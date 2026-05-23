@@ -56,6 +56,10 @@ class IndexTests(unittest.TestCase):
             ensure_read_only_sql("pragma journal_mode=WAL")
         with self.assertRaises(ValueError):
             ensure_read_only_sql("pragma writable_schema=ON")
+        with self.assertRaises(ValueError):
+            ensure_read_only_sql("select * from pragma_table_info('records')")
+        with self.assertRaises(ValueError):
+            ensure_read_only_sql("select name from pragma_database_list")
 
 
 if __name__ == "__main__":

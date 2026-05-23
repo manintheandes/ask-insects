@@ -65,6 +65,18 @@ class CliTests(unittest.TestCase):
         self.assertIn("error", payload)
         self.assertEqual(payload["source_gap"]["lane"], "sql")
 
+    def test_search_papers_alias_returns_literature_rows(self):
+        subprocess.run([sys.executable, "scripts/build_source_index.py", "--fixtures"], check=True)
+
+        result = self.run_cli("search", "papers", "host seeking")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stderr, "")
+        payload = json.loads(result.stdout)
+        self.assertTrue(payload["ok"])
+        self.assertTrue(payload["rows"])
+        self.assertTrue(any(row["lane"] == "literature" for row in payload["rows"]))
+
     def test_ask_with_malformed_index_returns_structured_error(self):
         with tempfile.TemporaryDirectory() as artifact_dir:
             conn = sqlite3.connect(f"{artifact_dir}/source_index.sqlite")

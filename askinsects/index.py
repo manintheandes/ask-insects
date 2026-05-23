@@ -59,6 +59,8 @@ def ensure_read_only_sql(sql: str) -> str:
     tokens = {token.lower() for token in re.findall(r"[A-Za-z_]+", _strip_sql_literals_and_comments(statement))}
     if tokens & WRITE_SQL_KEYWORDS:
         raise ValueError("sql is read-only; write statements are not allowed")
+    if any(token == "pragma" or token.startswith("pragma_") for token in tokens):
+        raise ValueError("sql is read-only; PRAGMA-style statements are not allowed")
     return statement
 
 

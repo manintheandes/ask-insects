@@ -45,6 +45,12 @@ def render_answer(payload: dict[str, object]) -> str:
     return "\n".join(lines)
 
 
+def normalize_search_lane(lane: str) -> str:
+    if lane == "papers":
+        return "literature"
+    return lane
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ask-insects")
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
@@ -108,8 +114,9 @@ def main(argv: list[str] | None = None) -> int:
         if not db_path.exists():
             emit(cli_error("missing mosquito_v1 source index", lane=args.lane, artifact_dir=artifact_dir))
             return 2
+        lane = normalize_search_lane(args.lane)
         try:
-            rows = [record.to_row() for record in index.search(args.query, lane=args.lane, limit=args.limit)]
+            rows = [record.to_row() for record in index.search(args.query, lane=lane, limit=args.limit)]
         except sqlite3.Error as exc:
             emit(cli_error(str(exc), lane=args.lane, artifact_dir=artifact_dir))
             return 2
