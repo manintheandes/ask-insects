@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import json
 from pathlib import Path
 import re
+import time
 from typing import Callable
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -26,16 +27,20 @@ class INaturalistBuildResult:
     requested_species: list[str]
     place: str | None
     observation_limit: int
+    page_size: int
+    delay_seconds: float
+    total_results: dict[str, int]
 
 
 class INaturalistClient:
     def __init__(self, fetch_json: Callable[[str], dict[str, object]] | None = None):
         self.fetch_json = fetch_json or self._fetch_json
 
-    def observations(self, species: str, *, place: str | None, limit: int) -> tuple[str, dict[str, object]]:
+    def observations(self, species: str, *, place: str | None, page: int, page_size: int) -> tuple[str, dict[str, object]]:
         params = {
             "taxon_name": species,
-            "per_page": limit,
+            "page": page,
+            "per_page": page_size,
             "photos": "true",
             "photo_licensed": "true",
             "order": "desc",
@@ -178,6 +183,8 @@ def fetch_inaturalist_records(
     raw_dir: Path,
     place: str | None = None,
     observation_limit: int = 10,
+    page_size: int = 200,
+    delay_seconds: float = 0.0,
     fetch_json: Callable[[str], dict[str, object]] | None = None,
     retrieved_at: str | None = None,
 ) -> INaturalistBuildResult:
@@ -186,50 +193,83 @@ def fetch_inaturalist_records(
     records: list[EvidenceRecord] = []
     gaps: list[dict[str, object]] = []
     raw_artifacts: list[str] = []
+    total_results: dict[str, int] = {}
+    seen_observations: set[str] = set()
+    seen_media: set[str] = set()
+    page_size = max(1, min(int(page_size), 200))
+    observation_limit = max(0, int(observation_limit))
 
     for species in species_names:
-        query_url, payload = client.observations(species, place=place, limit=observation_limit)
-        raw_path = write_raw_json(
-            raw_dir,
-            f"{safe_name(species)}_{safe_name(place)}_observations.json",
-            payload,
-        )
-        raw_artifacts.append(raw_path.as_posix())
-        results = payload.get("results")
-        if not isinstance(results, list) or not results:
+        species_indexed_observations = 0
+        species_seen_results = 0
+        species_had_results = False
+        photo_seen = False
+        page = 1
+
+        while species_indexed_observations < observation_limit:
+            if page > 1 and delay_seconds > 0:
+                time.sleep(delay_seconds)
+            query_url, payload = client.observations(species, place=place, page=page, page_size=page_size)
+            raw_path = write_raw_json(
+                raw_dir,
+                f"{safe_name(species)}_{safe_name(place)}_page_{page:03d}.json",
+                payload,
+            )
+            raw_artifacts.append(raw_path.as_posix())
+            total_results[species] = int(payload.get("total_results") or payload.get("total_count") or 0)
+            results = payload.get("results")
+            if not isinstance(results, list) or not results:
+                break
+            species_had_results = True
+            species_seen_results += len(results)
+
+            for observation in results:
+                if species_indexed_observations >= observation_limit:
+                    break
+                if not isinstance(observation, dict) or not observation.get("id"):
+                    continue
+                observation_id = str(observation["id"])
+                if observation_id in seen_observations:
+                    continue
+                photo = _photo(observation)
+                if not photo:
+                    continue
+                photo_id = str(photo.get("id") or observation_id)
+                if photo_id in seen_media:
+                    continue
+                photo_seen = True
+                seen_observations.add(observation_id)
+                seen_media.add(photo_id)
+                records.append(
+                    observation_record(
+                        observation,
+                        photo,
+                        species=species,
+                        query_url=query_url,
+                        raw_path=raw_path,
+                        retrieved_at=retrieved,
+                    )
+                )
+                records.append(
+                    media_record(
+                        observation,
+                        photo,
+                        species=species,
+                        raw_path=raw_path,
+                        retrieved_at=retrieved,
+                    )
+                )
+                species_indexed_observations += 1
+
+            if species_seen_results >= total_results.get(species, 0):
+                break
+            page += 1
+
+        if not species_had_results:
             gaps.append({"source": INATURALIST_SOURCE_ID, "lane": "observations", "species": species, "place": place, "reason": "iNaturalist returned no observations for this query."})
             continue
 
-        species_records = 0
-        photo_seen = False
-        for observation in results:
-            if not isinstance(observation, dict) or not observation.get("id"):
-                continue
-            photo = _photo(observation)
-            if not photo:
-                continue
-            photo_seen = True
-            records.append(
-                observation_record(
-                    observation,
-                    photo,
-                    species=species,
-                    query_url=query_url,
-                    raw_path=raw_path,
-                    retrieved_at=retrieved,
-                )
-            )
-            records.append(
-                media_record(
-                    observation,
-                    photo,
-                    species=species,
-                    raw_path=raw_path,
-                    retrieved_at=retrieved,
-                )
-            )
-            species_records += 2
-        if not photo_seen or species_records == 0:
+        if not photo_seen or species_indexed_observations == 0:
             gaps.append({"source": INATURALIST_SOURCE_ID, "lane": "media", "species": species, "place": place, "reason": "iNaturalist observations did not include usable licensed photos."})
 
     return INaturalistBuildResult(
@@ -240,4 +280,7 @@ def fetch_inaturalist_records(
         requested_species=list(species_names),
         place=place,
         observation_limit=observation_limit,
+        page_size=page_size,
+        delay_seconds=delay_seconds,
+        total_results=total_results,
     )
