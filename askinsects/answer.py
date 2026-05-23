@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import sqlite3
 
 from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
@@ -45,6 +46,8 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
         return f"I found {len(records)} indexed mosquito evidence record(s) matching the question."
     if plan.answer_shape == "action":
         return f"The local mosquito index supports this next step: {records[0].text}"
+    if plan.answer_shape == "literature":
+        return f"From the local mosquito literature index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "media":
         return f"I found {len(records)} indexed mosquito media record(s)."
     return f"I found {len(records)} indexed mosquito record(s)."
@@ -55,23 +58,42 @@ def _search_queries(question: str) -> list[str]:
     species_match = re.search(r"\b(Aedes|Culex|Anopheles)\s+[a-z]+\b", question, flags=re.IGNORECASE)
     if species_match:
         queries.append(species_match.group(0))
+    if "host seeking" in question.lower():
+        queries.append("host seeking")
     for term in ("Brazil", "mosquito"):
         if term.lower() in question.lower():
             queries.append(term)
     return list(dict.fromkeys(queries))
 
 
+def _index_ready(index: SourceIndex) -> bool:
+    if not index.path.exists():
+        return False
+    try:
+        index.summary()
+    except sqlite3.Error:
+        return False
+    return True
+
+
 def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, limit: int = 5) -> dict[str, object]:
     plan = plan_question(question)
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
+    if not _index_ready(index):
+        return source_gap(plan, "The mosquito V1 source index has not been built yet.")
+
     all_records: list[EvidenceRecord] = []
+    seen_record_ids: set[str] = set()
     for lane in plan.lanes:
         for search_query in _search_queries(plan.search_query):
-            all_records.extend(index.search(search_query, lane=lane, limit=limit))
-            if all_records:
+            query_records = index.search(search_query, lane=lane, limit=limit)
+            for record in query_records:
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
+            if query_records:
                 break
-        if len(all_records) >= limit:
-            break
 
     if plan.answer_shape == "media":
         media_records = [record for record in all_records if record.media_url and record.lane == "media"]
