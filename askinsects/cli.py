@@ -51,6 +51,23 @@ def normalize_search_lane(lane: str) -> str:
     return lane
 
 
+def indexed_sources(artifact_dir: Path) -> list[str]:
+    status_path = artifact_dir / "source_status.json"
+    if not status_path.exists():
+        return ["mosquito_v1_fixtures"]
+    try:
+        payload = json.loads(status_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ["mosquito_v1_fixtures"]
+    sources = payload.get("sources")
+    if isinstance(sources, list) and all(isinstance(source, str) for source in sources):
+        return sources
+    source_id = payload.get("source_id")
+    if isinstance(source_id, str):
+        return [source_id]
+    return ["mosquito_v1_fixtures"]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ask-insects")
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
@@ -95,7 +112,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         return 0
     if args.command == "sources":
-        emit({"sources": ["mosquito_v1_fixtures"], "artifact_dir": artifact_dir.as_posix()})
+        emit({"sources": indexed_sources(artifact_dir), "artifact_dir": artifact_dir.as_posix()})
         return 0
     if args.command == "ask":
         try:

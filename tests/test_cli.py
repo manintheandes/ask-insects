@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 
 class CliTests(unittest.TestCase):
@@ -76,6 +77,20 @@ class CliTests(unittest.TestCase):
         self.assertTrue(payload["ok"])
         self.assertTrue(payload["rows"])
         self.assertTrue(any(row["lane"] == "literature" for row in payload["rows"]))
+
+    def test_sources_reads_indexed_sources_from_status_file(self):
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            status_path = Path(artifact_dir) / "source_status.json"
+            status_path.write_text(
+                json.dumps({"sources": ["mosquito_v1_fixtures", "gbif_api"]}) + "\n",
+                encoding="utf-8",
+            )
+
+            result = self.run_cli("--artifact-dir", artifact_dir, "sources")
+
+            self.assertEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["sources"], ["mosquito_v1_fixtures", "gbif_api"])
 
     def test_ask_with_malformed_index_returns_structured_error(self):
         with tempfile.TemporaryDirectory() as artifact_dir:
