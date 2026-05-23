@@ -19,10 +19,17 @@ Sources:
 
 - `mosquito_v1_fixtures`: deterministic repo seed records.
 - `gbif_api`: bounded GBIF occurrence search records when explicitly fetched.
+- `inaturalist_api`: bounded iNaturalist observations with licensed photos when explicitly fetched.
 
 ## Videos And Media
 
 Public moving-image or inspectable media records. V1 reports missing video coverage honestly.
+
+Sources:
+
+- `inaturalist_api`: still-image media URLs from iNaturalist observation photos.
+
+Moving-image video coverage is still a source gap unless a future source lane adds video records.
 
 ## Papers And Literature
 
@@ -33,3 +40,5 @@ Paper metadata, abstracts when available, open access URLs, and source identifie
 Source-backed next steps for scientists, grounded in indexed observations and literature.
 
 GBIF V1 does not create action notes by itself. It strengthens the observation and taxonomy evidence that action answers can cite.
+
+iNaturalist V1 does not create action notes by itself. It strengthens photo-backed observation evidence that action answers can cite.

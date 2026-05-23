@@ -29,3 +29,15 @@ sources:
       - observations
     provenance_required: true
     live_fetch: opt_in
+  - id: inaturalist_api
+    name: iNaturalist public observations API
+    source_type: public_api
+    boundary: bounded mosquito observations with licensed photos
+    query_plane: inaturalist_observation_search
+    api_base: https://api.inaturalist.org/v1
+    artifact_dir: artifacts/mosquito-v1/raw/inaturalist
+    lanes:
+      - observations
+      - media
+    provenance_required: true
+    live_fetch: opt_in
