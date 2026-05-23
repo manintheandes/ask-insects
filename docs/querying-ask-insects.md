@@ -39,3 +39,21 @@ GBIF records use source id `gbif_api`. Raw GBIF responses are saved under `artif
 
 iNaturalist records use source id `inaturalist_api`. Raw iNaturalist responses are saved under `artifacts/mosquito-v1/raw/inaturalist/` and summarized in `artifacts/mosquito-v1/source_receipt.json`.
 Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes_aegypti_anywhere_page_001.json`.
+
+For deeper inspection, query the payload table:
+
+```bash
+python3 -m askinsects sql "select record_id, source, lane, json_extract(payload_json, '$.raw_observation.id') as observation_id from record_payloads where source='inaturalist_api' limit 5"
+```
+
+## Hosted Querying
+
+Hosted Ask Insects follows the Ask Monarch VM shape: the server reads `/home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite` and the local CLI talks to the server.
+
+```bash
+python3 -m askinsects configure --url http://<vm-ip>:8080 --token "$ASK_INSECTS_TOKEN"
+python3 -m askinsects health --hosted
+python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
+python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
+python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"
+```

@@ -53,6 +53,22 @@ python3 scripts/build_source_index.py --fixtures --inat --species "Aedes aegypti
 
 This saves each raw API page separately and records the page size, delay, and total iNaturalist results in the receipt.
 
+SQLite keeps two layers:
+
+- `records`: normalized Ask Insects evidence rows for answers, search, and provenance.
+- `record_payloads`: raw per-record source payloads, keyed by `record_id`, for deeper source inspection.
+
+## Hosted Ask Insects
+
+Hosted V1 follows the Ask Monarch VM pattern. The parsed SQLite index and raw source artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`.
+
+```bash
+python3 -m askinsects configure --url http://<vm-ip>:8080 --token "$ASK_INSECTS_TOKEN"
+python3 -m askinsects health --hosted
+python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
+python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
+```
+
 ## Contract
 
 Ask Insects answers from local indexed records. Every answer includes provenance or a clear source gap. V1 does not claim to mirror all mosquito knowledge. It proves a bounded mosquito seed source plane end to end.

@@ -13,7 +13,7 @@ Sources:
 
 ## Observations And Images
 
-Observation records with date, region, source URL, media URL, and license when available.
+Observation records with date, region, source URL, media URL, and license when available. Live source lanes also store raw per-record payloads in SQLite so the original API fields remain queryable.
 
 Sources:
 
@@ -30,7 +30,11 @@ Sources:
 - `inaturalist_api`: still-image media URLs from iNaturalist observation photos.
 
 Moving-image video coverage is still a source gap unless a future source lane adds video records.
-Deep iNaturalist ingest paginates the public API and saves one raw page artifact per request.
+Deep iNaturalist ingest paginates the public API and saves one raw page artifact per request. Each normalized iNaturalist observation and media row also gets a matching `record_payloads` row with the raw observation and photo payload.
+
+## Hosted Boundary
+
+Hosted Ask Insects uses the same source lanes. The difference is location: parsed artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`, and the local CLI asks the hosted API to ingest or query those artifacts.
 
 ## Papers And Literature
 
