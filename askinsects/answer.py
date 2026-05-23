@@ -55,15 +55,22 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     queries = [question]
-    species_match = re.search(r"\b(Aedes|Culex|Anopheles)\s+[a-z]+\b", question, flags=re.IGNORECASE)
-    if species_match:
-        queries.append(species_match.group(0))
-    if "host seeking" in question.lower():
+    species = _requested_species(question)
+    if species:
+        queries.append(species)
+    elif "host seeking" in question.lower():
         queries.append("host seeking")
     for term in ("Brazil", "mosquito"):
-        if term.lower() in question.lower():
+        if not species and term.lower() in question.lower():
             queries.append(term)
     return list(dict.fromkeys(queries))
+
+
+def _requested_species(question: str) -> str | None:
+    species_match = re.search(r"\b(Aedes|Culex|Anopheles)\s+[a-z]+\b", question, flags=re.IGNORECASE)
+    if not species_match:
+        return None
+    return species_match.group(0)
 
 
 def _index_ready(index: SourceIndex) -> bool:
@@ -103,6 +110,11 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "literature":
         literature_records = [record for record in all_records if record.lane == "literature"]
+        species = _requested_species(plan.question)
+        if species:
+            literature_records = [
+                record for record in literature_records if record.species and record.species.lower() == species.lower()
+            ]
         if not literature_records:
             return source_gap(plan, "The mosquito V1 index has no matching literature records.")
         all_records = literature_records

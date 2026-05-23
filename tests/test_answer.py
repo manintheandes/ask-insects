@@ -55,6 +55,16 @@ class AnswerTests(unittest.TestCase):
             self.assertFalse(answer["ok"])
             self.assertEqual(answer["source_gap"]["lane"], "literature")
 
+    def test_species_specific_literature_requires_species_match(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            answer = answer_question("what papers discuss Culex pipiens host seeking?", artifact_dir=artifact_dir)
+
+            self.assertFalse(answer["ok"])
+            self.assertEqual(answer["source_gap"]["lane"], "literature")
+
     def test_missing_index_returns_source_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "empty-mosquito-v1"
