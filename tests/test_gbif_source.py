@@ -12,7 +12,7 @@ class FakeGBIFFetcher:
 
     def __call__(self, url):
         self.urls.append(url)
-        if "/v2/species/match" in url:
+        if "/v1/species/match" in url:
             return {
                 "usageKey": 1651891,
                 "scientificName": "Aedes aegypti (Linnaeus, 1762)",
@@ -51,11 +51,12 @@ class FakeGBIFFetcher:
 class GBIFSourceTests(unittest.TestCase):
     def test_fetch_gbif_records_normalizes_taxonomy_and_occurrences(self):
         with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = FakeGBIFFetcher()
             result = fetch_gbif_records(
                 ["Aedes aegypti"],
                 raw_dir=Path(tmpdir) / "raw" / "gbif",
                 occurrence_limit=1,
-                fetch_json=FakeGBIFFetcher(),
+                fetch_json=fetcher,
                 retrieved_at="2026-05-23T00:00:00Z",
             )
 
@@ -71,6 +72,7 @@ class GBIFSourceTests(unittest.TestCase):
             self.assertIn("GBIF accepted species", taxonomy.text)
             self.assertEqual(taxonomy.provenance.source_id, GBIF_SOURCE_ID)
             self.assertIn("species/match", taxonomy.provenance.locator)
+            self.assertTrue(any("/v1/species/match" in url for url in fetcher.urls))
 
             occurrence = next(record for record in result.records if record.lane == "observations")
             self.assertEqual(occurrence.record_id, "gbif:occurrence:444")

@@ -51,7 +51,7 @@ Implement:
 - `GBIFBuildResult`
 - `fetch_gbif_records(...)`
 
-Use `https://api.gbif.org/v2/species/match` for species matching and `https://api.gbif.org/v1/occurrence/search` for occurrences.
+Use `https://api.gbif.org/v1/species/match` for species matching and `https://api.gbif.org/v1/occurrence/search` for occurrences.
 
 - [ ] **Step 4: Run tests**
 

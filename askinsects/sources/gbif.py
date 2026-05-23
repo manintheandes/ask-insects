@@ -34,7 +34,7 @@ class GBIFClient:
         self.fetch_json = fetch_json or self._fetch_json
 
     def species_match(self, species: str) -> tuple[str, dict[str, object]]:
-        url = f"{GBIF_API_BASE}/v2/species/match?{urlencode({'name': species})}"
+        url = f"{GBIF_API_BASE}/v1/species/match?{urlencode({'name': species})}"
         return url, self.fetch_json(url)
 
     def occurrence_search(self, taxon_key: int, limit: int) -> tuple[str, dict[str, object]]:
