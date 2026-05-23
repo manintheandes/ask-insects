@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import json
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -43,6 +44,7 @@ class EvidenceRecord:
     url: str | None
     media_url: str | None
     provenance: Provenance
+    payload: dict[str, Any] | None = None
 
     def to_row(self) -> dict[str, str | None]:
         return {

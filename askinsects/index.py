@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+import json
 from pathlib import Path
 import re
 import sqlite3
@@ -24,6 +25,16 @@ CREATE INDEX IF NOT EXISTS idx_records_lane ON records(lane);
 CREATE INDEX IF NOT EXISTS idx_records_species ON records(species);
 CREATE VIRTUAL TABLE IF NOT EXISTS records_fts
 USING fts5(record_id UNINDEXED, lane UNINDEXED, species UNINDEXED, title, text);
+CREATE TABLE IF NOT EXISTS record_payloads (
+  record_id TEXT PRIMARY KEY,
+  source TEXT NOT NULL,
+  lane TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  provenance_json TEXT NOT NULL,
+  FOREIGN KEY(record_id) REFERENCES records(record_id)
+);
+CREATE INDEX IF NOT EXISTS idx_record_payloads_source ON record_payloads(source);
+CREATE INDEX IF NOT EXISTS idx_record_payloads_lane ON record_payloads(lane);
 """
 
 
@@ -114,6 +125,28 @@ class SourceIndex:
                     "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
                     (record.record_id, record.lane, record.species, record.title, record.text),
                 )
+                if record.payload is None:
+                    conn.execute("DELETE FROM record_payloads WHERE record_id=?", (record.record_id,))
+                else:
+                    conn.execute(
+                        """
+                        INSERT INTO record_payloads (
+                          record_id, source, lane, payload_json, provenance_json
+                        ) VALUES (?, ?, ?, ?, ?)
+                        ON CONFLICT(record_id) DO UPDATE SET
+                          source=excluded.source,
+                          lane=excluded.lane,
+                          payload_json=excluded.payload_json,
+                          provenance_json=excluded.provenance_json
+                        """,
+                        (
+                            record.record_id,
+                            record.source,
+                            record.lane,
+                            json.dumps(record.payload, sort_keys=True),
+                            row["provenance_json"],
+                        ),
+                    )
 
     def search(self, query: str, lane: str | None = None, limit: int = 10) -> list[EvidenceRecord]:
         terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]

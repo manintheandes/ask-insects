@@ -107,12 +107,16 @@ class INaturalistSourceTests(unittest.TestCase):
             self.assertIn("Rio de Janeiro", observation.text)
             self.assertEqual(observation.provenance.license, "cc-by")
             self.assertIn("observations", observation.provenance.locator)
+            self.assertEqual(observation.payload["raw_observation"]["id"], 12345)
+            self.assertEqual(observation.payload["raw_photo"]["id"], 99)
 
             media = next(record for record in result.records if record.lane == "media")
             self.assertEqual(media.record_id, "inat:media:99")
             self.assertEqual(media.media_url, "https://static.inaturalist.org/photos/1/medium.jpg")
             self.assertIn("still image", media.text)
             self.assertEqual(media.provenance.source_url, "https://www.inaturalist.org/observations/12345")
+            self.assertEqual(media.payload["raw_observation"]["id"], 12345)
+            self.assertEqual(media.payload["raw_photo"]["id"], 99)
 
             raw_path = Path(tmpdir) / "raw" / "inaturalist" / "Aedes_aegypti_Brazil_page_001.json"
             self.assertTrue(raw_path.exists())
