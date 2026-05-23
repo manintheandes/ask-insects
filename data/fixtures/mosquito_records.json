@@ -1,0 +1,72 @@
+[
+  {
+    "record_id": "taxon:aedes_aegypti",
+    "lane": "taxonomy",
+    "title": "Aedes aegypti",
+    "text": "Aedes aegypti is a mosquito species strongly associated with human habitats and widely studied in public health, behavior, and vector-control literature.",
+    "species": "Aedes aegypti",
+    "url": "https://www.gbif.org/species/1651891",
+    "media_url": null,
+    "license": "CC0"
+  },
+  {
+    "record_id": "obs:aedes_aegypti_brazil_image",
+    "lane": "observations",
+    "title": "Aedes aegypti observation with image in Brazil",
+    "text": "A public mosquito observation record reports Aedes aegypti in Brazil with an inspectable image and location context.",
+    "species": "Aedes aegypti",
+    "url": "https://www.inaturalist.org/observations/example-aedes-brazil",
+    "media_url": "https://static.inaturalist.org/photos/example-aedes-brazil.jpg",
+    "license": "CC-BY"
+  },
+  {
+    "record_id": "paper:aedes_host_seeking",
+    "lane": "literature",
+    "title": "Mosquito host seeking and human-associated cues",
+    "text": "Literature about Aedes aegypti host seeking discusses odor, heat, carbon dioxide, and visual cues as evidence-backed signals to inspect.",
+    "species": "Aedes aegypti",
+    "url": "https://openalex.org/works/example-aedes-host-seeking",
+    "media_url": null,
+    "license": "metadata"
+  },
+  {
+    "record_id": "taxon:aedes_albopictus",
+    "lane": "taxonomy",
+    "title": "Aedes albopictus",
+    "text": "Aedes albopictus is a mosquito species known as the Asian tiger mosquito and is globally important in invasion ecology and vector surveillance.",
+    "species": "Aedes albopictus",
+    "url": "https://www.gbif.org/species/1651431",
+    "media_url": null,
+    "license": "CC0"
+  },
+  {
+    "record_id": "taxon:anopheles_gambiae",
+    "lane": "taxonomy",
+    "title": "Anopheles gambiae",
+    "text": "Anopheles gambiae is a mosquito species complex central to malaria-vector research and field surveillance.",
+    "species": "Anopheles gambiae",
+    "url": "https://www.gbif.org/species/1651041",
+    "media_url": null,
+    "license": "CC0"
+  },
+  {
+    "record_id": "taxon:culex_pipiens",
+    "lane": "taxonomy",
+    "title": "Culex pipiens",
+    "text": "Culex pipiens is a mosquito species complex often discussed in urban ecology, bird-associated feeding, and disease-vector monitoring.",
+    "species": "Culex pipiens",
+    "url": "https://www.gbif.org/species/1652358",
+    "media_url": null,
+    "license": "CC0"
+  },
+  {
+    "record_id": "action:culex_pipiens_next_steps",
+    "lane": "action_notes",
+    "title": "Culex pipiens inspection next steps",
+    "text": "For Culex pipiens, inspect local observation seasonality, nearby standing-water habitat, and literature about bird-associated host choice before making intervention claims.",
+    "species": "Culex pipiens",
+    "url": "docs/source-lanes.md#action-notes",
+    "media_url": null,
+    "license": "repo-authored"
+  }
+]
