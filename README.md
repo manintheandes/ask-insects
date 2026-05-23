@@ -45,6 +45,14 @@ python3 -m askinsects ask "show mosquito observations with images in Brazil"
 
 This writes raw iNaturalist API responses under `artifacts/mosquito-v1/raw/inaturalist/`, normalizes observation and still-image media records into the SQLite index, and records source receipts. Unit tests use fake iNaturalist responses so the completion gate stays deterministic.
 
+For a deeper `Aedes aegypti` ingest, use paginated API pulls with an explicit cap and delay:
+
+```bash
+python3 scripts/build_source_index.py --fixtures --inat --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
+```
+
+This saves each raw API page separately and records the page size, delay, and total iNaturalist results in the receipt.
+
 ## Contract
 
 Ask Insects answers from local indexed records. Every answer includes provenance or a clear source gap. V1 does not claim to mirror all mosquito knowledge. It proves a bounded mosquito seed source plane end to end.

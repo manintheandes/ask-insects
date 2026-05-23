@@ -30,6 +30,7 @@ Sources:
 - `inaturalist_api`: still-image media URLs from iNaturalist observation photos.
 
 Moving-image video coverage is still a source gap unless a future source lane adds video records.
+Deep iNaturalist ingest paginates the public API and saves one raw page artifact per request.
 
 ## Papers And Literature
 
