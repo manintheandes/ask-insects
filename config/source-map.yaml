@@ -17,3 +17,15 @@ sources:
       - literature
       - action_notes
     provenance_required: true
+  - id: gbif_api
+    name: Global Biodiversity Information Facility API
+    source_type: public_api
+    boundary: bounded mosquito taxonomy and occurrence pulls
+    query_plane: gbif_species_match_and_occurrence_search
+    api_base: https://api.gbif.org
+    artifact_dir: artifacts/mosquito-v1/raw/gbif
+    lanes:
+      - taxonomy
+      - observations
+    provenance_required: true
+    live_fetch: opt_in

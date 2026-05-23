@@ -9,7 +9,7 @@ from askinsects.builder import build_source_index
 
 
 def fake_gbif_fetcher(url):
-    if "/v2/species/match" in url:
+    if "/v1/species/match" in url:
         return {
             "usageKey": 1651891,
             "canonicalName": "Aedes aegypti",

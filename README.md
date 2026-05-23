@@ -21,6 +21,18 @@ python3 -m askinsects ask "what should a scientist inspect next for Culex pipien
 python3 scripts/verify_complete.py
 ```
 
+## GBIF Source Lane
+
+GBIF is the first live public source lane. It is opt-in and bounded:
+
+```bash
+python3 scripts/build_source_index.py --fixtures --gbif --species "Aedes aegypti" --occurrence-limit 3
+python3 -m askinsects sources
+python3 -m askinsects search observations "Aedes"
+```
+
+This writes raw GBIF API responses under `artifacts/mosquito-v1/raw/gbif/`, normalizes taxonomy and occurrence records into the SQLite index, and records source receipts. Unit tests use fake GBIF responses so the completion gate stays deterministic.
+
 ## Contract
 
 Ask Insects answers from local indexed records. Every answer includes provenance or a clear source gap. V1 does not claim to mirror all mosquito knowledge. It proves a bounded mosquito seed source plane end to end.
