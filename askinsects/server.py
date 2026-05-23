@@ -69,6 +69,42 @@ def health_payload(artifact_dir: Path) -> dict[str, object]:
     return payload
 
 
+def replace_path_strings(value: object, old: str, new: str) -> object:
+    return json.loads(json.dumps(value).replace(old, new))
+
+
+def rewrite_artifact_references(staging: Path, artifact_dir: Path, result: dict[str, object]) -> dict[str, object]:
+    old = str(staging)
+    new = str(artifact_dir)
+    for path in (staging / "source_status.json", staging / "source_receipt.json", staging / "gaps.json"):
+        if path.exists():
+            text = path.read_text(encoding="utf-8").replace(old, new)
+            path.write_text(text, encoding="utf-8")
+    db_path = staging / "source_index.sqlite"
+    if db_path.exists():
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("UPDATE records SET provenance_json = replace(provenance_json, ?, ?)", (old, new))
+            try:
+                conn.execute("UPDATE record_payloads SET provenance_json = replace(provenance_json, ? , ?)", (old, new))
+            except sqlite3.OperationalError:
+                pass
+    rewritten = replace_path_strings(result, old, new)
+    if not isinstance(rewritten, dict):
+        return result
+    return rewritten
+
+
+def activate_staging_artifact(staging: Path, artifact_dir: Path) -> None:
+    backup = artifact_dir.parent / f".{artifact_dir.name}.previous"
+    if backup.exists():
+        shutil.rmtree(backup)
+    if artifact_dir.exists():
+        artifact_dir.replace(backup)
+    staging.replace(artifact_dir)
+    if backup.exists():
+        shutil.rmtree(backup)
+
+
 def ingest_inaturalist(
     payload: dict[str, object],
     *,
@@ -90,17 +126,15 @@ def ingest_inaturalist(
     if place is not None and not isinstance(place, str):
         raise ValueError("place must be a string")
 
-    backup = artifact_dir.parent / f".{artifact_dir.name}.previous"
-    if backup.exists():
-        shutil.rmtree(backup)
-    if artifact_dir.exists():
-        artifact_dir.replace(backup)
+    staging = artifact_dir.parent / f".{artifact_dir.name}.staging"
+    if staging.exists():
+        shutil.rmtree(staging)
     try:
         result = build_source_index_fn(
             include_fixtures=True,
             include_gbif=False,
             include_inaturalist=True,
-            artifact_dir=artifact_dir,
+            artifact_dir=staging,
             inaturalist_species=species,
             inaturalist_place=place,
             observation_limit=observation_limit,
@@ -109,13 +143,11 @@ def ingest_inaturalist(
         )
         if not result.get("ok"):
             raise RuntimeError("hosted ingest failed")
+        result = rewrite_artifact_references(staging, artifact_dir, result)
+        activate_staging_artifact(staging, artifact_dir)
     except Exception:
-        shutil.rmtree(artifact_dir, ignore_errors=True)
-        if backup.exists():
-            backup.replace(artifact_dir)
+        shutil.rmtree(staging, ignore_errors=True)
         raise
-    if backup.exists():
-        shutil.rmtree(backup)
     result["activated_artifact_dir"] = str(artifact_dir)
     return result
 

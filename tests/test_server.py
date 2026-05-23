@@ -135,6 +135,31 @@ class ServerTests(unittest.TestCase):
             self.assertIn(str(artifact_dir), rows[0]["provenance_json"])
             self.assertNotIn(".staging", rows[0]["provenance_json"])
 
+    def test_ingest_keeps_active_index_available_during_build(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            active_db = artifact_dir / "source_index.sqlite"
+
+            def fake_builder(**kwargs):
+                self.assertTrue(active_db.exists())
+                self.assertNotEqual(kwargs["artifact_dir"], artifact_dir)
+                build_fixture_index(artifact_dir=kwargs["artifact_dir"])
+                return {"ok": True, "record_count": 7}
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/inaturalist",
+                {"species": ["Aedes aegypti"], "observation_limit": 1},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                build_source_index_fn=fake_builder,
+            )
+
+            self.assertTrue(response.payload["ok"])
+            self.assertTrue(active_db.exists())
+
 
 if __name__ == "__main__":
     unittest.main()

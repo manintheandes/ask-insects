@@ -70,8 +70,8 @@ def indexed_sources(artifact_dir: Path) -> list[str]:
     return ["mosquito_v1_fixtures"]
 
 
-def emit_hosted(method: str, path: str, payload: dict[str, object] | None = None) -> dict[str, object]:
-    result = hosted_request(load_config(), method, path, payload)
+def emit_hosted(method: str, path: str, payload: dict[str, object] | None = None, *, timeout: int = 120) -> dict[str, object]:
+    result = hosted_request(load_config(), method, path, payload, timeout=timeout)
     emit(result)
     return result
 
@@ -219,6 +219,7 @@ def main(argv: list[str] | None = None) -> int:
                 "page_size": args.page_size,
                 "delay_seconds": args.delay_seconds,
             },
+            timeout=3600,
         )
         return 0 if payload.get("ok") else 2
     parser.error("unknown command")

@@ -31,7 +31,7 @@ class HostedCliTests(unittest.TestCase):
     def test_hosted_health_uses_remote_request(self):
         calls = []
 
-        def fake_request(config, method, path, payload=None):
+        def fake_request(config, method, path, payload=None, timeout=120):
             calls.append((config.url, method, path, payload))
             return {"ok": True, "hosted": True}
 
@@ -46,8 +46,8 @@ class HostedCliTests(unittest.TestCase):
     def test_hosted_ingest_sends_species_options(self):
         calls = []
 
-        def fake_request(config, method, path, payload=None):
-            calls.append((method, path, payload))
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
             return {"ok": True, "record_count": 4}
 
         with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
@@ -70,6 +70,7 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][1], "/ingest/inaturalist")
         self.assertEqual(calls[0][2]["species"], ["Aedes aegypti"])
         self.assertEqual(calls[0][2]["observation_limit"], 10)
+        self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
 
