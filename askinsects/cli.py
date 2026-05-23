@@ -92,7 +92,10 @@ def main(argv: list[str] | None = None) -> int:
         emit({"sources": ["mosquito_v1_fixtures"], "artifact_dir": artifact_dir.as_posix()})
         return 0
     if args.command == "ask":
-        payload = answer_question(args.question, artifact_dir=artifact_dir, limit=args.limit)
+        try:
+            payload = answer_question(args.question, artifact_dir=artifact_dir, limit=args.limit)
+        except sqlite3.Error as exc:
+            payload = cli_error(str(exc), lane="mosquito_v1", artifact_dir=artifact_dir)
         gap = payload.get("source_gap") or {}
         if not payload.get("ok") and isinstance(gap, dict) and "index has not been built" in str(gap.get("reason")):
             payload = cli_error("missing mosquito_v1 source index", lane=str(gap.get("lane", "mosquito_v1")), artifact_dir=artifact_dir)

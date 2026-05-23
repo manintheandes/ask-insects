@@ -1,4 +1,5 @@
 import json
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -63,6 +64,41 @@ class CliTests(unittest.TestCase):
         self.assertFalse(payload["ok"])
         self.assertIn("error", payload)
         self.assertEqual(payload["source_gap"]["lane"], "sql")
+
+    def test_ask_with_malformed_index_returns_structured_error(self):
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            conn = sqlite3.connect(f"{artifact_dir}/source_index.sqlite")
+            conn.execute(
+                """
+                CREATE TABLE records (
+                  record_id TEXT PRIMARY KEY,
+                  lane TEXT NOT NULL,
+                  source TEXT NOT NULL,
+                  title TEXT NOT NULL,
+                  text TEXT NOT NULL,
+                  species TEXT,
+                  url TEXT,
+                  media_url TEXT,
+                  provenance_json TEXT NOT NULL
+                )
+                """
+            )
+            conn.close()
+
+            result = self.run_cli(
+                "--artifact-dir",
+                artifact_dir,
+                "ask",
+                "what do we know about Aedes aegypti?",
+                "--json",
+            )
+
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(result.stderr, "")
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ok"])
+            self.assertIn("error", payload)
+            self.assertIn("source_gap", payload)
 
 
 if __name__ == "__main__":
