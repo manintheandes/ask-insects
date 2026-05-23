@@ -46,6 +46,8 @@ class IndexTests(unittest.TestCase):
             ensure_read_only_sql("delete from records")
         with self.assertRaises(ValueError):
             ensure_read_only_sql("select * from records; drop table records")
+        with self.assertRaises(ValueError):
+            ensure_read_only_sql("WITH x AS (SELECT 1) DELETE FROM records")
 
 
 if __name__ == "__main__":

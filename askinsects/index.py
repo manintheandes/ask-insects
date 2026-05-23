@@ -27,12 +27,38 @@ USING fts5(record_id UNINDEXED, lane UNINDEXED, species UNINDEXED, title, text);
 """
 
 
+WRITE_SQL_KEYWORDS = {
+    "alter",
+    "attach",
+    "create",
+    "delete",
+    "detach",
+    "drop",
+    "insert",
+    "reindex",
+    "replace",
+    "update",
+    "vacuum",
+}
+
+
+def _strip_sql_literals_and_comments(sql: str) -> str:
+    return re.sub(
+        r"(?is)'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|--[^\n]*(?:\n|$)|/\*.*?\*/",
+        " ",
+        sql,
+    )
+
+
 def ensure_read_only_sql(sql: str) -> str:
     statement = sql.strip()
     if not re.match(r"(?is)^(select|with|pragma)\b", statement):
         raise ValueError("sql is read-only; use SELECT, WITH, or PRAGMA")
     if ";" in statement.rstrip(";"):
         raise ValueError("sql accepts one read-only statement at a time")
+    tokens = {token.lower() for token in re.findall(r"[A-Za-z_]+", _strip_sql_literals_and_comments(statement))}
+    if tokens & WRITE_SQL_KEYWORDS:
+        raise ValueError("sql is read-only; write statements are not allowed")
     return statement
 
 
