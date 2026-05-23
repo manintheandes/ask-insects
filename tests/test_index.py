@@ -48,6 +48,14 @@ class IndexTests(unittest.TestCase):
             ensure_read_only_sql("select * from records; drop table records")
         with self.assertRaises(ValueError):
             ensure_read_only_sql("WITH x AS (SELECT 1) DELETE FROM records")
+        with self.assertRaises(ValueError):
+            ensure_read_only_sql("pragma user_version")
+        with self.assertRaises(ValueError):
+            ensure_read_only_sql("pragma user_version=7")
+        with self.assertRaises(ValueError):
+            ensure_read_only_sql("pragma journal_mode=WAL")
+        with self.assertRaises(ValueError):
+            ensure_read_only_sql("pragma writable_schema=ON")
 
 
 if __name__ == "__main__":

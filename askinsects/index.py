@@ -52,8 +52,8 @@ def _strip_sql_literals_and_comments(sql: str) -> str:
 
 def ensure_read_only_sql(sql: str) -> str:
     statement = sql.strip()
-    if not re.match(r"(?is)^(select|with|pragma)\b", statement):
-        raise ValueError("sql is read-only; use SELECT, WITH, or PRAGMA")
+    if not re.match(r"(?is)^(select|with)\b", statement):
+        raise ValueError("sql is read-only; use SELECT or WITH")
     if ";" in statement.rstrip(";"):
         raise ValueError("sql accepts one read-only statement at a time")
     tokens = {token.lower() for token in re.findall(r"[A-Za-z_]+", _strip_sql_literals_and_comments(statement))}
