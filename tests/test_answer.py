@@ -45,6 +45,16 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["record_id"], "paper:aedes_host_seeking")
 
+    def test_literature_questions_gap_without_literature_evidence(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            answer = answer_question("what papers discuss Culex pipiens?", artifact_dir=artifact_dir)
+
+            self.assertFalse(answer["ok"])
+            self.assertEqual(answer["source_gap"]["lane"], "literature")
+
     def test_missing_index_returns_source_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "empty-mosquito-v1"

@@ -101,6 +101,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             return source_gap(plan, "The mosquito V1 index has no matching moving-image media records.")
         all_records = media_records
 
+    if plan.answer_shape == "literature":
+        literature_records = [record for record in all_records if record.lane == "literature"]
+        if not literature_records:
+            return source_gap(plan, "The mosquito V1 index has no matching literature records.")
+        all_records = literature_records
+
     if not all_records:
         return source_gap(plan, "No matching local records were found in the checked lanes.")
 
