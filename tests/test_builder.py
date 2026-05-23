@@ -136,6 +136,8 @@ class BuilderTests(unittest.TestCase):
                 inaturalist_species=["Aedes aegypti"],
                 inaturalist_place="Brazil",
                 observation_limit=1,
+                page_size=2,
+                delay_seconds=0,
                 inaturalist_fetch_json=fake_inaturalist_fetcher,
                 retrieved_at="2026-05-23T00:00:00Z",
             )
@@ -151,8 +153,11 @@ class BuilderTests(unittest.TestCase):
 
             receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
             self.assertEqual(receipt["inaturalist"]["observation_limit"], 1)
+            self.assertEqual(receipt["inaturalist"]["page_size"], 2)
+            self.assertEqual(receipt["inaturalist"]["delay_seconds"], 0)
+            self.assertEqual(receipt["inaturalist"]["total_results"]["Aedes aegypti"], 1)
             self.assertTrue(
-                (artifact_dir / "raw" / "inaturalist" / "Aedes_aegypti_Brazil_observations.json").exists()
+                (artifact_dir / "raw" / "inaturalist" / "Aedes_aegypti_Brazil_page_001.json").exists()
             )
 
 

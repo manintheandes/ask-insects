@@ -46,6 +46,8 @@ def build_source_index(
     inaturalist_species: list[str] | tuple[str, ...] | None = None,
     inaturalist_place: str | None = None,
     observation_limit: int = 10,
+    page_size: int = 200,
+    delay_seconds: float = 0.0,
     inaturalist_fetch_json: Callable[[str], dict[str, object]] | None = None,
     retrieved_at: str = FIXTURE_RETRIEVED_AT,
 ) -> dict[str, object]:
@@ -103,6 +105,8 @@ def build_source_index(
             raw_dir=artifact_dir / "raw" / "inaturalist",
             place=inaturalist_place,
             observation_limit=observation_limit,
+            page_size=page_size,
+            delay_seconds=delay_seconds,
             fetch_json=inaturalist_fetch_json,
             retrieved_at=retrieved_at,
         )
@@ -114,6 +118,9 @@ def build_source_index(
             "requested_species": inaturalist_result.requested_species,
             "place": inaturalist_result.place,
             "observation_limit": inaturalist_result.observation_limit,
+            "page_size": inaturalist_result.page_size,
+            "delay_seconds": inaturalist_result.delay_seconds,
+            "total_results": inaturalist_result.total_results,
             "raw_artifacts": inaturalist_result.raw_artifacts,
             "record_count": len(inaturalist_result.records),
             "gap_count": len(inaturalist_result.gaps),

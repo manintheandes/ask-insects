@@ -20,6 +20,8 @@ def main() -> int:
     parser.add_argument("--occurrence-limit", type=int, default=3, help="GBIF occurrence records to fetch per species.")
     parser.add_argument("--place", help="Place text for iNaturalist observation search, such as Brazil.")
     parser.add_argument("--observation-limit", type=int, default=10, help="iNaturalist observations to fetch per species.")
+    parser.add_argument("--page-size", type=int, default=200, help="iNaturalist API page size. Maximum is 200.")
+    parser.add_argument("--delay-seconds", type=float, default=0.0, help="Delay between iNaturalist API page requests.")
     parser.add_argument("--fixture-path", default=str(DEFAULT_FIXTURE_PATH))
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
     args = parser.parse_args()
@@ -38,6 +40,8 @@ def main() -> int:
         inaturalist_species=args.species or None,
         inaturalist_place=args.place,
         observation_limit=args.observation_limit,
+        page_size=args.page_size,
+        delay_seconds=args.delay_seconds,
     )
     print(json.dumps(result, sort_keys=True))
     return 0
