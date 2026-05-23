@@ -1,0 +1,19 @@
+sources:
+  - id: mosquito_v1_fixtures
+    name: Ask Insects mosquito V1 fixture source
+    source_type: local_fixture
+    boundary: mosquitoes first
+    query_plane: sqlite_atomic_index
+    artifact_dir: artifacts/mosquito-v1
+    artifacts:
+      sqlite_index: artifacts/mosquito-v1/source_index.sqlite
+      source_status: artifacts/mosquito-v1/source_status.json
+      source_receipt: artifacts/mosquito-v1/source_receipt.json
+      gaps: artifacts/mosquito-v1/gaps.json
+    lanes:
+      - taxonomy
+      - observations
+      - media
+      - literature
+      - action_notes
+    provenance_required: true
