@@ -1,4 +1,5 @@
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,6 +26,21 @@ class BuilderTests(unittest.TestCase):
             self.assertEqual(status["source_id"], "mosquito_v1_fixtures")
             self.assertTrue(status["fully_parsed"])
             self.assertEqual(status["gap_count"], 0)
+
+    def test_build_fixture_index_defaults_work_from_other_cwd(self):
+        original_cwd = Path.cwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            artifact_dir = tmp_path / "artifacts"
+            try:
+                os.chdir(tmp_path)
+                result = build_fixture_index(artifact_dir=artifact_dir)
+            finally:
+                os.chdir(original_cwd)
+
+            self.assertTrue(result["ok"])
+            self.assertTrue((artifact_dir / "source_index.sqlite").exists())
+            self.assertTrue((artifact_dir / "source_status.json").exists())
 
 
 if __name__ == "__main__":

@@ -7,8 +7,9 @@ from .index import SourceIndex
 from .sources.fixtures import FIXTURE_RETRIEVED_AT, FIXTURE_SOURCE_ID, load_fixture_records
 
 
-DEFAULT_ARTIFACT_DIR = Path("artifacts/mosquito-v1")
-DEFAULT_FIXTURE_PATH = Path("data/fixtures/mosquito_records.json")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_ARTIFACT_DIR = REPO_ROOT / "artifacts/mosquito-v1"
+DEFAULT_FIXTURE_PATH = REPO_ROOT / "data/fixtures/mosquito_records.json"
 
 
 def write_json(path: Path, payload: object) -> None:
