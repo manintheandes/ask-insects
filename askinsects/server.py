@@ -69,17 +69,6 @@ def health_payload(artifact_dir: Path) -> dict[str, object]:
     return payload
 
 
-def activate_staging_artifact(staging: Path, artifact_dir: Path) -> None:
-    backup = artifact_dir.parent / f".{artifact_dir.name}.previous"
-    if backup.exists():
-        shutil.rmtree(backup)
-    if artifact_dir.exists():
-        artifact_dir.replace(backup)
-    staging.replace(artifact_dir)
-    if backup.exists():
-        shutil.rmtree(backup)
-
-
 def ingest_inaturalist(
     payload: dict[str, object],
     *,
@@ -101,24 +90,32 @@ def ingest_inaturalist(
     if place is not None and not isinstance(place, str):
         raise ValueError("place must be a string")
 
-    staging = artifact_dir.parent / f".{artifact_dir.name}.staging"
-    if staging.exists():
-        shutil.rmtree(staging)
-    result = build_source_index_fn(
-        include_fixtures=True,
-        include_gbif=False,
-        include_inaturalist=True,
-        artifact_dir=staging,
-        inaturalist_species=species,
-        inaturalist_place=place,
-        observation_limit=observation_limit,
-        page_size=page_size,
-        delay_seconds=delay_seconds,
-    )
-    if not result.get("ok"):
-        shutil.rmtree(staging, ignore_errors=True)
-        return {"ok": False, "error": "hosted ingest failed", "result": result}
-    activate_staging_artifact(staging, artifact_dir)
+    backup = artifact_dir.parent / f".{artifact_dir.name}.previous"
+    if backup.exists():
+        shutil.rmtree(backup)
+    if artifact_dir.exists():
+        artifact_dir.replace(backup)
+    try:
+        result = build_source_index_fn(
+            include_fixtures=True,
+            include_gbif=False,
+            include_inaturalist=True,
+            artifact_dir=artifact_dir,
+            inaturalist_species=species,
+            inaturalist_place=place,
+            observation_limit=observation_limit,
+            page_size=page_size,
+            delay_seconds=delay_seconds,
+        )
+        if not result.get("ok"):
+            raise RuntimeError("hosted ingest failed")
+    except Exception:
+        shutil.rmtree(artifact_dir, ignore_errors=True)
+        if backup.exists():
+            backup.replace(artifact_dir)
+        raise
+    if backup.exists():
+        shutil.rmtree(backup)
     result["activated_artifact_dir"] = str(artifact_dir)
     return result
 

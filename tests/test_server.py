@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 
 from askinsects.builder import build_fixture_index
+from askinsects.index import SourceIndex
+from askinsects.records import EvidenceRecord, Provenance
 from askinsects.server import dispatch_request
 
 
@@ -86,6 +88,52 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(calls[0]["inaturalist_species"], ["Aedes aegypti"])
             self.assertTrue((artifact_dir / "source_index.sqlite").exists())
             self.assertFalse((artifact_dir.parent / ".mosquito-v1.staging").exists())
+
+    def test_ingest_records_final_artifact_paths_in_provenance(self):
+        def fake_builder(**kwargs):
+            artifact_dir = kwargs["artifact_dir"]
+            artifact_dir.mkdir(parents=True, exist_ok=True)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="inat:observation:1",
+                        lane="observations",
+                        source="inaturalist_api",
+                        title="Aedes aegypti observation",
+                        text="Aedes aegypti observed with a photo.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/1",
+                        media_url="https://static.inaturalist.org/photos/1/medium.jpg",
+                        provenance=Provenance(
+                            source_id="inaturalist_api",
+                            locator=f"{artifact_dir}/raw/inaturalist/page.json#observations/1",
+                            retrieved_at="2026-05-23T00:00:00Z",
+                            license="cc-by",
+                            source_url="https://api.inaturalist.org/v1/observations",
+                        ),
+                    )
+                ]
+            )
+            return {"ok": True, "record_count": 1, "artifact_dir": str(artifact_dir)}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            response = dispatch_request(
+                "POST",
+                "/ingest/inaturalist",
+                {"species": ["Aedes aegypti"], "observation_limit": 1},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                build_source_index_fn=fake_builder,
+            )
+
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select provenance_json from records")
+            self.assertIn(str(artifact_dir), rows[0]["provenance_json"])
+            self.assertNotIn(".staging", rows[0]["provenance_json"])
 
 
 if __name__ == "__main__":
