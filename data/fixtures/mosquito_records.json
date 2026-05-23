@@ -12,12 +12,12 @@
   {
     "record_id": "obs:aedes_aegypti_brazil_image",
     "lane": "observations",
-    "title": "Aedes aegypti observation with image in Brazil",
-    "text": "A public mosquito observation record reports Aedes aegypti in Brazil with an inspectable image and location context.",
+    "title": "Seeded Aedes aegypti observation fixture in Brazil",
+    "text": "A repo-local seeded observation fixture represents Aedes aegypti in Brazil for parser and answer-contract testing; it is not an external iNaturalist citation.",
     "species": "Aedes aegypti",
-    "url": "https://www.inaturalist.org/observations/example-aedes-brazil",
-    "media_url": "https://static.inaturalist.org/photos/example-aedes-brazil.jpg",
-    "license": "CC-BY"
+    "url": null,
+    "media_url": null,
+    "license": "repo-authored"
   },
   {
     "record_id": "paper:aedes_host_seeking",
@@ -25,7 +25,7 @@
     "title": "Mosquito host seeking and human-associated cues",
     "text": "Literature about Aedes aegypti host seeking discusses odor, heat, carbon dioxide, and visual cues as evidence-backed signals to inspect.",
     "species": "Aedes aegypti",
-    "url": "https://openalex.org/works/example-aedes-host-seeking",
+    "url": "https://openalex.org/W2953792681",
     "media_url": null,
     "license": "metadata"
   },
@@ -35,7 +35,7 @@
     "title": "Aedes albopictus",
     "text": "Aedes albopictus is a mosquito species known as the Asian tiger mosquito and is globally important in invasion ecology and vector surveillance.",
     "species": "Aedes albopictus",
-    "url": "https://www.gbif.org/species/1651431",
+    "url": "https://www.gbif.org/species/1651430",
     "media_url": null,
     "license": "CC0"
   },
@@ -45,7 +45,7 @@
     "title": "Anopheles gambiae",
     "text": "Anopheles gambiae is a mosquito species complex central to malaria-vector research and field surveillance.",
     "species": "Anopheles gambiae",
-    "url": "https://www.gbif.org/species/1651041",
+    "url": "https://www.gbif.org/species/1650518",
     "media_url": null,
     "license": "CC0"
   },
@@ -55,7 +55,7 @@
     "title": "Culex pipiens",
     "text": "Culex pipiens is a mosquito species complex often discussed in urban ecology, bird-associated feeding, and disease-vector monitoring.",
     "species": "Culex pipiens",
-    "url": "https://www.gbif.org/species/1652358",
+    "url": "https://www.gbif.org/species/1652991",
     "media_url": null,
     "license": "CC0"
   },
