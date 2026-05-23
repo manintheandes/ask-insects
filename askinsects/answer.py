@@ -66,6 +66,11 @@ def _search_queries(question: str) -> list[str]:
     return list(dict.fromkeys(queries))
 
 
+def _asks_for_still_images(question: str) -> bool:
+    q = question.lower()
+    return any(term in q for term in ("image", "images", "photo", "photos", "picture", "pictures"))
+
+
 def _requested_species(question: str) -> str | None:
     species_match = re.search(r"\b(Aedes|Culex|Anopheles)\s+[a-z]+\b", question, flags=re.IGNORECASE)
     if not species_match:
@@ -103,10 +108,19 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 break
 
     if plan.answer_shape == "media":
-        media_records = [record for record in all_records if record.media_url and record.lane == "media"]
+        media_records = [
+            record
+            for record in all_records
+            if record.media_url and record.lane == "media" and "still image" not in record.title.lower()
+        ]
         if not media_records:
             return source_gap(plan, "The mosquito V1 index has no matching moving-image media records.")
         all_records = media_records
+
+    if plan.answer_shape == "evidence" and _asks_for_still_images(plan.question):
+        still_records = [record for record in all_records if record.media_url and record.lane == "media"]
+        if still_records:
+            all_records = still_records + [record for record in all_records if record not in still_records]
 
     if plan.answer_shape == "literature":
         literature_records = [record for record in all_records if record.lane == "literature"]

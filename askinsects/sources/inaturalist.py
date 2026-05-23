@@ -147,6 +147,7 @@ def media_record(
     observation_id = int(observation["id"])
     photo_id = str(photo.get("id") or observation_id)
     taxon_name = _taxon_name(observation, species)
+    place_guess = observation.get("place_guess") or "unknown place"
     url = _observation_url(observation)
     photo_url = _photo_url(photo)
     license_code = str(photo.get("license_code") or observation.get("license_code") or "license not supplied")
@@ -157,7 +158,7 @@ def media_record(
         lane="media",
         source=INATURALIST_SOURCE_ID,
         title=f"{taxon_name} iNaturalist still image {photo_id}",
-        text=f"iNaturalist still image for observation {observation_id}.{attribution_text}",
+        text=f"iNaturalist still image for {taxon_name} at {place_guess}, from observation {observation_id}.{attribution_text}",
         species=taxon_name,
         url=url,
         media_url=photo_url,

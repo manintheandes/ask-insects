@@ -7,6 +7,7 @@ from typing import Callable
 from .index import SourceIndex
 from .sources.fixtures import FIXTURE_RETRIEVED_AT, FIXTURE_SOURCE_ID, load_fixture_records
 from .sources.gbif import DEFAULT_GBIF_SPECIES, GBIF_SOURCE_ID, fetch_gbif_records
+from .sources.inaturalist import DEFAULT_INATURALIST_SPECIES, INATURALIST_SOURCE_ID, fetch_inaturalist_records
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +27,7 @@ def build_fixture_index(
     return build_source_index(
         include_fixtures=True,
         include_gbif=False,
+        include_inaturalist=False,
         fixture_path=fixture_path,
         artifact_dir=artifact_dir,
     )
@@ -35,14 +37,19 @@ def build_source_index(
     *,
     include_fixtures: bool,
     include_gbif: bool,
+    include_inaturalist: bool = False,
     fixture_path: Path = DEFAULT_FIXTURE_PATH,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     gbif_species: list[str] | tuple[str, ...] | None = None,
     occurrence_limit: int = 3,
     gbif_fetch_json: Callable[[str], dict[str, object]] | None = None,
+    inaturalist_species: list[str] | tuple[str, ...] | None = None,
+    inaturalist_place: str | None = None,
+    observation_limit: int = 10,
+    inaturalist_fetch_json: Callable[[str], dict[str, object]] | None = None,
     retrieved_at: str = FIXTURE_RETRIEVED_AT,
 ) -> dict[str, object]:
-    if not include_fixtures and not include_gbif:
+    if not include_fixtures and not include_gbif and not include_inaturalist:
         raise ValueError("at least one source must be selected")
 
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -89,6 +96,30 @@ def build_source_index(
         }
         receipt_sources[GBIF_SOURCE_ID] = gbif_payload
 
+    inaturalist_payload: dict[str, object] | None = None
+    if include_inaturalist:
+        inaturalist_result = fetch_inaturalist_records(
+            inaturalist_species or DEFAULT_INATURALIST_SPECIES,
+            raw_dir=artifact_dir / "raw" / "inaturalist",
+            place=inaturalist_place,
+            observation_limit=observation_limit,
+            fetch_json=inaturalist_fetch_json,
+            retrieved_at=retrieved_at,
+        )
+        records.extend(inaturalist_result.records)
+        sources.append(INATURALIST_SOURCE_ID)
+        source_counts[INATURALIST_SOURCE_ID] = len(inaturalist_result.records)
+        gaps.extend(inaturalist_result.gaps)
+        inaturalist_payload = {
+            "requested_species": inaturalist_result.requested_species,
+            "place": inaturalist_result.place,
+            "observation_limit": inaturalist_result.observation_limit,
+            "raw_artifacts": inaturalist_result.raw_artifacts,
+            "record_count": len(inaturalist_result.records),
+            "gap_count": len(inaturalist_result.gaps),
+        }
+        receipt_sources[INATURALIST_SOURCE_ID] = inaturalist_payload
+
     index = SourceIndex(db_path)
     index.initialize()
     index.upsert_records(records)
@@ -118,6 +149,8 @@ def build_source_index(
     }
     if gbif_payload is not None:
         receipt["gbif"] = gbif_payload
+    if inaturalist_payload is not None:
+        receipt["inaturalist"] = inaturalist_payload
 
     write_json(artifact_dir / "gaps.json", gaps)
     write_json(artifact_dir / "source_status.json", status)
@@ -125,4 +158,6 @@ def build_source_index(
     result = {"ok": True, "artifact_dir": artifact_dir.as_posix(), **status}
     if gbif_payload is not None:
         result["gbif"] = gbif_payload
+    if inaturalist_payload is not None:
+        result["inaturalist"] = inaturalist_payload
     return result

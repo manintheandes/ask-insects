@@ -8,6 +8,31 @@ from askinsects.builder import build_fixture_index
 from askinsects.builder import build_source_index
 
 
+def fake_inaturalist_fetcher(url):
+    if "/v1/observations" in url:
+        return {
+            "total_results": 1,
+            "results": [
+                {
+                    "id": 12345,
+                    "uri": "https://www.inaturalist.org/observations/12345",
+                    "observed_on": "2021-02-03",
+                    "place_guess": "Rio de Janeiro, Brazil",
+                    "license_code": "cc-by",
+                    "taxon": {"name": "Aedes aegypti"},
+                    "photos": [
+                        {
+                            "id": 99,
+                            "url": "https://static.inaturalist.org/photos/1/medium.jpg",
+                            "license_code": "cc-by",
+                        }
+                    ],
+                }
+            ],
+        }
+    raise AssertionError(f"unexpected URL: {url}")
+
+
 def fake_gbif_fetcher(url):
     if "/v1/species/match" in url:
         return {
@@ -98,6 +123,37 @@ class BuilderTests(unittest.TestCase):
             receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
             self.assertEqual(receipt["gbif"]["requested_species"], ["Aedes aegypti"])
             self.assertTrue((artifact_dir / "raw" / "gbif" / "Aedes_aegypti_match.json").exists())
+
+    def test_build_source_index_combines_fixture_and_inaturalist_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            result = build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=True,
+                fixture_path=Path("data/fixtures/mosquito_records.json"),
+                artifact_dir=artifact_dir,
+                inaturalist_species=["Aedes aegypti"],
+                inaturalist_place="Brazil",
+                observation_limit=1,
+                inaturalist_fetch_json=fake_inaturalist_fetcher,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertIn("inaturalist_api", result["sources"])
+            self.assertEqual(result["source_counts"]["inaturalist_api"], 2)
+            self.assertEqual(result["inaturalist"]["requested_species"], ["Aedes aegypti"])
+            self.assertEqual(result["inaturalist"]["place"], "Brazil")
+
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            self.assertIn("inaturalist_api", status["sources"])
+
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["inaturalist"]["observation_limit"], 1)
+            self.assertTrue(
+                (artifact_dir / "raw" / "inaturalist" / "Aedes_aegypti_Brazil_observations.json").exists()
+            )
 
 
 if __name__ == "__main__":

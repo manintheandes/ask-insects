@@ -3,8 +3,31 @@ import unittest
 from pathlib import Path
 
 from askinsects.answer import answer_question
-from askinsects.builder import build_fixture_index
+from askinsects.builder import build_fixture_index, build_source_index
 from askinsects.planner import plan_question
+
+
+def fake_inaturalist_fetcher(url):
+    return {
+        "total_results": 1,
+        "results": [
+            {
+                "id": 12345,
+                "uri": "https://www.inaturalist.org/observations/12345",
+                "observed_on": "2021-02-03",
+                "place_guess": "Rio de Janeiro, Brazil",
+                "license_code": "cc-by",
+                "taxon": {"name": "Aedes aegypti"},
+                "photos": [
+                    {
+                        "id": 99,
+                        "url": "https://static.inaturalist.org/photos/1/medium.jpg",
+                        "license_code": "cc-by",
+                    }
+                ],
+            }
+        ],
+    }
 
 
 class AnswerTests(unittest.TestCase):
@@ -73,6 +96,47 @@ class AnswerTests(unittest.TestCase):
 
             self.assertFalse(answer["ok"])
             self.assertIsNotNone(answer["source_gap"])
+
+    def test_image_questions_use_inaturalist_media_when_available(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=True,
+                artifact_dir=artifact_dir,
+                inaturalist_species=["Aedes aegypti"],
+                inaturalist_place="Brazil",
+                observation_limit=1,
+                inaturalist_fetch_json=fake_inaturalist_fetcher,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            answer = answer_question("show mosquito observations with images in Brazil", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertTrue(any(item["lane"] == "media" for item in answer["evidence"]))
+            self.assertTrue(any(item["source"] == "inaturalist_api" for item in answer["evidence"]))
+
+    def test_video_questions_still_gap_with_only_still_images(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=True,
+                artifact_dir=artifact_dir,
+                inaturalist_species=["Aedes aegypti"],
+                inaturalist_place="Brazil",
+                observation_limit=1,
+                inaturalist_fetch_json=fake_inaturalist_fetcher,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            answer = answer_question("show mosquito videos from Brazil", artifact_dir=artifact_dir)
+
+            self.assertFalse(answer["ok"])
+            self.assertEqual(answer["source_gap"]["lane"], "media")
 
 
 if __name__ == "__main__":
