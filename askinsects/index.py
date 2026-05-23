@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import closing
 import json
 from pathlib import Path
 import re
@@ -86,11 +87,11 @@ class SourceIndex:
         return conn
 
     def initialize(self) -> None:
-        with self.connect() as conn:
+        with closing(self.connect()) as conn, conn:
             conn.executescript(SCHEMA)
 
     def upsert_records(self, records: list[EvidenceRecord]) -> None:
-        with self.connect() as conn:
+        with closing(self.connect()) as conn, conn:
             for record in records:
                 row = record.to_row()
                 conn.execute(
@@ -148,6 +149,15 @@ class SourceIndex:
                         ),
                     )
 
+    def delete_source(self, source: str) -> None:
+        with closing(self.connect()) as conn, conn:
+            rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
+            record_ids = [row["record_id"] for row in rows]
+            for record_id in record_ids:
+                conn.execute("DELETE FROM records_fts WHERE record_id=?", (record_id,))
+            conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))
+            conn.execute("DELETE FROM records WHERE source=?", (source,))
+
     def search(self, query: str, lane: str | None = None, limit: int = 10) -> list[EvidenceRecord]:
         terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]
         if not terms:
@@ -159,7 +169,7 @@ class SourceIndex:
             lane_filter = "AND r.lane = ?"
             params.append(lane)
         params.append(limit)
-        with self.connect() as conn:
+        with closing(self.connect()) as conn, conn:
             rows = conn.execute(
                 f"""
                 SELECT r.*
@@ -176,7 +186,7 @@ class SourceIndex:
 
     def sql(self, sql: str, limit: int = 100) -> list[dict[str, object]]:
         statement = ensure_read_only_sql(sql)
-        with self.connect() as conn:
+        with closing(self.connect()) as conn, conn:
             cursor = conn.execute(statement)
             rows = []
             for row in cursor:
@@ -186,7 +196,7 @@ class SourceIndex:
         return rows
 
     def summary(self) -> dict[str, object]:
-        with self.connect() as conn:
+        with closing(self.connect()) as conn, conn:
             rows = conn.execute("SELECT lane, COUNT(*) AS count FROM records GROUP BY lane").fetchall()
             record_count = conn.execute("SELECT COUNT(*) FROM records").fetchone()[0]
             species_count = conn.execute("SELECT COUNT(DISTINCT species) FROM records WHERE species IS NOT NULL").fetchone()[0]

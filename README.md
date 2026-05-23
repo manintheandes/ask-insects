@@ -23,7 +23,7 @@ python3 scripts/verify_complete.py
 
 ## GBIF Source Lane
 
-GBIF is the first live public source lane. It is opt-in and bounded:
+GBIF is the biodiversity occurrence source lane. Local pulls are opt-in and bounded:
 
 ```bash
 python3 scripts/build_source_index.py --fixtures --gbif --species "Aedes aegypti" --occurrence-limit 3
@@ -32,6 +32,14 @@ python3 -m askinsects search observations "Aedes"
 ```
 
 This writes raw GBIF API responses under `artifacts/mosquito-v1/raw/gbif/`, normalizes taxonomy and occurrence records into the SQLite index, and records source receipts. Unit tests use fake GBIF responses so the completion gate stays deterministic.
+
+Hosted Ask Insects can deep-refresh GBIF for one species without rebuilding or deleting the existing iNaturalist lane:
+
+```bash
+python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
+```
+
+The hosted ingest paginates GBIF occurrence search with a small worker pool, stores raw page JSON under `/home/josh/ask-insects/artifacts/mosquito-v1/raw/gbif/`, stores raw GBIF match and occurrence payloads in SQLite `record_payloads`, refreshes only `gbif_api` rows, and keeps the active server database available until the staged refresh is ready.
 
 ## iNaturalist Source Lane
 
@@ -65,6 +73,7 @@ Hosted V1 follows the Ask Monarch VM pattern. The parsed SQLite index and raw so
 ```bash
 python3 -m askinsects configure --url http://<vm-ip>:8080 --token "$ASK_INSECTS_TOKEN"
 python3 -m askinsects health --hosted
+python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```

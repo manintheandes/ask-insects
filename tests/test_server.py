@@ -6,6 +6,7 @@ from askinsects.builder import build_fixture_index
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.server import dispatch_request
+from askinsects.sources.gbif import GBIFBuildResult
 
 
 class ServerTests(unittest.TestCase):
@@ -159,6 +160,87 @@ class ServerTests(unittest.TestCase):
 
             self.assertTrue(response.payload["ok"])
             self.assertTrue(active_db.exists())
+
+    def test_ingest_gbif_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="inat:observation:1",
+                        lane="observations",
+                        source="inaturalist_api",
+                        title="Aedes aegypti iNaturalist observation",
+                        text="Aedes aegypti observed on iNaturalist.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="inaturalist_api",
+                            locator=f"{artifact_dir}/raw/inaturalist/page.json#observations/1",
+                            retrieved_at="2026-05-23T00:00:00Z",
+                            license="cc-by",
+                            source_url="https://api.inaturalist.org/v1/observations",
+                        ),
+                    )
+                ]
+            )
+
+            def fake_gbif_fetch(*args, **kwargs):
+                raw_dir = kwargs["raw_dir"]
+                return GBIFBuildResult(
+                    source_id="gbif_api",
+                    records=[
+                        EvidenceRecord(
+                            record_id="gbif:occurrence:444",
+                            lane="observations",
+                            source="gbif_api",
+                            title="Aedes aegypti occurrence 444",
+                            text="GBIF occurrence record for Aedes aegypti in Brazil.",
+                            species="Aedes aegypti",
+                            url="https://www.gbif.org/occurrence/444",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="gbif_api",
+                                locator=f"{raw_dir}/Aedes_aegypti_occurrences_offset_000000.json#occurrence/444",
+                                retrieved_at="2026-05-23T00:00:00Z",
+                                license="CC_BY_4_0",
+                                source_url="https://www.gbif.org/occurrence/444",
+                            ),
+                            payload={"raw_occurrence": {"key": 444}},
+                        )
+                    ],
+                    gaps=[],
+                    taxon_keys={"Aedes aegypti": 1651891},
+                    raw_artifacts=[(raw_dir / "Aedes_aegypti_occurrences_offset_000000.json").as_posix()],
+                    requested_species=["Aedes aegypti"],
+                    occurrence_limit=1,
+                    occurrence_page_size=300,
+                    occurrence_workers=1,
+                    total_results={"Aedes aegypti": 82237},
+                    page_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/gbif",
+                {"species": ["Aedes aegypti"], "occurrence_limit": 1},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_gbif_records_fn=fake_gbif_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["inaturalist_api"], 1)
+            self.assertEqual(counts["gbif_api"], 1)
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select record_id from record_payloads where source='gbif_api'")
+            self.assertEqual(payload_rows[0]["record_id"], "gbif:occurrence:444")
 
 
 if __name__ == "__main__":

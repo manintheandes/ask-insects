@@ -119,6 +119,14 @@ def main(argv: list[str] | None = None) -> int:
     ingest_inaturalist.add_argument("--page-size", type=int, default=200)
     ingest_inaturalist.add_argument("--delay-seconds", type=float, default=0.0)
 
+    ingest_gbif = sub.add_parser("ingest-gbif")
+    ingest_gbif.add_argument("--hosted", action="store_true")
+    ingest_gbif.add_argument("--species", action="append", default=[])
+    ingest_gbif.add_argument("--occurrence-limit", type=int, default=3)
+    ingest_gbif.add_argument("--occurrence-page-size", type=int, default=300)
+    ingest_gbif.add_argument("--occurrence-workers", type=int, default=1)
+    ingest_gbif.add_argument("--delay-seconds", type=float, default=0.0)
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -220,6 +228,23 @@ def main(argv: list[str] | None = None) -> int:
                 "delay_seconds": args.delay_seconds,
             },
             timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-gbif":
+        if not args.hosted:
+            emit({"ok": False, "error": "ingest-gbif currently requires --hosted; use scripts/build_source_index.py for local ingest"})
+            return 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/gbif",
+            {
+                "species": args.species or ["Aedes aegypti"],
+                "occurrence_limit": args.occurrence_limit,
+                "occurrence_page_size": args.occurrence_page_size,
+                "occurrence_workers": args.occurrence_workers,
+                "delay_seconds": args.delay_seconds,
+            },
+            timeout=7200,
         )
         return 0 if payload.get("ok") else 2
     parser.error("unknown command")

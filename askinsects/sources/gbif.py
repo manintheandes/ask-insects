@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import json
 from pathlib import Path
 import re
+import time
 from typing import Callable
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -27,6 +29,10 @@ class GBIFBuildResult:
     raw_artifacts: list[str]
     requested_species: list[str]
     occurrence_limit: int
+    occurrence_page_size: int
+    occurrence_workers: int
+    total_results: dict[str, int]
+    page_count: int
 
 
 class GBIFClient:
@@ -37,8 +43,8 @@ class GBIFClient:
         url = f"{GBIF_API_BASE}/v1/species/match?{urlencode({'name': species})}"
         return url, self.fetch_json(url)
 
-    def occurrence_search(self, taxon_key: int, limit: int) -> tuple[str, dict[str, object]]:
-        params = {"taxonKey": taxon_key, "limit": limit}
+    def occurrence_search(self, taxon_key: int, limit: int, offset: int = 0) -> tuple[str, dict[str, object]]:
+        params = {"taxonKey": taxon_key, "limit": limit, "offset": offset}
         url = f"{GBIF_API_BASE}/v1/occurrence/search?{urlencode(params)}"
         return url, self.fetch_json(url)
 
@@ -121,6 +127,10 @@ def taxonomy_record(
             license="GBIF API metadata",
             source_url=match_url,
         ),
+        payload={
+            "raw_match": match_payload,
+            "query_url": match_url,
+        },
     )
 
 
@@ -158,7 +168,25 @@ def occurrence_record(
             license=str(occurrence.get("license") or "GBIF occurrence license not supplied"),
             source_url=gbif_url if not occurrence_url else gbif_url,
         ),
+        payload={
+            "raw_occurrence": occurrence,
+            "query_url": occurrence_url,
+        },
     )
+
+
+def fetch_occurrence_page(
+    client: GBIFClient,
+    *,
+    taxon_key: int,
+    page_limit: int,
+    offset: int,
+    raw_dir: Path,
+    safe_name: str,
+) -> tuple[int, str, dict[str, object], Path]:
+    occurrence_url, occurrence_payload = client.occurrence_search(taxon_key, page_limit, offset=offset)
+    occurrence_path = write_raw_json(raw_dir, f"{safe_name}_occurrences_offset_{offset:06d}.json", occurrence_payload)
+    return offset, occurrence_url, occurrence_payload, occurrence_path
 
 
 def fetch_gbif_records(
@@ -166,15 +194,26 @@ def fetch_gbif_records(
     *,
     raw_dir: Path,
     occurrence_limit: int = 3,
+    occurrence_page_size: int = 300,
+    occurrence_workers: int = 1,
+    delay_seconds: float = 0.0,
     fetch_json: Callable[[str], dict[str, object]] | None = None,
     retrieved_at: str | None = None,
 ) -> GBIFBuildResult:
+    if occurrence_limit < 0:
+        raise ValueError("occurrence_limit must be zero or greater")
+    if occurrence_page_size <= 0:
+        raise ValueError("occurrence_page_size must be greater than zero")
+    if occurrence_workers <= 0:
+        raise ValueError("occurrence_workers must be greater than zero")
     retrieved = retrieved_at or utc_now()
     client = GBIFClient(fetch_json)
     records: list[EvidenceRecord] = []
     gaps: list[dict[str, object]] = []
     taxon_keys: dict[str, int] = {}
     raw_artifacts: list[str] = []
+    total_results: dict[str, int] = {}
+    page_count = 0
 
     for species in species_names:
         safe_name = safe_species_name(species)
@@ -199,24 +238,81 @@ def fetch_gbif_records(
             )
         )
 
-        occurrence_url, occurrence_payload = client.occurrence_search(taxon_key, occurrence_limit)
-        occurrence_path = write_raw_json(raw_dir, f"{safe_name}_occurrences.json", occurrence_payload)
-        raw_artifacts.append(occurrence_path.as_posix())
-        occurrence_results = occurrence_payload.get("results")
-        if not isinstance(occurrence_results, list) or not occurrence_results:
-            gaps.append({"source": GBIF_SOURCE_ID, "lane": "observations", "species": species, "reason": "GBIF returned no occurrence records for this species."})
-            continue
-        for occurrence in occurrence_results:
-            if isinstance(occurrence, dict) and occurrence.get("key"):
-                records.append(
-                    occurrence_record(
-                        occurrence,
-                        species=_canonical_species(species, match_payload),
-                        occurrence_url=occurrence_url,
-                        raw_path=occurrence_path,
-                        retrieved_at=retrieved,
+        target_count = occurrence_limit
+        pages: list[tuple[int, str, dict[str, object], Path]] = []
+        if occurrence_limit > 0:
+            first_page_limit = min(occurrence_page_size, occurrence_limit)
+            first_page = fetch_occurrence_page(
+                client,
+                taxon_key=taxon_key,
+                page_limit=first_page_limit,
+                offset=0,
+                raw_dir=raw_dir,
+                safe_name=safe_name,
+            )
+            pages.append(first_page)
+            first_payload = first_page[2]
+            reported_count = int(first_payload.get("count") or 0)
+            total_results[species] = reported_count
+            if reported_count:
+                target_count = min(occurrence_limit, reported_count)
+            first_results = first_payload.get("results")
+            first_result_count = len(first_results) if isinstance(first_results, list) else 0
+            remaining_offsets = list(range(first_result_count, target_count, occurrence_page_size))
+            if occurrence_workers == 1:
+                for offset in remaining_offsets:
+                    if delay_seconds:
+                        time.sleep(delay_seconds)
+                    page_limit = min(occurrence_page_size, target_count - offset)
+                    pages.append(
+                        fetch_occurrence_page(
+                            client,
+                            taxon_key=taxon_key,
+                            page_limit=page_limit,
+                            offset=offset,
+                            raw_dir=raw_dir,
+                            safe_name=safe_name,
+                        )
                     )
-                )
+            elif remaining_offsets:
+                with ThreadPoolExecutor(max_workers=occurrence_workers) as executor:
+                    futures = [
+                        executor.submit(
+                            fetch_occurrence_page,
+                            client,
+                            taxon_key=taxon_key,
+                            page_limit=min(occurrence_page_size, target_count - offset),
+                            offset=offset,
+                            raw_dir=raw_dir,
+                            safe_name=safe_name,
+                        )
+                        for offset in remaining_offsets
+                    ]
+                    for future in as_completed(futures):
+                        pages.append(future.result())
+
+        saw_occurrence = False
+        page_count += len(pages)
+        for _offset, occurrence_url, occurrence_payload, occurrence_path in sorted(pages, key=lambda item: item[0]):
+            raw_artifacts.append(occurrence_path.as_posix())
+            occurrence_results = occurrence_payload.get("results")
+            if not isinstance(occurrence_results, list) or not occurrence_results:
+                continue
+            for occurrence in occurrence_results:
+                if isinstance(occurrence, dict) and occurrence.get("key"):
+                    saw_occurrence = True
+                    records.append(
+                        occurrence_record(
+                            occurrence,
+                            species=_canonical_species(species, match_payload),
+                            occurrence_url=occurrence_url,
+                            raw_path=occurrence_path,
+                            retrieved_at=retrieved,
+                        )
+                    )
+
+        if not saw_occurrence:
+            gaps.append({"source": GBIF_SOURCE_ID, "lane": "observations", "species": species, "reason": "GBIF returned no occurrence records for this species."})
 
     return GBIFBuildResult(
         source_id=GBIF_SOURCE_ID,
@@ -226,4 +322,8 @@ def fetch_gbif_records(
         raw_artifacts=raw_artifacts,
         requested_species=list(species_names),
         occurrence_limit=occurrence_limit,
+        occurrence_page_size=occurrence_page_size,
+        occurrence_workers=occurrence_workers,
+        total_results=total_results,
+        page_count=page_count,
     )

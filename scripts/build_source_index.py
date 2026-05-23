@@ -18,6 +18,9 @@ def main() -> int:
     parser.add_argument("--inat", action="store_true", help="Fetch bounded live iNaturalist observations with photos.")
     parser.add_argument("--species", action="append", default=[], help="Scientific name to fetch from GBIF. Repeatable.")
     parser.add_argument("--occurrence-limit", type=int, default=3, help="GBIF occurrence records to fetch per species.")
+    parser.add_argument("--occurrence-page-size", type=int, default=300, help="GBIF API page size for occurrence search.")
+    parser.add_argument("--occurrence-workers", type=int, default=1, help="GBIF occurrence page workers. Use carefully with public APIs.")
+    parser.add_argument("--gbif-delay-seconds", type=float, default=0.0, help="Delay between GBIF occurrence API page requests.")
     parser.add_argument("--place", help="Place text for iNaturalist observation search, such as Brazil.")
     parser.add_argument("--observation-limit", type=int, default=10, help="iNaturalist observations to fetch per species.")
     parser.add_argument("--page-size", type=int, default=200, help="iNaturalist API page size. Maximum is 200.")
@@ -37,6 +40,9 @@ def main() -> int:
         artifact_dir=Path(args.artifact_dir),
         gbif_species=args.species or None,
         occurrence_limit=args.occurrence_limit,
+        occurrence_page_size=args.occurrence_page_size,
+        occurrence_workers=args.occurrence_workers,
+        gbif_delay_seconds=args.gbif_delay_seconds,
         inaturalist_species=args.species or None,
         inaturalist_place=args.place,
         observation_limit=args.observation_limit,
