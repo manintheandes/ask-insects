@@ -114,7 +114,8 @@
       "current_sources": [
         "mosquito_v1_fixtures",
         "gbif_api",
-        "inaturalist_api"
+        "inaturalist_api",
+        "mosquito_alert_gbif"
       ],
       "current_gates": {
         "mapped": "partial",
@@ -125,11 +126,11 @@
       },
       "current_evidence": [
         "Hosted artifact contains deep Aedes aegypti iNaturalist observation records with raw page artifacts and provenance.",
-        "GBIF and iNaturalist lanes exist, but Ask Insects is not yet a comprehensive observation mirror across all public surveillance systems."
+        "Mosquito Alert Aedes aegypti citizen-science observations are mapped through GBIF dataset 1fef1ead-3d02-495e-8ff1-6aeb01123408 with raw occurrence pages, media metadata, and provenance.",
+        "GBIF, iNaturalist, and Mosquito Alert lanes exist, but Ask Insects is not yet a comprehensive observation mirror across all public surveillance systems."
       ],
       "required_next_sources": [
         "deep Aedes aegypti GBIF occurrence refresh",
-        "Mosquito Alert public data",
         "regional surveillance exports where public"
       ],
       "completion_evidence": [
@@ -142,7 +143,8 @@
       "status": "partial_source_grade",
       "target_state": "Licensed Aedes aegypti images with observation, body part, life stage, view angle, source, license, and inspectable media locator.",
       "current_sources": [
-        "inaturalist_api"
+        "inaturalist_api",
+        "mosquito_alert_gbif"
       ],
       "current_gates": {
         "mapped": "partial",
@@ -153,10 +155,10 @@
       },
       "current_evidence": [
         "Hosted artifact contains deep Aedes aegypti iNaturalist licensed-photo media records with observation context and provenance.",
+        "Mosquito Alert Aedes aegypti still-image records preserve GBIF occurrence context plus image URL, rights holder, creator, and media license payloads.",
         "Image coverage is not yet enriched with body part, life stage, sex, anatomy, or quality labels."
       ],
       "required_next_sources": [
-        "Mosquito Alert images",
         "museum or reference-image collections with licensing",
         "image labels for species, life stage, sex, anatomy, and quality"
       ],

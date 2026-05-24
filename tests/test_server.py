@@ -6,11 +6,12 @@ from unittest import mock
 from askinsects.builder import build_fixture_index
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
-from askinsects.server import dispatch_request
+from askinsects.server import activate_source_staging, copy_artifact_to_staging, dispatch_request, prepare_mutable_staging
 from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
 from askinsects.sources.literature import FullTextUnit
+from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from tests.test_inaturalist_source import observation
 
@@ -29,6 +30,55 @@ class ServerTests(unittest.TestCase):
 
             self.assertEqual(response.status, 401)
             self.assertFalse(response.payload["ok"])
+
+    def test_staging_copy_hardlinks_raw_files_but_copies_mutable_files(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            artifact_dir = root / "mosquito-v1"
+            raw_dir = artifact_dir / "raw" / "large_source"
+            raw_dir.mkdir(parents=True)
+            (artifact_dir / "source_index.sqlite").write_text("mutable-db", encoding="utf-8")
+            (artifact_dir / "source_status.json").write_text("{}", encoding="utf-8")
+            (raw_dir / "page.json").write_text('{"ok": true}', encoding="utf-8")
+
+            staging = root / ".mosquito-v1.staging"
+            copy_artifact_to_staging(artifact_dir, staging)
+
+            self.assertNotEqual(
+                (artifact_dir / "source_index.sqlite").stat().st_ino,
+                (staging / "source_index.sqlite").stat().st_ino,
+            )
+            self.assertEqual(
+                (raw_dir / "page.json").stat().st_ino,
+                (staging / "raw" / "large_source" / "page.json").stat().st_ino,
+            )
+
+    def test_source_staging_replaces_mutables_and_one_raw_source(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            artifact_dir = root / "mosquito-v1"
+            old_raw = artifact_dir / "raw" / "old_source"
+            new_raw = artifact_dir / "raw" / "mosquito_alert"
+            old_raw.mkdir(parents=True)
+            new_raw.mkdir(parents=True)
+            (artifact_dir / "source_index.sqlite").write_text("old-db", encoding="utf-8")
+            (old_raw / "keep.json").write_text("keep", encoding="utf-8")
+            (new_raw / "old.json").write_text("old", encoding="utf-8")
+
+            staging = root / ".mosquito-v1.staging"
+            prepare_mutable_staging(artifact_dir, staging)
+            (staging / "source_index.sqlite").write_text("new-db", encoding="utf-8")
+            staged_raw = staging / "raw" / "mosquito_alert"
+            staged_raw.mkdir(parents=True)
+            (staged_raw / "new.json").write_text("new", encoding="utf-8")
+
+            activate_source_staging(staging, artifact_dir, Path("raw") / "mosquito_alert")
+
+            self.assertEqual((artifact_dir / "source_index.sqlite").read_text(encoding="utf-8"), "new-db")
+            self.assertEqual((old_raw / "keep.json").read_text(encoding="utf-8"), "keep")
+            self.assertFalse((new_raw / "old.json").exists())
+            self.assertEqual((new_raw / "new.json").read_text(encoding="utf-8"), "new")
+            self.assertFalse(staging.exists())
 
     def test_health_summary_sources_ask_and_sql(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -588,6 +638,74 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.status, 200)
             self.assertTrue(response.payload["ok"])
             self.assertGreater(seen_source_count[0], 1)
+
+    def test_ingest_mosquito_alert_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, occurrence_limit, occurrence_page_size, retrieved_at):
+                raw_path = raw_dir / "aedes_aegypti_occurrences_offset_000000.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"results":[]}', encoding="utf-8")
+                return MosquitoAlertBuildResult(
+                    source_id="mosquito_alert_gbif",
+                    records=[
+                        EvidenceRecord(
+                            record_id="mosquito_alert:observation:4909387174",
+                            lane="observations",
+                            source="mosquito_alert_gbif",
+                            title="Aedes aegypti Mosquito Alert observation 4909387174",
+                            text="Mosquito Alert citizen-science observation of Aedes aegypti in Brazil with one still image.",
+                            species="Aedes aegypti",
+                            url="https://www.gbif.org/occurrence/4909387174",
+                            media_url="http://webserver.mosquitoalert.com/media/tigapics/example.jpg",
+                            provenance=Provenance(
+                                source_id="mosquito_alert_gbif",
+                                locator=f"{raw_path}#occurrence/4909387174",
+                                retrieved_at=retrieved_at,
+                                license="http://creativecommons.org/publicdomain/zero/1.0/legalcode",
+                                source_url="https://www.gbif.org/occurrence/4909387174",
+                            ),
+                            payload={"raw_occurrence": {"key": 4909387174}},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    dataset_key="1fef1ead-3d02-495e-8ff1-6aeb01123408",
+                    dataset_doi="10.15470/t5a1os",
+                    taxon_key=1651891,
+                    occurrence_limit=occurrence_limit,
+                    occurrence_page_size=occurrence_page_size,
+                    total_results=1,
+                    page_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/mosquito-alert",
+                {"occurrence_limit": 1, "occurrence_page_size": 1},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_mosquito_alert_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["mosquito_alert_gbif"], 1)
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id from record_payloads where source='mosquito_alert_gbif'",
+            )
+            self.assertEqual(payload_rows[0]["record_id"], "mosquito_alert:observation:4909387174")
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='mosquito_alert_gbif'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
 
 
 if __name__ == "__main__":

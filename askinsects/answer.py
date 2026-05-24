@@ -87,6 +87,8 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
+    if "mosquito alert" in q:
+        return ["Mosquito Alert Aedes aegypti", "Mosquito Alert", "citizen-science observation", question]
     if "coi-5p" in q or re.search(r"\bcoi\b", q):
         return ["COI-5P", "Marker COI", question]
     if "bold" in q and ("barcode" in q or "barcodes" in q):
@@ -293,6 +295,20 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
     return sorted(records, key=score)
 
 
+def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    q = question.lower()
+    if "mosquito alert" not in q:
+        return records
+
+    def score(record: EvidenceRecord) -> tuple[int, int]:
+        return (
+            0 if record.source == "mosquito_alert_gbif" else 1,
+            0 if record.lane in {"observations", "media"} else 1,
+        )
+
+    return sorted(records, key=score)
+
+
 def _index_ready(index: SourceIndex) -> bool:
     if not index.path.exists():
         return False
@@ -341,6 +357,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         still_records = [record for record in all_records if record.media_url and record.lane == "media"]
         if still_records:
             all_records = still_records + [record for record in all_records if record not in still_records]
+
+    all_records = _prioritize_named_source_records(plan.question, all_records)
 
     if plan.answer_shape == "literature":
         literature_records = [record for record in all_records if record.lane == "literature"]

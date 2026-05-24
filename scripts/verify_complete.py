@@ -67,6 +67,7 @@ REQUIRED_FILES = (
     "askinsects/sources/neurobiology.py",
     "askinsects/sources/pmc_videos.py",
     "askinsects/sources/irmapper.py",
+    "askinsects/sources/mosquito_alert.py",
     "askinsects/sources/public_health.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
@@ -80,6 +81,7 @@ REQUIRED_FILES = (
     "scripts/ingest_inaturalist_observations.py",
     "scripts/ingest_pmc_videos.py",
     "scripts/ingest_irmapper.py",
+    "scripts/ingest_mosquito_alert_observations.py",
     "scripts/ingest_public_health_guidance.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
@@ -108,6 +110,8 @@ REQUIRED_FILES = (
     "tests/test_pmc_video_source.py",
     "tests/test_ingest_irmapper.py",
     "tests/test_irmapper_source.py",
+    "tests/test_mosquito_alert_source.py",
+    "tests/test_ingest_mosquito_alert_observations.py",
     "tests/test_public_health_source.py",
     "tests/test_ingest_public_health_guidance.py",
 )
@@ -138,6 +142,8 @@ UNIT_TEST_MODULES = (
     "tests.test_pmc_video_source",
     "tests.test_ingest_irmapper",
     "tests.test_irmapper_source",
+    "tests.test_mosquito_alert_source",
+    "tests.test_ingest_mosquito_alert_observations",
     "tests.test_public_health_source",
     "tests.test_ingest_public_health_guidance",
 )
@@ -224,6 +230,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "Aedes",
         "aedes_literature_facets",
         "aedes_public_health_guidance",
+        "mosquito_alert_gbif",
     )
     for term in required_terms:
         if term not in readme:
@@ -237,6 +244,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing public-health guidance term: {term}")
+    for term in ("mosquito_alert_gbif", "scripts/ingest_mosquito_alert_observations.py", "observations", "media"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Mosquito Alert term: {term}")
 
 
 def check_cli() -> None:

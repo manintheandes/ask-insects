@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -36,6 +36,7 @@ from .sources.inaturalist import (
     write_raw_json as write_inaturalist_raw_json,
 )
 from .sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetch_irmapper_records
+from .sources.mosquito_alert import MOSQUITO_ALERT_SOURCE_ID, fetch_mosquito_alert_records
 from .sources.public_health import (
     DEFAULT_PUBLIC_HEALTH_SOURCES,
     PUBLIC_HEALTH_SOURCE_ID,
@@ -115,6 +116,14 @@ def replace_path_strings(value: object, old: str, new: str) -> object:
     return json.loads(json.dumps(value).replace(old, new))
 
 
+def replace_record_path_strings(records: list[object], old: str, new: str) -> list[object]:
+    rewritten = []
+    for record in records:
+        provenance = replace(record.provenance, locator=record.provenance.locator.replace(old, new))
+        rewritten.append(replace(record, provenance=provenance))
+    return rewritten
+
+
 def rewrite_artifact_references(staging: Path, artifact_dir: Path, result: dict[str, object], *, rewrite_db: bool = True) -> dict[str, object]:
     old = str(staging)
     new = str(artifact_dir)
@@ -151,6 +160,64 @@ def activate_staging_artifact(staging: Path, artifact_dir: Path) -> None:
     staging.replace(artifact_dir)
     if backup.exists():
         shutil.rmtree(backup)
+
+
+MUTABLE_ARTIFACT_FILES = {
+    "source_index.sqlite",
+    "source_index.sqlite-shm",
+    "source_index.sqlite-wal",
+    "source_status.json",
+    "source_receipt.json",
+    "gaps.json",
+}
+
+
+def _copy_for_staging(src: str, dst: str) -> str:
+    if Path(src).name in MUTABLE_ARTIFACT_FILES:
+        return shutil.copy2(src, dst)
+    try:
+        os.link(src, dst)
+        shutil.copystat(src, dst, follow_symlinks=False)
+        return dst
+    except OSError:
+        return shutil.copy2(src, dst)
+
+
+def copy_artifact_to_staging(artifact_dir: Path, staging: Path) -> None:
+    shutil.copytree(artifact_dir, staging, copy_function=_copy_for_staging)
+
+
+def prepare_mutable_staging(artifact_dir: Path, staging: Path) -> None:
+    staging.mkdir(parents=True, exist_ok=True)
+    for name in MUTABLE_ARTIFACT_FILES:
+        source = artifact_dir / name
+        if source.exists():
+            target = staging / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
+
+
+def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir: Path) -> None:
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    for name in MUTABLE_ARTIFACT_FILES:
+        source = staging / name
+        if source.exists():
+            target = artifact_dir / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            source.replace(target)
+    raw_source = staging / raw_relative_dir
+    if raw_source.exists():
+        raw_target = artifact_dir / raw_relative_dir
+        raw_target.parent.mkdir(parents=True, exist_ok=True)
+        backup = raw_target.parent / f".{raw_target.name}.previous"
+        if backup.exists():
+            shutil.rmtree(backup)
+        if raw_target.exists():
+            raw_target.replace(backup)
+        raw_source.replace(raw_target)
+        if backup.exists():
+            shutil.rmtree(backup)
+    shutil.rmtree(staging, ignore_errors=True)
 
 
 def write_inaturalist_metadata(staging: Path, inaturalist_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
@@ -372,7 +439,7 @@ def ingest_inaturalist(
         shutil.rmtree(staging)
     try:
         if artifact_dir.exists():
-            shutil.copytree(artifact_dir, staging)
+            prepare_mutable_staging(artifact_dir, staging)
         else:
             staging.mkdir(parents=True, exist_ok=True)
         index = SourceIndex(staging / "source_index.sqlite")
@@ -656,7 +723,7 @@ def ingest_gbif(
         shutil.rmtree(staging)
     try:
         if artifact_dir.exists():
-            shutil.copytree(artifact_dir, staging)
+            copy_artifact_to_staging(artifact_dir, staging)
         else:
             staging.mkdir(parents=True, exist_ok=True)
         index = SourceIndex(staging / "source_index.sqlite")
@@ -777,7 +844,7 @@ def ingest_irmapper(
         shutil.rmtree(staging)
     try:
         if artifact_dir.exists():
-            shutil.copytree(artifact_dir, staging)
+            copy_artifact_to_staging(artifact_dir, staging)
         else:
             staging.mkdir(parents=True, exist_ok=True)
         index = SourceIndex(staging / "source_index.sqlite")
@@ -889,7 +956,7 @@ def ingest_public_health(
         shutil.rmtree(staging)
     try:
         if artifact_dir.exists():
-            shutil.copytree(artifact_dir, staging)
+            copy_artifact_to_staging(artifact_dir, staging)
         else:
             staging.mkdir(parents=True, exist_ok=True)
         index = SourceIndex(staging / "source_index.sqlite")
@@ -924,6 +991,128 @@ def ingest_public_health(
     return response
 
 
+def write_mosquito_alert_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(source_payload["retrieved_at"])
+    sources = [source for source in counts if source != MOSQUITO_ALERT_SOURCE_ID]
+    if counts.get(MOSQUITO_ALERT_SOURCE_ID):
+        sources.append(MOSQUITO_ALERT_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else MOSQUITO_ALERT_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": True,
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[MOSQUITO_ALERT_SOURCE_ID] = source_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else MOSQUITO_ALERT_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            "mosquito_alert": source_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, "mosquito_alert": source_payload}
+
+
+def ingest_mosquito_alert(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
+) -> dict[str, object]:
+    occurrence_limit = int(payload.get("occurrence_limit") or 1000)
+    occurrence_page_size = int(payload.get("occurrence_page_size") or 300)
+    staging = artifact_dir.parent / f".{artifact_dir.name}.mosquito-alert-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        staging.mkdir(parents=True, exist_ok=True)
+        retrieved_at = utc_now()
+        result = fetch_mosquito_alert_records_fn(
+            raw_dir=staging / "raw" / "mosquito_alert",
+            occurrence_limit=occurrence_limit,
+            occurrence_page_size=occurrence_page_size,
+            retrieved_at=retrieved_at,
+        )
+        old = staging.as_posix()
+        new = artifact_dir.as_posix()
+        records = replace_record_path_strings(result.records, old, new)
+        raw_target = artifact_dir / "raw" / "mosquito_alert"
+        raw_backup = raw_target.parent / ".mosquito_alert.previous"
+        raw_target.parent.mkdir(parents=True, exist_ok=True)
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+        if raw_target.exists():
+            raw_target.replace(raw_backup)
+        (staging / "raw" / "mosquito_alert").replace(raw_target)
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+
+        index = SourceIndex(artifact_dir / "source_index.sqlite")
+        index.initialize()
+        index.delete_source(MOSQUITO_ALERT_SOURCE_ID)
+        index.upsert_records(records)
+        old_gaps = read_json(artifact_dir / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == MOSQUITO_ALERT_SOURCE_ID)]
+        gaps.extend(result.gaps)
+        raw_artifacts = replace_path_strings(result.raw_artifacts, old, new)
+        if not isinstance(raw_artifacts, list):
+            raw_artifacts = result.raw_artifacts
+        source_payload = {
+            "dataset_key": result.dataset_key,
+            "dataset_doi": result.dataset_doi,
+            "taxon_key": result.taxon_key,
+            "occurrence_limit": result.occurrence_limit,
+            "occurrence_page_size": result.occurrence_page_size,
+            "total_results": result.total_results,
+            "page_count": result.page_count,
+            "raw_artifacts": raw_artifacts,
+            "record_count": len(records),
+            "gap_count": len(result.gaps),
+            "retrieved_at": retrieved_at,
+        }
+        response = write_mosquito_alert_metadata(artifact_dir, source_payload, gaps)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    shutil.rmtree(staging, ignore_errors=True)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -936,6 +1125,7 @@ def dispatch_request(
     fetch_gbif_records_fn: Callable[..., object] = fetch_gbif_records,
     fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
+    fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
     fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
 ) -> Response:
     if not is_authorized(headers, token):
@@ -995,6 +1185,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_public_health_guidance_records_fn=fetch_public_health_guidance_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/mosquito-alert":
+            result = ingest_mosquito_alert(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_mosquito_alert_records_fn=fetch_mosquito_alert_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

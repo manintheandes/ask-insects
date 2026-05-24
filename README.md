@@ -73,6 +73,17 @@ SQLite keeps these layers:
 - `record_payloads`: raw per-record source payloads, keyed by `record_id`, for deeper source inspection.
 - `literature_fulltext_units`: legal open full-text chunks for literature records when Unpaywall exposes a direct open text or PDF URL that Ask Insects can parse.
 
+## Mosquito Alert Source Lane
+
+Mosquito Alert is a citizen-science observation and image lane for `Aedes aegypti`, fetched through its public GBIF dataset:
+
+```bash
+python3 -m askinsects ingest-mosquito-alert --occurrence-limit 1000
+python3 -m askinsects ask "show Mosquito Alert Aedes aegypti images from Brazil" --json
+```
+
+The lane writes GBIF dataset and occurrence pages under `raw/mosquito_alert/`, normalizes one `observations` record per Mosquito Alert occurrence and one `media` record per still image from source `mosquito_alert_gbif`, stores raw occurrence and media payloads in SQLite, and preserves both occurrence-level and image-level license fields. This is a source-specific Aedes slice, not a replacement for the broader GBIF occurrence mirror.
+
 ## NCBI Genomics Source Lane
 
 NCBI Datasets is the first genomics lane. V1 parses an unpacked `Aedes aegypti` genome package for assembly `GCF_002204515.2`:
@@ -213,6 +224,7 @@ python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrenc
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-public-health --hosted
+python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```
 

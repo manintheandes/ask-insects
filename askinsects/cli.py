@@ -144,6 +144,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_public_health.add_argument("--hosted", action="store_true")
     ingest_public_health.add_argument("--source-url", action="append", default=[])
 
+    ingest_mosquito_alert = sub.add_parser("ingest-mosquito-alert")
+    ingest_mosquito_alert.add_argument("--hosted", action="store_true")
+    ingest_mosquito_alert.add_argument("--occurrence-limit", type=int, default=1000)
+    ingest_mosquito_alert.add_argument("--occurrence-page-size", type=int, default=300)
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -312,6 +317,27 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/public-health",
             {"source_urls": args.source_url},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-mosquito-alert":
+        if not args.hosted:
+            from scripts.ingest_mosquito_alert_observations import ingest_mosquito_alert_observations
+
+            payload = ingest_mosquito_alert_observations(
+                artifact_dir=artifact_dir,
+                occurrence_limit=args.occurrence_limit,
+                occurrence_page_size=args.occurrence_page_size,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/mosquito-alert",
+            {
+                "occurrence_limit": args.occurrence_limit,
+                "occurrence_page_size": args.occurrence_page_size,
+            },
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

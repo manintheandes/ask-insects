@@ -418,6 +418,56 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(any(item["lane"] == "media" for item in answer["evidence"]))
             self.assertTrue(any(item["source"] == "inaturalist_api" for item in answer["evidence"]))
 
+    def test_mosquito_alert_image_questions_use_media_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="inat:media:1",
+                        lane="media",
+                        source="inaturalist_api",
+                        title="Aedes aegypti iNaturalist still image 1",
+                        text="iNaturalist still image for Aedes aegypti from Brazil.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/1",
+                        media_url="https://static.inaturalist.org/photos/1/medium.jpg",
+                        provenance=Provenance(
+                            source_id="inaturalist_api",
+                            locator="raw/inaturalist/page.json#observations/1/photos/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="cc0",
+                            source_url="https://www.inaturalist.org/observations/1",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="mosquito_alert:media:4909387174:example",
+                        lane="media",
+                        source="mosquito_alert_gbif",
+                        title="Aedes aegypti Mosquito Alert still image 4909387174",
+                        text="Mosquito Alert still image for Aedes aegypti from citizen-science observation in Brazil.",
+                        species="Aedes aegypti",
+                        url="https://www.gbif.org/occurrence/4909387174",
+                        media_url="http://webserver.mosquitoalert.com/media/tigapics/example.jpg",
+                        provenance=Provenance(
+                            source_id="mosquito_alert_gbif",
+                            locator="raw/mosquito_alert/aedes_aegypti_occurrences_offset_000000.json#occurrence/4909387174/media/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="Anonymous, CC by Mosquito Alert",
+                            source_url="http://webserver.mosquitoalert.com/media/tigapics/example.jpg",
+                        ),
+                    )
+                ]
+            )
+
+            answer = answer_question("show Mosquito Alert Aedes aegypti images from Brazil", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["source"], "mosquito_alert_gbif")
+            self.assertEqual(answer["evidence"][0]["lane"], "media")
+
     def test_video_questions_still_gap_with_only_still_images(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

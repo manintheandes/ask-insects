@@ -153,6 +153,32 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_mosquito_alert_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 140}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-mosquito-alert",
+                "--hosted",
+                "--occurrence-limit",
+                "70",
+                "--occurrence-page-size",
+                "30",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/mosquito-alert")
+        self.assertEqual(calls[0][2]["occurrence_limit"], 70)
+        self.assertEqual(calls[0][2]["occurrence_page_size"], 30)
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
 
 if __name__ == "__main__":
     unittest.main()

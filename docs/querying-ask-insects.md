@@ -81,6 +81,13 @@ python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
 ```
 
+To add Mosquito Alert `Aedes aegypti` citizen-science observations and still images:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-mosquito-alert --occurrence-limit 1000
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Mosquito Alert Aedes aegypti images from Brazil" --json
+```
+
 To add public IR Mapper `Aedes aegypti` insecticide-resistance records:
 
 ```bash
@@ -127,6 +134,8 @@ This command talks to the hosted API. The server fetches GBIF pages with a small
 iNaturalist records use source id `inaturalist_api`. Raw iNaturalist responses are saved under `artifacts/mosquito-v1/raw/inaturalist/` and summarized in `artifacts/mosquito-v1/source_receipt.json`.
 Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes_aegypti_anywhere_page_001.json`.
 Local and hosted iNaturalist ingests are incremental. They replace only `inaturalist_api` rows, preserving the other source lanes already installed in `artifacts/mosquito-v1`.
+
+Mosquito Alert records use source id `mosquito_alert_gbif`. Raw GBIF dataset and occurrence pages are saved under `artifacts/mosquito-v1/raw/mosquito_alert/`. Each observation record stores the raw GBIF occurrence payload and occurrence license. Each media record stores the raw image metadata and media license.
 
 PMC video records use source id `pmc_open_access_videos`. Raw article HTML is saved under `artifacts/mosquito-v1/raw/pmc_videos/`. Each media record stores the article URL, downloadable video URL, parsed article title, DOI when present, license text when present, and a provenance locator into the saved raw HTML.
 
