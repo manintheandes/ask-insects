@@ -17,6 +17,7 @@ from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
 from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
 from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
+from askinsects.sources.vectorbase_genomics import VectorBaseGenomicsResult
 from tests.test_inaturalist_source import observation
 
 
@@ -716,6 +717,62 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
             self.assertNotIn(".staging", payload_rows[0]["payload_json"])
+
+    def test_ingest_vectorbase_genomics_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, file_urls, retrieved_at):
+                raw_path = raw_dir / "vectorbase.gff"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text("##gff-version 3\n", encoding="utf-8")
+                return VectorBaseGenomicsResult(
+                    source_id="vectorbase_aedes_genomics",
+                    records=[
+                        EvidenceRecord(
+                            record_id="vectorbase:gene:AAEL000001",
+                            lane="genes",
+                            source="vectorbase_aedes_genomics",
+                            title="Aedes aegypti VectorBase gene AAEL000001",
+                            text="VectorBase gene AAEL000001 for Aedes aegypti.",
+                            species="Aedes aegypti",
+                            url="https://vectorbase.org/gff",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="vectorbase_aedes_genomics",
+                                locator=f"{raw_path}#line/2",
+                                retrieved_at=retrieved_at,
+                                license="VectorBase/VEuPathDB public download; source terms apply",
+                                source_url="https://vectorbase.org/gff",
+                            ),
+                            payload={"raw_path": raw_path.as_posix(), "gff_attributes": {"ID": "AAEL000001"}},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_urls=["https://vectorbase.org/gff"],
+                    release="Current_Release",
+                    organism="AaegyptiLVP_AGWG",
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/vectorbase-genomics",
+                {"file_urls": {"gff": "https://vectorbase.org/gff"}},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_vectorbase_genomics_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["vectorbase_aedes_genomics"], 1)
+            self.assertEqual(response.payload["vectorbase_genomics"]["release"], "Current_Release")
 
     def test_ingest_mosquito_alert_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

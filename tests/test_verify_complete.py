@@ -26,6 +26,25 @@ class VerifyCompleteTests(unittest.TestCase):
         )
         self.assertIn("tests.test_ncbi_genome_source", unit_modules)
 
+    def test_verify_complete_requires_vectorbase_genomics_lane(self):
+        required_files = set(verify_complete.REQUIRED_FILES)
+        unit_modules = set(verify_complete.UNIT_TEST_MODULES)
+
+        self.assertIn("askinsects/sources/vectorbase_genomics.py", required_files)
+        self.assertIn("scripts/ingest_vectorbase_genomics.py", required_files)
+        self.assertIn("tests/test_vectorbase_genomics_source.py", required_files)
+        self.assertIn("tests/test_ingest_vectorbase_genomics.py", required_files)
+        self.assertIn(
+            "docs/superpowers/specs/2026-05-24-aedes-vectorbase-genomics-lane-design.md",
+            required_files,
+        )
+        self.assertIn(
+            "docs/superpowers/plans/2026-05-24-aedes-vectorbase-genomics-lane.md",
+            required_files,
+        )
+        self.assertIn("tests.test_vectorbase_genomics_source", unit_modules)
+        self.assertIn("tests.test_ingest_vectorbase_genomics", unit_modules)
+
     def test_verify_complete_requires_neurobiology_lane(self):
         required_files = set(verify_complete.REQUIRED_FILES)
         unit_modules = set(verify_complete.UNIT_TEST_MODULES)

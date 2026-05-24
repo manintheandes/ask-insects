@@ -97,6 +97,18 @@ python3 -m askinsects ask "show odorant receptor genes in Aedes aegypti"
 
 This stores the package files as raw artifacts and indexes useful atoms into SQLite: genome assembly rows, GFF genes, transcripts, other genome features, and protein FASTA headers. It does not index every DNA base as an answer row.
 
+## VectorBase Genomics Source Lane
+
+`vectorbase_aedes_genomics` is the VectorBase/VEuPathDB Aedes-specific genomics lane for current-release `AaegyptiLVP_AGWG` annotation downloads:
+
+```bash
+python3 -m askinsects ingest-vectorbase-genomics
+python3 -m askinsects search genes "AAEL odorant receptor"
+python3 -m askinsects ask "show VectorBase AAEL000001 gene annotation for Aedes aegypti" --json
+```
+
+This writes official GFF, annotated protein FASTA, and GO GAF downloads under `artifacts/mosquito-v1/raw/vectorbase_genomics/`, normalizes records into `genes`, `transcripts`, `proteins`, and `genome_features`, stores parsed payloads in SQLite, and keeps provenance to the saved file line or FASTA header.
+
 ## BOLD DNA Barcode Source Lane
 
 BOLD is the public DNA barcode source lane for `Aedes aegypti` specimen and COI-style marker records:

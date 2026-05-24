@@ -54,10 +54,13 @@ Sources:
 
 - `ncbi_datasets_genome`: parsed NCBI Datasets package for `Aedes aegypti` assembly `GCF_002204515.2`.
 - `ncbi_biosamples`: bounded NCBI BioSample metadata for `Aedes aegypti` samples, strains, isolates, collection dates, geographies, tissues, isolation sources, organizations, and linked SRA identifiers when present.
+- `vectorbase_aedes_genomics`: official VectorBase/VEuPathDB `AaegyptiLVP_AGWG` current-release GFF, annotated protein FASTA, and GO GAF downloads parsed into genes, transcripts, proteins, and GO annotation records.
 
 The genomics lane indexes useful atoms, not every DNA base. Raw NCBI package files remain the source artifacts. SQLite rows cite locators such as `assembly_data_report.jsonl#line/1`, `genomic.gff#line/42`, or `protein.faa#protein/XP_001`.
 
 NCBI BioSample rows cite saved ESummary batches under `raw/ncbi_biosamples/`. The ingest is bounded by default; if NCBI reports more `Aedes aegypti` BioSamples than were fetched, Ask Insects writes a structured `biosample_limit_applied` source gap.
+
+VectorBase rows cite saved files under `raw/vectorbase_genomics/`, with locators such as `VectorBase-68_AaegyptiLVP_AGWG.gff#line/42`, `VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta#line/12`, or `VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz#line/200`. VectorBase-specific questions, AAEL IDs, and GO annotation questions prefer this source over generic NCBI genome records.
 
 Current genomics lanes:
 

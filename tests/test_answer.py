@@ -824,6 +824,54 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "ncbi_datasets_genome")
             self.assertIn(answer["evidence"][0]["lane"], {"genes", "transcripts", "genome_features", "proteins"})
 
+    def test_vectorbase_genomics_questions_prefer_vectorbase_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="ncbi:gene:AAEL000001",
+                        lane="genes",
+                        source="ncbi_datasets_genome",
+                        title="Aedes aegypti NCBI gene AAEL000001",
+                        text="NCBI gene AAEL000001 for Aedes aegypti, annotated as odorant receptor coreceptor.",
+                        species="Aedes aegypti",
+                        url="https://example.org/ncbi",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="ncbi_datasets_genome",
+                            locator="raw/ncbi_genome#gff",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="NCBI",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:gene:AAEL000001",
+                        lane="genes",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase gene AAEL000001",
+                        text="VectorBase gene AAEL000001 for Aedes aegypti, annotated as odorant receptor coreceptor.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/gff/data/VectorBase-68_AaegyptiLVP_AGWG.gff",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/VectorBase-68_AaegyptiLVP_AGWG.gff#line/2",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show VectorBase AAEL000001 gene annotation for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "vectorbase_aedes_genomics")
+
     def test_coi_barcode_questions_prefer_coi_marker_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

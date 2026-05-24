@@ -126,6 +126,25 @@ sources:
       - biosamples
     provenance_required: true
     live_fetch: opt_in_bounded
+  - id: vectorbase_aedes_genomics
+    name: VectorBase/VEuPathDB Aedes aegypti genomics downloads
+    source_type: public_bulk_download
+    boundary: Official VectorBase current-release AaegyptiLVP_AGWG GFF, annotated protein FASTA, and GO GAF files for Aedes aegypti genes, transcripts, proteins, and GO annotations
+    query_plane: vectorbase_current_release_downloads_to_sqlite
+    api_base: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG
+    artifact_dir: artifacts/mosquito-v1/raw/vectorbase_genomics
+    ingest_script: scripts/ingest_vectorbase_genomics.py
+    files:
+      gff: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/gff/data/VectorBase-68_AaegyptiLVP_AGWG.gff
+      proteins: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta
+      go: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/gaf/VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz
+    lanes:
+      - genes
+      - transcripts
+      - proteins
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in
   - id: bold_api
     name: BOLD public Aedes aegypti DNA barcode records
     source_type: public_api

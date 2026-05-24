@@ -68,6 +68,14 @@ To add `Aedes aegypti` genomics from an unpacked NCBI Datasets package:
 python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
 ```
 
+To add official VectorBase/VEuPathDB `Aedes aegypti` gene, transcript, protein, and GO annotation downloads:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-vectorbase-genomics
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show VectorBase AAEL000001 gene annotation for Aedes aegypti" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search genome_features "GO odorant receptor"
+```
+
 To add `Aedes aegypti` brain and neuron source metadata:
 
 ```bash

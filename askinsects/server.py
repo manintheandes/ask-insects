@@ -51,6 +51,7 @@ from .sources.public_health import (
     PUBLIC_HEALTH_SOURCE_ID,
     fetch_public_health_guidance_records,
 )
+from .sources.vectorbase_genomics import fetch_vectorbase_genomics_records
 
 
 @dataclass(frozen=True)
@@ -1552,6 +1553,7 @@ def dispatch_request(
     fetch_pathogen_taxonomy_records_fn: Callable[..., object] = fetch_pathogen_taxonomy_records,
     fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
     fetch_paho_dengue_surveillance_records_fn: Callable[..., object] = fetch_paho_dengue_surveillance_records,
+    fetch_vectorbase_genomics_records_fn: Callable[..., object] = fetch_vectorbase_genomics_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -1618,6 +1620,19 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_paho_dengue_surveillance_records_fn=fetch_paho_dengue_surveillance_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/vectorbase-genomics":
+            from scripts.ingest_vectorbase_genomics import ingest_vectorbase_genomics
+
+            file_urls = (payload or {}).get("file_urls")
+            if file_urls is not None and not isinstance(file_urls, dict):
+                raise ValueError("file_urls must be an object")
+            result = ingest_vectorbase_genomics(
+                artifact_dir=artifact_dir,
+                file_urls=file_urls,
+                fetch_vectorbase_genomics_records_fn=fetch_vectorbase_genomics_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

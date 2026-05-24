@@ -131,6 +131,39 @@ def _search_queries(question: str) -> list[str]:
         if species:
             queries.append(species)
         return list(dict.fromkeys(queries))
+    if any(term in q for term in ("vectorbase", "veupathdb", "aael", "go annotation", "go term", "gene ontology")):
+        generic_terms = {
+            "aedes",
+            "aegypti",
+            "annotation",
+            "for",
+            "gene",
+            "genes",
+            "genomics",
+            "go",
+            "show",
+            "term",
+            "terms",
+            "the",
+            "vectorbase",
+            "veupathdb",
+            "what",
+            "which",
+        }
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9]+", question)
+            if token.lower() not in generic_terms
+        ]
+        queries = []
+        aael_terms = [token for token in salient if token.upper().startswith("AAEL")]
+        if aael_terms:
+            queries.extend(aael_terms)
+            queries.extend(f"VectorBase {term}" for term in aael_terms)
+        if salient:
+            queries.append(" ".join(salient))
+        queries.extend(["VectorBase Aedes aegypti", "Aedes aegypti VectorBase", question])
+        return list(dict.fromkeys(queries))
     if "mosquito alert" in q:
         return ["Mosquito Alert Aedes aegypti", "Mosquito Alert", "citizen-science observation", question]
     if "gbif" in q and any(term in q for term in ("observation", "observations", "occurrence", "occurrences", "record", "records")):
@@ -450,6 +483,23 @@ def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
 
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if any(term in q for term in ("vectorbase", "veupathdb", "aael", "go annotation", "go term", "gene ontology")):
+        aael_terms = [token.lower() for token in re.findall(r"AAEL[A-Za-z0-9-]+", question, flags=re.IGNORECASE)]
+        if aael_terms:
+            exact_records = [
+                record
+                for record in records
+                if any(term in f"{record.record_id}\n{record.title}\n{record.text}".lower() for term in aael_terms)
+            ]
+            if exact_records:
+                records = exact_records
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "vectorbase_aedes_genomics" else 1,
+                0 if record.lane in {"genes", "proteins", "transcripts", "genome_features"} else 1,
+            ),
+        )
     if any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates")) or (
         "sra" in q and "reanalysis" not in q and "raw read" not in q and "runinfo" not in q
     ):

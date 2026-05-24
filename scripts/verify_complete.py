@@ -40,6 +40,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-ncbi-biosample-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-resistance-marker-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-occurrence-ecology-lane-design.md",
+    "docs/superpowers/specs/2026-05-24-aedes-vectorbase-genomics-lane-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -54,6 +55,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-ncbi-biosample-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-resistance-marker-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-occurrence-ecology-lane.md",
+    "docs/superpowers/plans/2026-05-24-aedes-vectorbase-genomics-lane.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -81,6 +83,7 @@ REQUIRED_FILES = (
     "askinsects/sources/paho_surveillance.py",
     "askinsects/sources/pathogen_taxonomy.py",
     "askinsects/sources/ncbi_biosample.py",
+    "askinsects/sources/vectorbase_genomics.py",
     "askinsects/sources/vector_competence_assays.py",
     "askinsects/sources/resistance_markers.py",
     "askinsects/sources/occurrence_ecology.py",
@@ -102,6 +105,7 @@ REQUIRED_FILES = (
     "scripts/ingest_paho_dengue_surveillance.py",
     "scripts/ingest_pathogen_taxonomy.py",
     "scripts/ingest_ncbi_biosamples.py",
+    "scripts/ingest_vectorbase_genomics.py",
     "scripts/ingest_vector_competence_assays.py",
     "scripts/ingest_resistance_markers.py",
     "scripts/ingest_occurrence_ecology.py",
@@ -144,6 +148,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_pathogen_taxonomy.py",
     "tests/test_ncbi_biosample_source.py",
     "tests/test_ingest_ncbi_biosamples.py",
+    "tests/test_vectorbase_genomics_source.py",
+    "tests/test_ingest_vectorbase_genomics.py",
     "tests/test_vector_competence_assays_source.py",
     "tests/test_ingest_vector_competence_assays.py",
     "tests/test_resistance_markers_source.py",
@@ -190,6 +196,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_pathogen_taxonomy",
     "tests.test_ncbi_biosample_source",
     "tests.test_ingest_ncbi_biosamples",
+    "tests.test_vectorbase_genomics_source",
+    "tests.test_ingest_vectorbase_genomics",
     "tests.test_vector_competence_assays_source",
     "tests.test_ingest_vector_competence_assays",
     "tests.test_resistance_markers_source",
@@ -293,6 +301,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "ncbi_biosamples",
         "aedes_vector_competence_assays",
         "aedes_occurrence_ecology",
+        "vectorbase_aedes_genomics",
     )
     for term in required_terms:
         if term not in readme:
@@ -321,6 +330,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("ncbi_biosamples", "scripts/ingest_ncbi_biosamples.py", "biosamples", "ncbi_eutils_biosample_esearch_esummary_to_sqlite"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing NCBI BioSample term: {term}")
+    for term in ("vectorbase_aedes_genomics", "scripts/ingest_vectorbase_genomics.py", "vectorbase_current_release_downloads_to_sqlite", "VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing VectorBase genomics term: {term}")
     for term in ("aedes_vector_competence_assays", "scripts/ingest_vector_competence_assays.py", "literature_fulltext_units", "legal_fulltext_only"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing vector competence assay term: {term}")

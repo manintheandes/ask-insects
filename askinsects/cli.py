@@ -149,6 +149,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_paho_dengue_surveillance.add_argument("--report-url", action="append", default=[])
     ingest_paho_dengue_surveillance.add_argument("--dashboard-page", action="append", default=[])
 
+    ingest_vectorbase_genomics = sub.add_parser("ingest-vectorbase-genomics")
+    ingest_vectorbase_genomics.add_argument("--hosted", action="store_true")
+    ingest_vectorbase_genomics.add_argument("--gff-url")
+    ingest_vectorbase_genomics.add_argument("--protein-url")
+    ingest_vectorbase_genomics.add_argument("--go-url")
+
     ingest_mosquito_alert = sub.add_parser("ingest-mosquito-alert")
     ingest_mosquito_alert.add_argument("--hosted", action="store_true")
     ingest_mosquito_alert.add_argument("--occurrence-limit", type=int, default=1000)
@@ -364,6 +370,29 @@ def main(argv: list[str] | None = None) -> int:
             "/ingest/paho-dengue-surveillance",
             {"report_urls": args.report_url, "dashboard_pages": args.dashboard_page},
             timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-vectorbase-genomics":
+        file_urls = {
+            key: value
+            for key, value in {
+                "gff": args.gff_url,
+                "proteins": args.protein_url,
+                "go": args.go_url,
+            }.items()
+            if value
+        }
+        if not args.hosted:
+            from scripts.ingest_vectorbase_genomics import ingest_vectorbase_genomics
+
+            payload = ingest_vectorbase_genomics(artifact_dir=artifact_dir, file_urls=file_urls or None)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/vectorbase-genomics",
+            {"file_urls": file_urls},
+            timeout=7200,
         )
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-mosquito-alert":
