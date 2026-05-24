@@ -322,6 +322,17 @@ def check_literature_artifact() -> None:
         fulltext_units = int(conn.execute("select count(*) from literature_fulltext_units").fetchone()[0])
         fulltext_fts = int(conn.execute("select count(*) from literature_fulltext_fts").fetchone()[0])
         fulltext_record_ids = {row[0] for row in conn.execute("select distinct record_id from literature_fulltext_units")}
+        facet_counts = {
+            str(row["lane"]): int(row["n"])
+            for row in conn.execute(
+                """
+                select lane, count(*) as n
+                from records
+                where source='aedes_literature_facets'
+                group by lane
+                """
+            )
+        }
 
     if literature_records != 10683:
         raise RuntimeError(f"Aedes literature record count is {literature_records}, expected 10683")
@@ -335,6 +346,17 @@ def check_literature_artifact() -> None:
         raise RuntimeError("Aedes literature full text has not been extracted")
     if fulltext_fts != fulltext_units:
         raise RuntimeError("literature_fulltext_fts count does not match literature_fulltext_units")
+    required_facet_counts = {
+        "behavior": 2816,
+        "vector_competence": 4534,
+        "resistance": 2843,
+        "ecology": 5253,
+        "public_health": 8261,
+    }
+    for lane, expected in required_facet_counts.items():
+        actual = facet_counts.get(lane, 0)
+        if actual != expected:
+            raise RuntimeError(f"Aedes literature facet count for {lane} is {actual}, expected {expected}")
 
     payloads = {row["record_id"]: json.loads(row["payload_json"]) for row in payload_rows}
     direct_candidates = {record_id for record_id, payload in payloads.items() if _direct_fulltext_from_payload(payload)}
@@ -399,6 +421,8 @@ def check_literature_artifact() -> None:
     sources = run_json([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "sources"])
     if "aedes_literature_openalex" not in sources.get("sources", []):
         raise RuntimeError("Aedes artifact sources command does not include aedes_literature_openalex")
+    if "aedes_literature_facets" not in sources.get("sources", []):
+        raise RuntimeError("Aedes artifact sources command does not include aedes_literature_facets")
     search = run_json(
         [sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "search", "literature", "Wolbachia", "--limit", "3"]
     )

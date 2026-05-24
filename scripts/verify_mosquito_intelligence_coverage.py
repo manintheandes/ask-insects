@@ -101,6 +101,9 @@ def verify_coverage(payload: dict[str, object]) -> None:
         status = domain.get("status")
         if status not in ALLOWED_STATUS:
             raise ValueError(f"domain {domain_id} has invalid status: {status}")
+        current_sources = domain.get("current_sources")
+        if not isinstance(current_sources, list) or not all(isinstance(source, str) for source in current_sources):
+            raise ValueError(f"domain {domain_id} must declare current_sources as a string list")
         for key in ("target_state",):
             if not isinstance(domain.get(key), str) or not str(domain.get(key)).strip():
                 raise ValueError(f"domain {domain_id} missing {key}")
@@ -113,6 +116,8 @@ def verify_coverage(payload: dict[str, object]) -> None:
         }
         if invalid_gate_states:
             raise ValueError(f"domain {domain_id} has invalid gate states: {invalid_gate_states}")
+        if any(value in {"yes", "partial"} for value in gate_states.values()) and not current_sources:
+            raise ValueError(f"domain {domain_id} has active gate coverage but no current_sources")
 
         _require_nonempty_list(domain_id, domain, "current_evidence")
         _require_nonempty_list(domain_id, domain, "completion_evidence")

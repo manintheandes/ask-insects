@@ -1,6 +1,6 @@
 # Source Lanes
 
-V1 covers mosquitoes first.
+V1 is Aedes-first. Other mosquitoes can be indexed as comparison records, but `Aedes aegypti` is the completion boundary for this push.
 
 The comprehensive-source push is Aedes-first: Ask Insects should become the most comprehensive `Aedes aegypti` intelligence system in the world. Other mosquitoes can remain comparison records, but Aedes is the completion boundary for this push. The coverage ledger lives at `config/mosquito-intelligence-coverage.json` and tracks required domains, gate status, next source candidates, and completion evidence.
 
@@ -125,7 +125,7 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 search resi
 python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what vector competence data exists for dengue?" --json
 ```
 
-This lane is source `aedes_literature_facets`. It does not replace dedicated behavior, resistance, vector-competence, ecology, or public-health databases. It creates an immediate source-backed query plane from the indexed Aedes literature while those deeper external lanes are built.
+This lane is source `aedes_literature_facets`. It does not replace dedicated behavior, resistance, vector-competence, ecology, or public-health databases. It creates an immediate source-backed query plane from the indexed Aedes literature while those deeper external lanes are built. The coverage ledger marks these domains as partial source-grade when the facet records are installed and ask-surface wired.
 
 ## Insecticide Resistance
 

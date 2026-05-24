@@ -1,6 +1,6 @@
 # Ask Insects
 
-Ask Insects is a CLI-first local source plane for mosquito evidence.
+Ask Insects is a CLI-first, Aedes-first local source plane for mosquito evidence.
 
 V1 starts with mosquitoes, then expands to other insect groups. It follows the Ask Monarch pattern:
 
@@ -189,7 +189,7 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 search resi
 python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what vector competence data exists for dengue?" --json
 ```
 
-The derived source id is `aedes_literature_facets`. It creates records in `behavior`, `vector_competence`, `resistance`, `ecology`, and `public_health` from indexed Aedes literature and legal full text where available, with provenance back to the source literature record and full-text units.
+The derived source id is `aedes_literature_facets`. It creates records in `behavior`, `vector_competence`, `resistance`, `ecology`, and `public_health` from indexed Aedes literature and legal full text where available, with provenance back to the source literature record and full-text units. These are partial source-grade lanes: they make the domains queryable now, while deeper structured datasets remain required for world-class coverage.
 
 ## Hosted Ask Insects
 

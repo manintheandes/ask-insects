@@ -40,7 +40,7 @@
       ],
       "required_next_sources": [
         "Crossref or PubMed reconciliation for missing DOI and PMID gaps",
-        "topic-specific behavior, resistance, vector competence, ecology, and public-health paper facets"
+        "structured table, supplement, and claim extraction across behavior, resistance, vector competence, ecology, and public-health papers"
       ],
       "completion_evidence": [
         "CLI answers use full-text chunks when abstract metadata is insufficient",
@@ -80,21 +80,24 @@
     {
       "id": "behavior",
       "priority": 3,
-      "status": "planned",
+      "status": "partial_source_grade",
       "target_state": "Host seeking, biting, oviposition, mating, flight, circadian, larval, repellent, attraction, and insecticide-response behavior records.",
-      "current_sources": [],
+      "current_sources": [
+        "aedes_literature_facets"
+      ],
       "current_gates": {
-        "mapped": "no",
-        "accessible": "no",
-        "atomically_queryable": "no",
-        "receipted": "no",
-        "ask_surface_wired": "no"
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
+        "ask_surface_wired": "yes"
       },
       "current_evidence": [
-        "Behavior appears in literature text, but there is no dedicated behavior lane."
+        "aedes_literature_facets creates behavior records from source-grade Aedes literature metadata and legal full-text units.",
+        "Installed local and hosted artifacts contain 2,816 behavior records from aedes_literature_facets.",
+        "Behavior questions route through the behavior lane and return provenance back to source literature records and full-text units where available."
       ],
       "required_next_sources": [
-        "Aedes behavior literature facet",
         "open trajectory or assay datasets from behavior papers",
         "repellent and attractant assay datasets",
         "host-seeking and oviposition experiment metadata"
@@ -222,21 +225,24 @@
     {
       "id": "vector_competence",
       "priority": 8,
-      "status": "planned",
+      "status": "partial_source_grade",
       "target_state": "Pathogen, strain, mosquito population, infection, dissemination, transmission, dose, temperature, tissue, and experimental-condition records.",
-      "current_sources": [],
+      "current_sources": [
+        "aedes_literature_facets"
+      ],
       "current_gates": {
-        "mapped": "no",
-        "accessible": "no",
-        "atomically_queryable": "no",
-        "receipted": "no",
-        "ask_surface_wired": "no"
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
+        "ask_surface_wired": "yes"
       },
       "current_evidence": [
-        "Vector competence evidence exists only indirectly in literature records."
+        "aedes_literature_facets creates vector_competence records from source-grade Aedes literature metadata and legal full-text units.",
+        "Installed local and hosted artifacts contain 4,534 vector_competence records from aedes_literature_facets.",
+        "Vector competence questions route through the vector_competence lane and return provenance back to source literature records and full-text units where available."
       ],
       "required_next_sources": [
-        "Aedes vector competence paper facet",
         "structured extraction from tables and supplements",
         "pathogen taxonomy links for dengue, Zika, chikungunya, yellow fever, and other Aedes-relevant pathogens"
       ],
@@ -263,11 +269,11 @@
       "current_evidence": [
         "IR Mapper public Aedes JSON endpoint is mapped as irmapper_aedes and filtered by default to Aedes aegypti and Ae. aegypti rows.",
         "Installed records store raw IR Mapper rows in record_payloads with provenance to raw/irmapper/Aedes_aegypti.json row locators.",
+        "Installed local and hosted artifacts contain 2,843 resistance records from aedes_literature_facets.",
         "Resistance questions prefer the dedicated irmapper_aedes lane before literature-derived resistance facets."
       ],
       "required_next_sources": [
         "WHO insecticide resistance database availability review",
-        "Aedes resistance literature facet",
         "known kdr and metabolic-resistance marker records"
       ],
       "completion_evidence": [
@@ -277,18 +283,22 @@
     {
       "id": "ecology",
       "priority": 10,
-      "status": "planned",
+      "status": "partial_source_grade",
       "target_state": "Habitat, climate, seasonality, range, breeding-site, urbanization, and environmental suitability evidence for Aedes aegypti.",
-      "current_sources": [],
+      "current_sources": [
+        "aedes_literature_facets"
+      ],
       "current_gates": {
-        "mapped": "no",
-        "accessible": "no",
-        "atomically_queryable": "no",
-        "receipted": "no",
-        "ask_surface_wired": "no"
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
+        "ask_surface_wired": "yes"
       },
       "current_evidence": [
-        "Ecology evidence exists indirectly through observations and literature, but not as a dedicated lane."
+        "aedes_literature_facets creates ecology records from source-grade Aedes literature metadata and legal full-text units.",
+        "Installed local and hosted artifacts contain 5,253 ecology records from aedes_literature_facets.",
+        "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available."
       ],
       "required_next_sources": [
         "GBIF and iNaturalist observation joins",
@@ -303,18 +313,22 @@
     {
       "id": "public_health",
       "priority": 11,
-      "status": "planned",
+      "status": "partial_source_grade",
       "target_state": "Surveillance, outbreak, intervention, vector-control, disease-transmission, and operational public-health records connected to Aedes aegypti.",
-      "current_sources": [],
+      "current_sources": [
+        "aedes_literature_facets"
+      ],
       "current_gates": {
-        "mapped": "no",
-        "accessible": "no",
-        "atomically_queryable": "no",
-        "receipted": "no",
-        "ask_surface_wired": "no"
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
+        "ask_surface_wired": "yes"
       },
       "current_evidence": [
-        "Public-health evidence exists indirectly in literature but not as a structured operational lane."
+        "aedes_literature_facets creates public_health records from source-grade Aedes literature metadata and legal full-text units.",
+        "Installed local and hosted artifacts contain 8,261 public_health records from aedes_literature_facets.",
+        "Public-health questions route through the public_health lane and return provenance back to source literature records and full-text units where available."
       ],
       "required_next_sources": [
         "WHO dengue surveillance publications and dashboard exports where legally accessible",

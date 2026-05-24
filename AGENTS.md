@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Keep this repo focused on Ask Insects: a CLI-first local source plane for mosquito evidence.
+Keep this repo focused on Ask Insects: a CLI-first local source plane for `Aedes aegypti` evidence. Other mosquitoes are comparison material unless a repo-local plan says otherwise.
 
 ## Read Order
 
