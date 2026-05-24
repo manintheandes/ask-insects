@@ -92,7 +92,7 @@ python3 -m askinsects search neurobiology "brain atlas"
 python3 -m askinsects ask "what neuron data exists for the Aedes aegypti brain?"
 ```
 
-The full artifact path downloads GEO `GSE160740_RAW.tar`, the Mosquito Cell Atlas Zenodo record and files, the MosquitoBrains downloads page, and Dropbox folder ZIPs when Dropbox permits direct download. SQLite indexes GEO matrix summaries and feature rows, Zenodo file and ZIP-member rows, workbook sheets, MosquitoBrains links/files/ZIP members, study metadata, and an explicit connectome source-gap row. It does not yet parse H5AD internals, raw SRA reads, complete connectome data, or voxel-level brain image volumes.
+The full artifact path downloads GEO `GSE160740_RAW.tar`, SRA runinfo for `SRP290992`, the Mosquito Cell Atlas Zenodo record and files, the MosquitoBrains downloads page, Dropbox folder ZIPs when Dropbox permits direct download, and the public `htem/aedes_public` EM/CATMAID analysis repository metadata and CSVs. SQLite indexes GEO matrix summaries and feature rows, SRA run/sample metadata, H5AD internal AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, public EM/CATMAID CSV inventories, study metadata, and a narrowed whole-brain connectome source-gap row. It does not download or align raw SRA reads, index every voxel value, or claim a public whole-brain connectome download exists.
 
 ## Aedes aegypti Literature Lane
 

@@ -3,6 +3,9 @@ name = "askinsects"
 version = "0.1.0"
 description = "CLI-first local source plane for mosquito evidence."
 requires-python = ">=3.11"
+dependencies = [
+  "h5py>=3.16",
+]
 
 [project.scripts]
 ask-insects = "askinsects.cli:main"

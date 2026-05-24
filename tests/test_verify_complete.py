@@ -38,7 +38,15 @@ class VerifyCompleteTests(unittest.TestCase):
             required_files,
         )
         self.assertIn(
+            "docs/superpowers/specs/2026-05-24-aedes-neurobiology-deep-source-completion-design.md",
+            required_files,
+        )
+        self.assertIn(
             "docs/superpowers/plans/2026-05-23-aedes-aegypti-neurobiology-lane.md",
+            required_files,
+        )
+        self.assertIn(
+            "docs/superpowers/plans/2026-05-24-aedes-neurobiology-deep-source-completion.md",
             required_files,
         )
         self.assertIn("tests.test_neurobiology_source", unit_modules)

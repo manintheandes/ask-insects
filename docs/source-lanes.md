@@ -62,13 +62,13 @@ Brain atlas, neuroanatomy, brain single-nucleus RNA-seq, cell atlas package arti
 
 Sources:
 
-- `aedes_neurobiology_sources`: source records for mosquitobrains.org, GEO `GSE160740`, the Mosquito Cell Atlas Zenodo record and file package, and selected open neurobiology studies.
+- `aedes_neurobiology_sources`: source records for mosquitobrains.org, GEO `GSE160740`, SRA `SRP290992` runinfo, the Mosquito Cell Atlas Zenodo record and file package, public Aedes EM/CATMAID repository inventories, and selected open neurobiology studies.
 
 Current neurobiology lane:
 
 - `neurobiology`
 
-The artifact cache lives at `~/.local/share/ask-insects/sources/neurobiology` by default and is populated with `scripts/ingest_neurobiology_sources.py`. When the cache is supplied to `scripts/build_source_index.py --neurobiology --neurobiology-artifact-dir`, SQLite indexes GEO matrix summaries and feature rows, Zenodo files and ZIP members, workbook sheets, MosquitoBrains download links/files/ZIP members, and an explicit connectome source-gap row. H5AD internal matrix parsing, raw SRA reanalysis, complete connectome data, and voxel-level brain image parsing remain explicit expansion gaps.
+The artifact cache lives at `~/.local/share/ask-insects/sources/neurobiology` by default and is populated with `scripts/ingest_neurobiology_sources.py`. When the cache is supplied to `scripts/build_source_index.py --neurobiology --neurobiology-artifact-dir`, SQLite indexes GEO matrix summaries and feature rows, SRA run and sample metadata, Zenodo files and ZIP members, H5AD internal AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains download links/files/ZIP members, MHD/MHA volume headers, ITK-SNAP region labels, public Aedes EM/CATMAID CSV inventories, and an explicit whole-brain connectome source-gap row. Raw SRA read download/alignment, per-voxel image indexing, and a complete public whole-brain connectome download remain explicit expansion gaps.
 
 ## Papers And Literature
 

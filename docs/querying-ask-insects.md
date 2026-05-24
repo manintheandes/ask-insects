@@ -111,7 +111,7 @@ OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/l
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
-Neurobiology records use source id `aedes_neurobiology_sources`. Metadata-only builds index source records for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies. Artifact-cache builds additionally index GEO matrix summaries and features, Zenodo file and ZIP-member inventory, workbook sheets, MosquitoBrains download links/files/ZIP members, and a searchable connectome source-gap row. H5AD internal matrices, raw SRA reads, complete connectome data, and voxel-level image parsing are still explicit gaps.
+Neurobiology records use source id `aedes_neurobiology_sources`. Metadata-only builds index source records for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies. Artifact-cache builds additionally index GEO matrix summaries and features, SRA `SRP290992` run/sample metadata, Zenodo file and ZIP-member inventory, H5AD AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, public Aedes EM/CATMAID CSV inventories, and a searchable whole-brain connectome source-gap row. Raw SRA read download/alignment, per-voxel image indexing, and a complete public whole-brain connectome download are still explicit gaps.
 
 For deeper inspection, query the payload table:
 
