@@ -151,10 +151,11 @@ class CliTests(unittest.TestCase):
     def test_build_script_accepts_neurobiology_flag(self):
         parser = create_parser()
 
-        args = parser.parse_args(["--fixtures", "--neurobiology"])
+        args = parser.parse_args(["--fixtures", "--neurobiology", "--neurobiology-artifact-dir", "/tmp/aedes-neurobiology"])
 
         self.assertTrue(args.fixtures)
         self.assertTrue(args.neurobiology)
+        self.assertEqual(args.neurobiology_artifact_dir, "/tmp/aedes-neurobiology")
 
 
 if __name__ == "__main__":

@@ -27,6 +27,7 @@ class VerifyCompleteTests(unittest.TestCase):
         unit_modules = set(verify_complete.UNIT_TEST_MODULES)
 
         self.assertIn("askinsects/sources/neurobiology.py", required_files)
+        self.assertIn("scripts/ingest_neurobiology_sources.py", required_files)
         self.assertIn("tests/test_neurobiology_source.py", required_files)
         self.assertIn(
             "docs/superpowers/specs/2026-05-23-aedes-aegypti-neurobiology-lane-design.md",

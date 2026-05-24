@@ -8,6 +8,7 @@ from askinsects.builder import build_fixture_index
 from askinsects.builder import build_source_index
 from askinsects.sources.neurobiology import NEUROBIOLOGY_SOURCE_ID
 from tests.test_ncbi_genome_source import write_fake_ncbi_package
+from tests.test_neurobiology_source import write_fake_neurobiology_artifacts
 
 
 def fake_inaturalist_fetcher(url):
@@ -198,7 +199,9 @@ class BuilderTests(unittest.TestCase):
 
     def test_build_source_index_combines_fixture_and_neurobiology_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            tmp_path = Path(tmpdir)
+            artifact_dir = tmp_path / "mosquito-v1"
+            neurobiology_artifact_dir = write_fake_neurobiology_artifacts(tmp_path)
 
             result = build_source_index(
                 include_fixtures=True,
@@ -208,6 +211,7 @@ class BuilderTests(unittest.TestCase):
                 include_neurobiology=True,
                 fixture_path=Path("data/fixtures/mosquito_records.json"),
                 artifact_dir=artifact_dir,
+                neurobiology_artifact_dir=neurobiology_artifact_dir,
                 retrieved_at="2026-05-23T00:00:00Z",
             )
 
@@ -215,13 +219,15 @@ class BuilderTests(unittest.TestCase):
             self.assertIn(NEUROBIOLOGY_SOURCE_ID, result["sources"])
             self.assertGreaterEqual(result["source_counts"][NEUROBIOLOGY_SOURCE_ID], 6)
             self.assertGreaterEqual(result["lanes"]["neurobiology"], 6)
-            self.assertEqual(result["neurobiology"]["gap_count"], 0)
+            self.assertEqual(result["neurobiology"]["artifact_dir"], neurobiology_artifact_dir.as_posix())
+            self.assertGreaterEqual(result["neurobiology"]["gap_count"], 2)
 
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertIn(NEUROBIOLOGY_SOURCE_ID, status["sources"])
 
             receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
             self.assertEqual(receipt["neurobiology"]["source_id"], NEUROBIOLOGY_SOURCE_ID)
+            self.assertEqual(receipt["neurobiology"]["artifact_dir"], neurobiology_artifact_dir.as_posix())
 
 
 if __name__ == "__main__":

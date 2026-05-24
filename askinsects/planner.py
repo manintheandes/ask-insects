@@ -31,7 +31,10 @@ def plan_question(question: str) -> QueryPlan:
         "single nucleus",
         "snrna",
         "snrna-seq",
+        "h5ad",
+        "anndata",
         "cell atlas",
+        "mosquito cell atlas",
         "olfactory sensory neuron",
         "olfactory sensory neurons",
     )

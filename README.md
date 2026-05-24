@@ -81,15 +81,17 @@ This stores the package files as raw artifacts and indexes useful atoms into SQL
 
 ## Aedes aegypti Neurobiology Source Lane
 
-The neurobiology lane is an opt-in first pass for mosquito brain and neuron evidence:
+The neurobiology lane can run as metadata-only, or from a downloaded raw-artifact cache:
 
 ```bash
 python3 scripts/build_source_index.py --fixtures --neurobiology
+python3 scripts/ingest_neurobiology_sources.py
+python3 scripts/build_source_index.py --fixtures --neurobiology --neurobiology-artifact-dir ~/.local/share/ask-insects/sources/neurobiology
 python3 -m askinsects search neurobiology "brain atlas"
 python3 -m askinsects ask "what neuron data exists for the Aedes aegypti brain?"
 ```
 
-V1 indexes source atoms from mosquitobrains.org, GEO `GSE160740`, Mosquito Cell Atlas metadata, and selected open neurobiology study metadata. It proves queryability for brain atlas, reference brain, segmentation, brain snRNA-seq, cell atlas, antennal lobe, olfactory sensory neuron, and odor-encoding questions. It does not yet parse full H5AD matrices, raw SRA reads, connectomes, or brain image volumes.
+The full artifact path downloads GEO `GSE160740_RAW.tar`, the Mosquito Cell Atlas Zenodo record and files, the MosquitoBrains downloads page, and Dropbox folder ZIPs when Dropbox permits direct download. SQLite indexes GEO matrix summaries and feature rows, Zenodo file and ZIP-member rows, workbook sheets, MosquitoBrains links/files/ZIP members, study metadata, and an explicit connectome source-gap row. It does not yet parse H5AD internals, raw SRA reads, complete connectome data, or voxel-level brain image volumes.
 
 ## Hosted Ask Insects
 

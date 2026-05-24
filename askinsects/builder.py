@@ -63,6 +63,7 @@ def build_source_index(
     inaturalist_fetch_json: Callable[[str], dict[str, object]] | None = None,
     genome_package_dir: Path | None = None,
     genome_assembly_accession: str = DEFAULT_ASSEMBLY_ACCESSION,
+    neurobiology_artifact_dir: Path | None = None,
     retrieved_at: str = FIXTURE_RETRIEVED_AT,
 ) -> dict[str, object]:
     if (
@@ -178,13 +179,17 @@ def build_source_index(
 
     neurobiology_payload: dict[str, object] | None = None
     if include_neurobiology:
-        neurobiology_result = fetch_neurobiology_records(retrieved_at=retrieved_at)
+        neurobiology_result = fetch_neurobiology_records(
+            artifact_dir=neurobiology_artifact_dir,
+            retrieved_at=retrieved_at,
+        )
         records.extend(neurobiology_result.records)
         sources.append(NEUROBIOLOGY_SOURCE_ID)
         source_counts[NEUROBIOLOGY_SOURCE_ID] = len(neurobiology_result.records)
         gaps.extend(neurobiology_result.gaps)
         neurobiology_payload = {
             "source_id": neurobiology_result.source_id,
+            "artifact_dir": neurobiology_artifact_dir.as_posix() if neurobiology_artifact_dir else None,
             "raw_artifacts": neurobiology_result.raw_artifacts,
             "record_count": len(neurobiology_result.records),
             "gap_count": len(neurobiology_result.gaps),

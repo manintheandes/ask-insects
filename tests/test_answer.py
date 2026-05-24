@@ -6,6 +6,7 @@ from askinsects.answer import answer_question
 from askinsects.builder import build_fixture_index, build_source_index
 from askinsects.planner import plan_question
 from tests.test_ncbi_genome_source import write_fake_ncbi_package
+from tests.test_neurobiology_source import write_fake_neurobiology_artifacts
 
 
 def fake_inaturalist_fetcher(url):
@@ -40,6 +41,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
         self.assertEqual(plan_question("what neuron data exists for the Aedes aegypti brain?").answer_shape, "neurobiology")
         self.assertEqual(plan_question("what brain regions process smell in mosquitoes?").lanes[0], "neurobiology")
+        self.assertEqual(plan_question("what H5AD data exists in the Mosquito Cell Atlas?").lanes[0], "neurobiology")
 
     def test_answers_include_provenance_or_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -183,6 +185,28 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_neurobiology_sources")
             self.assertEqual(answer["evidence"][0]["lane"], "neurobiology")
             self.assertIn("brain", answer["answer"].lower())
+
+    def test_h5ad_questions_use_neurobiology_artifact_inventory(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            artifact_dir = tmp_path / "mosquito-v1"
+            neurobiology_artifact_dir = write_fake_neurobiology_artifacts(tmp_path)
+            build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_ncbi_genome=False,
+                include_neurobiology=True,
+                artifact_dir=artifact_dir,
+                neurobiology_artifact_dir=neurobiology_artifact_dir,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            answer = answer_question("what H5AD data exists in the Mosquito Cell Atlas?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "neurobiology")
+            self.assertTrue(any("H5AD" in item["title"] or "h5ad" in item["text"].lower() for item in answer["evidence"]))
 
 
 if __name__ == "__main__":

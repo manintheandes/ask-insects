@@ -59,20 +59,21 @@ sources:
     provenance_required: true
     live_fetch: package_path_required
   - id: aedes_neurobiology_sources
-    name: Aedes aegypti neurobiology source metadata
-    source_type: curated_public_source_metadata
-    boundary: Aedes aegypti brain atlas, neuroanatomy, brain snRNA-seq, cell atlas metadata, and sensory-neuron study metadata
+    name: Aedes aegypti neurobiology sources
+    source_type: local_public_artifact_cache
+    boundary: Aedes aegypti brain atlas downloads, GEO GSE160740 processed brain snRNA-seq, Mosquito Cell Atlas Zenodo files, and sensory-neuron study metadata
     query_plane: sqlite_atomic_index
-    artifact_dir: artifacts/mosquito-v1
+    artifact_dir: ~/.local/share/ask-insects/sources/neurobiology
+    ingest_script: scripts/ingest_neurobiology_sources.py
     lanes:
       - neurobiology
     provenance_required: true
-    live_fetch: deterministic_metadata
+    live_fetch: opt_in_artifact_download
     expansion_gaps:
-      - full H5AD cell matrix ingest
+      - H5AD internal matrix parsing
       - raw SRA reanalysis
       - complete connectome data
-      - brain image volume parsing
+      - voxel-level brain image-volume parsing
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects

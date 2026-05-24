@@ -48,6 +48,7 @@ REQUIRED_FILES = (
     "askinsects/sources/ncbi_genome.py",
     "askinsects/sources/neurobiology.py",
     "scripts/build_source_index.py",
+    "scripts/ingest_neurobiology_sources.py",
     "scripts/deploy_gce_app.sh",
     "scripts/deploy_gce_vm.sh",
     "scripts/verify_complete.py",

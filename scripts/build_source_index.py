@@ -17,7 +17,11 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gbif", action="store_true", help="Fetch bounded live GBIF taxonomy and occurrence records.")
     parser.add_argument("--inat", action="store_true", help="Fetch bounded live iNaturalist observations with photos.")
     parser.add_argument("--ncbi-genome", action="store_true", help="Parse an NCBI Datasets genome package.")
-    parser.add_argument("--neurobiology", action="store_true", help="Add deterministic Aedes aegypti brain and neuron source records.")
+    parser.add_argument("--neurobiology", action="store_true", help="Add Aedes aegypti brain and neuron source records.")
+    parser.add_argument(
+        "--neurobiology-artifact-dir",
+        help="Path to downloaded neurobiology raw artifacts, such as the cache from scripts/ingest_neurobiology_sources.py.",
+    )
     parser.add_argument("--species", action="append", default=[], help="Scientific name to fetch from GBIF. Repeatable.")
     parser.add_argument("--occurrence-limit", type=int, default=3, help="GBIF occurrence records to fetch per species.")
     parser.add_argument("--occurrence-page-size", type=int, default=300, help="GBIF API page size for occurrence search.")
@@ -63,6 +67,7 @@ def main() -> int:
         delay_seconds=args.delay_seconds,
         genome_package_dir=Path(args.genome_package_dir) if args.genome_package_dir else None,
         genome_assembly_accession=args.genome_assembly_accession,
+        neurobiology_artifact_dir=Path(args.neurobiology_artifact_dir) if args.neurobiology_artifact_dir else None,
     )
     print(json.dumps(result, sort_keys=True))
     return 0

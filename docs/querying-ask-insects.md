@@ -30,10 +30,17 @@ To add `Aedes aegypti` genomics from an unpacked NCBI Datasets package:
 python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
 ```
 
-To add first-pass `Aedes aegypti` brain and neuron source metadata:
+To add `Aedes aegypti` brain and neuron source metadata:
 
 ```bash
 python3 scripts/build_source_index.py --fixtures --neurobiology
+```
+
+To download and index the raw neurobiology artifact cache:
+
+```bash
+python3 scripts/ingest_neurobiology_sources.py
+python3 scripts/build_source_index.py --fixtures --neurobiology --neurobiology-artifact-dir ~/.local/share/ask-insects/sources/neurobiology
 ```
 
 Then query through the CLI:
@@ -66,7 +73,7 @@ Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
-Neurobiology records use source id `aedes_neurobiology_sources`. The first pass indexes source metadata for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies into lane `neurobiology`. It does not claim full H5AD, SRA, connectome, or brain image-volume ingestion yet.
+Neurobiology records use source id `aedes_neurobiology_sources`. Metadata-only builds index source records for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies. Artifact-cache builds additionally index GEO matrix summaries and features, Zenodo file and ZIP-member inventory, workbook sheets, MosquitoBrains download links/files/ZIP members, and a searchable connectome source-gap row. H5AD internal matrices, raw SRA reads, complete connectome data, and voxel-level image parsing are still explicit gaps.
 
 For deeper inspection, query the payload table:
 
