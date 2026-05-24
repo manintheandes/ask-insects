@@ -472,6 +472,7 @@ class VideoAtomsSourceTests(unittest.TestCase):
                         "species_scope": "Aedes aegypti",
                     }
                 ],
+                "paper_supplements": lambda: [],
             }
 
             result = build_video_atom_records(
@@ -490,6 +491,7 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertIn("video_discovery_not_video_media", reasons)
         self.assertIn("video_discovery_no_download_url", reasons)
         self.assertIn("video_discovery_client_missing", reasons)
+        self.assertIn("video_discovery_no_candidates", reasons)
 
 
 if __name__ == "__main__":

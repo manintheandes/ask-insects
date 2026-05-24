@@ -830,6 +830,9 @@ def _discover_candidates(
         except Exception as exc:
             gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_fetch_failed", "repository": repository, "error": str(exc)})
             continue
+        if not raw_items:
+            gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_no_candidates", "repository": repository})
+            continue
         for raw in raw_items:
             if count >= max_discovery_results:
                 gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_limit_applied", "max_discovery_results": max_discovery_results})
