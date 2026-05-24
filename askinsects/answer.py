@@ -1053,6 +1053,36 @@ def _source_records(index: SourceIndex, source: str, lanes: list[str], *, limit:
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _extracted_fact_records(index: SourceIndex, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
+    if not lanes:
+        return []
+    lane_placeholders = ",".join("?" for _ in lanes)
+    lane_order = " ".join(f"WHEN ? THEN {i}" for i, _lane in enumerate(lanes))
+    params: list[object] = [*lanes, *lanes, limit]
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*
+            FROM records r
+            LEFT JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ?
+              AND r.lane IN ({lane_placeholders})
+            ORDER BY
+              CASE json_extract(p.payload_json, '$.confidence')
+                WHEN 'parsed' THEN 0
+                WHEN 'candidate' THEN 1
+                WHEN 'manifest' THEN 2
+                ELSE 3
+              END,
+              CASE r.lane {lane_order} ELSE 99 END,
+              r.record_id
+            LIMIT ?
+            """,
+            [EXTRACTED_FACTS_SOURCE_ID, *params],
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
     if not lanes:
         return []
@@ -1156,7 +1186,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     break
 
     if _wants_extracted_facts(plan.question):
-        for record in _source_records(index, EXTRACTED_FACTS_SOURCE_ID, plan.lanes, limit=max(limit * 5, 25)):
+        for record in _extracted_fact_records(index, list(plan.lanes), limit=max(limit * 5, 25)):
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

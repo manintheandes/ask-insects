@@ -1200,6 +1200,65 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
             self.assertEqual(answer["evidence"][0]["lane"], "vector_competence")
 
+    def test_supplement_table_questions_do_not_let_manifests_crowd_out_parsed_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            records = [
+                EvidenceRecord(
+                    record_id=f"extracted_fact:supplement_manifest:W{i:02d}",
+                    lane="literature",
+                    source="aedes_extracted_facts",
+                    title=f"Aedes aegypti supplement manifest {i}",
+                    text="Supplement manifest for an Aedes aegypti table.",
+                    species="Aedes aegypti",
+                    url="https://example.org/manifest",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="aedes_extracted_facts",
+                        locator=f"records#W{i:02d};supplement#0",
+                        retrieved_at="2026-05-24T00:00:00Z",
+                        license="CC-BY",
+                        source_url="https://example.org/manifest",
+                    ),
+                    payload={"confidence": "manifest", "fact_type": "supplement_manifest"},
+                )
+                for i in range(40)
+            ]
+            records.append(
+                EvidenceRecord(
+                    record_id="extracted_fact:vector_competence:WPARSED:abc",
+                    lane="vector_competence",
+                    source="aedes_extracted_facts",
+                    title="Aedes aegypti extracted vector competence fact",
+                    text=(
+                        "Parsed supplement table row for dengue virus infection rate, "
+                        "dissemination rate, and transmission in saliva."
+                    ),
+                    species="Aedes aegypti",
+                    url="https://example.org/parsed",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="aedes_extracted_facts",
+                        locator="records#WPARSED;supplement#0;row#1",
+                        retrieved_at="2026-05-24T00:00:00Z",
+                        license="CC-BY",
+                        source_url="https://example.org/parsed",
+                    ),
+                    payload={"confidence": "parsed", "fact_type": "vector_competence"},
+                )
+            )
+            index.upsert_records(records)
+
+            answer = answer_question(
+                "show dengue vector competence supplement table infection rate for Aedes aegypti",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:vector_competence:WPARSED:abc")
+
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
