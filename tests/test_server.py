@@ -10,6 +10,7 @@ from askinsects.server import (
     activate_source_staging,
     copy_artifact_to_staging,
     dispatch_request,
+    ingest_video_atoms_staged,
     prepare_mutable_staging,
     rewrite_artifact_references,
 )
@@ -27,6 +28,7 @@ from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from askinsects.sources.vectorbase_genomics import VectorBaseGenomicsResult
 from tests.test_inaturalist_source import observation
+from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
 
 
 class ServerTests(unittest.TestCase):
@@ -92,6 +94,36 @@ class ServerTests(unittest.TestCase):
             self.assertFalse((new_raw / "old.json").exists())
             self.assertEqual((new_raw / "new.json").read_text(encoding="utf-8"), "new")
             self.assertFalse(staging.exists())
+
+    def test_video_atom_staging_copies_relative_motion_tables_for_parsing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = artifact_dir / "raw" / "mendeley_behavior_media" / "table_files" / "motion.csv"
+            table_path.parent.mkdir(parents=True, exist_ok=True)
+            table_path.write_text(
+                "video_id,track_id,frame,time_seconds,x,y,behavior\n"
+                "pmc:video:PMC123:video1.mp4,track-1,7,0.28,10.5,20.5,flight\n",
+                encoding="utf-8",
+            )
+
+            response = ingest_video_atoms_staged(
+                {
+                    "retrieved_at": RETRIEVED_AT,
+                    "motion_table_paths": ["raw/mendeley_behavior_media/table_files/motion.csv"],
+                },
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(response["ok"])
+            self.assertTrue(response["staged"])
+            self.assertEqual(response["motion_row_count"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_video_atoms' and lane='behavior'",
+                limit=5,
+            )
+            self.assertIn("raw/mendeley_behavior_media/table_files/motion.csv#row/1", rows[0]["provenance_json"])
+            self.assertNotIn(".video-atoms-staging", rows[0]["provenance_json"])
 
     def test_rewrite_artifact_references_can_limit_sqlite_updates_to_source(self):
         with tempfile.TemporaryDirectory() as tmpdir:

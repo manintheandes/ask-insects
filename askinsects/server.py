@@ -248,6 +248,21 @@ def prepare_mutable_staging(artifact_dir: Path, staging: Path) -> None:
             shutil.copy2(source, target)
 
 
+def copy_relative_inputs_to_staging(artifact_dir: Path, staging: Path, paths: list[Path]) -> None:
+    for path in paths:
+        if path.is_absolute():
+            continue
+        source = artifact_dir / path
+        target = staging / path
+        if not source.exists() or target.exists():
+            continue
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if source.is_dir():
+            shutil.copytree(source, target, copy_function=_copy_for_staging)
+        else:
+            shutil.copy2(source, target)
+
+
 def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir: Path) -> None:
     artifact_dir.mkdir(parents=True, exist_ok=True)
     for name in MUTABLE_ARTIFACT_FILES:
@@ -1950,6 +1965,7 @@ def ingest_video_atoms_staged(
     try:
         if artifact_dir.exists():
             prepare_mutable_staging(artifact_dir, staging)
+            copy_relative_inputs_to_staging(artifact_dir, staging, motion_table_paths)
         else:
             staging.mkdir(parents=True, exist_ok=True)
         result = ingest_video_atoms(
