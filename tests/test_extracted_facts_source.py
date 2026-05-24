@@ -116,6 +116,59 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(manifest.payload["supplement"]["url"], "https://example.org/aedes-facts/supp-table-1.csv")
             self.assertIn("records#openalex:WFACT1", manifest.provenance.locator)
 
+    def test_build_extracted_fact_records_uses_bounded_fulltext_probe(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            paper = EvidenceRecord(
+                record_id="openalex:WFACT2",
+                lane="literature",
+                source="aedes_literature_openalex",
+                title="Aedes aegypti dengue vector competence follow-up",
+                text="Aedes aegypti follow-up paper.",
+                species="Aedes aegypti",
+                url="https://example.org/aedes-facts-2",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/literature/page.json#WFACT2",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="open metadata",
+                    source_url="https://example.org/aedes-facts-2",
+                ),
+                payload={},
+            )
+            unit = FullTextUnit(
+                unit_id="openalex:WFACT2:fulltext:0",
+                record_id="openalex:WFACT2",
+                source="aedes_literature_openalex",
+                unit_index=0,
+                text="Aedes aegypti dengue vector competence infection rate 40%.",
+                url="https://example.org/aedes-facts-2/fulltext",
+                license="CC-BY",
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/fulltext/WFACT2.txt#chunk/0",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="CC-BY",
+                    source_url="https://example.org/aedes-facts-2/fulltext",
+                ),
+            )
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_records_and_fulltext_units(
+                [paper],
+                [unit],
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                max_fulltext_units=1,
+            )
+
+            self.assertEqual(result.fulltext_unit_count, 2)
+            self.assertEqual(result.selected_fulltext_unit_count, 1)
+            self.assertTrue(any(gap["reason"] == "fulltext_prefilter_limit_applied" for gap in result.gaps))
+
     def test_build_extracted_fact_records_ignores_non_openalex_literature_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

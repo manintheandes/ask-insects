@@ -335,7 +335,7 @@ def _bounded_fulltext_rows(
     params: list[object] = []
     if max_fulltext_units is not None:
         query += " LIMIT ?"
-        params.append(max_fulltext_units)
+        params.append(max_fulltext_units + 1)
     return conn.execute(query, params).fetchall()
 
 
@@ -349,11 +349,13 @@ def _text_candidates(
         raise ValueError("max_fulltext_units must be positive")
     literature_by_id = {str(row["record_id"]): row for row in literature_rows}
     try:
-        fulltext_total = int(conn.execute("SELECT COUNT(*) FROM literature_fulltext_units").fetchone()[0])
         fulltext_rows = _bounded_fulltext_rows(
             conn,
             max_fulltext_units=max_fulltext_units,
         )
+        fulltext_total = len(fulltext_rows)
+        if max_fulltext_units is not None and len(fulltext_rows) > max_fulltext_units:
+            fulltext_rows = fulltext_rows[:max_fulltext_units]
     except sqlite3.OperationalError:
         fulltext_rows = []
         fulltext_total = 0
