@@ -77,5 +77,5 @@
 - [x] Run `python3 scripts/verify_complete.py`.
 - [x] Run `python3 scripts/ingest_neurobiology_sources.py` to refresh raw artifacts.
 - [x] Rebuild `/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1` with fixtures, NCBI genome, literature if needed, and neurobiology artifact dir.
-- [ ] Refresh `/Users/josh/.local/share/ask-insects/main` from `main`.
-- [ ] Verify from `/tmp`: `ask-insects summary`, `ask-insects search neurobiology "AnnData obs cell type"`, `ask-insects search neurobiology "SRA SRR12972760"`, `ask-insects search neurobiology "DimSize 646 649 275"`, and `ask-insects ask "what public connectome data exists for Aedes aegypti?" --json`.
+- [x] Refresh `/Users/josh/.local/share/ask-insects/main` from `main`.
+- [x] Verify from `/tmp`: `ask-insects summary`, `ask-insects search neurobiology "AnnData obs cell type"`, `ask-insects search neurobiology "SRA SRR12972760"`, `ask-insects search neurobiology "DimSize 646 649 275"`, and `ask-insects ask "what public connectome data exists for Aedes aegypti?" --json`.
