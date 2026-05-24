@@ -194,6 +194,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_resistance_markers = sub.add_parser("ingest-resistance-markers")
     ingest_resistance_markers.add_argument("--hosted", action="store_true")
 
+    ingest_extracted_facts = sub.add_parser("ingest-extracted-facts")
+    ingest_extracted_facts.add_argument("--hosted", action="store_true")
+    ingest_extracted_facts.add_argument("--max-fulltext-units", type=int, default=5000)
+
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
 
@@ -561,6 +565,23 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/resistance-markers",
             {},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-extracted-facts":
+        if not args.hosted:
+            from scripts.ingest_extracted_facts import ingest_extracted_facts
+
+            payload = ingest_extracted_facts(
+                artifact_dir=artifact_dir,
+                max_fulltext_units=args.max_fulltext_units,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/extracted-facts",
+            {"max_fulltext_units": args.max_fulltext_units},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

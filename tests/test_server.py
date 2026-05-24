@@ -1322,6 +1322,39 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn("literature_fulltext_units#openalex:WRM1:fulltext:0", provenance_rows[0]["provenance_json"])
 
+    def test_ingest_extracted_facts_adds_cross_lane_records_without_removing_existing_sources(self):
+        from tests.test_extracted_facts_source import write_extracted_facts_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_extracted_facts_fixture(artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/extracted-facts",
+                {},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertTrue(response.payload["staged"])
+            self.assertEqual(response.payload["selected_fulltext_unit_count"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, lane, count(*) as n from records group by source, lane")
+            counts = {(row["source"], row["lane"]): row["n"] for row in rows}
+            self.assertGreaterEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 1)
+            self.assertGreaterEqual(counts[("aedes_extracted_facts", "vector_competence")], 1)
+            self.assertGreaterEqual(counts[("aedes_extracted_facts", "public_health")], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_extracted_facts' and lane='vector_competence'",
+            )
+            self.assertIn("literature_fulltext_units#openalex:WFACT1:fulltext:0", provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".extracted-facts-staging", provenance_rows[0]["provenance_json"])
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.extracted-facts-staging").exists())
+
     def test_ingest_occurrence_ecology_adds_records_without_removing_existing_sources(self):
         from tests.test_occurrence_ecology_source import write_occurrence_ecology_fixture
 
@@ -1349,7 +1382,6 @@ class ServerTests(unittest.TestCase):
                 "select payload_json from record_payloads where source='aedes_occurrence_ecology' and record_id='occurrence_ecology:country:Brazil'",
             )
             self.assertIn('"observation_count": 3', payload_rows[0]["payload_json"])
-
 
 if __name__ == "__main__":
     unittest.main()

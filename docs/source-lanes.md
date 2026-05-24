@@ -156,6 +156,12 @@ The pathogen taxonomy lane saves NCBI E-utilities taxonomy summary JSON under `r
 
 The assay-candidate lane reads source-grade `aedes_literature_openalex` records and legal `literature_fulltext_units`, then emits `vector_competence` records when a text unit contains an Aedes-relevant pathogen plus assay context such as infection, dissemination, transmission, dose, temperature, tissue, strain, population, or timepoint. Payloads preserve the detected pathogen, matched terms, fields, temperature values, dose values, source paper ID, full-text unit ID, and snippet. This is a structured candidate layer; true table and supplement parsing remains a follow-on requirement.
 
+## Cross-Lane Extracted Facts
+
+`aedes_extracted_facts` is a deterministic derived source over indexed Aedes literature records, `record_payloads`, and legal `literature_fulltext_units`. It emits one queryable record per detected candidate fact into `vector_competence`, `resistance`, `behavior`, `ecology`, and `public_health`, and one `literature` record per supplement manifest discovered in payload metadata.
+
+Payloads preserve `fact_type`, schema version, matched fields, source paper ID, full-text unit ID when available, supplement metadata, evidence text, confidence, extraction method, and source provenance. Confidence values are intentionally conservative: `candidate` for text-derived facts and `manifest` for supplement pointers. The text pass is bounded by a row-order `--max-fulltext-units` window for legal full-text units and matching record-level text candidates, plus a per-unit text window, recording `fulltext_prefilter_limit_applied`, `record_text_window_applied`, or `fulltext_text_window_applied` when additional matched text remains. The lane makes cross-domain paper facts queryable now, but it is not a claim that every PDF supplement, table, workbook, or archive has been parsed or human validated.
+
 ## Insecticide Resistance
 
 Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay protocol, geography, time, and reference records for `Aedes aegypti`.
@@ -165,6 +171,7 @@ Sources:
 - `irmapper_aedes`: live IR Mapper Aedes JSON endpoint, filtered by default to `Aedes aegypti` and `Ae. aegypti`.
 - `aedes_resistance_markers`: deterministic kdr, VGSC, and metabolic-resistance marker extraction from indexed Aedes literature records and legal full-text units.
 - `aedes_literature_facets`: literature-derived resistance facets while deeper source lanes are built.
+- `aedes_extracted_facts`: cross-lane candidate facts and supplement manifests from indexed Aedes literature, payload supplement metadata, and legal full-text units.
 
 The IR Mapper lane indexes one SQLite `resistance` row per matching public API row, stores the raw IR Mapper row in `record_payloads`, and cites a provenance locator such as `raw/irmapper/Aedes_aegypti.json#row/1`. It preserves source fields for country, locality, coordinates, collection year, developmental stage, test method, insecticide class, insecticide, dosage, mode of action, mortality, resistance status, mechanism, mutation frequency, reference, and source URL when present.
 

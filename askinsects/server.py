@@ -1828,6 +1828,44 @@ def ingest_ncbi_biosamples_staged(
     return response
 
 
+def ingest_extracted_facts_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_extracted_facts import ingest_extracted_facts
+
+    retrieved_at = payload.get("retrieved_at")
+    if retrieved_at is not None and not isinstance(retrieved_at, str):
+        raise ValueError("retrieved_at must be a string")
+    max_fulltext_units_value = payload.get("max_fulltext_units")
+    max_fulltext_units = 5000 if max_fulltext_units_value is None else int(max_fulltext_units_value)
+    if max_fulltext_units < 1:
+        raise ValueError("max_fulltext_units must be positive")
+
+    staging = artifact_dir.parent / f".{artifact_dir.name}.extracted-facts-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_extracted_facts(
+            artifact_dir=staging,
+            retrieved_at=retrieved_at,
+            max_fulltext_units=max_fulltext_units,
+        )
+        response = rewrite_artifact_references(staging, artifact_dir, result)
+        activate_source_staging(staging, artifact_dir, Path("raw") / "extracted_facts")
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -1982,6 +2020,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/resistance-markers":
             result = ingest_resistance_markers(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/extracted-facts":
+            result = ingest_extracted_facts_staged(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/occurrence-ecology":

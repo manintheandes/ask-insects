@@ -272,6 +272,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
         self.assertEqual(plan_question("what Mendeley table rows mention temperature gradients?").answer_shape, "behavior")
+        self.assertEqual(plan_question("show supplement table behavior response rate for Aedes aegypti").answer_shape, "behavior")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show Aedes aegypti BioSamples from China").lanes[0], "biosamples")
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
@@ -953,6 +954,25 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "vector_competence")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_vector_competence_assays")
             self.assertEqual(answer["evidence"][0]["record_id"], "assay_candidate:vector_competence:WVC1:abc")
+
+    def test_supplement_table_questions_prefer_extracted_facts(self):
+        from scripts.ingest_extracted_facts import ingest_extracted_facts
+        from tests.test_extracted_facts_source import write_extracted_facts_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            ingest_extracted_facts(artifact_dir=artifact_dir, retrieved_at="2026-05-24T00:00:00Z")
+
+            answer = answer_question(
+                "show dengue vector competence supplement table infection rate for Aedes aegypti",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "vector_competence")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
+            self.assertEqual(answer["evidence"][0]["lane"], "vector_competence")
 
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:

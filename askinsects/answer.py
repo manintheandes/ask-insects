@@ -8,6 +8,7 @@ from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
 from .planner import QueryPlan, plan_question
 from .records import EvidenceRecord
+from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
 
@@ -42,6 +43,11 @@ RESISTANCE_MARKER_QUERY_TERMS = {
     for alias in spec.aliases
 }
 RESISTANCE_MARKER_QUERY_TERMS.update({"kdr", "vgsc", "vssc", "metabolic resistance", "resistance marker", "resistance markers"})
+
+
+def _wants_extracted_facts(question: str) -> bool:
+    q = question.lower()
+    return any(term in q for term in ("extracted", "extracted fact", "extracted facts", "supplement", "supplementary", "table", "tables", "row", "rows"))
 
 
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
@@ -626,7 +632,7 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
     if not any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p")):
         return records
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int]:
+    def score(record: EvidenceRecord) -> tuple[int, int, int, int]:
         haystack = f"{record.title}\n{record.text}".lower()
         return (
             0 if record.lane == "dna_barcodes" else 1,
@@ -648,11 +654,14 @@ def _resistance_marker_terms(question: str) -> list[str]:
 
 def _prioritize_resistance_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     wants_marker = bool(_resistance_marker_terms(question))
+    wants_extracted = _wants_extracted_facts(question)
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int]:
+    def score(record: EvidenceRecord) -> tuple[int, int, int, int]:
+        extracted_rank = 0 if wants_extracted and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         marker_rank = 0 if wants_marker and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
         irmapper_rank = 0 if not wants_marker and record.source == "irmapper_aedes" else 1
         return (
+            extracted_rank,
             marker_rank,
             irmapper_rank,
             0 if record.lane == "resistance" else 1,
@@ -663,6 +672,14 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
 
 def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if _wants_extracted_facts(question):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == EXTRACTED_FACTS_SOURCE_ID else 1,
+                0 if record.lane == "public_health" else 1,
+            ),
+        )
     if not any(
         term in q
         for term in (
@@ -755,13 +772,27 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
     ):
         return records
 
-    def score(record: EvidenceRecord) -> tuple[int, int]:
+    def score(record: EvidenceRecord) -> tuple[int, int, int]:
+        extracted_rank = 0 if _wants_extracted_facts(question) and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         return (
+            extracted_rank,
             0 if record.source == OCCURRENCE_ECOLOGY_SOURCE_ID else 1,
             0 if record.lane == "ecology" else 1,
         )
 
     return sorted(records, key=score)
+
+
+def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    if not _wants_extracted_facts(question):
+        return records
+    return sorted(
+        records,
+        key=lambda record: (
+            0 if record.source == EXTRACTED_FACTS_SOURCE_ID else 1,
+            0 if record.lane == "behavior" else 1,
+        ),
+    )
 
 
 def _named_pathogen_terms(question: str) -> list[str]:
@@ -778,6 +809,7 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
     if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
         pathogen_terms = _named_pathogen_terms(question)
         wants_taxonomy = "taxonomy" in q
+        wants_extracted = _wants_extracted_facts(question)
         wants_assay = any(
             term in q
             for term in (
@@ -814,6 +846,8 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             haystack = f"{record.title}\n{record.text}".lower()
             if wants_taxonomy:
                 preferred_source = "aedes_pathogen_taxonomy"
+            elif wants_extracted:
+                preferred_source = EXTRACTED_FACTS_SOURCE_ID
             elif wants_assay:
                 preferred_source = "aedes_vector_competence_assays"
             else:
@@ -879,6 +913,24 @@ def _index_ready(index: SourceIndex) -> bool:
     return True
 
 
+def _source_records(index: SourceIndex, source: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
+    if not lanes:
+        return []
+    placeholders = ",".join("?" for _ in lanes)
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT *
+            FROM records
+            WHERE source = ? AND lane IN ({placeholders})
+            ORDER BY lane, record_id
+            LIMIT ?
+            """,
+            [source, *lanes, limit],
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, limit: int = 5) -> dict[str, object]:
     plan = plan_question(question)
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
@@ -902,6 +954,13 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 seen_record_ids.add(record.record_id)
             if query_records:
                 break
+
+    if _wants_extracted_facts(plan.question):
+        for record in _source_records(index, EXTRACTED_FACTS_SOURCE_ID, plan.lanes, limit=max(limit * 5, 25)):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "media":
         media_records = [
@@ -943,6 +1002,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "resistance":
         all_records = _prioritize_resistance_records(plan.question, all_records)
+
+    if plan.answer_shape == "behavior":
+        all_records = _prioritize_behavior_records(plan.question, all_records)
 
     if plan.answer_shape == "public_health":
         all_records = _prioritize_public_health_records(plan.question, all_records)

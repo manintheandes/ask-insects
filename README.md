@@ -333,6 +333,16 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what v
 
 The derived source id is `aedes_literature_facets`. It creates records in `behavior`, `vector_competence`, `resistance`, `ecology`, and `public_health` from indexed Aedes literature and legal full text where available, with provenance back to the source literature record and full-text units. These are partial source-grade lanes: they make the domains queryable now, while deeper structured datasets remain required for world-class coverage.
 
+`aedes_extracted_facts` is the next cross-lane extraction spine. It reads indexed Aedes literature records, record payload supplement metadata, and legal `literature_fulltext_units`, then emits candidate fact records into `vector_competence`, `resistance`, `behavior`, `ecology`, and `public_health`, plus `literature` records for supplement manifests:
+
+```bash
+python3 -m askinsects ingest-extracted-facts
+python3 -m askinsects ask "show extracted Aedes aegypti vector competence facts for dengue" --json
+python3 -m askinsects search literature "supplement manifest"
+```
+
+Extracted-facts payloads preserve `fact_type`, matched fields, source paper ID, full-text unit ID when available, evidence text, supplement metadata, confidence, extraction method, and provenance back to the source record or legal full-text unit. Confidence is `candidate` for deterministic text facts and `manifest` for supplement pointers. The text pass is bounded by a row-order `--max-fulltext-units` window for legal full-text units and matching record-level text candidates, plus a per-unit text window, recording `fulltext_prefilter_limit_applied`, `record_text_window_applied`, or `fulltext_text_window_applied` when those bounds are hit. It does not claim human validation or complete parsing of every table, PDF supplement, workbook, or archive.
+
 ## Hosted Ask Insects
 
 Hosted V1 follows the Ask Monarch VM pattern. The parsed SQLite index and raw source artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`.
@@ -346,6 +356,7 @@ python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-public-health --hosted
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
+python3 -m askinsects ingest-extracted-facts --hosted
 python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```

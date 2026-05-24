@@ -194,6 +194,16 @@ Pathogen taxonomy records use source id `aedes_pathogen_taxonomy`. Raw NCBI E-ut
 
 Vector-competence assay-candidate records use source id `aedes_vector_competence_assays`. They are derived from source-grade literature rows and legal full-text units already in SQLite. Each record stores a detected pathogen, assay-field map, context terms, temperature values, dose values, source paper ID, full-text unit ID when present, and a snippet. Provenance points back to `records#<paper_id>` and, when available, `literature_fulltext_units#<unit_id>`. This lane is legal full-text only and does not use private cookies, institutional access, or Sci-Hub.
 
+Cross-lane extracted facts use source id `aedes_extracted_facts`. Refresh them with:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-extracted-facts
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show dengue vector competence supplement table infection rate for Aedes aegypti" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select lane, count(*) as n from records where source='aedes_extracted_facts' group by lane order by lane"
+```
+
+This lane emits supplement manifests plus deterministic candidate facts for vector competence, resistance, behavior, ecology, and public health. It is provenance-backed to papers, full-text units, or supplement metadata. It is not yet human-validated table extraction.
+
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 
 OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/literature/` when that artifact directory is used. PubMed and Unpaywall enrichment payloads are stored per record in SQLite `record_payloads.payload_json`. Legal direct PDF/XML/text chunks are stored in `literature_fulltext_units` and mirrored into `literature_fulltext_fts`. Normal `ask` and `search literature` use metadata and abstracts first; literature answers fall back to legal full-text chunks, and `search fulltext` queries those chunks directly. Gaps are structured in `gaps.json`, including missing DOI, missing PMID, missing abstract, topic search gaps, Unpaywall no-full-text cases, landing-page-only cases, fetch failures, and parse failures.
@@ -238,7 +248,18 @@ python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-dryad-behavior-videos --hosted
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
+python3 -m askinsects ingest-extracted-facts --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"
 python3 -m askinsects search fulltext "microbiota Aedes aegypti" --hosted
 ```
+
+Use extracted facts when you want table-like cross-domain paper evidence at a candidate grain:
+
+```bash
+python3 -m askinsects search vector_competence "extracted dengue transmission" --hosted
+python3 -m askinsects search resistance "extracted permethrin mortality" --hosted
+python3 -m askinsects sql --hosted "select lane, count(*) as n from records where source='aedes_extracted_facts' group by lane"
+```
+
+Those records cite the source paper or legal full-text unit and carry `confidence` as `candidate` or `manifest`. The ingest is bounded by a row-order `--max-fulltext-units` window for legal full-text units and matching record-level text candidates, plus a per-unit text window, and records a gap when any bound is hit. Treat them as source-backed extraction candidates until a later validation lane proves a row or table has been fully parsed and checked.

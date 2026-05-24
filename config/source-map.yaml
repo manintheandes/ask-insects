@@ -279,6 +279,28 @@ sources:
       - public_health
     provenance_required: true
     live_fetch: derived_from_indexed_literature
+  - id: aedes_extracted_facts
+    name: Aedes aegypti extracted literature facts and supplement manifests
+    source_type: derived_sqlite_source
+    boundary: Deterministic cross-lane candidate facts and supplement manifests from indexed Aedes aegypti literature records, record payload supplement metadata, and legal literature_fulltext_units
+    query_plane: literature_records_payloads_and_fulltext_units_to_sqlite_fact_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_extracted_facts.py
+    input_sources:
+      - aedes_literature_openalex
+      - record_payloads
+      - literature_fulltext_units
+    lanes:
+      - literature
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+    provenance_required: true
+    live_fetch: derived_from_indexed_literature
+    legal_fulltext_only: true
+    confidence_policy: candidate_or_manifest_not_human_validated
   - id: aedes_pathogen_taxonomy
     name: NCBI Taxonomy Aedes-relevant arbovirus pathogen anchors
     source_type: public_api
