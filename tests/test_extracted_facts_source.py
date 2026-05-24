@@ -564,6 +564,63 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(result.selected_fulltext_unit_count, 1)
             self.assertTrue(any(gap["reason"] == "fulltext_prefilter_limit_applied" for gap in result.gaps))
 
+    def test_build_extracted_fact_records_preserves_hyphenated_term_matches(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            paper = EvidenceRecord(
+                record_id="openalex:WFACT-HYPHEN",
+                lane="literature",
+                source="aedes_literature_openalex",
+                title="Aedes aegypti vector-competence table",
+                text="Aedes aegypti dengue assay.",
+                species="Aedes aegypti",
+                url="https://example.org/aedes-hyphen",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/literature/page.json#WFACT-HYPHEN",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="open metadata",
+                    source_url="https://example.org/aedes-hyphen",
+                ),
+                payload={},
+            )
+            unit = FullTextUnit(
+                unit_id="openalex:WFACT-HYPHEN:fulltext:0",
+                record_id="openalex:WFACT-HYPHEN",
+                source="aedes_literature_openalex",
+                unit_index=0,
+                text="Aedes aegypti dengue vector-competence infection-rate 40% after blood-meal exposure.",
+                url="https://example.org/aedes-hyphen/fulltext",
+                license="CC-BY",
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/fulltext/WFACT-HYPHEN.txt#chunk/0",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="CC-BY",
+                    source_url="https://example.org/aedes-hyphen/fulltext",
+                ),
+            )
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_records_and_fulltext_units(
+                [paper],
+                [unit],
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                max_fulltext_units=10,
+            )
+
+            self.assertTrue(
+                any(
+                    record.payload["source_record_id"] == "openalex:WFACT-HYPHEN"
+                    and record.payload["fact_type"] == "vector_competence"
+                    for record in result.records
+                )
+            )
+
     def test_build_extracted_fact_records_skips_markup_noise_fulltext(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

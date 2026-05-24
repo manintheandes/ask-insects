@@ -249,11 +249,24 @@ def _pattern_for_term(term: str) -> re.Pattern[str]:
 
 
 def _matched_terms(text: str, terms: Iterable[str]) -> list[str]:
+    lower = text.lower()
     matches = []
     for term in terms:
+        if not _might_contain_term(lower, term):
+            continue
         if _pattern_for_term(term).search(text):
             matches.append(term)
     return matches
+
+
+def _might_contain_term(lower_text: str, term: str) -> bool:
+    lower_term = term.lower()
+    if lower_term in lower_text:
+        return True
+    if " " in lower_term and lower_term.replace(" ", "-") in lower_text:
+        return True
+    tokens = re.findall(r"[a-z0-9]+", lower_term)
+    return bool(tokens) and all(token in lower_text for token in tokens)
 
 
 def _safe_json(raw: object) -> dict[str, object]:
