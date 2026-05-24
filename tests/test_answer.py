@@ -4,7 +4,9 @@ from pathlib import Path
 
 from askinsects.answer import answer_question
 from askinsects.builder import build_fixture_index, build_source_index
+from askinsects.index import SourceIndex
 from askinsects.planner import plan_question
+from askinsects.records import EvidenceRecord, Provenance
 
 
 def fake_inaturalist_fetcher(url):
@@ -28,6 +30,95 @@ def fake_inaturalist_fetcher(url):
             }
         ],
     }
+
+
+def fake_literature_fetcher(url):
+    if "/topics" in url:
+        return {"results": []}
+    if "esearch.fcgi" in url:
+        return {"esearchresult": {"idlist": []}}
+    if "api.unpaywall.org" in url:
+        return {"doi": "10.1000/wolbachia-aedes", "is_oa": False, "best_oa_location": None}
+    if "/works" in url:
+        return {
+            "meta": {"count": 1, "next_cursor": None},
+            "results": [
+                {
+                    "id": "https://openalex.org/WANSWER",
+                    "doi": "https://doi.org/10.1000/wolbachia-aedes",
+                    "display_name": "Wolbachia and Aedes aegypti vector control",
+                    "publication_date": "2024-03-01",
+                    "type": "article",
+                    "abstract_inverted_index": {
+                        "Wolbachia": [0],
+                        "interventions": [1],
+                        "in": [2],
+                        "Aedes": [3],
+                        "aegypti": [4],
+                    },
+                    "primary_location": {"source": {"display_name": "Journal of Vector Biology"}},
+                    "ids": {
+                        "openalex": "https://openalex.org/WANSWER",
+                        "doi": "https://doi.org/10.1000/wolbachia-aedes",
+                    },
+                }
+            ],
+        }
+    raise AssertionError(f"unexpected URL: {url}")
+
+
+def fake_non_wolbachia_literature_fetcher(url):
+    if "/topics" in url:
+        return {"results": []}
+    if "esearch.fcgi" in url:
+        return {"esearchresult": {"idlist": []}}
+    if "api.unpaywall.org" in url:
+        return {"doi": "10.1000/aedes-larval", "is_oa": False, "best_oa_location": None}
+    if "/works" in url:
+        return {
+            "meta": {"count": 1, "next_cursor": None},
+            "results": [
+                {
+                    "id": "https://openalex.org/WNOwol",
+                    "doi": "https://doi.org/10.1000/aedes-larval",
+                    "display_name": "Aedes aegypti larval ecology",
+                    "publication_date": "2024-03-01",
+                    "type": "article",
+                    "abstract_inverted_index": {
+                        "Aedes": [0],
+                        "aegypti": [1],
+                        "larval": [2],
+                        "habitat": [3],
+                        "ecology": [4],
+                    },
+                    "primary_location": {"source": {"display_name": "Journal of Vector Biology"}},
+                    "ids": {
+                        "openalex": "https://openalex.org/WNOwol",
+                        "doi": "https://doi.org/10.1000/aedes-larval",
+                    },
+                }
+            ],
+        }
+    raise AssertionError(f"unexpected URL: {url}")
+
+
+def literature_record(record_id, title, text):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="literature",
+        source="aedes_literature_openalex",
+        title=title,
+        text=text,
+        species="Aedes aegypti",
+        url=None,
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_literature_openalex",
+            locator=f"test#{record_id}",
+            retrieved_at="2026-05-23T00:00:00Z",
+            license="OpenAlex metadata",
+        ),
+    )
 
 
 class AnswerTests(unittest.TestCase):
@@ -87,6 +178,99 @@ class AnswerTests(unittest.TestCase):
 
             self.assertFalse(answer["ok"])
             self.assertEqual(answer["source_gap"]["lane"], "literature")
+
+    def test_literature_question_uses_openalex_source_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "aedes-literature"
+            build_source_index(
+                include_fixtures=False,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_literature=True,
+                artifact_dir=artifact_dir,
+                literature_species="Aedes aegypti",
+                literature_from_date="2020-01-01",
+                literature_to_date="2026-05-23",
+                literature_work_type="article",
+                include_topic_discovery=True,
+                literature_page_size=25,
+                literature_delay_seconds=0,
+                literature_max_works=1,
+                literature_fetch_json=fake_literature_fetcher,
+                unpaywall_email="test@example.com",
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            payload = answer_question(
+                "what papers since 2020 discuss Wolbachia and Aedes aegypti?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["answer_shape"], "literature")
+            self.assertTrue(payload["evidence"])
+            self.assertEqual(payload["evidence"][0]["source"], "aedes_literature_openalex")
+            self.assertIn("From the Ask Insects literature index", payload["answer"])
+
+    def test_literature_species_fallback_requires_topical_match(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "aedes-literature"
+            build_source_index(
+                include_fixtures=False,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_literature=True,
+                artifact_dir=artifact_dir,
+                literature_species="Aedes aegypti",
+                literature_from_date="2020-01-01",
+                literature_to_date="2026-05-23",
+                literature_work_type="article",
+                include_topic_discovery=True,
+                literature_page_size=25,
+                literature_delay_seconds=0,
+                literature_max_works=1,
+                literature_fetch_json=fake_non_wolbachia_literature_fetcher,
+                unpaywall_email="test@example.com",
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            payload = answer_question(
+                "what papers since 2020 discuss Wolbachia and Aedes aegypti?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertFalse(payload["ok"])
+            self.assertEqual(payload["answer_shape"], "literature")
+            self.assertEqual(payload["source_gap"]["lane"], "literature")
+
+    def test_literature_question_uses_topical_query_before_species_fallback(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "aedes-literature"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    literature_record(
+                        "openalex:non_wolbachia",
+                        "Aedes aegypti Aedes aegypti larval ecology",
+                        "Aedes aegypti habitat monitoring without symbiont intervention.",
+                    ),
+                    literature_record(
+                        "openalex:wolbachia",
+                        "Wolbachia and Aedes aegypti vector control",
+                        "Wolbachia interventions in Aedes aegypti populations.",
+                    ),
+                ]
+            )
+
+            payload = answer_question(
+                "what papers since 2020 discuss Wolbachia and Aedes aegypti?",
+                artifact_dir=artifact_dir,
+                limit=1,
+            )
+
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["evidence"][0]["record_id"], "openalex:wolbachia")
 
     def test_missing_index_returns_source_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:

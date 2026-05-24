@@ -10,6 +10,31 @@ from .planner import QueryPlan, plan_question
 from .records import EvidenceRecord
 
 
+LITERATURE_QUERY_STOPWORDS = {
+    "and",
+    "about",
+    "article",
+    "articles",
+    "discuss",
+    "does",
+    "from",
+    "in",
+    "literature",
+    "paper",
+    "papers",
+    "research",
+    "review",
+    "reviews",
+    "since",
+    "studies",
+    "study",
+    "the",
+    "what",
+    "which",
+    "with",
+}
+
+
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
     return {
         "record_id": record.record_id,
@@ -29,7 +54,7 @@ def source_gap(plan: QueryPlan, reason: str) -> dict[str, object]:
     return {
         "ok": False,
         "answer_shape": plan.answer_shape,
-        "answer": f"I do not see enough indexed mosquito evidence for this question yet. {reason}",
+        "answer": f"I do not see enough indexed Ask Insects evidence for this question yet. {reason}",
         "evidence": [],
         "source_gap": {
             "lane": lane,
@@ -41,16 +66,16 @@ def source_gap(plan: QueryPlan, reason: str) -> dict[str, object]:
 
 def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
     if plan.answer_shape == "identity":
-        return f"From the local mosquito index, {records[0].title}: {records[0].text}"
+        return f"From the Ask Insects index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "evidence":
-        return f"I found {len(records)} indexed mosquito evidence record(s) matching the question."
+        return f"I found {len(records)} indexed Ask Insects evidence record(s) matching the question."
     if plan.answer_shape == "action":
-        return f"The local mosquito index supports this next step: {records[0].text}"
+        return f"The Ask Insects index supports this next step: {records[0].text}"
     if plan.answer_shape == "literature":
-        return f"From the local mosquito literature index, {records[0].title}: {records[0].text}"
+        return f"From the Ask Insects literature index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "media":
-        return f"I found {len(records)} indexed mosquito media record(s)."
-    return f"I found {len(records)} indexed mosquito record(s)."
+        return f"I found {len(records)} indexed Ask Insects media record(s)."
+    return f"I found {len(records)} indexed Ask Insects record(s)."
 
 
 def _search_queries(question: str) -> list[str]:
@@ -66,6 +91,19 @@ def _search_queries(question: str) -> list[str]:
     return list(dict.fromkeys(queries))
 
 
+def _literature_search_queries(question: str) -> list[str]:
+    species = _requested_species(question)
+    topical_tokens = _literature_topical_tokens(question, species)
+    queries = [question]
+    queries.extend(
+        token
+        for token in re.findall(r"[A-Za-z][A-Za-z0-9]+", question)
+        if token.lower() in topical_tokens
+    )
+    queries.extend(_search_queries(question))
+    return list(dict.fromkeys(queries))
+
+
 def _asks_for_still_images(question: str) -> bool:
     q = question.lower()
     return any(term in q for term in ("image", "images", "photo", "photos", "picture", "pictures"))
@@ -76,6 +114,20 @@ def _requested_species(question: str) -> str | None:
     if not species_match:
         return None
     return species_match.group(0)
+
+
+def _literature_topical_tokens(question: str, species: str | None) -> set[str]:
+    tokens = {token.lower() for token in re.findall(r"[A-Za-z][A-Za-z0-9]+", question)}
+    if species:
+        tokens -= {token.lower() for token in re.findall(r"[A-Za-z][A-Za-z0-9]+", species)}
+    tokens -= LITERATURE_QUERY_STOPWORDS
+    tokens -= {"mosquito", "mosquitoes"}
+    return {token for token in tokens if not token.isdigit()}
+
+
+def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
+    haystack = f"{record.title}\n{record.text}".lower()
+    return any(re.search(rf"\b{re.escape(token)}\b", haystack) for token in tokens)
 
 
 def _index_ready(index: SourceIndex) -> bool:
@@ -92,12 +144,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     plan = plan_question(question)
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
     if not _index_ready(index):
-        return source_gap(plan, "The mosquito V1 source index has not been built yet.")
+        return source_gap(plan, "The Ask Insects source index has not been built yet.")
 
     all_records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
     for lane in plan.lanes:
-        for search_query in _search_queries(plan.search_query):
+        search_queries = (
+            _literature_search_queries(plan.search_query)
+            if plan.answer_shape == "literature" and lane == "literature"
+            else _search_queries(plan.search_query)
+        )
+        for search_query in search_queries:
             query_records = index.search(search_query, lane=lane, limit=limit)
             for record in query_records:
                 if record.record_id in seen_record_ids:
@@ -114,7 +171,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             if record.media_url and record.lane == "media" and "still image" not in record.title.lower()
         ]
         if not media_records:
-            return source_gap(plan, "The mosquito V1 index has no matching moving-image media records.")
+            return source_gap(plan, "The Ask Insects index has no matching moving-image media records.")
         all_records = media_records
 
     if plan.answer_shape == "evidence" and _asks_for_still_images(plan.question):
@@ -129,12 +186,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             literature_records = [
                 record for record in literature_records if record.species and record.species.lower() == species.lower()
             ]
+        topical_tokens = _literature_topical_tokens(plan.question, species)
+        if topical_tokens:
+            literature_records = [
+                record for record in literature_records if _record_matches_any_token(record, topical_tokens)
+            ]
         if not literature_records:
-            return source_gap(plan, "The mosquito V1 index has no matching literature records.")
+            return source_gap(plan, "The Ask Insects index has no matching literature records.")
         all_records = literature_records
 
     if not all_records:
-        return source_gap(plan, "No matching local records were found in the checked lanes.")
+        return source_gap(plan, "No matching Ask Insects records were found in the checked lanes.")
 
     evidence = [record_to_evidence(record) for record in all_records[:limit]]
     return {

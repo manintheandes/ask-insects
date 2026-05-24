@@ -13,7 +13,7 @@ Sources:
 
 ## Observations And Images
 
-Observation records with date, region, source URL, media URL, and license when available.
+Observation records with date, region, source URL, media URL, and license when available. Live source lanes also store raw per-record payloads in SQLite so the original API fields remain queryable.
 
 Sources:
 
@@ -30,11 +30,34 @@ Sources:
 - `inaturalist_api`: still-image media URLs from iNaturalist observation photos.
 
 Moving-image video coverage is still a source gap unless a future source lane adds video records.
-Deep iNaturalist ingest paginates the public API and saves one raw page artifact per request.
+Deep iNaturalist ingest paginates the public API and saves one raw page artifact per request. Each normalized iNaturalist observation and media row also gets a matching `record_payloads` row with the raw observation and photo payload.
 
 ## Papers And Literature
 
 Paper metadata, abstracts when available, open access URLs, and source identifiers.
+
+Sources:
+
+- `mosquito_v1_fixtures`: deterministic repo seed records.
+- `aedes_literature_openalex`: OpenAlex articles from 2020-01-01 through run date where `Aedes aegypti` is material in title, abstract, or accepted topic metadata.
+
+OpenAlex is the canonical source for discovery and record identity. PubMed E-utilities are enrichment only, used for PMID-backed metadata. Unpaywall is enrichment only, used as the legal open full-text resolver. The lane may write legal direct PDF/XML/text chunks to `literature_fulltext_units`, but it must not use Sci-Hub, private cookies, or institutional scraping.
+
+The canonical artifact directory is `artifacts/aedes-literature-2020/`. It contains the SQLite index, raw OpenAlex cursor JSON artifacts, `source_status.json`, `source_receipt.json`, `literature_enrichment_receipt.json`, and `gaps.json`. PubMed and Unpaywall enrichment payloads are preserved in the SQLite `record_payloads` table rather than duplicated as separate raw JSON files.
+
+Structured literature gaps include:
+
+- `missing_doi`
+- `pubmed_missing_pmid`
+- `pubmed_fetch_failed`
+- `openalex_missing_abstract`
+- `openalex_topic_search_empty`
+- `openalex_topic_candidate_rejected`
+- `unpaywall_fetch_failed`
+- `unpaywall_no_fulltext_url`
+- `fulltext_landing_page_only`
+- `fulltext_fetch_failed`
+- `fulltext_parse_failed`
 
 ## Action Notes
 

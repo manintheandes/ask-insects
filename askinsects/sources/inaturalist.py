@@ -138,6 +138,11 @@ def observation_record(
             license=license_code,
             source_url=query_url,
         ),
+        payload={
+            "raw_observation": observation,
+            "raw_photo": photo,
+            "query_url": query_url,
+        },
     )
 
 
@@ -174,6 +179,10 @@ def media_record(
             license=license_code,
             source_url=url,
         ),
+        payload={
+            "raw_observation": observation,
+            "raw_photo": photo,
+        },
     )
 
 

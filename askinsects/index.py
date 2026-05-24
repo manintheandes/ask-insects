@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 from collections import Counter
+from contextlib import contextmanager
+import json
 from pathlib import Path
 import re
 import sqlite3
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from .records import EvidenceRecord
+
+if TYPE_CHECKING:
+    from .sources.literature import FullTextUnit
 
 
 SCHEMA = """
@@ -24,6 +31,29 @@ CREATE INDEX IF NOT EXISTS idx_records_lane ON records(lane);
 CREATE INDEX IF NOT EXISTS idx_records_species ON records(species);
 CREATE VIRTUAL TABLE IF NOT EXISTS records_fts
 USING fts5(record_id UNINDEXED, lane UNINDEXED, species UNINDEXED, title, text);
+CREATE TABLE IF NOT EXISTS record_payloads (
+  record_id TEXT PRIMARY KEY,
+  source TEXT NOT NULL,
+  lane TEXT NOT NULL,
+  payload_json TEXT NOT NULL,
+  provenance_json TEXT NOT NULL,
+  FOREIGN KEY(record_id) REFERENCES records(record_id)
+);
+CREATE INDEX IF NOT EXISTS idx_record_payloads_source ON record_payloads(source);
+CREATE INDEX IF NOT EXISTS idx_record_payloads_lane ON record_payloads(lane);
+CREATE TABLE IF NOT EXISTS literature_fulltext_units (
+  unit_id TEXT PRIMARY KEY,
+  record_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  unit_index INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  url TEXT,
+  license TEXT,
+  provenance_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_literature_fulltext_units_record_id ON literature_fulltext_units(record_id);
+CREATE VIRTUAL TABLE IF NOT EXISTS literature_fulltext_fts
+USING fts5(unit_id UNINDEXED, record_id UNINDEXED, text);
 """
 
 
@@ -68,11 +98,19 @@ class SourceIndex:
     def __init__(self, path: Path):
         self.path = Path(path)
 
-    def connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(self.path)
+        conn = sqlite3.connect(self.path, timeout=30)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def initialize(self) -> None:
         with self.connect() as conn:
@@ -80,40 +118,111 @@ class SourceIndex:
 
     def upsert_records(self, records: list[EvidenceRecord]) -> None:
         with self.connect() as conn:
-            for record in records:
-                row = record.to_row()
+            self._upsert_records(conn, records)
+
+    def upsert_fulltext_units(self, units: list[FullTextUnit]) -> None:
+        with self.connect() as conn:
+            self._upsert_fulltext_units(conn, units)
+
+    def upsert_records_and_fulltext_units(self, records: list[EvidenceRecord], units: list[FullTextUnit]) -> None:
+        with self.connect() as conn:
+            self._upsert_records(conn, records)
+            self._upsert_fulltext_units(conn, units)
+
+    def _upsert_records(self, conn: sqlite3.Connection, records: list[EvidenceRecord]) -> None:
+        for record in records:
+            row = record.to_row()
+            conn.execute(
+                """
+                INSERT INTO records (
+                  record_id, lane, source, title, text, species, url, media_url, provenance_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(record_id) DO UPDATE SET
+                  lane=excluded.lane,
+                  source=excluded.source,
+                  title=excluded.title,
+                  text=excluded.text,
+                  species=excluded.species,
+                  url=excluded.url,
+                  media_url=excluded.media_url,
+                  provenance_json=excluded.provenance_json
+                """,
+                (
+                    row["record_id"],
+                    row["lane"],
+                    row["source"],
+                    row["title"],
+                    row["text"],
+                    row["species"],
+                    row["url"],
+                    row["media_url"],
+                    row["provenance_json"],
+                ),
+            )
+            conn.execute("DELETE FROM records_fts WHERE record_id=?", (record.record_id,))
+            conn.execute(
+                "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
+                (record.record_id, record.lane, record.species, record.title, record.text),
+            )
+            if record.payload is None:
+                conn.execute("DELETE FROM record_payloads WHERE record_id=?", (record.record_id,))
+            else:
                 conn.execute(
                     """
-                    INSERT INTO records (
-                      record_id, lane, source, title, text, species, url, media_url, provenance_json
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO record_payloads (
+                      record_id, source, lane, payload_json, provenance_json
+                    ) VALUES (?, ?, ?, ?, ?)
                     ON CONFLICT(record_id) DO UPDATE SET
-                      lane=excluded.lane,
                       source=excluded.source,
-                      title=excluded.title,
-                      text=excluded.text,
-                      species=excluded.species,
-                      url=excluded.url,
-                      media_url=excluded.media_url,
+                      lane=excluded.lane,
+                      payload_json=excluded.payload_json,
                       provenance_json=excluded.provenance_json
                     """,
                     (
-                        row["record_id"],
-                        row["lane"],
-                        row["source"],
-                        row["title"],
-                        row["text"],
-                        row["species"],
-                        row["url"],
-                        row["media_url"],
+                        record.record_id,
+                        record.source,
+                        record.lane,
+                        json.dumps(record.payload, sort_keys=True),
                         row["provenance_json"],
                     ),
                 )
-                conn.execute("DELETE FROM records_fts WHERE record_id=?", (record.record_id,))
-                conn.execute(
-                    "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
-                    (record.record_id, record.lane, record.species, record.title, record.text),
-                )
+
+    def _upsert_fulltext_units(self, conn: sqlite3.Connection, units: list[FullTextUnit]) -> None:
+        affected_record_ids = sorted({unit.record_id for unit in units})
+        for record_id in affected_record_ids:
+            conn.execute("DELETE FROM literature_fulltext_fts WHERE record_id=?", (record_id,))
+            conn.execute("DELETE FROM literature_fulltext_units WHERE record_id=?", (record_id,))
+        for unit in units:
+            provenance_json = json.dumps(unit.provenance.to_dict(), sort_keys=True)
+            conn.execute(
+                """
+                INSERT INTO literature_fulltext_units (
+                  unit_id, record_id, source, unit_index, text, url, license, provenance_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(unit_id) DO UPDATE SET
+                  record_id=excluded.record_id,
+                  source=excluded.source,
+                  unit_index=excluded.unit_index,
+                  text=excluded.text,
+                  url=excluded.url,
+                  license=excluded.license,
+                  provenance_json=excluded.provenance_json
+                """,
+                (
+                    unit.unit_id,
+                    unit.record_id,
+                    unit.source,
+                    unit.unit_index,
+                    unit.text,
+                    unit.url,
+                    unit.license,
+                    provenance_json,
+                ),
+            )
+            conn.execute(
+                "INSERT INTO literature_fulltext_fts(unit_id, record_id, text) VALUES (?, ?, ?)",
+                (unit.unit_id, unit.record_id, unit.text),
+            )
 
     def search(self, query: str, lane: str | None = None, limit: int = 10) -> list[EvidenceRecord]:
         terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]

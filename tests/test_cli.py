@@ -6,6 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from scripts.build_source_index import create_parser
+
 
 class CliTests(unittest.TestCase):
     def run_cli(self, *args):
@@ -126,6 +128,78 @@ class CliTests(unittest.TestCase):
             self.assertFalse(payload["ok"])
             self.assertIn("error", payload)
             self.assertIn("source_gap", payload)
+
+    def test_build_script_accepts_literature_flags(self):
+        parser = create_parser()
+
+        args = parser.parse_args(
+            [
+                "--openalex-literature",
+                "--literature-species",
+                "Aedes aegypti",
+                "--literature-from-date",
+                "2020-01-01",
+                "--literature-to-date",
+                "2026-05-23",
+                "--literature-work-type",
+                "article",
+                "--literature-page-size",
+                "25",
+                "--literature-delay-seconds",
+                "0",
+                "--literature-max-works",
+                "1",
+                "--unpaywall-email",
+                "test@example.com",
+                "--skip-fulltext",
+                "--skip-pubmed",
+            ]
+        )
+
+        self.assertTrue(args.openalex_literature)
+        self.assertEqual(args.literature_species, "Aedes aegypti")
+        self.assertEqual(args.literature_from_date, "2020-01-01")
+        self.assertEqual(args.literature_to_date, "2026-05-23")
+        self.assertEqual(args.literature_work_type, "article")
+        self.assertEqual(args.literature_page_size, 25)
+        self.assertEqual(args.literature_delay_seconds, 0)
+        self.assertEqual(args.literature_max_works, 1)
+        self.assertEqual(args.unpaywall_email, "test@example.com")
+        self.assertTrue(args.skip_fulltext)
+        self.assertTrue(args.skip_pubmed)
+
+    def test_build_script_accepts_plan_aliases_for_literature_flags(self):
+        parser = create_parser()
+
+        args = parser.parse_args(
+            [
+                "--openalex-literature",
+                "--from-date",
+                "2020-01-01",
+                "--to-date",
+                "2026-05-23",
+                "--work-type",
+                "article",
+                "--max-works",
+                "1",
+                "--delay-seconds",
+                "0",
+            ]
+        )
+
+        self.assertTrue(args.openalex_literature)
+        self.assertEqual(args.literature_from_date, "2020-01-01")
+        self.assertEqual(args.literature_to_date, "2026-05-23")
+        self.assertEqual(args.literature_work_type, "article")
+        self.assertEqual(args.literature_max_works, 1)
+        self.assertEqual(args.delay_seconds, 0)
+
+    def test_build_script_leaves_literature_to_date_unset_by_default(self):
+        parser = create_parser()
+
+        args = parser.parse_args(["--openalex-literature"])
+
+        self.assertIsNone(args.literature_to_date)
 
 
 if __name__ == "__main__":
