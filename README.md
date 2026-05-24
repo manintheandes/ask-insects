@@ -173,6 +173,13 @@ OpenAlex is the canonical discovery source. A paper is in-boundary when `Aedes a
 
 The lane writes `source_index.sqlite`, `source_status.json`, `source_receipt.json`, `literature_enrichment_receipt.json`, `gaps.json`, and raw OpenAlex cursor artifacts under `artifacts/aedes-literature-2020/`. PubMed and Unpaywall enrichment payloads are stored per record in `record_payloads`. Structured gaps record missing DOI, missing PMID, missing abstract, rejected topic candidates, unavailable full text, landing-page-only full text, fetch failures, and parse failures.
 
+Legal direct full-text units are searchable through the normal CLI and used as a fallback for literature answers when metadata and abstracts are not enough:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 search fulltext "microbiota Aedes aegypti"
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what papers since 2020 discuss microbiota and Aedes aegypti?" --json
+```
+
 Literature can also be parsed into mosquito intelligence facets:
 
 ```bash

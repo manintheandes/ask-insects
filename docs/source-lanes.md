@@ -97,6 +97,8 @@ Sources:
 
 OpenAlex is the canonical source for discovery and record identity. PubMed E-utilities are enrichment only, used for PMID-backed metadata. Unpaywall is enrichment only, used as the legal open full-text resolver. The lane may write legal direct PDF/XML/text chunks to `literature_fulltext_units`, but it must not use Sci-Hub, private cookies, or institutional scraping.
 
+Legal full-text chunks are an atomic query plane. `search fulltext` reads `literature_fulltext_fts`, returns `literature_fulltext` evidence with provenance to the full-text unit, and literature answers fall back to those chunks when title/abstract metadata does not satisfy the question.
+
 The canonical artifact directory is `artifacts/aedes-literature-2020/`. It contains the SQLite index, raw OpenAlex cursor JSON artifacts, `source_status.json`, `source_receipt.json`, `literature_enrichment_receipt.json`, and `gaps.json`. PubMed and Unpaywall enrichment payloads are preserved in the SQLite `record_payloads` table rather than duplicated as separate raw JSON files.
 
 Structured literature gaps include:

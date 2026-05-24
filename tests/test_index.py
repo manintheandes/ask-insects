@@ -100,6 +100,53 @@ class IndexTests(unittest.TestCase):
             )
             self.assertEqual(fts_rows[0]["record_id"], "openalex:W1")
 
+    def test_search_literature_fulltext_returns_provenance_bearing_records(self):
+        from askinsects.sources.literature import FullTextUnit
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="aedes_literature_openalex",
+                locator="raw/literature/page.json#W1",
+                retrieved_at="2026-05-23T00:00:00Z",
+                license="CC BY",
+                source_url="https://example.org/paper",
+            )
+            index.upsert_records(
+                [
+                    sample_record(
+                        record_id="openalex:W1",
+                        lane="literature",
+                        text="Aedes aegypti paper metadata.",
+                        payload=None,
+                    )
+                ]
+            )
+            index.upsert_fulltext_units(
+                [
+                    FullTextUnit(
+                        unit_id="openalex:W1:fulltext:0",
+                        record_id="openalex:W1",
+                        source="aedes_literature_openalex",
+                        unit_index=0,
+                        text="The legal full text discusses microbiota effects in Aedes aegypti mosquitoes.",
+                        url="https://example.org/fulltext",
+                        license="CC BY",
+                        provenance=provenance,
+                    )
+                ]
+            )
+
+            rows = index.search_literature_fulltext("microbiota", limit=3)
+
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].record_id, "openalex:W1:fulltext:0")
+            self.assertEqual(rows[0].lane, "literature_fulltext")
+            self.assertEqual(rows[0].source, "aedes_literature_openalex")
+            self.assertIn("microbiota", rows[0].text)
+            self.assertIn("literature_fulltext_units#openalex:W1:fulltext:0", rows[0].provenance.locator)
+
     def test_replaces_fulltext_units_for_affected_records(self):
         from askinsects.sources.literature import FullTextUnit
 

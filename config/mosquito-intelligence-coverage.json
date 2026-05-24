@@ -28,17 +28,17 @@
       "current_gates": {
         "mapped": "yes",
         "accessible": "yes",
-        "atomically_queryable": "partial",
+        "atomically_queryable": "yes",
         "receipted": "yes",
-        "ask_surface_wired": "partial"
+        "ask_surface_wired": "yes"
       },
       "current_evidence": [
         "artifacts/aedes-literature-2020/source_index.sqlite",
         "artifacts/aedes-literature-2020/literature_enrichment_receipt.json",
-        "artifacts/aedes-literature-2020/gaps.json"
+        "artifacts/aedes-literature-2020/gaps.json",
+        "literature_fulltext_units and literature_fulltext_fts are searchable through search fulltext and literature-answer fallback"
       ],
       "required_next_sources": [
-        "dedicated full-text search and answer path over literature_fulltext_units",
         "Crossref or PubMed reconciliation for missing DOI and PMID gaps",
         "topic-specific behavior, resistance, vector competence, ecology, and public-health paper facets"
       ],

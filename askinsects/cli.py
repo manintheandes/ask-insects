@@ -51,6 +51,8 @@ def render_answer(payload: dict[str, object]) -> str:
 def normalize_search_lane(lane: str) -> str:
     if lane == "papers":
         return "literature"
+    if lane in {"fulltext", "full-text", "literature-fulltext"}:
+        return "literature_fulltext"
     return lane
 
 
@@ -205,7 +207,10 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         lane = normalize_search_lane(args.lane)
         try:
-            rows = [record.to_row() for record in index.search(args.query, lane=lane, limit=args.limit)]
+            if lane == "literature_fulltext":
+                rows = [record.to_row() for record in index.search_literature_fulltext(args.query, limit=args.limit)]
+            else:
+                rows = [record.to_row() for record in index.search(args.query, lane=lane, limit=args.limit)]
         except sqlite3.Error as exc:
             emit(cli_error(str(exc), lane=args.lane, artifact_dir=artifact_dir))
             return 2

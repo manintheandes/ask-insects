@@ -219,6 +219,21 @@ def _literature_topical_tokens(question: str, species: str | None) -> set[str]:
     return {token for token in tokens if not token.isdigit()}
 
 
+def _fulltext_literature_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    records: list[EvidenceRecord] = []
+    seen_record_ids: set[str] = set()
+    for search_query in _literature_search_queries(question):
+        query_records = index.search_literature_fulltext(search_query, limit=limit)
+        for record in query_records:
+            if record.record_id in seen_record_ids:
+                continue
+            records.append(record)
+            seen_record_ids.add(record.record_id)
+        if query_records:
+            break
+    return records
+
+
 def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
     haystack = f"{record.title}\n{record.text}".lower()
     return any(re.search(rf"\b{re.escape(token)}\b", haystack) for token in tokens)
@@ -312,7 +327,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 record for record in literature_records if _record_matches_any_token(record, topical_tokens)
             ]
         if not literature_records:
-            return source_gap(plan, "The Ask Insects index has no matching literature records.")
+            literature_records = _fulltext_literature_records(index, plan.question, limit=limit)
+        if not literature_records:
+            return source_gap(plan, "The Ask Insects index has no matching literature metadata or full-text records.")
         all_records = literature_records
 
     if plan.answer_shape == "genomics":

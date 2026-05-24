@@ -10,6 +10,7 @@ from askinsects.server import dispatch_request
 from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
+from askinsects.sources.literature import FullTextUnit
 from tests.test_inaturalist_source import observation
 
 
@@ -65,6 +66,57 @@ class ServerTests(unittest.TestCase):
             )
             self.assertTrue(sql.payload["ok"])
             self.assertEqual(sql.payload["rows"][0]["n"], 7)
+
+    def test_search_literature_fulltext_route(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="aedes_literature_openalex",
+                locator="raw/literature/page.json#WSRV",
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+            index.upsert_records_and_fulltext_units(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WSRV",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti full text paper",
+                        text="Aedes aegypti metadata.",
+                        species="Aedes aegypti",
+                        url="https://example.org/paper",
+                        media_url=None,
+                        provenance=provenance,
+                    )
+                ],
+                [
+                    FullTextUnit(
+                        unit_id="openalex:WSRV:fulltext:0",
+                        record_id="openalex:WSRV",
+                        source="aedes_literature_openalex",
+                        unit_index=0,
+                        text="Aedes aegypti legal full text mentions microbiota.",
+                        url="https://example.org/fulltext",
+                        license="CC BY",
+                        provenance=provenance,
+                    )
+                ],
+            )
+
+            response = dispatch_request(
+                "POST",
+                "/search",
+                {"lane": "literature_fulltext", "query": "microbiota", "limit": 5},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["rows"][0]["lane"], "literature_fulltext")
 
     def test_ingest_inaturalist_uses_staging_then_activates(self):
         with tempfile.TemporaryDirectory() as tmpdir:

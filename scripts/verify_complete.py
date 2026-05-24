@@ -196,6 +196,7 @@ def check_literature_source_map() -> None:
         "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
         "sqlite_payload_table: record_payloads",
         "sqlite_fulltext_table: literature_fulltext_units",
+        "search fulltext",
         "live_fetch: opt_in",
         "pubmed_eutilities",
         "unpaywall_api",

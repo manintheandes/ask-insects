@@ -44,6 +44,13 @@ python3 scripts/enrich_literature_index.py \
   --email you@example.com
 ```
 
+To query legal full-text chunks directly:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 search fulltext "microbiota Aedes aegypti"
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what papers since 2020 discuss microbiota and Aedes aegypti?" --json
+```
+
 For large full-text runs, use deterministic record-id shards. Each shard owns a stable slice of records, so resume workers do not duplicate each other:
 
 ```bash
@@ -127,7 +134,7 @@ IR Mapper resistance records use source id `irmapper_aedes`. Raw public API JSON
 
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 
-OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/literature/` when that artifact directory is used. PubMed and Unpaywall enrichment payloads are stored per record in SQLite `record_payloads.payload_json`. Legal direct PDF/XML/text chunks are stored in `literature_fulltext_units` and mirrored into `literature_fulltext_fts`. Normal `ask` and `search literature` use metadata and abstracts; query full-text chunks through read-only SQL until a dedicated full-text search command is added. Gaps are structured in `gaps.json`, including missing DOI, missing PMID, missing abstract, topic search gaps, Unpaywall no-full-text cases, landing-page-only cases, fetch failures, and parse failures.
+OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/literature/` when that artifact directory is used. PubMed and Unpaywall enrichment payloads are stored per record in SQLite `record_payloads.payload_json`. Legal direct PDF/XML/text chunks are stored in `literature_fulltext_units` and mirrored into `literature_fulltext_fts`. Normal `ask` and `search literature` use metadata and abstracts first; literature answers fall back to legal full-text chunks, and `search fulltext` queries those chunks directly. Gaps are structured in `gaps.json`, including missing DOI, missing PMID, missing abstract, topic search gaps, Unpaywall no-full-text cases, landing-page-only cases, fetch failures, and parse failures.
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
@@ -160,4 +167,5 @@ python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --ob
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"
+python3 -m askinsects search fulltext "microbiota Aedes aegypti" --hosted
 ```

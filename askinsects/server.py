@@ -843,7 +843,10 @@ def dispatch_request(
             lane_value = body.get("lane")
             lane = str(lane_value) if lane_value is not None else None
             limit = int(body.get("limit", 10))
-            rows = [record.to_row() for record in index.search(query, lane=lane, limit=limit)]
+            if lane == "literature_fulltext":
+                rows = [record.to_row() for record in index.search_literature_fulltext(query, limit=limit)]
+            else:
+                rows = [record.to_row() for record in index.search(query, lane=lane, limit=limit)]
             return json_response(200, {"ok": True, "rows": rows})
         if method == "POST" and path == "/sql":
             body = payload or {}

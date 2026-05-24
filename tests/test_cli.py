@@ -9,6 +9,9 @@ from pathlib import Path
 from askinsects.builder import build_source_index
 from scripts.build_source_index import create_parser
 from tests.test_neurobiology_source import write_fake_neurobiology_artifacts
+from askinsects.index import SourceIndex
+from askinsects.records import EvidenceRecord, Provenance
+from askinsects.sources.literature import FullTextUnit
 
 
 class CliTests(unittest.TestCase):
@@ -102,6 +105,50 @@ class CliTests(unittest.TestCase):
             self.assertTrue(payload["ok"])
             self.assertTrue(payload["rows"])
             self.assertTrue(any(row["lane"] == "literature" for row in payload["rows"]))
+
+    def test_search_fulltext_alias_returns_literature_fulltext_rows(self):
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="aedes_literature_openalex",
+                locator="raw/literature/page.json#WCLI",
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+            index.upsert_records_and_fulltext_units(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WCLI",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti paper",
+                        text="Aedes aegypti metadata.",
+                        species="Aedes aegypti",
+                        url="https://example.org/paper",
+                        media_url=None,
+                        provenance=provenance,
+                    )
+                ],
+                [
+                    FullTextUnit(
+                        unit_id="openalex:WCLI:fulltext:0",
+                        record_id="openalex:WCLI",
+                        source="aedes_literature_openalex",
+                        unit_index=0,
+                        text="Aedes aegypti legal full text mentions microbiota.",
+                        url="https://example.org/fulltext",
+                        license="CC BY",
+                        provenance=provenance,
+                    )
+                ],
+            )
+
+            result = self.run_cli("--artifact-dir", artifact_dir, "search", "fulltext", "microbiota")
+
+            self.assertEqual(result.returncode, 0)
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["rows"][0]["lane"], "literature_fulltext")
 
     def test_sources_reads_indexed_sources_from_status_file(self):
         with tempfile.TemporaryDirectory() as artifact_dir:

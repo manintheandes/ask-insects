@@ -7,6 +7,7 @@ from askinsects.builder import build_fixture_index, build_source_index
 from askinsects.index import SourceIndex
 from askinsects.planner import plan_question
 from askinsects.records import EvidenceRecord, Provenance
+from askinsects.sources.literature import FullTextUnit
 from tests.test_ncbi_genome_source import write_fake_ncbi_package
 from tests.test_neurobiology_source import write_fake_neurobiology_artifacts
 
@@ -323,6 +324,50 @@ class AnswerTests(unittest.TestCase):
 
             self.assertTrue(payload["ok"])
             self.assertEqual(payload["evidence"][0]["record_id"], "openalex:wolbachia")
+
+    def test_literature_question_falls_back_to_legal_fulltext_units(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "aedes-literature"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="aedes_literature_openalex",
+                locator="raw/literature/page.json#WFT",
+                retrieved_at="2026-05-23T00:00:00Z",
+                license="CC BY",
+                source_url="https://example.org/paper",
+            )
+            index.upsert_records_and_fulltext_units(
+                [
+                    literature_record(
+                        "openalex:WFT",
+                        "Aedes aegypti symbiont study",
+                        "Aedes aegypti paper metadata without the topical term.",
+                    )
+                ],
+                [
+                    FullTextUnit(
+                        unit_id="openalex:WFT:fulltext:0",
+                        record_id="openalex:WFT",
+                        source="aedes_literature_openalex",
+                        unit_index=0,
+                        text="The legal open full text reports microbiota changes in Aedes aegypti larvae.",
+                        url="https://example.org/fulltext",
+                        license="CC BY",
+                        provenance=provenance,
+                    )
+                ],
+            )
+
+            payload = answer_question(
+                "what papers since 2020 discuss microbiota and Aedes aegypti?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["answer_shape"], "literature")
+            self.assertEqual(payload["evidence"][0]["lane"], "literature_fulltext")
+            self.assertIn("microbiota", payload["evidence"][0]["text"])
 
     def test_missing_index_returns_source_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:

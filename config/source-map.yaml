@@ -59,6 +59,10 @@ sources:
       gaps: artifacts/aedes-literature-2020/gaps.json
     lanes:
       - literature
+    query_commands:
+      - search literature
+      - search fulltext
+      - ask literature questions with metadata and legal full-text fallback
     provenance_required: true
     live_fetch: opt_in
     enrichment_sources:

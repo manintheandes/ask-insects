@@ -9,7 +9,7 @@ import sqlite3
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
-from .records import EvidenceRecord
+from .records import EvidenceRecord, Provenance
 
 if TYPE_CHECKING:
     from .sources.literature import FullTextUnit
@@ -101,6 +101,22 @@ def _chunks(values: list[str], size: int = 500) -> list[list[str]]:
 def _record_chunks(records: list[EvidenceRecord], size: int = 500) -> Iterator[list[EvidenceRecord]]:
     for index in range(0, len(records), size):
         yield records[index : index + size]
+
+
+def _snippet(text: str, query: str, *, max_length: int = 520) -> str:
+    terms = [term.lower() for term in re.findall(r"[A-Za-z0-9]+", query) if term]
+    lower = text.lower()
+    positions = [lower.find(term) for term in terms if lower.find(term) >= 0]
+    if positions:
+        start = max(0, min(positions) - 120)
+    else:
+        start = 0
+    snippet = re.sub(r"\s+", " ", text[start : start + max_length]).strip()
+    if start > 0:
+        snippet = f"... {snippet}"
+    if start + max_length < len(text):
+        snippet = f"{snippet} ..."
+    return snippet
 
 
 class SourceIndex:
@@ -286,6 +302,64 @@ class SourceIndex:
                 params,
             ).fetchall()
         return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+    def search_literature_fulltext(self, query: str, limit: int = 10) -> list[EvidenceRecord]:
+        terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]
+        if not terms:
+            return []
+        match = " AND ".join(f"{term}*" for term in terms)
+        with self.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT
+                  u.unit_id,
+                  u.record_id AS paper_record_id,
+                  u.source,
+                  u.unit_index,
+                  u.text,
+                  u.url AS fulltext_url,
+                  u.license AS fulltext_license,
+                  u.provenance_json AS fulltext_provenance_json,
+                  r.title AS paper_title,
+                  r.species AS paper_species,
+                  r.url AS paper_url
+                FROM literature_fulltext_fts f
+                JOIN literature_fulltext_units u ON u.unit_id = f.unit_id
+                LEFT JOIN records r ON r.record_id = u.record_id
+                WHERE literature_fulltext_fts MATCH ?
+                ORDER BY bm25(literature_fulltext_fts)
+                LIMIT ?
+                """,
+                (match, limit),
+            ).fetchall()
+        records: list[EvidenceRecord] = []
+        for row in rows:
+            payload = dict(row)
+            provenance_payload = json.loads(str(row["fulltext_provenance_json"]))
+            source_url = row["fulltext_url"] or row["paper_url"] or provenance_payload.get("source_url")
+            title = str(row["paper_title"] or row["paper_record_id"])
+            text = _snippet(str(row["text"]), query)
+            records.append(
+                EvidenceRecord(
+                    record_id=str(row["unit_id"]),
+                    lane="literature_fulltext",
+                    source=str(row["source"]),
+                    title=f"Full text match: {title}",
+                    text=text,
+                    species=row["paper_species"],
+                    url=source_url,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id=str(row["source"]),
+                        locator=f"{provenance_payload.get('locator', '')};literature_fulltext_units#{row['unit_id']}",
+                        retrieved_at=str(provenance_payload.get("retrieved_at", "")),
+                        license=row["fulltext_license"] or provenance_payload.get("license"),
+                        source_url=source_url,
+                    ),
+                    payload=payload,
+                )
+            )
+        return records
 
     def sql(self, sql: str, limit: int = 100) -> list[dict[str, object]]:
         statement = ensure_read_only_sql(sql)
