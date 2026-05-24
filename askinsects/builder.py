@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 import json
 from pathlib import Path
 from typing import Callable
@@ -8,6 +9,7 @@ from .index import SourceIndex
 from .sources.fixtures import FIXTURE_RETRIEVED_AT, FIXTURE_SOURCE_ID, load_fixture_records
 from .sources.gbif import DEFAULT_GBIF_SPECIES, GBIF_SOURCE_ID, fetch_gbif_records
 from .sources.inaturalist import DEFAULT_INATURALIST_SPECIES, INATURALIST_SOURCE_ID, fetch_inaturalist_records
+from .sources.literature import LITERATURE_SOURCE_ID, fetch_literature_records
 from .sources.ncbi_genome import (
     DEFAULT_ASSEMBLY_ACCESSION,
     NCBI_GENOME_SOURCE_ID,
@@ -24,6 +26,10 @@ DEFAULT_FIXTURE_PATH = REPO_ROOT / "data/fixtures/mosquito_records.json"
 def write_json(path: Path, payload: object) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+
+
+def utc_now() -> str:
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def build_fixture_index(
@@ -45,6 +51,7 @@ def build_source_index(
     include_fixtures: bool,
     include_gbif: bool,
     include_inaturalist: bool = False,
+    include_literature: bool = False,
     include_ncbi_genome: bool = False,
     include_neurobiology: bool = False,
     fixture_path: Path = DEFAULT_FIXTURE_PATH,
@@ -61,18 +68,36 @@ def build_source_index(
     page_size: int = 200,
     delay_seconds: float = 0.0,
     inaturalist_fetch_json: Callable[[str], dict[str, object]] | None = None,
+    literature_species: str = "Aedes aegypti",
+    literature_from_date: str = "2020-01-01",
+    literature_to_date: str | None = None,
+    literature_work_type: str = "article",
+    include_topic_discovery: bool = False,
+    literature_page_size: int = 200,
+    literature_delay_seconds: float | None = None,
+    literature_max_works: int | None = None,
+    unpaywall_email: str | None = None,
+    skip_fulltext: bool = False,
+    skip_pubmed: bool = False,
+    literature_fetch_json: Callable[[str], dict[str, object]] | None = None,
+    literature_fetch_text: Callable[[str], str] | None = None,
     genome_package_dir: Path | None = None,
     genome_assembly_accession: str = DEFAULT_ASSEMBLY_ACCESSION,
-    retrieved_at: str = FIXTURE_RETRIEVED_AT,
+    retrieved_at: str | None = None,
 ) -> dict[str, object]:
     if (
         not include_fixtures
         and not include_gbif
         and not include_inaturalist
+        and not include_literature
         and not include_ncbi_genome
         and not include_neurobiology
     ):
         raise ValueError("at least one source must be selected")
+    has_live_source = include_gbif or include_inaturalist or include_literature
+    generated_at = retrieved_at or (utc_now() if has_live_source else FIXTURE_RETRIEVED_AT)
+    literature_effective_to_date = literature_to_date or generated_at.split("T", 1)[0]
+    gaps_path = artifact_dir / "gaps.json"
 
     artifact_dir.mkdir(parents=True, exist_ok=True)
     db_path = artifact_dir / "source_index.sqlite"
@@ -105,7 +130,7 @@ def build_source_index(
             occurrence_workers=occurrence_workers,
             delay_seconds=gbif_delay_seconds,
             fetch_json=gbif_fetch_json,
-            retrieved_at=retrieved_at,
+            retrieved_at=generated_at,
         )
         records.extend(gbif_result.records)
         sources.append(GBIF_SOURCE_ID)
@@ -135,7 +160,7 @@ def build_source_index(
             page_size=page_size,
             delay_seconds=delay_seconds,
             fetch_json=inaturalist_fetch_json,
-            retrieved_at=retrieved_at,
+            retrieved_at=generated_at,
         )
         records.extend(inaturalist_result.records)
         sources.append(INATURALIST_SOURCE_ID)
@@ -153,6 +178,53 @@ def build_source_index(
             "gap_count": len(inaturalist_result.gaps),
         }
         receipt_sources[INATURALIST_SOURCE_ID] = inaturalist_payload
+
+    literature_payload: dict[str, object] | None = None
+    literature_result = None
+    if include_literature:
+        literature_result = fetch_literature_records(
+            species=literature_species,
+            from_date=literature_from_date,
+            to_date=literature_effective_to_date,
+            work_type=literature_work_type,
+            include_topic_discovery=include_topic_discovery,
+            raw_dir=artifact_dir / "raw" / "literature",
+            page_size=literature_page_size,
+            delay_seconds=delay_seconds if literature_delay_seconds is None else literature_delay_seconds,
+            fetch_json=literature_fetch_json,
+            fetch_text=None if skip_fulltext else literature_fetch_text,
+            unpaywall_email=None if skip_fulltext else unpaywall_email,
+            retrieved_at=generated_at,
+            max_works=literature_max_works,
+            skip_pubmed=skip_pubmed,
+        )
+        records.extend(literature_result.records)
+        sources.append(LITERATURE_SOURCE_ID)
+        source_counts[LITERATURE_SOURCE_ID] = len(literature_result.records)
+        gaps.extend(literature_result.gaps)
+        literature_payload = {
+            "species": literature_species,
+            "from_date": literature_from_date,
+            "to_date": literature_effective_to_date,
+            "work_type": literature_work_type,
+            "include_topic_discovery": include_topic_discovery,
+            "reported_total_count": literature_result.reported_total_count,
+            "page_count": literature_result.page_count,
+            "record_count": len(literature_result.records),
+            "fulltext_unit_count": len(literature_result.fulltext_units),
+            "gap_count": len(literature_result.gaps),
+            "gaps_path": gaps_path.as_posix(),
+            "raw_artifacts": literature_result.raw_artifacts,
+            "topic_search_results": literature_result.topic_search_results,
+            "accepted_topic_ids": literature_result.accepted_topic_ids,
+            "inclusion_path_counts": literature_result.inclusion_path_counts,
+            "doi_count": literature_result.doi_count,
+            "unpaywall_queried_count": literature_result.unpaywall_queried_count,
+            "open_fulltext_count": literature_result.open_fulltext_count,
+            "skip_pubmed": skip_pubmed,
+            "pubmed_skipped_count": literature_result.pubmed_skipped_count,
+        }
+        receipt_sources[LITERATURE_SOURCE_ID] = literature_payload
 
     ncbi_genome_payload: dict[str, object] | None = None
     if include_ncbi_genome:
@@ -193,7 +265,10 @@ def build_source_index(
 
     index = SourceIndex(db_path)
     index.initialize()
-    index.upsert_records(records)
+    if include_literature and literature_result is not None:
+        index.upsert_records_and_fulltext_units(records, literature_result.fulltext_units)
+    else:
+        index.upsert_records(records)
     summary = index.summary()
     source_counts = {
         str(row["source"]): int(row["n"])
@@ -210,7 +285,7 @@ def build_source_index(
         "sources": sources,
         "source_counts": source_counts,
         "boundary": "mosquitoes first",
-        "generated_at": retrieved_at,
+        "generated_at": generated_at,
         "fully_parsed": True,
         "record_count": summary["record_count"],
         "species_count": summary["species_count"],
@@ -222,7 +297,7 @@ def build_source_index(
         "sources": receipt_sources,
         "artifact_dir": artifact_dir.as_posix(),
         "sqlite_index": db_path.as_posix(),
-        "generated_at": retrieved_at,
+        "generated_at": generated_at,
         "record_count": summary["record_count"],
         "lanes": summary["lanes"],
     }
@@ -230,12 +305,14 @@ def build_source_index(
         receipt["gbif"] = gbif_payload
     if inaturalist_payload is not None:
         receipt["inaturalist"] = inaturalist_payload
+    if literature_payload is not None:
+        receipt["literature"] = literature_payload
     if ncbi_genome_payload is not None:
         receipt["ncbi_genome"] = ncbi_genome_payload
     if neurobiology_payload is not None:
         receipt["neurobiology"] = neurobiology_payload
 
-    write_json(artifact_dir / "gaps.json", gaps)
+    write_json(gaps_path, gaps)
     write_json(artifact_dir / "source_status.json", status)
     write_json(artifact_dir / "source_receipt.json", receipt)
     result = {"ok": True, "artifact_dir": artifact_dir.as_posix(), **status}
@@ -243,6 +320,8 @@ def build_source_index(
         result["gbif"] = gbif_payload
     if inaturalist_payload is not None:
         result["inaturalist"] = inaturalist_payload
+    if literature_payload is not None:
+        result["literature"] = literature_payload
     if ncbi_genome_payload is not None:
         result["ncbi_genome"] = ncbi_genome_payload
     if neurobiology_payload is not None:

@@ -42,6 +42,27 @@ sources:
       - media
     provenance_required: true
     live_fetch: opt_in
+  - id: aedes_literature_openalex
+    name: Aedes aegypti literature since 2020
+    source_type: public_api_composite
+    boundary: OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata from 2020-01-01 through run date
+    query_plane: sqlite_atomic_index
+    artifact_dir: artifacts/aedes-literature-2020
+    artifacts:
+      sqlite_index: artifacts/aedes-literature-2020/source_index.sqlite
+      sqlite_payload_table: record_payloads
+      sqlite_fulltext_table: literature_fulltext_units
+      source_status: artifacts/aedes-literature-2020/source_status.json
+      source_receipt: artifacts/aedes-literature-2020/source_receipt.json
+      enrichment_receipt: artifacts/aedes-literature-2020/literature_enrichment_receipt.json
+      gaps: artifacts/aedes-literature-2020/gaps.json
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: opt_in
+    enrichment_sources:
+      - pubmed_eutilities
+      - unpaywall_api
   - id: ncbi_datasets_genome
     name: NCBI Datasets Aedes aegypti genome package
     source_type: local_or_hosted_dataset_package

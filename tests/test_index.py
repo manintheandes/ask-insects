@@ -70,6 +70,114 @@ class IndexTests(unittest.TestCase):
 
             self.assertEqual(row, ("obs:1", "mosquito_v1_fixtures", "observations", 12345))
 
+    def test_upserts_literature_fulltext_units(self):
+        from askinsects.sources.literature import FullTextUnit
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="aedes_literature_openalex",
+                locator="raw/openalex/page.json#W1",
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+            unit = FullTextUnit(
+                unit_id="openalex:W1:fulltext:0",
+                record_id="openalex:W1",
+                source="aedes_literature_openalex",
+                unit_index=0,
+                text="Aedes aegypti legal open full text",
+                url="https://example.org/fulltext",
+                license="cc-by",
+                provenance=provenance,
+            )
+            index.upsert_fulltext_units([unit])
+            rows = index.sql("select unit_id, text from literature_fulltext_units")
+            self.assertEqual(rows[0]["unit_id"], "openalex:W1:fulltext:0")
+            self.assertIn("Aedes aegypti", rows[0]["text"])
+            fts_rows = index.sql(
+                "select unit_id, record_id from literature_fulltext_fts where literature_fulltext_fts match 'aegypti'"
+            )
+            self.assertEqual(fts_rows[0]["record_id"], "openalex:W1")
+
+    def test_replaces_fulltext_units_for_affected_records(self):
+        from askinsects.sources.literature import FullTextUnit
+
+        provenance = Provenance(
+            source_id="aedes_literature_openalex",
+            locator="raw/openalex/page.json#W1",
+            retrieved_at="2026-05-23T00:00:00Z",
+        )
+
+        def fulltext_unit(unit_index, text):
+            return FullTextUnit(
+                unit_id=f"openalex:W1:fulltext:{unit_index}",
+                record_id="openalex:W1",
+                source="aedes_literature_openalex",
+                unit_index=unit_index,
+                text=text,
+                url="https://example.org/fulltext",
+                license="cc-by",
+                provenance=provenance,
+            )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_fulltext_units(
+                [
+                    fulltext_unit(0, "Aedes aegypti current chunk"),
+                    fulltext_unit(1, "staleunique old chunk"),
+                ]
+            )
+            index.upsert_fulltext_units([fulltext_unit(0, "Aedes aegypti rewritten shorter text")])
+
+            rows = index.sql("select unit_id, text from literature_fulltext_units order by unit_id")
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0]["unit_id"], "openalex:W1:fulltext:0")
+            self.assertNotIn("staleunique", rows[0]["text"])
+
+            stale_base_rows = index.sql(
+                "select unit_id from literature_fulltext_units where text like '%staleunique%'"
+            )
+            stale_fts_rows = index.sql(
+                "select unit_id from literature_fulltext_fts where literature_fulltext_fts match 'staleunique'"
+            )
+            self.assertEqual(stale_base_rows, [])
+            self.assertEqual(stale_fts_rows, [])
+
+    def test_records_and_fulltext_units_write_atomically(self):
+        from askinsects.sources.literature import FullTextUnit
+
+        provenance = Provenance(
+            source_id="aedes_literature_openalex",
+            locator="raw/openalex/page.json#W1",
+            retrieved_at="2026-05-23T00:00:00Z",
+        )
+        bad_unit = FullTextUnit(
+            unit_id="openalex:W1:fulltext:0",
+            record_id="openalex:W1",
+            source="aedes_literature_openalex",
+            unit_index=0,
+            text=None,
+            url="https://example.org/fulltext",
+            license="cc-by",
+            provenance=provenance,
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+
+            with self.assertRaises(sqlite3.IntegrityError):
+                index.upsert_records_and_fulltext_units(
+                    [sample_record(record_id="openalex:W1", lane="literature")],
+                    [bad_unit],
+                )
+
+            self.assertEqual(index.sql("select record_id from records"), [])
+            self.assertEqual(index.sql("select unit_id from literature_fulltext_units"), [])
+
     def test_read_only_sql_guard(self):
         self.assertEqual(ensure_read_only_sql("select * from records"), "select * from records")
         with self.assertRaises(ValueError):

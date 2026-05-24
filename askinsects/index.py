@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from collections import Counter
-from contextlib import closing
+from contextlib import contextmanager
 import json
 from pathlib import Path
 import re
 import sqlite3
+from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 from .records import EvidenceRecord
+
+if TYPE_CHECKING:
+    from .sources.literature import FullTextUnit
 
 
 SCHEMA = """
@@ -36,6 +41,19 @@ CREATE TABLE IF NOT EXISTS record_payloads (
 );
 CREATE INDEX IF NOT EXISTS idx_record_payloads_source ON record_payloads(source);
 CREATE INDEX IF NOT EXISTS idx_record_payloads_lane ON record_payloads(lane);
+CREATE TABLE IF NOT EXISTS literature_fulltext_units (
+  unit_id TEXT PRIMARY KEY,
+  record_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  unit_index INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  url TEXT,
+  license TEXT,
+  provenance_json TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_literature_fulltext_units_record_id ON literature_fulltext_units(record_id);
+CREATE VIRTUAL TABLE IF NOT EXISTS literature_fulltext_fts
+USING fts5(unit_id UNINDEXED, record_id UNINDEXED, text);
 """
 
 
@@ -84,22 +102,44 @@ class SourceIndex:
     def __init__(self, path: Path):
         self.path = Path(path)
 
-    def connect(self) -> sqlite3.Connection:
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(self.path)
+        conn = sqlite3.connect(self.path, timeout=30)
         conn.row_factory = sqlite3.Row
-        return conn
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def initialize(self) -> None:
-        with closing(self.connect()) as conn, conn:
+        with self.connect() as conn:
             conn.executescript(SCHEMA)
 
     def upsert_records(self, records: list[EvidenceRecord]) -> None:
         if not records:
             return
-        with closing(self.connect()) as conn, conn:
-            rows = [record.to_row() for record in records]
-            conn.executemany(
+        with self.connect() as conn:
+            self._upsert_records(conn, records)
+
+    def upsert_fulltext_units(self, units: list[FullTextUnit]) -> None:
+        with self.connect() as conn:
+            self._upsert_fulltext_units(conn, units)
+
+    def upsert_records_and_fulltext_units(self, records: list[EvidenceRecord], units: list[FullTextUnit]) -> None:
+        with self.connect() as conn:
+            self._upsert_records(conn, records)
+            self._upsert_fulltext_units(conn, units)
+
+    def _upsert_records(self, conn: sqlite3.Connection, records: list[EvidenceRecord]) -> None:
+        if not records:
+            return
+        rows = [record.to_row() for record in records]
+        conn.executemany(
                 """
                 INSERT INTO records (
                   record_id, lane, source, title, text, species, url, media_url, provenance_json
@@ -128,50 +168,90 @@ class SourceIndex:
                     )
                     for row in rows
                 ],
-            )
-            record_ids = [record.record_id for record in records]
-            for chunk in _chunks(record_ids):
-                placeholders = ",".join("?" for _ in chunk)
-                conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
-            conn.executemany(
-                "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
-                [(record.record_id, record.lane, record.species, record.title, record.text) for record in records],
-            )
+        )
+        record_ids = [record.record_id for record in records]
+        for chunk in _chunks(record_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+        conn.executemany(
+            "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
+            [(record.record_id, record.lane, record.species, record.title, record.text) for record in records],
+        )
 
-            empty_payload_record_ids = [record.record_id for record in records if record.payload is None]
-            for chunk in _chunks(empty_payload_record_ids):
-                placeholders = ",".join("?" for _ in chunk)
-                conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
-            conn.executemany(
+        empty_payload_record_ids = [record.record_id for record in records if record.payload is None]
+        for chunk in _chunks(empty_payload_record_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
+        conn.executemany(
+            """
+            INSERT INTO record_payloads (
+              record_id, source, lane, payload_json, provenance_json
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(record_id) DO UPDATE SET
+              source=excluded.source,
+              lane=excluded.lane,
+              payload_json=excluded.payload_json,
+              provenance_json=excluded.provenance_json
+            """,
+            [
+                (
+                    record.record_id,
+                    record.source,
+                    record.lane,
+                    json.dumps(record.payload, sort_keys=True),
+                    row["provenance_json"],
+                )
+                for record, row in zip(records, rows, strict=True)
+                if record.payload is not None
+            ],
+        )
+
+    def _upsert_fulltext_units(self, conn: sqlite3.Connection, units: list[FullTextUnit]) -> None:
+        affected_record_ids = sorted({unit.record_id for unit in units})
+        for record_id in affected_record_ids:
+            conn.execute("DELETE FROM literature_fulltext_fts WHERE record_id=?", (record_id,))
+            conn.execute("DELETE FROM literature_fulltext_units WHERE record_id=?", (record_id,))
+        for unit in units:
+            provenance_json = json.dumps(unit.provenance.to_dict(), sort_keys=True)
+            conn.execute(
                 """
-                INSERT INTO record_payloads (
-                  record_id, source, lane, payload_json, provenance_json
-                ) VALUES (?, ?, ?, ?, ?)
-                ON CONFLICT(record_id) DO UPDATE SET
+                INSERT INTO literature_fulltext_units (
+                  unit_id, record_id, source, unit_index, text, url, license, provenance_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(unit_id) DO UPDATE SET
+                  record_id=excluded.record_id,
                   source=excluded.source,
-                  lane=excluded.lane,
-                  payload_json=excluded.payload_json,
+                  unit_index=excluded.unit_index,
+                  text=excluded.text,
+                  url=excluded.url,
+                  license=excluded.license,
                   provenance_json=excluded.provenance_json
                 """,
-                [
-                    (
-                        record.record_id,
-                        record.source,
-                        record.lane,
-                        json.dumps(record.payload, sort_keys=True),
-                        row["provenance_json"],
-                    )
-                    for record, row in zip(records, rows, strict=True)
-                    if record.payload is not None
-                ],
+                (
+                    unit.unit_id,
+                    unit.record_id,
+                    unit.source,
+                    unit.unit_index,
+                    unit.text,
+                    unit.url,
+                    unit.license,
+                    provenance_json,
+                ),
+            )
+            conn.execute(
+                "INSERT INTO literature_fulltext_fts(unit_id, record_id, text) VALUES (?, ?, ?)",
+                (unit.unit_id, unit.record_id, unit.text),
             )
 
     def delete_source(self, source: str) -> None:
-        with closing(self.connect()) as conn, conn:
+        with self.connect() as conn:
             rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
             record_ids = [row["record_id"] for row in rows]
-            for record_id in record_ids:
-                conn.execute("DELETE FROM records_fts WHERE record_id=?", (record_id,))
+            for chunk in _chunks(record_ids):
+                placeholders = ",".join("?" for _ in chunk)
+                conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+                conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
+                conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
             conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))
             conn.execute("DELETE FROM records WHERE source=?", (source,))
 
@@ -186,7 +266,7 @@ class SourceIndex:
             lane_filter = "AND r.lane = ?"
             params.append(lane)
         params.append(limit)
-        with closing(self.connect()) as conn, conn:
+        with self.connect() as conn:
             rows = conn.execute(
                 f"""
                 SELECT r.*
@@ -203,7 +283,7 @@ class SourceIndex:
 
     def sql(self, sql: str, limit: int = 100) -> list[dict[str, object]]:
         statement = ensure_read_only_sql(sql)
-        with closing(self.connect()) as conn, conn:
+        with self.connect() as conn:
             cursor = conn.execute(statement)
             rows = []
             for row in cursor:
@@ -213,7 +293,7 @@ class SourceIndex:
         return rows
 
     def summary(self) -> dict[str, object]:
-        with closing(self.connect()) as conn, conn:
+        with self.connect() as conn:
             rows = conn.execute("SELECT lane, COUNT(*) AS count FROM records GROUP BY lane").fetchall()
             record_count = conn.execute("SELECT COUNT(*) FROM records").fetchone()[0]
             species_count = conn.execute("SELECT COUNT(DISTINCT species) FROM records WHERE species IS NOT NULL").fetchone()[0]
