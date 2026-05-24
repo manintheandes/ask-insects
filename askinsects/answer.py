@@ -912,9 +912,17 @@ def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -
 def _named_pathogen_terms(question: str) -> list[str]:
     q = question.lower()
     terms = []
-    for term in ("dengue", "zika", "chikungunya", "yellow fever", "west nile", "mayaro"):
+    aliases = {
+        "dengue": ("dengue", "denv"),
+        "zika": ("zika", "zikv"),
+        "chikungunya": ("chikungunya", "chikv"),
+        "yellow fever": ("yellow fever", "yfv"),
+        "west nile": ("west nile", "wnv"),
+        "mayaro": ("mayaro", "mayv"),
+    }
+    for term, term_aliases in aliases.items():
         if term in q:
-            terms.append(term)
+            terms.extend(term_aliases)
     return terms
 
 
