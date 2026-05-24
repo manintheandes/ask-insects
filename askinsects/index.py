@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS records (
 );
 CREATE INDEX IF NOT EXISTS idx_records_lane ON records(lane);
 CREATE INDEX IF NOT EXISTS idx_records_species ON records(species);
+CREATE INDEX IF NOT EXISTS idx_records_source ON records(source);
 CREATE VIRTUAL TABLE IF NOT EXISTS records_fts
 USING fts5(record_id UNINDEXED, lane UNINDEXED, species UNINDEXED, title, text);
 CREATE TABLE IF NOT EXISTS record_payloads (

@@ -153,26 +153,49 @@ def rewrite_artifact_references(
     db_path = staging / "source_index.sqlite"
     if rewrite_db and db_path.exists():
         with sqlite3.connect(db_path) as conn:
-            source_clause = " AND source=?" if source else ""
-            params: tuple[object, ...] = (old, new, f"%{old}%", source) if source else (old, new, f"%{old}%")
-            conn.execute(
-                f"UPDATE records SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?{source_clause}",
-                params,
-            )
-            try:
+            if source:
+                rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
+                record_ids = [str(row[0]) for row in rows]
+                for start in range(0, len(record_ids), 900):
+                    chunk = record_ids[start : start + 900]
+                    placeholders = ",".join("?" for _ in chunk)
+                    conn.execute(
+                        f"UPDATE records SET provenance_json = replace(provenance_json, ?, ?) WHERE record_id IN ({placeholders})",
+                        (old, new, *chunk),
+                    )
+                    try:
+                        conn.execute(
+                            f"UPDATE record_payloads SET provenance_json = replace(provenance_json, ?, ?) WHERE record_id IN ({placeholders})",
+                            (old, new, *chunk),
+                        )
+                    except sqlite3.OperationalError:
+                        pass
+                    try:
+                        conn.execute(
+                            f"UPDATE record_payloads SET payload_json = replace(payload_json, ?, ?) WHERE record_id IN ({placeholders})",
+                            (old, new, *chunk),
+                        )
+                    except sqlite3.OperationalError:
+                        pass
+            else:
                 conn.execute(
-                    f"UPDATE record_payloads SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?{source_clause}",
-                    params,
+                    "UPDATE records SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?",
+                    (old, new, f"%{old}%"),
                 )
-            except sqlite3.OperationalError:
-                pass
-            try:
-                conn.execute(
-                    f"UPDATE record_payloads SET payload_json = replace(payload_json, ?, ?) WHERE payload_json LIKE ?{source_clause}",
-                    params,
-                )
-            except sqlite3.OperationalError:
-                pass
+                try:
+                    conn.execute(
+                        "UPDATE record_payloads SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?",
+                        (old, new, f"%{old}%"),
+                    )
+                except sqlite3.OperationalError:
+                    pass
+                try:
+                    conn.execute(
+                        "UPDATE record_payloads SET payload_json = replace(payload_json, ?, ?) WHERE payload_json LIKE ?",
+                        (old, new, f"%{old}%"),
+                    )
+                except sqlite3.OperationalError:
+                    pass
     rewritten = replace_path_strings(result, old, new)
     if not isinstance(rewritten, dict):
         return result
