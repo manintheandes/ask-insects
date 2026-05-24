@@ -13,6 +13,7 @@ from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
 from askinsects.sources.literature import FullTextUnit
 from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
+from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from tests.test_inaturalist_source import observation
 
@@ -769,6 +770,65 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(payload_rows[0]["record_id"], "dryad:file:10_5061_dryad_example:host_seeking_videos_zip")
             provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select provenance_json from records where source='dryad_aedes_behavior_videos'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_pathogen_taxonomy_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, retrieved_at):
+                raw_path = raw_dir / "aedes_pathogen_taxonomy_esummary.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"result":{}}', encoding="utf-8")
+                return PathogenTaxonomyResult(
+                    source_id="aedes_pathogen_taxonomy",
+                    records=[
+                        EvidenceRecord(
+                            record_id="pathogen:ncbi_taxonomy:64320",
+                            lane="vector_competence",
+                            source="aedes_pathogen_taxonomy",
+                            title="Aedes aegypti pathogen taxonomy Zika virus",
+                            text="NCBI Taxonomy pathogen record for Zika virus.",
+                            species="Aedes aegypti",
+                            url="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=64320",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="aedes_pathogen_taxonomy",
+                                locator=f"{raw_path}#taxonomy/64320",
+                                retrieved_at=retrieved_at,
+                                license="NCBI Taxonomy public data; NCBI terms apply",
+                                source_url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+                            ),
+                            payload={"raw_summary": {"scientificname": "Zika virus"}},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_taxids=[64320],
+                    pathogen_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/pathogen-taxonomy",
+                {},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_pathogen_taxonomy_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_pathogen_taxonomy"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_pathogen_taxonomy'",
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])

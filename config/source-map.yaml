@@ -182,6 +182,18 @@ sources:
       - public_health
     provenance_required: true
     live_fetch: derived_from_indexed_literature
+  - id: aedes_pathogen_taxonomy
+    name: NCBI Taxonomy Aedes-relevant arbovirus pathogen anchors
+    source_type: public_api
+    boundary: NCBI Taxonomy records for dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus as pathogen identity anchors for Aedes aegypti vector-competence and public-health evidence
+    query_plane: ncbi_eutils_taxonomy_esummary_to_sqlite
+    api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+    artifact_dir: artifacts/mosquito-v1/raw/pathogen_taxonomy
+    ingest_script: scripts/ingest_pathogen_taxonomy.py
+    lanes:
+      - vector_competence
+    provenance_required: true
+    live_fetch: opt_in
   - id: aedes_public_health_guidance
     name: Official Aedes aegypti public-health guidance
     source_type: public_web_guidance

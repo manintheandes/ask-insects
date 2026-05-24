@@ -91,6 +91,8 @@ def _search_queries(question: str) -> list[str]:
         return ["Mosquito Alert Aedes aegypti", "Mosquito Alert", "citizen-science observation", question]
     if "dryad" in q:
         return ["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset", question]
+    if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
+        return ["NCBI Taxonomy pathogen", "pathogen taxonomy Aedes aegypti", question]
     if "coi-5p" in q or re.search(r"\bcoi\b", q):
         return ["COI-5P", "Marker COI", question]
     if "bold" in q and ("barcode" in q or "barcodes" in q):
@@ -297,8 +299,32 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
     return sorted(records, key=score)
 
 
+def _named_pathogen_terms(question: str) -> list[str]:
+    q = question.lower()
+    terms = []
+    for term in ("dengue", "zika", "chikungunya", "yellow fever", "west nile", "mayaro"):
+        if term in q:
+            terms.append(term)
+    return terms
+
+
 def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
+        pathogen_terms = _named_pathogen_terms(question)
+
+        def score_pathogen(record: EvidenceRecord) -> tuple[int, int, int]:
+            haystack = f"{record.title}\n{record.text}".lower()
+            return (
+                0 if record.source == "aedes_pathogen_taxonomy" else 1,
+                0 if record.lane == "vector_competence" else 1,
+                0 if pathogen_terms and any(term in haystack for term in pathogen_terms) else 1,
+            )
+
+        return sorted(
+            records,
+            key=score_pathogen,
+        )
     if "dryad" in q:
         return sorted(
             records,

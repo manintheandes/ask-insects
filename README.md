@@ -156,6 +156,18 @@ python3 -m askinsects ask "what vector control guidance exists for Aedes aegypti
 
 The lane writes raw official guidance HTML under `raw/public_health_guidance/`, normalizes one `public_health` record per guidance page from source `aedes_public_health_guidance`, stores page metadata in SQLite payloads, and preserves provenance to the saved HTML plus the official source URL. This is guidance coverage, not yet a full surveillance dashboard or outbreak time-series lane.
 
+## Pathogen Taxonomy Source Lane
+
+NCBI Taxonomy anchors core `Aedes aegypti` arbovirus names to stable pathogen identities for vector-competence and public-health questions:
+
+```bash
+python3 -m askinsects ingest-pathogen-taxonomy
+python3 -m askinsects ask "show Zika pathogen taxonomy for Aedes aegypti" --json
+python3 -m askinsects search vector_competence "dengue pathogen taxonomy"
+```
+
+The lane uses source id `aedes_pathogen_taxonomy`. It writes NCBI E-utilities taxonomy summary JSON under `raw/pathogen_taxonomy/`, normalizes one `vector_competence` record per configured pathogen, stores the raw taxonomy summary in SQLite payloads, and preserves provenance to the saved summary plus the NCBI request URL. This is a pathogen identity layer, not yet structured extraction of every vector-competence assay table.
+
 ## Aedes aegypti Neurobiology Source Lane
 
 The neurobiology lane can run as metadata-only, or from a downloaded raw-artifact cache:
@@ -236,6 +248,7 @@ python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrenc
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-public-health --hosted
+python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```

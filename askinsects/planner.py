@@ -17,7 +17,22 @@ def plan_question(question: str) -> QueryPlan:
         return QueryPlan(question, "media", ("media",), question)
     if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
-    if any(term in q for term in ("vector competence", "transmission competence", "infection rate", "dissemination rate", "transmission rate")):
+    if any(
+        term in q
+        for term in (
+            "vector competence",
+            "transmission competence",
+            "infection rate",
+            "dissemination rate",
+            "transmission rate",
+            "pathogen",
+            "pathogens",
+            "dengue",
+            "zika",
+            "chikungunya",
+            "yellow fever",
+        )
+    ):
         return QueryPlan(question, "vector_competence", ("vector_competence", "literature", "taxonomy"), question)
     if any(term in q for term in ("insecticide resistance", "pyrethroid resistance", "kdr", "knockdown resistance", "susceptibility", "bioassay", "resistance mutation")):
         return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)

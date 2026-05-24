@@ -232,7 +232,8 @@
       "status": "partial_source_grade",
       "target_state": "Pathogen, strain, mosquito population, infection, dissemination, transmission, dose, temperature, tissue, and experimental-condition records.",
       "current_sources": [
-        "aedes_literature_facets"
+        "aedes_literature_facets",
+        "aedes_pathogen_taxonomy"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -244,11 +245,12 @@
       "current_evidence": [
         "aedes_literature_facets creates vector_competence records from source-grade Aedes literature metadata and legal full-text units.",
         "Installed local and hosted artifacts contain 4,534 vector_competence records from aedes_literature_facets.",
-        "Vector competence questions route through the vector_competence lane and return provenance back to source literature records and full-text units where available."
+        "Vector competence questions route through the vector_competence lane and return provenance back to source literature records and full-text units where available.",
+        "aedes_pathogen_taxonomy anchors dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus identities to NCBI Taxonomy records for pathogen-specific Aedes aegypti questions."
       ],
       "required_next_sources": [
         "structured extraction from tables and supplements",
-        "pathogen taxonomy links for dengue, Zika, chikungunya, yellow fever, and other Aedes-relevant pathogens"
+        "pathogen-specific vector-competence assay extraction with mosquito population, strain, dose, temperature, tissue, dissemination, and transmission fields"
       ],
       "completion_evidence": [
         "Ask Insects can answer pathogen-specific competence questions with assay context and provenance"

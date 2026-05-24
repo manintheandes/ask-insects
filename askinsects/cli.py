@@ -153,6 +153,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_dryad_behavior_videos.add_argument("--hosted", action="store_true")
     ingest_dryad_behavior_videos.add_argument("--doi", action="append", default=[])
 
+    ingest_pathogen_taxonomy = sub.add_parser("ingest-pathogen-taxonomy")
+    ingest_pathogen_taxonomy.add_argument("--hosted", action="store_true")
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -359,6 +362,20 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/dryad-behavior-videos",
             {"dois": args.doi},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-pathogen-taxonomy":
+        if not args.hosted:
+            from scripts.ingest_pathogen_taxonomy import ingest_pathogen_taxonomy
+
+            payload = ingest_pathogen_taxonomy(artifact_dir=artifact_dir)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/pathogen-taxonomy",
+            {},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

@@ -131,6 +131,17 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what v
 
 This lane is source `aedes_literature_facets`. It does not replace dedicated behavior, resistance, vector-competence, ecology, or public-health databases. It creates an immediate source-backed query plane from the indexed Aedes literature while those deeper external lanes are built. The coverage ledger marks these domains as partial source-grade when the facet records are installed and ask-surface wired.
 
+## Pathogen And Vector Competence
+
+Pathogen identity records and vector-competence evidence for `Aedes aegypti`.
+
+Sources:
+
+- `aedes_literature_facets`: literature-derived vector-competence facets while deeper assay extraction is built.
+- `aedes_pathogen_taxonomy`: NCBI Taxonomy summary records for dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus as pathogen identity anchors.
+
+The pathogen taxonomy lane saves NCBI E-utilities taxonomy summary JSON under `raw/pathogen_taxonomy/`, indexes one `vector_competence` row per configured pathogen, preserves the raw taxonomy summary in `record_payloads`, and cites locators such as `raw/pathogen_taxonomy/aedes_pathogen_taxonomy_esummary.json#taxonomy/64320`. It is an identity layer, not a substitute for structured extraction of infection, dissemination, and transmission assay tables.
+
 ## Insecticide Resistance
 
 Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay protocol, geography, time, and reference records for `Aedes aegypti`.

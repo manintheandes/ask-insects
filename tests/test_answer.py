@@ -571,6 +571,73 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "dryad_aedes_behavior_videos")
 
+    def test_pathogen_questions_prefer_taxonomy_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="facet:vector:1",
+                        lane="vector_competence",
+                        source="aedes_literature_facets",
+                        title="Aedes aegypti vector competence Zika literature facet",
+                        text="Aedes aegypti vector competence literature facet mentions Zika virus.",
+                        species="Aedes aegypti",
+                        url="https://example.org/paper",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_facets",
+                            locator="literature#facet/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="pathogen:ncbi_taxonomy:59301",
+                        lane="vector_competence",
+                        source="aedes_pathogen_taxonomy",
+                        title="Aedes aegypti pathogen taxonomy Mayaro virus",
+                        text="NCBI Taxonomy pathogen record for Mayaro virus (taxid 59301).",
+                        species="Aedes aegypti",
+                        url="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=59301",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_pathogen_taxonomy",
+                            locator="raw/pathogen_taxonomy/esummary.json#taxonomy/59301",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="NCBI Taxonomy public data",
+                            source_url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="pathogen:ncbi_taxonomy:64320",
+                        lane="vector_competence",
+                        source="aedes_pathogen_taxonomy",
+                        title="Aedes aegypti pathogen taxonomy Zika virus",
+                        text="NCBI Taxonomy pathogen record for Zika virus (taxid 64320).",
+                        species="Aedes aegypti",
+                        url="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=64320",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_pathogen_taxonomy",
+                            locator="raw/pathogen_taxonomy/esummary.json#taxonomy/64320",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="NCBI Taxonomy public data",
+                            source_url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Zika pathogen taxonomy for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "vector_competence")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_pathogen_taxonomy")
+            self.assertEqual(answer["evidence"][0]["record_id"], "pathogen:ncbi_taxonomy:64320")
+
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

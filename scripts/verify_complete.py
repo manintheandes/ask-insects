@@ -70,6 +70,7 @@ REQUIRED_FILES = (
     "askinsects/sources/mosquito_alert.py",
     "askinsects/sources/dryad_behavior_videos.py",
     "askinsects/sources/public_health.py",
+    "askinsects/sources/pathogen_taxonomy.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -85,6 +86,7 @@ REQUIRED_FILES = (
     "scripts/ingest_mosquito_alert_observations.py",
     "scripts/ingest_dryad_behavior_videos.py",
     "scripts/ingest_public_health_guidance.py",
+    "scripts/ingest_pathogen_taxonomy.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -118,6 +120,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_dryad_behavior_videos.py",
     "tests/test_public_health_source.py",
     "tests/test_ingest_public_health_guidance.py",
+    "tests/test_pathogen_taxonomy_source.py",
+    "tests/test_ingest_pathogen_taxonomy.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -152,6 +156,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_dryad_behavior_videos",
     "tests.test_public_health_source",
     "tests.test_ingest_public_health_guidance",
+    "tests.test_pathogen_taxonomy_source",
+    "tests.test_ingest_pathogen_taxonomy",
 )
 
 
@@ -212,6 +218,7 @@ def check_literature_source_map() -> None:
         "pmc_open_access_videos",
         "irmapper_aedes",
         "dryad_aedes_behavior_videos",
+        "aedes_pathogen_taxonomy",
         "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
         "sqlite_payload_table: record_payloads",
         "sqlite_fulltext_table: literature_fulltext_units",
@@ -239,6 +246,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_public_health_guidance",
         "mosquito_alert_gbif",
         "dryad_aedes_behavior_videos",
+        "aedes_pathogen_taxonomy",
     )
     for term in required_terms:
         if term not in readme:
@@ -258,6 +266,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("dryad_aedes_behavior_videos", "scripts/ingest_dryad_behavior_videos.py", "behavior", "media"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Dryad behavior/video term: {term}")
+    for term in ("aedes_pathogen_taxonomy", "scripts/ingest_pathogen_taxonomy.py", "vector_competence"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing pathogen taxonomy term: {term}")
 
 
 def check_cli() -> None:
