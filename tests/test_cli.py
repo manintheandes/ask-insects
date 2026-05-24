@@ -20,24 +20,37 @@ class CliTests(unittest.TestCase):
         )
 
     def test_health_summary_sources_and_ask(self):
-        subprocess.run([sys.executable, "scripts/build_source_index.py", "--fixtures"], check=True)
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            subprocess.run(
+                [sys.executable, "scripts/build_source_index.py", "--fixtures", "--artifact-dir", artifact_dir],
+                check=True,
+            )
 
-        health = subprocess.check_output([sys.executable, "-m", "askinsects", "health"], text=True)
-        self.assertTrue(json.loads(health)["ok"])
+            health = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "health"], text=True)
+            self.assertTrue(json.loads(health)["ok"])
 
-        summary = subprocess.check_output([sys.executable, "-m", "askinsects", "summary"], text=True)
-        self.assertGreater(json.loads(summary)["record_count"], 0)
+            summary = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "summary"], text=True)
+            self.assertGreater(json.loads(summary)["record_count"], 0)
 
-        sources = subprocess.check_output([sys.executable, "-m", "askinsects", "sources"], text=True)
-        self.assertIn("mosquito_v1_fixtures", sources)
+            sources = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "sources"], text=True)
+            self.assertIn("mosquito_v1_fixtures", sources)
 
-        answer = subprocess.check_output(
-            [sys.executable, "-m", "askinsects", "ask", "what do we know about Aedes aegypti?", "--json"],
-            text=True,
-        )
-        payload = json.loads(answer)
-        self.assertTrue(payload["ok"])
-        self.assertTrue(payload["evidence"])
+            answer = subprocess.check_output(
+                [
+                    sys.executable,
+                    "-m",
+                    "askinsects",
+                    "--artifact-dir",
+                    artifact_dir,
+                    "ask",
+                    "what do we know about Aedes aegypti?",
+                    "--json",
+                ],
+                text=True,
+            )
+            payload = json.loads(answer)
+            self.assertTrue(payload["ok"])
+            self.assertTrue(payload["evidence"])
 
     def test_missing_index_commands_return_structured_errors(self):
         with tempfile.TemporaryDirectory() as artifact_dir:
@@ -59,28 +72,36 @@ class CliTests(unittest.TestCase):
                     self.assertIn("mosquito_v1", payload["source_gap"]["reason"])
 
     def test_invalid_write_sql_returns_structured_error(self):
-        subprocess.run([sys.executable, "scripts/build_source_index.py", "--fixtures"], check=True)
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            subprocess.run(
+                [sys.executable, "scripts/build_source_index.py", "--fixtures", "--artifact-dir", artifact_dir],
+                check=True,
+            )
 
-        result = self.run_cli("sql", "delete from records")
+            result = self.run_cli("--artifact-dir", artifact_dir, "sql", "delete from records")
 
-        self.assertEqual(result.returncode, 2)
-        self.assertEqual(result.stderr, "")
-        payload = json.loads(result.stdout)
-        self.assertFalse(payload["ok"])
-        self.assertIn("error", payload)
-        self.assertEqual(payload["source_gap"]["lane"], "sql")
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(result.stderr, "")
+            payload = json.loads(result.stdout)
+            self.assertFalse(payload["ok"])
+            self.assertIn("error", payload)
+            self.assertEqual(payload["source_gap"]["lane"], "sql")
 
     def test_search_papers_alias_returns_literature_rows(self):
-        subprocess.run([sys.executable, "scripts/build_source_index.py", "--fixtures"], check=True)
+        with tempfile.TemporaryDirectory() as artifact_dir:
+            subprocess.run(
+                [sys.executable, "scripts/build_source_index.py", "--fixtures", "--artifact-dir", artifact_dir],
+                check=True,
+            )
 
-        result = self.run_cli("search", "papers", "host seeking")
+            result = self.run_cli("--artifact-dir", artifact_dir, "search", "papers", "host seeking")
 
-        self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stderr, "")
-        payload = json.loads(result.stdout)
-        self.assertTrue(payload["ok"])
-        self.assertTrue(payload["rows"])
-        self.assertTrue(any(row["lane"] == "literature" for row in payload["rows"]))
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stderr, "")
+            payload = json.loads(result.stdout)
+            self.assertTrue(payload["ok"])
+            self.assertTrue(payload["rows"])
+            self.assertTrue(any(row["lane"] == "literature" for row in payload["rows"]))
 
     def test_sources_reads_indexed_sources_from_status_file(self):
         with tempfile.TemporaryDirectory() as artifact_dir:

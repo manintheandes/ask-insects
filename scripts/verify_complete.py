@@ -2,13 +2,17 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 import sqlite3
+import tempfile
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+VERIFY_ARTIFACT_DIR = Path(tempfile.mkdtemp(prefix="ask-insects-verify-")) / "mosquito-v1"
+VERIFY_ENV = {**os.environ, "ASK_INSECTS_ARTIFACT_DIR": VERIFY_ARTIFACT_DIR.as_posix()}
 
 REQUIRED_FILES = (
     "AGENTS.md",
@@ -108,7 +112,7 @@ def fail(message: str) -> int:
 
 
 def run_command(args: list[str], *, expected_returncode: int = 0) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(args, cwd=REPO_ROOT, capture_output=True, text=True)
+    result = subprocess.run(args, cwd=REPO_ROOT, env=VERIFY_ENV, capture_output=True, text=True)
     if result.returncode != expected_returncode:
         detail = result.stderr.strip() or result.stdout.strip()
         raise RuntimeError(f"{' '.join(args)} exited {result.returncode}: {detail}")
@@ -137,7 +141,15 @@ def check_unit_tests() -> None:
 
 
 def check_source_index_build() -> None:
-    payload = run_json([sys.executable, "scripts/build_source_index.py", "--fixtures"])
+    payload = run_json(
+        [
+            sys.executable,
+            "scripts/build_source_index.py",
+            "--fixtures",
+            "--artifact-dir",
+            VERIFY_ARTIFACT_DIR.as_posix(),
+        ]
+    )
     if not payload.get("ok"):
         raise RuntimeError("fixture index build did not report ok true")
     if int(payload.get("record_count", 0)) < 7:

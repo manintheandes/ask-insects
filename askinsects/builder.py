@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 import json
+import os
 from pathlib import Path
 from typing import Callable
 
@@ -19,7 +20,7 @@ from .sources.neurobiology import NEUROBIOLOGY_SOURCE_ID, fetch_neurobiology_rec
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_ARTIFACT_DIR = REPO_ROOT / "artifacts/mosquito-v1"
+DEFAULT_ARTIFACT_DIR = Path(os.environ.get("ASK_INSECTS_ARTIFACT_DIR", REPO_ROOT / "artifacts/mosquito-v1"))
 DEFAULT_FIXTURE_PATH = REPO_ROOT / "data/fixtures/mosquito_records.json"
 
 
