@@ -749,6 +749,77 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
     return sorted(records, key=score)
 
 
+def _like_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not any(
+        term in q
+        for term in (
+            "vectorbase",
+            "veupathdb",
+            "codon",
+            "codon usage",
+            "id event",
+            "identifier event",
+            "identifier history",
+            "linkout",
+            "ncbi linkout",
+            "aael",
+        )
+    ):
+        return []
+
+    records: list[EvidenceRecord] = []
+    seen_record_ids: set[str] = set()
+    clauses: list[tuple[str, tuple[object, ...]]] = []
+    if "codon" in q:
+        for codon in re.findall(r"\b[AUCGT]{3}\b", question.upper()):
+            clauses.append(("record_id = ?", (f"vectorbase:codon_usage:{codon.replace('T', 'U')}",)))
+    for aael_id in re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE):
+        clauses.append(
+            (
+                "record_id LIKE ? ESCAPE '\\'",
+                (f"vectorbase:id_event:{_like_escape(aael_id.upper())}:%",),
+            )
+        )
+    for linkout_id in re.findall(r"\bAaegL5_[0-9A-Za-z_.-]+\b", question, flags=re.IGNORECASE):
+        clauses.append(
+            (
+                "record_id LIKE ? ESCAPE '\\'",
+                (f"vectorbase:ncbi_linkout:%:{_like_escape(linkout_id)}:%",),
+            )
+        )
+    if not clauses:
+        return []
+
+    with index.connect() as conn:
+        for where_sql, params in clauses:
+            rows = conn.execute(
+                f"""
+                SELECT *
+                FROM records
+                WHERE source = 'vectorbase_aedes_genomics'
+                  AND lane = 'genome_features'
+                  AND {where_sql}
+                ORDER BY record_id
+                LIMIT ?
+                """,
+                (*params, limit),
+            ).fetchall()
+            for row in rows:
+                record = EvidenceRecord.from_row(dict(row))
+                if record.record_id in seen_record_ids:
+                    continue
+                records.append(record)
+                seen_record_ids.add(record.record_id)
+                if len(records) >= limit:
+                    return records
+    return records
+
+
 def _resistance_marker_terms(question: str) -> list[str]:
     lower = question.lower()
     matched = []
@@ -1189,6 +1260,11 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
         if _wants_video_discovery(plan.question) and _video_discovery_repository(plan.question) and not all_records:
             return source_gap(plan, "The Ask Insects video discovery lane has no matching records for that repository.")
+
+    if plan.answer_shape == "genomics":
+        for record in _vectorbase_auxiliary_records(index, plan.question, limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
 
     if not all_records:
         for lane in plan.lanes:

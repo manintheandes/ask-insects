@@ -1489,6 +1489,22 @@ class AnswerTests(unittest.TestCase):
                             license="VectorBase/VEuPathDB public download; source terms apply",
                         ),
                     ),
+                    EvidenceRecord(
+                        record_id="vectorbase:id_event:AAEL000355:none:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase ID event AAEL000355 deletion",
+                        text="VectorBase identifier event for Aedes aegypti old ID AAEL000355: deletion.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/id_events.tab",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab#line/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                        ),
+                    ),
                 ]
             )
 
@@ -1497,6 +1513,21 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:codon_usage:AUG")
+
+            answer = answer_question(
+                "show VectorBase AAEL000355 identifier event for Aedes aegypti",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:id_event:AAEL000355:none:1")
+
+            answer = answer_question("show VectorBase NCBI LinkOut for AaegL5_1", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:ncbi_linkout:Nucleotide:AaegL5_1:1")
 
     def test_coi_barcode_questions_prefer_coi_marker_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
