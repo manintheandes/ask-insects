@@ -36,6 +36,11 @@ from .sources.inaturalist import (
     write_raw_json as write_inaturalist_raw_json,
 )
 from .sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetch_irmapper_records
+from .sources.public_health import (
+    DEFAULT_PUBLIC_HEALTH_SOURCES,
+    PUBLIC_HEALTH_SOURCE_ID,
+    fetch_public_health_guidance_records,
+)
 
 
 @dataclass(frozen=True)
@@ -808,6 +813,117 @@ def ingest_irmapper(
     return response
 
 
+def write_public_health_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(source_payload["retrieved_at"])
+    sources = [source for source in counts if source != PUBLIC_HEALTH_SOURCE_ID]
+    if counts.get(PUBLIC_HEALTH_SOURCE_ID):
+        sources.append(PUBLIC_HEALTH_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else PUBLIC_HEALTH_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": True,
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[PUBLIC_HEALTH_SOURCE_ID] = source_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else PUBLIC_HEALTH_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            "public_health_guidance": source_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, "public_health_guidance": source_payload}
+
+
+def ingest_public_health(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
+) -> dict[str, object]:
+    source_urls = payload.get("source_urls")
+    if source_urls is None or source_urls == []:
+        guidance_sources = list(DEFAULT_PUBLIC_HEALTH_SOURCES)
+    elif isinstance(source_urls, list) and all(isinstance(item, str) for item in source_urls):
+        guidance_sources = [
+            {"organization": "custom", "url": url, "topic": "Aedes aegypti public health guidance"}
+            for url in source_urls
+        ]
+    else:
+        raise ValueError("source_urls must be a list of strings")
+
+    staging = artifact_dir.parent / f".{artifact_dir.name}.staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            shutil.copytree(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        index = SourceIndex(staging / "source_index.sqlite")
+        index.initialize()
+        index.delete_source(PUBLIC_HEALTH_SOURCE_ID)
+        retrieved_at = utc_now()
+        result = fetch_public_health_guidance_records_fn(
+            guidance_sources,
+            raw_dir=staging / "raw" / "public_health_guidance",
+            retrieved_at=retrieved_at,
+        )
+        index.upsert_records(result.records)
+        old_gaps = read_json(staging / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == PUBLIC_HEALTH_SOURCE_ID)]
+        gaps.extend(result.gaps)
+        source_payload = {
+            "requested_urls": result.requested_urls,
+            "raw_artifacts": result.raw_artifacts,
+            "record_count": len(result.records),
+            "gap_count": len(result.gaps),
+            "retrieved_at": retrieved_at,
+        }
+        response = write_public_health_metadata(staging, source_payload, gaps)
+        response = rewrite_artifact_references(staging, artifact_dir, response)
+        activate_staging_artifact(staging, artifact_dir)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -820,6 +936,7 @@ def dispatch_request(
     fetch_gbif_records_fn: Callable[..., object] = fetch_gbif_records,
     fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
+    fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -870,6 +987,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_irmapper_records_fn=fetch_irmapper_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/public-health":
+            result = ingest_public_health(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_public_health_guidance_records_fn=fetch_public_health_guidance_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

@@ -67,6 +67,7 @@ REQUIRED_FILES = (
     "askinsects/sources/neurobiology.py",
     "askinsects/sources/pmc_videos.py",
     "askinsects/sources/irmapper.py",
+    "askinsects/sources/public_health.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -79,6 +80,7 @@ REQUIRED_FILES = (
     "scripts/ingest_inaturalist_observations.py",
     "scripts/ingest_pmc_videos.py",
     "scripts/ingest_irmapper.py",
+    "scripts/ingest_public_health_guidance.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -106,6 +108,8 @@ REQUIRED_FILES = (
     "tests/test_pmc_video_source.py",
     "tests/test_ingest_irmapper.py",
     "tests/test_irmapper_source.py",
+    "tests/test_public_health_source.py",
+    "tests/test_ingest_public_health_guidance.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -134,6 +138,8 @@ UNIT_TEST_MODULES = (
     "tests.test_pmc_video_source",
     "tests.test_ingest_irmapper",
     "tests.test_irmapper_source",
+    "tests.test_public_health_source",
+    "tests.test_ingest_public_health_guidance",
 )
 
 
@@ -217,6 +223,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "config/mosquito-intelligence-coverage.json",
         "Aedes",
         "aedes_literature_facets",
+        "aedes_public_health_guidance",
     )
     for term in required_terms:
         if term not in readme:
@@ -227,6 +234,9 @@ def check_mosquito_intelligence_coverage() -> None:
         raise RuntimeError("config/source-map.yaml missing coverage ledger link")
     if "aedes_literature_facets" not in source_map:
         raise RuntimeError("config/source-map.yaml missing aedes_literature_facets")
+    for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing public-health guidance term: {term}")
 
 
 def check_cli() -> None:

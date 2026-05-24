@@ -165,6 +165,25 @@ def resistance_record(record_id, source):
     )
 
 
+def public_health_record(record_id, source, text):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="public_health",
+        source=source,
+        title=f"Aedes aegypti public health record from {source}",
+        text=text,
+        species="Aedes aegypti",
+        url="https://example.org/public-health",
+        media_url=None,
+        provenance=Provenance(
+            source_id=source,
+            locator=f"test#{record_id}",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="test",
+        ),
+    )
+
+
 class AnswerTests(unittest.TestCase):
     def test_planner_routes_identity_evidence_action_and_gap(self):
         self.assertEqual(plan_question("what do we know about Aedes aegypti?").answer_shape, "identity")
@@ -510,6 +529,32 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "resistance")
             self.assertEqual(answer["evidence"][0]["source"], "irmapper_aedes")
+
+    def test_guidance_questions_prefer_official_public_health_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "facet:public-health:1",
+                        "aedes_literature_facets",
+                        "Aedes aegypti dengue vector control literature facet.",
+                    ),
+                    public_health_record(
+                        "public_health:guidance:cdc",
+                        "aedes_public_health_guidance",
+                        "Official public-health guidance for Aedes aegypti vector control from CDC.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("what vector control guidance exists for Aedes aegypti?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_public_health_guidance")
 
     def test_neurobiology_questions_prefer_brain_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:

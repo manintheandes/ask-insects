@@ -145,3 +145,14 @@ Source-backed next steps for scientists, grounded in indexed observations and li
 GBIF V1 does not create action notes by itself. It strengthens the observation and taxonomy evidence that action answers can cite.
 
 iNaturalist V1 does not create action notes by itself. It strengthens photo-backed observation evidence that action answers can cite.
+
+## Operational Public Health
+
+Operational guidance, vector-control recommendations, disease-prevention pages, and community action messages connected to `Aedes aegypti`.
+
+Sources:
+
+- `aedes_literature_facets`: literature-derived public-health facets while deeper operational lanes are built.
+- `aedes_public_health_guidance`: official WHO, PAHO, and CDC guidance pages parsed into `public_health` records with raw HTML receipts and source URLs.
+
+The guidance lane is source-grade at the guidance-page grain: each page is mapped, fetched, raw-saved, indexed, payload-preserved, and queryable through public-health questions. It does not yet replace structured disease surveillance dashboards, outbreak line lists, or intervention outcome datasets.

@@ -11,6 +11,7 @@ from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
 from askinsects.sources.literature import FullTextUnit
+from askinsects.sources.public_health import PublicHealthGuidanceResult
 from tests.test_inaturalist_source import observation
 
 
@@ -499,6 +500,94 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_public_health_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(sources, *, raw_dir, retrieved_at):
+                raw_path = raw_dir / "cdc.html"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text("<html>Aedes aegypti dengue vector control guidance.</html>", encoding="utf-8")
+                return PublicHealthGuidanceResult(
+                    source_id="aedes_public_health_guidance",
+                    records=[
+                        EvidenceRecord(
+                            record_id="public_health:guidance:cdc",
+                            lane="public_health",
+                            source="aedes_public_health_guidance",
+                            title="CDC guidance",
+                            text="Official public-health guidance for Aedes aegypti dengue vector control.",
+                            species="Aedes aegypti",
+                            url="https://www.cdc.gov/example",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="aedes_public_health_guidance",
+                                locator=f"{raw_path}#page",
+                                retrieved_at=retrieved_at,
+                                license="Public health web guidance; source page terms apply",
+                                source_url="https://www.cdc.gov/example",
+                            ),
+                            payload={"organization": "CDC"},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_urls=["https://www.cdc.gov/example"],
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/public-health",
+                {"source_urls": ["https://www.cdc.gov/example"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_public_health_guidance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_public_health_guidance"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_public_health_guidance'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_public_health_empty_source_urls_uses_defaults(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            seen_source_count = []
+
+            def fake_fetch(sources, *, raw_dir, retrieved_at):
+                seen_source_count.append(len(sources))
+                return PublicHealthGuidanceResult(
+                    source_id="aedes_public_health_guidance",
+                    records=[],
+                    gaps=[],
+                    raw_artifacts=[],
+                    requested_urls=[str(source["url"]) for source in sources],
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/public-health",
+                {"source_urls": []},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_public_health_guidance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertGreater(seen_source_count[0], 1)
 
 
 if __name__ == "__main__":

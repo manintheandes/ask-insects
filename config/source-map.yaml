@@ -147,6 +147,17 @@ sources:
       - public_health
     provenance_required: true
     live_fetch: derived_from_indexed_literature
+  - id: aedes_public_health_guidance
+    name: Official Aedes aegypti public-health guidance
+    source_type: public_web_guidance
+    boundary: WHO, PAHO, and CDC public guidance pages relevant to Aedes aegypti operational vector control, arboviral disease prevention, surveillance, and community action
+    query_plane: official_guidance_html_to_sqlite_public_health_records
+    artifact_dir: artifacts/mosquito-v1/raw/public_health_guidance
+    ingest_script: scripts/ingest_public_health_guidance.py
+    lanes:
+      - public_health
+    provenance_required: true
+    live_fetch: opt_in
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects

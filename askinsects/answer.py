@@ -94,16 +94,30 @@ def _search_queries(question: str) -> list[str]:
     if any(
         term in q
         for term in (
+            "cdc",
+            "guidance",
             "insecticide resistance",
+            "paho",
+            "recommendation",
+            "recommendations",
             "pyrethroid resistance",
             "kdr",
             "knockdown resistance",
             "susceptibility",
             "bioassay",
             "resistance mutation",
+            "who",
         )
     ):
-        return ["IR Mapper Aedes insecticide resistance", "insecticide resistance", "resistance", question]
+        if any(term in q for term in ("insecticide resistance", "pyrethroid resistance", "kdr", "knockdown resistance", "susceptibility", "bioassay", "resistance mutation")):
+            return ["IR Mapper Aedes insecticide resistance", "insecticide resistance", "resistance", question]
+        if any(term in q for term in ("cdc", "guidance", "paho", "recommendation", "recommendations", "who")):
+            return [
+                "Official public-health guidance Aedes aegypti vector control",
+                "Aedes aegypti vector control guidance",
+                "vector control",
+                question,
+            ]
     if "catmaid" in q and ("skeleton" in q or "bulk" in q or "export" in q or "download" in q):
         return ["CATMAID Aedes skeleton export manifest", "skeleton manifest bulk download", "CATMAID skeleton IDs", question]
     if "catmaid" in q or "em dataset" in q or ("public" in q and "connectome" in q):
@@ -265,6 +279,20 @@ def _prioritize_resistance_records(records: list[EvidenceRecord]) -> list[Eviden
     return sorted(records, key=score)
 
 
+def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not any(term in q for term in ("cdc", "guidance", "paho", "recommendation", "recommendations", "who")):
+        return records
+
+    def score(record: EvidenceRecord) -> tuple[int, int]:
+        return (
+            0 if record.source == "aedes_public_health_guidance" else 1,
+            0 if record.lane == "public_health" else 1,
+        )
+
+    return sorted(records, key=score)
+
+
 def _index_ready(index: SourceIndex) -> bool:
     if not index.path.exists():
         return False
@@ -337,6 +365,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "resistance":
         all_records = _prioritize_resistance_records(all_records)
+
+    if plan.answer_shape == "public_health":
+        all_records = _prioritize_public_health_records(plan.question, all_records)
 
     if not all_records:
         return source_gap(plan, "No matching Ask Insects records were found in the checked lanes.")

@@ -316,7 +316,8 @@
       "status": "partial_source_grade",
       "target_state": "Surveillance, outbreak, intervention, vector-control, disease-transmission, and operational public-health records connected to Aedes aegypti.",
       "current_sources": [
-        "aedes_literature_facets"
+        "aedes_literature_facets",
+        "aedes_public_health_guidance"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -328,13 +329,14 @@
       "current_evidence": [
         "aedes_literature_facets creates public_health records from source-grade Aedes literature metadata and legal full-text units.",
         "Installed local and hosted artifacts contain 8,261 public_health records from aedes_literature_facets.",
+        "aedes_public_health_guidance maps official WHO, PAHO, and CDC guidance pages into public_health records with raw HTML receipts and source URLs.",
         "Public-health questions route through the public_health lane and return provenance back to source literature records and full-text units where available."
       ],
       "required_next_sources": [
         "WHO dengue surveillance publications and dashboard exports where legally accessible",
         "PAHO and national dengue or arbovirus reports where public",
         "CDC ArboNET public summaries and data portals where accessible",
-        "intervention and vector-control guidance records"
+        "structured intervention outcome and vector-control program datasets"
       ],
       "completion_evidence": [
         "Ask Insects can answer surveillance, outbreak, intervention, and operational-control questions with date, place, disease, source, and provenance"

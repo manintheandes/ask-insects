@@ -122,6 +122,17 @@ python3 -m askinsects sql "select country, count(*) from (select json_extract(pa
 
 The lane writes the raw IR Mapper Aedes JSON under `raw/irmapper/`, normalizes `Aedes aegypti` and abbreviated `Ae. aegypti` rows into `resistance` records from source `irmapper_aedes`, stores the raw row payload in SQLite, and records provenance to the saved JSON row. Other Aedes species in the endpoint are comparison material, not installed by default for this Aedes-first push.
 
+## Official Public-Health Guidance Source Lane
+
+WHO, PAHO, and CDC guidance pages are the first operational public-health guidance lane for `Aedes aegypti`:
+
+```bash
+python3 -m askinsects ingest-public-health
+python3 -m askinsects ask "what vector control guidance exists for Aedes aegypti?" --json
+```
+
+The lane writes raw official guidance HTML under `raw/public_health_guidance/`, normalizes one `public_health` record per guidance page from source `aedes_public_health_guidance`, stores page metadata in SQLite payloads, and preserves provenance to the saved HTML plus the official source URL. This is guidance coverage, not yet a full surveillance dashboard or outbreak time-series lane.
+
 ## Aedes aegypti Neurobiology Source Lane
 
 The neurobiology lane can run as metadata-only, or from a downloaded raw-artifact cache:
@@ -201,6 +212,7 @@ python3 -m askinsects health --hosted
 python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
+python3 -m askinsects ingest-public-health --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```
 

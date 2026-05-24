@@ -140,6 +140,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_irmapper.add_argument("--hosted", action="store_true")
     ingest_irmapper.add_argument("--species", default="Aedes aegypti")
 
+    ingest_public_health = sub.add_parser("ingest-public-health")
+    ingest_public_health.add_argument("--hosted", action="store_true")
+    ingest_public_health.add_argument("--source-url", action="append", default=[])
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -294,6 +298,20 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/irmapper",
             {"species": args.species},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-public-health":
+        if not args.hosted:
+            from scripts.ingest_public_health_guidance import ingest_public_health_guidance
+
+            payload = ingest_public_health_guidance(artifact_dir=artifact_dir, source_urls=args.source_url)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/public-health",
+            {"source_urls": args.source_url},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2
