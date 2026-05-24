@@ -79,11 +79,15 @@ class GBIFSourceTests(unittest.TestCase):
             self.assertEqual(occurrence.media_url, "https://example.org/aedes.jpg")
             self.assertIn("Brazil", occurrence.text)
             self.assertEqual(occurrence.provenance.source_url, "https://www.gbif.org/occurrence/444")
+            self.assertEqual(occurrence.payload["raw_occurrence"]["key"], 444)
+            self.assertEqual(taxonomy.payload["raw_match"]["usageKey"], 1651891)
 
             raw_files = sorted(path.name for path in (Path(tmpdir) / "raw" / "gbif").glob("*.json"))
-            self.assertEqual(raw_files, ["Aedes_aegypti_match.json", "Aedes_aegypti_occurrences.json"])
+            self.assertEqual(raw_files, ["Aedes_aegypti_match.json", "Aedes_aegypti_occurrences_offset_000000.json"])
             raw_payload = json.loads((Path(tmpdir) / "raw" / "gbif" / "Aedes_aegypti_match.json").read_text())
             self.assertEqual(raw_payload["usageKey"], 1651891)
+            self.assertEqual(result.total_results["Aedes aegypti"], 1)
+            self.assertEqual(result.page_count, 1)
 
     def test_fetch_gbif_records_records_gap_when_species_does_not_match(self):
         def no_match_fetcher(url):
@@ -101,6 +105,34 @@ class GBIFSourceTests(unittest.TestCase):
             self.assertEqual(result.records, [])
             self.assertEqual(result.gaps[0]["species"], "Imaginary mosquito")
             self.assertEqual(result.gaps[0]["lane"], "taxonomy")
+
+    def test_fetch_gbif_records_paginates_occurrences(self):
+        def paged_fetcher(url):
+            if "/v1/species/match" in url:
+                return {"usageKey": 1651891, "canonicalName": "Aedes aegypti"}
+            if "offset=0" in url:
+                return {"count": 3, "endOfRecords": False, "results": [{"key": 1}, {"key": 2}]}
+            if "offset=2" in url:
+                return {"count": 3, "endOfRecords": True, "results": [{"key": 3}]}
+            raise AssertionError(f"unexpected URL: {url}")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_gbif_records(
+                ["Aedes aegypti"],
+                raw_dir=Path(tmpdir),
+                occurrence_limit=3,
+                occurrence_page_size=2,
+                fetch_json=paged_fetcher,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            self.assertEqual([record.record_id for record in result.records if record.lane == "observations"], [
+                "gbif:occurrence:1",
+                "gbif:occurrence:2",
+                "gbif:occurrence:3",
+            ])
+            self.assertEqual(result.page_count, 2)
+            self.assertEqual(result.total_results["Aedes aegypti"], 3)
 
 
 if __name__ == "__main__":

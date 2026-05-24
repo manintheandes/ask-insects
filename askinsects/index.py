@@ -94,6 +94,10 @@ def ensure_read_only_sql(sql: str) -> str:
     return statement
 
 
+def _chunks(values: list[str], size: int = 500) -> list[list[str]]:
+    return [values[index : index + size] for index in range(0, len(values), size)]
+
+
 class SourceIndex:
     def __init__(self, path: Path):
         self.path = Path(path)
@@ -117,6 +121,8 @@ class SourceIndex:
             conn.executescript(SCHEMA)
 
     def upsert_records(self, records: list[EvidenceRecord]) -> None:
+        if not records:
+            return
         with self.connect() as conn:
             self._upsert_records(conn, records)
 
@@ -130,9 +136,10 @@ class SourceIndex:
             self._upsert_fulltext_units(conn, units)
 
     def _upsert_records(self, conn: sqlite3.Connection, records: list[EvidenceRecord]) -> None:
-        for record in records:
-            row = record.to_row()
-            conn.execute(
+        if not records:
+            return
+        rows = [record.to_row() for record in records]
+        conn.executemany(
                 """
                 INSERT INTO records (
                   record_id, lane, source, title, text, species, url, media_url, provenance_json
@@ -147,45 +154,57 @@ class SourceIndex:
                   media_url=excluded.media_url,
                   provenance_json=excluded.provenance_json
                 """,
-                (
-                    row["record_id"],
-                    row["lane"],
-                    row["source"],
-                    row["title"],
-                    row["text"],
-                    row["species"],
-                    row["url"],
-                    row["media_url"],
-                    row["provenance_json"],
-                ),
-            )
-            conn.execute("DELETE FROM records_fts WHERE record_id=?", (record.record_id,))
-            conn.execute(
-                "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
-                (record.record_id, record.lane, record.species, record.title, record.text),
-            )
-            if record.payload is None:
-                conn.execute("DELETE FROM record_payloads WHERE record_id=?", (record.record_id,))
-            else:
-                conn.execute(
-                    """
-                    INSERT INTO record_payloads (
-                      record_id, source, lane, payload_json, provenance_json
-                    ) VALUES (?, ?, ?, ?, ?)
-                    ON CONFLICT(record_id) DO UPDATE SET
-                      source=excluded.source,
-                      lane=excluded.lane,
-                      payload_json=excluded.payload_json,
-                      provenance_json=excluded.provenance_json
-                    """,
+                [
                     (
-                        record.record_id,
-                        record.source,
-                        record.lane,
-                        json.dumps(record.payload, sort_keys=True),
+                        row["record_id"],
+                        row["lane"],
+                        row["source"],
+                        row["title"],
+                        row["text"],
+                        row["species"],
+                        row["url"],
+                        row["media_url"],
                         row["provenance_json"],
-                    ),
+                    )
+                    for row in rows
+                ],
+        )
+        record_ids = [record.record_id for record in records]
+        for chunk in _chunks(record_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+        conn.executemany(
+            "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
+            [(record.record_id, record.lane, record.species, record.title, record.text) for record in records],
+        )
+
+        empty_payload_record_ids = [record.record_id for record in records if record.payload is None]
+        for chunk in _chunks(empty_payload_record_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
+        conn.executemany(
+            """
+            INSERT INTO record_payloads (
+              record_id, source, lane, payload_json, provenance_json
+            ) VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(record_id) DO UPDATE SET
+              source=excluded.source,
+              lane=excluded.lane,
+              payload_json=excluded.payload_json,
+              provenance_json=excluded.provenance_json
+            """,
+            [
+                (
+                    record.record_id,
+                    record.source,
+                    record.lane,
+                    json.dumps(record.payload, sort_keys=True),
+                    row["provenance_json"],
                 )
+                for record, row in zip(records, rows, strict=True)
+                if record.payload is not None
+            ],
+        )
 
     def _upsert_fulltext_units(self, conn: sqlite3.Connection, units: list[FullTextUnit]) -> None:
         affected_record_ids = sorted({unit.record_id for unit in units})
@@ -223,6 +242,18 @@ class SourceIndex:
                 "INSERT INTO literature_fulltext_fts(unit_id, record_id, text) VALUES (?, ?, ?)",
                 (unit.unit_id, unit.record_id, unit.text),
             )
+
+    def delete_source(self, source: str) -> None:
+        with self.connect() as conn:
+            rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
+            record_ids = [row["record_id"] for row in rows]
+            for chunk in _chunks(record_ids):
+                placeholders = ",".join("?" for _ in chunk)
+                conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+                conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
+                conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
+            conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))
+            conn.execute("DELETE FROM records WHERE source=?", (source,))
 
     def search(self, query: str, lane: str | None = None, limit: int = 10) -> list[EvidenceRecord]:
         terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]

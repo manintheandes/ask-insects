@@ -7,6 +7,7 @@ from askinsects.builder import build_fixture_index, build_source_index
 from askinsects.index import SourceIndex
 from askinsects.planner import plan_question
 from askinsects.records import EvidenceRecord, Provenance
+from tests.test_ncbi_genome_source import write_fake_ncbi_package
 
 
 def fake_inaturalist_fetcher(url):
@@ -321,6 +322,28 @@ class AnswerTests(unittest.TestCase):
 
             self.assertFalse(answer["ok"])
             self.assertEqual(answer["source_gap"]["lane"], "media")
+
+    def test_genomics_questions_prefer_genome_evidence(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            artifact_dir = tmp_path / "mosquito-v1"
+            package_dir = write_fake_ncbi_package(tmp_path)
+            build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_ncbi_genome=True,
+                artifact_dir=artifact_dir,
+                genome_package_dir=package_dir,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            answer = answer_question("show odorant receptor genes in Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "ncbi_datasets_genome")
+            self.assertIn(answer["evidence"][0]["lane"], {"genes", "transcripts", "genome_features", "proteins"})
 
 
 if __name__ == "__main__":

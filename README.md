@@ -23,7 +23,7 @@ python3 scripts/verify_complete.py
 
 ## GBIF Source Lane
 
-GBIF is the first live public source lane. It is opt-in and bounded:
+GBIF is the biodiversity occurrence source lane. Local pulls are opt-in and bounded:
 
 ```bash
 python3 scripts/build_source_index.py --fixtures --gbif --species "Aedes aegypti" --occurrence-limit 3
@@ -32,6 +32,14 @@ python3 -m askinsects search observations "Aedes"
 ```
 
 This writes raw GBIF API responses under `artifacts/mosquito-v1/raw/gbif/`, normalizes taxonomy and occurrence records into the SQLite index, and records source receipts. Unit tests use fake GBIF responses so the completion gate stays deterministic.
+
+Hosted Ask Insects can deep-refresh GBIF for one species without rebuilding or deleting the existing iNaturalist lane:
+
+```bash
+python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
+```
+
+The hosted ingest paginates GBIF occurrence search with a small worker pool, stores raw page JSON under `/home/josh/ask-insects/artifacts/mosquito-v1/raw/gbif/`, stores raw GBIF match and occurrence payloads in SQLite `record_payloads`, refreshes only `gbif_api` rows, and keeps the active server database available until the staged refresh is ready.
 
 ## iNaturalist Source Lane
 
@@ -58,6 +66,19 @@ SQLite keeps these layers:
 - `records`: normalized Ask Insects evidence rows for answers, search, and provenance.
 - `record_payloads`: raw per-record source payloads, keyed by `record_id`, for deeper source inspection.
 - `literature_fulltext_units`: legal open full-text chunks for literature records when Unpaywall exposes a direct open text or PDF URL that Ask Insects can parse.
+
+## NCBI Genomics Source Lane
+
+NCBI Datasets is the first genomics lane. V1 parses an unpacked `Aedes aegypti` genome package for assembly `GCF_002204515.2`:
+
+```bash
+python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
+python3 -m askinsects search proteins "odorant receptor"
+python3 -m askinsects search proteins "gustatory receptor"
+python3 -m askinsects ask "show odorant receptor genes in Aedes aegypti"
+```
+
+This stores the package files as raw artifacts and indexes useful atoms into SQLite: genome assembly rows, GFF genes, transcripts, other genome features, and protein FASTA headers. It does not index every DNA base as an answer row.
 
 ## Aedes aegypti Literature Lane
 
@@ -87,6 +108,18 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 \
 OpenAlex is the canonical discovery source. A paper is in-boundary when `Aedes aegypti` is material in the title, abstract, or accepted OpenAlex topic metadata. PubMed is used only as a cross-check enrichment source, and Unpaywall is used only as a legal open full-text resolver. Ask Insects does not use Sci-Hub, private cookies, or institutional scraping.
 
 The lane writes `source_index.sqlite`, `source_status.json`, `source_receipt.json`, `literature_enrichment_receipt.json`, `gaps.json`, and raw OpenAlex cursor artifacts under `artifacts/aedes-literature-2020/`. PubMed and Unpaywall enrichment payloads are stored per record in `record_payloads`. Structured gaps record missing DOI, missing PMID, missing abstract, rejected topic candidates, unavailable full text, landing-page-only full text, fetch failures, and parse failures.
+
+## Hosted Ask Insects
+
+Hosted V1 follows the Ask Monarch VM pattern. The parsed SQLite index and raw source artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`.
+
+```bash
+python3 -m askinsects configure --url http://<vm-ip>:8080 --token "$ASK_INSECTS_TOKEN"
+python3 -m askinsects health --hosted
+python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
+python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
+python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
+```
 
 ## Contract
 

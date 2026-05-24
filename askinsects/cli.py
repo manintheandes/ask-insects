@@ -7,6 +7,8 @@ import sqlite3
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
+from .hosted import CONFIG_PATH as HOSTED_CONFIG_PATH
+from .hosted import HostedConfig, hosted_request, load_config, save_config
 from .index import SourceIndex
 
 
@@ -68,40 +70,84 @@ def indexed_sources(artifact_dir: Path) -> list[str]:
     return ["mosquito_v1_fixtures"]
 
 
+def emit_hosted(method: str, path: str, payload: dict[str, object] | None = None, *, timeout: int = 120) -> dict[str, object]:
+    result = hosted_request(load_config(), method, path, payload, timeout=timeout)
+    emit(result)
+    return result
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ask-insects")
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("health")
-    sub.add_parser("summary")
-    sub.add_parser("sources")
+    configure = sub.add_parser("configure")
+    configure.add_argument("--url", required=True)
+    configure.add_argument("--token", required=True)
+
+    health = sub.add_parser("health")
+    health.add_argument("--hosted", action="store_true")
+
+    summary = sub.add_parser("summary")
+    summary.add_argument("--hosted", action="store_true")
+
+    sources = sub.add_parser("sources")
+    sources.add_argument("--hosted", action="store_true")
 
     ask = sub.add_parser("ask")
     ask.add_argument("question")
     ask.add_argument("--limit", type=int, default=5)
     ask.add_argument("--json", action="store_true")
+    ask.add_argument("--hosted", action="store_true")
 
     search = sub.add_parser("search")
     search.add_argument("lane")
     search.add_argument("query")
     search.add_argument("--limit", type=int, default=10)
+    search.add_argument("--hosted", action="store_true")
 
     sql = sub.add_parser("sql")
     sql.add_argument("sql")
     sql.add_argument("--limit", type=int, default=100)
+    sql.add_argument("--hosted", action="store_true")
+
+    ingest_inaturalist = sub.add_parser("ingest-inaturalist")
+    ingest_inaturalist.add_argument("--hosted", action="store_true")
+    ingest_inaturalist.add_argument("--species", action="append", default=[])
+    ingest_inaturalist.add_argument("--place")
+    ingest_inaturalist.add_argument("--observation-limit", type=int, default=10)
+    ingest_inaturalist.add_argument("--page-size", type=int, default=200)
+    ingest_inaturalist.add_argument("--delay-seconds", type=float, default=0.0)
+
+    ingest_gbif = sub.add_parser("ingest-gbif")
+    ingest_gbif.add_argument("--hosted", action="store_true")
+    ingest_gbif.add_argument("--species", action="append", default=[])
+    ingest_gbif.add_argument("--occurrence-limit", type=int, default=3)
+    ingest_gbif.add_argument("--occurrence-page-size", type=int, default=300)
+    ingest_gbif.add_argument("--occurrence-workers", type=int, default=1)
+    ingest_gbif.add_argument("--delay-seconds", type=float, default=0.0)
 
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     db_path = artifact_dir / "source_index.sqlite"
 
+    if args.command == "configure":
+        save_config(HostedConfig(url=args.url, token=args.token), path=HOSTED_CONFIG_PATH)
+        emit({"ok": True, "config_path": HOSTED_CONFIG_PATH.as_posix(), "url": args.url})
+        return 0
     if args.command == "health":
+        if args.hosted:
+            payload = emit_hosted("GET", "/health")
+            return 0 if payload.get("ok") else 2
         db_exists = db_path.exists()
         status_exists = (artifact_dir / "source_status.json").exists()
         emit({"ok": db_exists and status_exists, "db_exists": db_exists, "status_exists": status_exists})
         return 0
     if args.command == "summary":
+        if args.hosted:
+            payload = emit_hosted("GET", "/summary")
+            return 0 if payload.get("ok", True) is not False else 2
         if not db_path.exists():
             emit(cli_error("missing mosquito_v1 source index", lane="mosquito_v1", artifact_dir=artifact_dir))
             return 2
@@ -112,22 +158,37 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         return 0
     if args.command == "sources":
+        if args.hosted:
+            payload = emit_hosted("GET", "/sources")
+            return 0 if payload.get("ok", True) is not False else 2
         emit({"sources": indexed_sources(artifact_dir), "artifact_dir": artifact_dir.as_posix()})
         return 0
     if args.command == "ask":
-        try:
-            payload = answer_question(args.question, artifact_dir=artifact_dir, limit=args.limit)
-        except sqlite3.Error as exc:
-            payload = cli_error(str(exc), lane="mosquito_v1", artifact_dir=artifact_dir)
-        gap = payload.get("source_gap") or {}
-        if not payload.get("ok") and isinstance(gap, dict) and "index has not been built" in str(gap.get("reason")):
-            payload = cli_error("missing mosquito_v1 source index", lane=str(gap.get("lane", "mosquito_v1")), artifact_dir=artifact_dir)
+        if args.hosted:
+            payload = hosted_request(load_config(), "POST", "/ask", {"question": args.question, "limit": args.limit})
+        else:
+            try:
+                payload = answer_question(args.question, artifact_dir=artifact_dir, limit=args.limit)
+            except sqlite3.Error as exc:
+                payload = cli_error(str(exc), lane="mosquito_v1", artifact_dir=artifact_dir)
+            gap = payload.get("source_gap") or {}
+            if not payload.get("ok") and isinstance(gap, dict) and "index has not been built" in str(gap.get("reason")):
+                payload = cli_error(
+                    "missing mosquito_v1 source index",
+                    lane=str(gap.get("lane", "mosquito_v1")),
+                    artifact_dir=artifact_dir,
+                )
         if args.json:
+            emit(payload)
+        elif args.hosted and "answer" not in payload:
             emit(payload)
         else:
             print(render_answer(payload))
         return 0 if payload.get("ok") else 2
     if args.command == "search":
+        if args.hosted:
+            payload = emit_hosted("POST", "/search", {"lane": normalize_search_lane(args.lane), "query": args.query, "limit": args.limit})
+            return 0 if payload.get("ok") else 2
         if not db_path.exists():
             emit(cli_error("missing mosquito_v1 source index", lane=args.lane, artifact_dir=artifact_dir))
             return 2
@@ -140,6 +201,9 @@ def main(argv: list[str] | None = None) -> int:
         emit({"ok": True, "rows": rows})
         return 0
     if args.command == "sql":
+        if args.hosted:
+            payload = emit_hosted("POST", "/sql", {"sql": args.sql, "limit": args.limit})
+            return 0 if payload.get("ok") else 2
         if not db_path.exists():
             emit(cli_error("missing mosquito_v1 source index", lane="sql", artifact_dir=artifact_dir))
             return 2
@@ -149,5 +213,39 @@ def main(argv: list[str] | None = None) -> int:
             emit(cli_error(str(exc), lane="sql", artifact_dir=artifact_dir))
             return 2
         return 0
+    if args.command == "ingest-inaturalist":
+        if not args.hosted:
+            emit({"ok": False, "error": "ingest-inaturalist currently requires --hosted; use scripts/build_source_index.py for local ingest"})
+            return 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/inaturalist",
+            {
+                "species": args.species or ["Aedes aegypti"],
+                "place": args.place,
+                "observation_limit": args.observation_limit,
+                "page_size": args.page_size,
+                "delay_seconds": args.delay_seconds,
+            },
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-gbif":
+        if not args.hosted:
+            emit({"ok": False, "error": "ingest-gbif currently requires --hosted; use scripts/build_source_index.py for local ingest"})
+            return 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/gbif",
+            {
+                "species": args.species or ["Aedes aegypti"],
+                "occurrence_limit": args.occurrence_limit,
+                "occurrence_page_size": args.occurrence_page_size,
+                "occurrence_workers": args.occurrence_workers,
+                "delay_seconds": args.delay_seconds,
+            },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
     parser.error("unknown command")
     return 1

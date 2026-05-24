@@ -201,6 +201,25 @@ class CliTests(unittest.TestCase):
 
         self.assertIsNone(args.literature_to_date)
 
+    def test_build_script_accepts_ncbi_genome_flags(self):
+        parser = create_parser()
+
+        args = parser.parse_args(
+            [
+                "--fixtures",
+                "--ncbi-genome",
+                "--genome-package-dir",
+                "/tmp/aedes-ncbi-package",
+                "--genome-assembly-accession",
+                "GCF_002204515.2",
+            ]
+        )
+
+        self.assertTrue(args.fixtures)
+        self.assertTrue(args.ncbi_genome)
+        self.assertEqual(args.genome_package_dir, "/tmp/aedes-ncbi-package")
+        self.assertEqual(args.genome_assembly_accession, "GCF_002204515.2")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -10,6 +10,11 @@ from .sources.fixtures import FIXTURE_RETRIEVED_AT, FIXTURE_SOURCE_ID, load_fixt
 from .sources.gbif import DEFAULT_GBIF_SPECIES, GBIF_SOURCE_ID, fetch_gbif_records
 from .sources.inaturalist import DEFAULT_INATURALIST_SPECIES, INATURALIST_SOURCE_ID, fetch_inaturalist_records
 from .sources.literature import LITERATURE_SOURCE_ID, fetch_literature_records
+from .sources.ncbi_genome import (
+    DEFAULT_ASSEMBLY_ACCESSION,
+    NCBI_GENOME_SOURCE_ID,
+    fetch_ncbi_genome_records,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +39,7 @@ def build_fixture_index(
         include_fixtures=True,
         include_gbif=False,
         include_inaturalist=False,
+        include_ncbi_genome=False,
         fixture_path=fixture_path,
         artifact_dir=artifact_dir,
     )
@@ -45,10 +51,14 @@ def build_source_index(
     include_gbif: bool,
     include_inaturalist: bool = False,
     include_literature: bool = False,
+    include_ncbi_genome: bool = False,
     fixture_path: Path = DEFAULT_FIXTURE_PATH,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     gbif_species: list[str] | tuple[str, ...] | None = None,
     occurrence_limit: int = 3,
+    occurrence_page_size: int = 300,
+    occurrence_workers: int = 1,
+    gbif_delay_seconds: float = 0.0,
     gbif_fetch_json: Callable[[str], dict[str, object]] | None = None,
     inaturalist_species: list[str] | tuple[str, ...] | None = None,
     inaturalist_place: str | None = None,
@@ -69,9 +79,11 @@ def build_source_index(
     skip_pubmed: bool = False,
     literature_fetch_json: Callable[[str], dict[str, object]] | None = None,
     literature_fetch_text: Callable[[str], str] | None = None,
+    genome_package_dir: Path | None = None,
+    genome_assembly_accession: str = DEFAULT_ASSEMBLY_ACCESSION,
     retrieved_at: str | None = None,
 ) -> dict[str, object]:
-    if not include_fixtures and not include_gbif and not include_inaturalist and not include_literature:
+    if not include_fixtures and not include_gbif and not include_inaturalist and not include_literature and not include_ncbi_genome:
         raise ValueError("at least one source must be selected")
     has_live_source = include_gbif or include_inaturalist or include_literature
     generated_at = retrieved_at or (utc_now() if has_live_source else FIXTURE_RETRIEVED_AT)
@@ -105,6 +117,9 @@ def build_source_index(
             gbif_species or DEFAULT_GBIF_SPECIES,
             raw_dir=artifact_dir / "raw" / "gbif",
             occurrence_limit=occurrence_limit,
+            occurrence_page_size=occurrence_page_size,
+            occurrence_workers=occurrence_workers,
+            delay_seconds=gbif_delay_seconds,
             fetch_json=gbif_fetch_json,
             retrieved_at=generated_at,
         )
@@ -115,6 +130,10 @@ def build_source_index(
         gbif_payload = {
             "requested_species": gbif_result.requested_species,
             "occurrence_limit": gbif_result.occurrence_limit,
+            "occurrence_page_size": gbif_result.occurrence_page_size,
+            "occurrence_workers": gbif_result.occurrence_workers,
+            "total_results": gbif_result.total_results,
+            "page_count": gbif_result.page_count,
             "taxon_keys": gbif_result.taxon_keys,
             "raw_artifacts": gbif_result.raw_artifacts,
             "record_count": len(gbif_result.records),
@@ -152,6 +171,7 @@ def build_source_index(
         receipt_sources[INATURALIST_SOURCE_ID] = inaturalist_payload
 
     literature_payload: dict[str, object] | None = None
+    literature_result = None
     if include_literature:
         literature_result = fetch_literature_records(
             species=literature_species,
@@ -197,13 +217,41 @@ def build_source_index(
         }
         receipt_sources[LITERATURE_SOURCE_ID] = literature_payload
 
+    ncbi_genome_payload: dict[str, object] | None = None
+    if include_ncbi_genome:
+        if genome_package_dir is None:
+            raise ValueError("genome_package_dir is required when include_ncbi_genome is true")
+        ncbi_genome_result = fetch_ncbi_genome_records(
+            package_dir=genome_package_dir,
+            assembly_accession=genome_assembly_accession,
+            retrieved_at=retrieved_at,
+        )
+        records.extend(ncbi_genome_result.records)
+        sources.append(NCBI_GENOME_SOURCE_ID)
+        source_counts[NCBI_GENOME_SOURCE_ID] = len(ncbi_genome_result.records)
+        gaps.extend(ncbi_genome_result.gaps)
+        ncbi_genome_payload = {
+            "package_dir": ncbi_genome_result.package_dir,
+            "assembly_accession": ncbi_genome_result.assembly_accession,
+            "raw_artifacts": ncbi_genome_result.raw_artifacts,
+            "record_count": len(ncbi_genome_result.records),
+            "gap_count": len(ncbi_genome_result.gaps),
+        }
+        receipt_sources[NCBI_GENOME_SOURCE_ID] = ncbi_genome_payload
+
     index = SourceIndex(db_path)
     index.initialize()
-    if include_literature:
+    if include_literature and literature_result is not None:
         index.upsert_records_and_fulltext_units(records, literature_result.fulltext_units)
     else:
         index.upsert_records(records)
     summary = index.summary()
+    source_counts = {
+        str(row["source"]): int(row["n"])
+        for row in index.sql("select source, count(*) as n from records group by source", limit=1000)
+    }
+    if ncbi_genome_payload is not None:
+        ncbi_genome_payload["record_count"] = source_counts.get(NCBI_GENOME_SOURCE_ID, 0)
 
     status = {
         "ok": True,
@@ -233,6 +281,8 @@ def build_source_index(
         receipt["inaturalist"] = inaturalist_payload
     if literature_payload is not None:
         receipt["literature"] = literature_payload
+    if ncbi_genome_payload is not None:
+        receipt["ncbi_genome"] = ncbi_genome_payload
 
     write_json(gaps_path, gaps)
     write_json(artifact_dir / "source_status.json", status)
@@ -244,4 +294,6 @@ def build_source_index(
         result["inaturalist"] = inaturalist_payload
     if literature_payload is not None:
         result["literature"] = literature_payload
+    if ncbi_genome_payload is not None:
+        result["ncbi_genome"] = ncbi_genome_payload
     return result

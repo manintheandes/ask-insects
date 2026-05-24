@@ -21,7 +21,7 @@ sources:
   - id: gbif_api
     name: Global Biodiversity Information Facility API
     source_type: public_api
-    boundary: bounded mosquito taxonomy and occurrence pulls
+    boundary: Aedes aegypti taxonomy and occurrence pulls, including deep hosted refreshes
     query_plane: gbif_species_match_and_occurrence_search
     api_base: https://api.gbif.org
     artifact_dir: artifacts/mosquito-v1/raw/gbif
@@ -29,7 +29,7 @@ sources:
       - taxonomy
       - observations
     provenance_required: true
-    live_fetch: opt_in
+    live_fetch: opt_in_hosted
   - id: inaturalist_api
     name: iNaturalist public observations API
     source_type: public_api
@@ -63,3 +63,25 @@ sources:
     enrichment_sources:
       - pubmed_eutilities
       - unpaywall_api
+  - id: ncbi_datasets_genome
+    name: NCBI Datasets Aedes aegypti genome package
+    source_type: local_or_hosted_dataset_package
+    boundary: Aedes aegypti assembly GCF_002204515.2 assembly metadata, GFF features, and protein FASTA headers
+    query_plane: sqlite_atomic_index
+    package_layout: ncbi_dataset/data
+    artifact_dir: artifacts/mosquito-v1/raw/ncbi_genome
+    assembly_accession: GCF_002204515.2
+    lanes:
+      - genome_assemblies
+      - genome_features
+      - genes
+      - transcripts
+      - proteins
+    provenance_required: true
+    live_fetch: package_path_required
+hosted:
+  provider: google_compute_engine
+  vm_name: ask-insects
+  remote_root: /home/josh/ask-insects
+  artifact_dir: /home/josh/ask-insects/artifacts/mosquito-v1
+  sqlite_index: /home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite

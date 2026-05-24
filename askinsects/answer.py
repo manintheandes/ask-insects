@@ -75,15 +75,31 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
         return f"From the Ask Insects literature index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "media":
         return f"I found {len(records)} indexed Ask Insects media record(s)."
+    if plan.answer_shape == "genomics":
+        return f"From the local mosquito genomics index, {records[0].title}: {records[0].text}"
     return f"I found {len(records)} indexed Ask Insects record(s)."
 
 
 def _search_queries(question: str) -> list[str]:
     queries = [question]
     species = _requested_species(question)
-    if species:
+    q = question.lower()
+    added_domain_phrase = False
+    for phrase in (
+        "odorant receptor",
+        "gustatory receptor",
+        "ionotropic receptor",
+        "cytochrome p450",
+        "sodium channel",
+        "insecticide resistance",
+        "orco",
+    ):
+        if phrase in q:
+            queries.append(phrase)
+            added_domain_phrase = True
+    if species and not added_domain_phrase:
         queries.append(species)
-    elif "host seeking" in question.lower():
+    if not added_domain_phrase and "host seeking" in question.lower():
         queries.append("host seeking")
     for term in ("Brazil", "mosquito"):
         if not species and term.lower() in question.lower():
