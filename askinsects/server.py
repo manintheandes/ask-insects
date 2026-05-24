@@ -263,6 +263,18 @@ def copy_relative_inputs_to_staging(artifact_dir: Path, staging: Path, paths: li
             shutil.copy2(source, target)
 
 
+def copy_default_video_motion_inputs_to_staging(artifact_dir: Path, staging: Path) -> None:
+    copy_relative_inputs_to_staging(
+        artifact_dir,
+        staging,
+        [
+            Path("raw") / "mendeley_behavior_media" / "table_files",
+            Path("raw") / "mendeley_behavior_media",
+            Path("raw") / "video_atoms",
+        ],
+    )
+
+
 def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir: Path) -> None:
     artifact_dir.mkdir(parents=True, exist_ok=True)
     for name in MUTABLE_ARTIFACT_FILES:
@@ -1965,7 +1977,10 @@ def ingest_video_atoms_staged(
     try:
         if artifact_dir.exists():
             prepare_mutable_staging(artifact_dir, staging)
-            copy_relative_inputs_to_staging(artifact_dir, staging, motion_table_paths or [])
+            if motion_table_paths is None:
+                copy_default_video_motion_inputs_to_staging(artifact_dir, staging)
+            else:
+                copy_relative_inputs_to_staging(artifact_dir, staging, motion_table_paths)
         else:
             staging.mkdir(parents=True, exist_ok=True)
         result = ingest_video_atoms(
