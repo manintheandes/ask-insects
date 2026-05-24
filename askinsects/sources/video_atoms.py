@@ -510,13 +510,15 @@ def _mirror_candidate(
         gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_probe_tool_missing", "record_id": candidate.source_record_id, "error": str(exc)})
     except Exception as exc:
         gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_probe_failed", "record_id": candidate.source_record_id, "error": str(exc)})
+    probe_verified = any(probe_payload.get(key) is not None for key in ("duration_seconds", "fps", "width", "height", "codec"))
     extra_payload = {
         "sha256": digest,
         "byte_size": len(data),
         "raw_asset_path": raw_path.relative_to(artifact_dir).as_posix(),
         **{key: value for key, value in probe_payload.items() if value is not None},
     }
-    return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="mirrored", extra_payload=extra_payload), raw_path
+    verification_status = "verified" if probe_verified else "mirrored_unverified"
+    return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status=verification_status, extra_payload=extra_payload), raw_path
 
 
 def _artifact_records(
@@ -830,6 +832,7 @@ def build_video_atom_records(
         candidates.extend(discovered)
 
     mirrored_video_count = 0
+    verified_video_count = 0
     artifact_count = 0
     fetcher = fetch_video_bytes_fn or _default_fetch_video_bytes
     probe_fn = probe_video_file_fn or probe_video_file
@@ -850,10 +853,12 @@ def build_video_atom_records(
             )
             if asset_path is not None:
                 mirrored_video_count += 1
+                if asset.payload.get("verification_status") == "verified":
+                    verified_video_count += 1
         else:
             asset = _record_for_asset(candidate, retrieved_at=retrieved_at)
         records.append(asset)
-        if generate_artifacts and asset_path is not None:
+        if generate_artifacts and asset_path is not None and asset.payload.get("verification_status") == "verified":
             try:
                 output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / _safe_id(asset.record_id)
                 artifact_payload = artifact_fn(asset_path, output_dir, asset.payload)
@@ -878,7 +883,7 @@ def build_video_atom_records(
         gaps=gaps,
         video_asset_count=len(candidates),
         mirrored_video_count=mirrored_video_count,
-        verified_video_count=mirrored_video_count,
+        verified_video_count=verified_video_count,
         artifact_count=artifact_count,
         motion_row_count=len(motion_records),
         discovery_candidate_count=discovery_candidate_count,

@@ -143,7 +143,7 @@ class VideoAtomsSourceTests(unittest.TestCase):
 
             asset = next(record for record in result.records if record.payload["source_video_record_id"] == "pmc:video:PMC123:video1.mp4")
             digest = hashlib.sha256(video_bytes).hexdigest()
-            self.assertEqual(asset.payload["verification_status"], "mirrored")
+            self.assertEqual(asset.payload["verification_status"], "verified")
             self.assertEqual(asset.payload["sha256"], digest)
             self.assertEqual(asset.payload["byte_size"], len(video_bytes))
             self.assertEqual(asset.payload["duration_seconds"], 12.4)
@@ -154,6 +154,38 @@ class VideoAtomsSourceTests(unittest.TestCase):
             self.assertTrue(asset.payload["raw_asset_path"].startswith("raw/video_atoms/assets/"))
             self.assertTrue((artifact_dir / asset.payload["raw_asset_path"]).exists())
             self.assertEqual(result.mirrored_video_count, 1)
+            self.assertEqual(result.verified_video_count, 1)
+
+    def test_mirrored_video_with_failed_probe_is_not_counted_as_verified(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+
+            def fake_probe(path: Path) -> dict[str, object]:
+                raise RuntimeError("not parseable as a video")
+
+            def fail_artifacts(asset_path: Path, output_dir: Path, probe: dict[str, object]) -> dict[str, object]:
+                raise AssertionError("unverified video should not generate artifacts")
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                generate_artifacts=True,
+                max_video_bytes=10_000,
+                fetch_video_bytes_fn=lambda url, max_bytes: b"not-a-real-video",
+                probe_video_file_fn=fake_probe,
+                artifact_generator_fn=fail_artifacts,
+                allowed_licenses=("Creative Commons Attribution License",),
+            )
+
+            asset = next(record for record in result.records if record.payload["source_video_record_id"] == "pmc:video:PMC123:video1.mp4")
+            self.assertEqual(asset.payload["verification_status"], "mirrored_unverified")
+            self.assertEqual(result.mirrored_video_count, 1)
+            self.assertEqual(result.verified_video_count, 0)
+            self.assertEqual(result.artifact_count, 0)
+            self.assertTrue(any(gap["reason"] == "video_probe_failed" for gap in result.gaps))
+            self.assertFalse(any(gap["reason"] == "video_artifact_generation_failed" for gap in result.gaps))
 
     def test_records_video_gaps_for_large_or_unclear_assets(self):
         with tempfile.TemporaryDirectory() as tmpdir:
