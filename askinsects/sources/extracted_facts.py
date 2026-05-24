@@ -328,7 +328,32 @@ def _looks_like_markup_noise(text: str) -> bool:
         return True
     markup_tokens = sum(lower.count(token) for token in ("<div", "<style", "<script", "</", "{--", "font-family", "box-sizing"))
     css_tokens = lower.count("--") + lower.count("!important") + lower.count("var(")
-    return markup_tokens >= 6 or css_tokens >= 10
+    css_declarations = sum(
+        lower.count(token)
+        for token in (
+            "align-items:",
+            "background-color:",
+            "border-color:",
+            "border-radius:",
+            "box-shadow:",
+            "display:",
+            "font-size:",
+            "font-weight:",
+            "line-height:",
+            "padding:",
+            "text-align:",
+            "transition:",
+            "user-select:",
+            "vertical-align:",
+        )
+    )
+    css_rule_markers = sum(lower.count(token) for token in ("{", "}", "@media", ".btn", ":hover", ":focus"))
+    return (
+        markup_tokens >= 6
+        or css_tokens >= 10
+        or css_declarations >= 8
+        or (css_declarations >= 5 and css_rule_markers >= 5)
+    )
 
 
 def _bounded_fulltext_rows(
