@@ -327,7 +327,8 @@ def _looks_like_markup_noise(text: str) -> bool:
     if "<!doctype html" in lower or "<html" in lower:
         return True
     markup_tokens = sum(lower.count(token) for token in ("<div", "<style", "<script", "</", "{--", "font-family", "box-sizing"))
-    return markup_tokens >= 6
+    css_tokens = lower.count("--") + lower.count("!important") + lower.count("var(")
+    return markup_tokens >= 6 or css_tokens >= 10
 
 
 def _bounded_fulltext_rows(

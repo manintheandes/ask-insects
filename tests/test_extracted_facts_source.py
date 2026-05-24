@@ -212,7 +212,30 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                     source_url="https://example.org/html",
                 ),
             )
+            css_unit = FullTextUnit(
+                unit_id="openalex:WHTML:fulltext:1",
+                record_id="openalex:WHTML",
+                source="aedes_literature_openalex",
+                unit_index=1,
+                text=(
+                    "Aedes aegypti behavior response rate 99% "
+                    "--ds-header-color:#fff;--ds-footer-color:#000;--ds-sidebar-width:50px;"
+                    "--ds-slider-color:#eee;--ds-button-color:#111;var(--ds-header-color);"
+                    "var(--ds-footer-color);margin:0!important;padding:0!important;width:100%!important;"
+                    "display:flex!important;align-items:center!important"
+                ),
+                url="https://example.org/html",
+                license="OpenAlex OA PDF URL",
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/fulltext/WHTML.html#chunk/1",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="OpenAlex OA PDF URL",
+                    source_url="https://example.org/html",
+                ),
+            )
             SourceIndex(artifact_dir / "source_index.sqlite").upsert_records_and_fulltext_units([paper], [unit])
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_fulltext_units([unit, css_unit])
 
             result = build_extracted_fact_records(
                 artifact_dir,
