@@ -10,7 +10,7 @@ import re
 import shutil
 import subprocess
 from typing import Callable, Iterable
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from askinsects.index import SourceIndex
@@ -258,6 +258,106 @@ def _default_fetch_video_bytes(url: str, max_bytes: int) -> bytes:
     if len(data) > max_bytes:
         raise ValueError(f"video exceeds max bytes: {len(data)} > {max_bytes}")
     return data
+
+
+def _fetch_json(url: str) -> object:
+    request = Request(url, headers={"User-Agent": "AskInsects/0.1 video-discovery"})
+    with urlopen(request, timeout=60) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _default_zenodo_discovery_client() -> list[dict[str, object]]:
+    query = urlencode({"q": '"Aedes aegypti" (video OR movie OR mp4 OR tracking)', "size": "25"})
+    payload = _fetch_json(f"https://zenodo.org/api/records?{query}")
+    payload = payload if isinstance(payload, dict) else {}
+    hits = payload.get("hits")
+    records = hits.get("hits") if isinstance(hits, dict) else []
+    discovered: list[dict[str, object]] = []
+    for record in records if isinstance(records, list) else []:
+        if not isinstance(record, dict):
+            continue
+        metadata = record.get("metadata") if isinstance(record.get("metadata"), dict) else {}
+        files = record.get("files") if isinstance(record.get("files"), list) else []
+        title = str(metadata.get("title") or record.get("title") or "Zenodo Aedes video candidate")
+        description = str(metadata.get("description") or "")
+        license_payload = metadata.get("license") if isinstance(metadata.get("license"), dict) else {}
+        license_value = license_payload.get("id") or license_payload.get("title") or metadata.get("license")
+        source_url = None
+        links = record.get("links") if isinstance(record.get("links"), dict) else {}
+        if isinstance(links.get("html"), str):
+            source_url = links["html"]
+        elif isinstance(record.get("doi_url"), str):
+            source_url = record["doi_url"]
+        for file_payload in files:
+            if not isinstance(file_payload, dict):
+                continue
+            filename = str(file_payload.get("key") or file_payload.get("filename") or "")
+            file_links = file_payload.get("links") if isinstance(file_payload.get("links"), dict) else {}
+            download_url = file_links.get("self") or file_links.get("download")
+            if not isinstance(download_url, str) or not _looks_like_video(filename, download_url, title, description):
+                continue
+            discovered.append(
+                {
+                    "repository": "zenodo",
+                    "title": title,
+                    "description": description,
+                    "filename": filename,
+                    "download_url": download_url,
+                    "source_url": source_url,
+                    "license": license_value,
+                    "species_scope": f"{title} {description}",
+                    "retrieved_at": utc_now(),
+                }
+            )
+    return discovered
+
+
+def _default_figshare_discovery_client() -> list[dict[str, object]]:
+    query = urlencode({"search_for": "Aedes aegypti video", "page_size": "25"})
+    payload = _fetch_json(f"https://api.figshare.com/v2/articles/search?{query}")
+    summaries = payload if isinstance(payload, list) else []
+    discovered: list[dict[str, object]] = []
+    for summary in summaries:
+        if not isinstance(summary, dict):
+            continue
+        article_id = summary.get("id")
+        if not article_id:
+            continue
+        detail = _fetch_json(f"https://api.figshare.com/v2/articles/{article_id}")
+        title = str(detail.get("title") or summary.get("title") or "Figshare Aedes video candidate")
+        description = str(detail.get("description") or "")
+        license_payload = detail.get("license") if isinstance(detail.get("license"), dict) else {}
+        license_value = license_payload.get("name") or license_payload.get("url")
+        source_url = detail.get("url_public_html") if isinstance(detail.get("url_public_html"), str) else summary.get("url_public_html")
+        files = detail.get("files") if isinstance(detail.get("files"), list) else []
+        for file_payload in files:
+            if not isinstance(file_payload, dict):
+                continue
+            filename = str(file_payload.get("name") or "")
+            download_url = file_payload.get("download_url")
+            if not isinstance(download_url, str) or not _looks_like_video(filename, download_url, title, description):
+                continue
+            discovered.append(
+                {
+                    "repository": "figshare",
+                    "title": title,
+                    "description": description,
+                    "filename": filename,
+                    "download_url": download_url,
+                    "source_url": source_url,
+                    "license": license_value,
+                    "species_scope": f"{title} {description}",
+                    "retrieved_at": utc_now(),
+                }
+            )
+    return discovered
+
+
+def default_discovery_clients() -> dict[str, Callable[[], list[dict[str, object]]]]:
+    return {
+        "zenodo": _default_zenodo_discovery_client,
+        "figshare": _default_figshare_discovery_client,
+    }
 
 
 def probe_video_file(path: Path) -> dict[str, object]:
@@ -615,6 +715,7 @@ def _discover_candidates(
     for repository in DISCOVERY_REPOSITORIES:
         client = discovery_clients.get(repository)
         if client is None:
+            gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_client_missing", "repository": repository})
             continue
         try:
             raw_items = client()
@@ -660,7 +761,8 @@ def build_video_atom_records(
     records: list[EvidenceRecord] = []
     candidates = _candidate_rows(index)
     discovery_candidate_count = 0
-    if discover_sources and discovery_clients:
+    if discover_sources:
+        discovery_clients = discovery_clients if discovery_clients is not None else default_discovery_clients()
         discovered, discovery_candidate_count = _discover_candidates(discovery_clients, max_discovery_results=max_discovery_results, gaps=gaps)
         candidates.extend(discovered)
 

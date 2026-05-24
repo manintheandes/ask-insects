@@ -397,6 +397,7 @@ class VideoAtomsSourceTests(unittest.TestCase):
         reasons = {gap["reason"] for gap in result.gaps}
         self.assertIn("video_discovery_not_aedes_scope", reasons)
         self.assertIn("video_discovery_no_download_url", reasons)
+        self.assertIn("video_discovery_client_missing", reasons)
 
 
 if __name__ == "__main__":
