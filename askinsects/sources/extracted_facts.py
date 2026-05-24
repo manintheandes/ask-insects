@@ -326,6 +326,8 @@ def _looks_like_markup_noise(text: str) -> bool:
     lower = text[:20000].lower()
     if "<!doctype html" in lower or "<html" in lower:
         return True
+    if any(token in lower for token in ("<head", "<body", "<meta", "itemprop=", "property=\"og:", "name=\"citation_")):
+        return True
     encoded_state_tokens = sum(
         lower.count(token)
         for token in (

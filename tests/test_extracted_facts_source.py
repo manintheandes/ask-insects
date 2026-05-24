@@ -282,13 +282,35 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                     source_url="https://example.org/html",
                 ),
             )
+            meta_tag_unit = FullTextUnit(
+                unit_id="openalex:WHTML:fulltext:4",
+                record_id="openalex:WHTML",
+                source="aedes_literature_openalex",
+                unit_index=4,
+                text=(
+                    "Aedes aegypti host-seeking behavior response rate 66% "
+                    "or.\"> <meta itemprop=\"description\" content=\"Aedes aegypti mosquitoes are the principal "
+                    "vectors for Dengue Fever. Our goal was to discover new ways to interfere with the ability "
+                    "of a mosquito to locate a human host for a blood meal.\"> <meta itemprop=\"name\" "
+                    "content=\"The Neuropeptide Regulation of Host-Seeking Behavior in Aedes Aegypti Mosquitoes\">"
+                ),
+                url="https://example.org/html",
+                license="OpenAlex OA PDF URL",
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/fulltext/WHTML.html#chunk/4",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="OpenAlex OA PDF URL",
+                    source_url="https://example.org/html",
+                ),
+            )
             SourceIndex(artifact_dir / "source_index.sqlite").upsert_records_and_fulltext_units([paper], [unit])
-            SourceIndex(artifact_dir / "source_index.sqlite").upsert_fulltext_units([unit, css_unit, partial_css_unit, encoded_state_unit])
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_fulltext_units([unit, css_unit, partial_css_unit, encoded_state_unit, meta_tag_unit])
 
             result = build_extracted_fact_records(
                 artifact_dir,
                 retrieved_at="2026-05-24T00:00:00Z",
-                max_fulltext_units=5,
+                max_fulltext_units=6,
             )
 
             self.assertFalse(any(record.payload.get("source_record_id") == "openalex:WHTML" for record in result.records))
