@@ -59,7 +59,25 @@ class BoldBarcodeSourceTests(unittest.TestCase):
             self.assertEqual(len(rows), 2)
             self.assertEqual(rows[0]["marker"], "COI-5P")
 
+    def test_duplicate_process_ids_still_become_distinct_records(self):
+        duplicate_tsv = FAKE_BOLD_TSV + (
+            "BOLD1\tS3\tR3\tC3\t\tMuseum\t\t20\tArthropoda\t82\tInsecta\t127\tDiptera\t1730\tCulicidae\t2142\tCulicinae\t6438\tAedes\t14137\tAedes aegypti\t\t\tExpert\t\t\tCollector\t2020-01-03\tAdult\tF\t\t\t\t5.0\t6.0\tGPS\t\tMexico\t\t\tSite\tSEQ3\tITS2\t\tATGC\n"
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_bold_barcode_records(
+                species="Aedes aegypti",
+                raw_dir=Path(tmpdir) / "raw" / "bold",
+                limit=10,
+                fetch_text=lambda url: duplicate_tsv,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            record_ids = [record.record_id for record in result.records]
+
+            self.assertEqual(len(record_ids), 3)
+            self.assertEqual(len(set(record_ids)), 3)
+            self.assertTrue(any(record_id.startswith("bold:barcode:BOLD1:row:") for record_id in record_ids))
+
 
 if __name__ == "__main__":
     unittest.main()
-

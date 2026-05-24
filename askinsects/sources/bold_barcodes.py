@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 import urllib.parse
@@ -57,8 +58,19 @@ def _parse_rows(tsv_text: str) -> list[dict[str, str]]:
     return rows
 
 
-def _barcode_record(row: dict[str, str], *, raw_path: Path, row_number: int, retrieved_at: str) -> EvidenceRecord:
+def _barcode_record(
+    row: dict[str, str],
+    *,
+    raw_path: Path,
+    row_number: int,
+    retrieved_at: str,
+    duplicate_process_ids: set[str] | None = None,
+) -> EvidenceRecord:
     process_id = row["processid"]
+    duplicate_process_ids = duplicate_process_ids or set()
+    record_id = f"bold:barcode:{process_id}"
+    if process_id in duplicate_process_ids:
+        record_id = f"{record_id}:row:{row_number}"
     species = row.get("species_name") or DEFAULT_BOLD_SPECIES
     marker = row.get("markercode") or "unknown marker"
     country = row.get("country") or "unknown country"
@@ -80,7 +92,7 @@ def _barcode_record(row: dict[str, str], *, raw_path: Path, row_number: int, ret
     if genbank:
         text += f" GenBank accession: {genbank}."
     return EvidenceRecord(
-        record_id=f"bold:barcode:{process_id}",
+        record_id=record_id,
         lane="dna_barcodes",
         source=BOLD_SOURCE_ID,
         title=title,
@@ -150,8 +162,16 @@ def fetch_bold_barcode_records(
     raw_path.write_text(tsv_text, encoding="utf-8")
     raw_artifacts.append(raw_path.as_posix())
     parsed_rows = _parse_rows(tsv_text)
+    process_counts = Counter(row["processid"] for row in parsed_rows)
+    duplicate_process_ids = {process_id for process_id, count in process_counts.items() if count > 1}
     records = [
-        _barcode_record(row, raw_path=raw_path, row_number=index + 1, retrieved_at=retrieved_at)
+        _barcode_record(
+            row,
+            raw_path=raw_path,
+            row_number=index + 1,
+            retrieved_at=retrieved_at,
+            duplicate_process_ids=duplicate_process_ids,
+        )
         for index, row in enumerate(parsed_rows[:limit])
     ]
     if not records:
@@ -187,4 +207,3 @@ def fetch_bold_barcode_records(
         requested_limit=limit,
         fetched_row_count=len(parsed_rows),
     )
-
