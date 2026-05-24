@@ -87,6 +87,10 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
+    if "coi-5p" in q or re.search(r"\bcoi\b", q):
+        return ["COI-5P", "Marker COI", question]
+    if "bold" in q and ("barcode" in q or "barcodes" in q):
+        return ["BOLD barcode", question]
     if "catmaid" in q and ("skeleton" in q or "bulk" in q or "export" in q or "download" in q):
         return ["CATMAID Aedes skeleton export manifest", "skeleton manifest bulk download", "CATMAID skeleton IDs", question]
     if "catmaid" in q or "em dataset" in q or ("public" in q and "connectome" in q):
