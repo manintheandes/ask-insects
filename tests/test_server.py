@@ -775,6 +775,65 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(counts["mosquito_v1_fixtures"], 7)
             self.assertEqual(counts["vectorbase_aedes_genomics"], 1)
             self.assertEqual(response.payload["vectorbase_genomics"]["release"], "Current_Release")
+            self.assertTrue(response.payload["staged"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='vectorbase_aedes_genomics'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".vectorbase-staging", provenance_rows[0]["provenance_json"])
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select payload_json from record_payloads where source='vectorbase_aedes_genomics'",
+            )
+            self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
+            self.assertNotIn(".vectorbase-staging", payload_rows[0]["payload_json"])
+
+    def test_ingest_vectorbase_genomics_failure_preserves_existing_source_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:gene:old",
+                        lane="genes",
+                        source="vectorbase_aedes_genomics",
+                        title="Old VectorBase row",
+                        text="Existing VectorBase row that must survive a failed refresh.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/old",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator=f"{artifact_dir}/raw/vectorbase_genomics/old.gff#line/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    )
+                ]
+            )
+
+            def failing_fetch(*, raw_dir, file_urls, retrieved_at):
+                raw_dir.mkdir(parents=True, exist_ok=True)
+                (raw_dir / "partial.gff").write_text("partial\n", encoding="utf-8")
+                raise RuntimeError("simulated vectorbase fetch failure")
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/vectorbase-genomics",
+                {"file_urls": {"gff": "https://vectorbase.org/gff"}},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_vectorbase_genomics_records_fn=failing_fetch,
+            )
+
+            self.assertEqual(response.status, 500)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id from records where source='vectorbase_aedes_genomics'",
+            )
+            self.assertEqual([row["record_id"] for row in rows], ["vectorbase:gene:old"])
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.vectorbase-staging").exists())
 
     def test_ingest_mosquito_alert_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

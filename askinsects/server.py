@@ -1759,6 +1759,41 @@ def ingest_occurrence_ecology(
     return ingest_occurrence_ecology_script(artifact_dir=artifact_dir)
 
 
+def ingest_vectorbase_genomics_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_vectorbase_genomics_records_fn: Callable[..., object],
+) -> dict[str, object]:
+    from scripts.ingest_vectorbase_genomics import ingest_vectorbase_genomics
+
+    file_urls = payload.get("file_urls")
+    if file_urls is not None and not isinstance(file_urls, dict):
+        raise ValueError("file_urls must be an object")
+
+    staging = artifact_dir.parent / f".{artifact_dir.name}.vectorbase-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_vectorbase_genomics(
+            artifact_dir=staging,
+            file_urls=file_urls,
+            fetch_vectorbase_genomics_records_fn=fetch_vectorbase_genomics_records_fn,
+        )
+        response = rewrite_artifact_references(staging, artifact_dir, result)
+        activate_source_staging(staging, artifact_dir, Path("raw") / "vectorbase_genomics")
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -1850,14 +1885,9 @@ def dispatch_request(
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectorbase-genomics":
-            from scripts.ingest_vectorbase_genomics import ingest_vectorbase_genomics
-
-            file_urls = (payload or {}).get("file_urls")
-            if file_urls is not None and not isinstance(file_urls, dict):
-                raise ValueError("file_urls must be an object")
-            result = ingest_vectorbase_genomics(
+            result = ingest_vectorbase_genomics_staged(
+                payload or {},
                 artifact_dir=artifact_dir,
-                file_urls=file_urls,
                 fetch_vectorbase_genomics_records_fn=fetch_vectorbase_genomics_records_fn,
             )
             status = 200 if result.get("ok") else 500
