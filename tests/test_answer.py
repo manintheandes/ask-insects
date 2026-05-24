@@ -1305,6 +1305,26 @@ class AnswerTests(unittest.TestCase):
                     payload={"confidence": "parsed", "fact_type": "vector_competence"},
                 )
             )
+            records.append(
+                EvidenceRecord(
+                    record_id="extracted_fact:vector_competence:WAAA:candidate",
+                    lane="vector_competence",
+                    source="aedes_extracted_facts",
+                    title="Aedes aegypti extracted vector competence dengue candidate",
+                    text="Full-text candidate for dengue virus infection rate, not a parsed supplement table row.",
+                    species="Aedes aegypti",
+                    url="https://example.org/candidate",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="aedes_extracted_facts",
+                        locator="records#WAAA;literature_fulltext_units#WAAA:fulltext:0",
+                        retrieved_at="2026-05-24T00:00:00Z",
+                        license="CC-BY",
+                        source_url="https://example.org/candidate",
+                    ),
+                    payload={"confidence": "candidate", "fact_type": "vector_competence"},
+                )
+            )
             index.upsert_records(records)
 
             answer = answer_question(
