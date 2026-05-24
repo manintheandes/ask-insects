@@ -92,7 +92,15 @@ python3 -m askinsects search neurobiology "brain atlas"
 python3 -m askinsects ask "what neuron data exists for the Aedes aegypti brain?"
 ```
 
-The full artifact path downloads GEO `GSE160740_RAW.tar`, SRA runinfo for `SRP290992`, the Mosquito Cell Atlas Zenodo record and files, the MosquitoBrains downloads page, Dropbox folder ZIPs when Dropbox permits direct download, and the public `htem/aedes_public` EM/CATMAID analysis repository metadata and CSVs. SQLite indexes GEO matrix summaries and feature rows, SRA run/sample metadata, H5AD internal AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, public EM/CATMAID CSV inventories, study metadata, and a narrowed whole-brain connectome source-gap row. It does not download or align raw SRA reads, index every voxel value, or claim a public whole-brain connectome download exists.
+The full artifact path downloads GEO `GSE160740_RAW.tar`, SRA runinfo for `SRP290992`, the Mosquito Cell Atlas Zenodo record and files, the MosquitoBrains downloads page, Dropbox folder ZIPs when Dropbox permits direct download, and the public `htem/aedes_public` EM/CATMAID analysis repository metadata and CSVs. SQLite indexes GEO matrix summaries and feature rows, SRA run/sample metadata, raw SRA access and reanalysis workflow records, H5AD internal AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, coordinate-queryable voxel access locators, public EM/CATMAID CSV inventories, study metadata, and a narrowed whole-brain connectome source-gap row. It does not claim the compute-heavy raw SRA alignment has already been executed, and it does not claim a public whole-brain connectome download exists.
+
+Exact MosquitoBrains voxel values can be read by coordinate from the local raw artifacts:
+
+```bash
+python3 -m askinsects voxel \
+  "neuro:mosquitobrains:volume:Segmentation-Files.zip:Brain_border/WholeBrain_Border.mha" \
+  --x 0 --y 0 --z 0
+```
 
 ## Aedes aegypti Literature Lane
 

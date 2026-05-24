@@ -42,6 +42,10 @@ class VerifyCompleteTests(unittest.TestCase):
             required_files,
         )
         self.assertIn(
+            "docs/superpowers/specs/2026-05-23-neurobiology-gap-closure-design.md",
+            required_files,
+        )
+        self.assertIn(
             "docs/superpowers/plans/2026-05-23-aedes-aegypti-neurobiology-lane.md",
             required_files,
         )
@@ -49,6 +53,11 @@ class VerifyCompleteTests(unittest.TestCase):
             "docs/superpowers/plans/2026-05-24-aedes-neurobiology-deep-source-completion.md",
             required_files,
         )
+        self.assertIn(
+            "docs/superpowers/plans/2026-05-23-neurobiology-gap-closure.md",
+            required_files,
+        )
+        self.assertIn("askinsects/voxels.py", required_files)
         self.assertIn("tests.test_neurobiology_source", unit_modules)
 
     def test_verify_complete_gate_passes(self):

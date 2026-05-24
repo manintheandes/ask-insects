@@ -88,6 +88,8 @@ def _search_queries(question: str) -> list[str]:
         return ["connectome", question]
     if "h5ad" in q or "anndata" in q:
         return ["H5AD", "Mosquito Cell Atlas H5AD", question]
+    if "sra" in q and ("reanalysis" in q or "workflow" in q or "align" in q or "alignment" in q):
+        return ["raw SRA reanalysis workflow", "reanalysis workflow", "fasterq-dump", question]
     if "sra" in q or "raw read" in q or "runinfo" in q:
         return ["SRA SRP290992", "SRA raw read", "SRR12972760", question]
     if "voxel" in q or "mha" in q or "mhd" in q or "volume" in q:

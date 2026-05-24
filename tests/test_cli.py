@@ -6,7 +6,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from askinsects.builder import build_source_index
 from scripts.build_source_index import create_parser
+from tests.test_neurobiology_source import write_fake_neurobiology_artifacts
 
 
 class CliTests(unittest.TestCase):
@@ -228,6 +230,40 @@ class CliTests(unittest.TestCase):
         self.assertTrue(args.fixtures)
         self.assertTrue(args.neurobiology)
         self.assertEqual(args.neurobiology_artifact_dir, "/tmp/aedes-neurobiology")
+
+    def test_voxel_command_reads_coordinate_from_neurobiology_volume(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            source_dir = write_fake_neurobiology_artifacts(tmp_path)
+            artifact_dir = tmp_path / "mosquito-v1"
+            build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_neurobiology=True,
+                artifact_dir=artifact_dir,
+                neurobiology_artifact_dir=source_dir,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            result = self.run_cli(
+                "--artifact-dir",
+                str(artifact_dir),
+                "voxel",
+                "neuro:mosquitobrains:volume:Segmentation-Files.zip:individual_brain_regions/Individual_Brain_regions.mha",
+                "--x",
+                "1",
+                "--y",
+                "0",
+                "--z",
+                "1",
+            )
+
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual(result.stderr, "")
+            payload = json.loads(result.stdout)
+            self.assertEqual(payload["value"], 6)
+            self.assertEqual(payload["coordinate"], {"x": 1, "y": 0, "z": 1})
 
 
 if __name__ == "__main__":

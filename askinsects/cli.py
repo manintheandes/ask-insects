@@ -10,6 +10,7 @@ from .builder import DEFAULT_ARTIFACT_DIR
 from .hosted import CONFIG_PATH as HOSTED_CONFIG_PATH
 from .hosted import HostedConfig, hosted_request, load_config, save_config
 from .index import SourceIndex
+from .voxels import read_voxel_value
 
 
 def emit(payload: object) -> None:
@@ -111,6 +112,12 @@ def main(argv: list[str] | None = None) -> int:
     sql.add_argument("--limit", type=int, default=100)
     sql.add_argument("--hosted", action="store_true")
 
+    voxel = sub.add_parser("voxel")
+    voxel.add_argument("record_id")
+    voxel.add_argument("--x", type=int, required=True)
+    voxel.add_argument("--y", type=int, required=True)
+    voxel.add_argument("--z", type=int, required=True)
+
     ingest_inaturalist = sub.add_parser("ingest-inaturalist")
     ingest_inaturalist.add_argument("--hosted", action="store_true")
     ingest_inaturalist.add_argument("--species", action="append", default=[])
@@ -211,6 +218,16 @@ def main(argv: list[str] | None = None) -> int:
             emit({"ok": True, "rows": index.sql(args.sql, limit=args.limit)})
         except (sqlite3.Error, ValueError) as exc:
             emit(cli_error(str(exc), lane="sql", artifact_dir=artifact_dir))
+            return 2
+        return 0
+    if args.command == "voxel":
+        if not db_path.exists():
+            emit(cli_error("missing mosquito_v1 source index", lane="neurobiology", artifact_dir=artifact_dir))
+            return 2
+        try:
+            emit(read_voxel_value(index_path=db_path, record_id=args.record_id, x=args.x, y=args.y, z=args.z))
+        except (OSError, sqlite3.Error, ValueError, KeyError) as exc:
+            emit(cli_error(str(exc), lane="neurobiology", artifact_dir=artifact_dir))
             return 2
         return 0
     if args.command == "ingest-inaturalist":

@@ -369,6 +369,66 @@ def _sra_records(artifact_dir: Path, *, retrieved_at: str) -> tuple[list[Evidenc
                 retrieved_at=retrieved_at,
             )
         )
+    run_payloads = [
+        {
+            "run": row.get("Run"),
+            "sample_name": row.get("SampleName") or row.get("Sample"),
+            "download_path": row.get("download_path"),
+            "size_mb": _int_value(row.get("size_MB")),
+            "spots": _int_value(row.get("spots")),
+            "bases": _int_value(row.get("bases")),
+        }
+        for row in rows
+    ]
+    total_size_mb = sum(int(run["size_mb"]) for run in run_payloads)
+    records.append(
+        _record(
+            {
+                "record_id": "neuro:sra:SRP290992:raw-access",
+                "record_type": "sra_raw_access",
+                "title": "GSE160740 SRA raw read access manifest",
+                "text": (
+                    f"SRA SRP290992 exposes {len(run_payloads)} raw read run(s) for Aedes aegypti brain RNA-seq, "
+                    f"totaling {total_size_mb} MB in public runinfo metadata. Download URLs are preserved per run."
+                ),
+                "species": "Aedes aegypti",
+                "url": "https://www.ncbi.nlm.nih.gov/sra?term=SRP290992",
+                "locator": f"{runinfo_path.as_posix()}#download_path",
+                "license": "NCBI SRA public metadata",
+                "run_count": len(run_payloads),
+                "total_size_mb": total_size_mb,
+                "runs": run_payloads,
+            },
+            retrieved_at=retrieved_at,
+        )
+    )
+    records.append(
+        _record(
+            {
+                "record_id": "neuro:sra:SRP290992:reanalysis-workflow",
+                "record_type": "sra_reanalysis_workflow",
+                "title": "GSE160740 raw SRA reanalysis workflow",
+                "text": (
+                    "Raw SRA reanalysis for GSE160740 is mechanically defined from public runinfo: download each SRR run, "
+                    "convert with fasterq-dump --split-files, then align/count against the Aedes aegypti reference genome "
+                    "with a 10x-aware RNA-seq workflow such as STARsolo or kallisto/bustools. "
+                    "The source index records the workflow and inputs; it does not execute the compute-heavy alignment."
+                ),
+                "species": "Aedes aegypti",
+                "url": "https://www.ncbi.nlm.nih.gov/sra?term=SRP290992",
+                "locator": f"{runinfo_path.as_posix()}#reanalysis-workflow",
+                "license": "NCBI SRA public metadata",
+                "execution_status": "not_executed_by_source_index",
+                "inputs": run_payloads,
+                "commands": [
+                    "prefetch <SRR>",
+                    "fasterq-dump --split-files <SRR>",
+                    "STARsolo or kallisto/bustools alignment/counting against GCF_002204515.2",
+                ],
+            },
+            retrieved_at=retrieved_at,
+        )
+    )
     return records, raw_artifacts, gaps
 
 def _xlsx_sheet_names(path: Path) -> list[str]:
@@ -802,9 +862,44 @@ def _metaimage_header(text: str) -> dict[str, object]:
     return header
 
 
-def _read_metaimage_header_from_bytes(payload: bytes) -> dict[str, object]:
-    text = payload[:4096].decode("utf-8", errors="replace")
-    return _metaimage_header(text)
+def _read_metaimage_header_and_data_offset(payload: bytes) -> tuple[dict[str, object], int]:
+    offset = 0
+    lines: list[str] = []
+    for raw_line in payload.splitlines(keepends=True):
+        offset += len(raw_line)
+        line = raw_line.decode("utf-8", errors="replace")
+        lines.append(line)
+        if line.strip().startswith("ElementDataFile"):
+            break
+    return _metaimage_header("".join(lines)), offset
+
+
+def _dim_size_values(header: dict[str, object]) -> list[int]:
+    raw_values = header.get("DimSize_values")
+    if not isinstance(raw_values, list):
+        return []
+    values: list[int] = []
+    for value in raw_values:
+        try:
+            values.append(int(str(value)))
+        except ValueError:
+            return []
+    return values
+
+
+def _byte_order_msb(header: dict[str, object]) -> bool:
+    value = str(header.get("BinaryDataByteOrderMSB", "False")).strip().lower()
+    return value in {"1", "true", "yes"}
+
+
+def _raw_member_for_header(member_path: str, header: dict[str, object]) -> str | None:
+    data_file = header.get("ElementDataFile")
+    if not isinstance(data_file, str) or data_file.upper() == "LOCAL":
+        return None
+    parent = str(Path(member_path).parent)
+    if parent == ".":
+        return data_file
+    return f"{parent}/{data_file}"
 
 
 def _brain_volume_record(
@@ -814,10 +909,12 @@ def _brain_volume_record(
     header: dict[str, object],
     locator: str,
     retrieved_at: str,
+    voxel_access: dict[str, object] | None = None,
 ) -> EvidenceRecord:
     dim_size = header.get("DimSize")
     spacing = header.get("ElementSpacing") or header.get("ElementSize")
     element_type = header.get("ElementType")
+    queryable_text = " Exact voxel values are queryable by coordinate." if voxel_access else ""
     return _record(
         {
             "record_id": f"neuro:mosquitobrains:volume:{archive_name}:{member_name}",
@@ -825,7 +922,7 @@ def _brain_volume_record(
             "title": f"MosquitoBrains volume header {member_name}",
             "text": (
                 f"MosquitoBrains volume {member_name} has DimSize {dim_size}, spacing {spacing}, "
-                f"and element type {element_type}."
+                f"and element type {element_type}.{queryable_text}"
             ),
             "species": "Aedes aegypti",
             "url": "https://www.mosquitobrains.org/downloads-and-links",
@@ -837,6 +934,7 @@ def _brain_volume_record(
             "dim_size": dim_size,
             "spacing": spacing,
             "element_type": element_type,
+            "voxel_access": voxel_access,
         },
         retrieved_at=retrieved_at,
     )
@@ -890,20 +988,54 @@ def _mosquitobrains_archive_detail_records(
     *,
     archive_name: str,
     member_name: str,
+    member_path: str,
     data: bytes,
     locator: str,
+    archive_path: Path,
+    nested_archive_member: str | None,
     retrieved_at: str,
 ) -> list[EvidenceRecord]:
     records: list[EvidenceRecord] = []
     lower = member_name.lower()
     if lower.endswith((".mha", ".mhd")):
+        header, data_offset = _read_metaimage_header_and_data_offset(data)
+        voxel_access: dict[str, object] | None = None
+        dim_size = _dim_size_values(header)
+        element_type = header.get("ElementType")
+        if dim_size and isinstance(element_type, str):
+            if str(header.get("ElementDataFile", "")).upper() == "LOCAL":
+                voxel_access = {
+                    "kind": "nested_zip_mha_local" if nested_archive_member else "zip_mha_local",
+                    "archive_path": archive_path.as_posix(),
+                    "nested_archive_member": nested_archive_member,
+                    "member": member_path,
+                    "data_offset": data_offset,
+                    "dim_size": dim_size,
+                    "element_type": element_type,
+                    "byte_order_msb": _byte_order_msb(header),
+                }
+            else:
+                raw_member = _raw_member_for_header(member_path, header)
+                if raw_member:
+                    voxel_access = {
+                        "kind": "nested_zip_raw_member" if nested_archive_member else "zip_raw_member",
+                        "archive_path": archive_path.as_posix(),
+                        "nested_archive_member": nested_archive_member,
+                        "header_member": member_path,
+                        "raw_member": raw_member,
+                        "data_offset": 0,
+                        "dim_size": dim_size,
+                        "element_type": element_type,
+                        "byte_order_msb": _byte_order_msb(header),
+                    }
         records.append(
             _brain_volume_record(
                 archive_name=archive_name,
                 member_name=member_name,
-                header=_read_metaimage_header_from_bytes(data),
+                header=header,
                 locator=locator,
                 retrieved_at=retrieved_at,
+                voxel_access=voxel_access,
             )
         )
     elif lower.endswith(".txt") and "label" in lower:
@@ -1027,8 +1159,11 @@ def _mosquitobrains_records(artifact_dir: Path, *, retrieved_at: str) -> tuple[l
                                     _mosquitobrains_archive_detail_records(
                                         archive_name=path.name,
                                         member_name=f"{info.filename}:{nested_info.filename}",
+                                        member_path=nested_info.filename,
                                         data=nested_data,
                                         locator=f"{member_locator}#{nested_info.filename}",
+                                        archive_path=path,
+                                        nested_archive_member=info.filename,
                                         retrieved_at=retrieved_at,
                                     )
                                 )
@@ -1047,8 +1182,11 @@ def _mosquitobrains_records(artifact_dir: Path, *, retrieved_at: str) -> tuple[l
                         _mosquitobrains_archive_detail_records(
                             archive_name=path.name,
                             member_name=info.filename,
+                            member_path=info.filename,
                             data=data,
                             locator=member_locator,
+                            archive_path=path,
+                            nested_archive_member=None,
                             retrieved_at=retrieved_at,
                         )
                     )

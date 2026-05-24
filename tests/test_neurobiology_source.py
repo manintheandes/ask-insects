@@ -3,6 +3,7 @@ import gzip
 import h5py
 import io
 import json
+import struct
 import tarfile
 import unittest
 import zipfile
@@ -10,6 +11,7 @@ from pathlib import Path
 
 from askinsects.index import SourceIndex
 from askinsects.sources.neurobiology import NEUROBIOLOGY_SOURCE_ID, fetch_neurobiology_records
+from askinsects.voxels import read_voxel_value
 
 
 def write_fake_neurobiology_artifacts(root: Path) -> Path:
@@ -103,14 +105,15 @@ def write_fake_neurobiology_artifacts(root: Path) -> Path:
         with zipfile.ZipFile(nested, "w") as inner:
             inner.writestr(
                 "female_reference_brain/female_reference_brain.mhd",
-                "ObjectType = Image\nNDims = 3\nDimSize = 646 649 275\nElementSpacing = 0.001 0.001 0.001\nElementType = MET_SHORT\nElementDataFile = female_reference_brain.raw\n",
+                "ObjectType = Image\nNDims = 3\nDimSize = 2 2 2\nElementSpacing = 0.001 0.001 0.001\nElementType = MET_SHORT\nElementDataFile = female_reference_brain.raw\n",
             )
-            inner.writestr("female_reference_brain/female_reference_brain.raw", b"\0" * 8)
+            inner.writestr("female_reference_brain/female_reference_brain.raw", struct.pack("<8h", 10, 11, 12, 13, 14, 15, 16, 17))
         archive.writestr("female_reference_brain.zip", nested.getvalue())
     with zipfile.ZipFile(download_dir / "Segmentation-Files.zip", "w") as archive:
         archive.writestr(
             "individual_brain_regions/Individual_Brain_regions.mha",
-            b"ObjectType = Image\nNDims = 3\nDimSize = 646 649 275\nElementSpacing = 0.001 0.001 0.001\nElementType = MET_USHORT\nElementDataFile = LOCAL\n" + (b"\0" * 8),
+            b"ObjectType = Image\nNDims = 3\nDimSize = 2 2 2\nElementSpacing = 0.001 0.001 0.001\nElementType = MET_USHORT\nElementDataFile = LOCAL\n"
+            + struct.pack("<8H", 1, 2, 3, 4, 5, 6, 7, 8),
         )
         archive.writestr(
             "individual_brain_regions/Label_Descriptions_BrainRegions.txt",
@@ -195,6 +198,8 @@ class NeurobiologySourceTests(unittest.TestCase):
             self.assertIn("neuro:zenodo:14890013:h5ad-var-column:brain/female_brain.h5ad:gene_symbol", record_ids)
             self.assertIn("neuro:sra:SRP290992:run:SRR1", record_ids)
             self.assertIn("neuro:sra:SRP290992:sample:GSM1_male", record_ids)
+            self.assertIn("neuro:sra:SRP290992:raw-access", record_ids)
+            self.assertIn("neuro:sra:SRP290992:reanalysis-workflow", record_ids)
             self.assertIn("neuro:mosquitobrains:dropbox:Aedes-Reference-Brain", record_ids)
             self.assertIn("neuro:mosquitobrains:file:Aedes-Reference-Brain.zip", record_ids)
             self.assertIn("neuro:mosquitobrains:zip-member:Aedes-Reference-Brain.zip:female_reference_brain.zip", record_ids)
@@ -214,6 +219,15 @@ class NeurobiologySourceTests(unittest.TestCase):
             self.assertEqual(matrix.payload["matrix"]["columns"], 2)
             self.assertEqual(matrix.payload["matrix"]["nonzero_entries"], 3)
 
+            raw_access = next(record for record in result.records if record.record_id == "neuro:sra:SRP290992:raw-access")
+            self.assertEqual(raw_access.payload["run_count"], 1)
+            self.assertEqual(raw_access.payload["total_size_mb"], 1)
+            self.assertEqual(raw_access.payload["runs"][0]["run"], "SRR1")
+
+            workflow = next(record for record in result.records if record.record_id == "neuro:sra:SRP290992:reanalysis-workflow")
+            self.assertIn("fasterq-dump", workflow.text)
+            self.assertEqual(workflow.payload["execution_status"], "not_executed_by_source_index")
+
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
             index.initialize()
             index.upsert_records(result.records)
@@ -222,6 +236,25 @@ class NeurobiologySourceTests(unittest.TestCase):
                 limit=1,
             )
             self.assertEqual(len(payload_rows), 1)
+
+            mha_value = read_voxel_value(
+                index_path=Path(tmpdir) / "source_index.sqlite",
+                record_id="neuro:mosquitobrains:volume:Segmentation-Files.zip:individual_brain_regions/Individual_Brain_regions.mha",
+                x=1,
+                y=0,
+                z=1,
+            )
+            self.assertEqual(mha_value["value"], 6)
+            self.assertEqual(mha_value["coordinate"], {"x": 1, "y": 0, "z": 1})
+
+            mhd_value = read_voxel_value(
+                index_path=Path(tmpdir) / "source_index.sqlite",
+                record_id="neuro:mosquitobrains:volume:Aedes-Reference-Brain.zip:female_reference_brain.zip:female_reference_brain/female_reference_brain.mhd",
+                x=1,
+                y=1,
+                z=0,
+            )
+            self.assertEqual(mhd_value["value"], 13)
 
 
 if __name__ == "__main__":

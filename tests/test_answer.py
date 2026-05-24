@@ -432,10 +432,13 @@ class AnswerTests(unittest.TestCase):
             )
 
             sra = answer_question("what SRA raw reads exist for GSE160740?", artifact_dir=artifact_dir)
+            sra_workflow = answer_question("what raw SRA reanalysis workflow exists for GSE160740?", artifact_dir=artifact_dir)
             volume = answer_question("what voxel volume files exist in MosquitoBrains?", artifact_dir=artifact_dir)
 
             self.assertTrue(sra["ok"])
             self.assertTrue(any(item["record_id"].startswith("neuro:sra:SRP290992") for item in sra["evidence"]))
+            self.assertTrue(sra_workflow["ok"])
+            self.assertEqual(sra_workflow["evidence"][0]["record_id"], "neuro:sra:SRP290992:reanalysis-workflow")
             self.assertTrue(volume["ok"])
             self.assertTrue(any("volume" in item["record_id"] for item in volume["evidence"]))
 
