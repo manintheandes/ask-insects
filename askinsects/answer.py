@@ -1017,6 +1017,59 @@ def _source_records(index: SourceIndex, source: str, lanes: list[str], *, limit:
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
+    if not lanes:
+        return []
+    q = question.lower()
+    atom_types: list[str]
+    if _wants_video_gaps(question):
+        atom_types = ["video_gap"]
+    elif any(term in q for term in ("motion", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
+        atom_types = ["video_motion_row"]
+    elif any(term in q for term in ("fps", "codec", "duration", "resolution")):
+        atom_types = ["video_asset"]
+    else:
+        atom_types = []
+        if "keyframe" in q or "keyframes" in q:
+            atom_types.append("video_keyframe")
+        if "preview" in q or "previews" in q:
+            atom_types.append("video_preview_clip")
+        if "thumbnail" in q or "thumbnails" in q:
+            atom_types.append("video_thumbnail")
+        if "frame manifest" in q:
+            atom_types.append("video_frame_manifest")
+        if not atom_types:
+            atom_types = ["video_keyframe", "video_preview_clip", "video_thumbnail", "video_frame_manifest", "video_asset"]
+    lane_placeholders = ",".join("?" for _ in lanes)
+    atom_placeholders = ",".join("?" for _ in atom_types)
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = 'aedes_video_atoms'
+              AND r.lane IN ({lane_placeholders})
+              AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
+            ORDER BY
+              CASE json_extract(p.payload_json, '$.atom_type')
+                WHEN 'video_keyframe' THEN 0
+                WHEN 'video_preview_clip' THEN 1
+                WHEN 'video_thumbnail' THEN 2
+                WHEN 'video_frame_manifest' THEN 3
+                WHEN 'video_asset' THEN 4
+                WHEN 'video_motion_row' THEN 5
+                WHEN 'video_gap' THEN 6
+                ELSE 7
+              END,
+              r.record_id
+            LIMIT ?
+            """,
+            [*lanes, *atom_types, limit],
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, limit: int = 5) -> dict[str, object]:
     plan = plan_question(question)
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
@@ -1025,21 +1078,27 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     all_records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
-    for lane in plan.lanes:
-        search_queries = (
-            _literature_search_queries(plan.search_query)
-            if plan.answer_shape == "literature" and lane == "literature"
-            else _search_queries(plan.search_query)
-        )
-        for search_query in search_queries:
-            query_records = index.search(search_query, lane=lane, limit=limit)
-            for record in query_records:
-                if record.record_id in seen_record_ids:
-                    continue
-                all_records.append(record)
-                seen_record_ids.add(record.record_id)
-            if query_records:
-                break
+    if _wants_video_atoms(plan.question):
+        for record in _video_atom_records(index, plan.question, list(plan.lanes), limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if not all_records:
+        for lane in plan.lanes:
+            search_queries = (
+                _literature_search_queries(plan.search_query)
+                if plan.answer_shape == "literature" and lane == "literature"
+                else _search_queries(plan.search_query)
+            )
+            for search_query in search_queries:
+                query_records = index.search(search_query, lane=lane, limit=limit)
+                for record in query_records:
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+                if query_records:
+                    break
 
     if _wants_extracted_facts(plan.question):
         for record in _source_records(index, EXTRACTED_FACTS_SOURCE_ID, plan.lanes, limit=max(limit * 5, 25)):
