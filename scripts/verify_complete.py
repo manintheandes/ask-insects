@@ -74,6 +74,7 @@ REQUIRED_FILES = (
     "scripts/verify_mosquito_intelligence_coverage.py",
     "scripts/build_literature_facets.py",
     "scripts/ingest_bold_barcodes.py",
+    "scripts/ingest_inaturalist_observations.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -96,6 +97,7 @@ REQUIRED_FILES = (
     "tests/test_mosquito_intelligence_coverage.py",
     "tests/test_literature_facets.py",
     "tests/test_ingest_bold_barcodes.py",
+    "tests/test_ingest_inaturalist_observations.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -119,6 +121,7 @@ UNIT_TEST_MODULES = (
     "tests.test_mosquito_intelligence_coverage",
     "tests.test_literature_facets",
     "tests.test_ingest_bold_barcodes",
+    "tests.test_ingest_inaturalist_observations",
 )
 
 

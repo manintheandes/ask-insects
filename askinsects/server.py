@@ -25,6 +25,7 @@ from .sources.gbif import (
     utc_now,
     write_raw_json,
 )
+from .sources.inaturalist import INATURALIST_SOURCE_ID, fetch_inaturalist_records
 
 
 @dataclass(frozen=True)
@@ -131,11 +132,65 @@ def activate_staging_artifact(staging: Path, artifact_dir: Path) -> None:
         shutil.rmtree(backup)
 
 
+def write_inaturalist_metadata(staging: Path, inaturalist_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(inaturalist_payload["retrieved_at"])
+    sources = [source for source in counts if source != INATURALIST_SOURCE_ID]
+    if counts.get(INATURALIST_SOURCE_ID):
+        sources.append(INATURALIST_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else INATURALIST_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "mosquitoes first",
+            "generated_at": generated_at,
+            "fully_parsed": True,
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[INATURALIST_SOURCE_ID] = inaturalist_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else INATURALIST_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            "inaturalist": inaturalist_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, "inaturalist": inaturalist_payload}
+
+
 def ingest_inaturalist(
     payload: dict[str, object],
     *,
     artifact_dir: Path,
-    build_source_index_fn: Callable[..., dict[str, object]],
+    fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
 ) -> dict[str, object]:
     species_value = payload.get("species") or ["Aedes aegypti"]
     if isinstance(species_value, str):
@@ -156,26 +211,48 @@ def ingest_inaturalist(
     if staging.exists():
         shutil.rmtree(staging)
     try:
-        result = build_source_index_fn(
-            include_fixtures=True,
-            include_gbif=False,
-            include_inaturalist=True,
-            artifact_dir=staging,
-            inaturalist_species=species,
-            inaturalist_place=place,
+        if artifact_dir.exists():
+            shutil.copytree(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = fetch_inaturalist_records_fn(
+            species,
+            raw_dir=staging / "raw" / "inaturalist",
+            place=place,
             observation_limit=observation_limit,
             page_size=page_size,
             delay_seconds=delay_seconds,
         )
-        if not result.get("ok"):
-            raise RuntimeError("hosted ingest failed")
-        result = rewrite_artifact_references(staging, artifact_dir, result)
+        index = SourceIndex(staging / "source_index.sqlite")
+        index.initialize()
+        index.delete_source(INATURALIST_SOURCE_ID)
+        index.upsert_records(result.records)
+        old_gaps = read_json(staging / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == INATURALIST_SOURCE_ID)]
+        gaps.extend(result.gaps)
+        retrieved_at = result.records[0].provenance.retrieved_at if result.records else utc_now()
+        inaturalist_payload = {
+            "requested_species": result.requested_species,
+            "place": result.place,
+            "observation_limit": result.observation_limit,
+            "page_size": result.page_size,
+            "delay_seconds": result.delay_seconds,
+            "total_results": result.total_results,
+            "raw_artifacts": result.raw_artifacts,
+            "record_count": len(result.records),
+            "gap_count": len(result.gaps),
+            "retrieved_at": retrieved_at,
+        }
+        response = write_inaturalist_metadata(staging, inaturalist_payload, gaps)
+        response = rewrite_artifact_references(staging, artifact_dir, response)
         activate_staging_artifact(staging, artifact_dir)
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
         raise
-    result["activated_artifact_dir"] = str(artifact_dir)
-    return result
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
 
 
 def normalize_species(value: object, default: list[str]) -> list[str]:
@@ -471,6 +548,7 @@ def dispatch_request(
     token: str,
     build_source_index_fn: Callable[..., dict[str, object]] = build_source_index,
     fetch_gbif_records_fn: Callable[..., object] = fetch_gbif_records,
+    fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -502,7 +580,11 @@ def dispatch_request(
             limit = int(body.get("limit", 100))
             return json_response(200, {"ok": True, "rows": index.sql(sql, limit=limit)})
         if method == "POST" and path == "/ingest/inaturalist":
-            result = ingest_inaturalist(payload or {}, artifact_dir=artifact_dir, build_source_index_fn=build_source_index_fn)
+            result = ingest_inaturalist(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_inaturalist_records_fn=fetch_inaturalist_records_fn,
+            )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/gbif":

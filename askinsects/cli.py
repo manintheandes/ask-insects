@@ -232,8 +232,18 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "ingest-inaturalist":
         if not args.hosted:
-            emit({"ok": False, "error": "ingest-inaturalist currently requires --hosted; use scripts/build_source_index.py for local ingest"})
-            return 2
+            from scripts.ingest_inaturalist_observations import ingest_inaturalist_observations
+
+            payload = ingest_inaturalist_observations(
+                artifact_dir=artifact_dir,
+                species=args.species or ["Aedes aegypti"],
+                place=args.place,
+                observation_limit=args.observation_limit,
+                page_size=args.page_size,
+                delay_seconds=args.delay_seconds,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
         payload = emit_hosted(
             "POST",
             "/ingest/inaturalist",

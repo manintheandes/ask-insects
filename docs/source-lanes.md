@@ -21,7 +21,7 @@ Sources:
 
 - `mosquito_v1_fixtures`: deterministic repo seed records.
 - `gbif_api`: GBIF occurrence search records when explicitly fetched. The hosted deep ingest paginates the current `Aedes aegypti` GBIF occurrence set and refreshes only `gbif_api` rows, preserving other hosted lanes.
-- `inaturalist_api`: bounded iNaturalist observations with licensed photos when explicitly fetched.
+- `inaturalist_api`: bounded iNaturalist observations with licensed photos when explicitly fetched. Local and hosted incremental ingests refresh only `inaturalist_api` rows, preserving literature, genomics, neurobiology, BOLD, and derived facet lanes.
 
 ## Videos And Media
 
@@ -38,7 +38,7 @@ Deep iNaturalist ingest paginates the public API and saves one raw page artifact
 
 Hosted Ask Insects uses the same source lanes. The difference is location: parsed artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`, and the local CLI asks the hosted API to ingest or query those artifacts.
 
-Hosted GBIF ingest stages a copy of the active artifact directory, fetches GBIF into the staging copy, replaces existing `gbif_api` rows in SQLite, writes receipts, and activates the staged directory only after the refresh succeeds. This keeps the old server database readable during long GBIF pulls.
+Hosted GBIF and iNaturalist ingests stage a copy of the active artifact directory, fetch into the staging copy, replace only the matching source rows in SQLite, write receipts, and activate the staged directory only after the refresh succeeds. This keeps the old server database readable during long pulls.
 
 ## Genomics
 

@@ -33,10 +33,11 @@ sources:
   - id: inaturalist_api
     name: iNaturalist public observations API
     source_type: public_api
-    boundary: bounded mosquito observations with licensed photos
+    boundary: bounded Aedes aegypti and mosquito observations with licensed photos, refreshed incrementally so existing source lanes are preserved
     query_plane: inaturalist_observation_search
     api_base: https://api.inaturalist.org/v1
     artifact_dir: artifacts/mosquito-v1/raw/inaturalist
+    ingest_script: scripts/ingest_inaturalist_observations.py
     lanes:
       - observations
       - media

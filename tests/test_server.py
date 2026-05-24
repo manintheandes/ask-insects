@@ -7,6 +7,7 @@ from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.server import dispatch_request
 from askinsects.sources.gbif import GBIFBuildResult
+from askinsects.sources.inaturalist import INaturalistBuildResult
 
 
 class ServerTests(unittest.TestCase):
@@ -63,16 +64,28 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(sql.payload["rows"][0]["n"], 7)
 
     def test_ingest_inaturalist_uses_staging_then_activates(self):
-        calls = []
-
-        def fake_builder(**kwargs):
-            calls.append(kwargs)
-            artifact_dir = kwargs["artifact_dir"]
-            build_fixture_index(artifact_dir=artifact_dir)
-            return {"ok": True, "record_count": 7}
-
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*args, **kwargs):
+                raw_dir = kwargs["raw_dir"]
+                raw_dir.mkdir(parents=True, exist_ok=True)
+                raw_path = raw_dir / "page.json"
+                raw_path.write_text("{}\n", encoding="utf-8")
+                return INaturalistBuildResult(
+                    source_id="inaturalist_api",
+                    records=[],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_species=list(args[0]),
+                    place=kwargs["place"],
+                    observation_limit=kwargs["observation_limit"],
+                    page_size=kwargs["page_size"],
+                    delay_seconds=kwargs["delay_seconds"],
+                    total_results={"Aedes aegypti": 0},
+                )
+
             headers = {"Authorization": "Bearer secret"}
             response = dispatch_request(
                 "POST",
@@ -81,46 +94,52 @@ class ServerTests(unittest.TestCase):
                 headers=headers,
                 artifact_dir=artifact_dir,
                 token="secret",
-                build_source_index_fn=fake_builder,
+                fetch_inaturalist_records_fn=fake_fetch,
             )
 
             self.assertEqual(response.status, 200)
             self.assertTrue(response.payload["ok"])
-            self.assertEqual(calls[0]["inaturalist_species"], ["Aedes aegypti"])
+            self.assertIn("mosquito_v1_fixtures", response.payload["sources"])
             self.assertTrue((artifact_dir / "source_index.sqlite").exists())
             self.assertFalse((artifact_dir.parent / ".mosquito-v1.staging").exists())
 
     def test_ingest_records_final_artifact_paths_in_provenance(self):
-        def fake_builder(**kwargs):
-            artifact_dir = kwargs["artifact_dir"]
-            artifact_dir.mkdir(parents=True, exist_ok=True)
-            index = SourceIndex(artifact_dir / "source_index.sqlite")
-            index.initialize()
-            index.upsert_records(
-                [
+        def fake_fetch(*args, **kwargs):
+            raw_dir = kwargs["raw_dir"]
+            return INaturalistBuildResult(
+                source_id="inaturalist_api",
+                records=[
                     EvidenceRecord(
-                        record_id="inat:observation:1",
-                        lane="observations",
+                        record_id="inat:media:1",
+                        lane="media",
                         source="inaturalist_api",
-                        title="Aedes aegypti observation",
-                        text="Aedes aegypti observed with a photo.",
+                        title="Aedes aegypti image",
+                        text="Aedes aegypti image.",
                         species="Aedes aegypti",
                         url="https://www.inaturalist.org/observations/1",
                         media_url="https://static.inaturalist.org/photos/1/medium.jpg",
                         provenance=Provenance(
                             source_id="inaturalist_api",
-                            locator=f"{artifact_dir}/raw/inaturalist/page.json#observations/1",
+                            locator=f"{raw_dir}/page.json#observations/1/photos/1",
                             retrieved_at="2026-05-23T00:00:00Z",
                             license="cc-by",
-                            source_url="https://api.inaturalist.org/v1/observations",
+                            source_url="https://www.inaturalist.org/observations/1",
                         ),
                     )
-                ]
+                ],
+                gaps=[],
+                raw_artifacts=[(raw_dir / "page.json").as_posix()],
+                requested_species=list(args[0]),
+                place=kwargs["place"],
+                observation_limit=kwargs["observation_limit"],
+                page_size=kwargs["page_size"],
+                delay_seconds=kwargs["delay_seconds"],
+                total_results={"Aedes aegypti": 1},
             )
-            return {"ok": True, "record_count": 1, "artifact_dir": str(artifact_dir)}
 
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
             response = dispatch_request(
                 "POST",
                 "/ingest/inaturalist",
@@ -128,13 +147,88 @@ class ServerTests(unittest.TestCase):
                 headers={"Authorization": "Bearer secret"},
                 artifact_dir=artifact_dir,
                 token="secret",
-                build_source_index_fn=fake_builder,
+                fetch_inaturalist_records_fn=fake_fetch,
             )
 
             self.assertTrue(response.payload["ok"])
-            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select provenance_json from records")
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select provenance_json from records where source='inaturalist_api'")
             self.assertIn(str(artifact_dir), rows[0]["provenance_json"])
             self.assertNotIn(".staging", rows[0]["provenance_json"])
+
+    def test_ingest_inaturalist_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="bold:barcode:test",
+                        lane="dna_barcodes",
+                        source="bold_api",
+                        title="BOLD barcode",
+                        text="BOLD barcode for Aedes aegypti.",
+                        species="Aedes aegypti",
+                        url="https://portal.boldsystems.org/record/test",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="bold_api",
+                            locator="test.tsv#row/1",
+                            retrieved_at="2026-05-23T00:00:00Z",
+                            license="BOLD public data",
+                        ),
+                    )
+                ]
+            )
+
+            def fake_fetch(*args, **kwargs):
+                raw_dir = kwargs["raw_dir"]
+                return INaturalistBuildResult(
+                    source_id="inaturalist_api",
+                    records=[
+                        EvidenceRecord(
+                            record_id="inat:observation:1",
+                            lane="observations",
+                            source="inaturalist_api",
+                            title="Aedes aegypti observation",
+                            text="Aedes aegypti observed with a photo.",
+                            species="Aedes aegypti",
+                            url="https://www.inaturalist.org/observations/1",
+                            media_url="https://static.inaturalist.org/photos/1/medium.jpg",
+                            provenance=Provenance(
+                                source_id="inaturalist_api",
+                                locator=f"{raw_dir}/page.json#observations/1",
+                                retrieved_at="2026-05-23T00:00:00Z",
+                                license="cc-by",
+                                source_url="https://api.inaturalist.org/v1/observations",
+                            ),
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[(raw_dir / "page.json").as_posix()],
+                    requested_species=["Aedes aegypti"],
+                    place=None,
+                    observation_limit=1,
+                    page_size=200,
+                    delay_seconds=0.0,
+                    total_results={"Aedes aegypti": 1},
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/inaturalist",
+                {"species": ["Aedes aegypti"], "observation_limit": 1},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_inaturalist_records_fn=fake_fetch,
+            )
+
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["bold_api"], 1)
+            self.assertEqual(counts["inaturalist_api"], 1)
 
     def test_ingest_keeps_active_index_available_during_build(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -142,11 +236,21 @@ class ServerTests(unittest.TestCase):
             build_fixture_index(artifact_dir=artifact_dir)
             active_db = artifact_dir / "source_index.sqlite"
 
-            def fake_builder(**kwargs):
+            def fake_fetch(*args, **kwargs):
                 self.assertTrue(active_db.exists())
-                self.assertNotEqual(kwargs["artifact_dir"], artifact_dir)
-                build_fixture_index(artifact_dir=kwargs["artifact_dir"])
-                return {"ok": True, "record_count": 7}
+                self.assertNotEqual(kwargs["raw_dir"].parents[1], artifact_dir)
+                return INaturalistBuildResult(
+                    source_id="inaturalist_api",
+                    records=[],
+                    gaps=[],
+                    raw_artifacts=[],
+                    requested_species=list(args[0]),
+                    place=kwargs["place"],
+                    observation_limit=kwargs["observation_limit"],
+                    page_size=kwargs["page_size"],
+                    delay_seconds=kwargs["delay_seconds"],
+                    total_results={"Aedes aegypti": 0},
+                )
 
             response = dispatch_request(
                 "POST",
@@ -155,7 +259,7 @@ class ServerTests(unittest.TestCase):
                 headers={"Authorization": "Bearer secret"},
                 artifact_dir=artifact_dir,
                 token="secret",
-                build_source_index_fn=fake_builder,
+                fetch_inaturalist_records_fn=fake_fetch,
             )
 
             self.assertTrue(response.payload["ok"])

@@ -104,6 +104,7 @@ This command talks to the hosted API. The server fetches GBIF pages with a small
 
 iNaturalist records use source id `inaturalist_api`. Raw iNaturalist responses are saved under `artifacts/mosquito-v1/raw/inaturalist/` and summarized in `artifacts/mosquito-v1/source_receipt.json`.
 Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes_aegypti_anywhere_page_001.json`.
+Local and hosted iNaturalist ingests are incremental. They replace only `inaturalist_api` rows, preserving the other source lanes already installed in `artifacts/mosquito-v1`.
 
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 
@@ -135,7 +136,8 @@ Hosted Ask Insects follows the Ask Monarch VM shape: the server reads `/home/jos
 python3 -m askinsects configure --url http://<vm-ip>:8080 --token "$ASK_INSECTS_TOKEN"
 python3 -m askinsects health --hosted
 python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
-python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
+python3 -m askinsects ingest-inaturalist --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
+python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"
 ```

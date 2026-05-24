@@ -52,17 +52,17 @@ The hosted ingest paginates GBIF occurrence search with a small worker pool, sto
 iNaturalist is the live photo and observation lane. It is opt-in and bounded:
 
 ```bash
-python3 scripts/build_source_index.py --fixtures --inat --species "Aedes aegypti" --place Brazil --observation-limit 10
+python3 -m askinsects ingest-inaturalist --species "Aedes aegypti" --place Brazil --observation-limit 10 --page-size 10 --delay-seconds 0
 python3 -m askinsects sources
 python3 -m askinsects ask "show mosquito observations with images in Brazil"
 ```
 
-This writes raw iNaturalist API responses under `artifacts/mosquito-v1/raw/inaturalist/`, normalizes observation and still-image media records into the SQLite index, stores the raw per-record payloads in SQLite, and records source receipts. Unit tests use fake iNaturalist responses so the completion gate stays deterministic.
+This writes raw iNaturalist API responses under `artifacts/mosquito-v1/raw/inaturalist/`, normalizes observation and still-image media records into the SQLite index, stores the raw per-record payloads in SQLite, and records source receipts. The incremental ingest refreshes only `inaturalist_api` rows, preserving literature, genomics, neurobiology, BOLD, and derived facet lanes. Unit tests use fake iNaturalist responses so the completion gate stays deterministic.
 
 For a deeper `Aedes aegypti` ingest, use paginated API pulls with an explicit cap and delay:
 
 ```bash
-python3 scripts/build_source_index.py --fixtures --inat --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
+python3 -m askinsects ingest-inaturalist --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
 ```
 
 This saves each raw API page separately and records the page size, delay, and total iNaturalist results in the receipt.
