@@ -58,8 +58,6 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 def _search_queries(question: str) -> list[str]:
     queries = [question]
     species = _requested_species(question)
-    if species:
-        queries.append(species)
     q = question.lower()
     added_domain_phrase = False
     for phrase in (
@@ -74,6 +72,8 @@ def _search_queries(question: str) -> list[str]:
         if phrase in q:
             queries.append(phrase)
             added_domain_phrase = True
+    if species and not added_domain_phrase:
+        queries.append(species)
     if not added_domain_phrase and "host seeking" in question.lower():
         queries.append("host seeking")
     for term in ("Brazil", "mosquito"):

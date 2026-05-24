@@ -172,6 +172,12 @@ def build_source_index(
     index.initialize()
     index.upsert_records(records)
     summary = index.summary()
+    source_counts = {
+        str(row["source"]): int(row["n"])
+        for row in index.sql("select source, count(*) as n from records group by source", limit=1000)
+    }
+    if ncbi_genome_payload is not None:
+        ncbi_genome_payload["record_count"] = source_counts.get(NCBI_GENOME_SOURCE_ID, 0)
 
     status = {
         "ok": True,

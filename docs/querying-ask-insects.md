@@ -35,7 +35,7 @@ Then query through the CLI:
 ```bash
 python3 -m askinsects ask "what do we know about Aedes aegypti?"
 python3 -m askinsects search observations "Brazil"
-python3 -m askinsects search genes "odorant receptor"
+python3 -m askinsects search proteins "odorant receptor"
 python3 -m askinsects search proteins "gustatory receptor"
 python3 -m askinsects search papers "host seeking"
 python3 -m askinsects sql "select species, count(*) as records from records group by species"

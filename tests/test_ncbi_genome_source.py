@@ -38,6 +38,8 @@ def write_fake_ncbi_package(root: Path) -> Path:
                 "NC_035107.1\tRefSeq\tgene\t100\t900\t.\t+\t.\tID=gene-LOC5566000;Name=orco;gene=orco;gene_biotype=protein_coding;description=odorant receptor coreceptor",
                 "NC_035107.1\tRefSeq\tmRNA\t100\t900\t.\t+\t.\tID=rna-XM_001;Parent=gene-LOC5566000;Name=orco transcript;product=odorant receptor coreceptor transcript",
                 "NC_035107.1\tRefSeq\tCDS\t150\t850\t.\t+\t0\tID=cds-XP_001;Parent=rna-XM_001;Name=XP_001;product=odorant receptor coreceptor;protein_id=XP_001",
+                "NC_035107.1\tRefSeq\tCDS\t950\t1200\t.\t+\t0\tID=cds-XP_999;Parent=rna-XM_999;Name=XP_999;product=hypothetical protein;protein_id=XP_999",
+                "NC_035107.1\tRefSeq\texon\t950\t1200\t.\t+\t.\tID=exon-XM_999-1;Parent=rna-XM_999",
             ]
         )
         + "\n",
@@ -90,6 +92,8 @@ class NCBIGenomeSourceTests(unittest.TestCase):
             self.assertEqual(protein.lane, "proteins")
             self.assertIn("gustatory receptor", protein.text)
             self.assertEqual(protein.payload["sequence_length"], 6)
+            self.assertFalse(any(record.record_id == "ncbi:feature:cds-XP_999" for record in result.records))
+            self.assertFalse(any(record.record_id == "ncbi:feature:exon-XM_999-1" for record in result.records))
 
     def test_fetch_ncbi_genome_records_records_gap_when_optional_proteins_missing(self):
         with tempfile.TemporaryDirectory() as tmpdir:

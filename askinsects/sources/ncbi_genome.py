@@ -121,20 +121,40 @@ def _feature_name(attributes: dict[str, str], feature_type: str) -> str:
     return feature_type
 
 
-def _feature_lane(feature_type: str) -> str | None:
+FUNCTIONAL_FEATURE_TERMS = (
+    "odorant",
+    "gustatory",
+    "ionotropic",
+    "receptor",
+    "orco",
+    "cytochrome p450",
+    "sodium channel",
+    "insecticide",
+    "resistance",
+)
+
+
+def _is_functional_feature(attributes: dict[str, str]) -> bool:
+    text = " ".join(attributes.get(key, "") for key in ("Name", "gene", "product", "description", "Note")).lower()
+    return any(term in text for term in FUNCTIONAL_FEATURE_TERMS)
+
+
+def _feature_lane(feature_type: str, attributes: dict[str, str]) -> str | None:
     normalized = feature_type.lower()
     if normalized == "gene":
         return "genes"
     if normalized in {"mrna", "transcript", "ncrna", "lnc_rna", "rrna", "trna"}:
         return "transcripts"
-    if normalized in {"cds", "exon", "region", "sequence_feature"}:
+    if normalized == "region":
+        return "genome_features"
+    if normalized == "cds" and _is_functional_feature(attributes):
         return "genome_features"
     return None
 
 
 def _feature_record_id(feature_type: str, attributes: dict[str, str]) -> str:
     identifier = attributes.get("ID") or attributes.get("protein_id") or attributes.get("Name") or feature_type
-    lane = _feature_lane(feature_type)
+    lane = _feature_lane(feature_type, attributes)
     if lane == "genes":
         prefix = "gene"
     elif lane == "transcripts":
@@ -171,69 +191,74 @@ def _gff_records(
 ) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
     records: list[EvidenceRecord] = []
     gaps: list[dict[str, object]] = []
-    for line_number, line in enumerate(gff_path.read_text(encoding="utf-8").splitlines(), start=1):
-        if not line or line.startswith("#"):
-            continue
-        columns = line.split("\t")
-        if len(columns) != 9:
-            gaps.append(
-                {
-                    "source": NCBI_GENOME_SOURCE_ID,
-                    "lane": "genome_features",
-                    "assembly_accession": assembly_accession,
-                    "reason": f"Malformed GFF row at line {line_number}.",
-                }
-            )
-            continue
-        seqid, source, feature_type, start, end, score, strand, phase, raw_attributes = columns
-        lane = _feature_lane(feature_type)
-        if lane is None:
-            continue
-        attributes = parse_gff_attributes(raw_attributes)
-        record_id = _feature_record_id(feature_type, attributes)
-        name = _feature_name(attributes, feature_type)
-        payload = {
-            "assembly_accession": assembly_accession,
-            "gff_columns": {
-                "seqid": seqid,
-                "source": source,
-                "type": feature_type,
-                "start": int(start),
-                "end": int(end),
-                "score": score,
-                "strand": strand,
-                "phase": phase,
-            },
-            "gff_attributes": attributes,
-        }
-        records.append(
-            EvidenceRecord(
-                record_id=record_id,
-                lane=lane,
-                source=NCBI_GENOME_SOURCE_ID,
-                title=f"{species} {feature_type} {name}",
-                text=_feature_text(
+    with gff_path.open(encoding="utf-8") as handle:
+        lines = enumerate(handle, start=1)
+        for line_number, line in lines:
+            line = line.rstrip("\n")
+            if not line or line.startswith("#"):
+                continue
+            columns = line.split("\t")
+            if len(columns) != 9:
+                gaps.append(
+                    {
+                        "source": NCBI_GENOME_SOURCE_ID,
+                        "lane": "genome_features",
+                        "assembly_accession": assembly_accession,
+                        "reason": f"Malformed GFF row at line {line_number}.",
+                    }
+                )
+                continue
+            seqid, source, feature_type, start, end, score, strand, phase, raw_attributes = columns
+            attributes = parse_gff_attributes(raw_attributes)
+            lane = _feature_lane(feature_type, attributes)
+            if lane is None:
+                continue
+            record_id = _feature_record_id(feature_type, attributes)
+            if lane == "genome_features":
+                record_id = f"{record_id}:{start}-{end}"
+            name = _feature_name(attributes, feature_type)
+            payload = {
+                "assembly_accession": assembly_accession,
+                "gff_columns": {
+                    "seqid": seqid,
+                    "source": source,
+                    "type": feature_type,
+                    "start": int(start),
+                    "end": int(end),
+                    "score": score,
+                    "strand": strand,
+                    "phase": phase,
+                },
+                "gff_attributes": attributes,
+            }
+            records.append(
+                EvidenceRecord(
+                    record_id=record_id,
+                    lane=lane,
+                    source=NCBI_GENOME_SOURCE_ID,
+                    title=f"{species} {feature_type} {name}",
+                    text=_feature_text(
+                        species=species,
+                        feature_type=feature_type,
+                        seqid=seqid,
+                        start=start,
+                        end=end,
+                        strand=strand,
+                        attributes=attributes,
+                    ),
                     species=species,
-                    feature_type=feature_type,
-                    seqid=seqid,
-                    start=start,
-                    end=end,
-                    strand=strand,
-                    attributes=attributes,
-                ),
-                species=species,
-                url=_source_url(assembly_accession),
-                media_url=None,
-                provenance=Provenance(
-                    source_id=NCBI_GENOME_SOURCE_ID,
-                    locator=f"{gff_path.as_posix()}#line/{line_number}",
-                    retrieved_at=retrieved_at,
-                    license="NCBI public data metadata",
-                    source_url=_source_url(assembly_accession),
-                ),
-                payload=payload,
+                    url=_source_url(assembly_accession),
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id=NCBI_GENOME_SOURCE_ID,
+                        locator=f"{gff_path.as_posix()}#line/{line_number}",
+                        retrieved_at=retrieved_at,
+                        license="NCBI public data metadata",
+                        source_url=_source_url(assembly_accession),
+                    ),
+                    payload=payload,
+                )
             )
-        )
     return records, gaps
 
 
@@ -241,14 +266,16 @@ def _iter_fasta(path: Path) -> list[tuple[str, str]]:
     records: list[tuple[str, str]] = []
     header: str | None = None
     sequence_parts: list[str] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if line.startswith(">"):
-            if header is not None:
-                records.append((header, "".join(sequence_parts)))
-            header = line[1:].strip()
-            sequence_parts = []
-        else:
-            sequence_parts.append(line.strip())
+    with path.open(encoding="utf-8") as handle:
+        for line in handle:
+            line = line.rstrip("\n")
+            if line.startswith(">"):
+                if header is not None:
+                    records.append((header, "".join(sequence_parts)))
+                header = line[1:].strip()
+                sequence_parts = []
+            else:
+                sequence_parts.append(line.strip())
     if header is not None:
         records.append((header, "".join(sequence_parts)))
     return records

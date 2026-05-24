@@ -72,7 +72,7 @@ NCBI Datasets is the first genomics lane. V1 parses an unpacked `Aedes aegypti` 
 
 ```bash
 python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
-python3 -m askinsects search genes "odorant receptor"
+python3 -m askinsects search proteins "odorant receptor"
 python3 -m askinsects search proteins "gustatory receptor"
 python3 -m askinsects ask "show odorant receptor genes in Aedes aegypti"
 ```
