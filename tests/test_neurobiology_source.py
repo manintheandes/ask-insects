@@ -177,6 +177,10 @@ def write_fake_neurobiology_artifacts(root: Path) -> Path:
         ),
         encoding="utf-8",
     )
+    (catmaid_dir / "skeletons.json").write_text(json.dumps([156, 860, 419123]), encoding="utf-8")
+    (catmaid_dir / "skeletons_nodecount_gt_1.json").write_text(json.dumps([156, 860]), encoding="utf-8")
+    (catmaid_dir / "skeletons_nodecount_gt_10.json").write_text(json.dumps([156, 860]), encoding="utf-8")
+    (catmaid_dir / "skeletons_nodecount_gt_100.json").write_text(json.dumps([156]), encoding="utf-8")
     return artifact_dir
 
 
@@ -254,6 +258,10 @@ class NeurobiologySourceTests(unittest.TestCase):
             self.assertIn("neuro:connectome:catmaid:stack:1", record_ids)
             self.assertIn("neuro:connectome:catmaid:annotation:46", record_ids)
             self.assertIn("neuro:connectome:catmaid:volume:18", record_ids)
+            self.assertIn("neuro:connectome:catmaid:skeleton-manifest", record_ids)
+            self.assertIn("neuro:connectome:catmaid:skeleton-filter:nodecount-gt-100", record_ids)
+            self.assertIn("neuro:connectome:catmaid:skeleton:156", record_ids)
+            self.assertIn("neuro:connectome:catmaid:skeleton:419123", record_ids)
             self.assertIn("neuro:connectome:wellcome:source-gap", record_ids)
 
             gap_reasons = {gap["reason"] for gap in result.gaps}
@@ -273,6 +281,15 @@ class NeurobiologySourceTests(unittest.TestCase):
             workflow = next(record for record in result.records if record.record_id == "neuro:sra:SRP290992:reanalysis-workflow")
             self.assertIn("fasterq-dump", workflow.text)
             self.assertEqual(workflow.payload["execution_status"], "not_executed_by_source_index")
+
+            skeleton_manifest = next(record for record in result.records if record.record_id == "neuro:connectome:catmaid:skeleton-manifest")
+            self.assertEqual(skeleton_manifest.payload["skeleton_count"], 3)
+            self.assertEqual(skeleton_manifest.payload["nodecount_gt_counts"]["100"], 1)
+            self.assertIn("/skeletons/{skeleton_id}/compact-detail", skeleton_manifest.payload["endpoint_templates"]["compact_detail"])
+
+            skeleton = next(record for record in result.records if record.record_id == "neuro:connectome:catmaid:skeleton:156")
+            self.assertTrue(skeleton.payload["nodecount_gt"]["100"])
+            self.assertIn("/1/skeletons/156/compact-detail", skeleton.payload["compact_detail_url"])
 
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
             index.initialize()

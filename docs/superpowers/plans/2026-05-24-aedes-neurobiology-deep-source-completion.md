@@ -63,6 +63,7 @@
 - [x] Parse repository metadata and CSV inventories into records.
 - [x] Keep the whole-brain Wellcome gap as `whole_brain_connectome_download_not_public`.
 - [x] Add the public README CATMAID locator plus CATMAID project, stack, annotation, and volume API metadata.
+- [x] Add public CATMAID skeleton manifest, node-count filters, and skeleton-ID export endpoint records.
 
 ### Task 5: Verification And Install
 

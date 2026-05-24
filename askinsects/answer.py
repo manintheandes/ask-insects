@@ -84,6 +84,8 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
+    if "catmaid" in q and ("skeleton" in q or "bulk" in q or "export" in q or "download" in q):
+        return ["CATMAID Aedes skeleton export manifest", "skeleton manifest bulk download", "CATMAID skeleton IDs", question]
     if "catmaid" in q or "em dataset" in q or ("public" in q and "connectome" in q):
         return ["CATMAID project accessible", "Public CATMAID project", "CATMAID Aedes project", "CATMAID EM dataset", "aedes_public", question]
     if "connectome" in q:

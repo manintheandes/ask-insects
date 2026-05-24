@@ -1380,6 +1380,105 @@ def _connectome_records(artifact_dir: Path, *, retrieved_at: str) -> tuple[list[
                         retrieved_at=retrieved_at,
                     )
                 )
+    skeletons_path = catmaid_dir / "skeletons.json"
+    skeleton_ids: list[int] = []
+    if skeletons_path.exists():
+        raw_artifacts.append(skeletons_path.as_posix())
+        skeletons_payload = json.loads(skeletons_path.read_text(encoding="utf-8"))
+        if isinstance(skeletons_payload, list):
+            skeleton_ids = [int(skeleton_id) for skeleton_id in skeletons_payload if isinstance(skeleton_id, int)]
+    threshold_paths = {
+        "1": catmaid_dir / "skeletons_nodecount_gt_1.json",
+        "10": catmaid_dir / "skeletons_nodecount_gt_10.json",
+        "100": catmaid_dir / "skeletons_nodecount_gt_100.json",
+    }
+    threshold_sets: dict[str, set[int]] = {}
+    for threshold, path in threshold_paths.items():
+        if not path.exists():
+            continue
+        raw_artifacts.append(path.as_posix())
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if isinstance(payload, list):
+            threshold_sets[threshold] = {int(skeleton_id) for skeleton_id in payload if isinstance(skeleton_id, int)}
+            records.append(
+                _record(
+                    {
+                        "record_id": f"neuro:connectome:catmaid:skeleton-filter:nodecount-gt-{threshold}",
+                        "record_type": "catmaid_skeleton_filter",
+                        "title": f"CATMAID Aedes skeleton filter nodecount_gt={threshold}",
+                        "text": (
+                            f"Public CATMAID skeleton filter nodecount_gt={threshold} returns "
+                            f"{len(threshold_sets[threshold])} Aedes skeleton ID(s)."
+                        ),
+                        "species": "Aedes aegypti",
+                        "url": f"https://radagast.hms.harvard.edu/catmaidaedes/1/skeletons/?nodecount_gt={threshold}",
+                        "locator": path.as_posix(),
+                        "license": "CATMAID public metadata",
+                        "nodecount_gt": int(threshold),
+                        "skeleton_count": len(threshold_sets[threshold]),
+                        "sample_skeleton_ids": sorted(threshold_sets[threshold])[:20],
+                        "keywords": ["CATMAID", "skeleton IDs", "nodecount filter", "bulk export"],
+                    },
+                    retrieved_at=retrieved_at,
+                )
+            )
+    if skeleton_ids:
+        endpoint_templates = {
+            "list": "https://radagast.hms.harvard.edu/catmaidaedes/1/skeletons/",
+            "compact_detail": "https://radagast.hms.harvard.edu/catmaidaedes/1/skeletons/{skeleton_id}/compact-detail",
+            "cable_length": "https://radagast.hms.harvard.edu/catmaidaedes/1/skeletons/{skeleton_id}/cable-length",
+            "connector_links": "https://radagast.hms.harvard.edu/catmaidaedes/1/connectors/links/?skeleton_ids={skeleton_id}",
+        }
+        records.append(
+            _record(
+                {
+                    "record_id": "neuro:connectome:catmaid:skeleton-manifest",
+                    "record_type": "catmaid_skeleton_manifest",
+                    "title": "CATMAID Aedes skeleton export manifest",
+                    "text": (
+                        f"The public Aedes CATMAID API exposes {len(skeleton_ids)} skeleton ID(s) through GET /1/skeletons/. "
+                        "Each skeleton has public GET endpoints for compact-detail morphology, cable length, and connector links. "
+                        "This closes the CATMAID skeleton-ID export surface, but it is not the future Wellcome whole-brain bulk package."
+                    ),
+                    "species": "Aedes aegypti",
+                    "url": endpoint_templates["list"],
+                    "locator": skeletons_path.as_posix(),
+                    "license": "CATMAID public metadata",
+                    "skeleton_count": len(skeleton_ids),
+                    "sample_skeleton_ids": skeleton_ids[:20],
+                    "nodecount_gt_counts": {threshold: len(ids) for threshold, ids in threshold_sets.items()},
+                    "endpoint_templates": endpoint_templates,
+                    "keywords": ["CATMAID", "skeleton manifest", "bulk download", "skeleton IDs", "export"],
+                },
+                retrieved_at=retrieved_at,
+            )
+        )
+        for skeleton_id in skeleton_ids:
+            nodecount_gt = {threshold: skeleton_id in ids for threshold, ids in threshold_sets.items()}
+            records.append(
+                _record(
+                    {
+                        "record_id": f"neuro:connectome:catmaid:skeleton:{skeleton_id}",
+                        "record_type": "catmaid_skeleton",
+                        "title": f"CATMAID Aedes skeleton {skeleton_id}",
+                        "text": (
+                            f"Public CATMAID skeleton {skeleton_id} is listed in the Aedes EM project. "
+                            "Compact-detail morphology, cable length, and connector-link endpoints are available by skeleton ID."
+                        ),
+                        "species": "Aedes aegypti",
+                        "url": endpoint_templates["compact_detail"].format(skeleton_id=skeleton_id),
+                        "locator": f"{skeletons_path.as_posix()}#skeleton/{skeleton_id}",
+                        "license": "CATMAID public metadata",
+                        "skeleton_id": skeleton_id,
+                        "compact_detail_url": endpoint_templates["compact_detail"].format(skeleton_id=skeleton_id),
+                        "cable_length_url": endpoint_templates["cable_length"].format(skeleton_id=skeleton_id),
+                        "connector_links_url": endpoint_templates["connector_links"].format(skeleton_id=skeleton_id),
+                        "nodecount_gt": nodecount_gt,
+                        "keywords": ["CATMAID", "skeleton", "compact-detail", "connector links"],
+                    },
+                    retrieved_at=retrieved_at,
+                )
+            )
     csv_dir = root / "csvs"
     for csv_path in sorted(csv_dir.glob("*.csv")):
         raw_artifacts.append(csv_path.as_posix())

@@ -29,6 +29,12 @@ CATMAID_STACKS_URL = f"{CATMAID_BASE_URL}/1/stacks"
 CATMAID_STACK_1_INFO_URL = f"{CATMAID_BASE_URL}/1/stack/1/info"
 CATMAID_ANNOTATIONS_URL = f"{CATMAID_BASE_URL}/1/annotations/"
 CATMAID_VOLUMES_URL = f"{CATMAID_BASE_URL}/1/volumes/"
+CATMAID_SKELETONS_URL = f"{CATMAID_BASE_URL}/1/skeletons/"
+CATMAID_SKELETON_NODECOUNT_URLS = {
+    "skeletons_nodecount_gt_1": f"{CATMAID_SKELETONS_URL}?nodecount_gt=1",
+    "skeletons_nodecount_gt_10": f"{CATMAID_SKELETONS_URL}?nodecount_gt=10",
+    "skeletons_nodecount_gt_100": f"{CATMAID_SKELETONS_URL}?nodecount_gt=100",
+}
 USER_AGENT = "ask-insects-neurobiology-ingest/1.0 (+https://github.com/openai/codex)"
 
 
@@ -242,9 +248,24 @@ def ingest(artifact_dir: Path, *, download_dropbox: bool = True) -> dict[str, ob
             ("catmaid_stack_1_info", CATMAID_STACK_1_INFO_URL, "stack_1_info.json"),
             ("catmaid_annotations", CATMAID_ANNOTATIONS_URL, "annotations.json"),
             ("catmaid_volumes", CATMAID_VOLUMES_URL, "volumes.json"),
+            ("catmaid_skeletons", CATMAID_SKELETONS_URL, "skeletons.json"),
         ):
             payload = fetch_json_payload(url)
             path = catmaid_dir / filename
+            write_json(path, payload)
+            downloads.append(
+                {
+                    "source": "connectome",
+                    "key": label,
+                    "url": url,
+                    "path": path.as_posix(),
+                    "ok": True,
+                    "status": "downloaded",
+                }
+            )
+        for label, url in CATMAID_SKELETON_NODECOUNT_URLS.items():
+            payload = fetch_json_payload(url)
+            path = catmaid_dir / f"{label}.json"
             write_json(path, payload)
             downloads.append(
                 {

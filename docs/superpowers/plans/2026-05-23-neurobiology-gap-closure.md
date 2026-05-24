@@ -68,3 +68,19 @@
 - [x] Parse CATMAID project, stack, annotation, and volume metadata into provenance-backed records.
 - [x] Extend the neurobiology ingest script to download the README and public CATMAID API JSON.
 - [x] Update docs and source map to name the public CATMAID EM metadata as covered.
+
+### Task 5: Public CATMAID Skeleton Export Metadata
+
+**Files:**
+- Modify: `tests/test_neurobiology_source.py`
+- Modify: `tests/test_answer.py`
+- Modify: `scripts/ingest_neurobiology_sources.py`
+- Modify: `askinsects/sources/neurobiology.py`
+- Modify: `askinsects/answer.py`
+- Modify: source docs and skill copy
+
+- [x] Verify whether the public CATMAID server exposes skeleton IDs and export endpoints without auth.
+- [x] Add failing tests for CATMAID skeleton manifest records and skeleton-export answer routing.
+- [x] Extend ingest to download public skeleton ID lists and node-count-filtered skeleton lists.
+- [x] Parse skeleton manifest, skeleton filter, and individual skeleton-ID records with endpoint locators.
+- [x] Keep the future Wellcome whole-brain bulk package as a separate external availability gap.
