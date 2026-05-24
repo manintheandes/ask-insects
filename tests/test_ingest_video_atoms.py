@@ -76,6 +76,32 @@ class IngestVideoAtomsTests(unittest.TestCase):
             gaps = json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))
             self.assertTrue(any(gap.get("reason") == "video_license_unclear" for gap in gaps))
 
+    def test_ingest_resolves_relative_motion_tables_against_artifact_dir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = artifact_dir / "raw" / "video_atoms" / "motion.csv"
+            table_path.parent.mkdir(parents=True, exist_ok=True)
+            table_path.write_text(
+                "video_id,track_id,frame,time_seconds,x,y,behavior\n"
+                "pmc:video:PMC123:video1.mp4,track-1,7,0.28,10.5,20.5,flight\n",
+                encoding="utf-8",
+            )
+
+            result = ingest_video_atoms(
+                artifact_dir=artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                motion_table_paths=[Path("raw/video_atoms/motion.csv")],
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["motion_row_count"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_video_atoms' and lane='behavior'",
+                limit=5,
+            )
+            self.assertIn("raw/video_atoms/motion.csv#row/1", rows[0]["provenance_json"])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -111,6 +111,10 @@ def ingest_video_atoms(
     max_discovery_results: int = 1000,
     motion_table_paths: Iterable[Path] | None = None,
 ) -> dict[str, object]:
+    resolved_motion_table_paths = [
+        path if path.is_absolute() else artifact_dir / path
+        for path in (motion_table_paths or [])
+    ]
     result = build_video_atom_records(
         artifact_dir,
         retrieved_at=retrieved_at,
@@ -125,7 +129,7 @@ def ingest_video_atoms(
         artifact_generator_fn=artifact_generator_fn,
         discovery_clients=discovery_clients,
         max_discovery_results=max_discovery_results,
-        motion_table_paths=motion_table_paths,
+        motion_table_paths=resolved_motion_table_paths,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
