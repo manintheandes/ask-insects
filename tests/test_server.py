@@ -6,7 +6,13 @@ from unittest import mock
 from askinsects.builder import build_fixture_index
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
-from askinsects.server import activate_source_staging, copy_artifact_to_staging, dispatch_request, prepare_mutable_staging
+from askinsects.server import (
+    activate_source_staging,
+    copy_artifact_to_staging,
+    dispatch_request,
+    prepare_mutable_staging,
+    rewrite_artifact_references,
+)
 from askinsects.sources.dryad_behavior_videos import DryadBehaviorVideoResult
 from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
@@ -86,6 +92,68 @@ class ServerTests(unittest.TestCase):
             self.assertFalse((new_raw / "old.json").exists())
             self.assertEqual((new_raw / "new.json").read_text(encoding="utf-8"), "new")
             self.assertFalse(staging.exists())
+
+    def test_rewrite_artifact_references_can_limit_sqlite_updates_to_source(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            artifact_dir = root / "mosquito-v1"
+            staging = root / ".mosquito-v1.extracted-facts-staging"
+            staging.mkdir(parents=True)
+            index = SourceIndex(staging / "source_index.sqlite")
+            index.initialize()
+            old = staging.as_posix()
+            records = [
+                EvidenceRecord(
+                    record_id="target:1",
+                    lane="behavior",
+                    source="aedes_extracted_facts",
+                    title="Target",
+                    text="target text",
+                    species="Aedes aegypti",
+                    url=None,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="aedes_extracted_facts",
+                        locator=f"{old}/source_index.sqlite#target",
+                        retrieved_at="2026-05-24T00:00:00Z",
+                    ),
+                    payload={"path": f"{old}/raw/extracted_facts/target.json"},
+                ),
+                EvidenceRecord(
+                    record_id="other:1",
+                    lane="behavior",
+                    source="other_source",
+                    title="Other",
+                    text="other text",
+                    species="Aedes aegypti",
+                    url=None,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="other_source",
+                        locator=f"{old}/source_index.sqlite#other",
+                        retrieved_at="2026-05-24T00:00:00Z",
+                    ),
+                    payload={"path": f"{old}/raw/other_source/other.json"},
+                ),
+            ]
+            index.upsert_records(records)
+
+            result = rewrite_artifact_references(
+                staging,
+                artifact_dir,
+                {"artifact_dir": old},
+                source="aedes_extracted_facts",
+            )
+
+            self.assertEqual(result["artifact_dir"], artifact_dir.as_posix())
+            rows = SourceIndex(staging / "source_index.sqlite").sql(
+                "select r.source, r.provenance_json, p.payload_json from records r join record_payloads p using(record_id) order by r.source"
+            )
+            by_source = {row["source"]: row for row in rows}
+            self.assertIn(artifact_dir.as_posix(), by_source["aedes_extracted_facts"]["provenance_json"])
+            self.assertIn(artifact_dir.as_posix(), by_source["aedes_extracted_facts"]["payload_json"])
+            self.assertIn(old, by_source["other_source"]["provenance_json"])
+            self.assertIn(old, by_source["other_source"]["payload_json"])
 
     def test_health_summary_sources_ask_and_sql(self):
         with tempfile.TemporaryDirectory() as tmpdir:

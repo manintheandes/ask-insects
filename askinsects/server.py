@@ -136,7 +136,14 @@ def replace_record_path_strings(records: list[object], old: str, new: str) -> li
     return rewritten
 
 
-def rewrite_artifact_references(staging: Path, artifact_dir: Path, result: dict[str, object], *, rewrite_db: bool = True) -> dict[str, object]:
+def rewrite_artifact_references(
+    staging: Path,
+    artifact_dir: Path,
+    result: dict[str, object],
+    *,
+    rewrite_db: bool = True,
+    source: str | None = None,
+) -> dict[str, object]:
     old = str(staging)
     new = str(artifact_dir)
     for path in (staging / "source_status.json", staging / "source_receipt.json", staging / "gaps.json"):
@@ -146,21 +153,23 @@ def rewrite_artifact_references(staging: Path, artifact_dir: Path, result: dict[
     db_path = staging / "source_index.sqlite"
     if rewrite_db and db_path.exists():
         with sqlite3.connect(db_path) as conn:
+            source_clause = " AND source=?" if source else ""
+            params: tuple[object, ...] = (old, new, f"%{old}%", source) if source else (old, new, f"%{old}%")
             conn.execute(
-                "UPDATE records SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?",
-                (old, new, f"%{old}%"),
+                f"UPDATE records SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?{source_clause}",
+                params,
             )
             try:
                 conn.execute(
-                    "UPDATE record_payloads SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?",
-                    (old, new, f"%{old}%"),
+                    f"UPDATE record_payloads SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?{source_clause}",
+                    params,
                 )
             except sqlite3.OperationalError:
                 pass
             try:
                 conn.execute(
-                    "UPDATE record_payloads SET payload_json = replace(payload_json, ?, ?) WHERE payload_json LIKE ?",
-                    (old, new, f"%{old}%"),
+                    f"UPDATE record_payloads SET payload_json = replace(payload_json, ?, ?) WHERE payload_json LIKE ?{source_clause}",
+                    params,
                 )
             except sqlite3.OperationalError:
                 pass
@@ -1856,7 +1865,7 @@ def ingest_extracted_facts_staged(
             retrieved_at=retrieved_at,
             max_fulltext_units=max_fulltext_units,
         )
-        response = rewrite_artifact_references(staging, artifact_dir, result)
+        response = rewrite_artifact_references(staging, artifact_dir, result, source="aedes_extracted_facts")
         activate_source_staging(staging, artifact_dir, Path("raw") / "extracted_facts")
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
