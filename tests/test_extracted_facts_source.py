@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import io
 from pathlib import Path
 import tempfile
 import unittest
+import zipfile
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
@@ -11,6 +13,61 @@ from askinsects.sources.extracted_facts import (
     build_extracted_fact_records,
 )
 from askinsects.sources.literature import FullTextUnit
+
+
+def make_xlsx_bytes(rows: list[list[str]]) -> bytes:
+    strings: list[str] = []
+    string_index: dict[str, int] = {}
+    for row in rows:
+        for value in row:
+            if value not in string_index:
+                string_index[value] = len(strings)
+                strings.append(value)
+
+    def cell_ref(column_index: int, row_index: int) -> str:
+        return f"{chr(ord('A') + column_index)}{row_index}"
+
+    sheet_rows = []
+    for row_index, row in enumerate(rows, start=1):
+        cells = []
+        for column_index, value in enumerate(row):
+            cells.append(f'<c r="{cell_ref(column_index, row_index)}" t="s"><v>{string_index[value]}</v></c>')
+        sheet_rows.append(f'<row r="{row_index}">{"".join(cells)}</row>')
+    shared_strings = "".join(f"<si><t>{value}</t></si>" for value in strings)
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("[Content_Types].xml", """<?xml version="1.0"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+  <Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>
+</Types>
+""")
+        archive.writestr("_rels/.rels", """<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>
+""")
+        archive.writestr("xl/workbook.xml", """<?xml version="1.0"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets>
+</workbook>
+""")
+        archive.writestr("xl/_rels/workbook.xml.rels", """<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+  <Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>
+</Relationships>
+""")
+        archive.writestr("xl/sharedStrings.xml", f"""<?xml version="1.0"?>
+<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="{len(strings)}" uniqueCount="{len(strings)}">{shared_strings}</sst>
+""")
+        archive.writestr("xl/worksheets/sheet1.xml", f"""<?xml version="1.0"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>{"".join(sheet_rows)}</sheetData></worksheet>
+""")
+    return buffer.getvalue()
 
 
 def write_extracted_facts_fixture(artifact_dir: Path) -> None:
@@ -109,12 +166,113 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertIn("literature_fulltext_units#openalex:WFACT1:fulltext:0", vector.provenance.locator)
             self.assertEqual(result.max_fulltext_units, 5000)
             self.assertEqual(result.selected_record_text_count, 0)
+            self.assertEqual(result.parsed_supplement_row_count, 0)
 
             manifest = next(record for record in result.records if record.payload["fact_type"] == "supplement_manifest")
             self.assertEqual(manifest.lane, "literature")
             self.assertEqual(manifest.payload["confidence"], "manifest")
             self.assertEqual(manifest.payload["supplement"]["url"], "https://example.org/aedes-facts/supp-table-1.csv")
             self.assertIn("records#openalex:WFACT1", manifest.provenance.locator)
+
+    def test_build_extracted_fact_records_discovers_supplements_from_injected_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                self.assertEqual(request["pmcid"], "PMC1234567")
+                return [
+                    {
+                        "title": "Europe PMC Supplementary Table A",
+                        "url": "https://example.org/europepmc/table-a.tsv",
+                        "file_type": "tsv",
+                        "license": "CC-BY",
+                        "source": "europe_pmc",
+                    }
+                ]
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+            )
+
+            manifests = [record for record in result.records if record.payload["fact_type"] == "supplement_manifest"]
+            self.assertEqual(result.discovered_supplement_count, 1)
+            self.assertTrue(any(record.payload["supplement"]["source"] == "europe_pmc" for record in manifests))
+            self.assertTrue(any(record.payload["supplement"]["url"] == "https://example.org/europepmc/table-a.tsv" for record in manifests))
+
+    def test_build_extracted_fact_records_parses_supported_supplement_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            payloads: dict[str, bytes] = {
+                "https://example.org/aedes-facts/supp-table-1.csv": (
+                    "domain,pathogen,infection rate,temperature,tissue,strain\n"
+                    "vector competence,dengue virus,80%,28 C,saliva,Rockefeller\n"
+                ).encode("utf-8"),
+                "https://example.org/europepmc/resistance.tsv": (
+                    "domain\tinsecticide\tmortality\tmutation\tcountry\n"
+                    "resistance\tpermethrin\t55%\tV1016G\tBrazil\n"
+                ).encode("utf-8"),
+                "https://example.org/europepmc/behavior.xlsx": make_xlsx_bytes(
+                    [
+                        ["domain", "assay", "stimulus", "sex", "response rate"],
+                        ["behavior", "Y-tube olfactometer", "lactic acid", "female", "62%"],
+                    ]
+                ),
+                "https://example.org/europepmc/ecology.xml": (
+                    "<table><tr><th>domain</th><th>habitat</th><th>breeding site</th><th>climate</th></tr>"
+                    "<tr><td>ecology</td><td>urban habitat</td><td>water storage container</td><td>rainy season</td></tr></table>"
+                ).encode("utf-8"),
+                "https://example.org/europepmc/public-health.html": (
+                    "<table><tr><th>domain</th><th>cases</th><th>deaths</th><th>serotype</th><th>intervention</th></tr>"
+                    "<tr><td>public health</td><td>1234 cases</td><td>5 deaths</td><td>DENV-2</td><td>Wolbachia intervention</td></tr></table>"
+                ).encode("utf-8"),
+            }
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                return [
+                    {"title": "Resistance TSV", "url": "https://example.org/europepmc/resistance.tsv", "file_type": "tsv", "source": "europe_pmc"},
+                    {"title": "Behavior XLSX", "url": "https://example.org/europepmc/behavior.xlsx", "file_type": "xlsx", "source": "europe_pmc"},
+                    {"title": "Ecology XML", "url": "https://example.org/europepmc/ecology.xml", "file_type": "xml", "source": "pmc_oa"},
+                    {"title": "Public health HTML", "url": "https://example.org/europepmc/public-health.html", "file_type": "html", "source": "pmc_oa"},
+                ]
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                payload = payloads[url]
+                self.assertLessEqual(len(payload), max_bytes)
+                return payload
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                fetch_supplement_file_fn=fake_file_fetch,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            parsed_lanes = {record.lane for record in parsed}
+            self.assertEqual(result.parsed_supplement_file_count, 5)
+            self.assertEqual(result.parsed_supplement_row_count, 5)
+            self.assertIn("vector_competence", parsed_lanes)
+            self.assertIn("resistance", parsed_lanes)
+            self.assertIn("behavior", parsed_lanes)
+            self.assertIn("ecology", parsed_lanes)
+            self.assertIn("public_health", parsed_lanes)
+            vector = next(record for record in parsed if record.lane == "vector_competence")
+            self.assertEqual(vector.payload["extraction_method"], "deterministic_supplement_table_row_extract")
+            self.assertEqual(vector.payload["supplement"]["url"], "https://example.org/aedes-facts/supp-table-1.csv")
+            self.assertEqual(vector.payload["fields"]["table_row"]["infection rate"], "80%")
+            self.assertEqual(vector.payload["fields"]["table_row_index"], 1)
+            self.assertIn("raw/extracted_facts/supplements/", vector.provenance.locator)
+            self.assertIn("row#1", vector.provenance.locator)
+            self.assertTrue((artifact_dir / "raw" / "extracted_facts" / "supplements").exists())
 
     def test_build_extracted_fact_records_uses_bounded_fulltext_probe(self):
         with tempfile.TemporaryDirectory() as tmpdir:

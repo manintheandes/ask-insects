@@ -1874,6 +1874,16 @@ def ingest_extracted_facts_staged(
     max_fulltext_units = 5000 if max_fulltext_units_value is None else int(max_fulltext_units_value)
     if max_fulltext_units < 1:
         raise ValueError("max_fulltext_units must be positive")
+    discover_supplements = bool(payload.get("discover_supplements"))
+    download_supplements = bool(payload.get("download_supplements"))
+    max_supplement_files_value = payload.get("max_supplement_files")
+    max_supplement_files = 100 if max_supplement_files_value is None else int(max_supplement_files_value)
+    if max_supplement_files < 1:
+        raise ValueError("max_supplement_files must be positive")
+    max_supplement_bytes_value = payload.get("max_supplement_bytes")
+    max_supplement_bytes = 2_000_000 if max_supplement_bytes_value is None else int(max_supplement_bytes_value)
+    if max_supplement_bytes < 1:
+        raise ValueError("max_supplement_bytes must be positive")
 
     staging = artifact_dir.parent / f".{artifact_dir.name}.extracted-facts-staging"
     if staging.exists():
@@ -1887,6 +1897,10 @@ def ingest_extracted_facts_staged(
             artifact_dir=staging,
             retrieved_at=retrieved_at,
             max_fulltext_units=max_fulltext_units,
+            discover_supplements=discover_supplements,
+            download_supplements=download_supplements,
+            max_supplement_files=max_supplement_files,
+            max_supplement_bytes=max_supplement_bytes,
         )
         response = rewrite_artifact_references(staging, artifact_dir, result, source="aedes_extracted_facts")
         activate_source_staging(staging, artifact_dir, Path("raw") / "extracted_facts")

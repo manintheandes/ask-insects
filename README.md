@@ -337,11 +337,12 @@ The derived source id is `aedes_literature_facets`. It creates records in `behav
 
 ```bash
 python3 -m askinsects ingest-extracted-facts
+python3 -m askinsects ingest-extracted-facts --discover-supplements --download-supplements --max-supplement-files 100 --max-supplement-bytes 2000000
 python3 -m askinsects ask "show extracted Aedes aegypti vector competence facts for dengue" --json
 python3 -m askinsects search literature "supplement manifest"
 ```
 
-Extracted-facts payloads preserve `fact_type`, matched fields, source paper ID, full-text unit ID when available, evidence text, supplement metadata, confidence, extraction method, and provenance back to the source record or legal full-text unit. Confidence is `candidate` for deterministic text facts and `manifest` for supplement pointers. The text pass is bounded by a row-order `--max-fulltext-units` window for legal full-text units and matching record-level text candidates, plus a per-unit text window, recording `fulltext_prefilter_limit_applied`, `record_text_window_applied`, or `fulltext_text_window_applied` when those bounds are hit. It does not claim human validation or complete parsing of every table, PDF supplement, workbook, or archive.
+Extracted-facts payloads preserve `fact_type`, matched fields, source paper ID, full-text unit ID when available, evidence text, supplement metadata, confidence, extraction method, and provenance back to the source record, raw supplement file, row, or legal full-text unit. Confidence is `candidate` for deterministic text facts, `manifest` for supplement pointers, and `parsed` for supported supplement table rows. The opt-in supplement pass discovers Europe PMC and PMC metadata where identifiers are available, downloads bounded public supplement files, preserves them under `raw/extracted_facts/supplements/`, and parses `.csv`, `.tsv`, `.xlsx`, XML tables, and simple HTML tables. It does not claim human validation or complete parsing of every PDF supplement, workbook variant, image table, or archive.
 
 ## Hosted Ask Insects
 

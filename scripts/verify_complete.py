@@ -392,8 +392,10 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in (
         "aedes_extracted_facts",
         "scripts/ingest_extracted_facts.py",
-        "literature_records_payloads_and_fulltext_units_to_sqlite_fact_records",
-        "candidate_or_manifest_not_human_validated",
+        "literature_records_payloads_fulltext_units_and_supported_supplement_tables_to_sqlite_fact_records",
+        "candidate_manifest_or_parsed_not_human_validated",
+        "csv",
+        "xlsx",
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing extracted facts term: {term}")

@@ -1,14 +1,21 @@
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import lru_cache
+from html.parser import HTMLParser
 import hashlib
+import io
 import json
 from pathlib import Path
 import re
 import sqlite3
-from typing import Iterable
+from typing import Callable, Iterable
+from urllib.parse import urlencode, urlparse
+from urllib.request import Request, urlopen
+import xml.etree.ElementTree as ET
+import zipfile
 
 from askinsects.records import EvidenceRecord, Provenance
 
@@ -41,6 +48,11 @@ class TextCandidate:
     unit_license: str | None
     unit_provenance: dict[str, object] | None
     text: str
+    supplement: dict[str, object] | None = None
+    supplement_index: int | None = None
+    table_row_index: int | None = None
+    table_row: dict[str, str] | None = None
+    raw_file_path: str | None = None
 
 
 @dataclass(frozen=True)
@@ -66,6 +78,10 @@ class ExtractedFactsResult:
     truncated_fulltext_unit_count: int
     selected_record_text_count: int
     supplement_manifest_count: int
+    discovered_supplement_count: int
+    downloaded_supplement_file_count: int
+    parsed_supplement_file_count: int
+    parsed_supplement_row_count: int
     fact_counts: dict[str, int]
 
 
@@ -215,6 +231,9 @@ PERCENT_RE = re.compile(r"\b\d+(?:\.\d+)?\s?%")
 DOSE_RE = re.compile(r"\b(?:10\^?\d+|\d+(?:\.\d+)?)\s?(?:pfu|ffu|tcid50|focus-forming units|plaque-forming units|log10|log)\b", re.I)
 MUTATION_RE = re.compile(r"\b[A-Z][0-9]{2,4}[A-Z]\b")
 CASE_RE = re.compile(r"\b(?:cases|deaths|fatalities)\s+\d[\d,]*|\b\d[\d,]*\s+(?:cases|deaths|fatalities)\b", re.I)
+SUPPORTED_SUPPLEMENT_EXTENSIONS = {".csv", ".tsv", ".xlsx", ".xml", ".html", ".htm"}
+EUROPE_PMC_SEARCH_BASE = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
+PMC_OA_SERVICE_BASE = "https://pmc.ncbi.nlm.nih.gov/utils/oa/oa.fcgi"
 
 
 def utc_now() -> str:
@@ -252,6 +271,27 @@ def _normalize_id(value: str) -> str:
 def _digest(*parts: object) -> str:
     payload = "|".join("" if part is None else str(part) for part in parts)
     return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:12]
+
+
+def _fetch_json_url(url: str) -> dict[str, object]:
+    request = Request(url, headers={"User-Agent": "ask-insects/0.1"})
+    with urlopen(request, timeout=30) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"URL returned non-object JSON for {url}")
+    return payload
+
+
+def _fetch_bytes_url(url: str, max_bytes: int) -> bytes:
+    request = Request(url, headers={"User-Agent": "ask-insects/0.1"})
+    with urlopen(request, timeout=60) as response:
+        content_length = response.headers.get("content-length")
+        if content_length and int(content_length) > max_bytes:
+            raise ValueError(f"supplement exceeds max bytes: {content_length} > {max_bytes}")
+        data = response.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise ValueError(f"supplement exceeds max bytes: {len(data)} > {max_bytes}")
+    return data
 
 
 def _snippet(text: str, terms: Iterable[str], limit: int = 760) -> str:
@@ -315,6 +355,67 @@ def _source_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
         """,
         (INPUT_LITERATURE_SOURCE_ID,),
     ).fetchall()
+
+
+def _nested_get(payload: dict[str, object], *keys: str) -> object:
+    current: object = payload
+    for key in keys:
+        if not isinstance(current, dict):
+            return None
+        current = current.get(key)
+    return current
+
+
+def _identifier_request(paper: sqlite3.Row) -> dict[str, object]:
+    payload = _safe_json(paper["payload_json"])
+    ids = payload.get("ids") if isinstance(payload.get("ids"), dict) else {}
+    pubmed = payload.get("pubmed") if isinstance(payload.get("pubmed"), dict) else {}
+    doi = (
+        payload.get("doi")
+        or _nested_get(payload, "ids", "doi")
+        or _nested_get(payload, "openalex", "doi")
+        or paper["url"]
+    )
+    pmid = payload.get("pmid") or _nested_get(payload, "ids", "pmid") or pubmed.get("pmid")
+    pmcid = payload.get("pmcid") or _nested_get(payload, "ids", "pmcid") or pubmed.get("pmcid")
+    if isinstance(ids, dict):
+        pmid = pmid or ids.get("pmid")
+        pmcid = pmcid or ids.get("pmcid")
+    return {
+        "record_id": str(paper["record_id"]),
+        "title": str(paper["title"]),
+        "url": paper["url"],
+        "doi": str(doi).strip() if doi else None,
+        "pmid": str(pmid).strip() if pmid else None,
+        "pmcid": str(pmcid).strip() if pmcid else None,
+    }
+
+
+def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+    supplements: list[dict[str, object]] = []
+    query_parts = []
+    if request.get("pmcid"):
+        query_parts.append(f"PMCID:{request['pmcid']}")
+    if request.get("pmid"):
+        query_parts.append(f"EXT_ID:{request['pmid']}")
+    if request.get("doi"):
+        query_parts.append(f'DOI:"{request["doi"]}"')
+    if query_parts:
+        url = f"{EUROPE_PMC_SEARCH_BASE}?{urlencode({'query': ' OR '.join(query_parts), 'format': 'json', 'pageSize': '1'})}"
+        payload = _fetch_json_url(url)
+        for item in _payload_supplements(payload):
+            item = dict(item)
+            item.setdefault("source", "europe_pmc")
+            supplements.append(item)
+    pmcid = request.get("pmcid")
+    if pmcid:
+        oa_url = f"{PMC_OA_SERVICE_BASE}?{urlencode({'id': str(pmcid)})}"
+        try:
+            oa_xml = _fetch_bytes_url(oa_url, 1_000_000)
+            supplements.extend(_pmc_oa_supplements(oa_xml, source_url=oa_url))
+        except Exception:
+            pass
+    return supplements
 
 
 def _matches_prefilter(text: str) -> bool:
@@ -502,18 +603,18 @@ def _payload_supplements(payload: dict[str, object]) -> list[dict[str, object]]:
 
 def _normalize_supplement(raw: dict[str, object]) -> dict[str, object]:
     title = raw.get("title") or raw.get("caption") or raw.get("description") or raw.get("label")
-    url = raw.get("url") or raw.get("href") or raw.get("download_url") or raw.get("fileUrl")
-    file_type = raw.get("file_type") or raw.get("type") or raw.get("format") or raw.get("mimeType")
+    url = raw.get("url") or raw.get("href") or raw.get("download_url") or raw.get("fileUrl") or raw.get("downloadUrl") or raw.get("location")
+    file_type = raw.get("file_type") or raw.get("type") or raw.get("format") or raw.get("mimeType") or raw.get("mime_type")
     license_value = raw.get("license") or raw.get("licence")
     size = raw.get("size") or raw.get("fileSize")
-    source = raw.get("source") or raw.get("provider") or "record_payload"
+    source = raw.get("source") or raw.get("provider")
     supplement = {
         "title": str(title or "Supplementary material"),
         "url": str(url) if url else None,
         "file_type": str(file_type) if file_type else None,
         "license": str(license_value) if license_value else None,
         "size": size if isinstance(size, int | float | str) else None,
-        "source": str(source),
+        "source": str(source) if source else None,
     }
     return {key: value for key, value in supplement.items() if value is not None}
 
@@ -525,6 +626,7 @@ def _supplement_candidates(literature_rows: list[sqlite3.Row]) -> list[Supplemen
         payload = _safe_json(paper["payload_json"])
         for raw_supplement in _payload_supplements(payload):
             supplement = _normalize_supplement(raw_supplement)
+            supplement.setdefault("source", "record_payload")
             key = (str(paper["record_id"]), str(supplement.get("url") or ""), str(supplement.get("title") or ""))
             if key in seen:
                 continue
@@ -540,6 +642,392 @@ def _supplement_candidates(literature_rows: list[sqlite3.Row]) -> list[Supplemen
                 )
             )
     return candidates
+
+
+def _supplement_candidates_with_discovery(
+    literature_rows: list[sqlite3.Row],
+    *,
+    discover_supplements: bool,
+    fetch_supplement_metadata_fn: Callable[[dict[str, object]], list[dict[str, object]]] | None,
+    gaps: list[dict[str, object]],
+) -> tuple[list[SupplementCandidate], int]:
+    candidates: list[SupplementCandidate] = []
+    seen: set[tuple[str, str, str]] = set()
+    discovered_count = 0
+    for paper in literature_rows:
+        payload = _safe_json(paper["payload_json"])
+        raw_supplements = [(raw, "record_payload") for raw in _payload_supplements(payload)]
+        if discover_supplements and fetch_supplement_metadata_fn is not None:
+            request = _identifier_request(paper)
+            if not any(request.get(key) for key in ("doi", "pmid", "pmcid")):
+                gaps.append(
+                    {
+                        "source": EXTRACTED_FACTS_SOURCE_ID,
+                        "reason": "supplement_discovery_missing_identifier",
+                        "record_id": str(paper["record_id"]),
+                    }
+                )
+            else:
+                try:
+                    fetched = fetch_supplement_metadata_fn(request)
+                    discovered_count += len(fetched)
+                    raw_supplements.extend((raw, "metadata_fetch") for raw in fetched)
+                except Exception as exc:
+                    gaps.append(
+                        {
+                            "source": EXTRACTED_FACTS_SOURCE_ID,
+                            "reason": "supplement_metadata_fetch_failed",
+                            "record_id": str(paper["record_id"]),
+                            "error": str(exc),
+                        }
+                    )
+        for raw_supplement, fallback_source in raw_supplements:
+            supplement = _normalize_supplement(raw_supplement)
+            supplement.setdefault("source", fallback_source)
+            key = (str(paper["record_id"]), str(supplement.get("url") or ""), str(supplement.get("title") or ""))
+            if key in seen:
+                continue
+            seen.add(key)
+            candidates.append(
+                SupplementCandidate(
+                    source_record_id=str(paper["record_id"]),
+                    source_title=str(paper["title"]),
+                    species=paper["species"],
+                    paper_url=paper["url"],
+                    source_provenance=_safe_json(paper["provenance_json"]),
+                    supplement=supplement,
+                )
+            )
+    return candidates, discovered_count
+
+
+def _supplement_extension(supplement: dict[str, object]) -> str:
+    file_type = str(supplement.get("file_type") or "").lower()
+    url = str(supplement.get("url") or "")
+    suffix = Path(urlparse(url).path).suffix.lower()
+    if suffix in SUPPORTED_SUPPLEMENT_EXTENSIONS:
+        return suffix
+    if "csv" in file_type:
+        return ".csv"
+    if "tsv" in file_type or "tab" in file_type:
+        return ".tsv"
+    if "spreadsheet" in file_type or "xlsx" in file_type:
+        return ".xlsx"
+    if "html" in file_type:
+        return ".html"
+    if "xml" in file_type:
+        return ".xml"
+    return suffix
+
+
+def _safe_raw_filename(candidate: SupplementCandidate, index: int, extension: str) -> str:
+    digest = _digest(candidate.source_record_id, candidate.supplement.get("url"), index)
+    suffix = extension if extension in SUPPORTED_SUPPLEMENT_EXTENSIONS else ".dat"
+    return f"{_normalize_id(candidate.source_record_id)}_{index}_{digest}{suffix}"
+
+
+def _decode_table_bytes(data: bytes) -> str:
+    return data.decode("utf-8-sig", errors="replace")
+
+
+def _parse_delimited_rows(data: bytes, delimiter: str) -> list[dict[str, str]]:
+    text = _decode_table_bytes(data)
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
+    rows: list[dict[str, str]] = []
+    for row in reader:
+        cleaned = {str(key).strip(): str(value).strip() for key, value in row.items() if key and value is not None and str(value).strip()}
+        if cleaned:
+            rows.append(cleaned)
+    return rows
+
+
+def _xml_text(element: ET.Element) -> str:
+    return " ".join(part.strip() for part in element.itertext() if part and part.strip())
+
+
+def _strip_ns(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1].lower()
+
+
+def _parse_xml_rows(data: bytes) -> list[dict[str, str]]:
+    root = ET.fromstring(data)
+    table_rows: list[list[str]] = []
+    for tr in root.iter():
+        if _strip_ns(tr.tag) != "tr":
+            continue
+        values = [_xml_text(child) for child in list(tr) if _strip_ns(child.tag) in {"th", "td"}]
+        if values:
+            table_rows.append(values)
+    if table_rows:
+        headers = table_rows[0]
+        return [
+            {headers[index]: value for index, value in enumerate(row) if index < len(headers) and headers[index] and value}
+            for row in table_rows[1:]
+        ]
+
+    rows: list[dict[str, str]] = []
+    for row in root.iter():
+        if _strip_ns(row.tag) not in {"row", "record"}:
+            continue
+        values = {
+            _strip_ns(child.tag).replace("_", " "): _xml_text(child)
+            for child in list(row)
+            if _xml_text(child)
+        }
+        if values:
+            rows.append(values)
+    return rows
+
+
+class _SimpleHTMLTableParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__()
+        self._in_cell = False
+        self._cell_parts: list[str] = []
+        self._current_row: list[str] = []
+        self.rows: list[list[str]] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag.lower() == "tr":
+            self._current_row = []
+        if tag.lower() in {"td", "th"}:
+            self._in_cell = True
+            self._cell_parts = []
+
+    def handle_data(self, data: str) -> None:
+        if self._in_cell and data.strip():
+            self._cell_parts.append(data.strip())
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.lower()
+        if tag in {"td", "th"} and self._in_cell:
+            self._current_row.append(" ".join(self._cell_parts))
+            self._cell_parts = []
+            self._in_cell = False
+        if tag == "tr" and self._current_row:
+            self.rows.append(self._current_row)
+            self._current_row = []
+
+
+def _parse_html_rows(data: bytes) -> list[dict[str, str]]:
+    parser = _SimpleHTMLTableParser()
+    parser.feed(_decode_table_bytes(data))
+    if len(parser.rows) < 2:
+        return []
+    headers = parser.rows[0]
+    return [
+        {headers[index]: value for index, value in enumerate(row) if index < len(headers) and headers[index] and value}
+        for row in parser.rows[1:]
+    ]
+
+
+def _xlsx_shared_strings(archive: zipfile.ZipFile) -> list[str]:
+    try:
+        root = ET.fromstring(archive.read("xl/sharedStrings.xml"))
+    except KeyError:
+        return []
+    values: list[str] = []
+    for item in root.iter():
+        if _strip_ns(item.tag) != "si":
+            continue
+        values.append(_xml_text(item))
+    return values
+
+
+def _column_index(cell_ref: str) -> int:
+    letters = re.sub(r"[^A-Z]", "", cell_ref.upper())
+    value = 0
+    for letter in letters:
+        value = value * 26 + (ord(letter) - ord("A") + 1)
+    return max(0, value - 1)
+
+
+def _parse_xlsx_rows(data: bytes) -> list[dict[str, str]]:
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        shared_strings = _xlsx_shared_strings(archive)
+        sheet_name = "xl/worksheets/sheet1.xml"
+        root = ET.fromstring(archive.read(sheet_name))
+    table: list[list[str]] = []
+    for row in root.iter():
+        if _strip_ns(row.tag) != "row":
+            continue
+        values: dict[int, str] = {}
+        for cell in list(row):
+            if _strip_ns(cell.tag) != "c":
+                continue
+            cell_ref = str(cell.attrib.get("r", "A1"))
+            value_node = next((child for child in list(cell) if _strip_ns(child.tag) == "v"), None)
+            raw_value = _xml_text(value_node) if value_node is not None else ""
+            if cell.attrib.get("t") == "s" and raw_value.isdigit() and int(raw_value) < len(shared_strings):
+                raw_value = shared_strings[int(raw_value)]
+            values[_column_index(cell_ref)] = raw_value
+        if values:
+            max_index = max(values)
+            table.append([values.get(index, "") for index in range(max_index + 1)])
+    if len(table) < 2:
+        return []
+    headers = table[0]
+    return [
+        {headers[index]: value for index, value in enumerate(row) if index < len(headers) and headers[index] and value}
+        for row in table[1:]
+    ]
+
+
+def _parse_supported_table_rows(data: bytes, extension: str) -> list[dict[str, str]]:
+    if extension == ".csv":
+        return _parse_delimited_rows(data, ",")
+    if extension == ".tsv":
+        return _parse_delimited_rows(data, "\t")
+    if extension == ".xlsx":
+        return _parse_xlsx_rows(data)
+    if extension == ".xml":
+        return _parse_xml_rows(data)
+    if extension in {".html", ".htm"}:
+        return _parse_html_rows(data)
+    return []
+
+
+def _pmc_oa_supplements(data: bytes, *, source_url: str) -> list[dict[str, object]]:
+    root = ET.fromstring(data)
+    supplements: list[dict[str, object]] = []
+    for node in root.iter():
+        if _strip_ns(node.tag) not in {"file", "link"}:
+            continue
+        href = node.attrib.get("href") or node.attrib.get("url")
+        if not href:
+            continue
+        extension = Path(urlparse(href).path).suffix.lower()
+        if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS:
+            continue
+        supplements.append(
+            {
+                "title": node.attrib.get("title") or Path(urlparse(href).path).name or "PMC OA supplementary file",
+                "url": href,
+                "file_type": extension.lstrip("."),
+                "license": node.attrib.get("license"),
+                "source": "pmc_oa",
+                "metadata_url": source_url,
+            }
+        )
+    return supplements
+
+
+def _table_row_text(row: dict[str, str]) -> str:
+    return "Supplement table row. " + ". ".join(f"{key}: {value}" for key, value in row.items() if value)
+
+
+def _row_declared_fact_type(row: dict[str, str] | None) -> str | None:
+    if not row:
+        return None
+    for key in ("domain", "fact_type", "fact type", "lane"):
+        for row_key, value in row.items():
+            if row_key.lower().strip() == key and value:
+                return value.lower().strip().replace(" ", "_")
+    return None
+
+
+def _download_and_parse_supplement_rows(
+    supplement_candidates: list[SupplementCandidate],
+    *,
+    artifact_dir: Path,
+    retrieved_at: str,
+    fetch_supplement_file_fn: Callable[[str, int], bytes],
+    max_supplement_files: int,
+    max_supplement_bytes: int,
+    gaps: list[dict[str, object]],
+) -> tuple[list[TextCandidate], int, int, int]:
+    if max_supplement_files < 1:
+        raise ValueError("max_supplement_files must be positive")
+    if max_supplement_bytes < 1:
+        raise ValueError("max_supplement_bytes must be positive")
+    raw_dir = artifact_dir / "raw" / "extracted_facts" / "supplements"
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    candidates: list[TextCandidate] = []
+    downloaded_count = 0
+    parsed_file_count = 0
+    parsed_row_count = 0
+    for index, candidate in enumerate(supplement_candidates):
+        if downloaded_count >= max_supplement_files:
+            gaps.append(
+                {
+                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "reason": "supplement_file_limit_applied",
+                    "max_supplement_files": max_supplement_files,
+                }
+            )
+            break
+        url = candidate.supplement.get("url")
+        if not isinstance(url, str) or not url:
+            continue
+        extension = _supplement_extension(candidate.supplement)
+        if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS:
+            gaps.append(
+                {
+                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "reason": "unsupported_supplement_type",
+                    "record_id": candidate.source_record_id,
+                    "url": url,
+                    "file_type": candidate.supplement.get("file_type"),
+                }
+            )
+            continue
+        try:
+            data = fetch_supplement_file_fn(url, max_supplement_bytes)
+            downloaded_count += 1
+            raw_path = raw_dir / _safe_raw_filename(candidate, index, extension)
+            raw_path.write_bytes(data)
+            rows = _parse_supported_table_rows(data, extension)
+        except Exception as exc:
+            gaps.append(
+                {
+                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "reason": "supplement_table_parse_failed",
+                    "record_id": candidate.source_record_id,
+                    "url": url,
+                    "error": str(exc),
+                }
+            )
+            continue
+        if not rows:
+            gaps.append(
+                {
+                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "reason": "supplement_table_no_rows",
+                    "record_id": candidate.source_record_id,
+                    "url": url,
+                }
+            )
+            continue
+        parsed_file_count += 1
+        for row_index, row in enumerate(rows, start=1):
+            parsed_row_count += 1
+            candidates.append(
+                TextCandidate(
+                    source_record_id=candidate.source_record_id,
+                    source_title=candidate.source_title,
+                    species=candidate.species,
+                    paper_url=candidate.paper_url,
+                    source_provenance=candidate.source_provenance,
+                    extraction_source="supplement_table_row",
+                    unit_id=None,
+                    unit_index=None,
+                    unit_url=url,
+                    unit_license=candidate.supplement.get("license") if isinstance(candidate.supplement.get("license"), str) else None,
+                    unit_provenance={
+                        "source_id": EXTRACTED_FACTS_SOURCE_ID,
+                        "locator": f"{raw_path.relative_to(artifact_dir).as_posix()}#row/{row_index}",
+                        "retrieved_at": retrieved_at,
+                        "source_url": url,
+                    },
+                    text=_table_row_text(row),
+                    supplement=candidate.supplement,
+                    supplement_index=index,
+                    table_row_index=row_index,
+                    table_row=row,
+                    raw_file_path=raw_path.relative_to(artifact_dir).as_posix(),
+                )
+            )
+    return candidates, downloaded_count, parsed_file_count, parsed_row_count
 
 
 def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrieved_at: str) -> EvidenceRecord:
@@ -591,11 +1079,24 @@ def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[
     flat_terms = [term for values in fields.values() if isinstance(values, list) for term in values if isinstance(term, str)]
     context_hits = _matched_terms(combined_text, family.context_terms)
     evidence_text = _snippet(combined_text, _dedup(flat_terms + context_hits))
-    unit_part = candidate.unit_id or "literature-record"
+    if candidate.table_row:
+        fields = {
+            **fields,
+            "table_row": candidate.table_row,
+            "table_headers": list(candidate.table_row),
+            "table_row_index": candidate.table_row_index,
+        }
+    unit_part = candidate.unit_id or candidate.raw_file_path or "literature-record"
     digest = _digest(candidate.source_record_id, unit_part, family.fact_type, json.dumps(fields, sort_keys=True))
     locator_parts = [f"records#{candidate.source_record_id}"]
     if candidate.unit_id:
         locator_parts.append(f"literature_fulltext_units#{candidate.unit_id}")
+    if candidate.supplement_index is not None:
+        locator_parts.append(f"supplement#{candidate.supplement_index}")
+    if candidate.raw_file_path:
+        locator_parts.append(candidate.raw_file_path)
+    if candidate.table_row_index is not None:
+        locator_parts.append(f"row#{candidate.table_row_index}")
     provenance = Provenance(
         source_id=EXTRACTED_FACTS_SOURCE_ID,
         locator=";".join(locator_parts),
@@ -625,10 +1126,10 @@ def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[
             "fields": fields,
             "source_record_id": candidate.source_record_id,
             "fulltext_unit_id": candidate.unit_id,
-            "supplement": None,
+            "supplement": candidate.supplement,
             "evidence_text": evidence_text,
-            "confidence": "candidate",
-            "extraction_method": "deterministic_fulltext_term_extract",
+            "confidence": "parsed" if candidate.table_row else "candidate",
+            "extraction_method": "deterministic_supplement_table_row_extract" if candidate.table_row else "deterministic_fulltext_term_extract",
             "source_provenance": candidate.source_provenance,
             "unit_provenance": candidate.unit_provenance,
         },
@@ -640,6 +1141,12 @@ def build_extracted_fact_records(
     *,
     retrieved_at: str | None = None,
     max_fulltext_units: int | None = 5000,
+    discover_supplements: bool = False,
+    download_supplements: bool = False,
+    fetch_supplement_metadata_fn: Callable[[dict[str, object]], list[dict[str, object]]] | None = None,
+    fetch_supplement_file_fn: Callable[[str, int], bytes] | None = None,
+    max_supplement_files: int = 100,
+    max_supplement_bytes: int = 2_000_000,
 ) -> ExtractedFactsResult:
     retrieved_at = retrieved_at or utc_now()
     index_path = artifact_dir / "source_index.sqlite"
@@ -665,6 +1172,10 @@ def build_extracted_fact_records(
             selected_fulltext_unit_count=0,
             truncated_fulltext_unit_count=0,
             selected_record_text_count=0,
+            discovered_supplement_count=0,
+            downloaded_supplement_file_count=0,
+            parsed_supplement_file_count=0,
+            parsed_supplement_row_count=0,
         )
 
     conn = sqlite3.connect(index_path)
@@ -685,14 +1196,44 @@ def build_extracted_fact_records(
     finally:
         conn.close()
 
-    supplement_candidates = _supplement_candidates(literature_rows)
+    if discover_supplements and fetch_supplement_metadata_fn is None:
+        fetch_supplement_metadata_fn = fetch_public_supplement_metadata
+    supplement_candidates, discovered_supplement_count = _supplement_candidates_with_discovery(
+        literature_rows,
+        discover_supplements=discover_supplements,
+        fetch_supplement_metadata_fn=fetch_supplement_metadata_fn,
+        gaps=gaps,
+    )
     for index, candidate in enumerate(supplement_candidates):
         records.append(_record_for_supplement(candidate, index=index, retrieved_at=retrieved_at))
+    downloaded_supplement_file_count = 0
+    parsed_supplement_file_count = 0
+    parsed_supplement_row_count = 0
+    if download_supplements:
+        supplement_file_fetcher = fetch_supplement_file_fn or _fetch_bytes_url
+        (
+            supplement_text_candidates,
+            downloaded_supplement_file_count,
+            parsed_supplement_file_count,
+            parsed_supplement_row_count,
+        ) = _download_and_parse_supplement_rows(
+            supplement_candidates,
+            artifact_dir=artifact_dir,
+            retrieved_at=retrieved_at,
+            fetch_supplement_file_fn=supplement_file_fetcher,
+            max_supplement_files=max_supplement_files,
+            max_supplement_bytes=max_supplement_bytes,
+            gaps=gaps,
+        )
+        text_candidates.extend(supplement_text_candidates)
 
     fact_counts = {family.fact_type: 0 for family in FACT_FAMILIES}
     for candidate in text_candidates:
         combined_text = "\n".join([candidate.source_title, candidate.text])
+        declared_fact_type = _row_declared_fact_type(candidate.table_row)
         for family in FACT_FAMILIES:
+            if declared_fact_type and declared_fact_type != family.fact_type:
+                continue
             fields = _field_matches(combined_text, family)
             context_hits = _matched_terms(combined_text, family.context_terms)
             if not fields or not context_hits:
@@ -766,5 +1307,9 @@ def build_extracted_fact_records(
         truncated_fulltext_unit_count=truncated_fulltext_unit_count,
         selected_record_text_count=selected_record_text_count,
         supplement_manifest_count=len(supplement_candidates),
+        discovered_supplement_count=discovered_supplement_count,
+        downloaded_supplement_file_count=downloaded_supplement_file_count,
+        parsed_supplement_file_count=parsed_supplement_file_count,
+        parsed_supplement_row_count=parsed_supplement_row_count,
         fact_counts=fact_counts,
     )

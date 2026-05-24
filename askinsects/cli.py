@@ -197,6 +197,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_extracted_facts = sub.add_parser("ingest-extracted-facts")
     ingest_extracted_facts.add_argument("--hosted", action="store_true")
     ingest_extracted_facts.add_argument("--max-fulltext-units", type=int, default=5000)
+    ingest_extracted_facts.add_argument("--discover-supplements", action="store_true")
+    ingest_extracted_facts.add_argument("--download-supplements", action="store_true")
+    ingest_extracted_facts.add_argument("--max-supplement-files", type=int, default=100)
+    ingest_extracted_facts.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
 
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
@@ -575,13 +579,23 @@ def main(argv: list[str] | None = None) -> int:
             payload = ingest_extracted_facts(
                 artifact_dir=artifact_dir,
                 max_fulltext_units=args.max_fulltext_units,
+                discover_supplements=args.discover_supplements,
+                download_supplements=args.download_supplements,
+                max_supplement_files=args.max_supplement_files,
+                max_supplement_bytes=args.max_supplement_bytes,
             )
             emit(payload)
             return 0 if payload.get("ok") else 2
         payload = emit_hosted(
             "POST",
             "/ingest/extracted-facts",
-            {"max_fulltext_units": args.max_fulltext_units},
+            {
+                "max_fulltext_units": args.max_fulltext_units,
+                "discover_supplements": args.discover_supplements,
+                "download_supplements": args.download_supplements,
+                "max_supplement_files": args.max_supplement_files,
+                "max_supplement_bytes": args.max_supplement_bytes,
+            },
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

@@ -37,16 +37,17 @@
         "artifacts/aedes-literature-2020/source_index.sqlite",
         "artifacts/aedes-literature-2020/literature_enrichment_receipt.json",
         "artifacts/aedes-literature-2020/gaps.json",
-        "literature_fulltext_units and literature_fulltext_fts are searchable through search fulltext and literature-answer fallback"
+        "literature_fulltext_units and literature_fulltext_fts are searchable through search fulltext and literature-answer fallback",
+        "aedes_extracted_facts can discover Europe PMC or PMC supplement metadata when opted in and parse supported CSV, TSV, XLSX, XML, and HTML supplement tables into row-level fact records with raw-file provenance."
       ],
       "required_next_sources": [
         "Crossref or PubMed reconciliation for missing DOI and PMID gaps",
-        "deeper structured table, PDF supplement, workbook, and claim extraction across behavior, resistance, vector competence, ecology, and public-health papers beyond deterministic candidates"
+        "deeper PDF, archive, image-table, and claim extraction across behavior, resistance, vector competence, ecology, and public-health papers beyond supported deterministic table formats"
       ],
       "completion_evidence": [
         "CLI answers use full-text chunks when abstract metadata is insufficient",
         "remaining inaccessible full text is represented as structured gaps",
-        "supplement manifests and extracted candidate facts are queryable with source paper or full-text-unit provenance"
+        "supplement manifests, parsed supported table rows, and extracted candidate facts are queryable with source paper, raw supplement file, row, or full-text-unit provenance"
       ]
     },
     {
@@ -107,7 +108,7 @@
         "Dryad Aedes behavior/video dataset manifests map public host-seeking, visual-threat, flight-escape, mating/courtship, male host-attraction, and visual-tracking data files to behavior and media records with DOI, file, license, checksum, size, and download provenance.",
         "Mendeley Data Aedes behavior/media manifests map public mate-recognition, wingbeat, hearing, flight-tone, high-speed video, and locomotory video-analysis datasets to behavior and media records with dataset, folder, file, DOI, license, SHA-256, size, content-type, download, and view provenance.",
         "Mendeley public CSV, TSV, and XLSX Aedes behavior table files are parsed into sheet-level and row-level behavior records with headers, row values, row numbers, download URLs, licenses, and raw-file locators.",
-        "aedes_extracted_facts emits behavior candidate facts from indexed Aedes literature and legal full-text units, with matched assay, stimulus, sex, age, strain, response metric fields, and source provenance."
+        "aedes_extracted_facts emits behavior candidate facts from indexed Aedes literature and legal full-text units, and parsed behavior rows from supported public supplement tables, with matched assay, stimulus, sex, age, strain, response metric fields, and source provenance."
       ],
       "required_next_sources": [
         "decoded trajectory tables and assay-level rows from Dryad behavior archives",
@@ -266,10 +267,10 @@
         "Vector competence questions route through the vector_competence lane and return provenance back to source literature records and full-text units where available.",
         "aedes_pathogen_taxonomy anchors dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus identities to NCBI Taxonomy records for pathogen-specific Aedes aegypti questions.",
         "aedes_vector_competence_assays extracts pathogen-specific assay-candidate records from indexed Aedes literature and legal full-text units, preserving source paper and full-text-unit provenance plus structured pathogen, infection, dissemination, transmission, dose, temperature, tissue, strain, population, and timepoint fields when detected.",
-        "aedes_extracted_facts adds cross-lane vector-competence candidate facts and supplement manifests from indexed literature payloads and legal full-text units."
+        "aedes_extracted_facts adds cross-lane vector-competence candidate facts, supplement manifests, and parsed supported supplement table rows from indexed literature payloads, Europe PMC or PMC metadata, public supplement files, and legal full-text units."
       ],
       "required_next_sources": [
-        "validated table and supplement parsing for vector-competence assay rows beyond deterministic candidate extraction",
+        "validated table and supplement parsing for vector-competence assay rows beyond deterministic supported-format extraction",
         "manual or model-assisted validation labels for extracted assay candidates"
       ],
       "completion_evidence": [
@@ -300,11 +301,11 @@
         "Installed local and hosted artifacts contain 2,843 resistance records from aedes_literature_facets.",
         "Hosted artifact contains 6,449 aedes_resistance_markers records mapping kdr, VGSC, and metabolic-resistance marker mentions from indexed Aedes literature and legal full-text units into queryable resistance records with marker payloads, source locators, and zero marker-source gaps.",
         "General resistance questions prefer the dedicated irmapper_aedes lane, while kdr and metabolic-marker questions prefer aedes_resistance_markers before literature-derived resistance facets.",
-        "aedes_extracted_facts emits resistance candidate facts and supplement manifests from indexed Aedes literature, with matched insecticide, assay, mortality, knockdown, LC value, mutation, genotype-frequency, and country terms when detected."
+        "aedes_extracted_facts emits resistance candidate facts, supplement manifests, and parsed supported supplement table rows from indexed Aedes literature, with matched insecticide, assay, mortality, knockdown, LC value, mutation, genotype-frequency, and country terms when detected."
       ],
       "required_next_sources": [
         "WHO insecticide resistance database availability review",
-        "validated marker-frequency, haplotype, and genotype table extraction from papers and supplements beyond deterministic candidates"
+        "validated marker-frequency, haplotype, and genotype table extraction from papers and supplements beyond deterministic supported-format rows"
       ],
       "completion_evidence": [
         "Ask Insects can answer resistance questions by species, country, insecticide class, assay, mutation, and source"
@@ -333,7 +334,7 @@
         "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available.",
         "aedes_occurrence_ecology joins indexed GBIF, iNaturalist, and Mosquito Alert observation payloads into country, country-month, seasonality, range, and public habitat ecology records.",
         "The May 24, 2026 hosted ingest installed 1,985 aedes_occurrence_ecology records from 88,065 Aedes observation inputs, bringing the hosted ecology lane to 7,238 records.",
-        "aedes_extracted_facts emits ecology candidate facts from indexed Aedes literature and legal full-text units, including habitat, breeding-site, climate, seasonality, range, and location terms when detected."
+        "aedes_extracted_facts emits ecology candidate facts from indexed Aedes literature and legal full-text units, plus parsed supported supplement table rows, including habitat, breeding-site, climate, seasonality, range, and location terms when detected."
       ],
       "required_next_sources": [
         "climate-linked GBIF and iNaturalist observation joins",
@@ -370,7 +371,7 @@
         "aedes_paho_dengue_surveillance parses official PAHO dengue situation report HTML into regional week, year-to-date, subregion, serotype, and figure/table public_health records with raw HTML receipts and PAHO media locators.",
         "PAHO/PLISA dengue dashboard pages are mapped as official sources, but their underlying country-week Tableau/PHIP rows remain a structured source gap until a stable machine-readable CSV, JSON, or API endpoint is available or authorized access is obtained.",
         "Public-health questions route through the public_health lane and return provenance back to source literature records and full-text units where available.",
-        "aedes_extracted_facts emits public-health candidate facts from indexed Aedes literature and legal full-text units, including case, death, intervention, location, date, serotype, and source terms when detected."
+        "aedes_extracted_facts emits public-health candidate facts from indexed Aedes literature and legal full-text units, plus parsed supported supplement table rows, including case, death, intervention, location, date, serotype, and source terms when detected."
       ],
       "required_next_sources": [
         "WHO dengue surveillance publications and dashboard exports where legally accessible",

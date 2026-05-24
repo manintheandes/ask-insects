@@ -1423,6 +1423,23 @@ class ServerTests(unittest.TestCase):
             self.assertNotIn(".extracted-facts-staging", provenance_rows[0]["provenance_json"])
             self.assertFalse((artifact_dir.parent / ".mosquito-v1.extracted-facts-staging").exists())
 
+    def test_ingest_extracted_facts_rejects_invalid_supplement_limits(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/extracted-facts",
+                {"max_supplement_files": 0},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 400)
+            self.assertIn("max_supplement_files must be positive", response.payload["error"])
+
     def test_ingest_occurrence_ecology_adds_records_without_removing_existing_sources(self):
         from tests.test_occurrence_ecology_source import write_occurrence_ecology_fixture
 

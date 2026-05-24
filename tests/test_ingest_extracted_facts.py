@@ -65,6 +65,42 @@ class IngestExtractedFactsTests(unittest.TestCase):
             self.assertEqual(status["aedes_extracted_facts"]["max_fulltext_units"], 5000)
             self.assertEqual(status["aedes_extracted_facts"]["selected_record_text_count"], 0)
 
+    def test_ingest_can_download_and_parse_supplement_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                self.assertEqual(url, "https://example.org/aedes-facts/supp-table-1.csv")
+                self.assertEqual(max_bytes, 100000)
+                return (
+                    "domain,pathogen,infection rate,temperature,tissue,strain\n"
+                    "vector competence,dengue virus,80%,28 C,saliva,Rockefeller\n"
+                ).encode("utf-8")
+
+            result = ingest_extracted_facts(
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=fake_file_fetch,
+                max_supplement_files=3,
+                max_supplement_bytes=100000,
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["downloaded_supplement_file_count"], 1)
+            self.assertEqual(result["parsed_supplement_file_count"], 1)
+            self.assertEqual(result["parsed_supplement_row_count"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select payload_json, provenance_json from record_payloads where source='aedes_extracted_facts' and json_extract(payload_json, '$.confidence')='parsed'",
+                limit=5,
+            )
+            self.assertEqual(len(rows), 1)
+            self.assertIn('"infection rate": "80%"', rows[0]["payload_json"])
+            self.assertIn("raw/extracted_facts/supplements/", rows[0]["provenance_json"])
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            self.assertEqual(status["aedes_extracted_facts"]["parsed_supplement_row_count"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

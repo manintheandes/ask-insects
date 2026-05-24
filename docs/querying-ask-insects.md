@@ -198,11 +198,12 @@ Cross-lane extracted facts use source id `aedes_extracted_facts`. Refresh them w
 
 ```bash
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-extracted-facts
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-extracted-facts --discover-supplements --download-supplements --max-supplement-files 100 --max-supplement-bytes 2000000
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show dengue vector competence supplement table infection rate for Aedes aegypti" --json
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select lane, count(*) as n from records where source='aedes_extracted_facts' group by lane order by lane"
 ```
 
-This lane emits supplement manifests plus deterministic candidate facts for vector competence, resistance, behavior, ecology, and public health. It is provenance-backed to papers, full-text units, or supplement metadata. It is not yet human-validated table extraction.
+This lane emits supplement manifests plus deterministic candidate facts for vector competence, resistance, behavior, ecology, and public health. With opt-in supplement discovery and download, it also parses supported `.csv`, `.tsv`, `.xlsx`, XML table, and simple HTML table rows into `parsed` fact records with raw-file and row provenance. It is not yet human-validated extraction.
 
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 

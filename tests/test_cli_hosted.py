@@ -423,12 +423,32 @@ class HostedCliTests(unittest.TestCase):
 
         with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
             load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
-            code, output = self.run_cli("ingest-extracted-facts", "--hosted", "--max-fulltext-units", "25")
+            code, output = self.run_cli(
+                "ingest-extracted-facts",
+                "--hosted",
+                "--max-fulltext-units",
+                "25",
+                "--discover-supplements",
+                "--download-supplements",
+                "--max-supplement-files",
+                "12",
+                "--max-supplement-bytes",
+                "3456",
+            )
 
         self.assertEqual(code, 0)
         self.assertEqual(calls[0][0], "POST")
         self.assertEqual(calls[0][1], "/ingest/extracted-facts")
-        self.assertEqual(calls[0][2], {"max_fulltext_units": 25})
+        self.assertEqual(
+            calls[0][2],
+            {
+                "max_fulltext_units": 25,
+                "discover_supplements": True,
+                "download_supplements": True,
+                "max_supplement_files": 12,
+                "max_supplement_bytes": 3456,
+            },
+        )
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 

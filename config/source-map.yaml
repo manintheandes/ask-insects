@@ -282,14 +282,25 @@ sources:
   - id: aedes_extracted_facts
     name: Aedes aegypti extracted literature facts and supplement manifests
     source_type: derived_sqlite_source
-    boundary: Deterministic cross-lane candidate facts and supplement manifests from indexed Aedes aegypti literature records, record payload supplement metadata, and legal literature_fulltext_units
-    query_plane: literature_records_payloads_and_fulltext_units_to_sqlite_fact_records
+    boundary: Deterministic cross-lane candidate facts, supplement manifests, and supported parsed supplement table rows from indexed Aedes aegypti literature records, record payload supplement metadata, Europe PMC or PMC metadata, public supplement files, and legal literature_fulltext_units
+    query_plane: literature_records_payloads_fulltext_units_and_supported_supplement_tables_to_sqlite_fact_records
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_extracted_facts.py
+    api_base:
+      europe_pmc: https://www.ebi.ac.uk/europepmc/webservices/rest/search
+      pmc_oa: https://pmc.ncbi.nlm.nih.gov/utils/oa/oa.fcgi
     input_sources:
       - aedes_literature_openalex
       - record_payloads
       - literature_fulltext_units
+      - europe_pmc_metadata
+      - pmc_oa_metadata
+    supported_supplement_formats:
+      - csv
+      - tsv
+      - xlsx
+      - xml
+      - html
     lanes:
       - literature
       - behavior
@@ -298,9 +309,9 @@ sources:
       - ecology
       - public_health
     provenance_required: true
-    live_fetch: derived_from_indexed_literature
+    live_fetch: opt_in_supplement_discovery_and_download
     legal_fulltext_only: true
-    confidence_policy: candidate_or_manifest_not_human_validated
+    confidence_policy: candidate_manifest_or_parsed_not_human_validated
   - id: aedes_pathogen_taxonomy
     name: NCBI Taxonomy Aedes-relevant arbovirus pathogen anchors
     source_type: public_api

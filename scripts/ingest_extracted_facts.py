@@ -58,9 +58,13 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "truncated_fulltext_unit_count": result.truncated_fulltext_unit_count,
         "selected_record_text_count": result.selected_record_text_count,
         "supplement_manifest_count": result.supplement_manifest_count,
+        "discovered_supplement_count": result.discovered_supplement_count,
+        "downloaded_supplement_file_count": result.downloaded_supplement_file_count,
+        "parsed_supplement_file_count": result.parsed_supplement_file_count,
+        "parsed_supplement_row_count": result.parsed_supplement_row_count,
         "fact_counts": result.fact_counts,
         "gap_count": len(result.gaps),
-        "method": "deterministic supplement manifest discovery and cross-lane Aedes fact extraction from literature records and bounded legal full-text units",
+        "method": "deterministic supplement manifest discovery, supported supplement table parsing, and cross-lane Aedes fact extraction from literature records and bounded legal full-text units",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -97,6 +101,10 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "truncated_fulltext_unit_count": result.truncated_fulltext_unit_count,
         "selected_record_text_count": result.selected_record_text_count,
         "supplement_manifest_count": result.supplement_manifest_count,
+        "discovered_supplement_count": result.discovered_supplement_count,
+        "downloaded_supplement_file_count": result.downloaded_supplement_file_count,
+        "parsed_supplement_file_count": result.parsed_supplement_file_count,
+        "parsed_supplement_row_count": result.parsed_supplement_row_count,
         "fact_counts": result.fact_counts,
         "gap_count": len(result.gaps),
         "source_counts": source_counts,
@@ -110,11 +118,23 @@ def ingest_extracted_facts(
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     retrieved_at: str | None = None,
     max_fulltext_units: int | None = 5000,
+    discover_supplements: bool = False,
+    download_supplements: bool = False,
+    fetch_supplement_metadata_fn=None,
+    fetch_supplement_file_fn=None,
+    max_supplement_files: int = 100,
+    max_supplement_bytes: int = 2_000_000,
 ) -> dict[str, object]:
     result = build_extracted_fact_records(
         artifact_dir,
         retrieved_at=retrieved_at,
         max_fulltext_units=max_fulltext_units,
+        discover_supplements=discover_supplements,
+        download_supplements=download_supplements,
+        fetch_supplement_metadata_fn=fetch_supplement_metadata_fn,
+        fetch_supplement_file_fn=fetch_supplement_file_fn,
+        max_supplement_files=max_supplement_files,
+        max_supplement_bytes=max_supplement_bytes,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
@@ -128,11 +148,19 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
     parser.add_argument("--retrieved-at")
     parser.add_argument("--max-fulltext-units", type=int, default=5000)
+    parser.add_argument("--discover-supplements", action="store_true")
+    parser.add_argument("--download-supplements", action="store_true")
+    parser.add_argument("--max-supplement-files", type=int, default=100)
+    parser.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
     args = parser.parse_args(argv)
     result = ingest_extracted_facts(
         artifact_dir=Path(args.artifact_dir),
         retrieved_at=args.retrieved_at,
         max_fulltext_units=args.max_fulltext_units,
+        discover_supplements=args.discover_supplements,
+        download_supplements=args.download_supplements,
+        max_supplement_files=args.max_supplement_files,
+        max_supplement_bytes=args.max_supplement_bytes,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result.get("ok") else 2
