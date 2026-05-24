@@ -99,6 +99,17 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show BOLD COI ba
 The lane writes raw BOLD TSV under `raw/bold/`, normalizes public barcode/specimen atoms into `dna_barcodes`, stores raw row payloads in SQLite, and records bounded-download gaps such as `bold_limit_applied`.
 If the public API blocks the runtime IP, use `--tsv-path path/to/Aedes_aegypti_bold_combined.tsv` to ingest a saved BOLD TSV through the same parser and receipt path.
 
+## PMC Video Source Lane
+
+PMC open-access article pages are the first moving-image lane for `Aedes aegypti` videos:
+
+```bash
+python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
+```
+
+The lane stores raw PMC article HTML under `raw/pmc_videos/`, extracts downloadable MP4/WebM/AVI/MOV supplementary links, normalizes them as `media` records from source `pmc_open_access_videos`, stores per-record payloads in SQLite, and records the article URL, video URL, license text, DOI, and raw HTML locator. This is the first source-grade video layer, not the final video corpus. Larger Dryad and OSF motion datasets remain follow-on targets.
+
 ## Aedes aegypti Neurobiology Source Lane
 
 The neurobiology lane can run as metadata-only, or from a downloaded raw-artifact cache:

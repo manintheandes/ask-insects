@@ -67,6 +67,13 @@ To add `Aedes aegypti` brain and neuron source metadata:
 python3 scripts/build_source_index.py --fixtures --neurobiology
 ```
 
+To add bounded public PMC supplementary videos:
+
+```bash
+python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
+```
+
 To download and index the raw neurobiology artifact cache:
 
 ```bash
@@ -105,6 +112,8 @@ This command talks to the hosted API. The server fetches GBIF pages with a small
 iNaturalist records use source id `inaturalist_api`. Raw iNaturalist responses are saved under `artifacts/mosquito-v1/raw/inaturalist/` and summarized in `artifacts/mosquito-v1/source_receipt.json`.
 Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes_aegypti_anywhere_page_001.json`.
 Local and hosted iNaturalist ingests are incremental. They replace only `inaturalist_api` rows, preserving the other source lanes already installed in `artifacts/mosquito-v1`.
+
+PMC video records use source id `pmc_open_access_videos`. Raw article HTML is saved under `artifacts/mosquito-v1/raw/pmc_videos/`. Each media record stores the article URL, downloadable video URL, parsed article title, DOI when present, license text when present, and a provenance locator into the saved raw HTML.
 
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 

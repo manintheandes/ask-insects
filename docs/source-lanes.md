@@ -30,9 +30,11 @@ Public moving-image or inspectable media records. V1 reports missing video cover
 Sources:
 
 - `inaturalist_api`: still-image media URLs from iNaturalist observation photos.
+- `pmc_open_access_videos`: curated public PMC article supplementary videos for Aedes behavior, biting, host-seeking, threat avoidance, and photopreference studies.
 
-Moving-image video coverage is still a source gap unless a future source lane adds video records.
+Moving-image video coverage is now source-grade for the bounded PMC supplementary-video seed set. It is not comprehensive yet; larger Dryad, OSF, Mendeley, and challenge-video datasets remain follow-on work.
 Deep iNaturalist ingest paginates the public API and saves one raw page artifact per request. Each normalized iNaturalist observation and media row also gets a matching `record_payloads` row with the raw observation and photo payload.
+The PMC video ingest saves one raw article HTML artifact per article, extracts downloadable video links, stores video records in `media`, stores the raw article/video payload per record, and keeps provenance locators pointing back to the saved HTML.
 
 ## Hosted Boundary
 

@@ -355,6 +355,39 @@ class AnswerTests(unittest.TestCase):
             self.assertFalse(answer["ok"])
             self.assertEqual(answer["source_gap"]["lane"], "media")
 
+    def test_video_questions_use_pmc_video_media_when_available(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="pmc:video:PMC1:video1.mp4",
+                        lane="media",
+                        source="pmc_open_access_videos",
+                        title="Aedes aegypti PMC supplementary video video1.mp4",
+                        text="PMC open-access supplementary video for Aedes aegypti behavior.",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC1/",
+                        media_url="https://pmc.ncbi.nlm.nih.gov/articles/instance/1/bin/video1.mp4",
+                        provenance=Provenance(
+                            source_id="pmc_open_access_videos",
+                            locator="raw/pmc_videos/PMC1.html#video/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                            source_url="https://pmc.ncbi.nlm.nih.gov/articles/PMC1/",
+                        ),
+                    )
+                ]
+            )
+
+            answer = answer_question("show mosquito videos", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["source"], "pmc_open_access_videos")
+
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

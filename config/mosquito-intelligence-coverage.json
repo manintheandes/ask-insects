@@ -106,7 +106,7 @@
     {
       "id": "observations",
       "priority": 4,
-      "status": "thin",
+      "status": "partial_source_grade",
       "target_state": "Global Aedes aegypti occurrence, collection, trap, citizen-science, and surveillance observations with date, place, method, certainty, taxon, and provenance.",
       "current_sources": [
         "mosquito_v1_fixtures",
@@ -121,11 +121,11 @@
         "ask_surface_wired": "partial"
       },
       "current_evidence": [
-        "GBIF and iNaturalist lanes exist, but the installed production artifact is not yet a comprehensive observation mirror."
+        "Hosted artifact contains deep Aedes aegypti iNaturalist observation records with raw page artifacts and provenance.",
+        "GBIF and iNaturalist lanes exist, but Ask Insects is not yet a comprehensive observation mirror across all public surveillance systems."
       ],
       "required_next_sources": [
         "deep Aedes aegypti GBIF occurrence refresh",
-        "deep Aedes aegypti iNaturalist refresh with licensed media",
         "Mosquito Alert public data",
         "regional surveillance exports where public"
       ],
@@ -136,7 +136,7 @@
     {
       "id": "images",
       "priority": 5,
-      "status": "thin",
+      "status": "partial_source_grade",
       "target_state": "Licensed Aedes aegypti images with observation, body part, life stage, view angle, source, license, and inspectable media locator.",
       "current_sources": [
         "inaturalist_api"
@@ -149,10 +149,10 @@
         "ask_surface_wired": "partial"
       },
       "current_evidence": [
-        "iNaturalist can normalize still-image media records, but media coverage is bounded and thin."
+        "Hosted artifact contains deep Aedes aegypti iNaturalist licensed-photo media records with observation context and provenance.",
+        "Image coverage is not yet enriched with body part, life stage, sex, anatomy, or quality labels."
       ],
       "required_next_sources": [
-        "deep iNaturalist licensed-photo ingest",
         "Mosquito Alert images",
         "museum or reference-image collections with licensing",
         "image labels for species, life stage, sex, anatomy, and quality"
@@ -164,22 +164,27 @@
     {
       "id": "video",
       "priority": 6,
-      "status": "source_gap",
+      "status": "partial_source_grade",
       "target_state": "Public Aedes aegypti videos and motion records for behavior, flight, feeding, oviposition, larval motion, and assay clips.",
-      "current_sources": [],
+      "current_sources": [
+        "pmc_open_access_videos"
+      ],
       "current_gates": {
-        "mapped": "no",
-        "accessible": "no",
-        "atomically_queryable": "no",
-        "receipted": "no",
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
         "ask_surface_wired": "partial"
       },
       "current_evidence": [
-        "Ask Insects reports a moving-image media source gap for video questions."
+        "PMC supplementary-video lane maps curated Aedes aegypti article videos into media records with downloadable video locators.",
+        "Ask Insects video questions can return bounded PMC moving-image media records once the lane is installed."
       ],
       "required_next_sources": [
-        "supplemental videos from Aedes behavior papers",
-        "public repository videos with explicit licenses",
+        "Dryad chemosensory-navigation larvae video dataset",
+        "Dryad thermal-infrared host-seeking behavior video dataset",
+        "OSF FlightTrackAI Aedes aegypti flight videos",
+        "Mendeley high-speed mate-location and recognition videos",
         "lab assay video metadata where public",
         "bioacoustic or trajectory challenge datasets when mosquito-specific and licensed"
       ],

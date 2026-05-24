@@ -92,6 +92,17 @@ sources:
       - dna_barcodes
     provenance_required: true
     live_fetch: opt_in
+  - id: pmc_open_access_videos
+    name: PMC open-access Aedes aegypti supplementary videos
+    source_type: public_article_media
+    boundary: Curated public PMC articles with Aedes aegypti supplementary moving-image files, especially behavior, host-seeking, biting, and photopreference clips
+    query_plane: pmc_article_html_video_links
+    artifact_dir: artifacts/mosquito-v1/raw/pmc_videos
+    ingest_script: scripts/ingest_pmc_videos.py
+    lanes:
+      - media
+    provenance_required: true
+    live_fetch: opt_in
   - id: aedes_neurobiology_sources
     name: Aedes aegypti neurobiology sources
     source_type: local_public_artifact_cache

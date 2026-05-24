@@ -65,6 +65,7 @@ REQUIRED_FILES = (
     "askinsects/sources/literature.py",
     "askinsects/sources/ncbi_genome.py",
     "askinsects/sources/neurobiology.py",
+    "askinsects/sources/pmc_videos.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -75,6 +76,7 @@ REQUIRED_FILES = (
     "scripts/build_literature_facets.py",
     "scripts/ingest_bold_barcodes.py",
     "scripts/ingest_inaturalist_observations.py",
+    "scripts/ingest_pmc_videos.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -98,6 +100,8 @@ REQUIRED_FILES = (
     "tests/test_literature_facets.py",
     "tests/test_ingest_bold_barcodes.py",
     "tests/test_ingest_inaturalist_observations.py",
+    "tests/test_ingest_pmc_videos.py",
+    "tests/test_pmc_video_source.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -122,6 +126,8 @@ UNIT_TEST_MODULES = (
     "tests.test_literature_facets",
     "tests.test_ingest_bold_barcodes",
     "tests.test_ingest_inaturalist_observations",
+    "tests.test_ingest_pmc_videos",
+    "tests.test_pmc_video_source",
 )
 
 
@@ -179,6 +185,7 @@ def check_literature_source_map() -> None:
     text = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
     required_terms = (
         "aedes_literature_openalex",
+        "pmc_open_access_videos",
         "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
         "sqlite_payload_table: record_payloads",
         "sqlite_fulltext_table: literature_fulltext_units",

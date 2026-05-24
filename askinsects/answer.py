@@ -155,6 +155,8 @@ def _search_queries(question: str) -> list[str]:
         "surveillance",
         "vector control",
         "outbreak",
+        "video",
+        "videos",
         "orco",
     ):
         if phrase in q:
