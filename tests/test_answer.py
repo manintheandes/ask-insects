@@ -1335,6 +1335,51 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:vector_competence:WZZZ:dengue")
 
+    def test_supplement_table_ranking_prefers_parsed_rows_over_fulltext_candidates(self):
+        from askinsects.answer import _prioritize_named_source_records
+
+        candidate = EvidenceRecord(
+            record_id="extracted_fact:vector_competence:WAAA:candidate",
+            lane="vector_competence",
+            source="aedes_extracted_facts",
+            title="Aedes aegypti extracted vector competence dengue candidate",
+            text="Full-text candidate for dengue virus infection rate.",
+            species="Aedes aegypti",
+            url="https://example.org/candidate",
+            media_url=None,
+            provenance=Provenance(
+                source_id="aedes_extracted_facts",
+                locator="records#WAAA;literature_fulltext_units#WAAA:fulltext:0",
+                retrieved_at="2026-05-24T00:00:00Z",
+                license="CC-BY",
+                source_url="https://example.org/candidate",
+            ),
+        )
+        parsed = EvidenceRecord(
+            record_id="extracted_fact:vector_competence:WZZZ:dengue",
+            lane="vector_competence",
+            source="aedes_extracted_facts",
+            title="Aedes aegypti extracted vector competence dengue fact",
+            text="Parsed supplement table row: dengue virus infection rate 80%.",
+            species="Aedes aegypti",
+            url="https://example.org/dengue",
+            media_url=None,
+            provenance=Provenance(
+                source_id="aedes_extracted_facts",
+                locator="records#WZZZ;supplement#0;raw/extracted_facts/supplements/WZZZ.docx;row#1",
+                retrieved_at="2026-05-24T00:00:00Z",
+                license="CC-BY",
+                source_url="https://example.org/dengue",
+            ),
+        )
+
+        ranked = _prioritize_named_source_records(
+            "show dengue vector competence supplement table infection rate for Aedes aegypti",
+            [candidate, parsed],
+        )
+
+        self.assertEqual(ranked[0].record_id, "extracted_fact:vector_competence:WZZZ:dengue")
+
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

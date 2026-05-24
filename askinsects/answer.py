@@ -918,6 +918,19 @@ def _named_pathogen_terms(question: str) -> list[str]:
     return terms
 
 
+def _extracted_fact_grain_rank(question: str, record: EvidenceRecord) -> int:
+    if record.source != EXTRACTED_FACTS_SOURCE_ID or not _wants_extracted_facts(question):
+        return 3
+    locator = record.provenance.locator
+    if "raw/extracted_facts/supplements/" in locator and ";row#" in locator:
+        return 0
+    if ";row#" in locator:
+        return 1
+    if "supplement#" in locator:
+        return 3
+    return 2
+
+
 def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
     if _wants_video_atoms(question):
@@ -964,7 +977,7 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             if term in q
         ]
 
-        def score_pathogen(record: EvidenceRecord) -> tuple[int, int, int, int]:
+        def score_pathogen(record: EvidenceRecord) -> tuple[int, int, int, int, int]:
             haystack = f"{record.title}\n{record.text}".lower()
             if wants_taxonomy:
                 preferred_source = "aedes_pathogen_taxonomy"
@@ -977,6 +990,7 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             missing_assay_terms = sum(1 for term in assay_terms if term not in haystack)
             return (
                 0 if record.source == preferred_source else 1,
+                _extracted_fact_grain_rank(question, record),
                 0 if record.lane == "vector_competence" else 1,
                 0 if pathogen_terms and any(term in haystack for term in pathogen_terms) else 1,
                 missing_assay_terms,
