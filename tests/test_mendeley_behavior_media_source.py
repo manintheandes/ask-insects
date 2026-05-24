@@ -1,6 +1,8 @@
+import io
 import tempfile
 import unittest
 from pathlib import Path
+from zipfile import ZipFile
 
 from askinsects.sources.mendeley_behavior_media import (
     MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
@@ -81,6 +83,99 @@ class MendeleyFetcher:
         raise AssertionError(f"unexpected URL: {url}")
 
 
+def tiny_xlsx(rows):
+    out = io.BytesIO()
+    with ZipFile(out, "w") as zf:
+        zf.writestr(
+            "[Content_Types].xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>""",
+        )
+        zf.writestr(
+            "_rels/.rels",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>""",
+        )
+        zf.writestr(
+            "xl/workbook.xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Assay" sheetId="1" r:id="rId1"/></sheets>
+</workbook>""",
+        )
+        zf.writestr(
+            "xl/_rels/workbook.xml.rels",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>""",
+        )
+        row_xml = []
+        for row_index, row in enumerate(rows, start=1):
+            cells = []
+            for col_index, value in enumerate(row):
+                col = chr(ord("A") + col_index)
+                cells.append(
+                    f'<c r="{col}{row_index}" t="inlineStr"><is><t>{value}</t></is></c>'
+                )
+            row_xml.append(f'<row r="{row_index}">{"".join(cells)}</row>')
+        zf.writestr(
+            "xl/worksheets/sheet1.xml",
+            f"""<?xml version="1.0" encoding="UTF-8"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>{"".join(row_xml)}</sheetData>
+</worksheet>""",
+        )
+    return out.getvalue()
+
+
+class MendeleyTableFetcher(MendeleyFetcher):
+    def __init__(self):
+        super().__init__()
+        self.files_by_folder["root"].extend(
+            [
+                {
+                    "filename": "assay.csv",
+                    "id": "file-csv",
+                    "folder_id": None,
+                    "status": "COMPLETED",
+                    "content_details": {
+                        "content_type": "text/csv",
+                        "size": 52,
+                        "sha256_hash": "csv-hash",
+                        "download_url": "https://data.mendeley.com/public-files/csv/file_downloaded",
+                    },
+                },
+                {
+                    "filename": "assay.xlsx",
+                    "id": "file-xlsx",
+                    "folder_id": None,
+                    "status": "COMPLETED",
+                    "content_details": {
+                        "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "size": 4096,
+                        "sha256_hash": "xlsx-hash",
+                        "download_url": "https://data.mendeley.com/public-files/xlsx/file_downloaded",
+                    },
+                },
+            ]
+        )
+
+    def bytes_for(self, url):
+        if url.endswith("/csv/file_downloaded"):
+            return b"temperature,response\n27,resting\n30,flight\n"
+        if url.endswith("/xlsx/file_downloaded"):
+            return tiny_xlsx([["stimulus", "wingbeat"], ["tone", "430 Hz"]])
+        raise AssertionError(f"unexpected download URL: {url}")
+
+
 class MendeleyBehaviorMediaSourceTests(unittest.TestCase):
     def test_fetch_mendeley_behavior_media_records_normalizes_dataset_folders_and_files(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -122,6 +217,33 @@ class MendeleyBehaviorMediaSourceTests(unittest.TestCase):
             readme = next(record for record in result.records if record.title.endswith("read me.txt"))
             self.assertEqual(readme.lane, "behavior")
             self.assertIsNone(readme.media_url)
+
+    def test_fetch_mendeley_behavior_media_records_parses_downloaded_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = MendeleyTableFetcher()
+            result = fetch_mendeley_behavior_media_records(
+                [MendeleyDatasetSpec(dataset_id="6gvs94p6r2", version=1, behavior_labels=("mating", "wing flash"))],
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fetcher,
+                fetch_bytes=fetcher.bytes_for,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            self.assertEqual(result.table_file_count, 2)
+            self.assertEqual(result.parsed_table_file_count, 2)
+            self.assertEqual(result.table_sheet_count, 2)
+            self.assertEqual(result.table_row_count, 3)
+
+            sheet = next(record for record in result.records if record.record_id.startswith("mendeley:table:"))
+            self.assertEqual(sheet.lane, "behavior")
+            self.assertEqual(sheet.payload["headers"], ["temperature", "response"])
+            self.assertEqual(sheet.payload["row_count"], 2)
+
+            rows = [record for record in result.records if record.record_id.startswith("mendeley:table-row:")]
+            self.assertEqual(len(rows), 3)
+            self.assertTrue(any(record.payload["values"].get("response") == "flight" for record in rows))
+            self.assertTrue(any("430 Hz" in record.text for record in rows))
+            self.assertTrue(all(Path(path).name.endswith((".json", ".csv", ".xlsx")) for path in result.raw_artifacts))
 
     def test_fetch_mendeley_behavior_media_records_records_gap_on_fetch_failure(self):
         with tempfile.TemporaryDirectory() as tmpdir:

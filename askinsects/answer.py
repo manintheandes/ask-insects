@@ -195,8 +195,25 @@ def _search_queries(question: str) -> list[str]:
     if "dryad" in q:
         return ["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset", question]
     if "mendeley" in q:
+        if any(term in q for term in ("table", "tables", "row", "rows", "xlsx", "csv", "temperature", "gradient", "gradients")):
+            queries = [question]
+            if any(term in q for term in ("temperature", "gradient", "gradients")):
+                queries.extend(
+                    [
+                        "Data VideoAnalysis temperature gradients AeAegypti",
+                        "Aedes aegypti temperature gradients locomotory behavior",
+                        "Temperature Species aegypti Behavioural Activity",
+                    ]
+                )
+            queries.extend(
+                [
+                    "Mendeley Aedes aegypti behavior table row",
+                    "Mendeley Aedes aegypti parsed behavior table",
+                ]
+            )
+            return list(dict.fromkeys(queries))
         return ["Mendeley Aedes aegypti behavior media", "Mendeley wing flash video", "Mendeley flight tone", question]
-    if any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime")):
+    if any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime", "temperature gradient", "temperature gradients")):
         return [
             "Mendeley Aedes aegypti behavior media",
             "Aedes aegypti wing flash mate recognition flight tone locomotory behavior",
@@ -691,12 +708,15 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 0 if record.lane in {"media", "behavior"} else 1,
             ),
         )
-    if "mendeley" in q or any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime")):
+    if "mendeley" in q or any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime", "temperature gradient", "temperature gradients")):
+        wants_table_rows = any(term in q for term in ("table", "tables", "row", "rows", "xlsx", "csv", "temperature", "gradient", "gradients"))
         return sorted(
             records,
             key=lambda record: (
                 0 if record.source == "mendeley_aedes_behavior_media" else 1,
                 0 if record.lane in {"media", "behavior"} else 1,
+                0 if wants_table_rows and record.record_id.startswith("mendeley:table-row:") else 1,
+                0 if wants_table_rows and record.record_id.startswith("mendeley:table:") else 1,
             ),
         )
     if "mosquito alert" not in q:

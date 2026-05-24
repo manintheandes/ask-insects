@@ -80,6 +80,7 @@ def plan_question(question: str) -> QueryPlan:
     if any(
         term in q
         for term in (
+            "mendeley",
             "host seeking",
             "host-seeking",
             "blood feeding",
@@ -93,6 +94,9 @@ def plan_question(question: str) -> QueryPlan:
             "wingbeat",
             "hearing",
             "locomotory",
+            "temperature gradient",
+            "temperature gradients",
+            "temperature regime",
             "larval behavior",
             "repellent",
             "attractant",

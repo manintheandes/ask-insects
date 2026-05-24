@@ -271,6 +271,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show CYP9J32 metabolic resistance markers in Aedes aegypti").answer_shape, "resistance")
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
+        self.assertEqual(plan_question("what Mendeley table rows mention temperature gradients?").answer_shape, "behavior")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show Aedes aegypti BioSamples from China").lanes[0], "biosamples")
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
@@ -718,6 +719,57 @@ class AnswerTests(unittest.TestCase):
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["source"], "mendeley_aedes_behavior_media")
+
+    def test_mendeley_table_questions_prefer_parsed_behavior_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="mendeley:table:sg5rrvdzvg:v1:file:sheet1",
+                        lane="behavior",
+                        source="mendeley_aedes_behavior_media",
+                        title="Aedes aegypti Mendeley parsed behavior table Data_VideoAnalysis_temperature gradients_AeAegypti.xlsx sheet Sheet1",
+                        text="Parsed Mendeley behavior table for Aedes aegypti locomotory behavior temperature gradients. Rows: 2700.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/sg5rrvdzvg/1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/table_files/file.xlsx#sheet/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY 4.0",
+                            source_url="https://data.mendeley.com/public-files/file_downloaded",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="mendeley:table-row:sg5rrvdzvg:v1:file:sheet1:r2",
+                        lane="behavior",
+                        source="mendeley_aedes_behavior_media",
+                        title="Aedes aegypti Mendeley behavior table row Data_VideoAnalysis_temperature gradients_AeAegypti.xlsx Sheet1 row 2",
+                        text="Parsed Mendeley Aedes aegypti behavior table row. File: Data_VideoAnalysis_temperature gradients_AeAegypti.xlsx. Sheet: Sheet1. Row: 2. Values: Temperature: 30; Species: Aedes aegypti; Behavioural_Activity: flight.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/sg5rrvdzvg/1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/table_files/file.xlsx#sheet/1/row/2",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY 4.0",
+                            source_url="https://data.mendeley.com/public-files/file_downloaded",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("what Mendeley Aedes aegypti table rows mention temperature gradients?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["record_id"], "mendeley:table-row:sg5rrvdzvg:v1:file:sheet1:r2")
             self.assertEqual(answer["evidence"][0]["source"], "mendeley_aedes_behavior_media")
 
     def test_pathogen_questions_prefer_taxonomy_records(self):

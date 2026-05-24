@@ -102,11 +102,12 @@
         "Installed local and hosted artifacts contain 2,816 behavior records from aedes_literature_facets.",
         "Behavior questions route through the behavior lane and return provenance back to source literature records and full-text units where available.",
         "Dryad Aedes behavior/video dataset manifests map public host-seeking, visual-threat, flight-escape, mating/courtship, male host-attraction, and visual-tracking data files to behavior and media records with DOI, file, license, checksum, size, and download provenance.",
-        "Mendeley Data Aedes behavior/media manifests map public mate-recognition, wingbeat, hearing, flight-tone, high-speed video, and locomotory video-analysis datasets to behavior and media records with dataset, folder, file, DOI, license, SHA-256, size, content-type, download, and view provenance."
+        "Mendeley Data Aedes behavior/media manifests map public mate-recognition, wingbeat, hearing, flight-tone, high-speed video, and locomotory video-analysis datasets to behavior and media records with dataset, folder, file, DOI, license, SHA-256, size, content-type, download, and view provenance.",
+        "Mendeley public CSV, TSV, and XLSX Aedes behavior table files are parsed into sheet-level and row-level behavior records with headers, row values, row numbers, download URLs, licenses, and raw-file locators."
       ],
       "required_next_sources": [
         "decoded trajectory tables and assay-level rows from Dryad behavior archives",
-        "deep parsing of Mendeley spreadsheets, sound files, and high-speed video archives into assay and trajectory rows",
+        "deep parsing of Mendeley sound files, high-speed video archives, and compressed archives into acoustic, assay, and trajectory records",
         "repellent and attractant assay datasets",
         "host-seeking and oviposition experiment metadata"
       ],
@@ -195,11 +196,12 @@
         "PMC supplementary-video lane maps curated Aedes aegypti article videos into media records with downloadable video locators.",
         "Ask Insects video questions can return bounded PMC moving-image media records once the lane is installed.",
         "Dryad behavior/video dataset manifests add file-grained public Aedes video/archive records for thermal-infrared host seeking, visual-threat avoidance, looming-threat flight escape, mating/courtship/hearing, male attraction, and visual-tracking datasets without mirroring giant binary archives.",
-        "Mendeley behavior/media manifests add file-grained public Aedes high-speed video, wingbeat sound, flight-tone hearing, and locomotory video-analysis dataset records without mirroring giant binaries."
+        "Mendeley behavior/media manifests add file-grained public Aedes high-speed video, wingbeat sound, flight-tone hearing, and locomotory video-analysis dataset records without mirroring giant binaries.",
+        "Mendeley public behavior table files are parsed into queryable sheet and row records where the file is in Aedes aegypti scope."
       ],
       "required_next_sources": [
         "OSF FlightTrackAI Aedes aegypti flight videos",
-        "deep parsing of Mendeley high-speed mate-location, recognition, hearing, sound, and video-analysis files",
+        "deep parsing of Mendeley high-speed mate-location, recognition, hearing, sound, video, and archive files beyond tabular CSV/XLSX content",
         "lab assay video metadata where public",
         "bioacoustic or trajectory challenge datasets when mosquito-specific and licensed"
       ],

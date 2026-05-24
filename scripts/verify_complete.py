@@ -42,6 +42,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-occurrence-ecology-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-vectorbase-genomics-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-mendeley-behavior-media-lane-design.md",
+    "docs/superpowers/specs/2026-05-24-aedes-mendeley-behavior-table-deep-parse-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -58,6 +59,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-occurrence-ecology-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-vectorbase-genomics-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-mendeley-behavior-media-lane.md",
+    "docs/superpowers/plans/2026-05-24-aedes-mendeley-behavior-table-deep-parse.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -333,7 +335,12 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("dryad_aedes_behavior_videos", "scripts/ingest_dryad_behavior_videos.py", "behavior", "media"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Dryad behavior/video term: {term}")
-    for term in ("mendeley_aedes_behavior_media", "scripts/ingest_mendeley_behavior_media.py", "mendeley_public_snapshot_folder_file_manifest_to_sqlite", "6gvs94p6r2:1"):
+    for term in (
+        "mendeley_aedes_behavior_media",
+        "scripts/ingest_mendeley_behavior_media.py",
+        "mendeley_public_snapshot_folder_file_manifest_and_table_rows_to_sqlite",
+        "6gvs94p6r2:1",
+    ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Mendeley behavior/media term: {term}")
     for term in ("aedes_pathogen_taxonomy", "scripts/ingest_pathogen_taxonomy.py", "vector_competence"):

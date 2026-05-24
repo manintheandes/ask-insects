@@ -26,6 +26,8 @@ The lane uses the public Mendeley Data API pages:
 - One `behavior` record per folder in the dataset manifest.
 - One `media` record per file that is video, audio, or archive-like.
 - One `behavior` record per non-media file such as spreadsheet, source data, README, or code.
+- One `behavior` record per parsed public `.csv`, `.tsv`, or `.xlsx` table or workbook sheet when the file is in Aedes aegypti scope.
+- One `behavior` record per non-empty parsed table row when the file is in Aedes aegypti scope.
 
 Each file record must preserve filename, folder path, size, content type, SHA-256 hash when supplied, download URL, view URL, dataset DOI, dataset title, behavior labels, license, and raw manifest locator.
 
@@ -33,10 +35,10 @@ Each file record must preserve filename, folder path, size, content type, SHA-25
 
 - Mapped: `config/source-map.yaml` declares the lane, query plane, boundary, API base, ingest script, and lanes.
 - Accessible: the ingest fetches public snapshot, folder, and file manifest JSON from Mendeley Data.
-- Atomically queryable: SQLite records expose dataset, folder, and file atoms with `record_payloads`.
+- Atomically queryable: SQLite records expose dataset, folder, file, parsed sheet, and parsed row atoms with `record_payloads`.
 - Receipted: `source_status.json`, `source_receipt.json`, and `gaps.json` include Mendeley lane status and gaps.
 - Ask surface wired: `ask-insects ask/search` can surface Mendeley behavior and media records, and Mendeley-specific questions prefer this lane.
 
 ## Explicit Limits
 
-This lane indexes manifests and public download locators. It does not mirror multi-gigabyte binaries by default and does not decode video frames or spreadsheet tables yet. Those are follow-on Aedes behavior deep-parse tasks.
+This lane indexes manifests, public download locators, and parseable public Aedes table files. It does not mirror multi-gigabyte binaries by default and does not decode video frames, acoustic waveforms, or compressed archives yet. Those remain follow-on Aedes behavior deep-parse tasks.
