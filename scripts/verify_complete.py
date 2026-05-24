@@ -5,6 +5,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+import sqlite3
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -21,6 +22,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-23-ask-insects-gbif-v1-design.md",
     "docs/superpowers/specs/2026-05-23-ask-insects-inaturalist-v1-design.md",
     "docs/superpowers/specs/2026-05-23-inaturalist-deep-aedes-ingest-design.md",
+    "docs/superpowers/specs/2026-05-23-aedes-aegypti-literature-source-lane-design.md",
     "docs/superpowers/specs/2026-05-23-ask-insects-hosted-vm-infra-design.md",
     "docs/superpowers/specs/2026-05-23-aedes-aegypti-genomics-lane-design.md",
     "docs/superpowers/specs/2026-05-23-aedes-aegypti-neurobiology-lane-design.md",
@@ -28,6 +30,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
     "docs/superpowers/plans/2026-05-23-inaturalist-deep-aedes-ingest.md",
+    "docs/superpowers/plans/2026-05-23-aedes-aegypti-literature-source-lane.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-hosted-vm-infra.md",
     "docs/superpowers/plans/2026-05-23-aedes-aegypti-genomics-lane.md",
     "docs/superpowers/plans/2026-05-23-aedes-aegypti-neurobiology-lane.md",
@@ -45,9 +48,11 @@ REQUIRED_FILES = (
     "askinsects/sources/fixtures.py",
     "askinsects/sources/gbif.py",
     "askinsects/sources/inaturalist.py",
+    "askinsects/sources/literature.py",
     "askinsects/sources/ncbi_genome.py",
     "askinsects/sources/neurobiology.py",
     "scripts/build_source_index.py",
+    "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
     "scripts/deploy_gce_app.sh",
     "scripts/deploy_gce_vm.sh",
@@ -62,6 +67,8 @@ REQUIRED_FILES = (
     "tests/test_gbif_source.py",
     "tests/test_hosted_client.py",
     "tests/test_inaturalist_source.py",
+    "tests/test_literature_source.py",
+    "tests/test_literature_enrichment.py",
     "tests/test_index.py",
     "tests/test_ncbi_genome_source.py",
     "tests/test_neurobiology_source.py",
@@ -80,6 +87,8 @@ UNIT_TEST_MODULES = (
     "tests.test_gbif_source",
     "tests.test_hosted_client",
     "tests.test_inaturalist_source",
+    "tests.test_literature_source",
+    "tests.test_literature_enrichment",
     "tests.test_index",
     "tests.test_ncbi_genome_source",
     "tests.test_neurobiology_source",
@@ -130,6 +139,22 @@ def check_source_index_build() -> None:
         raise RuntimeError("fixture index build produced fewer than 7 records")
 
 
+def check_literature_source_map() -> None:
+    text = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
+    required_terms = (
+        "aedes_literature_openalex",
+        "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
+        "sqlite_payload_table: record_payloads",
+        "sqlite_fulltext_table: literature_fulltext_units",
+        "live_fetch: opt_in",
+        "pubmed_eutilities",
+        "unpaywall_api",
+    )
+    missing = [term for term in required_terms if term not in text]
+    if missing:
+        raise RuntimeError(f"source map missing literature term(s): {', '.join(missing)}")
+
+
 def check_cli() -> None:
     health = run_json([sys.executable, "-m", "askinsects", "health"])
     if health.get("ok") is not True:
@@ -172,12 +197,154 @@ def check_cli() -> None:
         raise RuntimeError("media source gap did not include source_gap")
 
 
+def _direct_fulltext_from_payload(payload: dict[str, object]) -> bool:
+    unpaywall = payload.get("unpaywall")
+    if isinstance(unpaywall, dict) and unpaywall.get("is_oa"):
+        location = unpaywall.get("best_oa_location")
+        if isinstance(location, dict):
+            url = location.get("url_for_pdf") or location.get("url_for_xml")
+            if isinstance(url, str) and url.startswith(("http://", "https://")):
+                return True
+    work = payload.get("raw_openalex_work")
+    if isinstance(work, dict):
+        location = work.get("best_oa_location")
+        if isinstance(location, dict):
+            url = location.get("pdf_url")
+            if isinstance(url, str) and url.startswith(("http://", "https://")):
+                return True
+    return False
+
+
+def check_literature_artifact() -> None:
+    artifact_dir = REPO_ROOT / "artifacts/aedes-literature-2020"
+    db_path = artifact_dir / "source_index.sqlite"
+    status_path = artifact_dir / "source_status.json"
+    receipt_path = artifact_dir / "source_receipt.json"
+    enrichment_receipt_path = artifact_dir / "literature_enrichment_receipt.json"
+    gaps_path = artifact_dir / "gaps.json"
+    for path in (db_path, status_path, receipt_path, enrichment_receipt_path, gaps_path):
+        if not path.exists():
+            raise RuntimeError(f"missing Aedes literature artifact file: {path.relative_to(REPO_ROOT)}")
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        literature_records = int(
+            conn.execute("select count(*) from records where source='aedes_literature_openalex'").fetchone()[0]
+        )
+        payload_rows = conn.execute(
+            "select record_id, payload_json from record_payloads where source='aedes_literature_openalex'"
+        ).fetchall()
+        pubmed_enriched = int(
+            conn.execute(
+                "select count(*) from record_payloads where source='aedes_literature_openalex' and json_type(payload_json, '$.pubmed')='object'"
+            ).fetchone()[0]
+        )
+        unpaywall_enriched = int(
+            conn.execute(
+                "select count(*) from record_payloads where source='aedes_literature_openalex' and json_type(payload_json, '$.unpaywall')='object'"
+            ).fetchone()[0]
+        )
+        fulltext_records = int(conn.execute("select count(distinct record_id) from literature_fulltext_units").fetchone()[0])
+        fulltext_units = int(conn.execute("select count(*) from literature_fulltext_units").fetchone()[0])
+        fulltext_fts = int(conn.execute("select count(*) from literature_fulltext_fts").fetchone()[0])
+        fulltext_record_ids = {row[0] for row in conn.execute("select distinct record_id from literature_fulltext_units")}
+
+    if literature_records != 10683:
+        raise RuntimeError(f"Aedes literature record count is {literature_records}, expected 10683")
+    if len(payload_rows) != literature_records:
+        raise RuntimeError("Aedes literature payload count does not match record count")
+    if pubmed_enriched < 3800:
+        raise RuntimeError(f"PubMed enrichment count is too low: {pubmed_enriched}")
+    if unpaywall_enriched < 9500:
+        raise RuntimeError(f"Unpaywall enrichment count is too low: {unpaywall_enriched}")
+    if fulltext_records == 0 or fulltext_units == 0:
+        raise RuntimeError("Aedes literature full text has not been extracted")
+    if fulltext_fts != fulltext_units:
+        raise RuntimeError("literature_fulltext_fts count does not match literature_fulltext_units")
+
+    payloads = {row["record_id"]: json.loads(row["payload_json"]) for row in payload_rows}
+    direct_candidates = {record_id for record_id, payload in payloads.items() if _direct_fulltext_from_payload(payload)}
+    gaps = json.loads(gaps_path.read_text(encoding="utf-8"))
+    if not isinstance(gaps, list):
+        raise RuntimeError("gaps.json is not a list")
+    gap_keys = {
+        (
+            str(gap.get("source")),
+            str(gap.get("lane")),
+            str(gap.get("reason")),
+            str(gap.get("record_id")),
+            str(gap.get("locator")),
+        )
+        for gap in gaps
+        if isinstance(gap, dict)
+    }
+    if len(gap_keys) != len(gaps):
+        raise RuntimeError("gaps.json contains duplicate source/lane/reason/record/locator rows")
+    failed_fulltext_ids = {
+        str(gap.get("record_id"))
+        for gap in gaps
+        if isinstance(gap, dict)
+        and gap.get("source") == "aedes_literature_openalex"
+        and gap.get("reason") in {"fulltext_fetch_failed", "fulltext_parse_failed"}
+    }
+    unresolved_direct = direct_candidates - fulltext_record_ids - failed_fulltext_ids
+    if unresolved_direct:
+        sample = ", ".join(sorted(unresolved_direct)[:5])
+        raise RuntimeError(f"{len(unresolved_direct)} direct full-text candidates lack extracted text or explicit gap, sample: {sample}")
+
+    status = json.loads(status_path.read_text(encoding="utf-8"))
+    receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+    status_lit = status.get("literature") if isinstance(status, dict) else None
+    receipt_lit = receipt.get("literature") if isinstance(receipt, dict) else None
+    if not isinstance(status_lit, dict) or not isinstance(receipt_lit, dict):
+        raise RuntimeError("literature counts missing from source_status.json or source_receipt.json")
+    if status.get("source_id") != "aedes_literature_openalex":
+        raise RuntimeError("source_status.json source_id does not identify the Aedes literature source")
+    if receipt.get("source_id") != "aedes_literature_openalex":
+        raise RuntimeError("source_receipt.json source_id does not identify the Aedes literature source")
+    if "aedes_literature_openalex" not in status.get("sources", []):
+        raise RuntimeError("source_status.json sources does not include the Aedes literature source")
+    if "aedes_literature_openalex" not in receipt.get("sources", []):
+        raise RuntimeError("source_receipt.json sources does not include the Aedes literature source")
+    expected_pairs = {
+        "record_count": literature_records,
+        "payload_count": len(payload_rows),
+        "pubmed_enriched_count": pubmed_enriched,
+        "unpaywall_enriched_count": unpaywall_enriched,
+        "direct_fulltext_candidate_count": len(direct_candidates),
+        "fulltext_record_count": fulltext_records,
+        "fulltext_unit_count": fulltext_units,
+        "fulltext_fts_count": fulltext_fts,
+    }
+    for key, value in expected_pairs.items():
+        if int(status_lit.get(key, -1)) != value:
+            raise RuntimeError(f"source_status.json literature.{key} does not match SQLite")
+        if int(receipt_lit.get(key, -1)) != value:
+            raise RuntimeError(f"source_receipt.json literature.{key} does not match SQLite")
+
+    sources = run_json([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "sources"])
+    if "aedes_literature_openalex" not in sources.get("sources", []):
+        raise RuntimeError("Aedes artifact sources command does not include aedes_literature_openalex")
+    search = run_json(
+        [sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "search", "literature", "Wolbachia", "--limit", "3"]
+    )
+    if not search.get("rows"):
+        raise RuntimeError("Aedes artifact literature search returned no rows for Wolbachia")
+    answer = run_json(
+        [sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "ask", "Aedes aegypti research", "--json"]
+    )
+    if answer.get("ok") is not True or not answer.get("evidence"):
+        raise RuntimeError("Aedes artifact ask query did not return provenance-bearing evidence")
+
+
 def main() -> int:
     try:
         check_required_files()
         check_unit_tests()
         check_source_index_build()
+        check_literature_source_map()
         check_cli()
+        check_literature_artifact()
     except Exception as exc:
         return fail(str(exc))
     print("verify_complete ok")
