@@ -53,6 +53,7 @@ class ServerTests(unittest.TestCase):
             raw_dir = artifact_dir / "raw" / "large_source"
             raw_dir.mkdir(parents=True)
             (artifact_dir / "source_index.sqlite").write_text("mutable-db", encoding="utf-8")
+            (artifact_dir / "source_index.sqlite-journal").write_text("stale rollback journal", encoding="utf-8")
             (artifact_dir / "source_status.json").write_text("{}", encoding="utf-8")
             (raw_dir / "page.json").write_text('{"ok": true}', encoding="utf-8")
 
@@ -67,6 +68,7 @@ class ServerTests(unittest.TestCase):
                 (raw_dir / "page.json").stat().st_ino,
                 (staging / "raw" / "large_source" / "page.json").stat().st_ino,
             )
+            self.assertFalse((staging / "source_index.sqlite-journal").exists())
 
     def test_source_staging_replaces_mutables_and_one_raw_source(self):
         with tempfile.TemporaryDirectory() as tmpdir:

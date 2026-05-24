@@ -222,6 +222,10 @@ MUTABLE_ARTIFACT_FILES = {
     "gaps.json",
 }
 
+VOLATILE_ARTIFACT_FILES = {
+    "source_index.sqlite-journal",
+}
+
 
 def _copy_for_staging(src: str, dst: str) -> str:
     if Path(src).name in MUTABLE_ARTIFACT_FILES:
@@ -235,7 +239,12 @@ def _copy_for_staging(src: str, dst: str) -> str:
 
 
 def copy_artifact_to_staging(artifact_dir: Path, staging: Path) -> None:
-    shutil.copytree(artifact_dir, staging, copy_function=_copy_for_staging)
+    shutil.copytree(
+        artifact_dir,
+        staging,
+        ignore=shutil.ignore_patterns(*VOLATILE_ARTIFACT_FILES),
+        copy_function=_copy_for_staging,
+    )
 
 
 def prepare_mutable_staging(artifact_dir: Path, staging: Path) -> None:
