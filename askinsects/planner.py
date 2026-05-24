@@ -179,12 +179,16 @@ def plan_question(question: str) -> QueryPlan:
             question,
         )
     genomics_terms = (
+        "aael",
         "assembly",
         "barcode",
         "barcodes",
         "bold",
         "coi",
         "coi-5p",
+        "codon",
+        "codons",
+        "codon usage",
         "dna barcode",
         "dna barcodes",
         "genome",
@@ -201,6 +205,15 @@ def plan_question(question: str) -> QueryPlan:
         "sra",
         "transcript",
         "transcripts",
+        "go annotation",
+        "go term",
+        "gene ontology",
+        "id event",
+        "id events",
+        "identifier event",
+        "identifier history",
+        "linkout",
+        "ncbi linkout",
         "protein",
         "proteins",
         "receptor",
@@ -212,10 +225,30 @@ def plan_question(question: str) -> QueryPlan:
         "cytochrome p450",
         "sodium channel",
         "insecticide resistance",
+        "vectorbase",
+        "veupathdb",
     )
     if any(term in q for term in genomics_terms):
         if any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p")):
             lanes = ("dna_barcodes", "genes", "proteins", "literature", "taxonomy")
+        elif any(
+            term in q
+            for term in (
+                "codon",
+                "codons",
+                "codon usage",
+                "go annotation",
+                "go term",
+                "gene ontology",
+                "id event",
+                "id events",
+                "identifier event",
+                "identifier history",
+                "linkout",
+                "ncbi linkout",
+            )
+        ):
+            lanes = ("genome_features", "genes", "proteins", "transcripts", "genome_assemblies", "literature", "taxonomy")
         elif any(term in q for term in ("receptor", "receptors", "odorant", "gustatory", "ionotropic", "orco")):
             lanes = ("proteins", "transcripts", "genome_features", "genes", "genome_assemblies", "literature", "taxonomy")
         elif any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates", "sra")):

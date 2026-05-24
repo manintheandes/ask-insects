@@ -37,10 +37,45 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
         handle.write(
             "VectorBase\tAAEL000001\torco\t\tGO:0004984\tPMID:1\tIEA\t\tF\todorant receptor activity\tOrco\tprotein\ttaxon:7159\t20260524\tVectorBase\t\tAAEL000001-PA\n"
         )
+    codon_usage = root / "VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt"
+    codon_usage.write_text(
+        "CODON\tAA\tFREQ\tABUNDANCE\nAUG\tM\t22.88 \t1.00\n",
+        encoding="utf-8",
+    )
+    id_events = root / "VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab"
+    id_events.write_text(
+        "AAEL000355\t\tdeletion\tpre-BRC4 52\t2009-06\n",
+        encoding="utf-8",
+    )
+    ncbi_linkout = root / "VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml"
+    ncbi_linkout.write_text(
+        """<?xml version="1.0"?>
+<LinkSet>
+  <Link>
+    <LinkId>1</LinkId>
+    <ProviderId>5941</ProviderId>
+    <ObjectSelector>
+      <Database>Nucleotide</Database>
+      <ObjectList>
+        <Query>AaegL5_1</Query>
+      </ObjectList>
+    </ObjectSelector>
+    <ObjectUrl>
+      <Base>https://vectorbase.org/a/app/record/genomic-sequence/</Base>
+      <Rule></Rule>
+    </ObjectUrl>
+  </Link>
+</LinkSet>
+""",
+        encoding="utf-8",
+    )
     return {
         "gff": gff.as_uri(),
         "proteins": proteins.as_uri(),
         "go": gaf.as_uri(),
+        "codon_usage": codon_usage.as_uri(),
+        "id_events": id_events.as_uri(),
+        "ncbi_linkout": ncbi_linkout.as_uri(),
     }
 
 
@@ -73,6 +108,15 @@ class VectorBaseGenomicsSourceTests(unittest.TestCase):
             go = next(record for record in result.records if record.record_id.startswith("vectorbase:go:"))
             self.assertIn("GO:0004984", go.text)
             self.assertEqual(go.payload["go_id"], "GO:0004984")
+            codon = next(record for record in result.records if record.record_id == "vectorbase:codon_usage:AUG")
+            self.assertIn("frequency 22.88", codon.text)
+            self.assertEqual(codon.payload["amino_acid"], "M")
+            id_event = next(record for record in result.records if record.record_id.startswith("vectorbase:id_event:AAEL000355"))
+            self.assertIn("deletion to no successor", id_event.text)
+            self.assertEqual(id_event.payload["event"], "deletion")
+            linkout = next(record for record in result.records if record.record_id.startswith("vectorbase:ncbi_linkout:Nucleotide:AaegL5_1"))
+            self.assertIn("NCBI LinkOut", linkout.text)
+            self.assertEqual(linkout.payload["query"], "AaegL5_1")
             self.assertTrue(any(gap["reason"] == "malformed_gff_row" for gap in result.gaps))
 
     def test_vectorbase_payloads_are_queryable_from_sqlite(self):

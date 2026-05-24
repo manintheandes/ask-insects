@@ -131,16 +131,40 @@ def _search_queries(question: str) -> list[str]:
         if species:
             queries.append(species)
         return list(dict.fromkeys(queries))
-    if any(term in q for term in ("vectorbase", "veupathdb", "aael", "go annotation", "go term", "gene ontology")):
+    if any(
+        term in q
+        for term in (
+            "vectorbase",
+            "veupathdb",
+            "aael",
+            "codon",
+            "codon usage",
+            "go annotation",
+            "go term",
+            "gene ontology",
+            "id event",
+            "id events",
+            "identifier event",
+            "identifier history",
+            "linkout",
+            "ncbi linkout",
+        )
+    ):
         generic_terms = {
             "aedes",
             "aegypti",
             "annotation",
+            "codon",
             "for",
             "gene",
             "genes",
             "genomics",
             "go",
+            "history",
+            "id",
+            "identifier",
+            "linkout",
+            "ncbi",
             "show",
             "term",
             "terms",
@@ -554,7 +578,25 @@ def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
 
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
-    if any(term in q for term in ("vectorbase", "veupathdb", "aael", "go annotation", "go term", "gene ontology")):
+    if any(
+        term in q
+        for term in (
+            "vectorbase",
+            "veupathdb",
+            "aael",
+            "codon",
+            "codon usage",
+            "go annotation",
+            "go term",
+            "gene ontology",
+            "id event",
+            "id events",
+            "identifier event",
+            "identifier history",
+            "linkout",
+            "ncbi linkout",
+        )
+    ):
         aael_terms = [token.lower() for token in re.findall(r"AAEL[A-Za-z0-9-]+", question, flags=re.IGNORECASE)]
         if aael_terms:
             exact_records = [

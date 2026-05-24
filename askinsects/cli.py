@@ -154,6 +154,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_vectorbase_genomics.add_argument("--gff-url")
     ingest_vectorbase_genomics.add_argument("--protein-url")
     ingest_vectorbase_genomics.add_argument("--go-url")
+    ingest_vectorbase_genomics.add_argument("--codon-usage-url")
+    ingest_vectorbase_genomics.add_argument("--id-events-url")
+    ingest_vectorbase_genomics.add_argument("--ncbi-linkout-url")
 
     ingest_mosquito_alert = sub.add_parser("ingest-mosquito-alert")
     ingest_mosquito_alert.add_argument("--hosted", action="store_true")
@@ -386,6 +389,9 @@ def main(argv: list[str] | None = None) -> int:
                 "gff": args.gff_url,
                 "proteins": args.protein_url,
                 "go": args.go_url,
+                "codon_usage": args.codon_usage_url,
+                "id_events": args.id_events_url,
+                "ncbi_linkout": args.ncbi_linkout_url,
             }.items()
             if value
         }

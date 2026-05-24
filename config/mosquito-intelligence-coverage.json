@@ -68,13 +68,13 @@
       "current_evidence": [
         "ncbi_datasets_genome records in the installed source index",
         "ncbi_biosamples maps bounded NCBI BioSample records for Aedes aegypti into queryable sample metadata atoms with accession, strain or isolate, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when exposed by NCBI.",
-        "vectorbase_aedes_genomics maps official VectorBase/VEuPathDB AaegyptiLVP_AGWG GFF, annotated protein FASTA, and GO GAF downloads into queryable genes, transcripts, proteins, and genome_features records with raw-file provenance.",
+        "vectorbase_aedes_genomics maps official VectorBase/VEuPathDB AaegyptiLVP_AGWG GFF, annotated protein FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut downloads into queryable genes, transcripts, proteins, GO annotation, codon usage, ID history, and genome cross-reference records with raw-file provenance.",
         "config/source-map.yaml"
       ],
       "required_next_sources": [
         "NCBI variation links and a larger or complete BioSample mirror beyond the bounded live ingest",
         "additional Aedes aegypti reference, strain, variation, and expression packages",
-        "orthology and resistance mutation references"
+        "orthology, variant, and expression resources not exposed as stable current-release VectorBase auxiliary downloads"
       ],
       "completion_evidence": [
         "Ask Insects can answer gene, protein, variant, strain, barcode, and orthology questions with provenance"

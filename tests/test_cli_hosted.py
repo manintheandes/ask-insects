@@ -197,6 +197,12 @@ class HostedCliTests(unittest.TestCase):
                 "https://vectorbase.org/proteins",
                 "--go-url",
                 "https://vectorbase.org/go.gaf.gz",
+                "--codon-usage-url",
+                "https://vectorbase.org/codon.txt",
+                "--id-events-url",
+                "https://vectorbase.org/id-events.tab",
+                "--ncbi-linkout-url",
+                "https://vectorbase.org/linkout.xml",
             )
 
         self.assertEqual(code, 0)
@@ -205,6 +211,9 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][2]["file_urls"]["gff"], "https://vectorbase.org/gff")
         self.assertEqual(calls[0][2]["file_urls"]["proteins"], "https://vectorbase.org/proteins")
         self.assertEqual(calls[0][2]["file_urls"]["go"], "https://vectorbase.org/go.gaf.gz")
+        self.assertEqual(calls[0][2]["file_urls"]["codon_usage"], "https://vectorbase.org/codon.txt")
+        self.assertEqual(calls[0][2]["file_urls"]["id_events"], "https://vectorbase.org/id-events.tab")
+        self.assertEqual(calls[0][2]["file_urls"]["ncbi_linkout"], "https://vectorbase.org/linkout.xml")
         self.assertEqual(calls[0][3], 7200)
         self.assertTrue(json.loads(output)["ok"])
 

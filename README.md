@@ -99,15 +99,16 @@ This stores the package files as raw artifacts and indexes useful atoms into SQL
 
 ## VectorBase Genomics Source Lane
 
-`vectorbase_aedes_genomics` is the VectorBase/VEuPathDB Aedes-specific genomics lane for current-release `AaegyptiLVP_AGWG` annotation downloads:
+`vectorbase_aedes_genomics` is the VectorBase/VEuPathDB Aedes-specific genomics lane for current-release `AaegyptiLVP_AGWG` annotation and cross-reference downloads:
 
 ```bash
 python3 -m askinsects ingest-vectorbase-genomics
 python3 -m askinsects search genes "AAEL odorant receptor"
 python3 -m askinsects ask "show VectorBase AAEL000001 gene annotation for Aedes aegypti" --json
+python3 -m askinsects ask "show VectorBase codon usage AUG for Aedes aegypti" --json
 ```
 
-This writes official GFF, annotated protein FASTA, and GO GAF downloads under `artifacts/mosquito-v1/raw/vectorbase_genomics/`, normalizes records into `genes`, `transcripts`, `proteins`, and `genome_features`, stores parsed payloads in SQLite, and keeps provenance to the saved file line or FASTA header.
+This writes official GFF, annotated protein FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut downloads under `artifacts/mosquito-v1/raw/vectorbase_genomics/`, normalizes records into `genes`, `transcripts`, `proteins`, and `genome_features`, stores parsed payloads in SQLite, and keeps provenance to the saved file line, FASTA header, or LinkOut entry.
 
 ## BOLD DNA Barcode Source Lane
 

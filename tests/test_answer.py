@@ -1024,6 +1024,54 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "vectorbase_aedes_genomics")
 
+    def test_vectorbase_auxiliary_genomics_questions_route_to_genome_features(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:codon_usage:AUG",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase codon usage AUG",
+                        text="VectorBase codon usage for Aedes aegypti codon AUG: amino acid M, frequency 22.88, relative abundance 1.00.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/codon.txt",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt#line/2",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:ncbi_linkout:Nucleotide:AaegL5_1:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase NCBI Nucleotide linkout AaegL5_1",
+                        text="VectorBase NCBI LinkOut maps Aedes aegypti Nucleotide query AaegL5_1 to VectorBase base URL https://vectorbase.org/a/app/record/genomic-sequence/.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/linkout.xml",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml#link/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show VectorBase codon usage AUG for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:codon_usage:AUG")
+
     def test_coi_barcode_questions_prefer_coi_marker_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

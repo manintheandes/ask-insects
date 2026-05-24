@@ -3,10 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import gzip
+import re
 import shutil
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 from urllib.request import Request, urlopen
+import xml.etree.ElementTree as ET
 
 from askinsects.records import EvidenceRecord, Provenance
 
@@ -19,6 +21,9 @@ DEFAULT_VECTORBASE_FILE_URLS = {
     "gff": f"{VECTORBASE_BASE_URL}/gff/data/VectorBase-68_AaegyptiLVP_AGWG.gff",
     "proteins": f"{VECTORBASE_BASE_URL}/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta",
     "go": f"{VECTORBASE_BASE_URL}/gaf/VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz",
+    "codon_usage": f"{VECTORBASE_BASE_URL}/txt/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt",
+    "id_events": f"{VECTORBASE_BASE_URL}/txt/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab",
+    "ncbi_linkout": f"{VECTORBASE_BASE_URL}/xml/VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml",
 }
 DEFAULT_VECTORBASE_SPECIES = "Aedes aegypti"
 
@@ -64,6 +69,10 @@ def _download_file(url: str, destination: Path) -> Path:
 def _safe_download_name(kind: str, url: str) -> str:
     name = Path(urlparse(url).path).name
     return name or f"{kind}.dat"
+
+
+def _record_id_piece(value: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_.:-]+", "_", value.strip()) or "unknown"
 
 
 def _feature_lane(feature_type: str) -> str | None:
@@ -343,6 +352,215 @@ def _parse_go(path: Path, *, source_url: str, retrieved_at: str) -> tuple[list[E
     return records, gaps
 
 
+def _parse_codon_usage(path: Path, *, source_url: str, retrieved_at: str) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
+    records: list[EvidenceRecord] = []
+    gaps: list[dict[str, object]] = []
+    with path.open(encoding="utf-8") as handle:
+        header = handle.readline().strip().split("\t")
+        if header != ["CODON", "AA", "FREQ", "ABUNDANCE"]:
+            gaps.append(
+                {
+                    "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                    "lane": "genome_features",
+                    "reason": "malformed_codon_usage_header",
+                    "file": path.as_posix(),
+                    "header": header,
+                }
+            )
+            return records, gaps
+        for line_number, raw_line in enumerate(handle, start=2):
+            line = raw_line.rstrip("\n")
+            if not line:
+                continue
+            columns = [column.strip() for column in line.split("\t")]
+            if len(columns) != 4:
+                gaps.append(
+                    {
+                        "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                        "lane": "genome_features",
+                        "reason": "malformed_codon_usage_row",
+                        "file": path.as_posix(),
+                        "line_number": line_number,
+                    }
+                )
+                continue
+            codon, amino_acid, frequency, abundance = columns
+            records.append(
+                EvidenceRecord(
+                    record_id=f"vectorbase:codon_usage:{_record_id_piece(codon)}",
+                    lane="genome_features",
+                    source=VECTORBASE_GENOMICS_SOURCE_ID,
+                    title=f"Aedes aegypti VectorBase codon usage {codon}",
+                    text=(
+                        f"VectorBase codon usage for Aedes aegypti codon {codon}: "
+                        f"amino acid {amino_acid}, frequency {frequency}, relative abundance {abundance}."
+                    ),
+                    species=DEFAULT_VECTORBASE_SPECIES,
+                    url=source_url,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id=VECTORBASE_GENOMICS_SOURCE_ID,
+                        locator=f"{path.as_posix()}#line/{line_number}",
+                        retrieved_at=retrieved_at,
+                        license="VectorBase/VEuPathDB public download; source terms apply",
+                        source_url=source_url,
+                    ),
+                    payload={
+                        "release": VECTORBASE_RELEASE,
+                        "organism": VECTORBASE_ORGANISM,
+                        "codon": codon,
+                        "amino_acid": amino_acid,
+                        "frequency": frequency,
+                        "relative_abundance": abundance,
+                    },
+                )
+            )
+    return records, gaps
+
+
+def _parse_id_events(path: Path, *, source_url: str, retrieved_at: str) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
+    records: list[EvidenceRecord] = []
+    gaps: list[dict[str, object]] = []
+    with path.open(encoding="utf-8") as handle:
+        for line_number, raw_line in enumerate(handle, start=1):
+            line = raw_line.rstrip("\n")
+            if not line:
+                continue
+            columns = [column.strip() for column in line.split("\t")]
+            if len(columns) != 5:
+                gaps.append(
+                    {
+                        "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                        "lane": "genome_features",
+                        "reason": "malformed_id_event_row",
+                        "file": path.as_posix(),
+                        "line_number": line_number,
+                    }
+                )
+                continue
+            old_id, new_id, event, release, event_date = columns
+            successor = new_id or "no successor"
+            records.append(
+                EvidenceRecord(
+                    record_id=(
+                        f"vectorbase:id_event:{_record_id_piece(old_id)}:"
+                        f"{_record_id_piece(new_id or 'none')}:{line_number}"
+                    ),
+                    lane="genome_features",
+                    source=VECTORBASE_GENOMICS_SOURCE_ID,
+                    title=f"Aedes aegypti VectorBase ID event {old_id} {event}",
+                    text=(
+                        f"VectorBase identifier event for Aedes aegypti {old_id}: {event} "
+                        f"to {successor}, release {release}, date {event_date}."
+                    ),
+                    species=DEFAULT_VECTORBASE_SPECIES,
+                    url=source_url,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id=VECTORBASE_GENOMICS_SOURCE_ID,
+                        locator=f"{path.as_posix()}#line/{line_number}",
+                        retrieved_at=retrieved_at,
+                        license="VectorBase/VEuPathDB public download; source terms apply",
+                        source_url=source_url,
+                    ),
+                    payload={
+                        "release": VECTORBASE_RELEASE,
+                        "organism": VECTORBASE_ORGANISM,
+                        "old_id": old_id,
+                        "new_id": new_id or None,
+                        "event": event,
+                        "event_release": release,
+                        "event_date": event_date,
+                    },
+                )
+            )
+    return records, gaps
+
+
+def _child_text(element: ET.Element, name: str) -> str:
+    for child in element.iter():
+        if child.tag.rsplit("}", 1)[-1] == name and child.text:
+            return child.text.strip()
+    return ""
+
+
+def _parse_ncbi_linkout(path: Path, *, source_url: str, retrieved_at: str) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
+    records: list[EvidenceRecord] = []
+    gaps: list[dict[str, object]] = []
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError as exc:
+        return records, [
+            {
+                "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                "lane": "genome_features",
+                "reason": "malformed_ncbi_linkout_xml",
+                "file": path.as_posix(),
+                "error": str(exc),
+            }
+        ]
+
+    for link in root.iter():
+        if link.tag.rsplit("}", 1)[-1] != "Link":
+            continue
+        link_id = _child_text(link, "LinkId")
+        database = _child_text(link, "Database")
+        base_url = _child_text(link, "Base")
+        rule = _child_text(link, "Rule")
+        queries = [
+            child.text.strip()
+            for child in link.iter()
+            if child.tag.rsplit("}", 1)[-1] == "Query" and child.text and child.text.strip()
+        ]
+        if not queries:
+            gaps.append(
+                {
+                    "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                    "lane": "genome_features",
+                    "reason": "ncbi_linkout_missing_query",
+                    "file": path.as_posix(),
+                    "link_id": link_id,
+                }
+            )
+            continue
+        for query in queries:
+            records.append(
+                EvidenceRecord(
+                    record_id=(
+                        f"vectorbase:ncbi_linkout:{_record_id_piece(database)}:"
+                        f"{_record_id_piece(query)}:{_record_id_piece(link_id)}"
+                    ),
+                    lane="genome_features",
+                    source=VECTORBASE_GENOMICS_SOURCE_ID,
+                    title=f"Aedes aegypti VectorBase NCBI {database} linkout {query}",
+                    text=(
+                        f"VectorBase NCBI LinkOut maps Aedes aegypti {database} query {query} "
+                        f"to VectorBase base URL {base_url}."
+                    ),
+                    species=DEFAULT_VECTORBASE_SPECIES,
+                    url=source_url,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id=VECTORBASE_GENOMICS_SOURCE_ID,
+                        locator=f"{path.as_posix()}#link/{link_id or query}",
+                        retrieved_at=retrieved_at,
+                        license="VectorBase/VEuPathDB public download; source terms apply",
+                        source_url=source_url,
+                    ),
+                    payload={
+                        "release": VECTORBASE_RELEASE,
+                        "organism": VECTORBASE_ORGANISM,
+                        "link_id": link_id,
+                        "database": database,
+                        "query": query,
+                        "base_url": base_url,
+                        "rule": rule,
+                    },
+                )
+            )
+    return records, gaps
+
+
 def fetch_vectorbase_genomics_records(
     *,
     raw_dir: Path,
@@ -387,6 +605,22 @@ def fetch_vectorbase_genomics_records(
         gaps.extend(parse_gaps)
     if "go" in downloaded:
         parsed, parse_gaps = _parse_go(downloaded["go"], source_url=urls["go"], retrieved_at=retrieved)
+        records.extend(parsed)
+        gaps.extend(parse_gaps)
+    if "codon_usage" in downloaded:
+        parsed, parse_gaps = _parse_codon_usage(
+            downloaded["codon_usage"], source_url=urls["codon_usage"], retrieved_at=retrieved
+        )
+        records.extend(parsed)
+        gaps.extend(parse_gaps)
+    if "id_events" in downloaded:
+        parsed, parse_gaps = _parse_id_events(downloaded["id_events"], source_url=urls["id_events"], retrieved_at=retrieved)
+        records.extend(parsed)
+        gaps.extend(parse_gaps)
+    if "ncbi_linkout" in downloaded:
+        parsed, parse_gaps = _parse_ncbi_linkout(
+            downloaded["ncbi_linkout"], source_url=urls["ncbi_linkout"], retrieved_at=retrieved
+        )
         records.extend(parsed)
         gaps.extend(parse_gaps)
 
