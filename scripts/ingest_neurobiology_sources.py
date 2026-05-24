@@ -17,8 +17,11 @@ import urllib.request
 
 DEFAULT_ARTIFACT_DIR = Path.home() / ".local/share/ask-insects/sources/neurobiology"
 GEO_RAW_URL = "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE160nnn/GSE160740/suppl/GSE160740_RAW.tar"
+SRA_RUNINFO_URL = "https://trace.ncbi.nlm.nih.gov/Traces/sra-db-be/runinfo?acc=SRP290992"
 MOSQUITOBRAINS_DOWNLOADS_URL = "https://www.mosquitobrains.org/downloads-and-links"
 ZENODO_API_URL = "https://zenodo.org/api/records/14890013"
+AEDES_PUBLIC_REPO_API_URL = "https://api.github.com/repos/htem/aedes_public"
+AEDES_PUBLIC_CSVS_API_URL = "https://api.github.com/repos/htem/aedes_public/contents/csvs"
 USER_AGENT = "ask-insects-neurobiology-ingest/1.0 (+https://github.com/openai/codex)"
 
 
@@ -100,6 +103,12 @@ def fetch_json(url: str) -> dict[str, object]:
     return loaded
 
 
+def fetch_json_payload(url: str) -> object:
+    with urllib.request.urlopen(request(url), timeout=120) as response:
+        payload = response.read().decode("utf-8")
+    return json.loads(payload)
+
+
 def fetch_text(url: str) -> str:
     with urllib.request.urlopen(request(url), timeout=120) as response:
         return response.read().decode("utf-8", errors="replace")
@@ -143,6 +152,8 @@ def ingest(artifact_dir: Path, *, download_dropbox: bool = True) -> dict[str, ob
 
     geo_path = artifact_dir / "geo" / "GSE160740" / "GSE160740_RAW.tar"
     downloads.append({"source": "geo", "url": GEO_RAW_URL, **download(GEO_RAW_URL, geo_path)})
+    sra_runinfo_path = artifact_dir / "geo" / "SRP290992_runinfo.csv"
+    downloads.append({"source": "sra", "url": SRA_RUNINFO_URL, **download(SRA_RUNINFO_URL, sra_runinfo_path)})
 
     zenodo_dir = artifact_dir / "zenodo" / "14890013"
     zenodo_dir.mkdir(parents=True, exist_ok=True)
@@ -189,6 +200,38 @@ def ingest(artifact_dir: Path, *, download_dropbox: bool = True) -> dict[str, ob
             downloads.append({"source": "mosquitobrains", "label": label, "url": url, **result})
             if not result.get("ok"):
                 gaps.append({"source": "mosquitobrains", "reason": "dropbox_download_failed", "label": label, "url": url, "error": result.get("error")})
+
+    connectome_dir = artifact_dir / "connectome" / "aedes_public"
+    connectome_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        repo_payload = fetch_json(AEDES_PUBLIC_REPO_API_URL)
+        write_json(connectome_dir / "repo.json", repo_payload)
+        downloads.append(
+            {
+                "source": "connectome",
+                "url": AEDES_PUBLIC_REPO_API_URL,
+                "path": (connectome_dir / "repo.json").as_posix(),
+                "ok": True,
+                "status": "downloaded",
+            }
+        )
+        csv_items = fetch_json_payload(AEDES_PUBLIC_CSVS_API_URL)
+        if not isinstance(csv_items, list):
+            gaps.append({"source": "connectome", "reason": "github_csv_listing_not_list", "url": AEDES_PUBLIC_CSVS_API_URL})
+        else:
+            for item in csv_items:
+                if not isinstance(item, dict) or item.get("type") != "file":
+                    continue
+                name = str(item.get("name", ""))
+                download_url = str(item.get("download_url", ""))
+                if not name.endswith(".csv") or not download_url:
+                    continue
+                result = download(download_url, connectome_dir / "csvs" / name)
+                downloads.append({"source": "connectome", "key": name, "url": download_url, **result})
+                if not result.get("ok"):
+                    gaps.append({"source": "connectome", "reason": "github_csv_download_failed", "key": name, "error": result.get("error")})
+    except (urllib.error.URLError, RuntimeError, json.JSONDecodeError) as exc:
+        gaps.append({"source": "connectome", "reason": "github_metadata_fetch_failed", "error": str(exc)})
 
     manifest["ok"] = not any(isinstance(item, dict) and not item.get("ok", False) for item in downloads)
     write_json(artifact_dir / "manifest.json", manifest)
