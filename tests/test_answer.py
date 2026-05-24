@@ -858,6 +858,7 @@ class AnswerTests(unittest.TestCase):
                             locator="gaps.json#aedes_video_atoms/1",
                             retrieved_at="2026-05-24T00:00:00Z",
                         ),
+                        payload={"atom_type": "video_gap"},
                     )
                 ]
             )
@@ -890,6 +891,7 @@ class AnswerTests(unittest.TestCase):
                             locator="gaps.json#aedes_video_atoms/1",
                             retrieved_at="2026-05-24T00:00:00Z",
                         ),
+                        payload={"atom_type": "video_gap", "repository": "zenodo"},
                     )
                 ]
             )
@@ -939,15 +941,62 @@ class AnswerTests(unittest.TestCase):
                             retrieved_at="2026-05-24T00:00:00Z",
                             license="CC BY",
                         ),
+                        payload={"atom_type": "video_motion_row"},
+                    ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:behavior:motion",
+                        lane="behavior",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti extracted behavior fact",
+                        text="Aedes aegypti extracted behavior fact for table rows.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:W1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
                     ),
                 ]
             )
 
-            answer = answer_question("show Aedes aegypti motion trajectory coordinates", artifact_dir=artifact_dir)
+            answer = answer_question("show Aedes aegypti video motion rows", artifact_dir=artifact_dir)
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "behavior")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+
+    def test_video_discovery_questions_do_not_fall_back_to_other_repositories(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:gap:dryad",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_discovery_client_missing",
+                        text="Aedes aegypti video source gap: video_discovery_client_missing. Repository: dryad.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="gaps.json#aedes_video_atoms/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "repository": "dryad"},
+                    )
+                ]
+            )
+
+            answer = answer_question("show Aedes video discovery from Zenodo", artifact_dir=artifact_dir)
+
+            self.assertFalse(answer["ok"])
+            self.assertIn("no matching records for that repository", answer["source_gap"]["reason"])
 
     def test_mendeley_table_questions_prefer_parsed_behavior_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:

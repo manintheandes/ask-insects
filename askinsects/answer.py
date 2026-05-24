@@ -89,6 +89,13 @@ def _wants_video_discovery(question: str) -> bool:
     return _wants_video_atoms(question) and "discovery" in question.lower()
 
 
+def _wants_video_motion(question: str) -> bool:
+    q = question.lower()
+    return _wants_video_atoms(question) and any(
+        term in q for term in ("motion", "trajectory", "trajectories", "tracking", "track id", "coordinates")
+    )
+
+
 def _video_discovery_repository(question: str) -> str | None:
     q = question.lower()
     if "pmc oa" in q or "pmc open access" in q:
@@ -883,6 +890,14 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
 
 
 def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    if _wants_video_motion(question):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "aedes_video_atoms" else 1,
+                0 if record.lane == "behavior" else 1,
+            ),
+        )
     if not _wants_extracted_facts(question):
         return records
     return sorted(
@@ -1120,6 +1135,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         for record in _video_atom_records(index, plan.question, list(plan.lanes), limit=limit):
             all_records.append(record)
             seen_record_ids.add(record.record_id)
+        if _wants_video_discovery(plan.question) and _video_discovery_repository(plan.question) and not all_records:
+            return source_gap(plan, "The Ask Insects video discovery lane has no matching records for that repository.")
 
     if not all_records:
         for lane in plan.lanes:
