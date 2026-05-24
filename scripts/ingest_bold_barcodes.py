@@ -82,13 +82,18 @@ def ingest_bold_barcodes(
     artifact_dir: Path,
     species: str = DEFAULT_BOLD_SPECIES,
     limit: int = 500,
+    tsv_path: Path | None = None,
     retrieved_at: str | None = None,
 ) -> dict[str, object]:
     retrieved = retrieved_at or utc_now()
+    fetch_text = None
+    if tsv_path:
+        fetch_text = lambda url: tsv_path.read_text(encoding="utf-8")
     result = fetch_bold_barcode_records(
         species=species,
         raw_dir=artifact_dir / "raw" / "bold",
         limit=limit,
+        fetch_text=fetch_text,
         retrieved_at=retrieved,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -102,12 +107,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", required=True)
     parser.add_argument("--species", default=DEFAULT_BOLD_SPECIES)
     parser.add_argument("--limit", type=int, default=500)
+    parser.add_argument("--tsv-path", help="Use a saved BOLD combined TSV instead of fetching the public API.")
     parser.add_argument("--retrieved-at")
     args = parser.parse_args(argv)
     result = ingest_bold_barcodes(
         artifact_dir=Path(args.artifact_dir),
         species=args.species,
         limit=args.limit,
+        tsv_path=Path(args.tsv_path) if args.tsv_path else None,
         retrieved_at=args.retrieved_at,
     )
     print(json.dumps(result, sort_keys=True))
@@ -116,4 +123,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -97,6 +97,7 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show BOLD COI ba
 ```
 
 The lane writes raw BOLD TSV under `raw/bold/`, normalizes public barcode/specimen atoms into `dna_barcodes`, stores raw row payloads in SQLite, and records bounded-download gaps such as `bold_limit_applied`.
+If the public API blocks the runtime IP, use `--tsv-path path/to/Aedes_aegypti_bold_combined.tsv` to ingest a saved BOLD TSV through the same parser and receipt path.
 
 ## Aedes aegypti Neurobiology Source Lane
 
