@@ -217,6 +217,10 @@ class HostedCliTests(unittest.TestCase):
                 "https://vectorbase.org/gff",
                 "--protein-url",
                 "https://vectorbase.org/proteins",
+                "--cds-url",
+                "https://vectorbase.org/cds.fasta",
+                "--transcript-url",
+                "https://vectorbase.org/transcripts.fasta",
                 "--go-url",
                 "https://vectorbase.org/go.gaf.gz",
                 "--codon-usage-url",
@@ -232,6 +236,8 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][1], "/ingest/vectorbase-genomics")
         self.assertEqual(calls[0][2]["file_urls"]["gff"], "https://vectorbase.org/gff")
         self.assertEqual(calls[0][2]["file_urls"]["proteins"], "https://vectorbase.org/proteins")
+        self.assertEqual(calls[0][2]["file_urls"]["cds"], "https://vectorbase.org/cds.fasta")
+        self.assertEqual(calls[0][2]["file_urls"]["transcript_sequences"], "https://vectorbase.org/transcripts.fasta")
         self.assertEqual(calls[0][2]["file_urls"]["go"], "https://vectorbase.org/go.gaf.gz")
         self.assertEqual(calls[0][2]["file_urls"]["codon_usage"], "https://vectorbase.org/codon.txt")
         self.assertEqual(calls[0][2]["file_urls"]["id_events"], "https://vectorbase.org/id-events.tab")

@@ -49,13 +49,13 @@ class IngestVectorBaseGenomicsTests(unittest.TestCase):
             counts = {(row["source"], row["lane"]): row["n"] for row in rows}
             self.assertEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 1)
             self.assertEqual(counts[("vectorbase_aedes_genomics", "genes")], 1)
-            self.assertEqual(counts[("vectorbase_aedes_genomics", "transcripts")], 1)
+            self.assertEqual(counts[("vectorbase_aedes_genomics", "transcripts")], 2)
             self.assertEqual(counts[("vectorbase_aedes_genomics", "proteins")], 1)
-            self.assertEqual(counts[("vectorbase_aedes_genomics", "genome_features")], 4)
+            self.assertEqual(counts[("vectorbase_aedes_genomics", "genome_features")], 5)
             payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select count(*) as n from record_payloads where source='vectorbase_aedes_genomics'"
             )
-            self.assertEqual(payload_rows[0]["n"], 7)
+            self.assertEqual(payload_rows[0]["n"], 9)
 
 
 if __name__ == "__main__":

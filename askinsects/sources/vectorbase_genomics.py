@@ -20,6 +20,8 @@ VECTORBASE_BASE_URL = f"https://vectorbase.org/common/downloads/{VECTORBASE_RELE
 DEFAULT_VECTORBASE_FILE_URLS = {
     "gff": f"{VECTORBASE_BASE_URL}/gff/data/VectorBase-68_AaegyptiLVP_AGWG.gff",
     "proteins": f"{VECTORBASE_BASE_URL}/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta",
+    "cds": f"{VECTORBASE_BASE_URL}/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta",
+    "transcript_sequences": f"{VECTORBASE_BASE_URL}/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedTranscripts.fasta",
     "go": f"{VECTORBASE_BASE_URL}/gaf/VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz",
     "codon_usage": f"{VECTORBASE_BASE_URL}/txt/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt",
     "id_events": f"{VECTORBASE_BASE_URL}/txt/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab",
@@ -264,6 +266,102 @@ def _parse_proteins(path: Path, *, source_url: str, retrieved_at: str) -> tuple[
                     },
                 )
             )
+    return records, gaps
+
+
+def _parse_sequence_fasta(
+    path: Path,
+    *,
+    source_url: str,
+    retrieved_at: str,
+    kind: str,
+    lane: str,
+    record_prefix: str,
+    label: str,
+) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
+    records: list[EvidenceRecord] = []
+    gaps: list[dict[str, object]] = []
+    current_id: str | None = None
+    current_header = ""
+    current_attributes: dict[str, str] = {}
+    current_line_number = 0
+    sequence_length = 0
+
+    def emit_record() -> None:
+        if current_id is None:
+            return
+        product = (
+            current_attributes.get("transcript_product")
+            or current_attributes.get("gene_product")
+            or current_attributes.get("product")
+            or label
+        )
+        gene = current_attributes.get("gene")
+        location = current_attributes.get("location")
+        declared_length = current_attributes.get("length")
+        pieces = [
+            f"VectorBase {label} {current_id} for Aedes aegypti, annotated as {product}.",
+        ]
+        if gene:
+            pieces.append(f"Gene: {gene}.")
+        if location:
+            pieces.append(f"Location: {location}.")
+        if declared_length:
+            pieces.append(f"Declared length: {declared_length} nucleotides.")
+        pieces.append(f"Observed FASTA sequence length: {sequence_length} nucleotides.")
+        records.append(
+            EvidenceRecord(
+                record_id=f"vectorbase:{record_prefix}:{current_id}",
+                lane=lane,
+                source=VECTORBASE_GENOMICS_SOURCE_ID,
+                title=f"Aedes aegypti VectorBase {label} {current_id}",
+                text=" ".join(pieces),
+                species=DEFAULT_VECTORBASE_SPECIES,
+                url=source_url,
+                media_url=None,
+                provenance=Provenance(
+                    source_id=VECTORBASE_GENOMICS_SOURCE_ID,
+                    locator=f"{path.as_posix()}#line/{current_line_number}",
+                    retrieved_at=retrieved_at,
+                    license="VectorBase/VEuPathDB public download; source terms apply",
+                    source_url=source_url,
+                ),
+                payload={
+                    "release": VECTORBASE_RELEASE,
+                    "organism": VECTORBASE_ORGANISM,
+                    "sequence_kind": kind,
+                    "sequence_id": current_id,
+                    "fasta_header": current_header,
+                    "attributes": current_attributes,
+                    "declared_length": int(declared_length) if declared_length and declared_length.isdigit() else None,
+                    "observed_sequence_length": sequence_length,
+                },
+            )
+        )
+
+    with path.open(encoding="utf-8") as handle:
+        for line_number, raw_line in enumerate(handle, start=1):
+            line = raw_line.rstrip("\n")
+            if line.startswith(">"):
+                emit_record()
+                current_id, current_attributes = _parse_fasta_header(line)
+                current_header = line
+                current_line_number = line_number
+                sequence_length = 0
+                if not current_id:
+                    gaps.append(
+                        {
+                            "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                            "lane": lane,
+                            "reason": f"malformed_{kind}_header",
+                            "file": path.as_posix(),
+                            "line_number": line_number,
+                        }
+                    )
+                continue
+            if current_id and line:
+                sequence_length += len(line.strip())
+    emit_record()
     return records, gaps
 
 
@@ -601,6 +699,30 @@ def fetch_vectorbase_genomics_records(
         gaps.extend(parse_gaps)
     if "proteins" in downloaded:
         parsed, parse_gaps = _parse_proteins(downloaded["proteins"], source_url=urls["proteins"], retrieved_at=retrieved)
+        records.extend(parsed)
+        gaps.extend(parse_gaps)
+    if "cds" in downloaded:
+        parsed, parse_gaps = _parse_sequence_fasta(
+            downloaded["cds"],
+            source_url=urls["cds"],
+            retrieved_at=retrieved,
+            kind="cds",
+            lane="genome_features",
+            record_prefix="cds",
+            label="CDS sequence",
+        )
+        records.extend(parsed)
+        gaps.extend(parse_gaps)
+    if "transcript_sequences" in downloaded:
+        parsed, parse_gaps = _parse_sequence_fasta(
+            downloaded["transcript_sequences"],
+            source_url=urls["transcript_sequences"],
+            retrieved_at=retrieved,
+            kind="transcript_sequence",
+            lane="transcripts",
+            record_prefix="transcript_sequence",
+            label="transcript sequence",
+        )
         records.extend(parsed)
         gaps.extend(parse_gaps)
     if "go" in downloaded:

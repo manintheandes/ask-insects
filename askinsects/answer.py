@@ -251,6 +251,10 @@ def _search_queries(question: str) -> list[str]:
             "aael",
             "codon",
             "codon usage",
+            "cds",
+            "coding sequence",
+            "coding sequences",
+            "transcript sequence",
             "go annotation",
             "go term",
             "gene ontology",
@@ -267,10 +271,14 @@ def _search_queries(question: str) -> list[str]:
             "aegypti",
             "annotation",
             "codon",
+            "cds",
+            "coding",
             "for",
             "gene",
             "genes",
             "genomics",
+            "sequence",
+            "sequences",
             "go",
             "history",
             "id",
@@ -416,6 +424,14 @@ def _search_queries(question: str) -> list[str]:
                 question,
             ]
         if any(term in q for term in ("paho", "plisa", "surveillance", "dengue", "cases", "deaths")):
+            if any(term in q for term in ("dashboard", "plisa", "iframe", "tableau")):
+                return [
+                    "PAHO PLISA dashboard locator",
+                    "PAHO dengue dashboard iframe",
+                    "PAHO dengue dashboard locator",
+                    "PAHO dengue surveillance",
+                    question,
+                ]
             return [
                 "PAHO dengue surveillance week summary",
                 "PAHO dengue surveillance Aedes aegypti",
@@ -698,6 +714,10 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
             "aael",
             "codon",
             "codon usage",
+            "cds",
+            "coding sequence",
+            "coding sequences",
+            "transcript sequence",
             "go annotation",
             "go term",
             "gene ontology",
@@ -762,6 +782,10 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
             "veupathdb",
             "codon",
             "codon usage",
+            "cds",
+            "coding sequence",
+            "coding sequences",
+            "transcript sequence",
             "id event",
             "identifier event",
             "identifier history",
@@ -779,6 +803,20 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
         for codon in re.findall(r"\b[AUCGT]{3}\b", question.upper()):
             clauses.append(("record_id = ?", (f"vectorbase:codon_usage:{codon.replace('T', 'U')}",)))
     for aael_id in re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE):
+        if any(term in q for term in ("cds", "coding sequence", "coding sequences")):
+            clauses.append(
+                (
+                    "record_id LIKE ? ESCAPE '\\'",
+                    (f"vectorbase:cds:{_like_escape(aael_id.upper())}%",),
+                )
+            )
+        if "transcript sequence" in q:
+            clauses.append(
+                (
+                    "record_id LIKE ? ESCAPE '\\'",
+                    (f"vectorbase:transcript_sequence:{_like_escape(aael_id.upper())}%",),
+                )
+            )
         clauses.append(
             (
                 "record_id LIKE ? ESCAPE '\\'",
@@ -802,7 +840,7 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
                 SELECT *
                 FROM records
                 WHERE source = 'vectorbase_aedes_genomics'
-                  AND lane = 'genome_features'
+                  AND lane IN ('genome_features', 'transcripts')
                   AND {where_sql}
                 ORDER BY record_id
                 LIMIT ?
@@ -904,7 +942,9 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
         guidance_rank = 0 if wants_guidance and record.source == "aedes_public_health_guidance" else 1
         paho_rank = 0 if not wants_guidance and any(term in q for term in ("paho", "plisa", "surveillance")) and record.source == "aedes_paho_dengue_surveillance" else 1
         if record.source == "aedes_paho_dengue_surveillance" and any(term in q for term in ("paho", "plisa", "surveillance")):
-            if "regional_week_summary" in record.record_id:
+            if any(term in q for term in ("dashboard", "plisa", "iframe", "tableau")) and "dashboard_locator" in record.record_id:
+                record_rank = 0
+            elif "regional_week_summary" in record.record_id:
                 record_rank = 0
             elif "regional_year_to_date_summary" in record.record_id:
                 record_rank = 1

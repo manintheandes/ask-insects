@@ -31,6 +31,18 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
         "MADEUPSEQ\n",
         encoding="utf-8",
     )
+    cds = root / "VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta"
+    cds.write_text(
+        ">AAEL000001-RA | organism=Aedes_aegypti_LVP_AGWG | product=odorant receptor coreceptor | location=AaegL5_1:100-900(+) | length=9 | sequence_SO=chromosome | SO=protein_coding_gene\n"
+        "ATGGCTTAA\n",
+        encoding="utf-8",
+    )
+    transcript_sequences = root / "VectorBase-68_AaegyptiLVP_AGWG_AnnotatedTranscripts.fasta"
+    transcript_sequences.write_text(
+        ">AAEL000001-RA | gene=AAEL000001 | organism=Aedes_aegypti_LVP_AGWG | gene_product=odorant receptor coreceptor | transcript_product=odorant receptor coreceptor transcript | location=AaegL5_1:100-900(+) | length=12 | sequence_SO=chromosome | SO=protein_coding_gene | is_pseudo=false\n"
+        "AAATGGCTTAAA\n",
+        encoding="utf-8",
+    )
     gaf = root / "VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz"
     with gzip.open(gaf, "wt", encoding="utf-8") as handle:
         handle.write("!gaf-version: 2.2\n")
@@ -72,6 +84,8 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
     return {
         "gff": gff.as_uri(),
         "proteins": proteins.as_uri(),
+        "cds": cds.as_uri(),
+        "transcript_sequences": transcript_sequences.as_uri(),
         "go": gaf.as_uri(),
         "codon_usage": codon_usage.as_uri(),
         "id_events": id_events.as_uri(),
@@ -105,6 +119,16 @@ class VectorBaseGenomicsSourceTests(unittest.TestCase):
             self.assertEqual(gene.payload["gff_attributes"]["ID"], "AAEL000001")
             protein = next(record for record in result.records if record.lane == "proteins")
             self.assertIn("odorant receptor coreceptor", protein.text)
+            cds = next(record for record in result.records if record.record_id == "vectorbase:cds:AAEL000001-RA")
+            self.assertEqual(cds.lane, "genome_features")
+            self.assertIn("Observed FASTA sequence length: 9 nucleotides", cds.text)
+            self.assertEqual(cds.payload["observed_sequence_length"], 9)
+            transcript_sequence = next(
+                record for record in result.records if record.record_id == "vectorbase:transcript_sequence:AAEL000001-RA"
+            )
+            self.assertEqual(transcript_sequence.lane, "transcripts")
+            self.assertIn("transcript sequence AAEL000001-RA", transcript_sequence.text)
+            self.assertEqual(transcript_sequence.payload["declared_length"], 12)
             go = next(record for record in result.records if record.record_id.startswith("vectorbase:go:"))
             self.assertIn("GO:0004984", go.text)
             self.assertEqual(go.payload["go_id"], "GO:0004984")

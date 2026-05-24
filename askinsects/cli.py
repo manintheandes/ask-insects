@@ -163,6 +163,8 @@ def main(argv: list[str] | None = None) -> int:
     ingest_vectorbase_genomics.add_argument("--hosted", action="store_true")
     ingest_vectorbase_genomics.add_argument("--gff-url")
     ingest_vectorbase_genomics.add_argument("--protein-url")
+    ingest_vectorbase_genomics.add_argument("--cds-url")
+    ingest_vectorbase_genomics.add_argument("--transcript-url")
     ingest_vectorbase_genomics.add_argument("--go-url")
     ingest_vectorbase_genomics.add_argument("--codon-usage-url")
     ingest_vectorbase_genomics.add_argument("--id-events-url")
@@ -434,6 +436,8 @@ def main(argv: list[str] | None = None) -> int:
             for key, value in {
                 "gff": args.gff_url,
                 "proteins": args.protein_url,
+                "cds": args.cds_url,
+                "transcript_sequences": args.transcript_url,
                 "go": args.go_url,
                 "codon_usage": args.codon_usage_url,
                 "id_events": args.id_events_url,

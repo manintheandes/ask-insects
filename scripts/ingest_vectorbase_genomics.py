@@ -113,6 +113,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
     parser.add_argument("--gff-url")
     parser.add_argument("--protein-url")
+    parser.add_argument("--cds-url")
+    parser.add_argument("--transcript-url")
     parser.add_argument("--go-url")
     parser.add_argument("--codon-usage-url")
     parser.add_argument("--id-events-url")
@@ -124,6 +126,8 @@ def main(argv: list[str] | None = None) -> int:
         for key, value in {
             "gff": args.gff_url,
             "proteins": args.protein_url,
+            "cds": args.cds_url,
+            "transcript_sequences": args.transcript_url,
             "go": args.go_url,
             "codon_usage": args.codon_usage_url,
             "id_events": args.id_events_url,

@@ -65,7 +65,7 @@ class PahoSurveillanceSourceTests(unittest.TestCase):
             )
 
             self.assertEqual(result.source_id, "aedes_paho_dengue_surveillance")
-            self.assertGreaterEqual(len(result.records), 6)
+            self.assertGreaterEqual(len(result.records), 7)
             self.assertEqual(result.report_count, 1)
             self.assertEqual(result.dashboard_page_count, 1)
             weekly = next(record for record in result.records if record.payload["aggregation_type"] == "regional_week_summary")
@@ -89,6 +89,10 @@ class PahoSurveillanceSourceTests(unittest.TestCase):
             )
             visual = next(record for record in result.records if record.payload["aggregation_type"] == "surveillance_visual")
             self.assertEqual(visual.media_url, "https://ais.paho.org/ArboPortal/img/2024/ComparativoDENGAME.png")
+            dashboard = next(record for record in result.records if record.payload["aggregation_type"] == "dashboard_locator")
+            self.assertEqual(dashboard.media_url, "https://phip.paho.org/trusted/example/views/1001en/Numeralia")
+            self.assertEqual(dashboard.payload["machine_readable_cell_status"], "not_proven")
+            self.assertIn("not a country-week", dashboard.text)
             self.assertEqual(result.gaps[0]["reason"], "paho_dashboard_data_not_yet_cell_queryable")
             self.assertTrue(Path(result.raw_artifacts[0]).exists())
 

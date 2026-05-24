@@ -129,7 +129,7 @@ sources:
   - id: vectorbase_aedes_genomics
     name: VectorBase/VEuPathDB Aedes aegypti genomics downloads
     source_type: public_bulk_download
-    boundary: Official VectorBase current-release AaegyptiLVP_AGWG GFF, annotated protein FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut files for Aedes aegypti genes, transcripts, proteins, GO annotations, codon usage, identifier history, and cross-references
+    boundary: Official VectorBase current-release AaegyptiLVP_AGWG GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut files for Aedes aegypti genes, transcripts, CDS sequence summaries, protein sequence summaries, GO annotations, codon usage, identifier history, and cross-references
     query_plane: vectorbase_current_release_downloads_to_sqlite
     api_base: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG
     artifact_dir: artifacts/mosquito-v1/raw/vectorbase_genomics
@@ -137,6 +137,8 @@ sources:
     files:
       gff: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/gff/data/VectorBase-68_AaegyptiLVP_AGWG.gff
       proteins: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta
+      cds: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta
+      transcript_sequences: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedTranscripts.fasta
       go: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/gaf/VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz
       codon_usage: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/txt/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt
       id_events: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/txt/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab
@@ -421,7 +423,7 @@ sources:
   - id: aedes_paho_dengue_surveillance
     name: PAHO dengue surveillance for Aedes aegypti public-health intelligence
     source_type: public_health_surveillance_report
-    boundary: Official PAHO/WHO dengue situation report HTML and mapped ARBO/PLISA dashboard landing pages, indexed at report and visual locator grain until stable row-level CSV, JSON, or API access is proven
+    boundary: Official PAHO/WHO dengue situation report HTML and mapped ARBO/PLISA dashboard landing pages, indexed at report, visual, dashboard page, and iframe locator grain until stable row-level CSV, JSON, or API access is proven
     query_plane: official_paho_dengue_report_html_to_sqlite_public_health_records
     artifact_dir: artifacts/mosquito-v1/raw/paho_dengue_surveillance
     ingest_script: scripts/ingest_paho_dengue_surveillance.py
@@ -429,7 +431,7 @@ sources:
       - public_health
     provenance_required: true
     live_fetch: opt_in
-    source_gap: PAHO/PLISA country-week dashboard data remains a source gap until PAHO exposes a stable machine-readable download/API or explicit authorized access is obtained
+    source_gap: PAHO/PLISA dashboard pages and iframe URLs are queryable as locator records, but PAHO/PLISA country-week dashboard data remains a source gap until PAHO exposes a stable machine-readable download/API or explicit authorized access is obtained
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects

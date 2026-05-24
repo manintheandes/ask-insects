@@ -452,6 +452,57 @@ def _dashboard_gap(url: str, html: str, raw_path: Path, retrieved_at: str) -> di
     }
 
 
+def _dashboard_locator_records(url: str, html: str, raw_path: Path, retrieved_at: str) -> list[EvidenceRecord]:
+    iframe_urls = re.findall(r"<iframe[^>]+src=[\"']([^\"']+)[\"']", html, flags=re.IGNORECASE)
+    title = _clean_text(_first(r"<title[^>]*>(.*?)</title>", html) or "PAHO dengue dashboard")
+    iframes_text = ", ".join(iframe_urls) if iframe_urls else "no iframe URL found in saved page"
+    records: list[EvidenceRecord] = []
+    for index, iframe_url in enumerate(iframe_urls or [""], start=1):
+        iframe_piece = _normalize_id(iframe_url or "page")
+        record_id = (
+            "public_health:surveillance:paho_dengue:"
+            f"dashboard_locator:{hashlib.sha1(f'{url}:{index}:{iframe_url}'.encode('utf-8')).hexdigest()[:12]}"
+        )
+        records.append(
+            EvidenceRecord(
+                record_id=record_id,
+                lane="public_health",
+                source=PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+                title=f"PAHO dengue dashboard locator: {title}",
+                text=(
+                    f"Official PAHO dengue dashboard locator for Aedes-relevant public-health surveillance. "
+                    f"Dashboard page: {url}. Embedded iframe URLs: {iframes_text}. "
+                    "This record makes the official dashboard surface queryable, but it is not a country-week "
+                    "PAHO/PLISA cell row because no stable unauthenticated CSV, JSON, or API endpoint has been proven."
+                ),
+                species="Aedes aegypti",
+                url=url,
+                media_url=iframe_url or None,
+                provenance=Provenance(
+                    source_id=PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+                    locator=f"{raw_path.as_posix()}#dashboard-locator-{index}-{iframe_piece}",
+                    retrieved_at=retrieved_at,
+                    license="PAHO/WHO public health surveillance page; source page terms apply",
+                    source_url=url,
+                ),
+                payload={
+                    "organization": "PAHO/WHO",
+                    "disease": "dengue",
+                    "aedes_relevance": "Dengue dashboard surface relevant to Aedes aegypti vector public-health intelligence",
+                    "aggregation_type": "dashboard_locator",
+                    "dashboard_page_url": url,
+                    "dashboard_title": title,
+                    "iframe_url": iframe_url or None,
+                    "iframe_urls": iframe_urls,
+                    "raw_html_path": raw_path.as_posix(),
+                    "machine_readable_cell_status": "not_proven",
+                    "source_gap_reason": "paho_dashboard_data_not_yet_cell_queryable",
+                },
+            )
+        )
+    return records
+
+
 def fetch_paho_dengue_surveillance_records(
     reports: list[dict[str, str]] | tuple[dict[str, str], ...] = DEFAULT_PAHO_DENGUE_REPORTS,
     *,
@@ -539,6 +590,7 @@ def fetch_paho_dengue_surveillance_records(
         raw_path = raw_dir / f"dashboard_{_safe_filename(url)}_{hashlib.sha1(url.encode('utf-8')).hexdigest()[:8]}.html"
         raw_path.write_text(html, encoding="utf-8")
         raw_artifacts.append(raw_path.as_posix())
+        records.extend(_dashboard_locator_records(url, html, raw_path, retrieved_at))
         gaps.append(_dashboard_gap(url, html, raw_path, retrieved_at))
         dashboard_page_count += 1
 

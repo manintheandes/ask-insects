@@ -1529,6 +1529,76 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:ncbi_linkout:Nucleotide:AaegL5_1:1")
 
+    def test_vectorbase_sequence_questions_route_to_sequence_atoms(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:id_event:AAEL000001:none:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase ID event AAEL000001 deletion",
+                        text="VectorBase identifier event for Aedes aegypti AAEL000001.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/id-events.tab",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/id-events.tab#line/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:cds:AAEL000001-RA",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase CDS sequence AAEL000001-RA",
+                        text="VectorBase CDS sequence AAEL000001-RA for Aedes aegypti. Observed FASTA sequence length: 9 nucleotides.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/cds.fasta",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/cds.fasta#line/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:transcript_sequence:AAEL000001-RA",
+                        lane="transcripts",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase transcript sequence AAEL000001-RA",
+                        text="VectorBase transcript sequence AAEL000001-RA for Aedes aegypti. Observed FASTA sequence length: 12 nucleotides.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/transcripts.fasta",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/transcripts.fasta#line/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show VectorBase CDS sequence for AAEL000001", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:cds:AAEL000001-RA")
+
+            answer = answer_question("show VectorBase transcript sequence for AAEL000001", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:transcript_sequence:AAEL000001-RA")
+
     def test_coi_barcode_questions_prefer_coi_marker_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -1797,6 +1867,35 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "public_health")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_paho_dengue_surveillance")
+
+    def test_paho_dashboard_questions_prefer_dashboard_locator_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:surveillance:paho_dengue:regional_week_summary:2024:week50",
+                        "aedes_paho_dengue_surveillance",
+                        "Official PAHO dengue surveillance regional week summary for Aedes aegypti public-health intelligence.",
+                    ),
+                    public_health_record(
+                        "public_health:surveillance:paho_dengue:dashboard_locator:abc123",
+                        "aedes_paho_dengue_surveillance",
+                        "Official PAHO dengue dashboard locator for PAHO/PLISA dashboard iframe evidence. Not a country-week cell row yet.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show PAHO PLISA dashboard locator evidence for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(
+                answer["evidence"][0]["record_id"],
+                "public_health:surveillance:paho_dengue:dashboard_locator:abc123",
+            )
 
     def test_neurobiology_questions_prefer_brain_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
