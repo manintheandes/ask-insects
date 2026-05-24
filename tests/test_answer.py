@@ -869,6 +869,38 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
             self.assertIn("video_probe_failed", answer["evidence"][0]["text"])
 
+    def test_video_discovery_questions_return_repository_assets_or_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:gap:zenodo_pdf",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_discovery_not_video_media",
+                        text="Aedes aegypti video source gap: video_discovery_not_video_media. Repository: zenodo.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="gaps.json#aedes_video_atoms/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    )
+                ]
+            )
+
+            answer = answer_question("show Aedes video discovery from Zenodo", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+            self.assertIn("video_discovery_not_video_media", answer["evidence"][0]["text"])
+
     def test_video_atom_motion_questions_prefer_queryable_motion_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

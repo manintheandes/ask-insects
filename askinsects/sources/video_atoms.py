@@ -28,17 +28,57 @@ VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 NON_VIDEO_MEDIA_EXTENSIONS = (
     ".aac",
     ".csv",
+    ".doc",
+    ".docx",
     ".flac",
+    ".html",
     ".json",
     ".mp3",
+    ".pdf",
     ".tsv",
+    ".txt",
     ".wav",
     ".xls",
     ".xlsx",
 )
 VIDEO_TERMS = ("video", "movie", "flight", "tracking", "high-speed", "wingbeat")
 UNCLEAR_LICENSE_MARKERS = ("not supplied", "unknown", "unclear", "not parsed", "missing")
-MOTION_HEADERS = {"video", "video_id", "track", "track_id", "frame", "time", "time_seconds", "x", "y", "behavior"}
+MOTION_HEADERS = {
+    "video",
+    "video_id",
+    "track",
+    "track_id",
+    "frame",
+    "time",
+    "time_seconds",
+    "position_t",
+    "x",
+    "position_x",
+    "y",
+    "position_y",
+    "behavior",
+}
+MOTION_HEADER_ALIASES = {
+    "source_video_record_id": "video_id",
+    "track": "track_id",
+    "trackid": "track_id",
+    "tracking_id": "track_id",
+    "position_t": "time_seconds",
+    "timestamp": "time_seconds",
+    "t": "time_seconds",
+    "position_x": "x",
+    "x_position": "x",
+    "pos_x": "x",
+    "center_x": "x",
+    "position_y": "y",
+    "y_position": "y",
+    "pos_y": "y",
+    "center_y": "y",
+    "behavioral_activity": "behavior",
+    "behavioural_activity": "behavior",
+    "behavior_type": "behavior",
+    "life stage": "life_stage",
+}
 DISCOVERY_REPOSITORIES = ("pmc_oa", "dryad", "mendeley", "osf", "zenodo", "figshare", "institutional")
 
 
@@ -601,8 +641,28 @@ def _parse_number(value: str | None) -> int | float | None:
     return int(number) if number.is_integer() else number
 
 
+def _normalize_motion_header(header: object) -> str:
+    normalized = re.sub(r"[^a-z0-9]+", "_", str(header or "").strip().lower()).strip("_")
+    return MOTION_HEADER_ALIASES.get(normalized, normalized)
+
+
+def _normalize_motion_row(row: dict[object, object]) -> dict[str, str]:
+    cleaned: dict[str, str] = {}
+    for key, value in row.items():
+        if key is None or value is None:
+            continue
+        raw_key = str(key).strip()
+        raw_value = str(value).strip()
+        if not raw_key or raw_value == "":
+            continue
+        cleaned[raw_key] = raw_value
+        normalized_key = _normalize_motion_header(raw_key)
+        cleaned.setdefault(normalized_key, raw_value)
+    return cleaned
+
+
 def _motion_record(row: dict[str, str], *, table_path: Path, artifact_dir: Path, row_index: int, retrieved_at: str) -> EvidenceRecord:
-    video_id = row.get("video_id") or row.get("video") or row.get("source_video_record_id") or "unknown-video"
+    video_id = row.get("video_id") or row.get("video") or row.get("source_video_record_id") or table_path.stem
     behavior = row.get("behavior") or row.get("behavior_type") or "video motion"
     payload = {
         "atom_type": "video_motion_row",
@@ -658,11 +718,11 @@ def _parse_motion_tables(
         try:
             with Path(table_path).open(newline="", encoding="utf-8-sig") as handle:
                 reader = csv.DictReader(handle)
-                headers = {str(header or "").strip().lower() for header in (reader.fieldnames or [])}
+                headers = {_normalize_motion_header(header) for header in (reader.fieldnames or [])}
                 if not headers & MOTION_HEADERS:
                     continue
                 for row_index, row in enumerate(reader, start=1):
-                    cleaned = {str(key).strip(): str(value).strip() for key, value in row.items() if key and value is not None}
+                    cleaned = _normalize_motion_row(row)
                     if cleaned:
                         records.append(_motion_record(cleaned, table_path=Path(table_path), artifact_dir=artifact_dir, row_index=row_index, retrieved_at=retrieved_at))
         except Exception as exc:
@@ -679,6 +739,9 @@ def _candidate_from_discovery(raw: dict[str, object]) -> VideoCandidate | dict[s
     download_url = raw.get("download_url") or raw.get("media_url")
     if not isinstance(download_url, str) or not download_url:
         return {"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_no_download_url", "repository": repository, "title": title}
+    filename = raw.get("filename") or raw.get("name") or raw.get("path")
+    if not _looks_like_video(filename, download_url, title, raw.get("description")):
+        return {"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_not_video_media", "repository": repository, "title": title}
     license_value = raw.get("license")
     if _license_is_unclear(license_value):
         return {"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_license_unclear", "repository": repository, "title": title}

@@ -65,7 +65,9 @@ VIDEO_ATOM_QUERY_TERMS = (
     "gaps",
     "failed",
     "failure",
+    "discovery",
 )
+VIDEO_DISCOVERY_REPOSITORIES = ("pmc_oa", "pmc", "dryad", "mendeley", "osf", "zenodo", "figshare", "institutional")
 
 
 def _wants_extracted_facts(question: str) -> bool:
@@ -81,6 +83,17 @@ def _wants_video_atoms(question: str) -> bool:
 def _wants_video_gaps(question: str) -> bool:
     q = question.lower()
     return _wants_video_atoms(question) and any(term in q for term in ("gap", "gaps", "failed", "failure", "license", "too large"))
+
+
+def _wants_video_discovery(question: str) -> bool:
+    return _wants_video_atoms(question) and "discovery" in question.lower()
+
+
+def _video_discovery_repository(question: str) -> str | None:
+    q = question.lower()
+    if "pmc oa" in q or "pmc open access" in q:
+        return "pmc_oa"
+    return next((repository for repository in VIDEO_DISCOVERY_REPOSITORIES if repository in q), None)
 
 
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
@@ -151,6 +164,14 @@ def _search_queries(question: str) -> list[str]:
                 "artifact generation failed",
                 "license unclear",
                 "too large",
+                question,
+            ]
+        if _wants_video_discovery(question):
+            return [
+                "video discovery",
+                "discovery repository",
+                "video gap",
+                "video asset",
                 question,
             ]
         if any(term in q for term in ("fps", "codec", "duration", "resolution")):
@@ -1024,6 +1045,8 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     atom_types: list[str]
     if _wants_video_gaps(question):
         atom_types = ["video_gap"]
+    elif _wants_video_discovery(question):
+        atom_types = ["video_asset", "video_gap"]
     elif any(term in q for term in ("motion", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
         atom_types = ["video_motion_row"]
     elif any(term in q for term in ("fps", "codec", "duration", "resolution")):
@@ -1042,6 +1065,20 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
             atom_types = ["video_keyframe", "video_preview_clip", "video_thumbnail", "video_frame_manifest", "video_asset"]
     lane_placeholders = ",".join("?" for _ in lanes)
     atom_placeholders = ",".join("?" for _ in atom_types)
+    repository = _video_discovery_repository(question)
+    repository_filter = ""
+    params: list[object] = [*lanes, *atom_types]
+    if repository:
+        repository_filter = """
+              AND (
+                json_extract(p.payload_json, '$.discovery_repository') = ?
+                OR json_extract(p.payload_json, '$.repository') = ?
+                OR lower(r.title) LIKE ?
+                OR lower(r.text) LIKE ?
+              )
+        """
+        params.extend([repository, repository, f"%{repository.replace('_', ' ')}%", f"%{repository.replace('_', ' ')}%"])
+    params.append(limit)
     with index.connect() as conn:
         rows = conn.execute(
             f"""
@@ -1051,6 +1088,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
             WHERE r.source = 'aedes_video_atoms'
               AND r.lane IN ({lane_placeholders})
               AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
+              {repository_filter}
             ORDER BY
               CASE json_extract(p.payload_json, '$.atom_type')
                 WHEN 'video_keyframe' THEN 0
@@ -1065,7 +1103,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
               r.record_id
             LIMIT ?
             """,
-            [*lanes, *atom_types, limit],
+            params,
         ).fetchall()
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
@@ -1108,11 +1146,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "media":
-        if _wants_video_gaps(plan.question):
+        if _wants_video_gaps(plan.question) or _wants_video_discovery(plan.question):
             media_records = [
                 record
                 for record in all_records
-                if record.lane == "media" and "video gap" in f"{record.title} {record.text}".lower()
+                if record.lane == "media"
+                and (record.media_url or "video gap" in f"{record.title} {record.text}".lower())
             ]
         else:
             media_records = [

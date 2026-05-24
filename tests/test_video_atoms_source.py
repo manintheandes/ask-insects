@@ -346,6 +346,36 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(row.payload["confidence"], "source_table")
         self.assertIn("raw/mendeley_behavior_media/motion.csv#row/1", row.provenance.locator)
 
+    def test_parses_trackmate_spot_statistics_motion_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = artifact_dir / "raw" / "mendeley_behavior_media" / "Video S1 - Spot Statistics.csv"
+            table_path.parent.mkdir(parents=True)
+            table_path.write_text(
+                "Label,ID,TRACK_ID,QUALITY,POSITION_X,POSITION_Y,POSITION_Z,POSITION_T,FRAME\n"
+                "ID947,947,2,0.204027742,213.639373433,212.619909425,0,0.125,15\n",
+                encoding="utf-8",
+            )
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                motion_table_paths=[table_path],
+            )
+
+        rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row.payload["source_video_record_id"], "Video S1 - Spot Statistics")
+        self.assertEqual(row.payload["track_id"], "2")
+        self.assertEqual(row.payload["frame"], 15)
+        self.assertEqual(row.payload["time_seconds"], 0.125)
+        self.assertEqual(row.payload["x"], 213.639373433)
+        self.assertEqual(row.payload["y"], 212.619909425)
+        self.assertEqual(row.payload["behavior_type"], "video motion")
+        self.assertIn("raw/mendeley_behavior_media/Video S1 - Spot Statistics.csv#row/1", row.provenance.locator)
+
     def test_discovers_or_gaps_external_video_candidates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -372,6 +402,16 @@ class VideoAtomsSourceTests(unittest.TestCase):
                         "species_scope": "Culex quinquefasciatus",
                     }
                 ],
+                "mendeley": lambda: [
+                    {
+                        "title": "Aedes aegypti video analysis paper",
+                        "download_url": "https://data.mendeley.com/files/analysis.pdf",
+                        "source_url": "https://data.mendeley.com/datasets/example",
+                        "license": "CC-BY",
+                        "repository": "mendeley",
+                        "species_scope": "Aedes aegypti",
+                    }
+                ],
                 "institutional": lambda: [
                     {
                         "title": "Aedes video with missing download",
@@ -396,6 +436,7 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(discovered[0].payload["download_url"], "https://zenodo.org/record/1/files/movie.mp4")
         reasons = {gap["reason"] for gap in result.gaps}
         self.assertIn("video_discovery_not_aedes_scope", reasons)
+        self.assertIn("video_discovery_not_video_media", reasons)
         self.assertIn("video_discovery_no_download_url", reasons)
         self.assertIn("video_discovery_client_missing", reasons)
 
