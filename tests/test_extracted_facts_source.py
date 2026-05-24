@@ -70,6 +70,36 @@ def make_xlsx_bytes(rows: list[list[str]]) -> bytes:
     return buffer.getvalue()
 
 
+def make_docx_bytes(rows: list[list[str]]) -> bytes:
+    def cell(value: str) -> str:
+        return f"<w:tc><w:p><w:r><w:t>{value}</w:t></w:r></w:p></w:tc>"
+
+    table_rows = []
+    for row in rows:
+        table_rows.append(f"<w:tr>{''.join(cell(value) for value in row)}</w:tr>")
+    document = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">'
+        f"<w:body><w:tbl>{''.join(table_rows)}</w:tbl></w:body></w:document>"
+    )
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr("[Content_Types].xml", """<?xml version="1.0"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>
+""")
+        archive.writestr("_rels/.rels", """<?xml version="1.0"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>
+""")
+        archive.writestr("word/document.xml", document)
+    return buffer.getvalue()
+
+
 def write_extracted_facts_fixture(artifact_dir: Path) -> None:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
@@ -250,9 +280,121 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                 max_supplement_discovery_records=1,
             )
 
-            self.assertEqual(requests, ["openalex:WFACT1"])
+            self.assertEqual(len(requests), 1)
+            self.assertIn(requests[0], {"openalex:WFACT1", "openalex:WFACT2"})
             self.assertEqual(result.supplement_discovery_record_count, 1)
             self.assertTrue(any(gap["reason"] == "supplement_discovery_record_limit_applied" for gap in result.gaps))
+
+    def test_build_extracted_fact_records_extracts_pubmed_articleids_for_supplement_discovery(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WARTICLEIDS",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti article with PubMed article IDs",
+                        text="Aedes aegypti dengue vector competence supplementary data.",
+                        species="Aedes aegypti",
+                        url="https://example.org/articleids",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WARTICLEIDS",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "pubmed": {
+                                "match": {
+                                    "articleids": [
+                                        {"idtype": "pubmed", "value": "41528154"},
+                                        {"idtype": "pmcid", "value": "pmc-id: PMC12892943;"},
+                                        {"idtype": "doi", "value": "10.1128/mbio.03173-25"},
+                                    ]
+                                }
+                            }
+                        },
+                    )
+                ]
+            )
+            seen: dict[str, dict[str, object]] = {}
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                seen[str(request["record_id"])] = request
+                return []
+
+            build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                max_supplement_discovery_records=10,
+            )
+
+            request = seen["openalex:WARTICLEIDS"]
+            self.assertEqual(request["pmid"], "41528154")
+            self.assertEqual(request["pmcid"], "PMC12892943")
+            self.assertEqual(request["doi"], "10.1128/mbio.03173-25")
+
+    def test_build_extracted_fact_records_prioritizes_identifier_rows_for_bounded_supplement_discovery(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:A_NOID",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti no identifier row",
+                        text="Aedes aegypti supplement mention but no identifiers.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#A_NOID",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={},
+                    ),
+                    EvidenceRecord(
+                        record_id="openalex:Z_ID",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Additional file 1 of Aedes aegypti vector competence table",
+                        text="Aedes aegypti supplementary vector competence table.",
+                        species="Aedes aegypti",
+                        url="10.6084/m9.figshare.31976326.v1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#Z_ID",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"raw_openalex_work": {"doi": "https://doi.org/10.6084/m9.figshare.31976326.v1"}},
+                    ),
+                ]
+            )
+            requests: list[str] = []
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                requests.append(str(request["record_id"]))
+                return []
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                max_supplement_discovery_records=1,
+            )
+
+            self.assertEqual(requests, ["openalex:Z_ID"])
+            self.assertEqual(result.supplement_discovery_record_count, 1)
 
     def test_build_extracted_fact_records_parses_supported_supplement_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -324,6 +466,50 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertIn("raw/extracted_facts/supplements/", vector.provenance.locator)
             self.assertIn("row#1", vector.provenance.locator)
             self.assertTrue((artifact_dir / "raw" / "extracted_facts" / "supplements").exists())
+
+    def test_build_extracted_fact_records_parses_docx_supplement_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            payload = make_docx_bytes(
+                [
+                    ["domain", "pathogen", "infection rate", "temperature", "tissue", "strain"],
+                    ["vector competence", "dengue virus", "83%", "28 C", "saliva", "Rockefeller"],
+                ]
+            )
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                return [
+                    {
+                        "title": "Vector competence DOCX supplement",
+                        "url": "https://example.org/aedes-facts/vector-competence.docx",
+                        "file_type": "docx",
+                        "source": "figshare",
+                    }
+                ]
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                self.assertEqual(url, "https://example.org/aedes-facts/vector-competence.docx")
+                return payload
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                fetch_supplement_file_fn=fake_file_fetch,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(result.parsed_supplement_file_count, 1)
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertTrue(any(record.lane == "vector_competence" for record in parsed))
+            vector = next(record for record in parsed if record.lane == "vector_competence")
+            self.assertEqual(vector.payload["fields"]["table_row"]["infection rate"], "83%")
+            self.assertIn(".docx", vector.provenance.locator)
 
     def test_build_extracted_fact_records_uses_bounded_fulltext_probe(self):
         with tempfile.TemporaryDirectory() as tmpdir:

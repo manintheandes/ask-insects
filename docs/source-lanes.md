@@ -160,9 +160,9 @@ The assay-candidate lane reads source-grade `aedes_literature_openalex` records 
 
 ## Cross-Lane Extracted Facts
 
-`aedes_extracted_facts` is a deterministic derived source over indexed Aedes literature records, `record_payloads`, legal `literature_fulltext_units`, Europe PMC or PMC supplement metadata, and bounded public supplement files. It emits one queryable record per detected candidate fact into `vector_competence`, `resistance`, `behavior`, `ecology`, and `public_health`, one `literature` record per supplement manifest, and one parsed fact per supported supplement table row.
+`aedes_extracted_facts` is a deterministic derived source over indexed Aedes literature records, `record_payloads`, legal `literature_fulltext_units`, Europe PMC, PMC, and Figshare supplement metadata, and bounded public supplement files. It emits one queryable record per detected candidate fact into `vector_competence`, `resistance`, `behavior`, `ecology`, and `public_health`, one `literature` record per supplement manifest, and one parsed fact per supported supplement table row.
 
-Payloads preserve `fact_type`, schema version, matched fields, source paper ID, full-text unit ID when available, supplement metadata, table row values when parsed, evidence text, confidence, extraction method, and source provenance. Confidence values are intentionally conservative: `candidate` for text-derived facts, `manifest` for supplement pointers, and `parsed` for supported `.csv`, `.tsv`, `.xlsx`, XML table, or simple HTML table rows. The lane makes cross-domain paper facts queryable now, but it is not a claim that every PDF supplement, image table, workbook variant, or archive has been parsed or human validated.
+Payloads preserve `fact_type`, schema version, matched fields, source paper ID, full-text unit ID when available, supplement metadata, table row values when parsed, evidence text, confidence, extraction method, and source provenance. Confidence values are intentionally conservative: `candidate` for text-derived facts, `manifest` for supplement pointers, and `parsed` for supported `.csv`, `.tsv`, `.xlsx`, `.docx`, XML table, or simple HTML table rows. The lane makes cross-domain paper facts queryable now, but it is not a claim that every PDF supplement, image table, workbook variant, or archive has been parsed or human validated.
 
 ## Insecticide Resistance
 

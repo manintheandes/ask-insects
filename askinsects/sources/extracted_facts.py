@@ -232,9 +232,10 @@ PERCENT_RE = re.compile(r"\b\d+(?:\.\d+)?\s?%")
 DOSE_RE = re.compile(r"\b(?:10\^?\d+|\d+(?:\.\d+)?)\s?(?:pfu|ffu|tcid50|focus-forming units|plaque-forming units|log10|log)\b", re.I)
 MUTATION_RE = re.compile(r"\b[A-Z][0-9]{2,4}[A-Z]\b")
 CASE_RE = re.compile(r"\b(?:cases|deaths|fatalities)\s+\d[\d,]*|\b\d[\d,]*\s+(?:cases|deaths|fatalities)\b", re.I)
-SUPPORTED_SUPPLEMENT_EXTENSIONS = {".csv", ".tsv", ".xlsx", ".xml", ".html", ".htm"}
+SUPPORTED_SUPPLEMENT_EXTENSIONS = {".csv", ".tsv", ".xlsx", ".docx", ".xml", ".html", ".htm"}
 EUROPE_PMC_SEARCH_BASE = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 PMC_OA_SERVICE_BASE = "https://pmc.ncbi.nlm.nih.gov/utils/oa/oa.fcgi"
+FIGSHARE_ARTICLE_API_BASE = "https://api.figshare.com/v2/articles"
 
 
 def utc_now() -> str:
@@ -375,10 +376,13 @@ def _identifier_request(paper: sqlite3.Row) -> dict[str, object]:
         payload.get("doi")
         or _nested_get(payload, "ids", "doi")
         or _nested_get(payload, "openalex", "doi")
+        or _nested_get(payload, "raw_openalex_work", "doi")
+        or _nested_get(payload, "raw_openalex_work", "ids", "doi")
+        or _pubmed_article_id(pubmed, "doi")
         or paper["url"]
     )
-    pmid = payload.get("pmid") or _nested_get(payload, "ids", "pmid") or pubmed.get("pmid")
-    pmcid = payload.get("pmcid") or _nested_get(payload, "ids", "pmcid") or pubmed.get("pmcid")
+    pmid = payload.get("pmid") or _nested_get(payload, "ids", "pmid") or pubmed.get("pmid") or _pubmed_article_id(pubmed, "pubmed")
+    pmcid = payload.get("pmcid") or _nested_get(payload, "ids", "pmcid") or pubmed.get("pmcid") or _pubmed_article_id(pubmed, "pmcid", "pmc")
     if isinstance(ids, dict):
         pmid = pmid or ids.get("pmid")
         pmcid = pmcid or ids.get("pmcid")
@@ -386,9 +390,9 @@ def _identifier_request(paper: sqlite3.Row) -> dict[str, object]:
         "record_id": str(paper["record_id"]),
         "title": str(paper["title"]),
         "url": paper["url"],
-        "doi": str(doi).strip() if doi else None,
-        "pmid": str(pmid).strip() if pmid else None,
-        "pmcid": str(pmcid).strip() if pmcid else None,
+        "doi": _normalize_doi(doi),
+        "pmid": _normalize_pmid(pmid),
+        "pmcid": _normalize_pmcid(pmcid),
     }
 
 
@@ -416,6 +420,92 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
             supplements.extend(_pmc_oa_supplements(oa_xml, source_url=oa_url))
         except Exception:
             pass
+    supplements.extend(_figshare_supplements(request))
+    return supplements
+
+
+def _pubmed_article_id(pubmed: dict[str, object], *idtypes: str) -> str | None:
+    wanted = {idtype.lower() for idtype in idtypes}
+    articleids = _nested_get(pubmed, "match", "articleids")
+    if not isinstance(articleids, list):
+        return None
+    for article_id in articleids:
+        if not isinstance(article_id, dict):
+            continue
+        idtype = str(article_id.get("idtype") or "").lower()
+        if idtype in wanted and article_id.get("value"):
+            return str(article_id["value"])
+    return None
+
+
+def _normalize_doi(value: object) -> str | None:
+    if not value:
+        return None
+    doi = str(value).strip()
+    doi = re.sub(r"^https?://(?:dx\.)?doi\.org/", "", doi, flags=re.I)
+    doi = re.sub(r"^doi:\s*", "", doi, flags=re.I)
+    return doi.strip() or None
+
+
+def _normalize_pmid(value: object) -> str | None:
+    if not value:
+        return None
+    match = re.search(r"\d+", str(value))
+    return match.group(0) if match else str(value).strip() or None
+
+
+def _normalize_pmcid(value: object) -> str | None:
+    if not value:
+        return None
+    match = re.search(r"PMC\d+", str(value), re.I)
+    return match.group(0).upper() if match else str(value).strip() or None
+
+
+def _figshare_article_id_from_request(request: dict[str, object]) -> str | None:
+    haystack = " ".join(str(request.get(key) or "") for key in ("doi", "url"))
+    match = re.search(r"figshare\.(\d+)", haystack, re.I)
+    if match:
+        return match.group(1)
+    match = re.search(r"figshare\.com/articles/(?:[^/]+/)?(\d+)", haystack, re.I)
+    return match.group(1) if match else None
+
+
+def _figshare_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    article_id = _figshare_article_id_from_request(request)
+    if not article_id:
+        return []
+    api_url = f"{FIGSHARE_ARTICLE_API_BASE}/{article_id}"
+    try:
+        payload = _fetch_json_url(api_url)
+    except Exception:
+        return []
+    files = payload.get("files") if isinstance(payload.get("files"), list) else []
+    license_payload = payload.get("license") if isinstance(payload.get("license"), dict) else {}
+    license_value = license_payload.get("name") or license_payload.get("url")
+    supplements: list[dict[str, object]] = []
+    for file_payload in files:
+        if not isinstance(file_payload, dict):
+            continue
+        url = file_payload.get("download_url")
+        if not isinstance(url, str) or not url:
+            continue
+        name = str(file_payload.get("name") or "Figshare supplementary file")
+        extension = Path(urlparse(name).path).suffix.lower()
+        mimetype = str(file_payload.get("mimetype") or "")
+        if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS and "wordprocessingml.document" not in mimetype:
+            continue
+        supplements.append(
+            {
+                "title": name,
+                "url": url,
+                "file_type": extension.lstrip(".") or mimetype,
+                "license": license_value,
+                "size": file_payload.get("size"),
+                "source": "figshare",
+                "metadata_url": api_url,
+                "checksum_md5": file_payload.get("computed_md5") or file_payload.get("supplied_md5"),
+            }
+        )
     return supplements
 
 
@@ -659,68 +749,85 @@ def _supplement_candidates_with_discovery(
     seen: set[tuple[str, str, str]] = set()
     discovered_count = 0
     discovery_record_count = 0
-    discovery_limit_recorded = False
+
+    def add_candidate(paper: sqlite3.Row, raw_supplement: dict[str, object], fallback_source: str) -> None:
+        nonlocal candidates
+        supplement = _normalize_supplement(raw_supplement)
+        supplement.setdefault("source", fallback_source)
+        key = (str(paper["record_id"]), str(supplement.get("url") or ""), str(supplement.get("title") or ""))
+        if key in seen:
+            return
+        seen.add(key)
+        candidates.append(
+            SupplementCandidate(
+                source_record_id=str(paper["record_id"]),
+                source_title=str(paper["title"]),
+                species=paper["species"],
+                paper_url=paper["url"],
+                source_provenance=_safe_json(paper["provenance_json"]),
+                supplement=supplement,
+            )
+        )
+
     for paper in literature_rows:
         payload = _safe_json(paper["payload_json"])
-        raw_supplements = [(raw, "record_payload") for raw in _payload_supplements(payload)]
-        if discover_supplements and fetch_supplement_metadata_fn is not None:
-            if (
-                max_supplement_discovery_records is not None
-                and discovery_record_count >= max_supplement_discovery_records
-            ):
-                if not discovery_limit_recorded:
-                    gaps.append(
-                        {
-                            "source": EXTRACTED_FACTS_SOURCE_ID,
-                            "reason": "supplement_discovery_record_limit_applied",
-                            "max_supplement_discovery_records": max_supplement_discovery_records,
-                            "source_record_count": len(literature_rows),
-                        }
-                    )
-                    discovery_limit_recorded = True
-            else:
-                discovery_record_count += 1
-                request = _identifier_request(paper)
-                if not any(request.get(key) for key in ("doi", "pmid", "pmcid")):
-                    gaps.append(
-                        {
-                            "source": EXTRACTED_FACTS_SOURCE_ID,
-                            "reason": "supplement_discovery_missing_identifier",
-                            "record_id": str(paper["record_id"]),
-                        }
-                    )
-                else:
-                    try:
-                        fetched = fetch_supplement_metadata_fn(request)
-                        discovered_count += len(fetched)
-                        raw_supplements.extend((raw, "metadata_fetch") for raw in fetched)
-                    except Exception as exc:
-                        gaps.append(
-                            {
-                                "source": EXTRACTED_FACTS_SOURCE_ID,
-                                "reason": "supplement_metadata_fetch_failed",
-                                "record_id": str(paper["record_id"]),
-                                "error": str(exc),
-                            }
-                        )
-        for raw_supplement, fallback_source in raw_supplements:
-            supplement = _normalize_supplement(raw_supplement)
-            supplement.setdefault("source", fallback_source)
-            key = (str(paper["record_id"]), str(supplement.get("url") or ""), str(supplement.get("title") or ""))
-            if key in seen:
-                continue
-            seen.add(key)
-            candidates.append(
-                SupplementCandidate(
-                    source_record_id=str(paper["record_id"]),
-                    source_title=str(paper["title"]),
-                    species=paper["species"],
-                    paper_url=paper["url"],
-                    source_provenance=_safe_json(paper["provenance_json"]),
-                    supplement=supplement,
-                )
+        for raw_supplement in _payload_supplements(payload):
+            add_candidate(paper, raw_supplement, "record_payload")
+
+    if discover_supplements and fetch_supplement_metadata_fn is not None:
+        discovery_rows = _prioritized_supplement_discovery_rows(literature_rows)
+        if max_supplement_discovery_records is not None and len(discovery_rows) > max_supplement_discovery_records:
+            gaps.append(
+                {
+                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "reason": "supplement_discovery_record_limit_applied",
+                    "max_supplement_discovery_records": max_supplement_discovery_records,
+                    "source_record_count": len(literature_rows),
+                    "discoverable_source_record_count": len(discovery_rows),
+                }
             )
+            discovery_rows = discovery_rows[:max_supplement_discovery_records]
+        for paper in discovery_rows:
+            request = _identifier_request(paper)
+            discovery_record_count += 1
+            try:
+                fetched = fetch_supplement_metadata_fn(request)
+                discovered_count += len(fetched)
+                for raw_supplement in fetched:
+                    add_candidate(paper, raw_supplement, "metadata_fetch")
+            except Exception as exc:
+                gaps.append(
+                    {
+                        "source": EXTRACTED_FACTS_SOURCE_ID,
+                        "reason": "supplement_metadata_fetch_failed",
+                        "record_id": str(paper["record_id"]),
+                        "error": str(exc),
+                    }
+                )
     return candidates, discovered_count, discovery_record_count
+
+
+def _supplement_discovery_score(paper: sqlite3.Row) -> tuple[int, int, int, str]:
+    request = _identifier_request(paper)
+    if not any(request.get(key) for key in ("doi", "pmid", "pmcid")):
+        return (0, 0, 0, str(paper["record_id"]))
+    title = str(paper["title"] or "").lower()
+    url = str(paper["url"] or "").lower()
+    figshare = 1 if _figshare_article_id_from_request(request) else 0
+    supplementish = 1 if any(term in title for term in ("additional file", "supplementary", "supplement ", " table", "dataset")) else 0
+    pmc_or_pubmed = 1 if request.get("pmcid") or request.get("pmid") else 0
+    if "figshare" in url:
+        figshare = 1
+    return (figshare, supplementish, pmc_or_pubmed, str(paper["record_id"]))
+
+
+def _prioritized_supplement_discovery_rows(literature_rows: list[sqlite3.Row]) -> list[sqlite3.Row]:
+    discoverable = [
+        paper
+        for paper in literature_rows
+        if any(_identifier_request(paper).get(key) for key in ("doi", "pmid", "pmcid"))
+    ]
+    return sorted(discoverable, key=_supplement_discovery_score, reverse=True)
 
 
 def _supplement_extension(supplement: dict[str, object]) -> str:
@@ -735,6 +842,8 @@ def _supplement_extension(supplement: dict[str, object]) -> str:
         return ".tsv"
     if "spreadsheet" in file_type or "xlsx" in file_type:
         return ".xlsx"
+    if "docx" in file_type or "wordprocessingml.document" in file_type:
+        return ".docx"
     if "html" in file_type:
         return ".html"
     if "xml" in file_type:
@@ -895,6 +1004,36 @@ def _parse_xlsx_rows(data: bytes) -> list[dict[str, str]]:
     ]
 
 
+def _parse_docx_rows(data: bytes) -> list[dict[str, str]]:
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        root = ET.fromstring(archive.read("word/document.xml"))
+    rows: list[dict[str, str]] = []
+    for table in root.iter():
+        if _strip_ns(table.tag) != "tbl":
+            continue
+        table_rows: list[list[str]] = []
+        for row in list(table):
+            if _strip_ns(row.tag) != "tr":
+                continue
+            values: list[str] = []
+            for cell in list(row):
+                if _strip_ns(cell.tag) != "tc":
+                    continue
+                value = _xml_text(cell)
+                if value:
+                    values.append(value)
+            if values:
+                table_rows.append(values)
+        if len(table_rows) < 2:
+            continue
+        headers = table_rows[0]
+        rows.extend(
+            {headers[index]: value for index, value in enumerate(row) if index < len(headers) and headers[index] and value}
+            for row in table_rows[1:]
+        )
+    return rows
+
+
 def _parse_supported_table_rows(data: bytes, extension: str) -> list[dict[str, str]]:
     if extension == ".csv":
         return _parse_delimited_rows(data, ",")
@@ -902,6 +1041,8 @@ def _parse_supported_table_rows(data: bytes, extension: str) -> list[dict[str, s
         return _parse_delimited_rows(data, "\t")
     if extension == ".xlsx":
         return _parse_xlsx_rows(data)
+    if extension == ".docx":
+        return _parse_docx_rows(data)
     if extension == ".xml":
         return _parse_xml_rows(data)
     if extension in {".html", ".htm"}:

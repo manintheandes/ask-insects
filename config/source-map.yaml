@@ -342,23 +342,26 @@ sources:
   - id: aedes_extracted_facts
     name: Aedes aegypti extracted literature facts and supplement manifests
     source_type: derived_sqlite_source
-    boundary: Deterministic cross-lane candidate facts, supplement manifests, and supported parsed supplement table rows from indexed Aedes aegypti literature records, record payload supplement metadata, Europe PMC or PMC metadata, public supplement files, and legal literature_fulltext_units
+    boundary: Deterministic cross-lane candidate facts, supplement manifests, and supported parsed supplement table rows from indexed Aedes aegypti literature records, record payload supplement metadata, Europe PMC, PMC, or Figshare metadata, public supplement files, and legal literature_fulltext_units
     query_plane: literature_records_payloads_fulltext_units_and_supported_supplement_tables_to_sqlite_fact_records
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_extracted_facts.py
     api_base:
       europe_pmc: https://www.ebi.ac.uk/europepmc/webservices/rest/search
       pmc_oa: https://pmc.ncbi.nlm.nih.gov/utils/oa/oa.fcgi
+      figshare: https://api.figshare.com/v2/articles
     input_sources:
       - aedes_literature_openalex
       - record_payloads
       - literature_fulltext_units
       - europe_pmc_metadata
       - pmc_oa_metadata
+      - figshare_metadata
     supported_supplement_formats:
       - csv
       - tsv
       - xlsx
+      - docx
       - xml
       - html
     lanes:

@@ -419,6 +419,8 @@ def check_mosquito_intelligence_coverage() -> None:
         "bounded_opt_in_supplement_discovery_and_download",
         "csv",
         "xlsx",
+        "docx",
+        "figshare_metadata",
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing extracted facts term: {term}")
