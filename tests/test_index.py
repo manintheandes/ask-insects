@@ -247,11 +247,27 @@ class IndexTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
             index.initialize()
+            other_record = EvidenceRecord(
+                record_id="other:1",
+                lane="taxonomy",
+                source="other_source",
+                title="Other source row",
+                text="other source row",
+                species="Aedes aegypti",
+                url="https://example.org/other",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="other_source",
+                    locator="other#1",
+                    retrieved_at="2026-05-23T00:00:00Z",
+                ),
+                payload={"version": "other"},
+            )
             index.upsert_records(
                 [
                     sample_record(record_id="obs:1", payload={"version": "old"}),
                     sample_record(record_id="obs:stale", text="staleunique old row"),
-                    sample_record(record_id="other:1", lane="taxonomy", text="other source row"),
+                    other_record,
                 ]
             )
             index.upsert_fulltext_units([stale_unit])
@@ -263,11 +279,14 @@ class IndexTests(unittest.TestCase):
 
             self.assertEqual(
                 index.sql("select record_id from records order by record_id"),
-                [{"record_id": "obs:2"}],
+                [{"record_id": "obs:2"}, {"record_id": "other:1"}],
             )
             self.assertEqual(
-                index.sql("select json_extract(payload_json, '$.version') as version from record_payloads"),
-                [{"version": "new"}],
+                index.sql(
+                    "select record_id, json_extract(payload_json, '$.version') as version "
+                    "from record_payloads order by record_id"
+                ),
+                [{"record_id": "obs:2", "version": "new"}, {"record_id": "other:1", "version": "other"}],
             )
             self.assertEqual(
                 index.sql("select unit_id from literature_fulltext_units where text like '%staleunique%'"),
