@@ -326,6 +326,18 @@ def _looks_like_markup_noise(text: str) -> bool:
     lower = text[:20000].lower()
     if "<!doctype html" in lower or "<html" in lower:
         return True
+    encoded_state_tokens = sum(
+        lower.count(token)
+        for token in (
+            "&q;",
+            "rotatable-typeahead",
+            "requestuuids",
+            "servertimecompleted",
+            "server/api",
+            "statistics/statlets",
+            "dc.contributor.",
+        )
+    )
     markup_tokens = sum(lower.count(token) for token in ("<div", "<style", "<script", "</", "{--", "font-family", "box-sizing"))
     css_tokens = lower.count("--") + lower.count("!important") + lower.count("var(")
     css_declarations = sum(
@@ -349,7 +361,9 @@ def _looks_like_markup_noise(text: str) -> bool:
     )
     css_rule_markers = sum(lower.count(token) for token in ("{", "}", "@media", ".btn", ":hover", ":focus"))
     return (
-        markup_tokens >= 6
+        encoded_state_tokens >= 12
+        or (lower.count("&q;") >= 8 and ("server/api" in lower or "rotatable-typeahead" in lower or "requestuuids" in lower))
+        or markup_tokens >= 6
         or css_tokens >= 10
         or css_declarations >= 8
         or (css_declarations >= 5 and css_rule_markers >= 5)
