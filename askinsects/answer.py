@@ -88,6 +88,12 @@ def _search_queries(question: str) -> list[str]:
         return ["connectome", question]
     if "h5ad" in q or "anndata" in q:
         return ["H5AD", "Mosquito Cell Atlas H5AD", question]
+    if "sra" in q or "raw read" in q or "runinfo" in q:
+        return ["SRA SRP290992", "SRA raw read", "SRR12972760", question]
+    if "voxel" in q or "mha" in q or "mhd" in q or "volume" in q:
+        return ["DimSize", "brain volume", question]
+    if "catmaid" in q or "em dataset" in q:
+        return ["CATMAID EM connectome", "aedes_public", question]
     queries = [question]
     species = _requested_species(question)
     added_domain_phrase = False
@@ -100,6 +106,15 @@ def _search_queries(question: str) -> list[str]:
         "single nucleus",
         "h5ad",
         "anndata",
+        "sra",
+        "raw reads",
+        "runinfo",
+        "mha",
+        "mhd",
+        "voxel",
+        "volume",
+        "catmaid",
+        "em dataset",
         "cell atlas",
         "mosquito cell atlas",
         "antennal lobe",

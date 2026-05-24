@@ -133,6 +133,8 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what neuron data exists for the Aedes aegypti brain?").answer_shape, "neurobiology")
         self.assertEqual(plan_question("what brain regions process smell in mosquitoes?").lanes[0], "neurobiology")
         self.assertEqual(plan_question("what H5AD data exists in the Mosquito Cell Atlas?").lanes[0], "neurobiology")
+        self.assertEqual(plan_question("what SRA raw reads exist for GSE160740?").lanes[0], "neurobiology")
+        self.assertEqual(plan_question("what voxel volume files exist in MosquitoBrains?").lanes[0], "neurobiology")
 
     def test_answers_include_provenance_or_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -412,6 +414,30 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "neurobiology")
             self.assertTrue(any("H5AD" in item["title"] or "h5ad" in item["text"].lower() for item in answer["evidence"]))
+
+    def test_sra_and_volume_questions_use_deep_neurobiology_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            artifact_dir = tmp_path / "mosquito-v1"
+            neurobiology_artifact_dir = write_fake_neurobiology_artifacts(tmp_path)
+            build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_ncbi_genome=False,
+                include_neurobiology=True,
+                artifact_dir=artifact_dir,
+                neurobiology_artifact_dir=neurobiology_artifact_dir,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            sra = answer_question("what SRA raw reads exist for GSE160740?", artifact_dir=artifact_dir)
+            volume = answer_question("what voxel volume files exist in MosquitoBrains?", artifact_dir=artifact_dir)
+
+            self.assertTrue(sra["ok"])
+            self.assertTrue(any(item["record_id"].startswith("neuro:sra:SRP290992") for item in sra["evidence"]))
+            self.assertTrue(volume["ok"])
+            self.assertTrue(any("volume" in item["record_id"] for item in volume["evidence"]))
 
 
 if __name__ == "__main__":

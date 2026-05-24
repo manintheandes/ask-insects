@@ -316,7 +316,7 @@ def _sra_records(artifact_dir: Path, *, retrieved_at: str) -> tuple[list[Evidenc
                     "record_type": "sra_run",
                     "title": f"GSE160740 SRA run {run}",
                     "text": (
-                        f"SRA run {run} belongs to sample {sample_name} for Aedes aegypti brain RNA-seq. "
+                        f"SRA SRP290992 run {run} belongs to sample {sample_name} for Aedes aegypti brain RNA-seq raw read metadata. "
                         f"Library {row.get('LibraryStrategy')} {row.get('LibraryLayout')}; "
                         f"{row.get('spots')} spots, {row.get('bases')} bases, {row.get('size_MB')} MB."
                     ),
@@ -352,7 +352,7 @@ def _sra_records(artifact_dir: Path, *, retrieved_at: str) -> tuple[list[Evidenc
                     "record_type": "sra_sample_summary",
                     "title": f"GSE160740 SRA sample {sample_name}",
                     "text": (
-                        f"SRA sample {sample_name} has {len(grouped_rows)} public run(s), "
+                        f"SRA SRP290992 sample {sample_name} has {len(grouped_rows)} public raw read run(s), "
                         f"{total_spots} spots, {total_bases} bases, and {total_size_mb} MB in runinfo metadata."
                     ),
                     "species": "Aedes aegypti",
