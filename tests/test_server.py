@@ -1211,6 +1211,60 @@ class ServerTests(unittest.TestCase):
             counts = {row["source"]: row["n"] for row in rows}
             self.assertEqual(counts["mosquito_v1_fixtures"], 7)
             self.assertEqual(counts["ncbi_biosamples"], 1)
+            self.assertTrue(response.payload["staged"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='ncbi_biosamples'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".ncbi-biosamples-staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_ncbi_biosamples_failure_preserves_existing_source_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="ncbi:biosample:old",
+                        lane="biosamples",
+                        source="ncbi_biosamples",
+                        title="Old BioSample row",
+                        text="Existing BioSample row that must survive a failed refresh.",
+                        species="Aedes aegypti",
+                        url="https://www.ncbi.nlm.nih.gov/biosample/old",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="ncbi_biosamples",
+                            locator=f"{artifact_dir}/raw/ncbi_biosamples/old.json#uid/old",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    )
+                ]
+            )
+
+            def failing_fetch(*, raw_dir, species, limit, page_size, delay_seconds, fetch_json, retrieved_at):
+                raw_dir.mkdir(parents=True, exist_ok=True)
+                (raw_dir / "partial.json").write_text("{}", encoding="utf-8")
+                raise RuntimeError("simulated biosample fetch failure")
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/ncbi-biosamples",
+                {"species": "Aedes aegypti", "limit": 1, "page_size": 1, "delay_seconds": 0},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_ncbi_biosample_records_fn=failing_fetch,
+            )
+
+            self.assertEqual(response.status, 500)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id from records where source='ncbi_biosamples'",
+            )
+            self.assertEqual([row["record_id"] for row in rows], ["ncbi:biosample:old"])
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.ncbi-biosamples-staging").exists())
 
     def test_ingest_vector_competence_assays_adds_records_without_removing_existing_sources(self):
         from tests.test_vector_competence_assays_source import write_assay_literature_fixture

@@ -1794,6 +1794,40 @@ def ingest_vectorbase_genomics_staged(
     return response
 
 
+def ingest_ncbi_biosamples_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_ncbi_biosample_records_fn: Callable[..., object],
+) -> dict[str, object]:
+    from scripts.ingest_ncbi_biosamples import ingest_ncbi_biosamples
+
+    staging = artifact_dir.parent / f".{artifact_dir.name}.ncbi-biosamples-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_ncbi_biosamples(
+            artifact_dir=staging,
+            species=str(payload.get("species") or DEFAULT_BIOSAMPLE_SPECIES),
+            limit=int(payload.get("limit") or 1000),
+            page_size=int(payload.get("page_size") or 200),
+            delay_seconds=float(payload.get("delay_seconds") if payload.get("delay_seconds") is not None else 0.34),
+            fetch_ncbi_biosample_records_fn=fetch_ncbi_biosample_records_fn,
+        )
+        response = rewrite_artifact_references(staging, artifact_dir, result)
+        activate_source_staging(staging, artifact_dir, Path("raw") / "ncbi_biosamples")
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -1933,15 +1967,9 @@ def dispatch_request(
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/ncbi-biosamples":
-            from scripts.ingest_ncbi_biosamples import ingest_ncbi_biosamples
-
-            body = payload or {}
-            result = ingest_ncbi_biosamples(
+            result = ingest_ncbi_biosamples_staged(
+                payload or {},
                 artifact_dir=artifact_dir,
-                species=str(body.get("species") or DEFAULT_BIOSAMPLE_SPECIES),
-                limit=int(body.get("limit") or 1000),
-                page_size=int(body.get("page_size") or 200),
-                delay_seconds=float(body.get("delay_seconds") if body.get("delay_seconds") is not None else 0.34),
                 fetch_ncbi_biosample_records_fn=fetch_ncbi_biosample_records_fn,
             )
             status = 200 if result.get("ok") else 500
