@@ -754,7 +754,12 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
                 from record_payloads
                 where source='aedes_video_atoms'
                   and json_extract(payload_json, '$.atom_type')='video_asset'
-                  and json_extract(payload_json, '$.mirror_path') is not null
+                  and coalesce(
+                    json_extract(payload_json, '$.mirror_path'),
+                    json_extract(payload_json, '$.raw_asset_path'),
+                    json_extract(payload_json, '$.mirrored_path'),
+                    json_extract(payload_json, '$.local_mirror_path')
+                  ) is not null
                 """
             ).fetchone()[0]
         )

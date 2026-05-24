@@ -71,7 +71,7 @@ class VerifyCompleteTests(unittest.TestCase):
                         "atom_type": "video_asset",
                         "repository": repository,
                         "verification_status": "verified",
-                        "mirror_path": f"raw/video_atoms/assets/{repository}.mp4",
+                        "raw_asset_path": f"raw/video_atoms/assets/{repository}.mp4",
                     },
                 )
             add("video_atom:thumbnail:1", "media", {"atom_type": "video_thumbnail"})
