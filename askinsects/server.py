@@ -109,7 +109,7 @@ def replace_path_strings(value: object, old: str, new: str) -> object:
     return json.loads(json.dumps(value).replace(old, new))
 
 
-def rewrite_artifact_references(staging: Path, artifact_dir: Path, result: dict[str, object]) -> dict[str, object]:
+def rewrite_artifact_references(staging: Path, artifact_dir: Path, result: dict[str, object], *, rewrite_db: bool = True) -> dict[str, object]:
     old = str(staging)
     new = str(artifact_dir)
     for path in (staging / "source_status.json", staging / "source_receipt.json", staging / "gaps.json"):
@@ -117,11 +117,17 @@ def rewrite_artifact_references(staging: Path, artifact_dir: Path, result: dict[
             text = path.read_text(encoding="utf-8").replace(old, new)
             path.write_text(text, encoding="utf-8")
     db_path = staging / "source_index.sqlite"
-    if db_path.exists():
+    if rewrite_db and db_path.exists():
         with sqlite3.connect(db_path) as conn:
-            conn.execute("UPDATE records SET provenance_json = replace(provenance_json, ?, ?)", (old, new))
+            conn.execute(
+                "UPDATE records SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?",
+                (old, new, f"%{old}%"),
+            )
             try:
-                conn.execute("UPDATE record_payloads SET provenance_json = replace(provenance_json, ? , ?)", (old, new))
+                conn.execute(
+                    "UPDATE record_payloads SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?",
+                    (old, new, f"%{old}%"),
+                )
             except sqlite3.OperationalError:
                 pass
     rewritten = replace_path_strings(result, old, new)
@@ -199,6 +205,7 @@ def stream_inaturalist_into_index(
     species_names: list[str],
     *,
     staging: Path,
+    artifact_dir: Path,
     place: str | None,
     observation_limit: int,
     page_size: int,
@@ -236,7 +243,8 @@ def stream_inaturalist_into_index(
                 f"{inaturalist_safe_name(species)}_{inaturalist_safe_name(place)}_page_{page:03d}.json",
                 payload,
             )
-            raw_artifacts.append(raw_path.as_posix())
+            final_raw_path = artifact_dir / raw_path.relative_to(staging)
+            raw_artifacts.append(final_raw_path.as_posix())
             total_results[species] = int(payload.get("total_results") or payload.get("total_count") or 0)
             results = payload.get("results")
             if not isinstance(results, list) or not results:
@@ -271,7 +279,7 @@ def stream_inaturalist_into_index(
                         photo,
                         species=species,
                         query_url=query_url,
-                        raw_path=raw_path,
+                        raw_path=final_raw_path,
                         retrieved_at=retrieved_at,
                     )
                 )
@@ -280,7 +288,7 @@ def stream_inaturalist_into_index(
                         observation,
                         photo,
                         species=species,
-                        raw_path=raw_path,
+                        raw_path=final_raw_path,
                         retrieved_at=retrieved_at,
                     )
                 )
@@ -361,21 +369,15 @@ def ingest_inaturalist(
             shutil.copytree(artifact_dir, staging)
         else:
             staging.mkdir(parents=True, exist_ok=True)
-        result = fetch_inaturalist_records_fn(
-            species,
-            raw_dir=staging / "raw" / "inaturalist",
-            place=place,
-            observation_limit=observation_limit,
-            page_size=page_size,
-            delay_seconds=delay_seconds,
-        )
         index = SourceIndex(staging / "source_index.sqlite")
         index.initialize()
         index.delete_source(INATURALIST_SOURCE_ID)
-        if fetch_inaturalist_records_fn is fetch_inaturalist_records:
+        stream_default_fetch = fetch_inaturalist_records_fn is fetch_inaturalist_records
+        if stream_default_fetch:
             inaturalist_payload, new_gaps = stream_inaturalist_into_index(
                 species,
                 staging=staging,
+                artifact_dir=artifact_dir,
                 place=place,
                 observation_limit=observation_limit,
                 page_size=page_size,
@@ -411,7 +413,7 @@ def ingest_inaturalist(
         gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == INATURALIST_SOURCE_ID)]
         gaps.extend(new_gaps)
         response = write_inaturalist_metadata(staging, inaturalist_payload, gaps)
-        response = rewrite_artifact_references(staging, artifact_dir, response)
+        response = rewrite_artifact_references(staging, artifact_dir, response, rewrite_db=not stream_default_fetch)
         activate_staging_artifact(staging, artifact_dir)
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)

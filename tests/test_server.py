@@ -69,8 +69,10 @@ class ServerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             build_fixture_index(artifact_dir=artifact_dir)
+            calls = []
 
             def fake_fetch(*args, **kwargs):
+                calls.append((args, kwargs))
                 raw_dir = kwargs["raw_dir"]
                 raw_dir.mkdir(parents=True, exist_ok=True)
                 raw_path = raw_dir / "page.json"
@@ -104,6 +106,7 @@ class ServerTests(unittest.TestCase):
             self.assertIn("mosquito_v1_fixtures", response.payload["sources"])
             self.assertTrue((artifact_dir / "source_index.sqlite").exists())
             self.assertFalse((artifact_dir.parent / ".mosquito-v1.staging").exists())
+            self.assertEqual(len(calls), 1)
 
     def test_ingest_records_final_artifact_paths_in_provenance(self):
         def fake_fetch(*args, **kwargs):
@@ -262,6 +265,14 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 4)
             self.assertEqual(counts[("inaturalist_api", "observations")], 1)
             self.assertEqual(counts[("inaturalist_api", "media")], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='inaturalist_api'",
+                limit=2,
+            )
+            self.assertTrue(provenance_rows)
+            for row in provenance_rows:
+                self.assertIn(str(artifact_dir), row["provenance_json"])
+                self.assertNotIn(".staging", row["provenance_json"])
 
     def test_ingest_keeps_active_index_available_during_build(self):
         with tempfile.TemporaryDirectory() as tmpdir:
