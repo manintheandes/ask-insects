@@ -1,6 +1,6 @@
 # Source Map
 
-Ask Insects is built from public insect sources. Each source is a place Ask Insects can read from, such as biodiversity APIs, observation records, licensed photos, public videos, research papers, genomes, cell atlases, or official public-health pages.
+Open Insects is built from public insect sources. Ask Insects is its first source-backed tool. Each source is a place Ask Insects can read from, such as biodiversity APIs, observation records, licensed photos, public videos, research papers, genomes, cell atlases, or official public-health pages.
 
 This page exists so the interactive graph shows what is actually inside Ask Insects.
 

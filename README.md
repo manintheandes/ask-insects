@@ -1,8 +1,12 @@
-# Ask Insects
+# Open Insects
 
-Ask Insects is a CLI-first, Aedes-first local source plane for mosquito evidence.
+Open Insects is an open-source effort to make insect knowledge queryable, source-backed, and actionable.
 
-V1 starts with mosquitoes, then expands to other insect groups. It follows the Ask Monarch pattern:
+Ask Insects is the first tool in Open Insects: a CLI and hosted source plane for asking evidence-backed questions about insects. The command remains `ask-insects`.
+
+Public home: `https://openinsects.org`
+
+V1 starts with mosquitoes, then expands to other insect groups. It follows a source-plane pattern:
 
 ```text
 source artifacts -> mapped lanes -> local parsed indexes -> receipts -> CLI -> answer with provenance or gap
@@ -18,7 +22,7 @@ The public repository ships code, docs, tests, source maps, small deterministic 
 
 ## Comprehensive Mosquito Intelligence Goal
 
-The current comprehensive-source strategy is Aedes-first: make Ask Insects the most comprehensive `Aedes aegypti` intelligence system in the world, full stop. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for this push.
+The current comprehensive-source strategy is Aedes-first: make Ask Insects the most comprehensive `Aedes aegypti` intelligence system in the world, full stop. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for this push. Open Insects expands outward from that source-backed base.
 
 The machine-readable coverage ledger is `config/mosquito-intelligence-coverage.json`. It is the durable backlog for domains that are not source grade yet. Do not treat a domain as covered unless the ledger, source map, receipts, SQLite records, and Ask Insects CLI all agree.
 

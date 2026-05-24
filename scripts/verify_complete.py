@@ -7,6 +7,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+import csv
 import sqlite3
 import tempfile
 
@@ -49,6 +50,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-mendeley-behavior-table-deep-parse-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-osf-flighttrackai-video-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-extracted-facts-design.md",
+    "docs/superpowers/specs/2026-05-24-open-insects-public-identity-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -69,6 +71,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-osf-flighttrackai-video-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-extracted-facts.md",
     "docs/superpowers/plans/2026-05-24-aedes-video-atoms.md",
+    "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -328,6 +331,47 @@ def check_open_source_boundary() -> None:
         raise RuntimeError(f"THIRD_PARTY_DATA.md missing source term(s): {', '.join(missing_sources)}")
 
 
+def check_public_identity() -> None:
+    readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    pyproject_text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    wiki_home_text = (REPO_ROOT / "wiki/Ask Insects.md").read_text(encoding="utf-8")
+    source_map_text = (REPO_ROOT / "wiki/Source Map.md").read_text(encoding="utf-8")
+
+    required_readme_terms = (
+        "# Open Insects",
+        "Open Insects is an open-source effort",
+        "Ask Insects is the first tool in Open Insects",
+        "The command remains `ask-insects`",
+        "https://openinsects.org",
+    )
+    missing_readme = [term for term in required_readme_terms if term not in readme_text]
+    if missing_readme:
+        raise RuntimeError(f"README.md missing Open Insects term(s): {', '.join(missing_readme)}")
+
+    required_pyproject_terms = (
+        'Homepage = "https://openinsects.org"',
+        'Source = "https://github.com/manintheandes/ask-insects"',
+        'ask-insects = "askinsects.cli:main"',
+    )
+    missing_pyproject = [term for term in required_pyproject_terms if term not in pyproject_text]
+    if missing_pyproject:
+        raise RuntimeError(f"pyproject.toml missing Open Insects metadata term(s): {', '.join(missing_pyproject)}")
+
+    required_wiki_terms = (
+        "# Open Insects",
+        "Ask Insects: a CLI and hosted source plane",
+        'ask-insects ask "where has Aedes aegypti been spotted this year?"',
+    )
+    missing_wiki = [term for term in required_wiki_terms if term not in wiki_home_text]
+    if missing_wiki:
+        raise RuntimeError(f"wiki/Ask Insects.md missing Open Insects term(s): {', '.join(missing_wiki)}")
+
+    if "Open Insects is built from public insect sources" not in source_map_text:
+        raise RuntimeError("wiki/Source Map.md must explain Open Insects source grounding")
+    if "Ask Insects is its first source-backed tool" not in source_map_text:
+        raise RuntimeError("wiki/Source Map.md must preserve Ask Insects as the first tool")
+
+
 DIRECT_SOURCE_REPLACEMENT_RE = re.compile(r"\.delete_source\([^\n]+\)\s*\n\s*[^#\n]*\.upsert_records\(")
 
 
@@ -477,6 +521,9 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Aedes video-atoms term: {term}")
+    for term in ("pmc_oa", "dryad", "mendeley", "osf", "zenodo", "figshare", "institutional", "paper_supplements"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Aedes video discovery target: {term}")
     for term in ("aedes_pathogen_taxonomy", "scripts/ingest_pathogen_taxonomy.py", "vector_competence"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing pathogen taxonomy term: {term}")
@@ -550,6 +597,197 @@ def check_cli() -> None:
         raise RuntimeError("media source gap did not report ok false")
     if not gap.get("source_gap"):
         raise RuntimeError("media source gap did not include source_gap")
+
+
+VIDEO_MOTION_HEADERS = {
+    "video",
+    "video_id",
+    "source_video_record_id",
+    "track",
+    "track_id",
+    "trackid",
+    "tracking_id",
+    "frame",
+    "time",
+    "time_seconds",
+    "position_t",
+    "timestamp",
+    "t",
+    "x",
+    "position_x",
+    "x_position",
+    "pos_x",
+    "center_x",
+    "y",
+    "position_y",
+    "y_position",
+    "pos_y",
+    "center_y",
+    "behavior",
+    "behavioral_activity",
+    "behavioural_activity",
+    "behavior_type",
+}
+VIDEO_DISCOVERY_TARGETS = (
+    "pmc_oa",
+    "dryad",
+    "mendeley",
+    "osf",
+    "zenodo",
+    "figshare",
+    "institutional",
+    "paper_supplements",
+)
+
+
+def _json_file(path: Path, default: object) -> object:
+    if not path.exists():
+        return default
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _video_source_payload(status: dict[str, object]) -> dict[str, object]:
+    payload = status.get("aedes_video_atoms")
+    if isinstance(payload, dict):
+        return payload
+    sources = status.get("sources")
+    if isinstance(sources, dict):
+        payload = sources.get("aedes_video_atoms")
+        if isinstance(payload, dict):
+            return payload
+    return {}
+
+
+def _video_atom_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    rows = conn.execute(
+        """
+        select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n
+        from record_payloads
+        where source='aedes_video_atoms'
+        group by atom_type
+        """
+    ).fetchall()
+    return {str(row["atom_type"]): int(row["n"]) for row in rows if row["atom_type"] is not None}
+
+
+def _video_repository_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    rows = conn.execute(
+        """
+        select repository, count(*) as n
+        from (
+          select coalesce(
+            json_extract(payload_json, '$.discovery_repository'),
+            json_extract(payload_json, '$.repository')
+          ) as repository
+          from record_payloads
+          where source='aedes_video_atoms'
+        )
+        where repository is not null
+        group by repository
+        """
+    ).fetchall()
+    return {str(row["repository"]): int(row["n"]) for row in rows}
+
+
+def _has_motion_table_inputs(artifact_dir: Path) -> bool:
+    roots = (
+        artifact_dir / "raw" / "mendeley_behavior_media" / "table_files",
+        artifact_dir / "raw" / "mendeley_behavior_media",
+        artifact_dir / "raw" / "video_atoms",
+    )
+    for root in roots:
+        if not root.exists():
+            continue
+        for path in root.glob("*.csv"):
+            try:
+                with path.open(newline="", encoding="utf-8-sig") as handle:
+                    reader = csv.reader(handle)
+                    headers = next(reader, [])
+            except (OSError, UnicodeDecodeError, StopIteration, csv.Error):
+                continue
+            normalized = {re.sub(r"[^a-z0-9]+", "_", header.strip().lower()).strip("_") for header in headers}
+            if normalized & VIDEO_MOTION_HEADERS:
+                return True
+    return False
+
+
+def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
+    artifact_dir = artifact_dir or (REPO_ROOT / "artifacts/mosquito-v1")
+    db_path = artifact_dir / "source_index.sqlite"
+    status_path = artifact_dir / "source_status.json"
+    gaps_path = artifact_dir / "gaps.json"
+    for path in (db_path, status_path, gaps_path):
+        if not path.exists():
+            raise RuntimeError(f"missing Aedes video artifact file: {path.relative_to(REPO_ROOT)}")
+
+    status = _json_file(status_path, {})
+    if not isinstance(status, dict):
+        raise RuntimeError("source_status.json is not an object")
+    video_status = _video_source_payload(status)
+    if not video_status:
+        raise RuntimeError("source_status.json missing aedes_video_atoms payload")
+    gaps_payload = _json_file(gaps_path, [])
+    if not isinstance(gaps_payload, list):
+        raise RuntimeError("gaps.json is not a list")
+    video_gaps = [gap for gap in gaps_payload if isinstance(gap, dict) and gap.get("source") == "aedes_video_atoms"]
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        source_records = int(conn.execute("select count(*) from records where source='aedes_video_atoms'").fetchone()[0])
+        atom_counts = _video_atom_counts(conn)
+        repository_counts = _video_repository_counts(conn)
+        verified_assets = int(
+            conn.execute(
+                """
+                select count(*)
+                from record_payloads
+                where source='aedes_video_atoms'
+                  and json_extract(payload_json, '$.atom_type')='video_asset'
+                  and json_extract(payload_json, '$.verification_status')='verified'
+                """
+            ).fetchone()[0]
+        )
+        mirrored_assets = int(
+            conn.execute(
+                """
+                select count(*)
+                from record_payloads
+                where source='aedes_video_atoms'
+                  and json_extract(payload_json, '$.atom_type')='video_asset'
+                  and json_extract(payload_json, '$.mirror_path') is not null
+                """
+            ).fetchone()[0]
+        )
+
+    expected_record_count = int(video_status.get("record_count", 0))
+    if source_records == 0:
+        raise RuntimeError("Aedes video atoms artifact has no queryable records")
+    if expected_record_count and source_records != expected_record_count:
+        raise RuntimeError(f"Aedes video atom record_count mismatch: SQLite has {source_records}, receipt has {expected_record_count}")
+
+    checks = {
+        "video_asset_count": atom_counts.get("video_asset", 0),
+        "motion_row_count": atom_counts.get("video_motion_row", 0),
+        "gap_count": atom_counts.get("video_gap", 0),
+    }
+    artifact_count = sum(atom_counts.get(atom_type, 0) for atom_type in ("video_thumbnail", "video_keyframe", "video_preview_clip", "video_frame_manifest"))
+    checks["artifact_count"] = artifact_count
+    checks["verified_video_count"] = verified_assets
+    checks["mirrored_video_count"] = mirrored_assets
+    for key, actual in checks.items():
+        if key in video_status and int(video_status.get(key, -1)) != actual:
+            raise RuntimeError(f"Aedes video atom {key} mismatch: SQLite has {actual}, receipt has {video_status.get(key)}")
+
+    if len(video_gaps) != atom_counts.get("video_gap", 0):
+        raise RuntimeError(
+            f"Aedes video gaps must be queryable: gaps.json has {len(video_gaps)}, SQLite has {atom_counts.get('video_gap', 0)} video_gap records"
+        )
+    if _has_motion_table_inputs(artifact_dir) and atom_counts.get("video_motion_row", 0) == 0:
+        raise RuntimeError("Aedes video motion tables exist, but aedes_video_atoms has zero queryable video_motion_row records")
+
+    missing_targets = [target for target in VIDEO_DISCOVERY_TARGETS if repository_counts.get(target, 0) == 0]
+    if missing_targets:
+        raise RuntimeError("Aedes video discovery targets lack queryable asset or gap records: " + ", ".join(missing_targets))
 
 
 def _direct_fulltext_from_payload(payload: dict[str, object]) -> bool:
@@ -720,6 +958,7 @@ def main() -> int:
     try:
         check_required_files()
         check_open_source_boundary()
+        check_public_identity()
         check_unit_tests()
         check_source_index_build()
         check_atomic_source_replacement()
@@ -727,6 +966,7 @@ def main() -> int:
         check_mosquito_intelligence_coverage()
         check_cli()
         check_literature_artifact()
+        check_aedes_video_atoms_artifact()
     except Exception as exc:
         return fail(str(exc))
     print("verify_complete ok")

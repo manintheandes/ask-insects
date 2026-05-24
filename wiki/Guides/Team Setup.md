@@ -11,7 +11,7 @@ tags:
 ---
 # Team Setup
 
-Ask Insects lets a user ask insect questions in natural language from Codex, Claude Code, or another coding agent.
+Open Insects is the public project. Ask Insects is the CLI and hosted query tool that lets a user ask insect questions in natural language from Codex, Claude Code, or another coding agent.
 
 ## Install
 

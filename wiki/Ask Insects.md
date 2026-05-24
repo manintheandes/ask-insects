@@ -3,10 +3,12 @@ title: Ask Insects
 type: home
 status: guided
 tags:
+  - open-insects
   - insects-wiki
   - ask-insects
   - codex
 aliases:
+  - Open Insects
   - Ask Insects Wiki
   - Ask Insects
 sources:
@@ -14,11 +16,17 @@ sources:
   - ../config/source-map.yaml
   - ../docs/source-lanes.md
 ---
-# Ask Insects
+# Open Insects
 
-Ask Insects is a model of insect intelligence.
+Open Insects is an open-source effort to make insect knowledge queryable, source-backed, and actionable.
 
-It brings together observations, images, videos, papers, genomes, behavior records, neurobiology, public-health evidence, and source gaps, then uses what it knows to answer questions and take action for insects.
+Its first tool is Ask Insects: a CLI and hosted source plane that brings together observations, images, videos, papers, genomes, behavior records, neurobiology, public-health evidence, and source gaps, then uses what it knows to answer questions and take action for insects.
+
+The command is still simple:
+
+```bash
+ask-insects ask "where has Aedes aegypti been spotted this year?"
+```
 
 What's inside:
 

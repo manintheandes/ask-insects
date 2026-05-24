@@ -16,5 +16,9 @@ classifiers = [
 [project.scripts]
 ask-insects = "askinsects.cli:main"
 
+[project.urls]
+Homepage = "https://openinsects.org"
+Source = "https://github.com/manintheandes/ask-insects"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
