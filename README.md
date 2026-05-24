@@ -79,6 +79,18 @@ python3 -m askinsects ask "show odorant receptor genes in Aedes aegypti"
 
 This stores the package files as raw artifacts and indexes useful atoms into SQLite: genome assembly rows, GFF genes, transcripts, other genome features, and protein FASTA headers. It does not index every DNA base as an answer row.
 
+## Aedes aegypti Neurobiology Source Lane
+
+The neurobiology lane is an opt-in first pass for mosquito brain and neuron evidence:
+
+```bash
+python3 scripts/build_source_index.py --fixtures --neurobiology
+python3 -m askinsects search neurobiology "brain atlas"
+python3 -m askinsects ask "what neuron data exists for the Aedes aegypti brain?"
+```
+
+V1 indexes source atoms from mosquitobrains.org, GEO `GSE160740`, Mosquito Cell Atlas metadata, and selected open neurobiology study metadata. It proves queryability for brain atlas, reference brain, segmentation, brain snRNA-seq, cell atlas, antennal lobe, olfactory sensory neuron, and odor-encoding questions. It does not yet parse full H5AD matrices, raw SRA reads, connectomes, or brain image volumes.
+
 ## Hosted Ask Insects
 
 Hosted V1 follows the Ask Monarch VM pattern. The parsed SQLite index and raw source artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`.

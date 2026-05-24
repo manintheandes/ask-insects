@@ -30,6 +30,12 @@ To add `Aedes aegypti` genomics from an unpacked NCBI Datasets package:
 python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
 ```
 
+To add first-pass `Aedes aegypti` brain and neuron source metadata:
+
+```bash
+python3 scripts/build_source_index.py --fixtures --neurobiology
+```
+
 Then query through the CLI:
 
 ```bash
@@ -37,6 +43,8 @@ python3 -m askinsects ask "what do we know about Aedes aegypti?"
 python3 -m askinsects search observations "Brazil"
 python3 -m askinsects search proteins "odorant receptor"
 python3 -m askinsects search proteins "gustatory receptor"
+python3 -m askinsects search neurobiology "brain atlas"
+python3 -m askinsects ask "what neuron data exists for the Aedes aegypti brain?"
 python3 -m askinsects search papers "host seeking"
 python3 -m askinsects sql "select species, count(*) as records from records group by species"
 ```
@@ -57,6 +65,8 @@ iNaturalist records use source id `inaturalist_api`. Raw iNaturalist responses a
 Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes_aegypti_anywhere_page_001.json`.
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
+
+Neurobiology records use source id `aedes_neurobiology_sources`. The first pass indexes source metadata for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies into lane `neurobiology`. It does not claim full H5AD, SRA, connectome, or brain image-volume ingestion yet.
 
 For deeper inspection, query the payload table:
 

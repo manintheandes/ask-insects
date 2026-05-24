@@ -56,6 +56,20 @@ Current genomics lanes:
 - `genome_features`
 - `proteins`
 
+## Neurobiology
+
+Brain atlas, neuroanatomy, brain single-nucleus RNA-seq metadata, cell atlas package metadata, and sensory-neuron study metadata for `Aedes aegypti`.
+
+Sources:
+
+- `aedes_neurobiology_sources`: deterministic metadata records for mosquitobrains.org, GEO `GSE160740`, the Mosquito Cell Atlas Zenodo record, and selected open neurobiology studies.
+
+Current neurobiology lane:
+
+- `neurobiology`
+
+This lane is a first source-contract slice. It indexes useful source atoms and provenance, not full image volumes, H5AD matrices, raw SRA runs, or a complete connectome. Those remain explicit expansion gaps.
+
 ## Papers And Literature
 
 Paper metadata, abstracts when available, open access URLs, and source identifiers.
