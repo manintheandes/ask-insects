@@ -40,6 +40,10 @@ def plan_question(question: str) -> QueryPlan:
         "codec",
         "duration",
         "resolution",
+        "gap",
+        "gaps",
+        "failed",
+        "failure",
     )
     if any(term in q for term in video_media_terms):
         return QueryPlan(question, "media", ("media",), question)

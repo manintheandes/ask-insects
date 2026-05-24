@@ -801,13 +801,29 @@ class AnswerTests(unittest.TestCase):
                         lane="media",
                         source="aedes_video_atoms",
                         title="Aedes aegypti video keyframe for BiteOscope",
-                        text="Inspectable keyframe, thumbnail, preview, fps, codec, duration, and resolution evidence from an Aedes aegypti video.",
+                        text="Inspectable keyframe derived from an Aedes aegypti video.",
                         species="Aedes aegypti",
                         url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
                         media_url="raw/video_atoms/artifacts/keyframe_000001.jpg",
                         provenance=Provenance(
                             source_id="aedes_video_atoms",
                             locator="records#pmc:video:PMC123:video1.mp4;raw/video_atoms/artifacts/keyframe_000001.jpg",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:video_preview_clip:pmc_video",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video preview clip for BiteOscope",
+                        text="Inspectable preview clip derived from an Aedes aegypti video.",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
+                        media_url="raw/video_atoms/artifacts/preview.mp4",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="records#pmc:video:PMC123:video1.mp4;raw/video_atoms/artifacts/preview.mp4",
                             retrieved_at="2026-05-24T00:00:00Z",
                             license="CC BY",
                         ),
@@ -820,6 +836,38 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+
+    def test_video_gap_questions_return_queryable_gap_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:gap:pmc_video",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_probe_failed",
+                        text="Aedes aegypti video source gap: video_probe_failed. Source record: pmc:video:PMC123:video1.mp4.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="gaps.json#aedes_video_atoms/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    )
+                ]
+            )
+
+            answer = answer_question("what Aedes video gaps failed?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+            self.assertIn("video_probe_failed", answer["evidence"][0]["text"])
 
     def test_video_atom_motion_questions_prefer_queryable_motion_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:

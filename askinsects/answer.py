@@ -61,6 +61,10 @@ VIDEO_ATOM_QUERY_TERMS = (
     "codec",
     "duration",
     "resolution",
+    "gap",
+    "gaps",
+    "failed",
+    "failure",
 )
 
 
@@ -72,6 +76,11 @@ def _wants_extracted_facts(question: str) -> bool:
 def _wants_video_atoms(question: str) -> bool:
     q = question.lower()
     return any(term in q for term in VIDEO_ATOM_QUERY_TERMS)
+
+
+def _wants_video_gaps(question: str) -> bool:
+    q = question.lower()
+    return _wants_video_atoms(question) and any(term in q for term in ("gap", "gaps", "failed", "failure", "license", "too large"))
 
 
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
@@ -134,11 +143,41 @@ def _search_queries(question: str) -> list[str]:
                 "track frame time coordinates",
                 question,
             ]
+        if _wants_video_gaps(question):
+            return [
+                "video gap",
+                "source gap",
+                "probe failed",
+                "artifact generation failed",
+                "license unclear",
+                "too large",
+                question,
+            ]
+        if any(term in q for term in ("fps", "codec", "duration", "resolution")):
+            return [
+                "fps codec duration",
+                "duration fps",
+                "resolution codec",
+                "video asset",
+                question,
+            ]
+        artifact_queries: list[str] = []
+        if "keyframe" in q or "keyframes" in q:
+            artifact_queries.append("keyframe")
+        if "preview" in q or "previews" in q:
+            artifact_queries.append("preview")
+        if "thumbnail" in q or "thumbnails" in q:
+            artifact_queries.append("thumbnail")
+        if "frame manifest" in q:
+            artifact_queries.append("frame manifest")
+        if artifact_queries:
+            artifact_queries.append(question)
+            return artifact_queries
         return [
-            "video keyframe preview thumbnail",
-            "keyframe preview",
-            "fps codec duration resolution",
-            "video atom",
+            "keyframe",
+            "preview",
+            "thumbnail",
+            "video asset",
             question,
         ]
     if any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates")) or (
@@ -1010,11 +1049,18 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "media":
-        media_records = [
-            record
-            for record in all_records
-            if record.media_url and record.lane == "media" and "still image" not in record.title.lower()
-        ]
+        if _wants_video_gaps(plan.question):
+            media_records = [
+                record
+                for record in all_records
+                if record.lane == "media" and "video gap" in f"{record.title} {record.text}".lower()
+            ]
+        else:
+            media_records = [
+                record
+                for record in all_records
+                if record.media_url and record.lane == "media" and "still image" not in record.title.lower()
+            ]
         if not media_records:
             return source_gap(plan, "The Ask Insects index has no matching moving-image media records.")
         all_records = media_records
