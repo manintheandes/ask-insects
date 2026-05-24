@@ -129,12 +129,12 @@
         "ask_surface_wired": "partial"
       },
       "current_evidence": [
+        "Hosted artifact contains 82,237 Aedes aegypti GBIF occurrence records plus one GBIF taxonomy record from source gbif_api, with raw page artifacts, payload rows, and zero GBIF gaps in source receipts.",
         "Hosted artifact contains deep Aedes aegypti iNaturalist observation records with raw page artifacts and provenance.",
         "Mosquito Alert Aedes aegypti citizen-science observations are mapped through GBIF dataset 1fef1ead-3d02-495e-8ff1-6aeb01123408 with raw occurrence pages, media metadata, and provenance.",
         "GBIF, iNaturalist, and Mosquito Alert lanes exist, but Ask Insects is not yet a comprehensive observation mirror across all public surveillance systems."
       ],
       "required_next_sources": [
-        "deep Aedes aegypti GBIF occurrence refresh",
         "regional surveillance exports where public"
       ],
       "completion_evidence": [

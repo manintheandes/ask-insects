@@ -153,7 +153,7 @@ For a hosted deep GBIF refresh of the current `Aedes aegypti` occurrence set:
 python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
 ```
 
-This command talks to the hosted API. The server fetches GBIF pages with a small worker pool, writes raw JSON under `/home/josh/ask-insects/artifacts/mosquito-v1/raw/gbif/`, refreshes `gbif_api` rows in `/home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite`, and preserves the other hosted lanes.
+This command talks to the hosted API. The server fetches GBIF pages with a small worker pool, writes raw JSON under `/home/josh/ask-insects/artifacts/mosquito-v1/raw/gbif/`, refreshes `gbif_api` rows in `/home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite`, and preserves the other hosted lanes. The May 24, 2026 hosted refresh installed 82,237 `Aedes aegypti` occurrence records plus the GBIF taxonomy row with zero GBIF gaps.
 
 iNaturalist records use source id `inaturalist_api`. Raw iNaturalist responses are saved under `artifacts/mosquito-v1/raw/inaturalist/` and summarized in `artifacts/mosquito-v1/source_receipt.json`.
 Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes_aegypti_anywhere_page_001.json`.

@@ -124,6 +124,32 @@ def _search_queries(question: str) -> list[str]:
         return list(dict.fromkeys(queries))
     if "mosquito alert" in q:
         return ["Mosquito Alert Aedes aegypti", "Mosquito Alert", "citizen-science observation", question]
+    if "gbif" in q and any(term in q for term in ("observation", "observations", "occurrence", "occurrences", "record", "records")):
+        generic_terms = {
+            "aedes",
+            "aegypti",
+            "gbif",
+            "in",
+            "occurrence",
+            "occurrences",
+            "observation",
+            "observations",
+            "record",
+            "records",
+            "show",
+            "the",
+        }
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9]+", question)
+            if token.lower() not in generic_terms
+        ]
+        queries = []
+        if salient:
+            queries.append(f"Aedes aegypti {' '.join(salient)} GBIF occurrence")
+            queries.append(f"{' '.join(salient)} GBIF")
+        queries.extend(["Aedes aegypti GBIF occurrence", "GBIF occurrence", question])
+        return list(dict.fromkeys(queries))
     if "dryad" in q:
         return ["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset", question]
     if any(term in q for term in ("assay", "infection rate", "dissemination", "transmission", "dose", "midgut", "saliva", "salivary", "extrinsic incubation")) and any(
@@ -248,7 +274,7 @@ def _search_queries(question: str) -> list[str]:
     if not added_domain_phrase and "host seeking" in question.lower():
         queries.append("host seeking")
     for term in ("Brazil", "mosquito"):
-        if not species and term.lower() in question.lower():
+        if term.lower() in question.lower():
             queries.append(term)
     return list(dict.fromkeys(queries))
 

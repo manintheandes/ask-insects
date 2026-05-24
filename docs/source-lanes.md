@@ -20,7 +20,7 @@ Observation records with date, region, source URL, media URL, and license when a
 Sources:
 
 - `mosquito_v1_fixtures`: deterministic repo seed records.
-- `gbif_api`: GBIF occurrence search records when explicitly fetched. The hosted deep ingest paginates the current `Aedes aegypti` GBIF occurrence set and refreshes only `gbif_api` rows, preserving other hosted lanes.
+- `gbif_api`: GBIF occurrence search records when explicitly fetched. The hosted deep ingest paginates the current `Aedes aegypti` GBIF occurrence set and refreshes only `gbif_api` rows, preserving other hosted lanes. The May 24, 2026 hosted refresh installed 82,237 occurrence records plus the taxonomy row with zero GBIF gaps.
 - `inaturalist_api`: bounded iNaturalist observations with licensed photos when explicitly fetched. Local and hosted incremental ingests refresh only `inaturalist_api` rows, preserving literature, genomics, neurobiology, BOLD, and derived facet lanes.
 - `mosquito_alert_gbif`: Mosquito Alert Dataset records for `Aedes aegypti`, fetched through GBIF with dataset and taxon pins, preserving expert-validated citizen-science observation fields and still-image metadata.
 

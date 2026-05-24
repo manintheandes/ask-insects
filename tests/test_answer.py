@@ -203,6 +203,26 @@ def public_health_record(record_id, source, text):
     )
 
 
+def gbif_observation_record(record_id, country):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="observations",
+        source="gbif_api",
+        title=f"Aedes aegypti occurrence {record_id}",
+        text=f"GBIF occurrence record for Aedes aegypti in {country}, event date 2026-01-18, from iNaturalist research-grade observations.",
+        species="Aedes aegypti",
+        url="https://www.gbif.org/occurrence/1",
+        media_url=None,
+        provenance=Provenance(
+            source_id="gbif_api",
+            locator=f"raw/gbif/page.json#{record_id}",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="CC0",
+            source_url="https://www.gbif.org/occurrence/1",
+        ),
+    )
+
+
 class AnswerTests(unittest.TestCase):
     def test_planner_routes_identity_evidence_action_and_gap(self):
         self.assertEqual(plan_question("what do we know about Aedes aegypti?").answer_shape, "identity")
@@ -487,6 +507,24 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["source"], "mosquito_alert_gbif")
             self.assertEqual(answer["evidence"][0]["lane"], "media")
+
+    def test_gbif_observation_questions_keep_country_terms_before_species_fallback(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    gbif_observation_record("gbif:occurrence:congo", "Congo, Democratic Republic of the"),
+                    gbif_observation_record("gbif:occurrence:brazil", "Brazil"),
+                ]
+            )
+
+            answer = answer_question("show GBIF Aedes aegypti observations in Brazil", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "gbif:occurrence:brazil")
+            self.assertIn("Brazil", answer["evidence"][0]["text"])
 
     def test_video_questions_still_gap_with_only_still_images(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -29,7 +29,7 @@
 - [x] Add hosted server `POST /ingest/gbif`.
 - [x] Add local CLI `ingest-gbif --hosted`.
 - [x] Update docs, source map, and source-lane descriptions.
-- [ ] Run full tests and completion gate.
-- [ ] Deploy the hosted API.
-- [ ] Run the hosted deep GBIF ingest for `Aedes aegypti`.
-- [ ] Verify hosted health, source counts, and payload counts.
+- [x] Run full tests and completion gate.
+- [x] Deploy the hosted API.
+- [x] Run the hosted deep GBIF ingest for `Aedes aegypti`.
+- [x] Verify hosted health, source counts, and payload counts.
