@@ -33,6 +33,7 @@ def write_json(path: Path, payload: object) -> None:
 def rewrite_paths(value: object, old_dir: Path, new_dir: Path) -> object:
     text = json.dumps(value, sort_keys=True)
     text = text.replace(old_dir.as_posix(), new_dir.as_posix()).replace(str(old_dir), str(new_dir))
+    text = text.replace(f"artifacts/{old_dir.name}", new_dir.as_posix())
     return json.loads(text)
 
 
@@ -92,13 +93,14 @@ def merge_sqlite(staging: Path, literature_artifact_dir: Path, target_artifact_d
         conn.executescript(SCHEMA)
         conn.execute("ATTACH DATABASE ? AS incoming", (incoming_db.as_posix(),))
         old_dir = literature_artifact_dir.as_posix()
+        old_relative_dir = f"artifacts/{literature_artifact_dir.name}"
         new_dir = target_artifact_dir.as_posix()
         conn.execute(
             """
             INSERT INTO records (
               record_id, lane, source, title, text, species, url, media_url, provenance_json
             )
-            SELECT record_id, lane, source, title, text, species, url, media_url, replace(provenance_json, ?, ?)
+            SELECT record_id, lane, source, title, text, species, url, media_url, replace(replace(provenance_json, ?, ?), ?, ?)
             FROM incoming.records
             WHERE source = ?
             ON CONFLICT(record_id) DO UPDATE SET
@@ -111,14 +113,14 @@ def merge_sqlite(staging: Path, literature_artifact_dir: Path, target_artifact_d
               media_url=excluded.media_url,
               provenance_json=excluded.provenance_json
             """,
-            (old_dir, new_dir, source_id),
+            (old_dir, new_dir, old_relative_dir, new_dir, source_id),
         )
         conn.execute(
             """
             INSERT INTO record_payloads (
               record_id, source, lane, payload_json, provenance_json
             )
-            SELECT record_id, source, lane, replace(payload_json, ?, ?), replace(provenance_json, ?, ?)
+            SELECT record_id, source, lane, replace(replace(payload_json, ?, ?), ?, ?), replace(replace(provenance_json, ?, ?), ?, ?)
             FROM incoming.record_payloads
             WHERE source = ?
             ON CONFLICT(record_id) DO UPDATE SET
@@ -127,14 +129,14 @@ def merge_sqlite(staging: Path, literature_artifact_dir: Path, target_artifact_d
               payload_json=excluded.payload_json,
               provenance_json=excluded.provenance_json
             """,
-            (old_dir, new_dir, old_dir, new_dir, source_id),
+            (old_dir, new_dir, old_relative_dir, new_dir, old_dir, new_dir, old_relative_dir, new_dir, source_id),
         )
         conn.execute(
             """
             INSERT INTO literature_fulltext_units (
               unit_id, record_id, source, unit_index, text, url, license, provenance_json
             )
-            SELECT unit_id, record_id, source, unit_index, text, url, license, replace(provenance_json, ?, ?)
+            SELECT unit_id, record_id, source, unit_index, text, url, license, replace(replace(provenance_json, ?, ?), ?, ?)
             FROM incoming.literature_fulltext_units
             WHERE source = ?
             ON CONFLICT(unit_id) DO UPDATE SET
@@ -146,7 +148,7 @@ def merge_sqlite(staging: Path, literature_artifact_dir: Path, target_artifact_d
               license=excluded.license,
               provenance_json=excluded.provenance_json
             """,
-            (old_dir, new_dir, source_id),
+            (old_dir, new_dir, old_relative_dir, new_dir, source_id),
         )
         conn.execute("DELETE FROM records_fts WHERE record_id IN (SELECT record_id FROM records WHERE source = ?)", (source_id,))
         conn.execute(

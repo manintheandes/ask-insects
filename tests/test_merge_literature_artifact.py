@@ -73,11 +73,11 @@ class MergeLiteratureArtifactTests(unittest.TestCase):
                 species="Aedes aegypti",
                 url="https://openalex.org/W1",
                 media_url=None,
-                provenance=Provenance(
-                    source_id=LITERATURE_SOURCE_ID,
-                    locator=f"{literature}/raw/literature/page.json#W1",
-                    retrieved_at="2026-05-24T00:00:00Z",
-                ),
+                        provenance=Provenance(
+                            source_id=LITERATURE_SOURCE_ID,
+                            locator="artifacts/aedes-literature-2020/raw/literature/page.json#W1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
                 payload={"raw_path": f"{literature}/raw/literature/page.json"},
             )
             unit = FullTextUnit(
