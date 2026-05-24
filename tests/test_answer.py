@@ -983,6 +983,32 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "public_health")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_public_health_guidance")
 
+    def test_paho_surveillance_questions_prefer_paho_public_health_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:guidance:cdc",
+                        "aedes_public_health_guidance",
+                        "Official public-health guidance for Aedes aegypti vector control from CDC.",
+                    ),
+                    public_health_record(
+                        "public_health:surveillance:paho",
+                        "aedes_paho_dengue_surveillance",
+                        "Official PAHO dengue surveillance evidence for Aedes aegypti public-health intelligence.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show PAHO dengue surveillance evidence for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_paho_dengue_surveillance")
+
     def test_neurobiology_questions_prefer_brain_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

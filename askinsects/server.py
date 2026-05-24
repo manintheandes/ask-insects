@@ -40,6 +40,12 @@ from .sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetc
 from .sources.mosquito_alert import MOSQUITO_ALERT_SOURCE_ID, fetch_mosquito_alert_records
 from .sources.ncbi_biosample import DEFAULT_BIOSAMPLE_SPECIES, fetch_ncbi_biosample_records
 from .sources.pathogen_taxonomy import PATHOGEN_TAXONOMY_SOURCE_ID, fetch_pathogen_taxonomy_records
+from .sources.paho_surveillance import (
+    DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES,
+    DEFAULT_PAHO_DENGUE_REPORTS,
+    PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+    fetch_paho_dengue_surveillance_records,
+)
 from .sources.public_health import (
     DEFAULT_PUBLIC_HEALTH_SOURCES,
     PUBLIC_HEALTH_SOURCE_ID,
@@ -144,6 +150,13 @@ def rewrite_artifact_references(staging: Path, artifact_dir: Path, result: dict[
             try:
                 conn.execute(
                     "UPDATE record_payloads SET provenance_json = replace(provenance_json, ?, ?) WHERE provenance_json LIKE ?",
+                    (old, new, f"%{old}%"),
+                )
+            except sqlite3.OperationalError:
+                pass
+            try:
+                conn.execute(
+                    "UPDATE record_payloads SET payload_json = replace(payload_json, ?, ?) WHERE payload_json LIKE ?",
                     (old, new, f"%{old}%"),
                 )
             except sqlite3.OperationalError:
@@ -937,6 +950,61 @@ def write_public_health_metadata(staging: Path, source_payload: dict[str, object
     return {"ok": True, "artifact_dir": staging.as_posix(), **status, "public_health_guidance": source_payload}
 
 
+def write_paho_dengue_surveillance_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(source_payload["retrieved_at"])
+    sources = [source for source in counts if source != PAHO_DENGUE_SURVEILLANCE_SOURCE_ID]
+    if counts.get(PAHO_DENGUE_SURVEILLANCE_SOURCE_ID):
+        sources.append(PAHO_DENGUE_SURVEILLANCE_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": not gaps,
+            "parsed_scope": "PAHO dengue report/page grain; dashboard row-level data is complete only when no source gaps are present",
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[PAHO_DENGUE_SURVEILLANCE_SOURCE_ID] = source_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            "aedes_paho_dengue_surveillance": source_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, "aedes_paho_dengue_surveillance": source_payload}
+
+
 def ingest_public_health(
     payload: dict[str, object],
     *,
@@ -985,6 +1053,79 @@ def ingest_public_health(
             "retrieved_at": retrieved_at,
         }
         response = write_public_health_metadata(staging, source_payload, gaps)
+        response = rewrite_artifact_references(staging, artifact_dir, response)
+        activate_staging_artifact(staging, artifact_dir)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
+def ingest_paho_dengue_surveillance(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_paho_dengue_surveillance_records_fn: Callable[..., object] = fetch_paho_dengue_surveillance_records,
+) -> dict[str, object]:
+    report_urls = payload.get("report_urls")
+    if report_urls is None or report_urls == []:
+        reports = list(DEFAULT_PAHO_DENGUE_REPORTS)
+    elif isinstance(report_urls, list) and all(isinstance(item, str) for item in report_urls):
+        reports = [
+            {
+                "organization": "PAHO/WHO",
+                "url": url,
+                "landing_url": url,
+                "topic": "custom PAHO dengue surveillance report",
+            }
+            for url in report_urls
+        ]
+    else:
+        raise ValueError("report_urls must be a list of strings")
+
+    dashboard_pages = payload.get("dashboard_pages")
+    if dashboard_pages is None or dashboard_pages == []:
+        dashboard_urls = list(DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES)
+    elif isinstance(dashboard_pages, list) and all(isinstance(item, str) for item in dashboard_pages):
+        dashboard_urls = dashboard_pages
+    else:
+        raise ValueError("dashboard_pages must be a list of strings")
+
+    staging = artifact_dir.parent / f".{artifact_dir.name}.paho-dengue-surveillance-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            copy_artifact_to_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        index = SourceIndex(staging / "source_index.sqlite")
+        index.initialize()
+        index.delete_source(PAHO_DENGUE_SURVEILLANCE_SOURCE_ID)
+        retrieved_at = utc_now()
+        result = fetch_paho_dengue_surveillance_records_fn(
+            reports,
+            raw_dir=staging / "raw" / "paho_dengue_surveillance",
+            retrieved_at=retrieved_at,
+            dashboard_pages=dashboard_urls,
+        )
+        index.upsert_records(result.records)
+        old_gaps = read_json(staging / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == PAHO_DENGUE_SURVEILLANCE_SOURCE_ID)]
+        gaps.extend(result.gaps)
+        source_payload = {
+            "requested_urls": result.requested_urls,
+            "raw_artifacts": result.raw_artifacts,
+            "record_count": len(result.records),
+            "gap_count": len(result.gaps),
+            "report_count": result.report_count,
+            "dashboard_page_count": result.dashboard_page_count,
+            "retrieved_at": retrieved_at,
+        }
+        response = write_paho_dengue_surveillance_metadata(staging, source_payload, gaps)
         response = rewrite_artifact_references(staging, artifact_dir, response)
         activate_staging_artifact(staging, artifact_dir)
     except Exception:
@@ -1410,6 +1551,7 @@ def dispatch_request(
     fetch_ncbi_biosample_records_fn: Callable[..., object] = fetch_ncbi_biosample_records,
     fetch_pathogen_taxonomy_records_fn: Callable[..., object] = fetch_pathogen_taxonomy_records,
     fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
+    fetch_paho_dengue_surveillance_records_fn: Callable[..., object] = fetch_paho_dengue_surveillance_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -1468,6 +1610,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_public_health_guidance_records_fn=fetch_public_health_guidance_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/paho-dengue-surveillance":
+            result = ingest_paho_dengue_surveillance(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_paho_dengue_surveillance_records_fn=fetch_paho_dengue_surveillance_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

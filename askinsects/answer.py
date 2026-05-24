@@ -174,6 +174,16 @@ def _search_queries(question: str) -> list[str]:
                 question,
             ]
         return ["vector competence assay Aedes aegypti", "infection dissemination transmission dose temperature", question]
+    if any(term in q for term in ("paho", "plisa", "surveillance", "outbreak", "incidence", "epidemic", "case fatality", "cases", "deaths", "public health")):
+        if any(term in q for term in ("paho", "plisa", "surveillance", "dengue", "cases", "deaths")):
+            return [
+                "PAHO dengue surveillance week summary",
+                "PAHO dengue surveillance Aedes aegypti",
+                "PAHO dengue surveillance",
+                "dengue surveillance public health",
+                question,
+            ]
+        return ["public health Aedes aegypti", "surveillance outbreak incidence", question]
     if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
         return ["NCBI Taxonomy pathogen", "pathogen taxonomy Aedes aegypti", question]
     if "coi-5p" in q or re.search(r"\bcoi\b", q):
@@ -490,13 +500,29 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
 
 def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
-    if not any(term in q for term in ("cdc", "guidance", "paho", "recommendation", "recommendations", "who")):
+    if not any(term in q for term in ("cdc", "guidance", "paho", "plisa", "surveillance", "recommendation", "recommendations", "who")):
         return records
 
-    def score(record: EvidenceRecord) -> tuple[int, int]:
+    def score(record: EvidenceRecord) -> tuple[int, int, int]:
+        paho_rank = 0 if any(term in q for term in ("paho", "plisa", "surveillance")) and record.source == "aedes_paho_dengue_surveillance" else 1
+        guidance_rank = 0 if record.source == "aedes_public_health_guidance" else 1
+        if record.source == "aedes_paho_dengue_surveillance" and any(term in q for term in ("paho", "plisa", "surveillance")):
+            if "regional_week_summary" in record.record_id:
+                record_rank = 0
+            elif "regional_year_to_date_summary" in record.record_id:
+                record_rank = 1
+            elif "subregion" in record.record_id:
+                record_rank = 2
+            elif "serotypes" in record.record_id:
+                record_rank = 3
+            else:
+                record_rank = 4
+        else:
+            record_rank = 0
         return (
-            0 if record.source == "aedes_public_health_guidance" else 1,
-            0 if record.lane == "public_health" else 1,
+            paho_rank,
+            guidance_rank,
+            record_rank if record.lane == "public_health" else 9,
         )
 
     return sorted(records, key=score)

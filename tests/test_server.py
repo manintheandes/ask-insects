@@ -14,6 +14,7 @@ from askinsects.sources.irmapper import IRMapperBuildResult
 from askinsects.sources.literature import FullTextUnit
 from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
 from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
+from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
 from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from tests.test_inaturalist_source import observation
@@ -641,6 +642,80 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.status, 200)
             self.assertTrue(response.payload["ok"])
             self.assertGreater(seen_source_count[0], 1)
+
+    def test_ingest_paho_dengue_surveillance_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(reports, *, raw_dir, retrieved_at, dashboard_pages):
+                raw_path = raw_dir / "paho.html"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text("<html>PAHO dengue surveillance.</html>", encoding="utf-8")
+                return PahoDengueSurveillanceResult(
+                    source_id="aedes_paho_dengue_surveillance",
+                    records=[
+                        EvidenceRecord(
+                            record_id="public_health:surveillance:paho_dengue:regional_week_summary:2024:week50",
+                            lane="public_health",
+                            source="aedes_paho_dengue_surveillance",
+                            title="PAHO dengue surveillance",
+                            text="Official PAHO dengue surveillance for Aedes aegypti public-health intelligence.",
+                            species="Aedes aegypti",
+                            url="https://ais.paho.org/example",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="aedes_paho_dengue_surveillance",
+                                locator=f"{raw_path}#regional_week_summary",
+                                retrieved_at=retrieved_at,
+                                license="PAHO/WHO public health surveillance page; source page terms apply",
+                                source_url="https://ais.paho.org/example",
+                            ),
+                            payload={"aggregation_type": "regional_week_summary", "raw_html_path": raw_path.as_posix()},
+                        )
+                    ],
+                    gaps=[
+                        {
+                            "source": "aedes_paho_dengue_surveillance",
+                            "lane": "public_health",
+                            "reason": "paho_dashboard_data_not_yet_cell_queryable",
+                            "retrieved_at": retrieved_at,
+                        }
+                    ],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_urls=["https://ais.paho.org/example"],
+                    report_count=1,
+                    dashboard_page_count=len(dashboard_pages),
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/paho-dengue-surveillance",
+                {"report_urls": ["https://ais.paho.org/example"], "dashboard_pages": ["https://www.paho.org/dashboard"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_paho_dengue_surveillance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_paho_dengue_surveillance"], 1)
+            self.assertFalse(response.payload["fully_parsed"])
+            self.assertEqual(response.payload["aedes_paho_dengue_surveillance"]["dashboard_page_count"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_paho_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select payload_json from record_payloads where source='aedes_paho_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
+            self.assertNotIn(".staging", payload_rows[0]["payload_json"])
 
     def test_ingest_mosquito_alert_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

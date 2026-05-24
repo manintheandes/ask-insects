@@ -20,6 +20,24 @@ def plan_question(question: str) -> QueryPlan:
     if any(
         term in q
         for term in (
+            "public health",
+            "surveillance",
+            "outbreak",
+            "vector control",
+            "intervention",
+            "incidence",
+            "epidemic",
+            "paho",
+            "plisa",
+            "case fatality",
+            "cases",
+            "deaths",
+        )
+    ):
+        return QueryPlan(question, "public_health", ("public_health", "observations", "literature", "taxonomy"), question)
+    if any(
+        term in q
+        for term in (
             "vector competence",
             "transmission competence",
             "vector competence assay",
@@ -83,8 +101,6 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "ecology", ("ecology", "observations", "literature", "taxonomy"), question)
-    if any(term in q for term in ("public health", "surveillance", "outbreak", "vector control", "intervention", "incidence", "epidemic")):
-        return QueryPlan(question, "public_health", ("public_health", "observations", "literature", "taxonomy"), question)
     neurobiology_terms = (
         "brain",
         "brains",

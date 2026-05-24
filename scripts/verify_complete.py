@@ -78,6 +78,7 @@ REQUIRED_FILES = (
     "askinsects/sources/mosquito_alert.py",
     "askinsects/sources/dryad_behavior_videos.py",
     "askinsects/sources/public_health.py",
+    "askinsects/sources/paho_surveillance.py",
     "askinsects/sources/pathogen_taxonomy.py",
     "askinsects/sources/ncbi_biosample.py",
     "askinsects/sources/vector_competence_assays.py",
@@ -98,6 +99,7 @@ REQUIRED_FILES = (
     "scripts/ingest_mosquito_alert_observations.py",
     "scripts/ingest_dryad_behavior_videos.py",
     "scripts/ingest_public_health_guidance.py",
+    "scripts/ingest_paho_dengue_surveillance.py",
     "scripts/ingest_pathogen_taxonomy.py",
     "scripts/ingest_ncbi_biosamples.py",
     "scripts/ingest_vector_competence_assays.py",
@@ -136,6 +138,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_dryad_behavior_videos.py",
     "tests/test_public_health_source.py",
     "tests/test_ingest_public_health_guidance.py",
+    "tests/test_paho_surveillance_source.py",
+    "tests/test_ingest_paho_dengue_surveillance.py",
     "tests/test_pathogen_taxonomy_source.py",
     "tests/test_ingest_pathogen_taxonomy.py",
     "tests/test_ncbi_biosample_source.py",
@@ -180,6 +184,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_dryad_behavior_videos",
     "tests.test_public_health_source",
     "tests.test_ingest_public_health_guidance",
+    "tests.test_paho_surveillance_source",
+    "tests.test_ingest_paho_dengue_surveillance",
     "tests.test_pathogen_taxonomy_source",
     "tests.test_ingest_pathogen_taxonomy",
     "tests.test_ncbi_biosample_source",
@@ -280,6 +286,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "Aedes",
         "aedes_literature_facets",
         "aedes_public_health_guidance",
+        "aedes_paho_dengue_surveillance",
         "mosquito_alert_gbif",
         "dryad_aedes_behavior_videos",
         "aedes_pathogen_taxonomy",
@@ -299,6 +306,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing public-health guidance term: {term}")
+    for term in ("aedes_paho_dengue_surveillance", "scripts/ingest_paho_dengue_surveillance.py", "official_paho_dengue_report_html_to_sqlite_public_health_records", "PAHO/PLISA country-week dashboard data remains a source gap"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing PAHO dengue surveillance term: {term}")
     for term in ("mosquito_alert_gbif", "scripts/ingest_mosquito_alert_observations.py", "observations", "media"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Mosquito Alert term: {term}")

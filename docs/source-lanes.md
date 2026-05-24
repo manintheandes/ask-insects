@@ -190,5 +190,6 @@ Sources:
 
 - `aedes_literature_facets`: literature-derived public-health facets while deeper operational lanes are built.
 - `aedes_public_health_guidance`: official WHO, PAHO, and CDC guidance pages parsed into `public_health` records with raw HTML receipts and source URLs.
+- `aedes_paho_dengue_surveillance`: official PAHO dengue situation report and dashboard landing pages parsed at report, subregion, serotype, and figure/table grain with raw HTML receipts and PAHO media locators.
 
-The guidance lane is source-grade at the guidance-page grain: each page is mapped, fetched, raw-saved, indexed, payload-preserved, and queryable through public-health questions. It does not yet replace structured disease surveillance dashboards, outbreak line lists, or intervention outcome datasets.
+The guidance lane is source-grade at the guidance-page grain: each page is mapped, fetched, raw-saved, indexed, payload-preserved, and queryable through public-health questions. The PAHO dengue surveillance lane adds report-grain surveillance records for the Region of the Americas, including weekly and year-to-date indicators, subregional case-change notes, serotype circulation notes, and figure/table media locators. PAHO/PLISA dashboard pages are mapped, but country-week Tableau/PHIP rows remain a source gap until a stable unauthenticated CSV, JSON, or API endpoint is available or explicit authorized access is obtained.

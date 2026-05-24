@@ -144,6 +144,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_public_health.add_argument("--hosted", action="store_true")
     ingest_public_health.add_argument("--source-url", action="append", default=[])
 
+    ingest_paho_dengue_surveillance = sub.add_parser("ingest-paho-dengue-surveillance")
+    ingest_paho_dengue_surveillance.add_argument("--hosted", action="store_true")
+    ingest_paho_dengue_surveillance.add_argument("--report-url", action="append", default=[])
+    ingest_paho_dengue_surveillance.add_argument("--dashboard-page", action="append", default=[])
+
     ingest_mosquito_alert = sub.add_parser("ingest-mosquito-alert")
     ingest_mosquito_alert.add_argument("--hosted", action="store_true")
     ingest_mosquito_alert.add_argument("--occurrence-limit", type=int, default=1000)
@@ -340,6 +345,24 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/public-health",
             {"source_urls": args.source_url},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-paho-dengue-surveillance":
+        if not args.hosted:
+            from scripts.ingest_paho_dengue_surveillance import ingest_paho_dengue_surveillance
+
+            payload = ingest_paho_dengue_surveillance(
+                artifact_dir=artifact_dir,
+                report_urls=args.report_url,
+                dashboard_pages=args.dashboard_page if args.dashboard_page else None,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/paho-dengue-surveillance",
+            {"report_urls": args.report_url, "dashboard_pages": args.dashboard_page},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

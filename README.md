@@ -180,6 +180,17 @@ python3 -m askinsects ask "what vector control guidance exists for Aedes aegypti
 
 The lane writes raw official guidance HTML under `raw/public_health_guidance/`, normalizes one `public_health` record per guidance page from source `aedes_public_health_guidance`, stores page metadata in SQLite payloads, and preserves provenance to the saved HTML plus the official source URL. This is guidance coverage, not yet a full surveillance dashboard or outbreak time-series lane.
 
+## PAHO Dengue Surveillance Source Lane
+
+PAHO dengue surveillance is indexed as `Aedes aegypti` public-health intelligence at the official report/page grain:
+
+```bash
+python3 -m askinsects ingest-paho-dengue-surveillance
+python3 -m askinsects ask "show PAHO dengue surveillance evidence for Aedes aegypti" --json
+```
+
+The lane uses source id `aedes_paho_dengue_surveillance`. It writes raw PAHO dengue situation report and dashboard landing HTML under `raw/paho_dengue_surveillance/`, parses regional week, year-to-date, subregion, serotype, and figure/table records into the `public_health` lane, stores metrics and PAHO image locators in SQLite payloads, and preserves provenance to the saved HTML plus official PAHO URLs. PAHO/PLISA dashboard pages are mapped, but country-week Tableau/PHIP rows remain a source gap until there is a stable machine-readable CSV, JSON, or API endpoint or explicit authorized access.
+
 ## Pathogen Taxonomy Source Lane
 
 NCBI Taxonomy anchors core `Aedes aegypti` arbovirus names to stable pathogen identities for vector-competence and public-health questions:

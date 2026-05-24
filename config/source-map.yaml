@@ -262,6 +262,18 @@ sources:
       - public_health
     provenance_required: true
     live_fetch: opt_in
+  - id: aedes_paho_dengue_surveillance
+    name: PAHO dengue surveillance for Aedes aegypti public-health intelligence
+    source_type: public_health_surveillance_report
+    boundary: Official PAHO/WHO dengue situation report HTML and mapped ARBO/PLISA dashboard landing pages, indexed at report and visual locator grain until stable row-level CSV, JSON, or API access is proven
+    query_plane: official_paho_dengue_report_html_to_sqlite_public_health_records
+    artifact_dir: artifacts/mosquito-v1/raw/paho_dengue_surveillance
+    ingest_script: scripts/ingest_paho_dengue_surveillance.py
+    lanes:
+      - public_health
+    provenance_required: true
+    live_fetch: opt_in
+    source_gap: PAHO/PLISA country-week dashboard data remains a source gap until PAHO exposes a stable machine-readable download/API or explicit authorized access is obtained
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects
