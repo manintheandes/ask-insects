@@ -112,6 +112,14 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Zika pathog
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search vector_competence "yellow fever pathogen taxonomy"
 ```
 
+To extract structured vector-competence assay candidates from indexed Aedes literature and legal full text:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-vector-competence-assays
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Zika vector competence assay dose and transmission for Aedes aegypti" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.pathogen') as pathogen, count(*) as n from record_payloads where source='aedes_vector_competence_assays' group by pathogen order by n desc" --limit 20
+```
+
 To download and index the raw neurobiology artifact cache:
 
 ```bash
@@ -161,6 +169,8 @@ IR Mapper resistance records use source id `irmapper_aedes`. Raw public API JSON
 
 Pathogen taxonomy records use source id `aedes_pathogen_taxonomy`. Raw NCBI E-utilities taxonomy summary JSON is saved under `artifacts/mosquito-v1/raw/pathogen_taxonomy/`. Each `vector_competence` record stores a configured pathogen label, taxid, pathogen group, Aedes relevance note, raw taxonomy summary, and provenance locator into the saved NCBI summary JSON. This lane gives pathogen-specific questions stable identifiers while assay-level table extraction remains a source gap.
 
+Vector-competence assay-candidate records use source id `aedes_vector_competence_assays`. They are derived from source-grade literature rows and legal full-text units already in SQLite. Each record stores a detected pathogen, assay-field map, context terms, temperature values, dose values, source paper ID, full-text unit ID when present, and a snippet. Provenance points back to `records#<paper_id>` and, when available, `literature_fulltext_units#<unit_id>`. This lane is legal full-text only and does not use private cookies, institutional access, or Sci-Hub.
+
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 
 OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/literature/` when that artifact directory is used. PubMed and Unpaywall enrichment payloads are stored per record in SQLite `record_payloads.payload_json`. Legal direct PDF/XML/text chunks are stored in `literature_fulltext_units` and mirrored into `literature_fulltext_fts`. Normal `ask` and `search literature` use metadata and abstracts first; literature answers fall back to legal full-text chunks, and `search fulltext` queries those chunks directly. Gaps are structured in `gaps.json`, including missing DOI, missing PMID, missing abstract, topic search gaps, Unpaywall no-full-text cases, landing-page-only cases, fetch failures, and parse failures.
@@ -196,6 +206,7 @@ python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --ob
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-dryad-behavior-videos --hosted
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
+python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"
 python3 -m askinsects search fulltext "microbiota Aedes aegypti" --hosted

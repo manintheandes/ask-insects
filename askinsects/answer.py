@@ -91,6 +91,19 @@ def _search_queries(question: str) -> list[str]:
         return ["Mosquito Alert Aedes aegypti", "Mosquito Alert", "citizen-science observation", question]
     if "dryad" in q:
         return ["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset", question]
+    if any(term in q for term in ("assay", "infection rate", "dissemination", "transmission", "dose", "midgut", "saliva", "salivary", "extrinsic incubation")) and any(
+        term in q for term in ("dengue", "zika", "chikungunya", "yellow fever", "west nile", "mayaro", "vector competence")
+    ):
+        pathogen_terms = _named_pathogen_terms(question)
+        pathogen_query = " ".join(pathogen_terms)
+        if pathogen_query:
+            return [
+                f"{pathogen_query} vector competence assay infection dissemination transmission dose temperature",
+                f"{pathogen_query} dose transmission infection dissemination",
+                "vector competence assay Aedes aegypti",
+                question,
+            ]
+        return ["vector competence assay Aedes aegypti", "infection dissemination transmission dose temperature", question]
     if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
         return ["NCBI Taxonomy pathogen", "pathogen taxonomy Aedes aegypti", question]
     if "coi-5p" in q or re.search(r"\bcoi\b", q):
@@ -312,13 +325,53 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
     q = question.lower()
     if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
         pathogen_terms = _named_pathogen_terms(question)
+        wants_taxonomy = "taxonomy" in q
+        wants_assay = any(
+            term in q
+            for term in (
+                "assay",
+                "infection rate",
+                "dissemination",
+                "transmission",
+                "dose",
+                "temperature",
+                "midgut",
+                "saliva",
+                "salivary",
+                "extrinsic incubation",
+            )
+        )
 
-        def score_pathogen(record: EvidenceRecord) -> tuple[int, int, int]:
+        assay_terms = [
+            term
+            for term in (
+                "infection",
+                "dissemination",
+                "transmission",
+                "dose",
+                "temperature",
+                "midgut",
+                "saliva",
+                "salivary",
+                "extrinsic incubation",
+            )
+            if term in q
+        ]
+
+        def score_pathogen(record: EvidenceRecord) -> tuple[int, int, int, int]:
             haystack = f"{record.title}\n{record.text}".lower()
+            if wants_taxonomy:
+                preferred_source = "aedes_pathogen_taxonomy"
+            elif wants_assay:
+                preferred_source = "aedes_vector_competence_assays"
+            else:
+                preferred_source = "aedes_vector_competence_assays" if record.source == "aedes_vector_competence_assays" else "aedes_pathogen_taxonomy"
+            missing_assay_terms = sum(1 for term in assay_terms if term not in haystack)
             return (
-                0 if record.source == "aedes_pathogen_taxonomy" else 1,
+                0 if record.source == preferred_source else 1,
                 0 if record.lane == "vector_competence" else 1,
                 0 if pathogen_terms and any(term in haystack for term in pathogen_terms) else 1,
+                missing_assay_terms,
             )
 
         return sorted(

@@ -1471,6 +1471,12 @@ def dispatch_request(
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
+        if method == "POST" and path == "/ingest/vector-competence-assays":
+            from scripts.ingest_vector_competence_assays import ingest_vector_competence_assays
+
+            result = ingest_vector_competence_assays(artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
     except (sqlite3.Error, ValueError) as exc:
         return json_response(400, {"ok": False, "error": str(exc)})
     except Exception as exc:

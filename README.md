@@ -168,6 +168,18 @@ python3 -m askinsects search vector_competence "dengue pathogen taxonomy"
 
 The lane uses source id `aedes_pathogen_taxonomy`. It writes NCBI E-utilities taxonomy summary JSON under `raw/pathogen_taxonomy/`, normalizes one `vector_competence` record per configured pathogen, stores the raw taxonomy summary in SQLite payloads, and preserves provenance to the saved summary plus the NCBI request URL. This is a pathogen identity layer, not yet structured extraction of every vector-competence assay table.
 
+## Vector-Competence Assay Candidate Lane
+
+Indexed Aedes literature and legal full-text chunks can be parsed into structured vector-competence assay candidates:
+
+```bash
+python3 -m askinsects ingest-vector-competence-assays
+python3 -m askinsects ask "show Zika vector competence assay dose and transmission for Aedes aegypti" --json
+python3 -m askinsects search vector_competence "dissemination saliva 28 C"
+```
+
+The lane uses source id `aedes_vector_competence_assays`. It creates one `vector_competence` record per detected pathogen-specific assay candidate, stores structured fields in SQLite payloads, and preserves provenance back to the source paper plus `literature_fulltext_units` when legal full text is available. It is deterministic candidate extraction, not a claim that every table and supplement has been fully parsed or human-validated.
+
 ## Aedes aegypti Neurobiology Source Lane
 
 The neurobiology lane can run as metadata-only, or from a downloaded raw-artifact cache:
@@ -249,6 +261,7 @@ python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --ob
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-public-health --hosted
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
+python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```

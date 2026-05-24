@@ -194,6 +194,21 @@ sources:
       - vector_competence
     provenance_required: true
     live_fetch: opt_in
+  - id: aedes_vector_competence_assays
+    name: Aedes aegypti vector-competence assay candidates
+    source_type: derived_sqlite_source
+    boundary: Deterministic structured assay-candidate extraction from source-grade Aedes aegypti literature records and legal full-text units, limited to pathogen, infection, dissemination, transmission, dose, temperature, tissue, strain, population, and timepoint mentions
+    query_plane: literature_fulltext_units_to_sqlite_vector_competence_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_vector_competence_assays.py
+    input_sources:
+      - aedes_literature_openalex
+      - literature_fulltext_units
+    lanes:
+      - vector_competence
+    provenance_required: true
+    live_fetch: derived_from_indexed_literature
+    legal_fulltext_only: true
   - id: aedes_public_health_guidance
     name: Official Aedes aegypti public-health guidance
     source_type: public_web_guidance

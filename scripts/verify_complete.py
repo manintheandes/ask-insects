@@ -36,6 +36,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-neurobiology-deep-source-completion-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-aegypti-world-intelligence-source-plane-design.md",
     "docs/superpowers/specs/2026-05-23-neurobiology-gap-closure-design.md",
+    "docs/superpowers/specs/2026-05-24-aedes-vector-competence-assay-candidates-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -46,6 +47,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-23-aedes-aegypti-neurobiology-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-neurobiology-deep-source-completion.md",
     "docs/superpowers/plans/2026-05-23-neurobiology-gap-closure.md",
+    "docs/superpowers/plans/2026-05-24-aedes-vector-competence-assay-candidates.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -71,6 +73,7 @@ REQUIRED_FILES = (
     "askinsects/sources/dryad_behavior_videos.py",
     "askinsects/sources/public_health.py",
     "askinsects/sources/pathogen_taxonomy.py",
+    "askinsects/sources/vector_competence_assays.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -87,6 +90,7 @@ REQUIRED_FILES = (
     "scripts/ingest_dryad_behavior_videos.py",
     "scripts/ingest_public_health_guidance.py",
     "scripts/ingest_pathogen_taxonomy.py",
+    "scripts/ingest_vector_competence_assays.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -122,6 +126,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_public_health_guidance.py",
     "tests/test_pathogen_taxonomy_source.py",
     "tests/test_ingest_pathogen_taxonomy.py",
+    "tests/test_vector_competence_assays_source.py",
+    "tests/test_ingest_vector_competence_assays.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -158,6 +164,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_public_health_guidance",
     "tests.test_pathogen_taxonomy_source",
     "tests.test_ingest_pathogen_taxonomy",
+    "tests.test_vector_competence_assays_source",
+    "tests.test_ingest_vector_competence_assays",
 )
 
 
@@ -219,6 +227,7 @@ def check_literature_source_map() -> None:
         "irmapper_aedes",
         "dryad_aedes_behavior_videos",
         "aedes_pathogen_taxonomy",
+        "aedes_vector_competence_assays",
         "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
         "sqlite_payload_table: record_payloads",
         "sqlite_fulltext_table: literature_fulltext_units",
@@ -247,6 +256,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "mosquito_alert_gbif",
         "dryad_aedes_behavior_videos",
         "aedes_pathogen_taxonomy",
+        "aedes_vector_competence_assays",
     )
     for term in required_terms:
         if term not in readme:
@@ -269,6 +279,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_pathogen_taxonomy", "scripts/ingest_pathogen_taxonomy.py", "vector_competence"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing pathogen taxonomy term: {term}")
+    for term in ("aedes_vector_competence_assays", "scripts/ingest_vector_competence_assays.py", "literature_fulltext_units", "legal_fulltext_only"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing vector competence assay term: {term}")
 
 
 def check_cli() -> None:

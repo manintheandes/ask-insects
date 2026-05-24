@@ -833,6 +833,34 @@ class ServerTests(unittest.TestCase):
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
 
+    def test_ingest_vector_competence_assays_adds_records_without_removing_existing_sources(self):
+        from tests.test_vector_competence_assays_source import write_assay_literature_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_assay_literature_fixture(artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/vector-competence-assays",
+                {},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_vector_competence_assays"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_vector_competence_assays'",
+            )
+            self.assertIn("literature_fulltext_units#openalex:WVC1:fulltext:0", provenance_rows[0]["provenance_json"])
+
 
 if __name__ == "__main__":
     unittest.main()

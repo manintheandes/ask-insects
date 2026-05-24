@@ -638,6 +638,71 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_pathogen_taxonomy")
             self.assertEqual(answer["evidence"][0]["record_id"], "pathogen:ncbi_taxonomy:64320")
 
+    def test_vector_competence_assay_questions_prefer_structured_assay_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="pathogen:ncbi_taxonomy:64320",
+                        lane="vector_competence",
+                        source="aedes_pathogen_taxonomy",
+                        title="Aedes aegypti pathogen taxonomy Zika virus",
+                        text="NCBI Taxonomy pathogen record for Zika virus (taxid 64320).",
+                        species="Aedes aegypti",
+                        url="https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=64320",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_pathogen_taxonomy",
+                            locator="raw/pathogen_taxonomy/esummary.json#taxonomy/64320",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="NCBI Taxonomy public data",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="assay_candidate:vector_competence:WVC0:abc",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti vector competence assay candidate: Zika virus",
+                        text="Structured assay-candidate extraction for Zika virus. Detected assay fields: infection.",
+                        species="Aedes aegypti",
+                        url="https://example.org/vector-competence-weak",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="records#openalex:WVC0",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="OpenAlex metadata",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="assay_candidate:vector_competence:WVC1:abc",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti vector competence assay candidate: Zika virus",
+                        text="Structured assay-candidate extraction for Zika virus. Detected assay fields: infection, dissemination, transmission, dose, temperature.",
+                        species="Aedes aegypti",
+                        url="https://example.org/vector-competence",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="records#openalex:WVC1;literature_fulltext_units#openalex:WVC1:fulltext:0",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC-BY",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Zika vector competence assay dose and transmission for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "vector_competence")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_vector_competence_assays")
+            self.assertEqual(answer["evidence"][0]["record_id"], "assay_candidate:vector_competence:WVC1:abc")
+
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

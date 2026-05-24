@@ -156,6 +156,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_pathogen_taxonomy = sub.add_parser("ingest-pathogen-taxonomy")
     ingest_pathogen_taxonomy.add_argument("--hosted", action="store_true")
 
+    ingest_vector_competence_assays = sub.add_parser("ingest-vector-competence-assays")
+    ingest_vector_competence_assays.add_argument("--hosted", action="store_true")
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -375,6 +378,20 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/pathogen-taxonomy",
+            {},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-vector-competence-assays":
+        if not args.hosted:
+            from scripts.ingest_vector_competence_assays import ingest_vector_competence_assays
+
+            payload = ingest_vector_competence_assays(artifact_dir=artifact_dir)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/vector-competence-assays",
             {},
             timeout=3600,
         )
