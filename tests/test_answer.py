@@ -1259,6 +1259,62 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:vector_competence:WPARSED:abc")
 
+    def test_supplement_table_questions_rank_relevant_parsed_rows_after_broad_fetch(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            records = [
+                EvidenceRecord(
+                    record_id=f"extracted_fact:vector_competence:WOTHER:{i:02d}",
+                    lane="vector_competence",
+                    source="aedes_extracted_facts",
+                    title="Aedes aegypti extracted vector competence fact",
+                    text="Parsed supplement table row for saliva or midgut without dengue rate terms.",
+                    species="Aedes aegypti",
+                    url="https://example.org/other",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="aedes_extracted_facts",
+                        locator=f"records#WOTHER;supplement#0;row#{i}",
+                        retrieved_at="2026-05-24T00:00:00Z",
+                        license="CC-BY",
+                        source_url="https://example.org/other",
+                    ),
+                    payload={"confidence": "parsed", "fact_type": "vector_competence"},
+                )
+                for i in range(60)
+            ]
+            records.append(
+                EvidenceRecord(
+                    record_id="extracted_fact:vector_competence:WZZZ:dengue",
+                    lane="vector_competence",
+                    source="aedes_extracted_facts",
+                    title="Aedes aegypti extracted vector competence dengue fact",
+                    text="Parsed supplement table row: dengue virus infection rate 80%, dissemination rate 40%, transmission rate 20%.",
+                    species="Aedes aegypti",
+                    url="https://example.org/dengue",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="aedes_extracted_facts",
+                        locator="records#WZZZ;supplement#0;row#1",
+                        retrieved_at="2026-05-24T00:00:00Z",
+                        license="CC-BY",
+                        source_url="https://example.org/dengue",
+                    ),
+                    payload={"confidence": "parsed", "fact_type": "vector_competence"},
+                )
+            )
+            index.upsert_records(records)
+
+            answer = answer_question(
+                "show dengue vector competence supplement table infection rate for Aedes aegypti",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:vector_competence:WZZZ:dengue")
+
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

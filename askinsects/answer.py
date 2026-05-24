@@ -1186,7 +1186,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     break
 
     if _wants_extracted_facts(plan.question):
-        for record in _extracted_fact_records(index, list(plan.lanes), limit=max(limit * 5, 25)):
+        for record in _extracted_fact_records(index, list(plan.lanes), limit=max(limit * 50, 250)):
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)
