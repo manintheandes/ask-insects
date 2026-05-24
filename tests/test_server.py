@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from askinsects.builder import build_fixture_index
 from askinsects.index import SourceIndex
@@ -8,6 +9,7 @@ from askinsects.records import EvidenceRecord, Provenance
 from askinsects.server import dispatch_request
 from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
+from tests.test_inaturalist_source import observation
 
 
 class ServerTests(unittest.TestCase):
@@ -229,6 +231,37 @@ class ServerTests(unittest.TestCase):
             counts = {row["source"]: row["n"] for row in rows}
             self.assertEqual(counts["bold_api"], 1)
             self.assertEqual(counts["inaturalist_api"], 1)
+
+    def test_ingest_inaturalist_streams_default_fetch_into_existing_index(self):
+        class FakeClient:
+            def observations(self, species, *, place, page, page_size):
+                return (
+                    "https://api.inaturalist.org/v1/observations",
+                    {
+                        "total_results": 1,
+                        "results": [observation(1, 101)],
+                    },
+                )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("askinsects.server.INaturalistClient", return_value=FakeClient()):
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/inaturalist",
+                    {"species": ["Aedes aegypti"], "observation_limit": 1, "page_size": 10, "delay_seconds": 0},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, lane, count(*) as n from records group by source, lane")
+            counts = {(row["source"], row["lane"]): row["n"] for row in rows}
+            self.assertEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 4)
+            self.assertEqual(counts[("inaturalist_api", "observations")], 1)
+            self.assertEqual(counts[("inaturalist_api", "media")], 1)
 
     def test_ingest_keeps_active_index_available_during_build(self):
         with tempfile.TemporaryDirectory() as tmpdir:

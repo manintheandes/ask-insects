@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import shutil
 import sqlite3
+import time
 from typing import Callable
 
 from .answer import answer_question
@@ -25,7 +26,15 @@ from .sources.gbif import (
     utc_now,
     write_raw_json,
 )
-from .sources.inaturalist import INATURALIST_SOURCE_ID, fetch_inaturalist_records
+from .sources.inaturalist import (
+    INATURALIST_SOURCE_ID,
+    INaturalistClient,
+    fetch_inaturalist_records,
+    media_record,
+    observation_record,
+    safe_name as inaturalist_safe_name,
+    write_raw_json as write_inaturalist_raw_json,
+)
 
 
 @dataclass(frozen=True)
@@ -186,6 +195,143 @@ def write_inaturalist_metadata(staging: Path, inaturalist_payload: dict[str, obj
     return {"ok": True, "artifact_dir": staging.as_posix(), **status, "inaturalist": inaturalist_payload}
 
 
+def stream_inaturalist_into_index(
+    species_names: list[str],
+    *,
+    staging: Path,
+    place: str | None,
+    observation_limit: int,
+    page_size: int,
+    delay_seconds: float,
+) -> tuple[dict[str, object], list[dict[str, object]]]:
+    if observation_limit < 0:
+        raise ValueError("observation_limit must be zero or greater")
+    if page_size <= 0:
+        raise ValueError("page_size must be greater than zero")
+
+    retrieved_at = utc_now()
+    client = INaturalistClient()
+    index = SourceIndex(staging / "source_index.sqlite")
+    raw_dir = staging / "raw" / "inaturalist"
+    raw_artifacts: list[str] = []
+    gaps: list[dict[str, object]] = []
+    total_results: dict[str, int] = {}
+    seen_observations: set[str] = set()
+    seen_media: set[str] = set()
+    record_count = 0
+    page_size = max(1, min(int(page_size), 200))
+
+    for species in species_names:
+        species_indexed_observations = 0
+        species_seen_results = 0
+        species_had_results = False
+        photo_seen = False
+        page = 1
+        while species_indexed_observations < observation_limit:
+            if page > 1 and delay_seconds > 0:
+                time.sleep(delay_seconds)
+            query_url, payload = client.observations(species, place=place, page=page, page_size=page_size)
+            raw_path = write_inaturalist_raw_json(
+                raw_dir,
+                f"{inaturalist_safe_name(species)}_{inaturalist_safe_name(place)}_page_{page:03d}.json",
+                payload,
+            )
+            raw_artifacts.append(raw_path.as_posix())
+            total_results[species] = int(payload.get("total_results") or payload.get("total_count") or 0)
+            results = payload.get("results")
+            if not isinstance(results, list) or not results:
+                break
+            species_had_results = True
+            species_seen_results += len(results)
+
+            page_records = []
+            for observation in results:
+                if species_indexed_observations >= observation_limit:
+                    break
+                if not isinstance(observation, dict) or not observation.get("id"):
+                    continue
+                observation_id = str(observation["id"])
+                if observation_id in seen_observations:
+                    continue
+                photos = observation.get("photos")
+                if not isinstance(photos, list):
+                    continue
+                photo = next((item for item in photos if isinstance(item, dict) and item.get("url")), None)
+                if photo is None:
+                    continue
+                photo_id = str(photo.get("id") or observation_id)
+                if photo_id in seen_media:
+                    continue
+                photo_seen = True
+                seen_observations.add(observation_id)
+                seen_media.add(photo_id)
+                page_records.append(
+                    observation_record(
+                        observation,
+                        photo,
+                        species=species,
+                        query_url=query_url,
+                        raw_path=raw_path,
+                        retrieved_at=retrieved_at,
+                    )
+                )
+                page_records.append(
+                    media_record(
+                        observation,
+                        photo,
+                        species=species,
+                        raw_path=raw_path,
+                        retrieved_at=retrieved_at,
+                    )
+                )
+                species_indexed_observations += 1
+            if page_records:
+                index.upsert_records(page_records)
+                record_count += len(page_records)
+
+            if species_seen_results >= total_results.get(species, 0):
+                break
+            page += 1
+
+        if not species_had_results:
+            gaps.append(
+                {
+                    "source": INATURALIST_SOURCE_ID,
+                    "lane": "observations",
+                    "species": species,
+                    "place": place,
+                    "reason": "iNaturalist returned no observations for this query.",
+                }
+            )
+            continue
+        if not photo_seen or species_indexed_observations == 0:
+            gaps.append(
+                {
+                    "source": INATURALIST_SOURCE_ID,
+                    "lane": "media",
+                    "species": species,
+                    "place": place,
+                    "reason": "iNaturalist observations did not include usable licensed photos.",
+                }
+            )
+
+    return (
+        {
+            "requested_species": species_names,
+            "place": place,
+            "observation_limit": observation_limit,
+            "page_size": page_size,
+            "delay_seconds": delay_seconds,
+            "total_results": total_results,
+            "raw_artifacts": raw_artifacts,
+            "record_count": record_count,
+            "gap_count": len(gaps),
+            "retrieved_at": retrieved_at,
+        },
+        gaps,
+    )
+
+
 def ingest_inaturalist(
     payload: dict[str, object],
     *,
@@ -226,25 +372,44 @@ def ingest_inaturalist(
         index = SourceIndex(staging / "source_index.sqlite")
         index.initialize()
         index.delete_source(INATURALIST_SOURCE_ID)
-        index.upsert_records(result.records)
+        if fetch_inaturalist_records_fn is fetch_inaturalist_records:
+            inaturalist_payload, new_gaps = stream_inaturalist_into_index(
+                species,
+                staging=staging,
+                place=place,
+                observation_limit=observation_limit,
+                page_size=page_size,
+                delay_seconds=delay_seconds,
+            )
+        else:
+            result = fetch_inaturalist_records_fn(
+                species,
+                raw_dir=staging / "raw" / "inaturalist",
+                place=place,
+                observation_limit=observation_limit,
+                page_size=page_size,
+                delay_seconds=delay_seconds,
+            )
+            index.upsert_records(result.records)
+            retrieved_at = result.records[0].provenance.retrieved_at if result.records else utc_now()
+            inaturalist_payload = {
+                "requested_species": result.requested_species,
+                "place": result.place,
+                "observation_limit": result.observation_limit,
+                "page_size": result.page_size,
+                "delay_seconds": result.delay_seconds,
+                "total_results": result.total_results,
+                "raw_artifacts": result.raw_artifacts,
+                "record_count": len(result.records),
+                "gap_count": len(result.gaps),
+                "retrieved_at": retrieved_at,
+            }
+            new_gaps = result.gaps
         old_gaps = read_json(staging / "gaps.json", [])
         if not isinstance(old_gaps, list):
             old_gaps = []
         gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == INATURALIST_SOURCE_ID)]
-        gaps.extend(result.gaps)
-        retrieved_at = result.records[0].provenance.retrieved_at if result.records else utc_now()
-        inaturalist_payload = {
-            "requested_species": result.requested_species,
-            "place": result.place,
-            "observation_limit": result.observation_limit,
-            "page_size": result.page_size,
-            "delay_seconds": result.delay_seconds,
-            "total_results": result.total_results,
-            "raw_artifacts": result.raw_artifacts,
-            "record_count": len(result.records),
-            "gap_count": len(result.gaps),
-            "retrieved_at": retrieved_at,
-        }
+        gaps.extend(new_gaps)
         response = write_inaturalist_metadata(staging, inaturalist_payload, gaps)
         response = rewrite_artifact_references(staging, artifact_dir, response)
         activate_staging_artifact(staging, artifact_dir)
