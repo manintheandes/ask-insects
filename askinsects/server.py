@@ -37,6 +37,7 @@ from .sources.inaturalist import (
     write_raw_json as write_inaturalist_raw_json,
 )
 from .sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetch_irmapper_records
+from .sources.mendeley_behavior_media import MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, fetch_mendeley_behavior_media_records
 from .sources.mosquito_alert import MOSQUITO_ALERT_SOURCE_ID, fetch_mosquito_alert_records
 from .sources.ncbi_biosample import DEFAULT_BIOSAMPLE_SPECIES, fetch_ncbi_biosample_records
 from .sources.pathogen_taxonomy import PATHOGEN_TAXONOMY_SOURCE_ID, fetch_pathogen_taxonomy_records
@@ -1394,6 +1395,155 @@ def ingest_dryad_behavior_videos(
     return response
 
 
+def write_mendeley_behavior_media_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(source_payload["retrieved_at"])
+    sources = [source for source in counts if source != MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID]
+    if counts.get(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID):
+        sources.append(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": True,
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID] = source_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            "mendeley_behavior_media": source_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, "mendeley_behavior_media": source_payload}
+
+
+def ingest_mendeley_behavior_media(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_mendeley_behavior_media_records_fn: Callable[..., object] = fetch_mendeley_behavior_media_records,
+) -> dict[str, object]:
+    datasets_payload = payload.get("datasets")
+    if datasets_payload is not None and not (
+        isinstance(datasets_payload, list) and all(isinstance(dataset, str) for dataset in datasets_payload)
+    ):
+        raise ValueError("datasets must be a list of DATASET_ID:VERSION strings")
+    staging = artifact_dir.parent / f".{artifact_dir.name}.mendeley-behavior-media-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        staging.mkdir(parents=True, exist_ok=True)
+        retrieved_at = utc_now()
+        if datasets_payload:
+            from .sources.mendeley_behavior_media import DEFAULT_MENDELEY_DATASETS, MendeleyDatasetSpec
+
+            known = {f"{spec.dataset_id}:{spec.version}": spec for spec in DEFAULT_MENDELEY_DATASETS}
+            dataset_specs = []
+            for value in datasets_payload:
+                dataset_id, _, version_text = value.partition(":")
+                if not dataset_id or not version_text:
+                    raise ValueError("datasets must be formatted as DATASET_ID:VERSION")
+                version = int(version_text)
+                dataset_specs.append(
+                    known.get(
+                        f"{dataset_id}:{version}",
+                        MendeleyDatasetSpec(dataset_id=dataset_id, version=version, behavior_labels=("behavior", "media")),
+                    )
+                )
+            result = fetch_mendeley_behavior_media_records_fn(
+                dataset_specs,
+                raw_dir=staging / "raw" / "mendeley_behavior_media",
+                retrieved_at=retrieved_at,
+            )
+        else:
+            result = fetch_mendeley_behavior_media_records_fn(
+                raw_dir=staging / "raw" / "mendeley_behavior_media",
+                retrieved_at=retrieved_at,
+            )
+        old = staging.as_posix()
+        new = artifact_dir.as_posix()
+        records = replace_record_path_strings(result.records, old, new)
+        raw_target = artifact_dir / "raw" / "mendeley_behavior_media"
+        raw_backup = raw_target.parent / ".mendeley_behavior_media.previous"
+        raw_target.parent.mkdir(parents=True, exist_ok=True)
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+        staged_raw = staging / "raw" / "mendeley_behavior_media"
+        if staged_raw.exists():
+            if raw_target.exists():
+                raw_target.replace(raw_backup)
+            staged_raw.replace(raw_target)
+            if raw_backup.exists():
+                shutil.rmtree(raw_backup)
+
+        index = SourceIndex(artifact_dir / "source_index.sqlite")
+        index.initialize()
+        index.delete_source(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID)
+        index.upsert_records(records)
+        old_gaps = read_json(artifact_dir / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [
+            gap
+            for gap in old_gaps
+            if not (isinstance(gap, dict) and gap.get("source") == MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID)
+        ]
+        gaps.extend(result.gaps)
+        raw_artifacts = replace_path_strings(result.raw_artifacts, old, new)
+        if not isinstance(raw_artifacts, list):
+            raw_artifacts = result.raw_artifacts
+        source_payload = {
+            "requested_datasets": result.requested_datasets,
+            "dataset_count": result.dataset_count,
+            "folder_count": result.folder_count,
+            "file_count": result.file_count,
+            "media_file_count": result.media_file_count,
+            "raw_artifacts": raw_artifacts,
+            "record_count": len(records),
+            "gap_count": len(result.gaps),
+            "retrieved_at": retrieved_at,
+        }
+        response = write_mendeley_behavior_media_metadata(artifact_dir, source_payload, gaps)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    shutil.rmtree(staging, ignore_errors=True)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def write_pathogen_taxonomy_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
     index = SourceIndex(staging / "source_index.sqlite")
     summary = index.summary()
@@ -1548,6 +1698,7 @@ def dispatch_request(
     fetch_dryad_behavior_video_records_fn: Callable[..., object] = fetch_dryad_behavior_video_records,
     fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
+    fetch_mendeley_behavior_media_records_fn: Callable[..., object] = fetch_mendeley_behavior_media_records,
     fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
     fetch_ncbi_biosample_records_fn: Callable[..., object] = fetch_ncbi_biosample_records,
     fetch_pathogen_taxonomy_records_fn: Callable[..., object] = fetch_pathogen_taxonomy_records,
@@ -1649,6 +1800,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_dryad_behavior_video_records_fn=fetch_dryad_behavior_video_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/mendeley-behavior-media":
+            result = ingest_mendeley_behavior_media(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_mendeley_behavior_media_records_fn=fetch_mendeley_behavior_media_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

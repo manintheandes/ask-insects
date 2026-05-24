@@ -12,6 +12,7 @@ from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
 from askinsects.sources.literature import FullTextUnit
+from askinsects.sources.mendeley_behavior_media import MendeleyBehaviorMediaResult
 from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
 from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
 from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
@@ -903,6 +904,72 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(payload_rows[0]["record_id"], "dryad:file:10_5061_dryad_example:host_seeking_videos_zip")
             provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select provenance_json from records where source='dryad_aedes_behavior_videos'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_mendeley_behavior_media_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*args, raw_dir, retrieved_at):
+                raw_path = raw_dir / "6gvs94p6r2_v1_files.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text("[]", encoding="utf-8")
+                return MendeleyBehaviorMediaResult(
+                    source_id="mendeley_aedes_behavior_media",
+                    records=[
+                        EvidenceRecord(
+                            record_id="mendeley:file:6gvs94p6r2:v1:file_video",
+                            lane="media",
+                            source="mendeley_aedes_behavior_media",
+                            title="Aedes aegypti Mendeley video/audio/archive file wing-flash-video.mp4",
+                            text="Mendeley video archive for Aedes aegypti wing flash behavior.",
+                            species="Aedes aegypti",
+                            url="https://data.mendeley.com/datasets/6gvs94p6r2/1",
+                            media_url="https://data.mendeley.com/public-files/video/file_downloaded",
+                            provenance=Provenance(
+                                source_id="mendeley_aedes_behavior_media",
+                                locator=f"{raw_path}#files/root/1",
+                                retrieved_at=retrieved_at,
+                                license="CC BY 4.0",
+                                source_url="https://data.mendeley.com/public-files/video/file_downloaded",
+                            ),
+                            payload={"filename": "wing-flash-video.mp4"},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_datasets=["6gvs94p6r2:v1"],
+                    dataset_count=1,
+                    folder_count=0,
+                    file_count=1,
+                    media_file_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/mendeley-behavior-media",
+                {"datasets": ["6gvs94p6r2:1"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_mendeley_behavior_media_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["mendeley_aedes_behavior_media"], 1)
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id from record_payloads where source='mendeley_aedes_behavior_media'",
+            )
+            self.assertEqual(payload_rows[0]["record_id"], "mendeley:file:6gvs94p6r2:v1:file_video")
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='mendeley_aedes_behavior_media'",
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])

@@ -164,6 +164,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_dryad_behavior_videos.add_argument("--hosted", action="store_true")
     ingest_dryad_behavior_videos.add_argument("--doi", action="append", default=[])
 
+    ingest_mendeley_behavior_media = sub.add_parser("ingest-mendeley-behavior-media")
+    ingest_mendeley_behavior_media.add_argument("--hosted", action="store_true")
+    ingest_mendeley_behavior_media.add_argument("--dataset", action="append", default=[])
+
     ingest_pathogen_taxonomy = sub.add_parser("ingest-pathogen-taxonomy")
     ingest_pathogen_taxonomy.add_argument("--hosted", action="store_true")
 
@@ -430,6 +434,23 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/dryad-behavior-videos",
             {"dois": args.doi},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-mendeley-behavior-media":
+        if not args.hosted:
+            from scripts.ingest_mendeley_behavior_media import ingest_mendeley_behavior_media
+
+            payload = ingest_mendeley_behavior_media(
+                artifact_dir=artifact_dir,
+                datasets=args.dataset or None,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/mendeley-behavior-media",
+            {"datasets": args.dataset},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

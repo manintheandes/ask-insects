@@ -188,6 +188,23 @@ sources:
       - 10.5061/dryad.qz612jmrb
       - 10.5061/dryad.tb2rbp04x
       - 10.5061/dryad.z8w9ghxfv
+  - id: mendeley_aedes_behavior_media
+    name: Mendeley Data Aedes aegypti behavior and media manifests
+    source_type: public_dataset_api
+    boundary: Public Mendeley Data datasets where Aedes aegypti is materially present in the title, description, or topic, including high-speed mate-recognition videos, wingbeat sound files, flight-tone hearing data, and locomotory behavior video-analysis files
+    query_plane: mendeley_public_snapshot_folder_file_manifest_to_sqlite
+    api_base: https://data.mendeley.com/public-api
+    artifact_dir: artifacts/mosquito-v1/raw/mendeley_behavior_media
+    ingest_script: scripts/ingest_mendeley_behavior_media.py
+    lanes:
+      - behavior
+      - media
+    provenance_required: true
+    live_fetch: opt_in
+    default_datasets:
+      - 6gvs94p6r2:1
+      - g79w8wxpr7:2
+      - sg5rrvdzvg:1
   - id: irmapper_aedes
     name: IR Mapper Aedes aegypti resistance records
     source_type: public_api

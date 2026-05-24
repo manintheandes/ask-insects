@@ -77,7 +77,27 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
-    if any(term in q for term in ("host seeking", "host-seeking", "blood feeding", "biting behavior", "oviposition", "mating", "larval behavior", "repellent", "attractant")):
+    if any(
+        term in q
+        for term in (
+            "host seeking",
+            "host-seeking",
+            "blood feeding",
+            "biting behavior",
+            "oviposition",
+            "mating",
+            "mate recognition",
+            "wing flash",
+            "flight tone",
+            "flight tones",
+            "wingbeat",
+            "hearing",
+            "locomotory",
+            "larval behavior",
+            "repellent",
+            "attractant",
+        )
+    ):
         return QueryPlan(question, "behavior", ("behavior", "neurobiology", "literature", "taxonomy"), question)
     if any(
         term in q

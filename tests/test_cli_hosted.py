@@ -257,6 +257,29 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_mendeley_behavior_media_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 5}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-mendeley-behavior-media",
+                "--hosted",
+                "--dataset",
+                "6gvs94p6r2:1",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/mendeley-behavior-media")
+        self.assertEqual(calls[0][2]["datasets"], ["6gvs94p6r2:1"])
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_pathogen_taxonomy_ingest_sends_request(self):
         calls = []
 

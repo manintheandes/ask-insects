@@ -194,6 +194,14 @@ def _search_queries(question: str) -> list[str]:
         return list(dict.fromkeys(queries))
     if "dryad" in q:
         return ["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset", question]
+    if "mendeley" in q:
+        return ["Mendeley Aedes aegypti behavior media", "Mendeley wing flash video", "Mendeley flight tone", question]
+    if any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime")):
+        return [
+            "Mendeley Aedes aegypti behavior media",
+            "Aedes aegypti wing flash mate recognition flight tone locomotory behavior",
+            question,
+        ]
     if any(term in q for term in ("assay", "infection rate", "dissemination", "transmission", "dose", "midgut", "saliva", "salivary", "extrinsic incubation")) and any(
         term in q for term in ("dengue", "zika", "chikungunya", "yellow fever", "west nile", "mayaro", "vector competence")
     ):
@@ -680,6 +688,14 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             records,
             key=lambda record: (
                 0 if record.source == "dryad_aedes_behavior_videos" else 1,
+                0 if record.lane in {"media", "behavior"} else 1,
+            ),
+        )
+    if "mendeley" in q or any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "mendeley_aedes_behavior_media" else 1,
                 0 if record.lane in {"media", "behavior"} else 1,
             ),
         )

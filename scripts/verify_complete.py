@@ -41,6 +41,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-resistance-marker-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-occurrence-ecology-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-vectorbase-genomics-lane-design.md",
+    "docs/superpowers/specs/2026-05-24-aedes-mendeley-behavior-media-lane-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -56,6 +57,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-resistance-marker-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-occurrence-ecology-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-vectorbase-genomics-lane.md",
+    "docs/superpowers/plans/2026-05-24-aedes-mendeley-behavior-media-lane.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -79,6 +81,7 @@ REQUIRED_FILES = (
     "askinsects/sources/irmapper.py",
     "askinsects/sources/mosquito_alert.py",
     "askinsects/sources/dryad_behavior_videos.py",
+    "askinsects/sources/mendeley_behavior_media.py",
     "askinsects/sources/public_health.py",
     "askinsects/sources/paho_surveillance.py",
     "askinsects/sources/pathogen_taxonomy.py",
@@ -101,6 +104,7 @@ REQUIRED_FILES = (
     "scripts/ingest_irmapper.py",
     "scripts/ingest_mosquito_alert_observations.py",
     "scripts/ingest_dryad_behavior_videos.py",
+    "scripts/ingest_mendeley_behavior_media.py",
     "scripts/ingest_public_health_guidance.py",
     "scripts/ingest_paho_dengue_surveillance.py",
     "scripts/ingest_pathogen_taxonomy.py",
@@ -140,6 +144,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_mosquito_alert_observations.py",
     "tests/test_dryad_behavior_videos_source.py",
     "tests/test_ingest_dryad_behavior_videos.py",
+    "tests/test_mendeley_behavior_media_source.py",
+    "tests/test_ingest_mendeley_behavior_media.py",
     "tests/test_public_health_source.py",
     "tests/test_ingest_public_health_guidance.py",
     "tests/test_paho_surveillance_source.py",
@@ -188,6 +194,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_mosquito_alert_observations",
     "tests.test_dryad_behavior_videos_source",
     "tests.test_ingest_dryad_behavior_videos",
+    "tests.test_mendeley_behavior_media_source",
+    "tests.test_ingest_mendeley_behavior_media",
     "tests.test_public_health_source",
     "tests.test_ingest_public_health_guidance",
     "tests.test_paho_surveillance_source",
@@ -264,6 +272,7 @@ def check_literature_source_map() -> None:
         "pmc_open_access_videos",
         "irmapper_aedes",
         "dryad_aedes_behavior_videos",
+        "mendeley_aedes_behavior_media",
         "aedes_pathogen_taxonomy",
         "ncbi_biosamples",
         "aedes_vector_competence_assays",
@@ -324,6 +333,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("dryad_aedes_behavior_videos", "scripts/ingest_dryad_behavior_videos.py", "behavior", "media"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Dryad behavior/video term: {term}")
+    for term in ("mendeley_aedes_behavior_media", "scripts/ingest_mendeley_behavior_media.py", "mendeley_public_snapshot_folder_file_manifest_to_sqlite", "6gvs94p6r2:1"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Mendeley behavior/media term: {term}")
     for term in ("aedes_pathogen_taxonomy", "scripts/ingest_pathogen_taxonomy.py", "vector_competence"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing pathogen taxonomy term: {term}")
