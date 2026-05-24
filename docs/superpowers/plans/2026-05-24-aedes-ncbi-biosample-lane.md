@@ -11,4 +11,4 @@
 - [x] Run focused tests.
 - [x] Run full tests and completion gate.
 - [x] Install to local Ask Insects runtime, deploy hosted server, ingest hosted BioSamples, verify hosted query results.
-- [ ] Commit and push to `main`.
+- [x] Commit and push to `main`.
