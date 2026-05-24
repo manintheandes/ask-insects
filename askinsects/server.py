@@ -1957,7 +1957,7 @@ def ingest_video_atoms_staged(
     if max_discovery_results < 1:
         raise ValueError("max_discovery_results must be positive")
     allowed_licenses = _payload_string_list(payload, "allowed_licenses") or None
-    motion_table_paths = [Path(path) for path in _payload_string_list(payload, "motion_table_paths")]
+    motion_table_paths = [Path(path) for path in _payload_string_list(payload, "motion_table_paths")] or None
 
     staging = artifact_dir.parent / f".{artifact_dir.name}.video-atoms-staging"
     if staging.exists():
@@ -1965,7 +1965,7 @@ def ingest_video_atoms_staged(
     try:
         if artifact_dir.exists():
             prepare_mutable_staging(artifact_dir, staging)
-            copy_relative_inputs_to_staging(artifact_dir, staging, motion_table_paths)
+            copy_relative_inputs_to_staging(artifact_dir, staging, motion_table_paths or [])
         else:
             staging.mkdir(parents=True, exist_ok=True)
         result = ingest_video_atoms(

@@ -111,10 +111,11 @@ def ingest_video_atoms(
     max_discovery_results: int = 1000,
     motion_table_paths: Iterable[Path] | None = None,
 ) -> dict[str, object]:
-    resolved_motion_table_paths = [
-        path if path.is_absolute() else artifact_dir / path
-        for path in (motion_table_paths or [])
-    ]
+    resolved_motion_table_paths = (
+        [path if path.is_absolute() else artifact_dir / path for path in motion_table_paths]
+        if motion_table_paths
+        else None
+    )
     result = build_video_atom_records(
         artifact_dir,
         retrieved_at=retrieved_at,
@@ -165,7 +166,7 @@ def main(argv: list[str] | None = None) -> int:
         discover_sources=args.discover_sources,
         allow_unclear_license=args.allow_unclear_license,
         allowed_licenses=_split_csv(args.allowed_licenses),
-        motion_table_paths=[Path(path) for path in args.motion_table],
+        motion_table_paths=[Path(path) for path in args.motion_table] or None,
         max_discovery_results=args.max_discovery_results,
     )
     print(json.dumps(result, sort_keys=True))

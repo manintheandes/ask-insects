@@ -408,6 +408,25 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(row.payload["behavior_type"], "video motion")
         self.assertIn("raw/mendeley_behavior_media/Video S1 - Spot Statistics.csv#row/1", row.provenance.locator)
 
+    def test_discovers_default_mendeley_motion_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = artifact_dir / "raw" / "mendeley_behavior_media" / "table_files" / "Video S1 - Spot Statistics.csv"
+            table_path.parent.mkdir(parents=True)
+            table_path.write_text(
+                "Label,ID,TRACK_ID,QUALITY,POSITION_X,POSITION_Y,POSITION_Z,POSITION_T,FRAME\n"
+                "ID947,947,2,0.204027742,213.639373433,212.619909425,0,0.125,15\n",
+                encoding="utf-8",
+            )
+
+            result = build_video_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(result.motion_row_count, 1)
+        self.assertIn("raw/mendeley_behavior_media/table_files/Video S1 - Spot Statistics.csv#row/1", rows[0].provenance.locator)
+
     def test_discovers_or_gaps_external_video_candidates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

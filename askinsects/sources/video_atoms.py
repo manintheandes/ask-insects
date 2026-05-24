@@ -732,6 +732,26 @@ def _parse_motion_tables(
     return records
 
 
+def _default_motion_table_paths(artifact_dir: Path) -> list[Path]:
+    search_roots = (
+        artifact_dir / "raw" / "mendeley_behavior_media" / "table_files",
+        artifact_dir / "raw" / "mendeley_behavior_media",
+        artifact_dir / "raw" / "video_atoms",
+    )
+    paths: list[Path] = []
+    seen: set[Path] = set()
+    for root in search_roots:
+        if not root.exists():
+            continue
+        for path in sorted(root.glob("*.csv")):
+            resolved = path.resolve()
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            paths.append(path)
+    return paths
+
+
 def _candidate_from_discovery(raw: dict[str, object]) -> VideoCandidate | dict[str, object]:
     repository = str(raw.get("repository") or "unknown")
     title = str(raw.get("title") or "")
@@ -874,7 +894,9 @@ def build_video_atom_records(
             except Exception as exc:
                 gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_artifact_generation_failed", "record_id": candidate.source_record_id, "error": str(exc)})
 
-    motion_records = _parse_motion_tables(motion_table_paths or [], artifact_dir=artifact_dir, retrieved_at=retrieved_at, gaps=gaps)
+    if motion_table_paths is None:
+        motion_table_paths = _default_motion_table_paths(artifact_dir)
+    motion_records = _parse_motion_tables(motion_table_paths, artifact_dir=artifact_dir, retrieved_at=retrieved_at, gaps=gaps)
     records.extend(motion_records)
     records.extend(_gap_record(gap, retrieved_at=retrieved_at, index=index) for index, gap in enumerate(gaps, start=1))
     return AedesVideoAtomsResult(
