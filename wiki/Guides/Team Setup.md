@@ -15,20 +15,26 @@ Ask Insects lets a user ask insect questions in natural language from Codex, Cla
 
 ## Install
 
-The packaged team setup flow is not public yet.
+Each user should do this once on their own computer:
 
-On Josh's current machine, Ask Insects is already installed and wired to the hosted server. To check it:
-
-```bash
-ask-insects health --hosted
-```
-
-If the command is not on PATH, run this from the Ask Insects repo:
+1. Open Codex, Claude Code, or another coding-agent app.
+2. Start a new thread.
+3. Ask Josh for the current Ask Insects API URL and token.
+4. Paste these commands into the thread and run them:
 
 ```bash
-python3 -m askinsects health --hosted
+uv tool install "git+ssh://git@github.com/manintheandes/ask-insects.git"
+ask-insects setup --url "<Ask Insects API URL>" --token "<Ask Insects token>"
 ```
 
-After the health check says `ok: true`, ask an insect question normally.
+If the agent says `uv` is not installed, tell it to install `uv` with the Astral installer, add `~/.local/bin` to PATH, and run the install command again.
 
-This makes the source-backed Ask Insects path available to the agent.
+If Claude Code says `git` is not installed, tell it to install Git first, then run the install command again.
+
+5. Wait for setup to say `status: ready`.
+6. Open a fresh Codex, Claude Code, or coding-agent thread.
+7. Ask an insect question normally.
+
+This makes the new skills show up and makes the source-backed Ask Insects path available to the agent.
+
+<!-- publish-bump: 2026-05-24T06:51:53-07:00 -->

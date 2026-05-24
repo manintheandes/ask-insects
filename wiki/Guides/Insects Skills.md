@@ -9,16 +9,17 @@ Each skill teaches the agent how to do a specific Ask Insects workflow consisten
 | Skill | What it does | Example use |
 | --- | --- | --- |
 | `askinsects` | Answers insect questions using Ask Insects. | "Search Aedes aegypti records and cite the source rows." |
-| `source` | Adds, checks, or repairs source coverage when a corpus needs to become queryable. | "Add this public dataset as an Ask Insects source and prove Ask Insects can answer from it." |
+| `insectsource` | Adds, checks, or repairs Ask Insects source lanes. | "Add this public dataset as an Ask Insects source and prove Ask Insects can answer from it." |
+| `source` | Applies the general source contract when a corpus needs to become queryable. | "Map this API, parse its records, and make the smallest useful units queryable." |
 | `braintrust` | Inspects traces, spans, evals, and routing behavior when observability is wired. | "Open the trace for this Ask Insects answer and show why it chose that source." |
 | `harness-engineering` | Keeps the repo legible for agents through docs, gates, source maps, and validators. | "Make this source lane mechanically verifiable." |
 
-## Example: Source-Backed Answer
+## Example: Hosted Source Answer
 
-A normal question can route through the hosted Ask Insects server and return source-grade evidence:
+Some skills prove the source plane is working end to end. For example, `askinsects` can ask the hosted server a neurobiology question and return a sourced CATMAID skeleton manifest answer.
 
-```text
-Can we bulk download CATMAID skeleton IDs for Aedes aegypti?
-```
+![[Assets/skill-proofs/askinsects-hosted-catmaid-proof.png]]
 
-Ask Insects should answer from `aedes_neurobiology_sources`, include the CATMAID skeleton manifest record, and name the remaining whole-brain connectome package gap.
+The evidence comes from `aedes_neurobiology_sources` and cites `neuro:connectome:catmaid:skeleton-manifest`.
+
+<!-- publish-bump: 2026-05-24T06:51:53-07:00 -->

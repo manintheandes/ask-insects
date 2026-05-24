@@ -28,6 +28,28 @@ class HostedCliTests(unittest.TestCase):
             self.assertTrue(payload["ok"])
             self.assertTrue(path.exists())
 
+    def test_setup_saves_config_and_reports_ready_after_health_check(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((config.url, config.token, method, path, payload, timeout))
+            return {"ok": True, "record_count": 436182}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "config.json"
+            with patch("askinsects.cli.HOSTED_CONFIG_PATH", path), patch("askinsects.cli.hosted_request", fake_request):
+                code, output = self.run_cli("setup", "--url", "https://ask-insects.example", "--token", "secret")
+
+            self.assertEqual(code, 0)
+            payload = json.loads(output)
+            self.assertTrue(payload["ok"])
+            self.assertEqual(payload["status"], "ready")
+            self.assertEqual(payload["url"], "https://ask-insects.example")
+            self.assertEqual(payload["record_count"], 436182)
+            self.assertNotIn("secret", output)
+            self.assertEqual(calls[0], ("https://ask-insects.example", "secret", "GET", "/health", None, 120))
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["url"], "https://ask-insects.example")
+
     def test_hosted_health_uses_remote_request(self):
         calls = []
 

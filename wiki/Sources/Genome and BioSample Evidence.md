@@ -6,10 +6,10 @@ This page covers Aedes aegypti genomes, genes, transcripts, proteins, genome fea
 
 What it contains:
 
-- 39,045 hosted gene records
-- 68,438 hosted transcript records
-- 56,708 hosted protein records
-- 130,763 hosted genome-feature records
+- 19,241 hosted gene records
+- 33,961 hosted transcript records
+- 28,317 hosted protein records
+- 12,871 hosted genome-feature records
 - 20,656 hosted BioSample records
 - 3,561 hosted DNA barcode records
 - NCBI assembly and package metadata
@@ -22,3 +22,5 @@ Connects to:
 - [[Resistance and Control Evidence]]
 - [[Neurobiology and Connectome Evidence]]
 - [[Source Map]]
+
+<!-- publish-bump: 2026-05-24T06:51:53-07:00 -->

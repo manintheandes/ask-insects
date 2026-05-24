@@ -5,41 +5,41 @@
 */
 
 body {
-  --ask-insects-brand-green: #22c55e;
-  --ask-insects-brand-green-hover: #4ade80;
-  --interactive-accent: var(--ask-insects-brand-green);
-  --interactive-accent-hover: var(--ask-insects-brand-green-hover);
+  --ask-insects-brand-turquoise: #00d7c7;
+  --ask-insects-brand-turquoise-hover: #5ae6de;
+  --interactive-accent: var(--ask-insects-brand-turquoise);
+  --interactive-accent-hover: var(--ask-insects-brand-turquoise-hover);
 }
 
 body.theme-dark {
-  --link-color: var(--ask-insects-brand-green);
-  --link-color-hover: var(--ask-insects-brand-green-hover);
-  --text-accent: var(--ask-insects-brand-green);
-  --text-accent-hover: var(--ask-insects-brand-green-hover);
-  --blockquote-border-color: var(--ask-insects-brand-green);
+  --link-color: var(--ask-insects-brand-turquoise);
+  --link-color-hover: var(--ask-insects-brand-turquoise-hover);
+  --text-accent: var(--ask-insects-brand-turquoise);
+  --text-accent-hover: var(--ask-insects-brand-turquoise-hover);
+  --blockquote-border-color: var(--ask-insects-brand-turquoise);
 }
 
 body.theme-light {
-  --link-color: #15803d;
-  --link-color-hover: #166534;
-  --text-accent: #15803d;
-  --text-accent-hover: #166534;
-  --blockquote-border-color: var(--ask-insects-brand-green);
+  --link-color: #008f86;
+  --link-color-hover: #006f68;
+  --text-accent: #008f86;
+  --text-accent-hover: #006f68;
+  --blockquote-border-color: var(--ask-insects-brand-turquoise);
 }
 
 button.mod-cta,
 .modal button.mod-cta,
 .modal .modal-button-container button.mod-cta {
-  background-color: var(--ask-insects-brand-green) !important;
+  background-color: var(--ask-insects-brand-turquoise) !important;
   background-image: none !important;
-  color: #04130a !important;
+  color: #032322 !important;
 }
 
 button.mod-cta:hover,
 .modal button.mod-cta:hover,
 .modal .modal-button-container button.mod-cta:hover {
-  background-color: var(--ask-insects-brand-green-hover) !important;
-  color: #04130a !important;
+  background-color: var(--ask-insects-brand-turquoise-hover) !important;
+  color: #032322 !important;
 }
 
 .publish-renderer .mod-header.mod-ui {

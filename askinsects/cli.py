@@ -88,6 +88,10 @@ def main(argv: list[str] | None = None) -> int:
     configure.add_argument("--url", required=True)
     configure.add_argument("--token", required=True)
 
+    setup = sub.add_parser("setup")
+    setup.add_argument("--url", required=True)
+    setup.add_argument("--token", required=True)
+
     health = sub.add_parser("health")
     health.add_argument("--hosted", action="store_true")
 
@@ -202,6 +206,22 @@ def main(argv: list[str] | None = None) -> int:
         save_config(HostedConfig(url=args.url, token=args.token), path=HOSTED_CONFIG_PATH)
         emit({"ok": True, "config_path": HOSTED_CONFIG_PATH.as_posix(), "url": args.url})
         return 0
+    if args.command == "setup":
+        config = HostedConfig(url=args.url, token=args.token)
+        save_config(config, path=HOSTED_CONFIG_PATH)
+        health_payload = hosted_request(config, "GET", "/health")
+        payload = {
+            "ok": bool(health_payload.get("ok")),
+            "status": "ready" if health_payload.get("ok") else "needs_help",
+            "config_path": HOSTED_CONFIG_PATH.as_posix(),
+            "url": args.url,
+        }
+        if "record_count" in health_payload:
+            payload["record_count"] = health_payload["record_count"]
+        if "error" in health_payload:
+            payload["error"] = health_payload["error"]
+        emit(payload)
+        return 0 if payload["ok"] else 2
     if args.command == "health":
         if args.hosted:
             payload = emit_hosted("GET", "/health")
