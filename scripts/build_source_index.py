@@ -17,6 +17,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--gbif", action="store_true", help="Fetch bounded live GBIF taxonomy and occurrence records.")
     parser.add_argument("--inat", action="store_true", help="Fetch bounded live iNaturalist observations with photos.")
     parser.add_argument("--ncbi-genome", action="store_true", help="Parse an NCBI Datasets genome package.")
+    parser.add_argument("--neurobiology", action="store_true", help="Add deterministic Aedes aegypti brain and neuron source records.")
     parser.add_argument("--species", action="append", default=[], help="Scientific name to fetch from GBIF. Repeatable.")
     parser.add_argument("--occurrence-limit", type=int, default=3, help="GBIF occurrence records to fetch per species.")
     parser.add_argument("--occurrence-page-size", type=int, default=300, help="GBIF API page size for occurrence search.")
@@ -37,14 +38,17 @@ def main() -> int:
     parser = create_parser()
     args = parser.parse_args()
 
-    if not args.fixtures and not args.gbif and not args.inat and not args.ncbi_genome:
-        parser.error("select at least one source: --fixtures, --gbif, --inat, --ncbi-genome, or a combination")
+    if not args.fixtures and not args.gbif and not args.inat and not args.ncbi_genome and not args.neurobiology:
+        parser.error(
+            "select at least one source: --fixtures, --gbif, --inat, --ncbi-genome, --neurobiology, or a combination"
+        )
 
     result = build_source_index(
         include_fixtures=args.fixtures,
         include_gbif=args.gbif,
         include_inaturalist=args.inat,
         include_ncbi_genome=args.ncbi_genome,
+        include_neurobiology=args.neurobiology,
         fixture_path=Path(args.fixture_path),
         artifact_dir=Path(args.artifact_dir),
         gbif_species=args.species or None,

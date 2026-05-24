@@ -13,6 +13,7 @@ from .sources.ncbi_genome import (
     NCBI_GENOME_SOURCE_ID,
     fetch_ncbi_genome_records,
 )
+from .sources.neurobiology import NEUROBIOLOGY_SOURCE_ID, fetch_neurobiology_records
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +46,7 @@ def build_source_index(
     include_gbif: bool,
     include_inaturalist: bool = False,
     include_ncbi_genome: bool = False,
+    include_neurobiology: bool = False,
     fixture_path: Path = DEFAULT_FIXTURE_PATH,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     gbif_species: list[str] | tuple[str, ...] | None = None,
@@ -63,7 +65,13 @@ def build_source_index(
     genome_assembly_accession: str = DEFAULT_ASSEMBLY_ACCESSION,
     retrieved_at: str = FIXTURE_RETRIEVED_AT,
 ) -> dict[str, object]:
-    if not include_fixtures and not include_gbif and not include_inaturalist and not include_ncbi_genome:
+    if (
+        not include_fixtures
+        and not include_gbif
+        and not include_inaturalist
+        and not include_ncbi_genome
+        and not include_neurobiology
+    ):
         raise ValueError("at least one source must be selected")
 
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -168,6 +176,21 @@ def build_source_index(
         }
         receipt_sources[NCBI_GENOME_SOURCE_ID] = ncbi_genome_payload
 
+    neurobiology_payload: dict[str, object] | None = None
+    if include_neurobiology:
+        neurobiology_result = fetch_neurobiology_records(retrieved_at=retrieved_at)
+        records.extend(neurobiology_result.records)
+        sources.append(NEUROBIOLOGY_SOURCE_ID)
+        source_counts[NEUROBIOLOGY_SOURCE_ID] = len(neurobiology_result.records)
+        gaps.extend(neurobiology_result.gaps)
+        neurobiology_payload = {
+            "source_id": neurobiology_result.source_id,
+            "raw_artifacts": neurobiology_result.raw_artifacts,
+            "record_count": len(neurobiology_result.records),
+            "gap_count": len(neurobiology_result.gaps),
+        }
+        receipt_sources[NEUROBIOLOGY_SOURCE_ID] = neurobiology_payload
+
     index = SourceIndex(db_path)
     index.initialize()
     index.upsert_records(records)
@@ -178,6 +201,8 @@ def build_source_index(
     }
     if ncbi_genome_payload is not None:
         ncbi_genome_payload["record_count"] = source_counts.get(NCBI_GENOME_SOURCE_ID, 0)
+    if neurobiology_payload is not None:
+        neurobiology_payload["record_count"] = source_counts.get(NEUROBIOLOGY_SOURCE_ID, 0)
 
     status = {
         "ok": True,
@@ -207,6 +232,8 @@ def build_source_index(
         receipt["inaturalist"] = inaturalist_payload
     if ncbi_genome_payload is not None:
         receipt["ncbi_genome"] = ncbi_genome_payload
+    if neurobiology_payload is not None:
+        receipt["neurobiology"] = neurobiology_payload
 
     write_json(artifact_dir / "gaps.json", gaps)
     write_json(artifact_dir / "source_status.json", status)
@@ -218,4 +245,6 @@ def build_source_index(
         result["inaturalist"] = inaturalist_payload
     if ncbi_genome_payload is not None:
         result["ncbi_genome"] = ncbi_genome_payload
+    if neurobiology_payload is not None:
+        result["neurobiology"] = neurobiology_payload
     return result

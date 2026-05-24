@@ -22,6 +22,22 @@ class VerifyCompleteTests(unittest.TestCase):
         )
         self.assertIn("tests.test_ncbi_genome_source", unit_modules)
 
+    def test_verify_complete_requires_neurobiology_lane(self):
+        required_files = set(verify_complete.REQUIRED_FILES)
+        unit_modules = set(verify_complete.UNIT_TEST_MODULES)
+
+        self.assertIn("askinsects/sources/neurobiology.py", required_files)
+        self.assertIn("tests/test_neurobiology_source.py", required_files)
+        self.assertIn(
+            "docs/superpowers/specs/2026-05-23-aedes-aegypti-neurobiology-lane-design.md",
+            required_files,
+        )
+        self.assertIn(
+            "docs/superpowers/plans/2026-05-23-aedes-aegypti-neurobiology-lane.md",
+            required_files,
+        )
+        self.assertIn("tests.test_neurobiology_source", unit_modules)
+
     def test_verify_complete_gate_passes(self):
         result = subprocess.run(
             [sys.executable, "scripts/verify_complete.py"],

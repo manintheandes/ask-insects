@@ -148,6 +148,14 @@ class CliTests(unittest.TestCase):
         self.assertEqual(args.genome_package_dir, "/tmp/aedes-ncbi-package")
         self.assertEqual(args.genome_assembly_accession, "GCF_002204515.2")
 
+    def test_build_script_accepts_neurobiology_flag(self):
+        parser = create_parser()
+
+        args = parser.parse_args(["--fixtures", "--neurobiology"])
+
+        self.assertTrue(args.fixtures)
+        self.assertTrue(args.neurobiology)
+
 
 if __name__ == "__main__":
     unittest.main()

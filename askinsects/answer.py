@@ -52,6 +52,8 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
         return f"I found {len(records)} indexed mosquito media record(s)."
     if plan.answer_shape == "genomics":
         return f"From the local mosquito genomics index, {records[0].title}: {records[0].text}"
+    if plan.answer_shape == "neurobiology":
+        return f"From the local mosquito neurobiology index, {records[0].title}: {records[0].text}"
     return f"I found {len(records)} indexed mosquito record(s)."
 
 
@@ -61,6 +63,16 @@ def _search_queries(question: str) -> list[str]:
     q = question.lower()
     added_domain_phrase = False
     for phrase in (
+        "brain atlas",
+        "female brain",
+        "reference brain",
+        "segmentation files",
+        "single-nucleus",
+        "single nucleus",
+        "cell atlas",
+        "antennal lobe",
+        "olfactory sensory neurons",
+        "olfactory sensory neuron",
         "odorant receptor",
         "gustatory receptor",
         "ionotropic receptor",

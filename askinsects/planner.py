@@ -15,6 +15,33 @@ def plan_question(question: str) -> QueryPlan:
     q = question.lower()
     if "video" in q or "moving" in q:
         return QueryPlan(question, "media", ("media",), question)
+    neurobiology_terms = (
+        "brain",
+        "brains",
+        "neuron",
+        "neurons",
+        "neural",
+        "neurobiology",
+        "neuroanatomy",
+        "glia",
+        "antennal lobe",
+        "mushroom body",
+        "connectome",
+        "single-nucleus",
+        "single nucleus",
+        "snrna",
+        "snrna-seq",
+        "cell atlas",
+        "olfactory sensory neuron",
+        "olfactory sensory neurons",
+    )
+    if any(term in q for term in neurobiology_terms):
+        return QueryPlan(
+            question,
+            "neurobiology",
+            ("neurobiology", "proteins", "transcripts", "genes", "literature", "taxonomy"),
+            question,
+        )
     genomics_terms = (
         "assembly",
         "genome",

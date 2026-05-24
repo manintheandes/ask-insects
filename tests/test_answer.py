@@ -38,6 +38,8 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what should a scientist inspect next for Culex pipiens?").answer_shape, "action")
         self.assertEqual(plan_question("show mosquito videos from Brazil").answer_shape, "media")
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
+        self.assertEqual(plan_question("what neuron data exists for the Aedes aegypti brain?").answer_shape, "neurobiology")
+        self.assertEqual(plan_question("what brain regions process smell in mosquitoes?").lanes[0], "neurobiology")
 
     def test_answers_include_provenance_or_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -160,6 +162,27 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "ncbi_datasets_genome")
             self.assertIn(answer["evidence"][0]["lane"], {"genes", "transcripts", "genome_features", "proteins"})
+
+    def test_neurobiology_questions_prefer_brain_evidence(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_ncbi_genome=False,
+                include_neurobiology=True,
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            answer = answer_question("what neuron data exists for the Aedes aegypti brain?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "neurobiology")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_neurobiology_sources")
+            self.assertEqual(answer["evidence"][0]["lane"], "neurobiology")
+            self.assertIn("brain", answer["answer"].lower())
 
 
 if __name__ == "__main__":

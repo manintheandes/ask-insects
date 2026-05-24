@@ -6,6 +6,7 @@ from pathlib import Path
 
 from askinsects.builder import build_fixture_index
 from askinsects.builder import build_source_index
+from askinsects.sources.neurobiology import NEUROBIOLOGY_SOURCE_ID
 from tests.test_ncbi_genome_source import write_fake_ncbi_package
 
 
@@ -194,6 +195,33 @@ class BuilderTests(unittest.TestCase):
 
             receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
             self.assertEqual(receipt["ncbi_genome"]["package_dir"], package_dir.as_posix())
+
+    def test_build_source_index_combines_fixture_and_neurobiology_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+
+            result = build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_ncbi_genome=False,
+                include_neurobiology=True,
+                fixture_path=Path("data/fixtures/mosquito_records.json"),
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertIn(NEUROBIOLOGY_SOURCE_ID, result["sources"])
+            self.assertGreaterEqual(result["source_counts"][NEUROBIOLOGY_SOURCE_ID], 6)
+            self.assertGreaterEqual(result["lanes"]["neurobiology"], 6)
+            self.assertEqual(result["neurobiology"]["gap_count"], 0)
+
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            self.assertIn(NEUROBIOLOGY_SOURCE_ID, status["sources"])
+
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["neurobiology"]["source_id"], NEUROBIOLOGY_SOURCE_ID)
 
 
 if __name__ == "__main__":
