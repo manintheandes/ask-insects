@@ -246,6 +246,15 @@ sources:
       - Figshare
       - institutional repositories
       - paper supplements
+    discovery_targets:
+      - pmc_oa
+      - dryad
+      - mendeley
+      - osf
+      - zenodo
+      - figshare
+      - institutional
+      - paper_supplements
     lanes:
       - media
       - behavior

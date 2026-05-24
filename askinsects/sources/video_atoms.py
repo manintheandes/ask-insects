@@ -79,7 +79,16 @@ MOTION_HEADER_ALIASES = {
     "behavior_type": "behavior",
     "life stage": "life_stage",
 }
-DISCOVERY_REPOSITORIES = ("pmc_oa", "dryad", "mendeley", "osf", "zenodo", "figshare", "institutional")
+DISCOVERY_REPOSITORIES = (
+    "pmc_oa",
+    "dryad",
+    "mendeley",
+    "osf",
+    "zenodo",
+    "figshare",
+    "institutional",
+    "paper_supplements",
+)
 
 
 @dataclass(frozen=True)
@@ -179,6 +188,15 @@ def _source_dataset(row: dict[str, object], payload: dict[str, object]) -> str:
     return title or str(row.get("source") or "Aedes video source")
 
 
+def _repository_for_source(source: str) -> str | None:
+    return {
+        "pmc_open_access_videos": "pmc_oa",
+        "dryad_aedes_behavior_videos": "dryad",
+        "mendeley_aedes_behavior_media": "mendeley",
+        "osf_flighttrackai_aedes_videos": "osf",
+    }.get(source)
+
+
 def _size_from_candidate(candidate: VideoCandidate) -> int | None:
     for key in ("size", "size_bytes", "byte_size"):
         value = candidate.payload.get(key)
@@ -254,6 +272,11 @@ def _record_for_asset(
     }
     if candidate.discovery_repository:
         payload["discovery_repository"] = candidate.discovery_repository
+        payload["repository"] = candidate.discovery_repository
+    else:
+        repository = _repository_for_source(candidate.source)
+        if repository:
+            payload["repository"] = repository
     if extra_payload:
         payload.update(extra_payload)
     digest = _digest(candidate.source_record_id, candidate.media_url, verification_status)
