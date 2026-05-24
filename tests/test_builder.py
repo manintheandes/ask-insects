@@ -432,7 +432,7 @@ class BuilderTests(unittest.TestCase):
             self.assertGreaterEqual(result["source_counts"][NEUROBIOLOGY_SOURCE_ID], 6)
             self.assertGreaterEqual(result["lanes"]["neurobiology"], 6)
             self.assertEqual(result["neurobiology"]["artifact_dir"], neurobiology_artifact_dir.as_posix())
-            self.assertGreaterEqual(result["neurobiology"]["gap_count"], 2)
+            self.assertEqual(result["neurobiology"]["gap_count"], 1)
 
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertIn(NEUROBIOLOGY_SOURCE_ID, status["sources"])

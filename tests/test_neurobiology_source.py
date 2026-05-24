@@ -1,5 +1,6 @@
 import tempfile
 import gzip
+import h5py
 import io
 import json
 import tarfile
@@ -67,7 +68,25 @@ def write_fake_neurobiology_artifacts(root: Path) -> Path:
             "</sheets></workbook>",
         )
     with zipfile.ZipFile(zenodo_dir / "04_H5ADs.zip", "w") as archive:
-        archive.writestr("brain/female_brain.h5ad", "fake h5ad bytes")
+        h5ad_path = root / "female_brain.h5ad"
+        with h5py.File(h5ad_path, "w") as h5:
+            h5.create_dataset("X", data=[[1, 0, 3], [0, 2, 4]])
+            obs = h5.create_group("obs")
+            obs.create_dataset("_index", data=[b"cell-1", b"cell-2"])
+            obs.create_dataset("cell_type", data=[b"Kenyon cell", b"projection neuron"])
+            var = h5.create_group("var")
+            var.create_dataset("_index", data=[b"AAEL000001", b"AAEL000002", b"AAEL000003"])
+            var.create_dataset("gene_symbol", data=[b"orco", b"dsx", b"nix"])
+            uns = h5.create_group("uns")
+            uns.create_dataset("dataset_name", data=b"fake brain atlas")
+        archive.write(h5ad_path, "brain/female_brain.h5ad")
+
+    sra_dir = artifact_dir / "geo"
+    (sra_dir / "SRP290992_runinfo.csv").write_text(
+        "Run,Experiment,Sample,BioSample,SampleName,LibraryStrategy,LibraryLayout,spots,bases,size_MB,download_path,ScientificName\n"
+        "SRR1,SRX1,SRS1,SAMN1,GSM1_male,RNA-Seq,PAIRED,10,1340,1,https://example.test/SRR1.lite.1,Aedes aegypti\n",
+        encoding="utf-8",
+    )
 
     mosquito_dir = artifact_dir / "mosquitobrains"
     mosquito_dir.mkdir()
@@ -79,7 +98,40 @@ def write_fake_neurobiology_artifacts(root: Path) -> Path:
     download_dir = mosquito_dir / "downloads"
     download_dir.mkdir()
     with zipfile.ZipFile(download_dir / "Aedes-Reference-Brain.zip", "w") as archive:
-        archive.writestr("female_reference_brain.mhd", "ObjectType = Image")
+        nested = io.BytesIO()
+        with zipfile.ZipFile(nested, "w") as inner:
+            inner.writestr(
+                "female_reference_brain/female_reference_brain.mhd",
+                "ObjectType = Image\nNDims = 3\nDimSize = 646 649 275\nElementSpacing = 0.001 0.001 0.001\nElementType = MET_SHORT\nElementDataFile = female_reference_brain.raw\n",
+            )
+            inner.writestr("female_reference_brain/female_reference_brain.raw", b"\0" * 8)
+        archive.writestr("female_reference_brain.zip", nested.getvalue())
+    with zipfile.ZipFile(download_dir / "Segmentation-Files.zip", "w") as archive:
+        archive.writestr(
+            "individual_brain_regions/Individual_Brain_regions.mha",
+            b"ObjectType = Image\nNDims = 3\nDimSize = 646 649 275\nElementSpacing = 0.001 0.001 0.001\nElementType = MET_USHORT\nElementDataFile = LOCAL\n" + (b"\0" * 8),
+        )
+        archive.writestr(
+            "individual_brain_regions/Label_Descriptions_BrainRegions.txt",
+            '    1   255    0    0        1  1  1    "Lamina"\n'
+            '    2    38  255    0        1  1  1    "Medulla"\n',
+        )
+
+    connectome_dir = artifact_dir / "connectome" / "aedes_public" / "csvs"
+    connectome_dir.mkdir(parents=True)
+    (connectome_dir.parent / "repo.json").write_text(
+        json.dumps(
+            {
+                "full_name": "htem/aedes_public",
+                "html_url": "https://github.com/htem/aedes_public",
+                "description": "Public Aedes EM/CATMAID analysis repository",
+                "license": {"spdx_id": "GPL-3.0"},
+                "pushed_at": "2026-05-22T22:13:48Z",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (connectome_dir / "total_synapse_data.csv").write_text("class,total_synapses\nOSN,42\n", encoding="utf-8")
     return artifact_dir
 
 
@@ -136,14 +188,25 @@ class NeurobiologySourceTests(unittest.TestCase):
             self.assertIn("neuro:zenodo:14890013:file:00_README.txt", record_ids)
             self.assertIn("neuro:zenodo:14890013:workbook:09_tables.xlsx:sheet:Brain cells", record_ids)
             self.assertIn("neuro:zenodo:14890013:zip-member:04_H5ADs.zip:brain/female_brain.h5ad", record_ids)
+            self.assertIn("neuro:zenodo:14890013:h5ad-summary:brain/female_brain.h5ad", record_ids)
+            self.assertIn("neuro:zenodo:14890013:h5ad-dataset:brain/female_brain.h5ad:X", record_ids)
+            self.assertIn("neuro:zenodo:14890013:h5ad-obs-column:brain/female_brain.h5ad:cell_type", record_ids)
+            self.assertIn("neuro:zenodo:14890013:h5ad-var-column:brain/female_brain.h5ad:gene_symbol", record_ids)
+            self.assertIn("neuro:sra:SRP290992:run:SRR1", record_ids)
+            self.assertIn("neuro:sra:SRP290992:sample:GSM1_male", record_ids)
             self.assertIn("neuro:mosquitobrains:dropbox:Aedes-Reference-Brain", record_ids)
             self.assertIn("neuro:mosquitobrains:file:Aedes-Reference-Brain.zip", record_ids)
-            self.assertIn("neuro:mosquitobrains:zip-member:Aedes-Reference-Brain.zip:female_reference_brain.mhd", record_ids)
+            self.assertIn("neuro:mosquitobrains:zip-member:Aedes-Reference-Brain.zip:female_reference_brain.zip", record_ids)
+            self.assertIn("neuro:mosquitobrains:volume:Aedes-Reference-Brain.zip:female_reference_brain.zip:female_reference_brain/female_reference_brain.mhd", record_ids)
+            self.assertIn("neuro:mosquitobrains:volume:Segmentation-Files.zip:individual_brain_regions/Individual_Brain_regions.mha", record_ids)
+            self.assertIn("neuro:mosquitobrains:label:Segmentation-Files.zip:individual_brain_regions/Label_Descriptions_BrainRegions.txt:1", record_ids)
+            self.assertIn("neuro:connectome:aedes_public:repository", record_ids)
+            self.assertIn("neuro:connectome:aedes_public:csv:total_synapse_data.csv", record_ids)
             self.assertIn("neuro:connectome:wellcome:source-gap", record_ids)
 
             gap_reasons = {gap["reason"] for gap in result.gaps}
-            self.assertIn("connectome_dataset_not_public", gap_reasons)
-            self.assertIn("h5ad_internal_matrix_not_parsed", gap_reasons)
+            self.assertIn("whole_brain_connectome_download_not_public", gap_reasons)
+            self.assertNotIn("h5ad_internal_matrix_not_parsed", gap_reasons)
 
             matrix = next(record for record in result.records if record.record_id == "neuro:geo:GSE160740:GSM1_male:matrix")
             self.assertEqual(matrix.payload["matrix"]["rows"], 2)
