@@ -71,6 +71,7 @@ def write_fake_neurobiology_artifacts(root: Path) -> Path:
         h5ad_path = root / "female_brain.h5ad"
         with h5py.File(h5ad_path, "w") as h5:
             h5.create_dataset("X", data=[[1, 0, 3], [0, 2, 4]])
+            h5["X"].attrs["shape"] = [2, 3]
             obs = h5.create_group("obs")
             obs.create_dataset("_index", data=[b"cell-1", b"cell-2"])
             obs.create_dataset("cell_type", data=[b"Kenyon cell", b"projection neuron"])
@@ -212,6 +213,15 @@ class NeurobiologySourceTests(unittest.TestCase):
             self.assertEqual(matrix.payload["matrix"]["rows"], 2)
             self.assertEqual(matrix.payload["matrix"]["columns"], 2)
             self.assertEqual(matrix.payload["matrix"]["nonzero_entries"], 3)
+
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(result.records)
+            payload_rows = index.sql(
+                "select record_id from record_payloads where record_id='neuro:zenodo:14890013:h5ad-dataset:brain/female_brain.h5ad:X'",
+                limit=1,
+            )
+            self.assertEqual(len(payload_rows), 1)
 
 
 if __name__ == "__main__":

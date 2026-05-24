@@ -390,13 +390,17 @@ def _xlsx_sheet_names(path: Path) -> list[str]:
 def _clean_hdf5_value(value: object) -> object:
     if isinstance(value, bytes):
         return value.decode("utf-8", errors="replace")
+    if isinstance(value, dict):
+        return {str(key): _clean_hdf5_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_clean_hdf5_value(item) for item in value]
+    if hasattr(value, "tolist"):
+        return _clean_hdf5_value(value.tolist())
     if hasattr(value, "item"):
         try:
             return value.item()
         except (ValueError, TypeError):
             pass
-    if isinstance(value, (list, tuple)):
-        return [_clean_hdf5_value(item) for item in value]
     return value
 
 
