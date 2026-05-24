@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -268,6 +269,32 @@ def check_required_files() -> None:
     missing = [path for path in REQUIRED_FILES if not (REPO_ROOT / path).is_file()]
     if missing:
         raise RuntimeError(f"missing required file(s): {', '.join(missing)}")
+
+
+DIRECT_SOURCE_REPLACEMENT_RE = re.compile(r"\.delete_source\([^\n]+\)\s*\n\s*[^#\n]*\.upsert_records\(")
+
+
+def check_atomic_source_replacement() -> None:
+    checked_paths = [
+        path
+        for path in REQUIRED_FILES
+        if path.startswith("scripts/ingest_") or path in {"scripts/build_literature_facets.py", "askinsects/server.py"}
+    ]
+    offenders = []
+    for path in checked_paths:
+        text = (REPO_ROOT / path).read_text(encoding="utf-8")
+        if DIRECT_SOURCE_REPLACEMENT_RE.search(text):
+            offenders.append(path)
+    if offenders:
+        raise RuntimeError(
+            "source replacement must use SourceIndex.replace_source_records instead of delete_source followed by upsert_records: "
+            + ", ".join(offenders)
+        )
+
+    index_text = (REPO_ROOT / "askinsects/index.py").read_text(encoding="utf-8")
+    for term in ("def replace_source_records", "self._delete_source_records(conn, source)", "self._upsert_records(conn, chunk)"):
+        if term not in index_text:
+            raise RuntimeError(f"askinsects/index.py missing atomic replacement term: {term}")
 
 
 def check_unit_tests() -> None:
@@ -637,6 +664,7 @@ def main() -> int:
         check_required_files()
         check_unit_tests()
         check_source_index_build()
+        check_atomic_source_replacement()
         check_literature_source_map()
         check_mosquito_intelligence_coverage()
         check_cli()

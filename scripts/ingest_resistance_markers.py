@@ -100,8 +100,7 @@ def ingest_resistance_markers(
     result = build_resistance_marker_records(artifact_dir, retrieved_at=retrieved_at)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.delete_source(RESISTANCE_MARKER_SOURCE_ID)
-    index.upsert_records(result.records)
+    index.replace_source_records(RESISTANCE_MARKER_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result)
 
 

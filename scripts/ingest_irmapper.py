@@ -93,8 +93,7 @@ def ingest_irmapper(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.delete_source(IRMAPPER_SOURCE_ID)
-    index.upsert_records(result.records)
+    index.replace_source_records(IRMAPPER_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result)
 
 

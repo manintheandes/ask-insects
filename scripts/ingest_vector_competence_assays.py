@@ -98,8 +98,7 @@ def ingest_vector_competence_assays(
     result = build_vector_competence_assay_records(artifact_dir, retrieved_at=retrieved_at)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.delete_source(VECTOR_COMPETENCE_ASSAY_SOURCE_ID)
-    index.upsert_records(result.records)
+    index.replace_source_records(VECTOR_COMPETENCE_ASSAY_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result)
 
 

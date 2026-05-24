@@ -325,8 +325,7 @@ def build_literature_facets(artifact_dir: Path, *, retrieved_at: str | None = No
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     for legacy_source_id in LEGACY_FACET_SOURCE_IDS:
         index.delete_source(legacy_source_id)
-    index.delete_source(FACET_SOURCE_ID)
-    index.upsert_records(records)
+    index.replace_source_records(FACET_SOURCE_ID, records)
     _update_status_and_receipt(artifact_dir, records)
     return {
         "ok": True,

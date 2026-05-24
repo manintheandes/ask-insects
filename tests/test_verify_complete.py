@@ -10,6 +10,9 @@ class VerifyCompleteTests(unittest.TestCase):
         verify_complete.check_literature_source_map()
         self.assertIn("tests.test_literature_source", verify_complete.UNIT_TEST_MODULES)
 
+    def test_verify_complete_enforces_atomic_source_replacement(self):
+        verify_complete.check_atomic_source_replacement()
+
     def test_verify_complete_requires_ncbi_genome_lane(self):
         required_files = set(verify_complete.REQUIRED_FILES)
         unit_modules = set(verify_complete.UNIT_TEST_MODULES)

@@ -104,8 +104,7 @@ def ingest_vectorbase_genomics(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.delete_source(VECTORBASE_GENOMICS_SOURCE_ID)
-    index.upsert_records(result.records)
+    index.replace_source_records(VECTORBASE_GENOMICS_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result, retrieved)
 
 

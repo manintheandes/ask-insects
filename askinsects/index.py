@@ -268,15 +268,24 @@ class SourceIndex:
 
     def delete_source(self, source: str) -> None:
         with self.connect() as conn:
-            rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
-            record_ids = [row["record_id"] for row in rows]
-            for chunk in _chunks(record_ids):
-                placeholders = ",".join("?" for _ in chunk)
-                conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
-                conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
-                conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
-            conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))
-            conn.execute("DELETE FROM records WHERE source=?", (source,))
+            self._delete_source_records(conn, source)
+
+    def replace_source_records(self, source: str, records: list[EvidenceRecord]) -> None:
+        with self.connect() as conn:
+            self._delete_source_records(conn, source)
+            for chunk in _record_chunks(records):
+                self._upsert_records(conn, chunk)
+
+    def _delete_source_records(self, conn: sqlite3.Connection, source: str) -> None:
+        rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
+        record_ids = [row["record_id"] for row in rows]
+        for chunk in _chunks(record_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+            conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
+            conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
+        conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))
+        conn.execute("DELETE FROM records WHERE source=?", (source,))
 
     def search(self, query: str, lane: str | None = None, limit: int = 10) -> list[EvidenceRecord]:
         terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]

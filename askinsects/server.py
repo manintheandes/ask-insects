@@ -272,18 +272,7 @@ def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir:
 
 
 def replace_source_records(index: SourceIndex, source: str, records: list[object]) -> None:
-    with index.connect() as conn:
-        rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
-        record_ids = [row["record_id"] for row in rows]
-        for start in range(0, len(record_ids), 900):
-            chunk = record_ids[start : start + 900]
-            placeholders = ",".join("?" for _ in chunk)
-            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
-            conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
-            conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
-        conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))
-        conn.execute("DELETE FROM records WHERE source=?", (source,))
-        index._upsert_records(conn, records)
+    index.replace_source_records(source, records)
 
 
 def write_inaturalist_metadata(staging: Path, inaturalist_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
@@ -1290,8 +1279,7 @@ def ingest_mosquito_alert(
 
         index = SourceIndex(artifact_dir / "source_index.sqlite")
         index.initialize()
-        index.delete_source(MOSQUITO_ALERT_SOURCE_ID)
-        index.upsert_records(records)
+        index.replace_source_records(MOSQUITO_ALERT_SOURCE_ID, records)
         old_gaps = read_json(artifact_dir / "gaps.json", [])
         if not isinstance(old_gaps, list):
             old_gaps = []
@@ -1425,8 +1413,7 @@ def ingest_dryad_behavior_videos(
 
         index = SourceIndex(artifact_dir / "source_index.sqlite")
         index.initialize()
-        index.delete_source(DRYAD_BEHAVIOR_VIDEO_SOURCE_ID)
-        index.upsert_records(records)
+        index.replace_source_records(DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, records)
         old_gaps = read_json(artifact_dir / "gaps.json", [])
         if not isinstance(old_gaps, list):
             old_gaps = []
@@ -1573,8 +1560,7 @@ def ingest_mendeley_behavior_media(
 
         index = SourceIndex(artifact_dir / "source_index.sqlite")
         index.initialize()
-        index.delete_source(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID)
-        index.upsert_records(records)
+        index.replace_source_records(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, records)
         old_gaps = read_json(artifact_dir / "gaps.json", [])
         if not isinstance(old_gaps, list):
             old_gaps = []
@@ -1643,8 +1629,7 @@ def ingest_osf_flighttrackai_videos(
     records = source_result.records
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.delete_source(OSF_FLIGHTTRACKAI_SOURCE_ID)
-    index.upsert_records(records)
+    index.replace_source_records(OSF_FLIGHTTRACKAI_SOURCE_ID, records)
     response = _update_metadata(artifact_dir, source_result, retrieved_at)
     response["activated_artifact_dir"] = str(artifact_dir)
     return response
@@ -1738,8 +1723,7 @@ def ingest_pathogen_taxonomy(
 
         index = SourceIndex(artifact_dir / "source_index.sqlite")
         index.initialize()
-        index.delete_source(PATHOGEN_TAXONOMY_SOURCE_ID)
-        index.upsert_records(records)
+        index.replace_source_records(PATHOGEN_TAXONOMY_SOURCE_ID, records)
         old_gaps = read_json(artifact_dir / "gaps.json", [])
         if not isinstance(old_gaps, list):
             old_gaps = []

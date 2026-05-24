@@ -97,8 +97,7 @@ def ingest_bold_barcodes(
         retrieved_at=retrieved,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
-    index.delete_source(BOLD_SOURCE_ID)
-    index.upsert_records(result.records)
+    index.replace_source_records(BOLD_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result)
 
 

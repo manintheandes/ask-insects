@@ -225,6 +225,93 @@ class IndexTests(unittest.TestCase):
             self.assertEqual(index.sql("select record_id from records"), [])
             self.assertEqual(index.sql("select unit_id from literature_fulltext_units"), [])
 
+    def test_replace_source_records_removes_stale_source_rows_atomically(self):
+        from askinsects.sources.literature import FullTextUnit
+
+        provenance = Provenance(
+            source_id="mosquito_v1_fixtures",
+            locator="data/fixtures/mosquito_records.json#obs:1",
+            retrieved_at="2026-05-23T00:00:00Z",
+        )
+        stale_unit = FullTextUnit(
+            unit_id="obs:1:fulltext:0",
+            record_id="obs:1",
+            source="mosquito_v1_fixtures",
+            unit_index=0,
+            text="staleunique old source text",
+            url="https://example.org/fulltext",
+            license="CC-BY",
+            provenance=provenance,
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    sample_record(record_id="obs:1", payload={"version": "old"}),
+                    sample_record(record_id="obs:stale", text="staleunique old row"),
+                    sample_record(record_id="other:1", lane="taxonomy", text="other source row"),
+                ]
+            )
+            index.upsert_fulltext_units([stale_unit])
+
+            index.replace_source_records(
+                "mosquito_v1_fixtures",
+                [sample_record(record_id="obs:2", text="replacement row", payload={"version": "new"})],
+            )
+
+            self.assertEqual(
+                index.sql("select record_id from records order by record_id"),
+                [{"record_id": "obs:2"}],
+            )
+            self.assertEqual(
+                index.sql("select json_extract(payload_json, '$.version') as version from record_payloads"),
+                [{"version": "new"}],
+            )
+            self.assertEqual(
+                index.sql("select unit_id from literature_fulltext_units where text like '%staleunique%'"),
+                [],
+            )
+            self.assertEqual(
+                index.sql("select record_id from records_fts where records_fts match 'staleunique'"),
+                [],
+            )
+
+    def test_replace_source_records_rolls_back_failed_replacement(self):
+        bad_record = EvidenceRecord(
+            record_id="obs:bad",
+            lane="observations",
+            source="mosquito_v1_fixtures",
+            title=None,
+            text="bad replacement",
+            species="Aedes aegypti",
+            url="https://example.org/bad",
+            media_url=None,
+            provenance=Provenance(
+                source_id="mosquito_v1_fixtures",
+                locator="bad",
+                retrieved_at="2026-05-23T00:00:00Z",
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([sample_record(record_id="obs:old", payload={"version": "old"})])
+
+            with self.assertRaises(sqlite3.IntegrityError):
+                index.replace_source_records("mosquito_v1_fixtures", [bad_record])
+
+            self.assertEqual(
+                index.sql("select record_id, title from records"),
+                [{"record_id": "obs:old", "title": "Brazil observation"}],
+            )
+            self.assertEqual(
+                index.sql("select json_extract(payload_json, '$.version') as version from record_payloads"),
+                [{"version": "old"}],
+            )
+
     def test_read_only_sql_guard(self):
         self.assertEqual(ensure_read_only_sql("select * from records"), "select * from records")
         with self.assertRaises(ValueError):

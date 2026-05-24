@@ -118,8 +118,7 @@ def ingest_ncbi_biosamples(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.delete_source(NCBI_BIOSAMPLE_SOURCE_ID)
-    index.upsert_records(result.records)
+    index.replace_source_records(NCBI_BIOSAMPLE_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result, retrieved)
 
 

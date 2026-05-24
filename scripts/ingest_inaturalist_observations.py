@@ -38,8 +38,7 @@ def ingest_inaturalist_observations(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.delete_source(INATURALIST_SOURCE_ID)
-    index.upsert_records(result.records)
+    index.replace_source_records(INATURALIST_SOURCE_ID, result.records)
 
     old_gaps = read_json(artifact_dir / "gaps.json", [])
     if not isinstance(old_gaps, list):

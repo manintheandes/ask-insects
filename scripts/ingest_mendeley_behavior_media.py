@@ -136,8 +136,7 @@ def ingest_mendeley_behavior_media(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.delete_source(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID)
-    index.upsert_records(result.records)
+    index.replace_source_records(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result, retrieved)
 
 
