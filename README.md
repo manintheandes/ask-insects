@@ -66,6 +66,19 @@ SQLite keeps two layers:
 - `records`: normalized Ask Insects evidence rows for answers, search, and provenance.
 - `record_payloads`: raw per-record source payloads, keyed by `record_id`, for deeper source inspection.
 
+## NCBI Genomics Source Lane
+
+NCBI Datasets is the first genomics lane. V1 parses an unpacked `Aedes aegypti` genome package for assembly `GCF_002204515.2`:
+
+```bash
+python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
+python3 -m askinsects search genes "odorant receptor"
+python3 -m askinsects search proteins "gustatory receptor"
+python3 -m askinsects ask "show odorant receptor genes in Aedes aegypti"
+```
+
+This stores the package files as raw artifacts and indexes useful atoms into SQLite: genome assembly rows, GFF genes, transcripts, other genome features, and protein FASTA headers. It does not index every DNA base as an answer row.
+
 ## Hosted Ask Insects
 
 Hosted V1 follows the Ask Monarch VM pattern. The parsed SQLite index and raw source artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`.

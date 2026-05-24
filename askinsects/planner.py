@@ -15,6 +15,32 @@ def plan_question(question: str) -> QueryPlan:
     q = question.lower()
     if "video" in q or "moving" in q:
         return QueryPlan(question, "media", ("media",), question)
+    genomics_terms = (
+        "assembly",
+        "genome",
+        "gene",
+        "genes",
+        "transcript",
+        "transcripts",
+        "protein",
+        "proteins",
+        "receptor",
+        "receptors",
+        "odorant",
+        "gustatory",
+        "ionotropic",
+        "orco",
+        "cytochrome p450",
+        "sodium channel",
+        "insecticide resistance",
+    )
+    if any(term in q for term in genomics_terms):
+        return QueryPlan(
+            question,
+            "genomics",
+            ("genes", "proteins", "transcripts", "genome_features", "genome_assemblies", "literature", "taxonomy"),
+            question,
+        )
     if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
     if "what should" in q or "inspect next" in q or "take action" in q or "next step" in q:

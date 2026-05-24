@@ -38,6 +38,24 @@ Hosted Ask Insects uses the same source lanes. The difference is location: parse
 
 Hosted GBIF ingest stages a copy of the active artifact directory, fetches GBIF into the staging copy, replaces existing `gbif_api` rows in SQLite, writes receipts, and activates the staged directory only after the refresh succeeds. This keeps the old server database readable during long GBIF pulls.
 
+## Genomics
+
+Genome assembly metadata, GFF annotation features, gene rows, transcript rows, and protein FASTA headers.
+
+Sources:
+
+- `ncbi_datasets_genome`: parsed NCBI Datasets package for `Aedes aegypti` assembly `GCF_002204515.2`.
+
+The genomics lane indexes useful atoms, not every DNA base. Raw NCBI package files remain the source artifacts. SQLite rows cite locators such as `assembly_data_report.jsonl#line/1`, `genomic.gff#line/42`, or `protein.faa#protein/XP_001`.
+
+Current genomics lanes:
+
+- `genome_assemblies`
+- `genes`
+- `transcripts`
+- `genome_features`
+- `proteins`
+
 ## Papers And Literature
 
 Paper metadata, abstracts when available, open access URLs, and source identifiers.

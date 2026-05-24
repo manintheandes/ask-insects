@@ -24,11 +24,19 @@ To deep-ingest all currently reported public licensed-photo `Aedes aegypti` obse
 python3 scripts/build_source_index.py --fixtures --inat --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
 ```
 
+To add `Aedes aegypti` genomics from an unpacked NCBI Datasets package:
+
+```bash
+python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
+```
+
 Then query through the CLI:
 
 ```bash
 python3 -m askinsects ask "what do we know about Aedes aegypti?"
 python3 -m askinsects search observations "Brazil"
+python3 -m askinsects search genes "odorant receptor"
+python3 -m askinsects search proteins "gustatory receptor"
 python3 -m askinsects search papers "host seeking"
 python3 -m askinsects sql "select species, count(*) as records from records group by species"
 ```
@@ -47,6 +55,8 @@ This command talks to the hosted API. The server fetches GBIF pages with a small
 
 iNaturalist records use source id `inaturalist_api`. Raw iNaturalist responses are saved under `artifacts/mosquito-v1/raw/inaturalist/` and summarized in `artifacts/mosquito-v1/source_receipt.json`.
 Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes_aegypti_anywhere_page_001.json`.
+
+NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
 For deeper inspection, query the payload table:
 

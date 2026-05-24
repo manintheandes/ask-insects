@@ -42,6 +42,22 @@ sources:
       - media
     provenance_required: true
     live_fetch: opt_in
+  - id: ncbi_datasets_genome
+    name: NCBI Datasets Aedes aegypti genome package
+    source_type: local_or_hosted_dataset_package
+    boundary: Aedes aegypti assembly GCF_002204515.2 assembly metadata, GFF features, and protein FASTA headers
+    query_plane: sqlite_atomic_index
+    package_layout: ncbi_dataset/data
+    artifact_dir: artifacts/mosquito-v1/raw/ncbi_genome
+    assembly_accession: GCF_002204515.2
+    lanes:
+      - genome_assemblies
+      - genome_features
+      - genes
+      - transcripts
+      - proteins
+    provenance_required: true
+    live_fetch: package_path_required
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects
