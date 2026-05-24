@@ -13,7 +13,35 @@ class QueryPlan:
 
 def plan_question(question: str) -> QueryPlan:
     q = question.lower()
-    if "video" in q or "moving" in q:
+    video_motion_terms = (
+        "motion",
+        "trajectory",
+        "trajectories",
+        "tracking",
+        "track id",
+        "coordinates",
+    )
+    if any(term in q for term in video_motion_terms):
+        return QueryPlan(question, "behavior", ("behavior", "media"), question)
+    video_media_terms = (
+        "video",
+        "videos",
+        "movie",
+        "movies",
+        "moving",
+        "keyframe",
+        "keyframes",
+        "thumbnail",
+        "thumbnails",
+        "preview",
+        "previews",
+        "frame manifest",
+        "fps",
+        "codec",
+        "duration",
+        "resolution",
+    )
+    if any(term in q for term in video_media_terms):
         return QueryPlan(question, "media", ("media",), question)
     if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)

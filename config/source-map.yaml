@@ -224,6 +224,66 @@ sources:
     provenance_required: true
     live_fetch: opt_in
     binary_policy: manifest_and_download_locators_only_by_default
+  - id: aedes_video_atoms
+    name: Aedes aegypti verified video atoms and motion rows
+    source_type: derived_sqlite_source
+    boundary: Derived Aedes aegypti video intelligence records from indexed PMC, Dryad, Mendeley, OSF, repository-discovery candidates, bounded mirrored videos, ffprobe metadata, inspectable thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and explicit structured gaps for huge files, unclear licenses, missing downloads, failed probes, or out-of-scope discoveries
+    query_plane: indexed_video_records_motion_tables_and_repository_discovery_to_sqlite_video_atoms
+    artifact_dir: artifacts/mosquito-v1/raw/video_atoms
+    ingest_script: scripts/ingest_video_atoms.py
+    input_sources:
+      - pmc_open_access_videos
+      - dryad_aedes_behavior_videos
+      - mendeley_aedes_behavior_media
+      - osf_flighttrackai_aedes_videos
+      - PMC OA supplements
+      - Dryad
+      - Mendeley Data
+      - OSF
+      - Zenodo
+      - Figshare
+      - institutional repositories
+      - paper supplements
+    lanes:
+      - media
+      - behavior
+    provenance_required: true
+    live_fetch: derived_from_indexed_video_sources
+    binary_policy: bounded_mirror_when_license_and_size_allow_else_structured_gap
+    source_contract:
+      mirror_or_gap:
+        - checksum
+        - byte_size
+        - duration
+        - fps
+        - resolution
+        - codec
+        - source_paper_or_dataset
+        - license
+        - exact_locator
+      inspectable_artifacts:
+        - thumbnails
+        - keyframes
+        - preview_clips
+        - frame_manifests
+      queryable_motion_rows:
+        - behavior_type
+        - life_stage
+        - sex
+        - assay
+        - stimulus
+        - arena
+        - frame_or_time_range
+        - track_id
+        - coordinates
+        - confidence
+      structured_gaps:
+        - video_license_unclear
+        - video_too_large
+        - video_download_url_missing
+        - video_probe_failed
+        - video_artifact_generation_failed
+        - video_discovery_not_aedes_scope
   - id: irmapper_aedes
     name: IR Mapper Aedes aegypti resistance records
     source_type: public_api

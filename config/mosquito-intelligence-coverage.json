@@ -189,14 +189,15 @@
         "pmc_open_access_videos",
         "dryad_aedes_behavior_videos",
         "mendeley_aedes_behavior_media",
-        "osf_flighttrackai_aedes_videos"
+        "osf_flighttrackai_aedes_videos",
+        "aedes_video_atoms"
       ],
       "current_gates": {
         "mapped": "yes",
         "accessible": "yes",
         "atomically_queryable": "partial",
         "receipted": "yes",
-        "ask_surface_wired": "partial"
+        "ask_surface_wired": "yes"
       },
       "current_evidence": [
         "PMC supplementary-video lane maps curated Aedes aegypti article videos into media records with downloadable video locators.",
@@ -204,16 +205,20 @@
         "Dryad behavior/video dataset manifests add file-grained public Aedes video/archive records for thermal-infrared host seeking, visual-threat avoidance, looming-threat flight escape, mating/courtship/hearing, male attraction, and visual-tracking datasets without mirroring giant binary archives.",
         "Mendeley behavior/media manifests add file-grained public Aedes high-speed video, wingbeat sound, flight-tone hearing, and locomotory video-analysis dataset records without mirroring giant binaries.",
         "Mendeley public behavior table files are parsed into queryable sheet and row records where the file is in Aedes aegypti scope.",
-        "OSF FlightTrackAI manifests add file-grained public Aedes aegypti processed/unprocessed flight videos, executable bundle, trained model, and installation-instruction records without mirroring multi-gigabyte binaries."
+        "OSF FlightTrackAI manifests add file-grained public Aedes aegypti processed/unprocessed flight videos, executable bundle, trained model, and installation-instruction records without mirroring multi-gigabyte binaries.",
+        "Aedes video atoms derive video asset rows, optional bounded mirrors, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and structured gaps for oversized or license-unclear files.",
+        "Ask routing now prefers aedes_video_atoms for keyframe, thumbnail, preview, frame, motion, trajectory, tracking, fps, codec, duration, and resolution questions."
       ],
       "required_next_sources": [
-        "deep parsing of Mendeley high-speed mate-location, recognition, hearing, sound, video, and archive files beyond tabular CSV/XLSX content",
-        "deep parsing or frame-level metadata for OSF FlightTrackAI videos where licensed and storage-feasible",
-        "lab assay video metadata where public",
-        "bioacoustic or trajectory challenge datasets when mosquito-specific and licensed"
+        "systematic live sweeps of PMC OA supplements, Dryad, Mendeley, OSF, Zenodo, Figshare, institutional repositories, and paper supplements",
+        "larger licensed binary mirrors where storage and rights allow",
+        "computer-vision extraction for videos that lack source trajectory tables",
+        "lab assay video metadata where public"
       ],
       "completion_evidence": [
-        "video questions return inspectable media locators, licenses, behavior labels, and provenance, or precise external availability gaps"
+        "video questions return inspectable media locators, licenses, behavior labels, and provenance, or precise external availability gaps",
+        "keyframe, preview, fps, codec, duration, resolution, motion, trajectory, and tracking questions prefer aedes_video_atoms",
+        "downloadable video assets either have checksum, byte size, duration, fps, resolution, codec, source paper/dataset, license, and exact locator or a structured gap"
       ]
     },
     {

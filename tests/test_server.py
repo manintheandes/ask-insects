@@ -1440,6 +1440,39 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.status, 400)
             self.assertIn("max_supplement_files must be positive", response.payload["error"])
 
+    def test_ingest_video_atoms_adds_records_without_removing_existing_sources(self):
+        from tests.test_video_atoms_source import write_video_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_video_fixture(artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/video-atoms",
+                {"max_video_bytes": 100, "mirror_videos": False},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertTrue(response.payload["staged"])
+            self.assertEqual(response.payload["video_asset_count"], 2)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, lane, count(*) as n from records group by source, lane")
+            counts = {(row["source"], row["lane"]): row["n"] for row in rows}
+            self.assertGreaterEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 1)
+            self.assertEqual(counts[("aedes_video_atoms", "media")], 2)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_video_atoms'",
+            )
+            provenance_json = "\n".join(str(row["provenance_json"]) for row in provenance_rows)
+            self.assertIn("records#pmc:video:PMC123:video1.mp4", provenance_json)
+            self.assertNotIn(".video-atoms-staging", provenance_json)
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.video-atoms-staging").exists())
+
     def test_ingest_occurrence_ecology_adds_records_without_removing_existing_sources(self):
         from tests.test_occurrence_ecology_source import write_occurrence_ecology_fixture
 

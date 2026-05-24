@@ -772,6 +772,103 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "osf_flighttrackai_aedes_videos")
 
+    def test_video_atom_media_questions_prefer_inspectable_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="pmc:video:PMC123:video1.mp4",
+                        lane="media",
+                        source="pmc_open_access_videos",
+                        title="Aedes aegypti PMC supplementary video video1.mp4",
+                        text="BiteOscope Aedes aegypti mosquito biting behavior video file.",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
+                        media_url="https://example.org/video1.mp4",
+                        provenance=Provenance(
+                            source_id="pmc_open_access_videos",
+                            locator="raw/pmc_videos/PMC123.html#video/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                            source_url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:video_keyframe:pmc_video",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video keyframe for BiteOscope",
+                        text="Inspectable keyframe, thumbnail, preview, fps, codec, duration, and resolution evidence from an Aedes aegypti video.",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
+                        media_url="raw/video_atoms/artifacts/keyframe_000001.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="records#pmc:video:PMC123:video1.mp4;raw/video_atoms/artifacts/keyframe_000001.jpg",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti keyframes and previews", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+
+    def test_video_atom_motion_questions_prefer_queryable_motion_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="mendeley:table-row:motion",
+                        lane="behavior",
+                        source="mendeley_aedes_behavior_media",
+                        title="Aedes aegypti parsed behavior row",
+                        text="Aedes aegypti behavior table row for flight tracking.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/example",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/table.csv#row/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY 4.0",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:motion:pmc_video:row1",
+                        lane="behavior",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video motion row host seeking",
+                        text="Aedes aegypti video motion trajectory row with track id, frame, time range, coordinates, assay, stimulus, arena, and confidence.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/motion.csv#row/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti motion trajectory coordinates", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+
     def test_mendeley_table_questions_prefer_parsed_behavior_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

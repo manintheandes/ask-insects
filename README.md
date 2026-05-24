@@ -170,6 +170,18 @@ python3 -m askinsects search behavior "FlightTrackAI flight behavior"
 
 The lane uses source id `osf_flighttrackai_aedes_videos`. It writes the OSF project JSON, provider JSON, and recursive `osfstorage` manifests under `raw/osf_flighttrackai_videos/`, normalizes the project and folders as `behavior`, MP4 files as `media`, and executable, model, and instruction files as `behavior`. It preserves file size, OSF download URL, API locator, raw file payload, and provenance. It indexes manifest metadata by default; it does not mirror multi-gigabyte binaries unless a future repo plan explicitly requires binary mirroring.
 
+## Aedes Video Atoms Source Lane
+
+`aedes_video_atoms` turns video manifests and source tables into inspectable, queryable evidence:
+
+```bash
+python3 -m askinsects ingest-video-atoms --mirror-videos --generate-artifacts --max-video-bytes 750000000
+python3 -m askinsects ask "show Aedes aegypti keyframes and previews" --json
+python3 -m askinsects ask "show Aedes aegypti motion trajectory coordinates" --json
+```
+
+The lane derives from PMC, Dryad, Mendeley, OSF, and repository-discovery candidates. For each downloadable video it stores checksum, byte size, duration, fps, resolution, codec, source paper or dataset, license, and exact locator when mirroring and probing are allowed. If the file is too large, missing a download URL, blocked by license uncertainty, or cannot be probed, the ingest writes a structured gap instead of pretending coverage exists. When artifact generation is enabled it emits thumbnails, keyframes, preview clips, and frame manifests under `raw/video_atoms/`. Motion table inputs become `behavior` rows with behavior type, life stage, sex, assay, stimulus, arena, frame/time, track ID, coordinates, and confidence when present.
+
 ## IR Mapper Resistance Source Lane
 
 IR Mapper is the dedicated insecticide-resistance source lane for `Aedes aegypti`:

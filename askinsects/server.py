@@ -1912,6 +1912,77 @@ def ingest_extracted_facts_staged(
     return response
 
 
+def _payload_bool(payload: dict[str, object], key: str, default: bool = False) -> bool:
+    value = payload.get(key)
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in {"1", "true", "yes", "on"}
+    return bool(value)
+
+
+def _payload_string_list(payload: dict[str, object], key: str) -> list[str]:
+    value = payload.get(key)
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list) and all(isinstance(item, str) for item in value):
+        return value
+    raise ValueError(f"{key} must be a list of strings")
+
+
+def ingest_video_atoms_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_video_atoms import ingest_video_atoms
+
+    retrieved_at = payload.get("retrieved_at")
+    if retrieved_at is not None and not isinstance(retrieved_at, str):
+        raise ValueError("retrieved_at must be a string")
+    max_video_bytes = int(payload.get("max_video_bytes") or 750_000_000)
+    if max_video_bytes < 1:
+        raise ValueError("max_video_bytes must be positive")
+    max_discovery_results = int(payload.get("max_discovery_results") or 1000)
+    if max_discovery_results < 1:
+        raise ValueError("max_discovery_results must be positive")
+    allowed_licenses = _payload_string_list(payload, "allowed_licenses") or None
+    motion_table_paths = [Path(path) for path in _payload_string_list(payload, "motion_table_paths")]
+
+    staging = artifact_dir.parent / f".{artifact_dir.name}.video-atoms-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_video_atoms(
+            artifact_dir=staging,
+            retrieved_at=retrieved_at,
+            max_video_bytes=max_video_bytes,
+            mirror_videos=_payload_bool(payload, "mirror_videos"),
+            generate_artifacts=_payload_bool(payload, "generate_artifacts"),
+            discover_sources=_payload_bool(payload, "discover_sources"),
+            allow_unclear_license=_payload_bool(payload, "allow_unclear_license"),
+            allowed_licenses=allowed_licenses,
+            max_discovery_results=max_discovery_results,
+            motion_table_paths=motion_table_paths,
+        )
+        response = rewrite_artifact_references(staging, artifact_dir, result, source="aedes_video_atoms")
+        activate_source_staging(staging, artifact_dir, Path("raw") / "video_atoms")
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -2070,6 +2141,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/extracted-facts":
             result = ingest_extracted_facts_staged(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/video-atoms":
+            result = ingest_video_atoms_staged(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/occurrence-ecology":

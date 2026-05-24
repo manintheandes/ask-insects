@@ -73,6 +73,12 @@ def indexed_sources(artifact_dir: Path) -> list[str]:
     return ["mosquito_v1_fixtures"]
 
 
+def split_csv(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [part.strip() for part in value.split(",") if part.strip()]
+
+
 def emit_hosted(method: str, path: str, payload: dict[str, object] | None = None, *, timeout: int = 120) -> dict[str, object]:
     result = hosted_request(load_config(), method, path, payload, timeout=timeout)
     emit(result)
@@ -201,6 +207,17 @@ def main(argv: list[str] | None = None) -> int:
     ingest_extracted_facts.add_argument("--download-supplements", action="store_true")
     ingest_extracted_facts.add_argument("--max-supplement-files", type=int, default=100)
     ingest_extracted_facts.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
+
+    ingest_video_atoms = sub.add_parser("ingest-video-atoms")
+    ingest_video_atoms.add_argument("--hosted", action="store_true")
+    ingest_video_atoms.add_argument("--max-video-bytes", type=int, default=750_000_000)
+    ingest_video_atoms.add_argument("--mirror-videos", action="store_true")
+    ingest_video_atoms.add_argument("--generate-artifacts", action="store_true")
+    ingest_video_atoms.add_argument("--discover-sources", action="store_true")
+    ingest_video_atoms.add_argument("--allow-unclear-license", action="store_true")
+    ingest_video_atoms.add_argument("--allowed-licenses")
+    ingest_video_atoms.add_argument("--motion-table", action="append", default=[])
+    ingest_video_atoms.add_argument("--max-discovery-results", type=int, default=1000)
 
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
@@ -597,6 +614,40 @@ def main(argv: list[str] | None = None) -> int:
                 "max_supplement_bytes": args.max_supplement_bytes,
             },
             timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-video-atoms":
+        allowed_licenses = split_csv(args.allowed_licenses)
+        if not args.hosted:
+            from scripts.ingest_video_atoms import ingest_video_atoms
+
+            payload = ingest_video_atoms(
+                artifact_dir=artifact_dir,
+                max_video_bytes=args.max_video_bytes,
+                mirror_videos=args.mirror_videos,
+                generate_artifacts=args.generate_artifacts,
+                discover_sources=args.discover_sources,
+                allow_unclear_license=args.allow_unclear_license,
+                allowed_licenses=allowed_licenses or None,
+                motion_table_paths=[Path(path) for path in args.motion_table],
+                max_discovery_results=args.max_discovery_results,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/video-atoms",
+            {
+                "max_video_bytes": args.max_video_bytes,
+                "mirror_videos": args.mirror_videos,
+                "generate_artifacts": args.generate_artifacts,
+                "discover_sources": args.discover_sources,
+                "allow_unclear_license": args.allow_unclear_license,
+                "allowed_licenses": allowed_licenses,
+                "motion_table_paths": args.motion_table,
+                "max_discovery_results": args.max_discovery_results,
+            },
+            timeout=7200,
         )
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-occurrence-ecology":

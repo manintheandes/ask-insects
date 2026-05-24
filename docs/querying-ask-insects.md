@@ -90,6 +90,14 @@ python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
 ```
 
+To derive inspectable video atoms, previews, keyframes, probes, and queryable motion rows from indexed Aedes video sources:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-video-atoms --mirror-videos --generate-artifacts --max-video-bytes 750000000
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti keyframes and previews" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti motion trajectory coordinates" --json
+```
+
 To add public Dryad `Aedes aegypti` behavior/video dataset manifests:
 
 ```bash

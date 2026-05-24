@@ -43,11 +43,35 @@ RESISTANCE_MARKER_QUERY_TERMS = {
     for alias in spec.aliases
 }
 RESISTANCE_MARKER_QUERY_TERMS.update({"kdr", "vgsc", "vssc", "metabolic resistance", "resistance marker", "resistance markers"})
+VIDEO_ATOM_QUERY_TERMS = (
+    "keyframe",
+    "keyframes",
+    "thumbnail",
+    "thumbnails",
+    "preview",
+    "previews",
+    "frame manifest",
+    "motion",
+    "trajectory",
+    "trajectories",
+    "tracking",
+    "track id",
+    "coordinates",
+    "fps",
+    "codec",
+    "duration",
+    "resolution",
+)
 
 
 def _wants_extracted_facts(question: str) -> bool:
     q = question.lower()
     return any(term in q for term in ("extracted", "extracted fact", "extracted facts", "supplement", "supplementary", "table", "tables", "row", "rows"))
+
+
+def _wants_video_atoms(question: str) -> bool:
+    q = question.lower()
+    return any(term in q for term in VIDEO_ATOM_QUERY_TERMS)
 
 
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
@@ -102,6 +126,21 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
+    if _wants_video_atoms(question):
+        if any(term in q for term in ("motion", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
+            return [
+                "video motion trajectory coordinates",
+                "motion trajectory coordinates",
+                "track frame time coordinates",
+                question,
+            ]
+        return [
+            "video keyframe preview thumbnail",
+            "keyframe preview",
+            "fps codec duration resolution",
+            "video atom",
+            question,
+        ]
     if any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates")) or (
         "sra" in q and "reanalysis" not in q and "raw read" not in q and "runinfo" not in q
     ):
@@ -806,6 +845,14 @@ def _named_pathogen_terms(question: str) -> list[str]:
 
 def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if _wants_video_atoms(question):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "aedes_video_atoms" else 1,
+                0 if record.lane in {"media", "behavior"} else 1,
+            ),
+        )
     if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
         pathogen_terms = _named_pathogen_terms(question)
         wants_taxonomy = "taxonomy" in q

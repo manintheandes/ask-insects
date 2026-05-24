@@ -64,6 +64,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-mendeley-behavior-table-deep-parse.md",
     "docs/superpowers/plans/2026-05-24-aedes-osf-flighttrackai-video-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-extracted-facts.md",
+    "docs/superpowers/plans/2026-05-24-aedes-video-atoms.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -98,6 +99,7 @@ REQUIRED_FILES = (
     "askinsects/sources/resistance_markers.py",
     "askinsects/sources/occurrence_ecology.py",
     "askinsects/sources/extracted_facts.py",
+    "askinsects/sources/video_atoms.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -123,6 +125,7 @@ REQUIRED_FILES = (
     "scripts/ingest_resistance_markers.py",
     "scripts/ingest_occurrence_ecology.py",
     "scripts/ingest_extracted_facts.py",
+    "scripts/ingest_video_atoms.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -176,6 +179,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_occurrence_ecology.py",
     "tests/test_extracted_facts_source.py",
     "tests/test_ingest_extracted_facts.py",
+    "tests/test_video_atoms_source.py",
+    "tests/test_ingest_video_atoms.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -230,6 +235,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_occurrence_ecology",
     "tests.test_extracted_facts_source",
     "tests.test_ingest_extracted_facts",
+    "tests.test_video_atoms_source",
+    "tests.test_ingest_video_atoms",
 )
 
 
@@ -332,6 +339,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_occurrence_ecology",
         "vectorbase_aedes_genomics",
         "osf_flighttrackai_aedes_videos",
+        "aedes_video_atoms",
     )
     for term in required_terms:
         if term not in readme:
@@ -371,6 +379,20 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing OSF FlightTrackAI term: {term}")
+    for term in (
+        "aedes_video_atoms",
+        "scripts/ingest_video_atoms.py",
+        "indexed_video_records_motion_tables_and_repository_discovery_to_sqlite_video_atoms",
+        "bounded_mirror_when_license_and_size_allow_else_structured_gap",
+        "video_license_unclear",
+        "thumbnails",
+        "keyframes",
+        "preview_clips",
+        "frame_manifests",
+        "coordinates",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Aedes video-atoms term: {term}")
     for term in ("aedes_pathogen_taxonomy", "scripts/ingest_pathogen_taxonomy.py", "vector_competence"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing pathogen taxonomy term: {term}")
