@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make raw SRA access/workflow and MosquitoBrains voxel values queryable, while preserving the true whole-brain connectome availability boundary.
+**Goal:** Make raw SRA access/workflow, MosquitoBrains voxel values, and public CATMAID EM metadata queryable, while preserving the true whole-brain connectome bulk-download boundary.
 
 **Architecture:** Keep normalized evidence in the existing neurobiology source adapter. Store voxel access as payload metadata on volume records and resolve exact values through a focused CLI command.
 
@@ -52,3 +52,19 @@
 - [x] Rebuild `/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1`.
 - [x] Refresh the installed code snapshot.
 - [x] Verify `ask-insects voxel`, raw SRA workflow search, and connectome answers from `/tmp`.
+
+### Task 4: Public CATMAID EM Metadata
+
+**Files:**
+- Modify: `tests/test_neurobiology_source.py`
+- Modify: `scripts/ingest_neurobiology_sources.py`
+- Modify: `askinsects/sources/neurobiology.py`
+- Modify: `README.md`
+- Modify: `docs/source-lanes.md`
+- Modify: `docs/querying-ask-insects.md`
+- Modify: `config/source-map.yaml`
+
+- [x] Add a failing source fixture for the `htem/aedes_public` README CATMAID URL plus public CATMAID project, stack, annotation, and volume JSON.
+- [x] Parse CATMAID project, stack, annotation, and volume metadata into provenance-backed records.
+- [x] Extend the neurobiology ingest script to download the README and public CATMAID API JSON.
+- [x] Update docs and source map to name the public CATMAID EM metadata as covered.

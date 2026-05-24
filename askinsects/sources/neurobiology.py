@@ -1224,6 +1224,162 @@ def _connectome_records(artifact_dir: Path, *, retrieved_at: str) -> tuple[list[
             retrieved_at=retrieved_at,
         )
     )
+    readme_path = root / "README.md"
+    catmaid_url = "https://radagast.hms.harvard.edu/catmaidaedes/?pid=1&zp=173280&yp=235408&xp=324692&tool=navigator&sid0=1&s0=1"
+    if readme_path.exists():
+        raw_artifacts.append(readme_path.as_posix())
+        readme_text = readme_path.read_text(encoding="utf-8", errors="replace")
+        match = re.search(r"https://radagast\.hms\.harvard\.edu/catmaidaedes/\?[^)\s]+", readme_text)
+        if match:
+            catmaid_url = match.group(0)
+        records.append(
+            _record(
+                {
+                    "record_id": "neuro:connectome:aedes_public:readme",
+                    "record_type": "connectome_repository_readme",
+                    "title": "Aedes public repository README EM dataset locator",
+                    "text": (
+                        "The htem/aedes_public README maps the public Aedes EM dataset to a web-based CATMAID project. "
+                        f"CATMAID URL: {catmaid_url}."
+                    ),
+                    "species": "Aedes aegypti",
+                    "url": html_url,
+                    "locator": readme_path.as_posix(),
+                    "license": "GitHub public repository metadata",
+                    "catmaid_url": catmaid_url,
+                    "keywords": ["CATMAID", "EM dataset", "public Aedes connectome"],
+                },
+                retrieved_at=retrieved_at,
+            )
+        )
+    catmaid_dir = root / "catmaid"
+    projects_path = catmaid_dir / "projects.json"
+    if projects_path.exists():
+        raw_artifacts.append(projects_path.as_posix())
+        projects_payload = json.loads(projects_path.read_text(encoding="utf-8"))
+        if isinstance(projects_payload, list):
+            for project in projects_payload:
+                if not isinstance(project, dict):
+                    continue
+                project_id = str(project.get("id", "unknown"))
+                records.append(
+                    _record(
+                        {
+                            "record_id": f"neuro:connectome:catmaid:project:{project_id}",
+                            "record_type": "catmaid_project",
+                            "title": f"CATMAID Aedes project {project_id}",
+                            "text": (
+                                f"Public CATMAID project {project_id} for Aedes EM data is accessible. "
+                                f"Comment: {project.get('comment', '')}."
+                            ),
+                            "species": "Aedes aegypti",
+                            "url": catmaid_url,
+                            "locator": f"{projects_path.as_posix()}#project/{project_id}",
+                            "license": "CATMAID public metadata",
+                            "project": project,
+                            "keywords": ["CATMAID", "EM dataset", "project"],
+                        },
+                        retrieved_at=retrieved_at,
+                    )
+                )
+    stacks_path = catmaid_dir / "stacks.json"
+    stack_info_by_id: dict[str, dict[str, object]] = {}
+    for stack_info_path in sorted(catmaid_dir.glob("stack_*_info.json")):
+        raw_artifacts.append(stack_info_path.as_posix())
+        stack_id = stack_info_path.stem.removeprefix("stack_").removesuffix("_info")
+        stack_payload = json.loads(stack_info_path.read_text(encoding="utf-8"))
+        if isinstance(stack_payload, dict):
+            stack_info_by_id[stack_id] = stack_payload
+    if stacks_path.exists():
+        raw_artifacts.append(stacks_path.as_posix())
+        stacks_payload = json.loads(stacks_path.read_text(encoding="utf-8"))
+        if isinstance(stacks_payload, list):
+            for stack in stacks_payload:
+                if not isinstance(stack, dict):
+                    continue
+                stack_id = str(stack.get("id", "unknown"))
+                info = stack_info_by_id.get(stack_id, {})
+                records.append(
+                    _record(
+                        {
+                            "record_id": f"neuro:connectome:catmaid:stack:{stack_id}",
+                            "record_type": "catmaid_stack",
+                            "title": f"CATMAID Aedes stack {stack.get('title', stack_id)}",
+                            "text": (
+                                f"Public CATMAID stack {stack.get('title', stack_id)} is accessible for Aedes EM image data. "
+                                f"Dimensions: {info.get('dimension')}; resolution: {info.get('resolution')}."
+                            ),
+                            "species": "Aedes aegypti",
+                            "url": catmaid_url,
+                            "locator": f"{stacks_path.as_posix()}#stack/{stack_id}",
+                            "license": "CATMAID public metadata",
+                            "stack": stack,
+                            "stack_info": info,
+                            "keywords": ["CATMAID", "EM stack", "image data"],
+                        },
+                        retrieved_at=retrieved_at,
+                    )
+                )
+    annotations_path = catmaid_dir / "annotations.json"
+    if annotations_path.exists():
+        raw_artifacts.append(annotations_path.as_posix())
+        annotations_payload = json.loads(annotations_path.read_text(encoding="utf-8"))
+        annotations = annotations_payload.get("annotations") if isinstance(annotations_payload, dict) else None
+        if isinstance(annotations, list):
+            for annotation in annotations:
+                if not isinstance(annotation, dict):
+                    continue
+                annotation_id = str(annotation.get("id", "unknown"))
+                name = str(annotation.get("name", annotation_id))
+                records.append(
+                    _record(
+                        {
+                            "record_id": f"neuro:connectome:catmaid:annotation:{annotation_id}",
+                            "record_type": "catmaid_annotation",
+                            "title": f"CATMAID Aedes annotation {name}",
+                            "text": f"Public CATMAID annotation {annotation_id} is named {name}.",
+                            "species": "Aedes aegypti",
+                            "url": catmaid_url,
+                            "locator": f"{annotations_path.as_posix()}#annotation/{annotation_id}",
+                            "license": "CATMAID public metadata",
+                            "annotation": annotation,
+                            "keywords": ["CATMAID", "annotation", name],
+                        },
+                        retrieved_at=retrieved_at,
+                    )
+                )
+    volumes_path = catmaid_dir / "volumes.json"
+    if volumes_path.exists():
+        raw_artifacts.append(volumes_path.as_posix())
+        volumes_payload = json.loads(volumes_path.read_text(encoding="utf-8"))
+        columns = volumes_payload.get("columns") if isinstance(volumes_payload, dict) else None
+        data = volumes_payload.get("data") if isinstance(volumes_payload, dict) else None
+        if isinstance(columns, list) and isinstance(data, list):
+            for row in data:
+                if not isinstance(row, list):
+                    continue
+                volume = {str(column): row[index] if index < len(row) else None for index, column in enumerate(columns)}
+                volume_id = str(volume.get("id", "unknown"))
+                records.append(
+                    _record(
+                        {
+                            "record_id": f"neuro:connectome:catmaid:volume:{volume_id}",
+                            "record_type": "catmaid_volume",
+                            "title": f"CATMAID Aedes volume {volume.get('name', volume_id)}",
+                            "text": (
+                                f"Public CATMAID volume {volume_id} is named {volume.get('name', '')}. "
+                                f"Area: {volume.get('area')}; volume: {volume.get('volume')}."
+                            ),
+                            "species": "Aedes aegypti",
+                            "url": catmaid_url,
+                            "locator": f"{volumes_path.as_posix()}#volume/{volume_id}",
+                            "license": "CATMAID public metadata",
+                            "volume": volume,
+                            "keywords": ["CATMAID", "volume", "EM dataset"],
+                        },
+                        retrieved_at=retrieved_at,
+                    )
+                )
     csv_dir = root / "csvs"
     for csv_path in sorted(csv_dir.glob("*.csv")):
         raw_artifacts.append(csv_path.as_posix())

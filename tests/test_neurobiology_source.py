@@ -135,7 +135,48 @@ def write_fake_neurobiology_artifacts(root: Path) -> Path:
         ),
         encoding="utf-8",
     )
+    (connectome_dir.parent / "README.md").write_text(
+        "## EM dataset\n\n"
+        "Image data can be accessed through [CATMAID](https://radagast.hms.harvard.edu/catmaidaedes/?pid=1&zp=173280&yp=235408&xp=324692&tool=navigator&sid0=1&s0=1)\n",
+        encoding="utf-8",
+    )
     (connectome_dir / "total_synapse_data.csv").write_text("class,total_synapses\nOSN,42\n", encoding="utf-8")
+    catmaid_dir = connectome_dir.parent / "catmaid"
+    catmaid_dir.mkdir()
+    (catmaid_dir / "projects.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": 1,
+                    "title": "aedes_r194",
+                    "comment": "Aedes CO2 EM project",
+                    "stacks": [{"id": 1, "title": "aedes_r194_Flower"}],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (catmaid_dir / "stacks.json").write_text(
+        json.dumps([{"id": 1, "pid": 1, "title": "aedes_r194_Flower", "comment": ""}]),
+        encoding="utf-8",
+    )
+    (catmaid_dir / "stack_1_info.json").write_text(
+        json.dumps({"dimension": {"x": 100, "y": 200, "z": 300}, "resolution": {"x": 4, "y": 4, "z": 40}}),
+        encoding="utf-8",
+    )
+    (catmaid_dir / "annotations.json").write_text(
+        json.dumps({"annotations": [{"id": 46, "name": "central neuron"}, {"id": 47, "name": "projection neuron"}]}),
+        encoding="utf-8",
+    )
+    (catmaid_dir / "volumes.json").write_text(
+        json.dumps(
+            {
+                "columns": ["id", "name", "comment", "area", "volume"],
+                "data": [[18, "MD1", "example volume", 12.5, 42.0]],
+            }
+        ),
+        encoding="utf-8",
+    )
     return artifact_dir
 
 
@@ -207,7 +248,12 @@ class NeurobiologySourceTests(unittest.TestCase):
             self.assertIn("neuro:mosquitobrains:volume:Segmentation-Files.zip:individual_brain_regions/Individual_Brain_regions.mha", record_ids)
             self.assertIn("neuro:mosquitobrains:label:Segmentation-Files.zip:individual_brain_regions/Label_Descriptions_BrainRegions.txt:1", record_ids)
             self.assertIn("neuro:connectome:aedes_public:repository", record_ids)
+            self.assertIn("neuro:connectome:aedes_public:readme", record_ids)
             self.assertIn("neuro:connectome:aedes_public:csv:total_synapse_data.csv", record_ids)
+            self.assertIn("neuro:connectome:catmaid:project:1", record_ids)
+            self.assertIn("neuro:connectome:catmaid:stack:1", record_ids)
+            self.assertIn("neuro:connectome:catmaid:annotation:46", record_ids)
+            self.assertIn("neuro:connectome:catmaid:volume:18", record_ids)
             self.assertIn("neuro:connectome:wellcome:source-gap", record_ids)
 
             gap_reasons = {gap["reason"] for gap in result.gaps}

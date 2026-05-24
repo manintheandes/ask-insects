@@ -84,8 +84,10 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
+    if "catmaid" in q or "em dataset" in q or ("public" in q and "connectome" in q):
+        return ["CATMAID project accessible", "Public CATMAID project", "CATMAID Aedes project", "CATMAID EM dataset", "aedes_public", question]
     if "connectome" in q:
-        return ["connectome", question]
+        return ["whole brain connectome source gap", "connectome", question]
     if "h5ad" in q or "anndata" in q:
         return ["H5AD", "Mosquito Cell Atlas H5AD", question]
     if "sra" in q and ("reanalysis" in q or "workflow" in q or "align" in q or "alignment" in q):
@@ -94,8 +96,6 @@ def _search_queries(question: str) -> list[str]:
         return ["SRA SRP290992", "SRA raw read", "SRR12972760", question]
     if "voxel" in q or "mha" in q or "mhd" in q or "volume" in q:
         return ["DimSize", "brain volume", question]
-    if "catmaid" in q or "em dataset" in q:
-        return ["CATMAID EM connectome", "aedes_public", question]
     queries = [question]
     species = _requested_species(question)
     added_domain_phrase = False

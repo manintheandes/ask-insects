@@ -62,13 +62,13 @@ Brain atlas, neuroanatomy, brain single-nucleus RNA-seq, cell atlas package arti
 
 Sources:
 
-- `aedes_neurobiology_sources`: source records for mosquitobrains.org, GEO `GSE160740`, SRA `SRP290992` runinfo, the Mosquito Cell Atlas Zenodo record and file package, public Aedes EM/CATMAID repository inventories, and selected open neurobiology studies.
+- `aedes_neurobiology_sources`: source records for mosquitobrains.org, GEO `GSE160740`, SRA `SRP290992` runinfo, the Mosquito Cell Atlas Zenodo record and file package, public Aedes EM/CATMAID repository, CATMAID API metadata, and selected open neurobiology studies.
 
 Current neurobiology lane:
 
 - `neurobiology`
 
-The artifact cache lives at `~/.local/share/ask-insects/sources/neurobiology` by default and is populated with `scripts/ingest_neurobiology_sources.py`. When the cache is supplied to `scripts/build_source_index.py --neurobiology --neurobiology-artifact-dir`, SQLite indexes GEO matrix summaries and feature rows, SRA run and sample metadata, raw SRA access and reanalysis workflow records, Zenodo files and ZIP members, H5AD internal AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains download links/files/ZIP members, MHD/MHA volume headers, coordinate-queryable voxel access locators, ITK-SNAP region labels, public Aedes EM/CATMAID CSV inventories, and an explicit whole-brain connectome source-gap row. Exact voxel values are read on demand with `ask-insects voxel <record_id> --x <x> --y <y> --z <z>` so the index does not need one row per voxel. The source index does not claim compute-heavy raw SRA alignment/count outputs have already been executed. A complete public whole-brain connectome download remains an explicit external availability gap.
+The artifact cache lives at `~/.local/share/ask-insects/sources/neurobiology` by default and is populated with `scripts/ingest_neurobiology_sources.py`. When the cache is supplied to `scripts/build_source_index.py --neurobiology --neurobiology-artifact-dir`, SQLite indexes GEO matrix summaries and feature rows, SRA run and sample metadata, raw SRA access and reanalysis workflow records, Zenodo files and ZIP members, H5AD internal AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains download links/files/ZIP members, MHD/MHA volume headers, coordinate-queryable voxel access locators, ITK-SNAP region labels, public Aedes EM/CATMAID project, stack, annotation, and volume metadata, public Aedes EM/CATMAID CSV inventories, and an explicit whole-brain connectome source-gap row. Exact voxel values are read on demand with `ask-insects voxel <record_id> --x <x> --y <y> --z <z>` so the index does not need one row per voxel. The source index does not claim compute-heavy raw SRA alignment/count outputs have already been executed. A complete public whole-brain connectome bulk download remains an explicit external availability gap.
 
 ## Papers And Literature
 

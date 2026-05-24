@@ -22,6 +22,13 @@ MOSQUITOBRAINS_DOWNLOADS_URL = "https://www.mosquitobrains.org/downloads-and-lin
 ZENODO_API_URL = "https://zenodo.org/api/records/14890013"
 AEDES_PUBLIC_REPO_API_URL = "https://api.github.com/repos/htem/aedes_public"
 AEDES_PUBLIC_CSVS_API_URL = "https://api.github.com/repos/htem/aedes_public/contents/csvs"
+AEDES_PUBLIC_README_URL = "https://raw.githubusercontent.com/htem/aedes_public/main/README.md"
+CATMAID_BASE_URL = "https://radagast.hms.harvard.edu/catmaidaedes"
+CATMAID_PROJECTS_URL = f"{CATMAID_BASE_URL}/projects/"
+CATMAID_STACKS_URL = f"{CATMAID_BASE_URL}/1/stacks"
+CATMAID_STACK_1_INFO_URL = f"{CATMAID_BASE_URL}/1/stack/1/info"
+CATMAID_ANNOTATIONS_URL = f"{CATMAID_BASE_URL}/1/annotations/"
+CATMAID_VOLUMES_URL = f"{CATMAID_BASE_URL}/1/volumes/"
 USER_AGENT = "ask-insects-neurobiology-ingest/1.0 (+https://github.com/openai/codex)"
 
 
@@ -215,6 +222,40 @@ def ingest(artifact_dir: Path, *, download_dropbox: bool = True) -> dict[str, ob
                 "status": "downloaded",
             }
         )
+        readme_text = fetch_text(AEDES_PUBLIC_README_URL)
+        readme_path = connectome_dir / "README.md"
+        readme_path.write_text(readme_text, encoding="utf-8")
+        downloads.append(
+            {
+                "source": "connectome",
+                "url": AEDES_PUBLIC_README_URL,
+                "path": readme_path.as_posix(),
+                "ok": True,
+                "status": "downloaded",
+            }
+        )
+        catmaid_dir = connectome_dir / "catmaid"
+        catmaid_dir.mkdir(parents=True, exist_ok=True)
+        for label, url, filename in (
+            ("catmaid_projects", CATMAID_PROJECTS_URL, "projects.json"),
+            ("catmaid_stacks", CATMAID_STACKS_URL, "stacks.json"),
+            ("catmaid_stack_1_info", CATMAID_STACK_1_INFO_URL, "stack_1_info.json"),
+            ("catmaid_annotations", CATMAID_ANNOTATIONS_URL, "annotations.json"),
+            ("catmaid_volumes", CATMAID_VOLUMES_URL, "volumes.json"),
+        ):
+            payload = fetch_json_payload(url)
+            path = catmaid_dir / filename
+            write_json(path, payload)
+            downloads.append(
+                {
+                    "source": "connectome",
+                    "key": label,
+                    "url": url,
+                    "path": path.as_posix(),
+                    "ok": True,
+                    "status": "downloaded",
+                }
+            )
         csv_items = fetch_json_payload(AEDES_PUBLIC_CSVS_API_URL)
         if not isinstance(csv_items, list):
             gaps.append({"source": "connectome", "reason": "github_csv_listing_not_list", "url": AEDES_PUBLIC_CSVS_API_URL})
