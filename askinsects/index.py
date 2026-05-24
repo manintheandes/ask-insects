@@ -98,6 +98,11 @@ def _chunks(values: list[str], size: int = 500) -> list[list[str]]:
     return [values[index : index + size] for index in range(0, len(values), size)]
 
 
+def _record_chunks(records: list[EvidenceRecord], size: int = 500) -> Iterator[list[EvidenceRecord]]:
+    for index in range(0, len(records), size):
+        yield records[index : index + size]
+
+
 class SourceIndex:
     def __init__(self, path: Path):
         self.path = Path(path)
@@ -124,7 +129,8 @@ class SourceIndex:
         if not records:
             return
         with self.connect() as conn:
-            self._upsert_records(conn, records)
+            for chunk in _record_chunks(records):
+                self._upsert_records(conn, chunk)
 
     def upsert_fulltext_units(self, units: list[FullTextUnit]) -> None:
         with self.connect() as conn:
