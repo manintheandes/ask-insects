@@ -57,6 +57,17 @@ Current genomics lanes:
 - `transcripts`
 - `genome_features`
 - `proteins`
+- `dna_barcodes`
+
+## DNA Barcodes
+
+Public BOLD barcode records for `Aedes aegypti` specimen and marker evidence.
+
+Sources:
+
+- `bold_api`: bounded BOLD public combined TSV records fetched with `scripts/ingest_bold_barcodes.py`.
+
+The barcode lane indexes BOLD process IDs as `dna_barcodes` records with marker code, country/province, collection date, BIN URI, GenBank accession, sequence length, and provenance to the saved TSV row. It is a bounded ingest: if BOLD returns more rows than the configured cap, Ask Insects records a `bold_limit_applied` gap instead of pretending the lane is complete.
 
 ## Neurobiology
 

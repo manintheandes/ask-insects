@@ -59,6 +59,7 @@ REQUIRED_FILES = (
     "askinsects/voxels.py",
     "askinsects/sources/__init__.py",
     "askinsects/sources/fixtures.py",
+    "askinsects/sources/bold_barcodes.py",
     "askinsects/sources/gbif.py",
     "askinsects/sources/inaturalist.py",
     "askinsects/sources/literature.py",
@@ -72,9 +73,11 @@ REQUIRED_FILES = (
     "scripts/verify_complete.py",
     "scripts/verify_mosquito_intelligence_coverage.py",
     "scripts/build_literature_facets.py",
+    "scripts/ingest_bold_barcodes.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
+    "tests/test_bold_barcode_source.py",
     "tests/test_cli.py",
     "tests/test_cli_hosted.py",
     "tests/test_deploy_files.py",
@@ -92,11 +95,13 @@ REQUIRED_FILES = (
     "tests/test_verify_complete.py",
     "tests/test_mosquito_intelligence_coverage.py",
     "tests/test_literature_facets.py",
+    "tests/test_ingest_bold_barcodes.py",
 )
 
 UNIT_TEST_MODULES = (
     "tests.test_answer",
     "tests.test_builder",
+    "tests.test_bold_barcode_source",
     "tests.test_cli",
     "tests.test_cli_hosted",
     "tests.test_deploy_files",
@@ -113,6 +118,7 @@ UNIT_TEST_MODULES = (
     "tests.test_server",
     "tests.test_mosquito_intelligence_coverage",
     "tests.test_literature_facets",
+    "tests.test_ingest_bold_barcodes",
 )
 
 

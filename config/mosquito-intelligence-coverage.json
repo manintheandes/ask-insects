@@ -53,7 +53,8 @@
       "status": "partial_source_grade",
       "target_state": "Reference genomes, genes, proteins, transcripts, variants, orthology, barcodes, expression summaries, microbiome links, strains, and resistance markers for Aedes aegypti.",
       "current_sources": [
-        "ncbi_datasets_genome"
+        "ncbi_datasets_genome",
+        "bold_api"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -69,7 +70,6 @@
       "required_next_sources": [
         "VectorBase or successor vector genomics resources",
         "NCBI variation and BioSample links",
-        "BOLD COI barcode records",
         "additional Aedes aegypti reference, strain, variation, BioSample, and expression packages",
         "orthology and resistance mutation references"
       ],

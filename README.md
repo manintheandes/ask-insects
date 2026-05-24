@@ -86,6 +86,18 @@ python3 -m askinsects ask "show odorant receptor genes in Aedes aegypti"
 
 This stores the package files as raw artifacts and indexes useful atoms into SQLite: genome assembly rows, GFF genes, transcripts, other genome features, and protein FASTA headers. It does not index every DNA base as an answer row.
 
+## BOLD DNA Barcode Source Lane
+
+BOLD is the public DNA barcode source lane for `Aedes aegypti` specimen and COI-style marker records:
+
+```bash
+python3 scripts/ingest_bold_barcodes.py --artifact-dir artifacts/mosquito-v1 --species "Aedes aegypti" --limit 500
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search dna_barcodes "COI Aedes aegypti"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show BOLD COI barcode records for Aedes aegypti" --json
+```
+
+The lane writes raw BOLD TSV under `raw/bold/`, normalizes public barcode/specimen atoms into `dna_barcodes`, stores raw row payloads in SQLite, and records bounded-download gaps such as `bold_limit_applied`.
+
 ## Aedes aegypti Neurobiology Source Lane
 
 The neurobiology lane can run as metadata-only, or from a downloaded raw-artifact cache:

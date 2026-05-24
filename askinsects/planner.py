@@ -68,6 +68,13 @@ def plan_question(question: str) -> QueryPlan:
         )
     genomics_terms = (
         "assembly",
+        "barcode",
+        "barcodes",
+        "bold",
+        "coi",
+        "coi-5p",
+        "dna barcode",
+        "dna barcodes",
         "genome",
         "gene",
         "genes",
@@ -86,7 +93,9 @@ def plan_question(question: str) -> QueryPlan:
         "insecticide resistance",
     )
     if any(term in q for term in genomics_terms):
-        if any(term in q for term in ("receptor", "receptors", "odorant", "gustatory", "ionotropic", "orco")):
+        if any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p")):
+            lanes = ("dna_barcodes", "genes", "proteins", "literature", "taxonomy")
+        elif any(term in q for term in ("receptor", "receptors", "odorant", "gustatory", "ionotropic", "orco")):
             lanes = ("proteins", "transcripts", "genome_features", "genes", "genome_assemblies", "literature", "taxonomy")
         elif "assembly" in q or "genome" in q:
             lanes = ("genome_assemblies", "genes", "transcripts", "proteins", "genome_features", "literature", "taxonomy")

@@ -123,6 +123,28 @@ def literature_record(record_id, title, text):
     )
 
 
+def barcode_record(record_id, marker):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="dna_barcodes",
+        source="bold_api",
+        title=f"BOLD DNA barcode {record_id} for Aedes aegypti",
+        text=(
+            f"BOLD barcode specimen {record_id} identifies Aedes aegypti. "
+            f"Marker: {marker}. Country/province: Honduras. Collection date: unknown date."
+        ),
+        species="Aedes aegypti",
+        url=f"https://portal.boldsystems.org/record/{record_id}",
+        media_url=None,
+        provenance=Provenance(
+            source_id="bold_api",
+            locator=f"test#{record_id}",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="BOLD public data",
+        ),
+    )
+
+
 class AnswerTests(unittest.TestCase):
     def test_planner_routes_identity_evidence_action_and_gap(self):
         self.assertEqual(plan_question("what do we know about Aedes aegypti?").answer_shape, "identity")
@@ -132,6 +154,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what insecticide resistance data exists for Aedes aegypti?").answer_shape, "resistance")
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
+        self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
         self.assertEqual(plan_question("what neuron data exists for the Aedes aegypti brain?").answer_shape, "neurobiology")
         self.assertEqual(plan_question("what brain regions process smell in mosquitoes?").lanes[0], "neurobiology")
@@ -353,6 +376,25 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "ncbi_datasets_genome")
             self.assertIn(answer["evidence"][0]["lane"], {"genes", "transcripts", "genome_features", "proteins"})
+
+    def test_coi_barcode_questions_prefer_coi_marker_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    barcode_record("GBFSB7979-24", "ITS2"),
+                    barcode_record("GBAAW12253-24", "COI-5P"),
+                ]
+            )
+
+            answer = answer_question("show BOLD COI barcode records for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "GBAAW12253-24")
+            self.assertIn("Marker: COI-5P", answer["evidence"][0]["text"])
 
     def test_neurobiology_questions_prefer_brain_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:

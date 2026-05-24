@@ -205,6 +205,22 @@ def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
     return any(re.search(rf"\b{re.escape(token)}\b", haystack) for token in tokens)
 
 
+def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p")):
+        return records
+
+    def score(record: EvidenceRecord) -> tuple[int, int, int]:
+        haystack = f"{record.title}\n{record.text}".lower()
+        return (
+            0 if record.lane == "dna_barcodes" else 1,
+            0 if any(term in haystack for term in ("coi-5p", "marker: coi", "marker:coi", " coi ")) else 1,
+            0 if record.source == "bold_api" else 1,
+        )
+
+    return sorted(records, key=score)
+
+
 def _index_ready(index: SourceIndex) -> bool:
     if not index.path.exists():
         return False
@@ -269,6 +285,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         if not literature_records:
             return source_gap(plan, "The Ask Insects index has no matching literature records.")
         all_records = literature_records
+
+    if plan.answer_shape == "genomics":
+        all_records = _prioritize_genomics_records(plan.question, all_records)
 
     if not all_records:
         return source_gap(plan, "No matching Ask Insects records were found in the checked lanes.")

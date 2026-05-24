@@ -79,6 +79,18 @@ sources:
       - proteins
     provenance_required: true
     live_fetch: package_path_required
+  - id: bold_api
+    name: BOLD public Aedes aegypti DNA barcode records
+    source_type: public_api
+    boundary: Bounded public BOLD combined TSV records for Aedes aegypti DNA barcode specimens, including marker, country, collection metadata, BIN, GenBank accession, and sequence length when provided
+    query_plane: bold_public_combined_tsv
+    api_base: https://v3.boldsystems.org/index.php/API_Public/combined
+    artifact_dir: artifacts/mosquito-v1/raw/bold
+    ingest_script: scripts/ingest_bold_barcodes.py
+    lanes:
+      - dna_barcodes
+    provenance_required: true
+    live_fetch: opt_in
   - id: aedes_neurobiology_sources
     name: Aedes aegypti neurobiology sources
     source_type: local_public_artifact_cache
