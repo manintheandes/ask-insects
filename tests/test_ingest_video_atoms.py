@@ -62,15 +62,15 @@ class IngestVideoAtomsTests(unittest.TestCase):
             rows = index.sql("select source, lane, count(*) as n from records group by source, lane", limit=100)
             counts = {(row["source"], row["lane"]): int(row["n"]) for row in rows}
             self.assertEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 1)
-            self.assertEqual(counts[("aedes_video_atoms", "media")], 2)
+            self.assertEqual(counts[("aedes_video_atoms", "media")], 4)
             payload_rows = index.sql("select count(*) as n from record_payloads where source='aedes_video_atoms'")
-            self.assertEqual(payload_rows[0]["n"], 2)
+            self.assertEqual(payload_rows[0]["n"], 4)
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertIn("aedes_video_atoms", status["sources"])
             self.assertEqual(status["aedes_video_atoms"]["video_asset_count"], 2)
             self.assertEqual(status["aedes_video_atoms"]["mirrored_video_count"], 1)
             receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
-            self.assertEqual(receipt["aedes_video_atoms"]["record_count"], 2)
+            self.assertEqual(receipt["aedes_video_atoms"]["record_count"], 4)
             gaps = json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))
             self.assertTrue(any(gap.get("reason") == "video_license_unclear" for gap in gaps))
 

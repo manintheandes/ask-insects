@@ -432,6 +432,40 @@ def _artifact_records(
     return records
 
 
+def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> EvidenceRecord:
+    reason = str(gap.get("reason") or "video_gap")
+    source_record_id = str(gap.get("record_id") or gap.get("title") or gap.get("repository") or f"gap-{index}")
+    digest = _digest(reason, source_record_id, json.dumps(gap, sort_keys=True, default=str), index)
+    locator = str(gap.get("locator") or f"gaps.json#aedes_video_atoms/{index}")
+    source_url = gap.get("source_url")
+    url = source_url if isinstance(source_url, str) and source_url else None
+    license_value = gap.get("license")
+    title = f"Aedes aegypti video gap {reason}"
+    text = f"Aedes aegypti video source gap: {reason}. Source record: {source_record_id}."
+    if gap.get("repository"):
+        text += f" Repository: {gap.get('repository')}."
+    if gap.get("error"):
+        text += f" Error: {gap.get('error')}."
+    return EvidenceRecord(
+        record_id=f"video_atom:gap:{_safe_id(source_record_id)}:{digest}",
+        lane="media",
+        source=VIDEO_ATOMS_SOURCE_ID,
+        title=title,
+        text=text,
+        species="Aedes aegypti",
+        url=url,
+        media_url=None,
+        provenance=Provenance(
+            source_id=VIDEO_ATOMS_SOURCE_ID,
+            locator=locator,
+            retrieved_at=retrieved_at,
+            license=license_value if isinstance(license_value, str) else None,
+            source_url=url,
+        ),
+        payload={"atom_type": "video_gap", **gap},
+    )
+
+
 def generate_video_artifacts(asset_path: Path, output_dir: Path, probe: dict[str, object]) -> dict[str, object]:
     if shutil.which("ffmpeg") is None:
         raise FileNotFoundError("ffmpeg not found")
@@ -672,6 +706,7 @@ def build_video_atom_records(
 
     motion_records = _parse_motion_tables(motion_table_paths or [], artifact_dir=artifact_dir, retrieved_at=retrieved_at, gaps=gaps)
     records.extend(motion_records)
+    records.extend(_gap_record(gap, retrieved_at=retrieved_at, index=index) for index, gap in enumerate(gaps, start=1))
     return AedesVideoAtomsResult(
         source_id=VIDEO_ATOMS_SOURCE_ID,
         records=records,

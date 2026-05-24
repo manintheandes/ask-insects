@@ -12,7 +12,7 @@ gcloud compute scp /tmp/ask-insects-deploy.tgz "$VM:/tmp/ask-insects-deploy.tgz"
 gcloud compute ssh "$VM" --zone "$ZONE" --command "
   set -euo pipefail
   sudo apt-get update
-  sudo apt-get install -y python3 python3-h5py
+  sudo apt-get install -y python3 python3-h5py ffmpeg
   mkdir -p '$REMOTE_DIR'
   tar -xzf /tmp/ask-insects-deploy.tgz -C '$REMOTE_DIR'
   printf 'ASK_INSECTS_TOKEN=%s\n' '$TOKEN' > '$REMOTE_DIR/.env'

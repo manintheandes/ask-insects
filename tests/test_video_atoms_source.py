@@ -193,6 +193,9 @@ class VideoAtomsSourceTests(unittest.TestCase):
         reasons = {gap["reason"] for gap in result.gaps}
         self.assertIn("video_license_unclear", reasons)
         self.assertIn("video_too_large", reasons)
+        gap_records = [record for record in result.records if record.payload and record.payload.get("atom_type") == "video_gap"]
+        self.assertEqual({record.payload["reason"] for record in gap_records}, reasons)
+        self.assertTrue(all(record.source == VIDEO_ATOMS_SOURCE_ID for record in gap_records))
 
     def test_ignores_audio_files_from_mixed_media_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -297,7 +300,12 @@ class VideoAtomsSourceTests(unittest.TestCase):
                 allowed_licenses=("Creative Commons Attribution License",),
             )
 
-        artifact_records = [record for record in result.records if str(record.payload.get("atom_type", "")).startswith("video_") and record.payload["atom_type"] != "video_asset"]
+        artifact_records = [
+            record
+            for record in result.records
+            if str(record.payload.get("atom_type", "")).startswith("video_")
+            and record.payload["atom_type"] not in {"video_asset", "video_gap"}
+        ]
         atom_types = {record.payload["atom_type"] for record in artifact_records}
         self.assertIn("video_thumbnail", atom_types)
         self.assertIn("video_keyframe", atom_types)
