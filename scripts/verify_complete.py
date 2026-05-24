@@ -416,6 +416,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "scripts/ingest_extracted_facts.py",
         "literature_records_payloads_fulltext_units_and_supported_supplement_tables_to_sqlite_fact_records",
         "candidate_manifest_or_parsed_not_human_validated",
+        "bounded_opt_in_supplement_discovery_and_download",
         "csv",
         "xlsx",
     ):

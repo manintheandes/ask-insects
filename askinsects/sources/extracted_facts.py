@@ -78,6 +78,7 @@ class ExtractedFactsResult:
     truncated_fulltext_unit_count: int
     selected_record_text_count: int
     supplement_manifest_count: int
+    supplement_discovery_record_count: int
     discovered_supplement_count: int
     downloaded_supplement_file_count: int
     parsed_supplement_file_count: int
@@ -649,38 +650,59 @@ def _supplement_candidates_with_discovery(
     *,
     discover_supplements: bool,
     fetch_supplement_metadata_fn: Callable[[dict[str, object]], list[dict[str, object]]] | None,
+    max_supplement_discovery_records: int | None,
     gaps: list[dict[str, object]],
-) -> tuple[list[SupplementCandidate], int]:
+) -> tuple[list[SupplementCandidate], int, int]:
+    if max_supplement_discovery_records is not None and max_supplement_discovery_records < 1:
+        raise ValueError("max_supplement_discovery_records must be positive")
     candidates: list[SupplementCandidate] = []
     seen: set[tuple[str, str, str]] = set()
     discovered_count = 0
+    discovery_record_count = 0
+    discovery_limit_recorded = False
     for paper in literature_rows:
         payload = _safe_json(paper["payload_json"])
         raw_supplements = [(raw, "record_payload") for raw in _payload_supplements(payload)]
         if discover_supplements and fetch_supplement_metadata_fn is not None:
-            request = _identifier_request(paper)
-            if not any(request.get(key) for key in ("doi", "pmid", "pmcid")):
-                gaps.append(
-                    {
-                        "source": EXTRACTED_FACTS_SOURCE_ID,
-                        "reason": "supplement_discovery_missing_identifier",
-                        "record_id": str(paper["record_id"]),
-                    }
-                )
-            else:
-                try:
-                    fetched = fetch_supplement_metadata_fn(request)
-                    discovered_count += len(fetched)
-                    raw_supplements.extend((raw, "metadata_fetch") for raw in fetched)
-                except Exception as exc:
+            if (
+                max_supplement_discovery_records is not None
+                and discovery_record_count >= max_supplement_discovery_records
+            ):
+                if not discovery_limit_recorded:
                     gaps.append(
                         {
                             "source": EXTRACTED_FACTS_SOURCE_ID,
-                            "reason": "supplement_metadata_fetch_failed",
-                            "record_id": str(paper["record_id"]),
-                            "error": str(exc),
+                            "reason": "supplement_discovery_record_limit_applied",
+                            "max_supplement_discovery_records": max_supplement_discovery_records,
+                            "source_record_count": len(literature_rows),
                         }
                     )
+                    discovery_limit_recorded = True
+            else:
+                discovery_record_count += 1
+                request = _identifier_request(paper)
+                if not any(request.get(key) for key in ("doi", "pmid", "pmcid")):
+                    gaps.append(
+                        {
+                            "source": EXTRACTED_FACTS_SOURCE_ID,
+                            "reason": "supplement_discovery_missing_identifier",
+                            "record_id": str(paper["record_id"]),
+                        }
+                    )
+                else:
+                    try:
+                        fetched = fetch_supplement_metadata_fn(request)
+                        discovered_count += len(fetched)
+                        raw_supplements.extend((raw, "metadata_fetch") for raw in fetched)
+                    except Exception as exc:
+                        gaps.append(
+                            {
+                                "source": EXTRACTED_FACTS_SOURCE_ID,
+                                "reason": "supplement_metadata_fetch_failed",
+                                "record_id": str(paper["record_id"]),
+                                "error": str(exc),
+                            }
+                        )
         for raw_supplement, fallback_source in raw_supplements:
             supplement = _normalize_supplement(raw_supplement)
             supplement.setdefault("source", fallback_source)
@@ -698,7 +720,7 @@ def _supplement_candidates_with_discovery(
                     supplement=supplement,
                 )
             )
-    return candidates, discovered_count
+    return candidates, discovered_count, discovery_record_count
 
 
 def _supplement_extension(supplement: dict[str, object]) -> str:
@@ -1145,6 +1167,7 @@ def build_extracted_fact_records(
     download_supplements: bool = False,
     fetch_supplement_metadata_fn: Callable[[dict[str, object]], list[dict[str, object]]] | None = None,
     fetch_supplement_file_fn: Callable[[str, int], bytes] | None = None,
+    max_supplement_discovery_records: int | None = 500,
     max_supplement_files: int = 100,
     max_supplement_bytes: int = 2_000_000,
 ) -> ExtractedFactsResult:
@@ -1172,6 +1195,7 @@ def build_extracted_fact_records(
             selected_fulltext_unit_count=0,
             truncated_fulltext_unit_count=0,
             selected_record_text_count=0,
+            supplement_discovery_record_count=0,
             discovered_supplement_count=0,
             downloaded_supplement_file_count=0,
             parsed_supplement_file_count=0,
@@ -1198,10 +1222,15 @@ def build_extracted_fact_records(
 
     if discover_supplements and fetch_supplement_metadata_fn is None:
         fetch_supplement_metadata_fn = fetch_public_supplement_metadata
-    supplement_candidates, discovered_supplement_count = _supplement_candidates_with_discovery(
+    (
+        supplement_candidates,
+        discovered_supplement_count,
+        supplement_discovery_record_count,
+    ) = _supplement_candidates_with_discovery(
         literature_rows,
         discover_supplements=discover_supplements,
         fetch_supplement_metadata_fn=fetch_supplement_metadata_fn,
+        max_supplement_discovery_records=max_supplement_discovery_records,
         gaps=gaps,
     )
     for index, candidate in enumerate(supplement_candidates):
@@ -1307,6 +1336,7 @@ def build_extracted_fact_records(
         truncated_fulltext_unit_count=truncated_fulltext_unit_count,
         selected_record_text_count=selected_record_text_count,
         supplement_manifest_count=len(supplement_candidates),
+        supplement_discovery_record_count=supplement_discovery_record_count,
         discovered_supplement_count=discovered_supplement_count,
         downloaded_supplement_file_count=downloaded_supplement_file_count,
         parsed_supplement_file_count=parsed_supplement_file_count,

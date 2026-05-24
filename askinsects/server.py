@@ -1876,6 +1876,12 @@ def ingest_extracted_facts_staged(
         raise ValueError("max_fulltext_units must be positive")
     discover_supplements = bool(payload.get("discover_supplements"))
     download_supplements = bool(payload.get("download_supplements"))
+    max_supplement_discovery_records_value = payload.get("max_supplement_discovery_records")
+    max_supplement_discovery_records = (
+        500 if max_supplement_discovery_records_value is None else int(max_supplement_discovery_records_value)
+    )
+    if max_supplement_discovery_records < 1:
+        raise ValueError("max_supplement_discovery_records must be positive")
     max_supplement_files_value = payload.get("max_supplement_files")
     max_supplement_files = 100 if max_supplement_files_value is None else int(max_supplement_files_value)
     if max_supplement_files < 1:
@@ -1899,6 +1905,7 @@ def ingest_extracted_facts_staged(
             max_fulltext_units=max_fulltext_units,
             discover_supplements=discover_supplements,
             download_supplements=download_supplements,
+            max_supplement_discovery_records=max_supplement_discovery_records,
             max_supplement_files=max_supplement_files,
             max_supplement_bytes=max_supplement_bytes,
         )

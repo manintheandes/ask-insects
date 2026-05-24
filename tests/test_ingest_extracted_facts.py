@@ -91,6 +91,7 @@ class IngestExtractedFactsTests(unittest.TestCase):
             self.assertEqual(result["downloaded_supplement_file_count"], 1)
             self.assertEqual(result["parsed_supplement_file_count"], 1)
             self.assertEqual(result["parsed_supplement_row_count"], 1)
+            self.assertEqual(result["supplement_discovery_record_count"], 0)
             rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select payload_json, provenance_json from record_payloads where source='aedes_extracted_facts' and json_extract(payload_json, '$.confidence')='parsed'",
                 limit=5,

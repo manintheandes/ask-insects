@@ -203,6 +203,57 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertTrue(any(record.payload["supplement"]["source"] == "europe_pmc" for record in manifests))
             self.assertTrue(any(record.payload["supplement"]["url"] == "https://example.org/europepmc/table-a.tsv" for record in manifests))
 
+    def test_build_extracted_fact_records_bounds_supplement_discovery_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WFACT2",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Second Aedes aegypti supplement metadata paper",
+                        text="Second indexed Aedes aegypti paper with supplement identifiers.",
+                        species="Aedes aegypti",
+                        url="https://example.org/aedes-facts-2",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WFACT2",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="open metadata",
+                            source_url="https://example.org/aedes-facts-2",
+                        ),
+                        payload={
+                            "ids": {
+                                "doi": "10.1234/aedes.fact.2",
+                                "pmid": "22345678",
+                                "pmcid": "PMC2234567",
+                            }
+                        },
+                    )
+                ]
+            )
+            requests: list[str] = []
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                requests.append(str(request["record_id"]))
+                return []
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                max_supplement_discovery_records=1,
+            )
+
+            self.assertEqual(requests, ["openalex:WFACT1"])
+            self.assertEqual(result.supplement_discovery_record_count, 1)
+            self.assertTrue(any(gap["reason"] == "supplement_discovery_record_limit_applied" for gap in result.gaps))
+
     def test_build_extracted_fact_records_parses_supported_supplement_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -369,7 +369,7 @@ sources:
       - ecology
       - public_health
     provenance_required: true
-    live_fetch: opt_in_supplement_discovery_and_download
+    live_fetch: bounded_opt_in_supplement_discovery_and_download
     legal_fulltext_only: true
     confidence_policy: candidate_manifest_or_parsed_not_human_validated
   - id: aedes_pathogen_taxonomy

@@ -58,6 +58,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "truncated_fulltext_unit_count": result.truncated_fulltext_unit_count,
         "selected_record_text_count": result.selected_record_text_count,
         "supplement_manifest_count": result.supplement_manifest_count,
+        "supplement_discovery_record_count": result.supplement_discovery_record_count,
         "discovered_supplement_count": result.discovered_supplement_count,
         "downloaded_supplement_file_count": result.downloaded_supplement_file_count,
         "parsed_supplement_file_count": result.parsed_supplement_file_count,
@@ -101,6 +102,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "truncated_fulltext_unit_count": result.truncated_fulltext_unit_count,
         "selected_record_text_count": result.selected_record_text_count,
         "supplement_manifest_count": result.supplement_manifest_count,
+        "supplement_discovery_record_count": result.supplement_discovery_record_count,
         "discovered_supplement_count": result.discovered_supplement_count,
         "downloaded_supplement_file_count": result.downloaded_supplement_file_count,
         "parsed_supplement_file_count": result.parsed_supplement_file_count,
@@ -122,6 +124,7 @@ def ingest_extracted_facts(
     download_supplements: bool = False,
     fetch_supplement_metadata_fn=None,
     fetch_supplement_file_fn=None,
+    max_supplement_discovery_records: int | None = 500,
     max_supplement_files: int = 100,
     max_supplement_bytes: int = 2_000_000,
 ) -> dict[str, object]:
@@ -133,6 +136,7 @@ def ingest_extracted_facts(
         download_supplements=download_supplements,
         fetch_supplement_metadata_fn=fetch_supplement_metadata_fn,
         fetch_supplement_file_fn=fetch_supplement_file_fn,
+        max_supplement_discovery_records=max_supplement_discovery_records,
         max_supplement_files=max_supplement_files,
         max_supplement_bytes=max_supplement_bytes,
     )
@@ -150,6 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-fulltext-units", type=int, default=5000)
     parser.add_argument("--discover-supplements", action="store_true")
     parser.add_argument("--download-supplements", action="store_true")
+    parser.add_argument("--max-supplement-discovery-records", type=int, default=500)
     parser.add_argument("--max-supplement-files", type=int, default=100)
     parser.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
     args = parser.parse_args(argv)
@@ -159,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
         max_fulltext_units=args.max_fulltext_units,
         discover_supplements=args.discover_supplements,
         download_supplements=args.download_supplements,
+        max_supplement_discovery_records=args.max_supplement_discovery_records,
         max_supplement_files=args.max_supplement_files,
         max_supplement_bytes=args.max_supplement_bytes,
     )
