@@ -39,6 +39,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-vector-competence-assay-candidates-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-ncbi-biosample-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-resistance-marker-lane-design.md",
+    "docs/superpowers/specs/2026-05-24-aedes-occurrence-ecology-lane-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -52,6 +53,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-vector-competence-assay-candidates.md",
     "docs/superpowers/plans/2026-05-24-aedes-ncbi-biosample-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-resistance-marker-lane.md",
+    "docs/superpowers/plans/2026-05-24-aedes-occurrence-ecology-lane.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -80,6 +82,7 @@ REQUIRED_FILES = (
     "askinsects/sources/ncbi_biosample.py",
     "askinsects/sources/vector_competence_assays.py",
     "askinsects/sources/resistance_markers.py",
+    "askinsects/sources/occurrence_ecology.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -99,6 +102,7 @@ REQUIRED_FILES = (
     "scripts/ingest_ncbi_biosamples.py",
     "scripts/ingest_vector_competence_assays.py",
     "scripts/ingest_resistance_markers.py",
+    "scripts/ingest_occurrence_ecology.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -140,6 +144,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_vector_competence_assays.py",
     "tests/test_resistance_markers_source.py",
     "tests/test_ingest_resistance_markers.py",
+    "tests/test_occurrence_ecology_source.py",
+    "tests/test_ingest_occurrence_ecology.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -182,6 +188,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_vector_competence_assays",
     "tests.test_resistance_markers_source",
     "tests.test_ingest_resistance_markers",
+    "tests.test_occurrence_ecology_source",
+    "tests.test_ingest_occurrence_ecology",
 )
 
 
@@ -246,6 +254,7 @@ def check_literature_source_map() -> None:
         "ncbi_biosamples",
         "aedes_vector_competence_assays",
         "aedes_resistance_markers",
+        "aedes_occurrence_ecology",
         "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
         "sqlite_payload_table: record_payloads",
         "sqlite_fulltext_table: literature_fulltext_units",
@@ -276,6 +285,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_pathogen_taxonomy",
         "ncbi_biosamples",
         "aedes_vector_competence_assays",
+        "aedes_occurrence_ecology",
     )
     for term in required_terms:
         if term not in readme:
@@ -307,6 +317,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_resistance_markers", "scripts/ingest_resistance_markers.py", "literature_records_and_fulltext_units_to_sqlite_resistance_marker_records", "legal_fulltext_only"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing resistance marker term: {term}")
+    for term in ("aedes_occurrence_ecology", "scripts/ingest_occurrence_ecology.py", "indexed_observation_payloads_to_sqlite_ecology_records", "GBIF and iNaturalist observation joins"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing occurrence ecology term: {term}")
 
 
 def check_cli() -> None:

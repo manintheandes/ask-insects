@@ -169,6 +169,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_resistance_markers = sub.add_parser("ingest-resistance-markers")
     ingest_resistance_markers.add_argument("--hosted", action="store_true")
 
+    ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
+    ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -441,6 +444,20 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/resistance-markers",
+            {},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-occurrence-ecology":
+        if not args.hosted:
+            from scripts.ingest_occurrence_ecology import ingest_occurrence_ecology
+
+            payload = ingest_occurrence_ecology(artifact_dir=artifact_dir)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/occurrence-ecology",
             {},
             timeout=3600,
         )

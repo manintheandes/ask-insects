@@ -1382,6 +1382,17 @@ def ingest_resistance_markers(
     return ingest_resistance_markers_script(artifact_dir=artifact_dir)
 
 
+def ingest_occurrence_ecology(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_occurrence_ecology import ingest_occurrence_ecology as ingest_occurrence_ecology_script
+
+    _ = payload
+    return ingest_occurrence_ecology_script(artifact_dir=artifact_dir)
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -1506,6 +1517,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/resistance-markers":
             result = ingest_resistance_markers(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/occurrence-ecology":
+            result = ingest_occurrence_ecology(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
     except (sqlite3.Error, ValueError) as exc:

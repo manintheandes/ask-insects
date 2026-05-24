@@ -58,6 +58,21 @@ sources:
       - media
     provenance_required: true
     live_fetch: opt_in
+  - id: aedes_occurrence_ecology
+    name: Aedes aegypti occurrence ecology summaries
+    source_type: derived_sqlite_source
+    boundary: GBIF and iNaturalist observation joins plus Mosquito Alert Aedes aegypti observations summarized into country, country-month, seasonality, range, and public habitat ecology records
+    query_plane: indexed_observation_payloads_to_sqlite_ecology_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_occurrence_ecology.py
+    input_sources:
+      - gbif_api
+      - inaturalist_api
+      - mosquito_alert_gbif
+    lanes:
+      - ecology
+    provenance_required: true
+    live_fetch: derived_from_indexed_observations
   - id: aedes_literature_openalex
     name: Aedes aegypti literature since 2020
     source_type: public_api_composite

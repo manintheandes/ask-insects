@@ -242,6 +242,25 @@ def gbif_observation_record(record_id, country):
     )
 
 
+def ecology_record(record_id, source):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="ecology",
+        source=source,
+        title=f"Aedes aegypti ecology record from {source}",
+        text="Aedes aegypti occurrence ecology range distribution seasonality Brazil January observations.",
+        species="Aedes aegypti",
+        url="https://example.org/ecology",
+        media_url=None,
+        provenance=Provenance(
+            source_id=source,
+            locator=f"test#{record_id}",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="test",
+        ),
+    )
+
+
 class AnswerTests(unittest.TestCase):
     def test_planner_routes_identity_evidence_action_and_gap(self):
         self.assertEqual(plan_question("what do we know about Aedes aegypti?").answer_shape, "identity")
@@ -260,6 +279,8 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what H5AD data exists in the Mosquito Cell Atlas?").lanes[0], "neurobiology")
         self.assertEqual(plan_question("what SRA raw reads exist for GSE160740?").lanes[0], "neurobiology")
         self.assertEqual(plan_question("what voxel volume files exist in MosquitoBrains?").lanes[0], "neurobiology")
+        self.assertEqual(plan_question("where is Aedes aegypti observed by month in Brazil?").answer_shape, "ecology")
+        self.assertEqual(plan_question("what range and seasonality evidence exists for Aedes aegypti?").lanes[0], "ecology")
 
     def test_answers_include_provenance_or_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -900,6 +921,41 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "resistance")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_resistance_markers")
             self.assertIn("V1016G", answer["evidence"][0]["text"])
+
+    def test_ecology_questions_prefer_occurrence_ecology_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    ecology_record("facet:ecology:1", "aedes_literature_facets"),
+                    ecology_record("occurrence_ecology:country_month:Brazil:01", "aedes_occurrence_ecology"),
+                    EvidenceRecord(
+                        record_id="occurrence_ecology:country:Somalia",
+                        lane="ecology",
+                        source="aedes_occurrence_ecology",
+                        title="Aedes aegypti occurrence ecology in Somalia",
+                        text="Aedes aegypti occurrence ecology range distribution seasonality Somalia observations.",
+                        species="Aedes aegypti",
+                        url="https://example.org/somalia",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_occurrence_ecology",
+                            locator="test#somalia",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("what seasonality evidence exists for Aedes aegypti in Brazil by month?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "ecology")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_occurrence_ecology")
+            self.assertIn("Brazil", answer["evidence"][0]["text"])
 
     def test_guidance_questions_prefer_official_public_health_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

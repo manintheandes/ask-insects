@@ -157,6 +157,18 @@ python3 -m askinsects sql "select json_extract(payload_json, '$.marker_id') as m
 
 The lane uses source id `aedes_resistance_markers`. It creates one `resistance` record per detected marker candidate, stores marker class, gene or family, matched aliases, resistance context, insecticide terms, source paper ID, full-text unit ID when present, and snippet in SQLite payloads, and preserves provenance back to `records#<paper_id>` plus `literature_fulltext_units#<unit_id>` when legal full text is available. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. It is deterministic candidate extraction, not yet validated genotype or marker-frequency table extraction.
 
+## Occurrence Ecology Source Lane
+
+Indexed GBIF, iNaturalist, and Mosquito Alert observation payloads can be joined into country, country-month, seasonality, range, and public habitat ecology records:
+
+```bash
+python3 -m askinsects ingest-occurrence-ecology
+python3 -m askinsects ask "what seasonality evidence exists for Aedes aegypti in Brazil by month?" --json
+python3 -m askinsects sql "select json_extract(payload_json, '$.country') as country, count(*) as n from record_payloads where source='aedes_occurrence_ecology' and json_extract(payload_json, '$.aggregation_type')='country_month_summary' group by country order by n desc" --limit 20
+```
+
+The lane uses source id `aedes_occurrence_ecology`. It creates `ecology` records from existing `gbif_api`, `inaturalist_api`, and `mosquito_alert_gbif` observation payloads, stores input source counts, observation counts, date ranges, coordinate counts, bounding boxes, sample input record IDs, and sample URLs in SQLite payloads, and preserves provenance to the derived observation join. The May 24, 2026 hosted ingest installed 1,985 occurrence ecology records from 88,065 Aedes observation inputs. This is occurrence-derived ecology coverage; climate rasters, land-use layers, mechanistic suitability models, and surveillance completeness remain follow-on sources.
+
 ## Official Public-Health Guidance Source Lane
 
 WHO, PAHO, and CDC guidance pages are the first operational public-health guidance lane for `Aedes aegypti`:

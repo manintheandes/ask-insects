@@ -163,6 +163,17 @@ The IR Mapper lane indexes one SQLite `resistance` row per matching public API r
 
 The resistance-marker lane indexes one SQLite `resistance` row per marker candidate, stores marker ID, marker class, gene or family, matched aliases, context terms, insecticide terms, source paper ID, and full-text unit ID when present in `record_payloads`, and cites provenance back to `records#<paper_id>` plus `literature_fulltext_units#<unit_id>` when legal full text is available. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. It covers candidate marker evidence such as kdr/VGSC substitutions and metabolic-resistance genes or families; validated genotype-frequency and haplotype table extraction remains follow-on work.
 
+## Ecology
+
+Habitat, seasonality, range, and distribution records for `Aedes aegypti`.
+
+Sources:
+
+- `aedes_occurrence_ecology`: derived country, country-month, seasonality, range, and public habitat summaries from indexed GBIF, iNaturalist, and Mosquito Alert observation payloads.
+- `aedes_literature_facets`: literature-derived ecology facets while deeper climate, land-use, suitability, breeding-site, and surveillance lanes are built.
+
+The occurrence ecology lane indexes one SQLite `ecology` row per country summary, country-month summary, and public iNaturalist habitat-field summary. Payloads store aggregation type, country, month when applicable, source counts, observation count, sample input record IDs, sample URLs, coordinate count, bounding box, and observed date range. Provenance points to the derived observation join over `gbif_api`, `inaturalist_api`, and `mosquito_alert_gbif`. The source id is `aedes_occurrence_ecology`, and it is refreshed with `scripts/ingest_occurrence_ecology.py`. The May 24, 2026 hosted ingest installed 1,985 occurrence ecology records from 88,065 Aedes observation inputs. Climate rasters, land-use layers, model outputs, and surveillance completeness remain explicit source gaps.
+
 ## Action Notes
 
 Source-backed next steps for scientists, grounded in indexed observations and literature.

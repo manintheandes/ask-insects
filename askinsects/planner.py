@@ -61,7 +61,27 @@ def plan_question(question: str) -> QueryPlan:
         return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
     if any(term in q for term in ("host seeking", "host-seeking", "blood feeding", "biting behavior", "oviposition", "mating", "larval behavior", "repellent", "attractant")):
         return QueryPlan(question, "behavior", ("behavior", "neurobiology", "literature", "taxonomy"), question)
-    if any(term in q for term in ("larval habitat", "breeding site", "ecology", "climate", "rainfall", "seasonality", "environmental suitability", "land use")):
+    if any(
+        term in q
+        for term in (
+            "larval habitat",
+            "breeding site",
+            "ecology",
+            "climate",
+            "rainfall",
+            "seasonality",
+            "seasonal",
+            "range",
+            "distribution",
+            "where",
+            "country",
+            "countries",
+            "month",
+            "monthly",
+            "environmental suitability",
+            "land use",
+        )
+    ):
         return QueryPlan(question, "ecology", ("ecology", "observations", "literature", "taxonomy"), question)
     if any(term in q for term in ("public health", "surveillance", "outbreak", "vector control", "intervention", "incidence", "epidemic")):
         return QueryPlan(question, "public_health", ("public_health", "observations", "literature", "taxonomy"), question)

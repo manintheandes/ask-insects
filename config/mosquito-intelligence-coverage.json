@@ -298,7 +298,8 @@
       "status": "partial_source_grade",
       "target_state": "Habitat, climate, seasonality, range, breeding-site, urbanization, and environmental suitability evidence for Aedes aegypti.",
       "current_sources": [
-        "aedes_literature_facets"
+        "aedes_literature_facets",
+        "aedes_occurrence_ecology"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -310,10 +311,12 @@
       "current_evidence": [
         "aedes_literature_facets creates ecology records from source-grade Aedes literature metadata and legal full-text units.",
         "Installed local and hosted artifacts contain 5,253 ecology records from aedes_literature_facets.",
-        "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available."
+        "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available.",
+        "aedes_occurrence_ecology joins indexed GBIF, iNaturalist, and Mosquito Alert observation payloads into country, country-month, seasonality, range, and public habitat ecology records.",
+        "The May 24, 2026 hosted ingest installed 1,985 aedes_occurrence_ecology records from 88,065 Aedes observation inputs, bringing the hosted ecology lane to 7,238 records."
       ],
       "required_next_sources": [
-        "GBIF and iNaturalist observation joins",
+        "climate-linked GBIF and iNaturalist observation joins",
         "climate and land-use layers with clear licenses",
         "range and suitability model outputs",
         "breeding-site and larval-habitat records from literature and surveillance reports"

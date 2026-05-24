@@ -8,6 +8,7 @@ from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
 from .planner import QueryPlan, plan_question
 from .records import EvidenceRecord
+from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
 
 
@@ -195,6 +196,86 @@ def _search_queries(question: str) -> list[str]:
             "IR Mapper Aedes insecticide resistance",
             question,
         ]
+    if (
+        not any(
+            term in q
+            for term in (
+                "assay",
+                "cdc",
+                "dengue",
+                "guidance",
+                "insecticide resistance",
+                "kdr",
+                "pathogen",
+                "paho",
+                "pyrethroid resistance",
+                "recommendation",
+                "recommendations",
+                "susceptibility",
+                "vector competence",
+                "who",
+                "yellow fever",
+                "zika",
+            )
+        )
+        and any(
+        term in q
+        for term in (
+            "ecology",
+            "range",
+            "distribution",
+            "where",
+            "country",
+            "countries",
+            "seasonality",
+            "seasonal",
+            "month",
+            "monthly",
+            "habitat",
+            "observed",
+            "occurrence",
+            "occurrences",
+        )
+        )
+    ):
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9]+", question)
+            if token.lower()
+            not in {
+                "aedes",
+                "aegypti",
+                "country",
+                "countries",
+                "does",
+                "ecology",
+                "evidence",
+                "exists",
+                "for",
+                "by",
+                "in",
+                "is",
+                "month",
+                "monthly",
+                "mosquito",
+                "mosquitoes",
+                "occurrence",
+                "occurrences",
+                "range",
+                "seasonality",
+                "seasonal",
+                "show",
+                "the",
+                "what",
+                "where",
+            }
+        ]
+        queries = []
+        if salient:
+            queries.append(f"Aedes aegypti occurrence ecology {' '.join(salient)}")
+            queries.append(" ".join(salient))
+        queries.extend(["Aedes aegypti occurrence ecology", "range distribution seasonality", question])
+        return list(dict.fromkeys(queries))
     if any(
         term in q
         for term in (
@@ -421,6 +502,37 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
     return sorted(records, key=score)
 
 
+def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not any(
+        term in q
+        for term in (
+            "ecology",
+            "range",
+            "distribution",
+            "where",
+            "country",
+            "countries",
+            "seasonality",
+            "seasonal",
+            "month",
+            "monthly",
+            "habitat",
+            "occurrence",
+            "observed",
+        )
+    ):
+        return records
+
+    def score(record: EvidenceRecord) -> tuple[int, int]:
+        return (
+            0 if record.source == OCCURRENCE_ECOLOGY_SOURCE_ID else 1,
+            0 if record.lane == "ecology" else 1,
+        )
+
+    return sorted(records, key=score)
+
+
 def _named_pathogen_terms(question: str) -> list[str]:
     q = question.lower()
     terms = []
@@ -584,6 +696,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "public_health":
         all_records = _prioritize_public_health_records(plan.question, all_records)
+
+    if plan.answer_shape == "ecology":
+        all_records = _prioritize_ecology_records(plan.question, all_records)
 
     if not all_records:
         return source_gap(plan, "No matching Ask Insects records were found in the checked lanes.")
