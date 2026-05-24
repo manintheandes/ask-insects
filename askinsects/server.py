@@ -270,9 +270,12 @@ def copy_default_video_motion_inputs_to_staging(artifact_dir: Path, staging: Pat
         [
             Path("raw") / "mendeley_behavior_media" / "table_files",
             Path("raw") / "mendeley_behavior_media",
-            Path("raw") / "video_atoms",
         ],
     )
+    video_atoms_root = artifact_dir / "raw" / "video_atoms"
+    if video_atoms_root.exists():
+        relative_csvs = [path.relative_to(artifact_dir) for path in sorted(video_atoms_root.glob("*.csv")) if path.is_file()]
+        copy_relative_inputs_to_staging(artifact_dir, staging, relative_csvs)
 
 
 def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir: Path) -> None:
