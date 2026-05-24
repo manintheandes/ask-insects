@@ -207,14 +207,14 @@ The lane uses source id `aedes_occurrence_ecology`. It creates `ecology` records
 
 ## Official Public-Health Guidance Source Lane
 
-WHO, PAHO, and CDC guidance pages are the first operational public-health guidance lane for `Aedes aegypti`:
+WHO, PAHO, CDC, and ECDC guidance pages are the first operational public-health guidance lane for `Aedes aegypti`:
 
 ```bash
 python3 -m askinsects ingest-public-health
 python3 -m askinsects ask "what vector control guidance exists for Aedes aegypti?" --json
 ```
 
-The lane writes raw official guidance HTML under `raw/public_health_guidance/`, normalizes one `public_health` record per guidance page from source `aedes_public_health_guidance`, stores page metadata in SQLite payloads, and preserves provenance to the saved HTML plus the official source URL. This is guidance coverage, not yet a full surveillance dashboard or outbreak time-series lane.
+The lane writes raw official guidance HTML under `raw/public_health_guidance/`, normalizes one `public_health` record per guidance page from source `aedes_public_health_guidance`, stores page metadata in SQLite payloads, and preserves provenance to the saved HTML plus the official source URL. The default set includes official dengue, Zika, Aedes life-cycle, vector-control, travel-medicine, Wolbachia, community prevention, and ECDC species-factsheet pages. This is guidance coverage, not yet a full surveillance dashboard or outbreak time-series lane.
 
 ## PAHO Dengue Surveillance Source Lane
 

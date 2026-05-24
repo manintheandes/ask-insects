@@ -355,7 +355,7 @@
       "current_evidence": [
         "aedes_literature_facets creates public_health records from source-grade Aedes literature metadata and legal full-text units.",
         "Installed local and hosted artifacts contain 8,261 public_health records from aedes_literature_facets.",
-        "aedes_public_health_guidance maps official WHO, PAHO, and CDC guidance pages into public_health records with raw HTML receipts and source URLs.",
+        "aedes_public_health_guidance maps official WHO, PAHO, CDC, and ECDC guidance pages into public_health records with raw HTML receipts and source URLs.",
         "aedes_paho_dengue_surveillance parses official PAHO dengue situation report HTML into regional week, year-to-date, subregion, serotype, and figure/table public_health records with raw HTML receipts and PAHO media locators.",
         "PAHO/PLISA dengue dashboard pages are mapped as official sources, but their underlying country-week Tableau/PHIP rows remain a structured source gap until a stable machine-readable CSV, JSON, or API endpoint is available or authorized access is obtained.",
         "Public-health questions route through the public_health lane and return provenance back to source literature records and full-text units where available."

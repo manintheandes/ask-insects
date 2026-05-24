@@ -306,10 +306,15 @@ sources:
   - id: aedes_public_health_guidance
     name: Official Aedes aegypti public-health guidance
     source_type: public_web_guidance
-    boundary: WHO, PAHO, and CDC public guidance pages relevant to Aedes aegypti operational vector control, arboviral disease prevention, surveillance, and community action
+    boundary: WHO, PAHO, CDC, and ECDC public guidance pages relevant to Aedes aegypti operational vector control, arboviral disease prevention, surveillance, species facts, life cycle, travel medicine, and community action
     query_plane: official_guidance_html_to_sqlite_public_health_records
     artifact_dir: artifacts/mosquito-v1/raw/public_health_guidance
     ingest_script: scripts/ingest_public_health_guidance.py
+    default_organizations:
+      - WHO
+      - PAHO
+      - CDC
+      - ECDC
     lanes:
       - public_health
     provenance_required: true

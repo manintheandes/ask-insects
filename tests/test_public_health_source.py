@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from askinsects.sources.public_health import fetch_public_health_guidance_records
+from askinsects.sources.public_health import DEFAULT_PUBLIC_HEALTH_SOURCES, fetch_public_health_guidance_records
 
 
 HTML = """
@@ -59,6 +59,14 @@ class PublicHealthSourceTests(unittest.TestCase):
 
             self.assertFalse(result.records)
             self.assertEqual(result.gaps[0]["reason"], "public_health_guidance_fetch_failed")
+
+    def test_default_public_health_sources_include_official_aedes_and_dengue_references(self):
+        urls = {str(source["url"]) for source in DEFAULT_PUBLIC_HEALTH_SOURCES}
+
+        self.assertIn("https://www.who.int/en/news-room/fact-sheets/detail/dengue-and-severe-dengue", urls)
+        self.assertIn("https://www.cdc.gov/dengue/prevention/index.html", urls)
+        self.assertIn("https://www.cdc.gov/mosquitoes/about/life-cycle-of-aedes-mosquitoes.html", urls)
+        self.assertIn("https://www.ecdc.europa.eu/en/disease-vectors/facts/mosquito-factsheets/aedes-aegypti", urls)
 
 
 if __name__ == "__main__":

@@ -239,6 +239,21 @@ def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir:
     shutil.rmtree(staging, ignore_errors=True)
 
 
+def replace_source_records(index: SourceIndex, source: str, records: list[object]) -> None:
+    with index.connect() as conn:
+        rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
+        record_ids = [row["record_id"] for row in rows]
+        for start in range(0, len(record_ids), 900):
+            chunk = record_ids[start : start + 900]
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+            conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
+            conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
+        conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))
+        conn.execute("DELETE FROM records WHERE source=?", (source,))
+        index._upsert_records(conn, records)
+
+
 def write_inaturalist_metadata(staging: Path, inaturalist_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
     index = SourceIndex(staging / "source_index.sqlite")
     summary = index.summary()
@@ -1025,42 +1040,57 @@ def ingest_public_health(
     else:
         raise ValueError("source_urls must be a list of strings")
 
-    staging = artifact_dir.parent / f".{artifact_dir.name}.staging"
-    if staging.exists():
-        shutil.rmtree(staging)
+    raw_staging = artifact_dir.parent / f".{artifact_dir.name}.public-health-raw-staging"
+    raw_final = artifact_dir / "raw" / "public_health_guidance"
+    raw_backup = raw_final.parent / f".{raw_final.name}.previous"
+    raw_activated = False
+    if raw_staging.exists():
+        shutil.rmtree(raw_staging)
     try:
-        if artifact_dir.exists():
-            copy_artifact_to_staging(artifact_dir, staging)
-        else:
-            staging.mkdir(parents=True, exist_ok=True)
-        index = SourceIndex(staging / "source_index.sqlite")
-        index.initialize()
-        index.delete_source(PUBLIC_HEALTH_SOURCE_ID)
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        db_path = artifact_dir / "source_index.sqlite"
+        index = SourceIndex(db_path)
+        if not db_path.exists():
+            index.initialize()
         retrieved_at = utc_now()
         result = fetch_public_health_guidance_records_fn(
             guidance_sources,
-            raw_dir=staging / "raw" / "public_health_guidance",
+            raw_dir=raw_staging,
             retrieved_at=retrieved_at,
         )
-        index.upsert_records(result.records)
-        old_gaps = read_json(staging / "gaps.json", [])
+        raw_staging.mkdir(parents=True, exist_ok=True)
+        records = replace_record_path_strings(result.records, str(raw_staging), str(raw_final))
+        raw_artifacts = [artifact.replace(str(raw_staging), str(raw_final)) for artifact in result.raw_artifacts]
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+        if raw_final.exists():
+            raw_final.replace(raw_backup)
+        raw_final.parent.mkdir(parents=True, exist_ok=True)
+        raw_staging.replace(raw_final)
+        raw_activated = True
+        replace_source_records(index, PUBLIC_HEALTH_SOURCE_ID, records)
+        old_gaps = read_json(artifact_dir / "gaps.json", [])
         if not isinstance(old_gaps, list):
             old_gaps = []
         gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == PUBLIC_HEALTH_SOURCE_ID)]
         gaps.extend(result.gaps)
         source_payload = {
             "requested_urls": result.requested_urls,
-            "raw_artifacts": result.raw_artifacts,
-            "record_count": len(result.records),
+            "raw_artifacts": raw_artifacts,
+            "record_count": len(records),
             "gap_count": len(result.gaps),
             "retrieved_at": retrieved_at,
         }
-        response = write_public_health_metadata(staging, source_payload, gaps)
-        response = rewrite_artifact_references(staging, artifact_dir, response)
-        activate_staging_artifact(staging, artifact_dir)
+        response = write_public_health_metadata(artifact_dir, source_payload, gaps)
     except Exception:
-        shutil.rmtree(staging, ignore_errors=True)
+        shutil.rmtree(raw_staging, ignore_errors=True)
+        if raw_activated and raw_backup.exists():
+            if raw_final.exists():
+                shutil.rmtree(raw_final)
+            raw_backup.replace(raw_final)
         raise
+    if raw_backup.exists():
+        shutil.rmtree(raw_backup)
     response["activated_artifact_dir"] = str(artifact_dir)
     return response
 

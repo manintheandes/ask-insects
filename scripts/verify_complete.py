@@ -333,7 +333,7 @@ def check_mosquito_intelligence_coverage() -> None:
         raise RuntimeError("config/source-map.yaml missing coverage ledger link")
     if "aedes_literature_facets" not in source_map:
         raise RuntimeError("config/source-map.yaml missing aedes_literature_facets")
-    for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health"):
+    for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health", "ECDC"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing public-health guidance term: {term}")
     for term in ("aedes_paho_dengue_surveillance", "scripts/ingest_paho_dengue_surveillance.py", "official_paho_dengue_report_html_to_sqlite_public_health_records", "PAHO/PLISA country-week dashboard data remains a source gap"):

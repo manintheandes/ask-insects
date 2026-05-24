@@ -54,6 +54,36 @@ DEFAULT_PUBLIC_HEALTH_SOURCES: tuple[dict[str, object], ...] = (
         "url": "https://www.cdc.gov/mosquitoes/mosquito-control/mosquitoes-with-wolbachia.html",
         "topic": "Wolbachia Aedes aegypti mosquito control",
     },
+    {
+        "organization": "WHO",
+        "url": "https://www.who.int/en/news-room/fact-sheets/detail/dengue-and-severe-dengue",
+        "topic": "dengue fact sheet transmission vector control",
+    },
+    {
+        "organization": "CDC",
+        "url": "https://www.cdc.gov/dengue/prevention/index.html",
+        "topic": "dengue prevention mosquito bite prevention",
+    },
+    {
+        "organization": "CDC",
+        "url": "https://www.cdc.gov/mosquitoes/about/life-cycle-of-aedes-mosquitoes.html",
+        "topic": "Aedes mosquito life cycle breeding sites",
+    },
+    {
+        "organization": "CDC",
+        "url": "https://www.cdc.gov/zika/php/transmission/index.html",
+        "topic": "Zika transmission Aedes aegypti",
+    },
+    {
+        "organization": "CDC",
+        "url": "https://www.cdc.gov/yellow-book/hcp/travel-associated-infections-diseases/dengue.html",
+        "topic": "travel-associated dengue prevention and transmission",
+    },
+    {
+        "organization": "ECDC",
+        "url": "https://www.ecdc.europa.eu/en/disease-vectors/facts/mosquito-factsheets/aedes-aegypti",
+        "topic": "Aedes aegypti vector factsheet control ecology",
+    },
 )
 
 

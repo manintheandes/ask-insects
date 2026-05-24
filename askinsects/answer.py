@@ -239,7 +239,46 @@ def _search_queries(question: str) -> list[str]:
                 question,
             ]
         return ["vector competence assay Aedes aegypti", "infection dissemination transmission dose temperature", question]
-    if any(term in q for term in ("paho", "plisa", "surveillance", "outbreak", "incidence", "epidemic", "case fatality", "cases", "deaths", "public health")):
+    if any(
+        term in q
+        for term in (
+            "cdc",
+            "ecdc",
+            "fact sheet",
+            "factsheet",
+            "guidance",
+            "prevention",
+            "prevent",
+            "recommendation",
+            "recommendations",
+            "who",
+            "paho",
+            "plisa",
+            "surveillance",
+            "outbreak",
+            "incidence",
+            "epidemic",
+            "case fatality",
+            "cases",
+            "deaths",
+            "public health",
+        )
+    ):
+        if "ecdc" in q:
+            return [
+                "ECDC Aedes aegypti factsheet",
+                "Aedes aegypti vector factsheet control ecology",
+                question,
+                "official public-health guidance Aedes aegypti",
+            ]
+        if any(term in q for term in ("guidance", "prevention", "prevent", "recommendation", "recommendations", "cdc", "ecdc", "who")):
+            return [
+                "dengue prevention guidance",
+                "official dengue guidance",
+                "Aedes vector control guidance",
+                "official public-health guidance Aedes aegypti",
+                question,
+            ]
         if any(term in q for term in ("paho", "plisa", "surveillance", "dengue", "cases", "deaths")):
             return [
                 "PAHO dengue surveillance week summary",
@@ -248,7 +287,7 @@ def _search_queries(question: str) -> list[str]:
                 "dengue surveillance public health",
                 question,
             ]
-        return ["public health Aedes aegypti", "surveillance outbreak incidence", question]
+        return ["official public-health guidance Aedes aegypti", "vector control guidance", "prevention guidance", question]
     if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
         return ["NCBI Taxonomy pathogen", "pathogen taxonomy Aedes aegypti", question]
     if "coi-5p" in q or re.search(r"\bcoi\b", q):
@@ -582,12 +621,52 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
 
 def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
-    if not any(term in q for term in ("cdc", "guidance", "paho", "plisa", "surveillance", "recommendation", "recommendations", "who")):
+    if not any(
+        term in q
+        for term in (
+            "cdc",
+            "ecdc",
+            "fact sheet",
+            "factsheet",
+            "guidance",
+            "paho",
+            "plisa",
+            "surveillance",
+            "recommendation",
+            "recommendations",
+            "who",
+        )
+    ):
         return records
+    wants_guidance = any(
+        term in q
+        for term in (
+            "cdc",
+            "ecdc",
+            "fact sheet",
+            "factsheet",
+            "guidance",
+            "prevention",
+            "prevent",
+            "recommendation",
+            "recommendations",
+            "who",
+        )
+    )
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int]:
-        paho_rank = 0 if any(term in q for term in ("paho", "plisa", "surveillance")) and record.source == "aedes_paho_dengue_surveillance" else 1
-        guidance_rank = 0 if record.source == "aedes_public_health_guidance" else 1
+    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int]:
+        haystack = f"{record.title}\n{record.text}\n{record.url or ''}".lower()
+        if "ecdc" in q:
+            organization_rank = 0 if "ecdc" in haystack else 1
+        elif "cdc" in q:
+            organization_rank = 0 if "cdc" in haystack else 1
+        elif "world health organization" in q or "who" in q:
+            organization_rank = 0 if "who" in haystack or "world health organization" in haystack else 1
+        else:
+            organization_rank = 0
+        factsheet_rank = 0 if not any(term in q for term in ("fact sheet", "factsheet")) or any(term in haystack for term in ("fact sheet", "factsheet")) else 1
+        guidance_rank = 0 if wants_guidance and record.source == "aedes_public_health_guidance" else 1
+        paho_rank = 0 if not wants_guidance and any(term in q for term in ("paho", "plisa", "surveillance")) and record.source == "aedes_paho_dengue_surveillance" else 1
         if record.source == "aedes_paho_dengue_surveillance" and any(term in q for term in ("paho", "plisa", "surveillance")):
             if "regional_week_summary" in record.record_id:
                 record_rank = 0
@@ -604,6 +683,8 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
         return (
             paho_rank,
             guidance_rank,
+            organization_rank,
+            factsheet_rank,
             record_rank if record.lane == "public_health" else 9,
         )
 

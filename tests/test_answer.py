@@ -1183,6 +1183,90 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "public_health")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_public_health_guidance")
 
+    def test_dengue_prevention_guidance_questions_route_to_public_health(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="public_health:guidance:cdc-preventing-dengue",
+                        lane="public_health",
+                        source="aedes_public_health_guidance",
+                        title="CDC guidance: Preventing Dengue",
+                        text="Official CDC public-health guidance for dengue prevention. Aedes mosquitoes spread dengue; prevent mosquito bites and control mosquitoes around the home.",
+                        species="Aedes aegypti",
+                        url="https://www.cdc.gov/dengue/prevention/index.html",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_public_health_guidance",
+                            locator="raw/public_health_guidance/CDC.html#page",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="Public health web guidance; source page terms apply",
+                            source_url="https://www.cdc.gov/dengue/prevention/index.html",
+                        ),
+                    )
+                ]
+            )
+
+            answer = answer_question("what official Aedes aegypti dengue prevention guidance exists?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_public_health_guidance")
+
+    def test_ecdc_factsheet_questions_route_to_public_health(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="public_health:guidance:cdc-preventing-dengue",
+                        lane="public_health",
+                        source="aedes_public_health_guidance",
+                        title="CDC guidance: Preventing Dengue",
+                        text="Official CDC public-health guidance for dengue prevention.",
+                        species="Aedes aegypti",
+                        url="https://www.cdc.gov/dengue/prevention/index.html",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_public_health_guidance",
+                            locator="raw/public_health_guidance/CDC.html#page",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="Public health web guidance; source page terms apply",
+                            source_url="https://www.cdc.gov/dengue/prevention/index.html",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="public_health:guidance:ecdc-aedes-factsheet",
+                        lane="public_health",
+                        source="aedes_public_health_guidance",
+                        title="ECDC guidance: Aedes aegypti factsheet",
+                        text="Official ECDC public-health factsheet evidence for Aedes aegypti control ecology.",
+                        species="Aedes aegypti",
+                        url="https://www.ecdc.europa.eu/en/disease-vectors/facts/mosquito-factsheets/aedes-aegypti",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_public_health_guidance",
+                            locator="raw/public_health_guidance/ECDC.html#page",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="Public health web guidance; source page terms apply",
+                            source_url="https://www.ecdc.europa.eu/en/disease-vectors/facts/mosquito-factsheets/aedes-aegypti",
+                        ),
+                    )
+                ]
+            )
+
+            answer = answer_question("show ECDC Aedes aegypti factsheet evidence", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_public_health_guidance")
+            self.assertIn("ECDC", answer["evidence"][0]["title"])
+
     def test_paho_surveillance_questions_prefer_paho_public_health_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
