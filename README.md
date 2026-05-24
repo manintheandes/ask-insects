@@ -145,6 +145,18 @@ python3 -m askinsects sql "select country, count(*) from (select json_extract(pa
 
 The lane writes the raw IR Mapper Aedes JSON under `raw/irmapper/`, normalizes `Aedes aegypti` and abbreviated `Ae. aegypti` rows into `resistance` records from source `irmapper_aedes`, stores the raw row payload in SQLite, and records provenance to the saved JSON row. Other Aedes species in the endpoint are comparison material, not installed by default for this Aedes-first push.
 
+## Resistance Marker Source Lane
+
+Indexed Aedes literature and legal full-text chunks can be parsed into kdr, VGSC, and metabolic-resistance marker records:
+
+```bash
+python3 -m askinsects ingest-resistance-markers
+python3 -m askinsects ask "show kdr V1016G resistance markers in Aedes aegypti" --json
+python3 -m askinsects sql "select json_extract(payload_json, '$.marker_id') as marker, count(*) as n from record_payloads where source='aedes_resistance_markers' group by marker order by n desc" --limit 20
+```
+
+The lane uses source id `aedes_resistance_markers`. It creates one `resistance` record per detected marker candidate, stores marker class, gene or family, matched aliases, resistance context, insecticide terms, source paper ID, full-text unit ID when present, and snippet in SQLite payloads, and preserves provenance back to `records#<paper_id>` plus `literature_fulltext_units#<unit_id>` when legal full text is available. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. It is deterministic candidate extraction, not yet validated genotype or marker-frequency table extraction.
+
 ## Official Public-Health Guidance Source Lane
 
 WHO, PAHO, and CDC guidance pages are the first operational public-health guidance lane for `Aedes aegypti`:

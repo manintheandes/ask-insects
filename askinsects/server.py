@@ -1371,6 +1371,17 @@ def ingest_pathogen_taxonomy(
     return response
 
 
+def ingest_resistance_markers(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_resistance_markers import ingest_resistance_markers as ingest_resistance_markers_script
+
+    _ = payload
+    return ingest_resistance_markers_script(artifact_dir=artifact_dir)
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -1491,6 +1502,10 @@ def dispatch_request(
             from scripts.ingest_vector_competence_assays import ingest_vector_competence_assays
 
             result = ingest_vector_competence_assays(artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/resistance-markers":
+            result = ingest_resistance_markers(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
     except (sqlite3.Error, ValueError) as exc:

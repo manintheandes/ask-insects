@@ -41,7 +41,23 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "vector_competence", ("vector_competence", "literature", "taxonomy"), question)
-    if any(term in q for term in ("insecticide resistance", "pyrethroid resistance", "kdr", "knockdown resistance", "susceptibility", "bioassay", "resistance mutation")):
+    if any(
+        term in q
+        for term in (
+            "insecticide resistance",
+            "pyrethroid resistance",
+            "metabolic resistance",
+            "resistance marker",
+            "resistance markers",
+            "kdr",
+            "knockdown resistance",
+            "susceptibility",
+            "bioassay",
+            "resistance mutation",
+            "vgsc",
+            "vssc",
+        )
+    ):
         return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
     if any(term in q for term in ("host seeking", "host-seeking", "blood feeding", "biting behavior", "oviposition", "mating", "larval behavior", "repellent", "attractant")):
         return QueryPlan(question, "behavior", ("behavior", "neurobiology", "literature", "taxonomy"), question)

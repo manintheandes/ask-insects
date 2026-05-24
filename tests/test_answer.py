@@ -184,6 +184,25 @@ def resistance_record(record_id, source):
     )
 
 
+def resistance_marker_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="resistance",
+        source="aedes_resistance_markers",
+        title="Aedes aegypti resistance marker: V1016G",
+        text="Deterministic marker extraction for Aedes aegypti insecticide resistance. Marker: V1016G. Class: target_site. Gene or family: VGSC. Resistance context: kdr, pyrethroid resistance. Insecticide terms: permethrin.",
+        species="Aedes aegypti",
+        url="https://example.org/resistance-marker",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_resistance_markers",
+            locator="records#openalex:WRM1;literature_fulltext_units#openalex:WRM1:fulltext:0",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="CC-BY",
+        ),
+    )
+
+
 def public_health_record(record_id, source, text):
     return EvidenceRecord(
         record_id=record_id,
@@ -230,6 +249,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what should a scientist inspect next for Culex pipiens?").answer_shape, "action")
         self.assertEqual(plan_question("show mosquito videos from Brazil").answer_shape, "media")
         self.assertEqual(plan_question("what insecticide resistance data exists for Aedes aegypti?").answer_shape, "resistance")
+        self.assertEqual(plan_question("show CYP9J32 metabolic resistance markers in Aedes aegypti").answer_shape, "resistance")
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
@@ -861,6 +881,25 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "resistance")
             self.assertEqual(answer["evidence"][0]["source"], "irmapper_aedes")
+
+    def test_marker_resistance_questions_prefer_marker_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    resistance_record("irmapper:aedes:1", "irmapper_aedes"),
+                    resistance_marker_record("resistance_marker:V1016G:openalex:WRM1"),
+                ]
+            )
+
+            answer = answer_question("show kdr V1016G resistance markers in Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_resistance_markers")
+            self.assertIn("V1016G", answer["evidence"][0]["text"])
 
     def test_guidance_questions_prefer_official_public_health_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

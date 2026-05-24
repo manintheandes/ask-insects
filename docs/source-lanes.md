@@ -156,9 +156,12 @@ Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay pro
 Sources:
 
 - `irmapper_aedes`: live IR Mapper Aedes JSON endpoint, filtered by default to `Aedes aegypti` and `Ae. aegypti`.
+- `aedes_resistance_markers`: deterministic kdr, VGSC, and metabolic-resistance marker extraction from indexed Aedes literature records and legal full-text units.
 - `aedes_literature_facets`: literature-derived resistance facets while deeper source lanes are built.
 
 The IR Mapper lane indexes one SQLite `resistance` row per matching public API row, stores the raw IR Mapper row in `record_payloads`, and cites a provenance locator such as `raw/irmapper/Aedes_aegypti.json#row/1`. It preserves source fields for country, locality, coordinates, collection year, developmental stage, test method, insecticide class, insecticide, dosage, mode of action, mortality, resistance status, mechanism, mutation frequency, reference, and source URL when present.
+
+The resistance-marker lane indexes one SQLite `resistance` row per marker candidate, stores marker ID, marker class, gene or family, matched aliases, context terms, insecticide terms, source paper ID, and full-text unit ID when present in `record_payloads`, and cites provenance back to `records#<paper_id>` plus `literature_fulltext_units#<unit_id>` when legal full text is available. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. It covers candidate marker evidence such as kdr/VGSC substitutions and metabolic-resistance genes or families; validated genotype-frequency and haplotype table extraction remains follow-on work.
 
 ## Action Notes
 

@@ -104,6 +104,14 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what insecticide
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search resistance "deltamethrin Brazil"
 ```
 
+To extract kdr, VGSC, and metabolic-resistance marker records from indexed Aedes literature and legal full text:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-resistance-markers
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show kdr V1016G resistance markers in Aedes aegypti" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.marker_id') as marker, count(*) as n from record_payloads where source='aedes_resistance_markers' group by marker order by n desc" --limit 20
+```
+
 To add NCBI Taxonomy pathogen identity anchors for Aedes-relevant arboviruses:
 
 ```bash
@@ -166,6 +174,8 @@ PMC video records use source id `pmc_open_access_videos`. Raw article HTML is sa
 Dryad behavior/video records use source id `dryad_aedes_behavior_videos`. Raw dataset, version, and file-manifest JSON is saved under `artifacts/mosquito-v1/raw/dryad_behavior_videos/`. Dataset records use lane `behavior`; video/archive file records use lane `media`; README/source-data files use lane `behavior`. Each record stores the DOI, behavior labels, license, file size, checksum, download URL when present, raw manifest payload, and a provenance locator into the saved Dryad API JSON. The default ingest indexes metadata and download locators only; it does not mirror large video archives.
 
 IR Mapper resistance records use source id `irmapper_aedes`. Raw public API JSON is saved under `artifacts/mosquito-v1/raw/irmapper/`. Each resistance record stores the raw row payload, the installed species filter, and a provenance locator into the saved raw JSON row.
+
+Resistance-marker records use source id `aedes_resistance_markers`. They are derived from source-grade literature rows and legal full-text units already in SQLite. Each record stores marker ID, marker class, gene or family, matched aliases, context terms, insecticide terms, source paper ID, full-text unit ID when present, and snippet. Provenance points back to `records#<paper_id>` and, when available, `literature_fulltext_units#<unit_id>`. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. This lane is legal full-text only and does not use private cookies, institutional access, or Sci-Hub.
 
 Pathogen taxonomy records use source id `aedes_pathogen_taxonomy`. Raw NCBI E-utilities taxonomy summary JSON is saved under `artifacts/mosquito-v1/raw/pathogen_taxonomy/`. Each `vector_competence` record stores a configured pathogen label, taxid, pathogen group, Aedes relevance note, raw taxonomy summary, and provenance locator into the saved NCBI summary JSON. This lane gives pathogen-specific questions stable identifiers while assay-level table extraction remains a source gap.
 

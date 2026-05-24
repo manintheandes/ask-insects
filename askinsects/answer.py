@@ -8,6 +8,7 @@ from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
 from .planner import QueryPlan, plan_question
 from .records import EvidenceRecord
+from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
 
 
 LITERATURE_QUERY_STOPWORDS = {
@@ -33,6 +34,13 @@ LITERATURE_QUERY_STOPWORDS = {
     "which",
     "with",
 }
+
+RESISTANCE_MARKER_QUERY_TERMS = {
+    alias.lower()
+    for spec in MARKER_SPECS
+    for alias in spec.aliases
+}
+RESISTANCE_MARKER_QUERY_TERMS.update({"kdr", "vgsc", "vssc", "metabolic resistance", "resistance marker", "resistance markers"})
 
 
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
@@ -171,6 +179,22 @@ def _search_queries(question: str) -> list[str]:
         return ["COI-5P", "Marker COI", question]
     if "bold" in q and ("barcode" in q or "barcodes" in q):
         return ["BOLD barcode", question]
+    marker_terms = _resistance_marker_terms(question)
+    if marker_terms:
+        marker_query_terms = [
+            term
+            for term in marker_terms
+            if term not in {"resistance marker", "resistance markers", "metabolic resistance"}
+        ] or marker_terms
+        marker_query = " ".join(marker_query_terms)
+        return [
+            marker_query,
+            f"{marker_query} resistance",
+            f"{marker_query} Aedes aegypti",
+            "kdr metabolic resistance marker",
+            "IR Mapper Aedes insecticide resistance",
+            question,
+        ]
     if any(
         term in q
         for term in (
@@ -359,10 +383,24 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
     return sorted(records, key=score)
 
 
-def _prioritize_resistance_records(records: list[EvidenceRecord]) -> list[EvidenceRecord]:
-    def score(record: EvidenceRecord) -> tuple[int, int]:
+def _resistance_marker_terms(question: str) -> list[str]:
+    lower = question.lower()
+    matched = []
+    for term in sorted(RESISTANCE_MARKER_QUERY_TERMS, key=len, reverse=True):
+        if term and term in lower:
+            matched.append(term)
+    return list(dict.fromkeys(matched))
+
+
+def _prioritize_resistance_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    wants_marker = bool(_resistance_marker_terms(question))
+
+    def score(record: EvidenceRecord) -> tuple[int, int, int]:
+        marker_rank = 0 if wants_marker and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
+        irmapper_rank = 0 if not wants_marker and record.source == "irmapper_aedes" else 1
         return (
-            0 if record.source == "irmapper_aedes" else 1,
+            marker_rank,
+            irmapper_rank,
             0 if record.lane == "resistance" else 1,
         )
 
@@ -542,7 +580,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         all_records = _prioritize_genomics_records(plan.question, all_records)
 
     if plan.answer_shape == "resistance":
-        all_records = _prioritize_resistance_records(all_records)
+        all_records = _prioritize_resistance_records(plan.question, all_records)
 
     if plan.answer_shape == "public_health":
         all_records = _prioritize_public_health_records(plan.question, all_records)

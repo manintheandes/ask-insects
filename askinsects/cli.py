@@ -166,6 +166,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_vector_competence_assays = sub.add_parser("ingest-vector-competence-assays")
     ingest_vector_competence_assays.add_argument("--hosted", action="store_true")
 
+    ingest_resistance_markers = sub.add_parser("ingest-resistance-markers")
+    ingest_resistance_markers.add_argument("--hosted", action="store_true")
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -424,6 +427,20 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/vector-competence-assays",
+            {},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-resistance-markers":
+        if not args.hosted:
+            from scripts.ingest_resistance_markers import ingest_resistance_markers
+
+            payload = ingest_resistance_markers(artifact_dir=artifact_dir)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/resistance-markers",
             {},
             timeout=3600,
         )

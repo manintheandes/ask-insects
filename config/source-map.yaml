@@ -166,6 +166,21 @@ sources:
       - resistance
     provenance_required: true
     live_fetch: opt_in
+  - id: aedes_resistance_markers
+    name: Aedes aegypti resistance marker records
+    source_type: derived_sqlite_source
+    boundary: Deterministic kdr, VGSC, and metabolic-resistance marker extraction from source-grade Aedes aegypti literature records and legal full-text units where available
+    query_plane: literature_records_and_fulltext_units_to_sqlite_resistance_marker_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_resistance_markers.py
+    input_sources:
+      - aedes_literature_openalex
+      - literature_fulltext_units
+    lanes:
+      - resistance
+    provenance_required: true
+    live_fetch: derived_from_indexed_literature
+    legal_fulltext_only: true
   - id: aedes_neurobiology_sources
     name: Aedes aegypti neurobiology sources
     source_type: local_public_artifact_cache
