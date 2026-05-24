@@ -247,21 +247,25 @@
     {
       "id": "resistance",
       "priority": 9,
-      "status": "planned",
+      "status": "partial_source_grade",
       "target_state": "Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay protocol, geography, and time records for Aedes aegypti.",
-      "current_sources": [],
+      "current_sources": [
+        "irmapper_aedes",
+        "aedes_literature_facets"
+      ],
       "current_gates": {
-        "mapped": "no",
-        "accessible": "no",
-        "atomically_queryable": "no",
-        "receipted": "no",
-        "ask_surface_wired": "no"
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
+        "ask_surface_wired": "yes"
       },
       "current_evidence": [
-        "Resistance evidence exists only indirectly in literature and genome records."
+        "IR Mapper public Aedes JSON endpoint is mapped as irmapper_aedes and filtered by default to Aedes aegypti and Ae. aegypti rows.",
+        "Installed records store raw IR Mapper rows in record_payloads with provenance to raw/irmapper/Aedes_aegypti.json row locators.",
+        "Resistance questions prefer the dedicated irmapper_aedes lane before literature-derived resistance facets."
       ],
       "required_next_sources": [
-        "IR Mapper data if downloadable or API-accessible",
         "WHO insecticide resistance database availability review",
         "Aedes resistance literature facet",
         "known kdr and metabolic-resistance marker records"

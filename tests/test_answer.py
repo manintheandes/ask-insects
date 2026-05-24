@@ -145,6 +145,25 @@ def barcode_record(record_id, marker):
     )
 
 
+def resistance_record(record_id, source):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="resistance",
+        source=source,
+        title=f"Aedes aegypti resistance record from {source}",
+        text="Aedes aegypti insecticide resistance pyrethroid deltamethrin confirmed resistance Brazil.",
+        species="Aedes aegypti",
+        url="https://example.org/resistance",
+        media_url=None,
+        provenance=Provenance(
+            source_id=source,
+            locator=f"test#{record_id}",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="test",
+        ),
+    )
+
+
 class AnswerTests(unittest.TestCase):
     def test_planner_routes_identity_evidence_action_and_gap(self):
         self.assertEqual(plan_question("what do we know about Aedes aegypti?").answer_shape, "identity")
@@ -428,6 +447,24 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["record_id"], "GBAAW12253-24")
             self.assertIn("Marker: COI-5P", answer["evidence"][0]["text"])
+
+    def test_resistance_questions_prefer_dedicated_irmapper_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    resistance_record("facet:resistance:1", "aedes_literature_facets"),
+                    resistance_record("irmapper:aedes:1", "irmapper_aedes"),
+                ]
+            )
+
+            answer = answer_question("what insecticide resistance data exists for Aedes aegypti?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "irmapper_aedes")
 
     def test_neurobiology_questions_prefer_brain_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -103,6 +103,18 @@ sources:
       - media
     provenance_required: true
     live_fetch: opt_in
+  - id: irmapper_aedes
+    name: IR Mapper Aedes aegypti resistance records
+    source_type: public_api
+    boundary: Public IR Mapper Aedes endpoint filtered to Aedes aegypti and Ae. aegypti insecticide resistance records, including geography, year, assay, insecticide, status, mechanism, reference, and URL when provided
+    query_plane: irmapper_aedes_json_api_to_sqlite
+    api_base: https://api.irmapper.com/api/aedes
+    artifact_dir: artifacts/mosquito-v1/raw/irmapper
+    ingest_script: scripts/ingest_irmapper.py
+    lanes:
+      - resistance
+    provenance_required: true
+    live_fetch: opt_in
   - id: aedes_neurobiology_sources
     name: Aedes aegypti neurobiology sources
     source_type: local_public_artifact_cache

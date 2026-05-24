@@ -35,6 +35,7 @@ from .sources.inaturalist import (
     safe_name as inaturalist_safe_name,
     write_raw_json as write_inaturalist_raw_json,
 )
+from .sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetch_irmapper_records
 
 
 @dataclass(frozen=True)
@@ -705,6 +706,108 @@ def ingest_gbif(
     return response
 
 
+def write_irmapper_metadata(staging: Path, irmapper_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(irmapper_payload["retrieved_at"])
+    sources = [source for source in counts if source != IRMAPPER_SOURCE_ID]
+    if counts.get(IRMAPPER_SOURCE_ID):
+        sources.append(IRMAPPER_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else IRMAPPER_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": True,
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[IRMAPPER_SOURCE_ID] = irmapper_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else IRMAPPER_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            "irmapper": irmapper_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, "irmapper": irmapper_payload}
+
+
+def ingest_irmapper(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
+) -> dict[str, object]:
+    species = str(payload.get("species") or DEFAULT_IRMAPPER_SPECIES)
+    staging = artifact_dir.parent / f".{artifact_dir.name}.staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            shutil.copytree(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        index = SourceIndex(staging / "source_index.sqlite")
+        index.initialize()
+        index.delete_source(IRMAPPER_SOURCE_ID)
+        retrieved_at = utc_now()
+        result = fetch_irmapper_records_fn(
+            raw_dir=staging / "raw" / "irmapper",
+            species=species,
+            retrieved_at=retrieved_at,
+        )
+        index.upsert_records(result.records)
+        old_gaps = read_json(staging / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == IRMAPPER_SOURCE_ID)]
+        gaps.extend(result.gaps)
+        irmapper_payload = {
+            "requested_species": result.requested_species,
+            "fetched_row_count": result.fetched_row_count,
+            "raw_artifacts": result.raw_artifacts,
+            "record_count": len(result.records),
+            "gap_count": len(result.gaps),
+            "retrieved_at": retrieved_at,
+        }
+        response = write_irmapper_metadata(staging, irmapper_payload, gaps)
+        response = rewrite_artifact_references(staging, artifact_dir, response)
+        activate_staging_artifact(staging, artifact_dir)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -716,6 +819,7 @@ def dispatch_request(
     build_source_index_fn: Callable[..., dict[str, object]] = build_source_index,
     fetch_gbif_records_fn: Callable[..., object] = fetch_gbif_records,
     fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
+    fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -756,6 +860,14 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/gbif":
             result = ingest_gbif(payload or {}, artifact_dir=artifact_dir, fetch_gbif_records_fn=fetch_gbif_records_fn)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/irmapper":
+            result = ingest_irmapper(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_irmapper_records_fn=fetch_irmapper_records_fn,
+            )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
     except (sqlite3.Error, ValueError) as exc:

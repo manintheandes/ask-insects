@@ -66,6 +66,7 @@ REQUIRED_FILES = (
     "askinsects/sources/ncbi_genome.py",
     "askinsects/sources/neurobiology.py",
     "askinsects/sources/pmc_videos.py",
+    "askinsects/sources/irmapper.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -77,6 +78,7 @@ REQUIRED_FILES = (
     "scripts/ingest_bold_barcodes.py",
     "scripts/ingest_inaturalist_observations.py",
     "scripts/ingest_pmc_videos.py",
+    "scripts/ingest_irmapper.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -102,6 +104,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_inaturalist_observations.py",
     "tests/test_ingest_pmc_videos.py",
     "tests/test_pmc_video_source.py",
+    "tests/test_ingest_irmapper.py",
+    "tests/test_irmapper_source.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -128,6 +132,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_inaturalist_observations",
     "tests.test_ingest_pmc_videos",
     "tests.test_pmc_video_source",
+    "tests.test_ingest_irmapper",
+    "tests.test_irmapper_source",
 )
 
 
@@ -186,6 +192,7 @@ def check_literature_source_map() -> None:
     required_terms = (
         "aedes_literature_openalex",
         "pmc_open_access_videos",
+        "irmapper_aedes",
         "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
         "sqlite_payload_table: record_payloads",
         "sqlite_fulltext_table: literature_fulltext_units",

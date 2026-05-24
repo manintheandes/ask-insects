@@ -134,6 +134,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_gbif.add_argument("--occurrence-workers", type=int, default=1)
     ingest_gbif.add_argument("--delay-seconds", type=float, default=0.0)
 
+    ingest_irmapper = sub.add_parser("ingest-irmapper")
+    ingest_irmapper.add_argument("--hosted", action="store_true")
+    ingest_irmapper.add_argument("--species", default="Aedes aegypti")
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -272,6 +276,20 @@ def main(argv: list[str] | None = None) -> int:
                 "delay_seconds": args.delay_seconds,
             },
             timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-irmapper":
+        if not args.hosted:
+            from scripts.ingest_irmapper import ingest_irmapper
+
+            payload = ingest_irmapper(artifact_dir=artifact_dir, species=args.species)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/irmapper",
+            {"species": args.species},
+            timeout=3600,
         )
         return 0 if payload.get("ok") else 2
     parser.error("unknown command")

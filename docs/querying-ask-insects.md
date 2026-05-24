@@ -74,6 +74,14 @@ python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
 ```
 
+To add public IR Mapper `Aedes aegypti` insecticide-resistance records:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-irmapper --species "Aedes aegypti"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what insecticide resistance data exists for Aedes aegypti?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search resistance "deltamethrin Brazil"
+```
+
 To download and index the raw neurobiology artifact cache:
 
 ```bash
@@ -115,6 +123,8 @@ Local and hosted iNaturalist ingests are incremental. They replace only `inatura
 
 PMC video records use source id `pmc_open_access_videos`. Raw article HTML is saved under `artifacts/mosquito-v1/raw/pmc_videos/`. Each media record stores the article URL, downloadable video URL, parsed article title, DOI when present, license text when present, and a provenance locator into the saved raw HTML.
 
+IR Mapper resistance records use source id `irmapper_aedes`. Raw public API JSON is saved under `artifacts/mosquito-v1/raw/irmapper/`. Each resistance record stores the raw row payload, the installed species filter, and a provenance locator into the saved raw JSON row.
+
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 
 OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/literature/` when that artifact directory is used. PubMed and Unpaywall enrichment payloads are stored per record in SQLite `record_payloads.payload_json`. Legal direct PDF/XML/text chunks are stored in `literature_fulltext_units` and mirrored into `literature_fulltext_fts`. Normal `ask` and `search literature` use metadata and abstracts; query full-text chunks through read-only SQL until a dedicated full-text search command is added. Gaps are structured in `gaps.json`, including missing DOI, missing PMID, missing abstract, topic search gaps, Unpaywall no-full-text cases, landing-page-only cases, fetch failures, and parse failures.
@@ -147,6 +157,7 @@ python3 -m askinsects health --hosted
 python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
 python3 -m askinsects ingest-inaturalist --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
+python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"
 ```

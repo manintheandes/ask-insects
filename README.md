@@ -110,6 +110,18 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegyp
 
 The lane stores raw PMC article HTML under `raw/pmc_videos/`, extracts downloadable MP4/WebM/AVI/MOV supplementary links, normalizes them as `media` records from source `pmc_open_access_videos`, stores per-record payloads in SQLite, and records the article URL, video URL, license text, DOI, and raw HTML locator. This is the first source-grade video layer, not the final video corpus. Larger Dryad and OSF motion datasets remain follow-on targets.
 
+## IR Mapper Resistance Source Lane
+
+IR Mapper is the dedicated insecticide-resistance source lane for `Aedes aegypti`:
+
+```bash
+python3 -m askinsects ingest-irmapper --species "Aedes aegypti"
+python3 -m askinsects ask "what insecticide resistance data exists for Aedes aegypti?" --json
+python3 -m askinsects sql "select country, count(*) from (select json_extract(payload_json, '$.raw_row.country') as country from record_payloads where source='irmapper_aedes') group by country order by count(*) desc" --limit 10
+```
+
+The lane writes the raw IR Mapper Aedes JSON under `raw/irmapper/`, normalizes `Aedes aegypti` and abbreviated `Ae. aegypti` rows into `resistance` records from source `irmapper_aedes`, stores the raw row payload in SQLite, and records provenance to the saved JSON row. Other Aedes species in the endpoint are comparison material, not installed by default for this Aedes-first push.
+
 ## Aedes aegypti Neurobiology Source Lane
 
 The neurobiology lane can run as metadata-only, or from a downloaded raw-artifact cache:
@@ -181,6 +193,7 @@ python3 -m askinsects configure --url http://<vm-ip>:8080 --token "$ASK_INSECTS_
 python3 -m askinsects health --hosted
 python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
+python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```
 

@@ -125,6 +125,17 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what v
 
 This lane is source `aedes_literature_facets`. It does not replace dedicated behavior, resistance, vector-competence, ecology, or public-health databases. It creates an immediate source-backed query plane from the indexed Aedes literature while those deeper external lanes are built.
 
+## Insecticide Resistance
+
+Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay protocol, geography, time, and reference records for `Aedes aegypti`.
+
+Sources:
+
+- `irmapper_aedes`: live IR Mapper Aedes JSON endpoint, filtered by default to `Aedes aegypti` and `Ae. aegypti`.
+- `aedes_literature_facets`: literature-derived resistance facets while deeper source lanes are built.
+
+The IR Mapper lane indexes one SQLite `resistance` row per matching public API row, stores the raw IR Mapper row in `record_payloads`, and cites a provenance locator such as `raw/irmapper/Aedes_aegypti.json#row/1`. It preserves source fields for country, locality, coordinates, collection year, developmental stage, test method, insecticide class, insecticide, dosage, mode of action, mortality, resistance status, mechanism, mutation frequency, reference, and source URL when present.
+
 ## Action Notes
 
 Source-backed next steps for scientists, grounded in indexed observations and literature.

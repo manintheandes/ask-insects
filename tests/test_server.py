@@ -9,6 +9,7 @@ from askinsects.records import EvidenceRecord, Provenance
 from askinsects.server import dispatch_request
 from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
+from askinsects.sources.irmapper import IRMapperBuildResult
 from tests.test_inaturalist_source import observation
 
 
@@ -389,6 +390,63 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(counts["gbif_api"], 1)
             payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select record_id from record_payloads where source='gbif_api'")
             self.assertEqual(payload_rows[0]["record_id"], "gbif:occurrence:444")
+
+    def test_ingest_irmapper_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, species, retrieved_at):
+                raw_path = raw_dir / "Aedes_aegypti.json"
+                return IRMapperBuildResult(
+                    source_id="irmapper_aedes",
+                    records=[
+                        EvidenceRecord(
+                            record_id="irmapper:aedes:301",
+                            lane="resistance",
+                            source="irmapper_aedes",
+                            title="Aedes aegypti IR Mapper resistance deltamethrin Brazil",
+                            text="IR Mapper resistance record for Aedes aegypti in Brazil with deltamethrin.",
+                            species="Aedes aegypti",
+                            url="https://example.org/paper",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="irmapper_aedes",
+                                locator=f"{raw_path}#row/1",
+                                retrieved_at=retrieved_at,
+                                license="IR Mapper public API",
+                                source_url="https://api.irmapper.com/api/aedes",
+                            ),
+                            payload={"raw_row": {"id": 301}},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_species=species,
+                    fetched_row_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/irmapper",
+                {"species": "Aedes aegypti"},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_irmapper_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["irmapper_aedes"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='irmapper_aedes'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
 
 
 if __name__ == "__main__":
