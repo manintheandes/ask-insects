@@ -169,6 +169,59 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(result.selected_fulltext_unit_count, 1)
             self.assertTrue(any(gap["reason"] == "fulltext_prefilter_limit_applied" for gap in result.gaps))
 
+    def test_build_extracted_fact_records_skips_markup_noise_fulltext(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            paper = EvidenceRecord(
+                record_id="openalex:WHTML",
+                lane="literature",
+                source="aedes_literature_openalex",
+                title="Aedes aegypti landing page",
+                text="Aedes aegypti landing page.",
+                species="Aedes aegypti",
+                url="https://example.org/html",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/literature/page.json#WHTML",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="open metadata",
+                    source_url="https://example.org/html",
+                ),
+                payload={},
+            )
+            unit = FullTextUnit(
+                unit_id="openalex:WHTML:fulltext:0",
+                record_id="openalex:WHTML",
+                source="aedes_literature_openalex",
+                unit_index=0,
+                text=(
+                    "<!DOCTYPE html><html><head><style>:root{--color:red;font-family:sans-serif}"
+                    "*{box-sizing:border-box}</style><script></script></head><body><div>"
+                    "Aedes aegypti behavior response rate 99% oviposition assay"
+                    "</div></body></html>"
+                ),
+                url="https://example.org/html",
+                license="OpenAlex OA PDF URL",
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/fulltext/WHTML.html#chunk/0",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="OpenAlex OA PDF URL",
+                    source_url="https://example.org/html",
+                ),
+            )
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_records_and_fulltext_units([paper], [unit])
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                max_fulltext_units=2,
+            )
+
+            self.assertFalse(any(record.payload.get("source_record_id") == "openalex:WHTML" for record in result.records))
+
     def test_build_extracted_fact_records_ignores_non_openalex_literature_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

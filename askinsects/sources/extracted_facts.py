@@ -322,6 +322,14 @@ def _matches_prefilter(text: str) -> bool:
     return any(token in lower for token in PREFILTER_TOKENS)
 
 
+def _looks_like_markup_noise(text: str) -> bool:
+    lower = text[:20000].lower()
+    if "<!doctype html" in lower or "<html" in lower:
+        return True
+    markup_tokens = sum(lower.count(token) for token in ("<div", "<style", "<script", "</", "{--", "font-family", "box-sizing"))
+    return markup_tokens >= 6
+
+
 def _bounded_fulltext_rows(
     conn: sqlite3.Connection,
     *,
@@ -368,6 +376,8 @@ def _text_candidates(
         if paper is None:
             continue
         unit_text = str(unit["text"])
+        if _looks_like_markup_noise(unit_text):
+            continue
         if len(unit_text) > MAX_CANDIDATE_TEXT_CHARS:
             unit_text = unit_text[:MAX_CANDIDATE_TEXT_CHARS]
             truncated_fulltext_unit_count += 1
