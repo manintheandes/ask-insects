@@ -83,9 +83,13 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 
 def _search_queries(question: str) -> list[str]:
+    q = question.lower()
+    if "connectome" in q:
+        return ["connectome", question]
+    if "h5ad" in q or "anndata" in q:
+        return ["H5AD", "Mosquito Cell Atlas H5AD", question]
     queries = [question]
     species = _requested_species(question)
-    q = question.lower()
     added_domain_phrase = False
     for phrase in (
         "brain atlas",

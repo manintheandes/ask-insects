@@ -370,6 +370,27 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["lane"], "neurobiology")
             self.assertIn("brain", answer["answer"].lower())
 
+    def test_connectome_questions_prefer_source_gap_record(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            artifact_dir = tmp_path / "mosquito-v1"
+            neurobiology_artifact_dir = write_fake_neurobiology_artifacts(tmp_path)
+            build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_ncbi_genome=False,
+                include_neurobiology=True,
+                artifact_dir=artifact_dir,
+                neurobiology_artifact_dir=neurobiology_artifact_dir,
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            answer = answer_question("is there a complete Aedes aegypti brain connectome?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "neuro:connectome:wellcome:source-gap")
+
     def test_h5ad_questions_use_neurobiology_artifact_inventory(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
