@@ -8,6 +8,12 @@ V1 starts with mosquitoes, then expands to other insect groups. It follows the A
 source artifacts -> mapped lanes -> local parsed indexes -> receipts -> CLI -> answer with provenance or gap
 ```
 
+## Comprehensive Mosquito Intelligence Goal
+
+The current comprehensive-source strategy is Aedes-first: make Ask Insects the most comprehensive `Aedes aegypti` intelligence system in the world, full stop. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for this push.
+
+The machine-readable coverage ledger is `config/mosquito-intelligence-coverage.json`. It is the durable backlog for domains that are not source grade yet. Do not treat a domain as covered unless the ledger, source map, receipts, SQLite records, and Ask Insects CLI all agree.
+
 ## Quick Start
 
 ```bash
@@ -130,6 +136,17 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 \
 OpenAlex is the canonical discovery source. A paper is in-boundary when `Aedes aegypti` is material in the title, abstract, or accepted OpenAlex topic metadata. PubMed is used only as a cross-check enrichment source, and Unpaywall is used only as a legal open full-text resolver. Ask Insects does not use Sci-Hub, private cookies, or institutional scraping.
 
 The lane writes `source_index.sqlite`, `source_status.json`, `source_receipt.json`, `literature_enrichment_receipt.json`, `gaps.json`, and raw OpenAlex cursor artifacts under `artifacts/aedes-literature-2020/`. PubMed and Unpaywall enrichment payloads are stored per record in `record_payloads`. Structured gaps record missing DOI, missing PMID, missing abstract, rejected topic candidates, unavailable full text, landing-page-only full text, fetch failures, and parse failures.
+
+Literature can also be parsed into mosquito intelligence facets:
+
+```bash
+python3 scripts/build_literature_facets.py --artifact-dir artifacts/aedes-literature-2020
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 search behavior "host seeking"
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 search resistance "pyrethroid"
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what vector competence data exists for dengue?" --json
+```
+
+The derived source id is `aedes_literature_facets`. It creates records in `behavior`, `vector_competence`, `resistance`, `ecology`, and `public_health` from indexed Aedes literature and legal full text where available, with provenance back to the source literature record and full-text units.
 
 ## Hosted Ask Insects
 

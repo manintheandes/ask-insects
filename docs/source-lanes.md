@@ -2,6 +2,8 @@
 
 V1 covers mosquitoes first.
 
+The comprehensive-source push is Aedes-first: Ask Insects should become the most comprehensive `Aedes aegypti` intelligence system in the world. Other mosquitoes can remain comparison records, but Aedes is the completion boundary for this push. The coverage ledger lives at `config/mosquito-intelligence-coverage.json` and tracks required domains, gate status, next source candidates, and completion evidence.
+
 ## Taxonomy
 
 Scientific names, common labels, synonyms, rank, family, genus, and species.
@@ -96,6 +98,18 @@ Structured literature gaps include:
 - `fulltext_landing_page_only`
 - `fulltext_fetch_failed`
 - `fulltext_parse_failed`
+
+## Literature-Derived Intelligence Facets
+
+Behavior, vector competence, resistance, ecology, and public-health records can be derived from source-grade literature records and legal full-text units with:
+
+```bash
+python3 scripts/build_literature_facets.py --artifact-dir artifacts/aedes-literature-2020
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 search resistance "pyrethroid"
+python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 ask "what vector competence data exists for dengue?" --json
+```
+
+This lane is source `aedes_literature_facets`. It does not replace dedicated behavior, resistance, vector-competence, ecology, or public-health databases. It creates an immediate source-backed query plane from the indexed Aedes literature while those deeper external lanes are built.
 
 ## Action Notes
 

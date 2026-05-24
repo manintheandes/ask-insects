@@ -15,6 +15,18 @@ def plan_question(question: str) -> QueryPlan:
     q = question.lower()
     if "video" in q or "moving" in q:
         return QueryPlan(question, "media", ("media",), question)
+    if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
+        return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
+    if any(term in q for term in ("vector competence", "transmission competence", "infection rate", "dissemination rate", "transmission rate")):
+        return QueryPlan(question, "vector_competence", ("vector_competence", "literature", "taxonomy"), question)
+    if any(term in q for term in ("insecticide resistance", "pyrethroid resistance", "kdr", "knockdown resistance", "susceptibility", "bioassay", "resistance mutation")):
+        return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
+    if any(term in q for term in ("host seeking", "host-seeking", "blood feeding", "biting behavior", "oviposition", "mating", "larval behavior", "repellent", "attractant")):
+        return QueryPlan(question, "behavior", ("behavior", "neurobiology", "literature", "taxonomy"), question)
+    if any(term in q for term in ("larval habitat", "breeding site", "ecology", "climate", "rainfall", "seasonality", "environmental suitability", "land use")):
+        return QueryPlan(question, "ecology", ("ecology", "observations", "literature", "taxonomy"), question)
+    if any(term in q for term in ("public health", "surveillance", "outbreak", "vector control", "intervention", "incidence", "epidemic")):
+        return QueryPlan(question, "public_health", ("public_health", "observations", "literature", "taxonomy"), question)
     neurobiology_terms = (
         "brain",
         "brains",
@@ -86,8 +98,6 @@ def plan_question(question: str) -> QueryPlan:
             lanes,
             question,
         )
-    if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
-        return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
     if "what should" in q or "inspect next" in q or "take action" in q or "next step" in q:
         return QueryPlan(question, "action", ("action_notes", "literature", "observations"), question)
     if "observation" in q or "image" in q or "photo" in q or "show" in q:

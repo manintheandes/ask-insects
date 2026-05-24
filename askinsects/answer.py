@@ -79,6 +79,9 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
         return f"From the local mosquito genomics index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "neurobiology":
         return f"From the local mosquito neurobiology index, {records[0].title}: {records[0].text}"
+    if plan.answer_shape in {"behavior", "vector_competence", "resistance", "ecology", "public_health"}:
+        label = plan.answer_shape.replace("_", " ")
+        return f"From the Ask Insects {label} index, {records[0].title}: {records[0].text}"
     return f"I found {len(records)} indexed Ask Insects record(s)."
 
 
@@ -130,6 +133,24 @@ def _search_queries(question: str) -> list[str]:
         "cytochrome p450",
         "sodium channel",
         "insecticide resistance",
+        "pyrethroid resistance",
+        "knockdown resistance",
+        "resistance",
+        "vector competence",
+        "transmission competence",
+        "competence",
+        "host seeking",
+        "host-seeking",
+        "behavior",
+        "blood feeding",
+        "oviposition",
+        "larval habitat",
+        "breeding site",
+        "ecology",
+        "public health",
+        "surveillance",
+        "vector control",
+        "outbreak",
         "orco",
     ):
         if phrase in q:

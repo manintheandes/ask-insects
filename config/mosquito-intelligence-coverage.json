@@ -1,0 +1,321 @@
+{
+  "scope": {
+    "primary_taxon": "Aedes aegypti",
+    "strategy": "Build the most comprehensive Aedes aegypti intelligence system in the world, full stop.",
+    "expansion_order": [
+      "Aedes albopictus",
+      "Anopheles gambiae complex and other primary Anopheles vectors",
+      "Culex pipiens complex and other primary Culex vectors",
+      "broader Culicidae"
+    ]
+  },
+  "source_contract_gates": [
+    "mapped",
+    "accessible",
+    "atomically_queryable",
+    "receipted",
+    "ask_surface_wired"
+  ],
+  "domains": [
+    {
+      "id": "literature",
+      "priority": 1,
+      "status": "partial_source_grade",
+      "target_state": "All materially relevant Aedes aegypti research papers, with metadata, abstracts, legal full text when available, enrichment payloads, and explicit gaps.",
+      "current_sources": [
+        "aedes_literature_openalex"
+      ],
+      "current_gates": {
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
+        "ask_surface_wired": "partial"
+      },
+      "current_evidence": [
+        "artifacts/aedes-literature-2020/source_index.sqlite",
+        "artifacts/aedes-literature-2020/literature_enrichment_receipt.json",
+        "artifacts/aedes-literature-2020/gaps.json"
+      ],
+      "required_next_sources": [
+        "dedicated full-text search and answer path over literature_fulltext_units",
+        "Crossref or PubMed reconciliation for missing DOI and PMID gaps",
+        "topic-specific behavior, resistance, vector competence, ecology, and public-health paper facets"
+      ],
+      "completion_evidence": [
+        "CLI answers use full-text chunks when abstract metadata is insufficient",
+        "remaining inaccessible full text is represented as structured gaps"
+      ]
+    },
+    {
+      "id": "genomics",
+      "priority": 2,
+      "status": "partial_source_grade",
+      "target_state": "Reference genomes, genes, proteins, transcripts, variants, orthology, barcodes, expression summaries, microbiome links, strains, and resistance markers for Aedes aegypti.",
+      "current_sources": [
+        "ncbi_datasets_genome"
+      ],
+      "current_gates": {
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
+        "ask_surface_wired": "partial"
+      },
+      "current_evidence": [
+        "ncbi_datasets_genome records in the installed source index",
+        "config/source-map.yaml"
+      ],
+      "required_next_sources": [
+        "VectorBase or successor vector genomics resources",
+        "NCBI variation and BioSample links",
+        "BOLD COI barcode records",
+        "additional Aedes aegypti reference, strain, variation, BioSample, and expression packages",
+        "orthology and resistance mutation references"
+      ],
+      "completion_evidence": [
+        "Ask Insects can answer gene, protein, variant, strain, barcode, and orthology questions with provenance"
+      ]
+    },
+    {
+      "id": "behavior",
+      "priority": 3,
+      "status": "planned",
+      "target_state": "Host seeking, biting, oviposition, mating, flight, circadian, larval, repellent, attraction, and insecticide-response behavior records.",
+      "current_sources": [],
+      "current_gates": {
+        "mapped": "no",
+        "accessible": "no",
+        "atomically_queryable": "no",
+        "receipted": "no",
+        "ask_surface_wired": "no"
+      },
+      "current_evidence": [
+        "Behavior appears in literature text, but there is no dedicated behavior lane."
+      ],
+      "required_next_sources": [
+        "Aedes behavior literature facet",
+        "open trajectory or assay datasets from behavior papers",
+        "repellent and attractant assay datasets",
+        "host-seeking and oviposition experiment metadata"
+      ],
+      "completion_evidence": [
+        "behavior lane records include behavior type, assay, stimulus, condition, population or strain, source paper or dataset, and provenance locator"
+      ]
+    },
+    {
+      "id": "observations",
+      "priority": 4,
+      "status": "thin",
+      "target_state": "Global Aedes aegypti occurrence, collection, trap, citizen-science, and surveillance observations with date, place, method, certainty, taxon, and provenance.",
+      "current_sources": [
+        "mosquito_v1_fixtures",
+        "gbif_api",
+        "inaturalist_api"
+      ],
+      "current_gates": {
+        "mapped": "partial",
+        "accessible": "partial",
+        "atomically_queryable": "partial",
+        "receipted": "partial",
+        "ask_surface_wired": "partial"
+      },
+      "current_evidence": [
+        "GBIF and iNaturalist lanes exist, but the installed production artifact is not yet a comprehensive observation mirror."
+      ],
+      "required_next_sources": [
+        "deep Aedes aegypti GBIF occurrence refresh",
+        "deep Aedes aegypti iNaturalist refresh with licensed media",
+        "Mosquito Alert public data",
+        "regional surveillance exports where public"
+      ],
+      "completion_evidence": [
+        "Ask Insects can answer global, country, date, and source-specific Aedes observation questions with counts and provenance"
+      ]
+    },
+    {
+      "id": "images",
+      "priority": 5,
+      "status": "thin",
+      "target_state": "Licensed Aedes aegypti images with observation, body part, life stage, view angle, source, license, and inspectable media locator.",
+      "current_sources": [
+        "inaturalist_api"
+      ],
+      "current_gates": {
+        "mapped": "partial",
+        "accessible": "partial",
+        "atomically_queryable": "partial",
+        "receipted": "partial",
+        "ask_surface_wired": "partial"
+      },
+      "current_evidence": [
+        "iNaturalist can normalize still-image media records, but media coverage is bounded and thin."
+      ],
+      "required_next_sources": [
+        "deep iNaturalist licensed-photo ingest",
+        "Mosquito Alert images",
+        "museum or reference-image collections with licensing",
+        "image labels for species, life stage, sex, anatomy, and quality"
+      ],
+      "completion_evidence": [
+        "image questions return media records with license, source URL, observation context, and provenance"
+      ]
+    },
+    {
+      "id": "video",
+      "priority": 6,
+      "status": "source_gap",
+      "target_state": "Public Aedes aegypti videos and motion records for behavior, flight, feeding, oviposition, larval motion, and assay clips.",
+      "current_sources": [],
+      "current_gates": {
+        "mapped": "no",
+        "accessible": "no",
+        "atomically_queryable": "no",
+        "receipted": "no",
+        "ask_surface_wired": "partial"
+      },
+      "current_evidence": [
+        "Ask Insects reports a moving-image media source gap for video questions."
+      ],
+      "required_next_sources": [
+        "supplemental videos from Aedes behavior papers",
+        "public repository videos with explicit licenses",
+        "lab assay video metadata where public",
+        "bioacoustic or trajectory challenge datasets when mosquito-specific and licensed"
+      ],
+      "completion_evidence": [
+        "video questions return inspectable media locators, licenses, behavior labels, and provenance, or precise external availability gaps"
+      ]
+    },
+    {
+      "id": "neurobiology",
+      "priority": 7,
+      "status": "partial_source_grade",
+      "target_state": "Brain atlas, cell atlas, sensory neuron, connectome, skeleton, voxel, study, and reanalysis records for Aedes aegypti.",
+      "current_sources": [
+        "aedes_neurobiology_sources"
+      ],
+      "current_gates": {
+        "mapped": "yes",
+        "accessible": "yes",
+        "atomically_queryable": "partial",
+        "receipted": "yes",
+        "ask_surface_wired": "yes"
+      },
+      "current_evidence": [
+        "MosquitoBrains, GEO/SRA, Mosquito Cell Atlas, CATMAID metadata, skeleton manifest, and source-gap records in the installed source index."
+      ],
+      "required_next_sources": [
+        "complete public whole-brain Aedes connectome bulk package when available",
+        "computed SRA alignment and count receipts if raw reanalysis is executed",
+        "interactive atlas region and coordinate browser"
+      ],
+      "completion_evidence": [
+        "brain, neuron, cell atlas, skeleton, voxel, and connectome questions answer from records or explicit public-availability gaps"
+      ]
+    },
+    {
+      "id": "vector_competence",
+      "priority": 8,
+      "status": "planned",
+      "target_state": "Pathogen, strain, mosquito population, infection, dissemination, transmission, dose, temperature, tissue, and experimental-condition records.",
+      "current_sources": [],
+      "current_gates": {
+        "mapped": "no",
+        "accessible": "no",
+        "atomically_queryable": "no",
+        "receipted": "no",
+        "ask_surface_wired": "no"
+      },
+      "current_evidence": [
+        "Vector competence evidence exists only indirectly in literature records."
+      ],
+      "required_next_sources": [
+        "Aedes vector competence paper facet",
+        "structured extraction from tables and supplements",
+        "pathogen taxonomy links for dengue, Zika, chikungunya, yellow fever, and other Aedes-relevant pathogens"
+      ],
+      "completion_evidence": [
+        "Ask Insects can answer pathogen-specific competence questions with assay context and provenance"
+      ]
+    },
+    {
+      "id": "resistance",
+      "priority": 9,
+      "status": "planned",
+      "target_state": "Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay protocol, geography, and time records for Aedes aegypti.",
+      "current_sources": [],
+      "current_gates": {
+        "mapped": "no",
+        "accessible": "no",
+        "atomically_queryable": "no",
+        "receipted": "no",
+        "ask_surface_wired": "no"
+      },
+      "current_evidence": [
+        "Resistance evidence exists only indirectly in literature and genome records."
+      ],
+      "required_next_sources": [
+        "IR Mapper data if downloadable or API-accessible",
+        "WHO insecticide resistance database availability review",
+        "Aedes resistance literature facet",
+        "known kdr and metabolic-resistance marker records"
+      ],
+      "completion_evidence": [
+        "Ask Insects can answer resistance questions by species, country, insecticide class, assay, mutation, and source"
+      ]
+    },
+    {
+      "id": "ecology",
+      "priority": 10,
+      "status": "planned",
+      "target_state": "Habitat, climate, seasonality, range, breeding-site, urbanization, and environmental suitability evidence for Aedes aegypti.",
+      "current_sources": [],
+      "current_gates": {
+        "mapped": "no",
+        "accessible": "no",
+        "atomically_queryable": "no",
+        "receipted": "no",
+        "ask_surface_wired": "no"
+      },
+      "current_evidence": [
+        "Ecology evidence exists indirectly through observations and literature, but not as a dedicated lane."
+      ],
+      "required_next_sources": [
+        "GBIF and iNaturalist observation joins",
+        "climate and land-use layers with clear licenses",
+        "range and suitability model outputs",
+        "breeding-site and larval-habitat records from literature and surveillance reports"
+      ],
+      "completion_evidence": [
+        "Ask Insects can answer where, when, habitat, climate, seasonality, and range questions with source-backed records"
+      ]
+    },
+    {
+      "id": "public_health",
+      "priority": 11,
+      "status": "planned",
+      "target_state": "Surveillance, outbreak, intervention, vector-control, disease-transmission, and operational public-health records connected to Aedes aegypti.",
+      "current_sources": [],
+      "current_gates": {
+        "mapped": "no",
+        "accessible": "no",
+        "atomically_queryable": "no",
+        "receipted": "no",
+        "ask_surface_wired": "no"
+      },
+      "current_evidence": [
+        "Public-health evidence exists indirectly in literature but not as a structured operational lane."
+      ],
+      "required_next_sources": [
+        "WHO dengue surveillance publications and dashboard exports where legally accessible",
+        "PAHO and national dengue or arbovirus reports where public",
+        "CDC ArboNET public summaries and data portals where accessible",
+        "intervention and vector-control guidance records"
+      ],
+      "completion_evidence": [
+        "Ask Insects can answer surveillance, outbreak, intervention, and operational-control questions with date, place, disease, source, and provenance"
+      ]
+    }
+  ]
+}

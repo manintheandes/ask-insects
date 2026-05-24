@@ -11,6 +11,8 @@ import tempfile
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 VERIFY_ARTIFACT_DIR = Path(tempfile.mkdtemp(prefix="ask-insects-verify-")) / "mosquito-v1"
 VERIFY_ENV = {**os.environ, "ASK_INSECTS_ARTIFACT_DIR": VERIFY_ARTIFACT_DIR.as_posix()}
 
@@ -19,6 +21,7 @@ REQUIRED_FILES = (
     "README.md",
     "pyproject.toml",
     "config/source-map.yaml",
+    "config/mosquito-intelligence-coverage.json",
     "data/fixtures/mosquito_records.json",
     "docs/querying-ask-insects.md",
     "docs/source-lanes.md",
@@ -31,6 +34,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-23-aedes-aegypti-genomics-lane-design.md",
     "docs/superpowers/specs/2026-05-23-aedes-aegypti-neurobiology-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-neurobiology-deep-source-completion-design.md",
+    "docs/superpowers/specs/2026-05-24-aedes-aegypti-world-intelligence-source-plane-design.md",
     "docs/superpowers/specs/2026-05-23-neurobiology-gap-closure-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
@@ -66,6 +70,8 @@ REQUIRED_FILES = (
     "scripts/deploy_gce_app.sh",
     "scripts/deploy_gce_vm.sh",
     "scripts/verify_complete.py",
+    "scripts/verify_mosquito_intelligence_coverage.py",
+    "scripts/build_literature_facets.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -84,6 +90,8 @@ REQUIRED_FILES = (
     "tests/test_records.py",
     "tests/test_server.py",
     "tests/test_verify_complete.py",
+    "tests/test_mosquito_intelligence_coverage.py",
+    "tests/test_literature_facets.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -103,6 +111,8 @@ UNIT_TEST_MODULES = (
     "tests.test_neurobiology_source",
     "tests.test_records",
     "tests.test_server",
+    "tests.test_mosquito_intelligence_coverage",
+    "tests.test_literature_facets",
 )
 
 
@@ -170,6 +180,29 @@ def check_literature_source_map() -> None:
     missing = [term for term in required_terms if term not in text]
     if missing:
         raise RuntimeError(f"source map missing literature term(s): {', '.join(missing)}")
+
+
+def check_mosquito_intelligence_coverage() -> None:
+    from scripts.verify_mosquito_intelligence_coverage import load_coverage, verify_coverage
+
+    verify_coverage(load_coverage())
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    lanes_doc = (REPO_ROOT / "docs/source-lanes.md").read_text(encoding="utf-8")
+    source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
+    required_terms = (
+        "config/mosquito-intelligence-coverage.json",
+        "Aedes",
+        "aedes_literature_facets",
+    )
+    for term in required_terms:
+        if term not in readme:
+            raise RuntimeError(f"README.md missing coverage term: {term}")
+        if term not in lanes_doc:
+            raise RuntimeError(f"docs/source-lanes.md missing coverage term: {term}")
+    if "mosquito-intelligence-coverage.json" not in source_map:
+        raise RuntimeError("config/source-map.yaml missing coverage ledger link")
+    if "aedes_literature_facets" not in source_map:
+        raise RuntimeError("config/source-map.yaml missing aedes_literature_facets")
 
 
 def check_cli() -> None:
@@ -360,6 +393,7 @@ def main() -> int:
         check_unit_tests()
         check_source_index_build()
         check_literature_source_map()
+        check_mosquito_intelligence_coverage()
         check_cli()
         check_literature_artifact()
     except Exception as exc:

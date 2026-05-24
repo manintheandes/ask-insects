@@ -92,9 +92,39 @@ sources:
     live_fetch: opt_in_artifact_download
     expansion_gaps:
       - complete public whole-brain Wellcome connectome bulk package
+  - id: aedes_literature_facets
+    name: Aedes literature-derived intelligence facets
+    source_type: derived_sqlite_source
+    boundary: Keyword-derived behavior, vector competence, resistance, ecology, and public-health facets from source-grade indexed Aedes aegypti literature records and legal full-text units where available
+    query_plane: sqlite_atomic_index
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/build_literature_facets.py
+    lanes:
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+    provenance_required: true
+    live_fetch: derived_from_indexed_literature
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects
   remote_root: /home/josh/ask-insects
   artifact_dir: /home/josh/ask-insects/artifacts/mosquito-v1
   sqlite_index: /home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite
+coverage:
+  comprehensive_strategy: Build the most comprehensive Aedes aegypti intelligence system in the world, full stop.
+  ledger: config/mosquito-intelligence-coverage.json
+  required_domains:
+    - literature
+    - genomics
+    - behavior
+    - observations
+    - images
+    - video
+    - neurobiology
+    - vector_competence
+    - resistance
+    - ecology
+    - public_health
