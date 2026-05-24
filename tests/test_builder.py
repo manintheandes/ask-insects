@@ -6,6 +6,7 @@ from pathlib import Path
 
 from askinsects.builder import build_fixture_index
 from askinsects.builder import build_source_index
+from tests.test_ncbi_genome_source import write_fake_ncbi_package
 
 
 def fake_inaturalist_fetcher(url):
@@ -159,6 +160,40 @@ class BuilderTests(unittest.TestCase):
             self.assertTrue(
                 (artifact_dir / "raw" / "inaturalist" / "Aedes_aegypti_Brazil_page_001.json").exists()
             )
+
+    def test_build_source_index_combines_fixture_and_ncbi_genome_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            artifact_dir = tmp_path / "mosquito-v1"
+            package_dir = write_fake_ncbi_package(tmp_path)
+
+            result = build_source_index(
+                include_fixtures=True,
+                include_gbif=False,
+                include_inaturalist=False,
+                include_ncbi_genome=True,
+                fixture_path=Path("data/fixtures/mosquito_records.json"),
+                artifact_dir=artifact_dir,
+                genome_package_dir=package_dir,
+                genome_assembly_accession="GCF_002204515.2",
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertIn("ncbi_datasets_genome", result["sources"])
+            self.assertEqual(result["ncbi_genome"]["assembly_accession"], "GCF_002204515.2")
+            self.assertGreaterEqual(result["source_counts"]["ncbi_datasets_genome"], 6)
+            self.assertEqual(result["lanes"]["genome_assemblies"], 1)
+            self.assertEqual(result["lanes"]["genes"], 1)
+            self.assertEqual(result["lanes"]["transcripts"], 1)
+            self.assertGreaterEqual(result["lanes"]["genome_features"], 1)
+            self.assertEqual(result["lanes"]["proteins"], 2)
+
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            self.assertIn("ncbi_datasets_genome", status["sources"])
+
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["ncbi_genome"]["package_dir"], package_dir.as_posix())
 
 
 if __name__ == "__main__":

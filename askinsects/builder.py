@@ -8,6 +8,11 @@ from .index import SourceIndex
 from .sources.fixtures import FIXTURE_RETRIEVED_AT, FIXTURE_SOURCE_ID, load_fixture_records
 from .sources.gbif import DEFAULT_GBIF_SPECIES, GBIF_SOURCE_ID, fetch_gbif_records
 from .sources.inaturalist import DEFAULT_INATURALIST_SPECIES, INATURALIST_SOURCE_ID, fetch_inaturalist_records
+from .sources.ncbi_genome import (
+    DEFAULT_ASSEMBLY_ACCESSION,
+    NCBI_GENOME_SOURCE_ID,
+    fetch_ncbi_genome_records,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -28,6 +33,7 @@ def build_fixture_index(
         include_fixtures=True,
         include_gbif=False,
         include_inaturalist=False,
+        include_ncbi_genome=False,
         fixture_path=fixture_path,
         artifact_dir=artifact_dir,
     )
@@ -38,6 +44,7 @@ def build_source_index(
     include_fixtures: bool,
     include_gbif: bool,
     include_inaturalist: bool = False,
+    include_ncbi_genome: bool = False,
     fixture_path: Path = DEFAULT_FIXTURE_PATH,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     gbif_species: list[str] | tuple[str, ...] | None = None,
@@ -52,9 +59,11 @@ def build_source_index(
     page_size: int = 200,
     delay_seconds: float = 0.0,
     inaturalist_fetch_json: Callable[[str], dict[str, object]] | None = None,
+    genome_package_dir: Path | None = None,
+    genome_assembly_accession: str = DEFAULT_ASSEMBLY_ACCESSION,
     retrieved_at: str = FIXTURE_RETRIEVED_AT,
 ) -> dict[str, object]:
-    if not include_fixtures and not include_gbif and not include_inaturalist:
+    if not include_fixtures and not include_gbif and not include_inaturalist and not include_ncbi_genome:
         raise ValueError("at least one source must be selected")
 
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -137,6 +146,28 @@ def build_source_index(
         }
         receipt_sources[INATURALIST_SOURCE_ID] = inaturalist_payload
 
+    ncbi_genome_payload: dict[str, object] | None = None
+    if include_ncbi_genome:
+        if genome_package_dir is None:
+            raise ValueError("genome_package_dir is required when include_ncbi_genome is true")
+        ncbi_genome_result = fetch_ncbi_genome_records(
+            package_dir=genome_package_dir,
+            assembly_accession=genome_assembly_accession,
+            retrieved_at=retrieved_at,
+        )
+        records.extend(ncbi_genome_result.records)
+        sources.append(NCBI_GENOME_SOURCE_ID)
+        source_counts[NCBI_GENOME_SOURCE_ID] = len(ncbi_genome_result.records)
+        gaps.extend(ncbi_genome_result.gaps)
+        ncbi_genome_payload = {
+            "package_dir": ncbi_genome_result.package_dir,
+            "assembly_accession": ncbi_genome_result.assembly_accession,
+            "raw_artifacts": ncbi_genome_result.raw_artifacts,
+            "record_count": len(ncbi_genome_result.records),
+            "gap_count": len(ncbi_genome_result.gaps),
+        }
+        receipt_sources[NCBI_GENOME_SOURCE_ID] = ncbi_genome_payload
+
     index = SourceIndex(db_path)
     index.initialize()
     index.upsert_records(records)
@@ -168,6 +199,8 @@ def build_source_index(
         receipt["gbif"] = gbif_payload
     if inaturalist_payload is not None:
         receipt["inaturalist"] = inaturalist_payload
+    if ncbi_genome_payload is not None:
+        receipt["ncbi_genome"] = ncbi_genome_payload
 
     write_json(artifact_dir / "gaps.json", gaps)
     write_json(artifact_dir / "source_status.json", status)
@@ -177,4 +210,6 @@ def build_source_index(
         result["gbif"] = gbif_payload
     if inaturalist_payload is not None:
         result["inaturalist"] = inaturalist_payload
+    if ncbi_genome_payload is not None:
+        result["ncbi_genome"] = ncbi_genome_payload
     return result
