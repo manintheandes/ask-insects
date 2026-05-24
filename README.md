@@ -8,6 +8,14 @@ V1 starts with mosquitoes, then expands to other insect groups. It follows the A
 source artifacts -> mapped lanes -> local parsed indexes -> receipts -> CLI -> answer with provenance or gap
 ```
 
+## License And Open Source Boundary
+
+Ask Insects code and project-authored documentation are licensed under Apache-2.0. See `LICENSE`.
+
+Third-party scientific data, images, videos, papers, API payloads, and database exports are not relicensed by Ask Insects. They remain governed by upstream licenses and terms. See `NOTICE` and `THIRD_PARTY_DATA.md`.
+
+The public repository ships code, docs, tests, source maps, small deterministic fixtures, and provenance rules. Raw artifacts, SQLite mirrors, video archives, paper downloads, API tokens, and credentials stay out of git.
+
 ## Comprehensive Mosquito Intelligence Goal
 
 The current comprehensive-source strategy is Aedes-first: make Ask Insects the most comprehensive `Aedes aegypti` intelligence system in the world, full stop. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for this push.

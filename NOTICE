@@ -1,0 +1,14 @@
+Ask Insects
+Copyright 2026 Josh Tetrick and Ask Insects contributors
+
+Ask Insects code and project-authored documentation are licensed under the
+Apache License, Version 2.0. See LICENSE.
+
+Third-party data, images, videos, papers, database exports, API payloads, and
+other upstream scientific artifacts referenced, indexed, or downloaded by Ask
+Insects are not relicensed by this project. They remain governed by their
+upstream licenses, terms, and attribution requirements.
+
+Ask Insects preserves source IDs, URLs, locators, retrieval metadata, parser
+grains, source receipts, and explicit source gaps so downstream users can trace
+answers back to the originating source.

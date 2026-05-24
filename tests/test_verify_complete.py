@@ -13,6 +13,14 @@ class VerifyCompleteTests(unittest.TestCase):
     def test_verify_complete_enforces_atomic_source_replacement(self):
         verify_complete.check_atomic_source_replacement()
 
+    def test_verify_complete_requires_open_source_boundary(self):
+        required_files = set(verify_complete.REQUIRED_FILES)
+
+        self.assertIn("LICENSE", required_files)
+        self.assertIn("NOTICE", required_files)
+        self.assertIn("THIRD_PARTY_DATA.md", required_files)
+        verify_complete.check_open_source_boundary()
+
     def test_verify_complete_requires_ncbi_genome_lane(self):
         required_files = set(verify_complete.REQUIRED_FILES)
         unit_modules = set(verify_complete.UNIT_TEST_MODULES)

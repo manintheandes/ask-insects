@@ -19,7 +19,10 @@ VERIFY_ENV = {**os.environ, "ASK_INSECTS_ARTIFACT_DIR": VERIFY_ARTIFACT_DIR.as_p
 
 REQUIRED_FILES = (
     "AGENTS.md",
+    "LICENSE",
+    "NOTICE",
     "README.md",
+    "THIRD_PARTY_DATA.md",
     "pyproject.toml",
     "config/source-map.yaml",
     "config/mosquito-intelligence-coverage.json",
@@ -269,6 +272,60 @@ def check_required_files() -> None:
     missing = [path for path in REQUIRED_FILES if not (REPO_ROOT / path).is_file()]
     if missing:
         raise RuntimeError(f"missing required file(s): {', '.join(missing)}")
+
+
+def check_open_source_boundary() -> None:
+    license_text = (REPO_ROOT / "LICENSE").read_text(encoding="utf-8")
+    notice_text = (REPO_ROOT / "NOTICE").read_text(encoding="utf-8")
+    data_text = (REPO_ROOT / "THIRD_PARTY_DATA.md").read_text(encoding="utf-8")
+    readme_text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    pyproject_text = (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
+    gitignore_text = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
+
+    if "Apache License" not in license_text or "Version 2.0" not in license_text:
+        raise RuntimeError("LICENSE must contain Apache License Version 2.0")
+    if 'license = "Apache-2.0"' not in pyproject_text:
+        raise RuntimeError("pyproject.toml must declare Apache-2.0")
+    if "License :: OSI Approved :: Apache Software License" not in pyproject_text:
+        raise RuntimeError("pyproject.toml must expose the Apache classifier")
+    if "artifacts/" not in gitignore_text:
+        raise RuntimeError(".gitignore must keep generated artifacts out of git")
+
+    required_terms = (
+        "Apache-2.0",
+        "not relicensed",
+        "third-party data",
+        "upstream licenses",
+        "credentials",
+    )
+    combined = "\n".join((notice_text.lower(), data_text.lower(), readme_text.lower()))
+    missing = [term for term in required_terms if term.lower() not in combined]
+    if missing:
+        raise RuntimeError(f"open-source boundary docs missing term(s): {', '.join(missing)}")
+
+    source_terms = (
+        "GBIF",
+        "iNaturalist",
+        "Mosquito Alert",
+        "NCBI",
+        "VectorBase",
+        "OpenAlex",
+        "PubMed",
+        "Unpaywall",
+        "PMC Open Access",
+        "Dryad",
+        "Mendeley Data",
+        "OSF",
+        "WHO",
+        "PAHO",
+        "CDC",
+        "ECDC",
+        "BOLD",
+        "IR Mapper",
+    )
+    missing_sources = [term for term in source_terms if term not in data_text]
+    if missing_sources:
+        raise RuntimeError(f"THIRD_PARTY_DATA.md missing source term(s): {', '.join(missing_sources)}")
 
 
 DIRECT_SOURCE_REPLACEMENT_RE = re.compile(r"\.delete_source\([^\n]+\)\s*\n\s*[^#\n]*\.upsert_records\(")
@@ -662,6 +719,7 @@ def check_literature_artifact() -> None:
 def main() -> int:
     try:
         check_required_files()
+        check_open_source_boundary()
         check_unit_tests()
         check_source_index_build()
         check_atomic_source_replacement()
