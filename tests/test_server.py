@@ -15,6 +15,7 @@ from askinsects.sources.literature import FullTextUnit
 from askinsects.sources.mendeley_behavior_media import MendeleyBehaviorMediaResult
 from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
 from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
+from askinsects.sources.osf_flighttrackai_videos import OSFFlightTrackAIResult
 from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
 from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
@@ -973,6 +974,68 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_osf_flighttrackai_videos_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, retrieved_at):
+                raw_path = raw_dir / "cx762_osfstorage_root.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"data":[]}', encoding="utf-8")
+                return OSFFlightTrackAIResult(
+                    source_id="osf_flighttrackai_aedes_videos",
+                    records=[
+                        EvidenceRecord(
+                            record_id="osf:flighttrackai:file:video_a",
+                            lane="media",
+                            source="osf_flighttrackai_aedes_videos",
+                            title="Aedes aegypti OSF FlightTrackAI video file Video A.mp4",
+                            text="OSF FlightTrackAI video file for Aedes aegypti flight-behavior tracking.",
+                            species="Aedes aegypti",
+                            url="https://osf.io/cx762/",
+                            media_url="https://osf.io/download/pu8zf/",
+                            provenance=Provenance(
+                                source_id="osf_flighttrackai_aedes_videos",
+                                locator=f"{raw_path}#files/1",
+                                retrieved_at=retrieved_at,
+                                license="OSF project license not supplied",
+                                source_url="https://api.osf.io/v2/files/video-a/",
+                            ),
+                            payload={"name": "Video A.mp4"},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    project_id="cx762",
+                    folder_count=1,
+                    file_count=1,
+                    media_file_count=1,
+                    software_file_count=0,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/osf-flighttrackai-videos",
+                {},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_osf_flighttrackai_video_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["osf_flighttrackai_aedes_videos"], 1)
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id from record_payloads where source='osf_flighttrackai_aedes_videos'",
+            )
+            self.assertEqual(payload_rows[0]["record_id"], "osf:flighttrackai:file:video_a")
+            self.assertEqual(response.payload["media_file_count"], 1)
 
     def test_ingest_pathogen_taxonomy_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

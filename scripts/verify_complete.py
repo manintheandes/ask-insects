@@ -43,6 +43,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-vectorbase-genomics-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-mendeley-behavior-media-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-mendeley-behavior-table-deep-parse-design.md",
+    "docs/superpowers/specs/2026-05-24-aedes-osf-flighttrackai-video-lane-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -60,6 +61,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-vectorbase-genomics-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-mendeley-behavior-media-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-mendeley-behavior-table-deep-parse.md",
+    "docs/superpowers/plans/2026-05-24-aedes-osf-flighttrackai-video-lane.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -84,6 +86,7 @@ REQUIRED_FILES = (
     "askinsects/sources/mosquito_alert.py",
     "askinsects/sources/dryad_behavior_videos.py",
     "askinsects/sources/mendeley_behavior_media.py",
+    "askinsects/sources/osf_flighttrackai_videos.py",
     "askinsects/sources/public_health.py",
     "askinsects/sources/paho_surveillance.py",
     "askinsects/sources/pathogen_taxonomy.py",
@@ -107,6 +110,7 @@ REQUIRED_FILES = (
     "scripts/ingest_mosquito_alert_observations.py",
     "scripts/ingest_dryad_behavior_videos.py",
     "scripts/ingest_mendeley_behavior_media.py",
+    "scripts/ingest_osf_flighttrackai_videos.py",
     "scripts/ingest_public_health_guidance.py",
     "scripts/ingest_paho_dengue_surveillance.py",
     "scripts/ingest_pathogen_taxonomy.py",
@@ -148,6 +152,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_dryad_behavior_videos.py",
     "tests/test_mendeley_behavior_media_source.py",
     "tests/test_ingest_mendeley_behavior_media.py",
+    "tests/test_osf_flighttrackai_videos_source.py",
+    "tests/test_ingest_osf_flighttrackai_videos.py",
     "tests/test_public_health_source.py",
     "tests/test_ingest_public_health_guidance.py",
     "tests/test_paho_surveillance_source.py",
@@ -198,6 +204,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_dryad_behavior_videos",
     "tests.test_mendeley_behavior_media_source",
     "tests.test_ingest_mendeley_behavior_media",
+    "tests.test_osf_flighttrackai_videos_source",
+    "tests.test_ingest_osf_flighttrackai_videos",
     "tests.test_public_health_source",
     "tests.test_ingest_public_health_guidance",
     "tests.test_paho_surveillance_source",
@@ -275,6 +283,7 @@ def check_literature_source_map() -> None:
         "irmapper_aedes",
         "dryad_aedes_behavior_videos",
         "mendeley_aedes_behavior_media",
+        "osf_flighttrackai_aedes_videos",
         "aedes_pathogen_taxonomy",
         "ncbi_biosamples",
         "aedes_vector_competence_assays",
@@ -313,6 +322,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_vector_competence_assays",
         "aedes_occurrence_ecology",
         "vectorbase_aedes_genomics",
+        "osf_flighttrackai_aedes_videos",
     )
     for term in required_terms:
         if term not in readme:
@@ -343,6 +353,15 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Mendeley behavior/media term: {term}")
+    for term in (
+        "osf_flighttrackai_aedes_videos",
+        "scripts/ingest_osf_flighttrackai_videos.py",
+        "osf_project_file_manifest_to_sqlite",
+        "cx762",
+        "manifest_and_download_locators_only_by_default",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing OSF FlightTrackAI term: {term}")
     for term in ("aedes_pathogen_taxonomy", "scripts/ingest_pathogen_taxonomy.py", "vector_competence"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing pathogen taxonomy term: {term}")

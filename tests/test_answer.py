@@ -721,6 +721,56 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "mendeley_aedes_behavior_media")
 
+    def test_osf_flighttrackai_questions_prefer_osf_video_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="mendeley:file:6gvs94p6r2:v1:file_video",
+                        lane="media",
+                        source="mendeley_aedes_behavior_media",
+                        title="Aedes aegypti Mendeley video/audio/archive file wing-flash-video.mp4",
+                        text="Mendeley high-speed video for Aedes aegypti wing flash mate recognition behavior.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/6gvs94p6r2/1",
+                        media_url="https://data.mendeley.com/public-files/video/file_downloaded",
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/files.json#files/root/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY 4.0",
+                            source_url="https://data.mendeley.com/public-files/video/file_downloaded",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="osf:flighttrackai:file:video_a",
+                        lane="media",
+                        source="osf_flighttrackai_aedes_videos",
+                        title="Aedes aegypti OSF FlightTrackAI video file Video A.mp4",
+                        text="OSF FlightTrackAI video file for Aedes aegypti flight-behavior tracking.",
+                        species="Aedes aegypti",
+                        url="https://osf.io/cx762/",
+                        media_url="https://osf.io/download/pu8zf/",
+                        provenance=Provenance(
+                            source_id="osf_flighttrackai_aedes_videos",
+                            locator="raw/osf_flighttrackai_videos/cx762_folder_processed.json#files/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="OSF project license not supplied",
+                            source_url="https://api.osf.io/v2/files/video-a/",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show OSF FlightTrackAI Aedes aegypti videos", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["source"], "osf_flighttrackai_aedes_videos")
+
     def test_mendeley_table_questions_prefer_parsed_behavior_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -40,6 +40,7 @@ from .sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetc
 from .sources.mendeley_behavior_media import MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, fetch_mendeley_behavior_media_records
 from .sources.mosquito_alert import MOSQUITO_ALERT_SOURCE_ID, fetch_mosquito_alert_records
 from .sources.ncbi_biosample import DEFAULT_BIOSAMPLE_SPECIES, fetch_ncbi_biosample_records
+from .sources.osf_flighttrackai_videos import OSF_FLIGHTTRACKAI_SOURCE_ID, fetch_osf_flighttrackai_video_records
 from .sources.pathogen_taxonomy import PATHOGEN_TAXONOMY_SOURCE_ID, fetch_pathogen_taxonomy_records
 from .sources.paho_surveillance import (
     DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES,
@@ -1549,6 +1550,44 @@ def ingest_mendeley_behavior_media(
     return response
 
 
+def ingest_osf_flighttrackai_videos(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_osf_flighttrackai_video_records_fn: Callable[..., object] = fetch_osf_flighttrackai_video_records,
+) -> dict[str, object]:
+    if payload:
+        unexpected = sorted(payload)
+        if unexpected:
+            raise ValueError(f"unexpected OSF FlightTrackAI option(s): {', '.join(unexpected)}")
+    from scripts.ingest_osf_flighttrackai_videos import ingest_osf_flighttrackai_videos as ingest_local
+
+    result = ingest_local(
+        artifact_dir=artifact_dir,
+        fetch_json=None,
+        retrieved_at=utc_now(),
+    ) if fetch_osf_flighttrackai_video_records_fn is fetch_osf_flighttrackai_video_records else None
+    if result is not None:
+        result["activated_artifact_dir"] = str(artifact_dir)
+        return result
+
+    from scripts.ingest_osf_flighttrackai_videos import _update_metadata
+
+    retrieved_at = utc_now()
+    source_result = fetch_osf_flighttrackai_video_records_fn(
+        raw_dir=artifact_dir / "raw" / "osf_flighttrackai_videos",
+        retrieved_at=retrieved_at,
+    )
+    records = source_result.records
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    index.delete_source(OSF_FLIGHTTRACKAI_SOURCE_ID)
+    index.upsert_records(records)
+    response = _update_metadata(artifact_dir, source_result, retrieved_at)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def write_pathogen_taxonomy_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
     index = SourceIndex(staging / "source_index.sqlite")
     summary = index.summary()
@@ -1706,6 +1745,7 @@ def dispatch_request(
     fetch_mendeley_behavior_media_records_fn: Callable[..., object] = fetch_mendeley_behavior_media_records,
     fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
     fetch_ncbi_biosample_records_fn: Callable[..., object] = fetch_ncbi_biosample_records,
+    fetch_osf_flighttrackai_video_records_fn: Callable[..., object] = fetch_osf_flighttrackai_video_records,
     fetch_pathogen_taxonomy_records_fn: Callable[..., object] = fetch_pathogen_taxonomy_records,
     fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
     fetch_paho_dengue_surveillance_records_fn: Callable[..., object] = fetch_paho_dengue_surveillance_records,
@@ -1813,6 +1853,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_mendeley_behavior_media_records_fn=fetch_mendeley_behavior_media_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/osf-flighttrackai-videos":
+            result = ingest_osf_flighttrackai_videos(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_osf_flighttrackai_video_records_fn=fetch_osf_flighttrackai_video_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

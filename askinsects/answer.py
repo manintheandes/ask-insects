@@ -194,6 +194,13 @@ def _search_queries(question: str) -> list[str]:
         return list(dict.fromkeys(queries))
     if "dryad" in q:
         return ["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset", question]
+    if "osf" in q or "flighttrackai" in q or "flighttrack" in q or "flight tracking" in q:
+        return [
+            "OSF FlightTrackAI Aedes aegypti video",
+            "FlightTrackAI Aedes aegypti flight behavior",
+            "OSF FlightTrackAI video file",
+            question,
+        ]
     if "mendeley" in q:
         if any(term in q for term in ("table", "tables", "row", "rows", "xlsx", "csv", "temperature", "gradient", "gradients")):
             queries = [question]
@@ -705,6 +712,14 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             records,
             key=lambda record: (
                 0 if record.source == "dryad_aedes_behavior_videos" else 1,
+                0 if record.lane in {"media", "behavior"} else 1,
+            ),
+        )
+    if "osf" in q or "flighttrackai" in q or "flighttrack" in q or "flight tracking" in q:
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "osf_flighttrackai_aedes_videos" else 1,
                 0 if record.lane in {"media", "behavior"} else 1,
             ),
         )

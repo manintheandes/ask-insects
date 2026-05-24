@@ -81,6 +81,9 @@ def plan_question(question: str) -> QueryPlan:
         term in q
         for term in (
             "mendeley",
+            "osf",
+            "flighttrackai",
+            "flight tracking",
             "host seeking",
             "host-seeking",
             "blood feeding",

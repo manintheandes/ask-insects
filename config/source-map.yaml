@@ -205,6 +205,22 @@ sources:
       - 6gvs94p6r2:1
       - g79w8wxpr7:2
       - sg5rrvdzvg:1
+  - id: osf_flighttrackai_aedes_videos
+    name: OSF FlightTrackAI Aedes aegypti videos and file manifest
+    source_type: public_osf_project
+    boundary: Public OSF project cx762 for FlightTrackAI, including Aedes aegypti flight-behavior video files, processed/unprocessed video folders, installation instructions, executable bundles, and trained model metadata
+    query_plane: osf_project_file_manifest_to_sqlite
+    api_base: https://api.osf.io/v2
+    project_url: https://osf.io/cx762/
+    project_id: cx762
+    artifact_dir: artifacts/mosquito-v1/raw/osf_flighttrackai_videos
+    ingest_script: scripts/ingest_osf_flighttrackai_videos.py
+    lanes:
+      - behavior
+      - media
+    provenance_required: true
+    live_fetch: opt_in
+    binary_policy: manifest_and_download_locators_only_by_default
   - id: irmapper_aedes
     name: IR Mapper Aedes aegypti resistance records
     source_type: public_api

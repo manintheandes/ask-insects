@@ -131,7 +131,7 @@ python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
 ```
 
-The lane stores raw PMC article HTML under `raw/pmc_videos/`, extracts downloadable MP4/WebM/AVI/MOV supplementary links, normalizes them as `media` records from source `pmc_open_access_videos`, stores per-record payloads in SQLite, and records the article URL, video URL, license text, DOI, and raw HTML locator. This is one source-grade video layer, not the final video corpus. OSF and other motion datasets remain follow-on targets.
+The lane stores raw PMC article HTML under `raw/pmc_videos/`, extracts downloadable MP4/WebM/AVI/MOV supplementary links, normalizes them as `media` records from source `pmc_open_access_videos`, stores per-record payloads in SQLite, and records the article URL, video URL, license text, DOI, and raw HTML locator. This is one source-grade video layer, not the final video corpus.
 
 ## Dryad Behavior And Video Source Lane
 
@@ -156,6 +156,18 @@ python3 -m askinsects search behavior "flight tone mate recognition"
 ```
 
 The lane uses source id `mendeley_aedes_behavior_media`. It writes public Mendeley snapshot, folder, and file-manifest JSON under `raw/mendeley_behavior_media/`, normalizes one `behavior` record per dataset, one `behavior` record per folder, file-level `media` records for video, audio, or archive files, and file-level `behavior` records for spreadsheets, README, code, or source-data files. It also downloads public `.csv`, `.tsv`, and `.xlsx` Aedes table files into `raw/mendeley_behavior_media/table_files/` and emits parsed sheet-level plus row-level `behavior` records with headers, values, row numbers, licenses, download URLs, and raw-file locators. It preserves DOI, license, folder path, size, content type, SHA-256 hash when supplied, download URL, view URL, behavior labels, and raw manifest payloads. It does not mirror multi-gigabyte binaries or decode video frames, acoustic waveforms, or compressed archives.
+
+## OSF FlightTrackAI Video Source Lane
+
+OSF project `cx762` adds file-grained `Aedes aegypti` FlightTrackAI flight-behavior video manifests:
+
+```bash
+python3 -m askinsects ingest-osf-flighttrackai-videos
+python3 -m askinsects ask "show OSF FlightTrackAI Aedes aegypti videos" --json
+python3 -m askinsects search behavior "FlightTrackAI flight behavior"
+```
+
+The lane uses source id `osf_flighttrackai_aedes_videos`. It writes the OSF project JSON, provider JSON, and recursive `osfstorage` manifests under `raw/osf_flighttrackai_videos/`, normalizes the project and folders as `behavior`, MP4 files as `media`, and executable, model, and instruction files as `behavior`. It preserves file size, OSF download URL, API locator, raw file payload, and provenance. It indexes manifest metadata by default; it does not mirror multi-gigabyte binaries unless a future repo plan explicitly requires binary mirroring.
 
 ## IR Mapper Resistance Source Lane
 

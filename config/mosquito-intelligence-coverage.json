@@ -183,7 +183,8 @@
       "current_sources": [
         "pmc_open_access_videos",
         "dryad_aedes_behavior_videos",
-        "mendeley_aedes_behavior_media"
+        "mendeley_aedes_behavior_media",
+        "osf_flighttrackai_aedes_videos"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -197,11 +198,12 @@
         "Ask Insects video questions can return bounded PMC moving-image media records once the lane is installed.",
         "Dryad behavior/video dataset manifests add file-grained public Aedes video/archive records for thermal-infrared host seeking, visual-threat avoidance, looming-threat flight escape, mating/courtship/hearing, male attraction, and visual-tracking datasets without mirroring giant binary archives.",
         "Mendeley behavior/media manifests add file-grained public Aedes high-speed video, wingbeat sound, flight-tone hearing, and locomotory video-analysis dataset records without mirroring giant binaries.",
-        "Mendeley public behavior table files are parsed into queryable sheet and row records where the file is in Aedes aegypti scope."
+        "Mendeley public behavior table files are parsed into queryable sheet and row records where the file is in Aedes aegypti scope.",
+        "OSF FlightTrackAI manifests add file-grained public Aedes aegypti processed/unprocessed flight videos, executable bundle, trained model, and installation-instruction records without mirroring multi-gigabyte binaries."
       ],
       "required_next_sources": [
-        "OSF FlightTrackAI Aedes aegypti flight videos",
         "deep parsing of Mendeley high-speed mate-location, recognition, hearing, sound, video, and archive files beyond tabular CSV/XLSX content",
+        "deep parsing or frame-level metadata for OSF FlightTrackAI videos where licensed and storage-feasible",
         "lab assay video metadata where public",
         "bioacoustic or trajectory challenge datasets when mosquito-specific and licensed"
       ],

@@ -164,6 +164,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_dryad_behavior_videos.add_argument("--hosted", action="store_true")
     ingest_dryad_behavior_videos.add_argument("--doi", action="append", default=[])
 
+    ingest_osf_flighttrackai_videos = sub.add_parser("ingest-osf-flighttrackai-videos")
+    ingest_osf_flighttrackai_videos.add_argument("--hosted", action="store_true")
+
     ingest_mendeley_behavior_media = sub.add_parser("ingest-mendeley-behavior-media")
     ingest_mendeley_behavior_media.add_argument("--hosted", action="store_true")
     ingest_mendeley_behavior_media.add_argument("--dataset", action="append", default=[])
@@ -434,6 +437,20 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/dryad-behavior-videos",
             {"dois": args.doi},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-osf-flighttrackai-videos":
+        if not args.hosted:
+            from scripts.ingest_osf_flighttrackai_videos import ingest_osf_flighttrackai_videos
+
+            payload = ingest_osf_flighttrackai_videos(artifact_dir=artifact_dir)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/osf-flighttrackai-videos",
+            {},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2
