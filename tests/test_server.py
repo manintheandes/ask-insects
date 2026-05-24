@@ -13,6 +13,7 @@ from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
 from askinsects.sources.literature import FullTextUnit
 from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
+from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
 from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from tests.test_inaturalist_source import observation
@@ -832,6 +833,63 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_ncbi_biosamples_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, species, limit, page_size, delay_seconds, fetch_json, retrieved_at):
+                raw_path = raw_dir / "Aedes_aegypti_esummary_000000.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"result":{}}', encoding="utf-8")
+                return NCBIBioSampleResult(
+                    source_id="ncbi_biosamples",
+                    records=[
+                        EvidenceRecord(
+                            record_id="ncbi:biosample:SAMN1",
+                            lane="biosamples",
+                            source="ncbi_biosamples",
+                            title="Aedes aegypti BioSample SAMN1",
+                            text="NCBI BioSample SAMN1 for Aedes aegypti. Sample name: Rockefeller.",
+                            species="Aedes aegypti",
+                            url="https://www.ncbi.nlm.nih.gov/biosample/SAMN1",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="ncbi_biosamples",
+                                locator=f"{raw_path}#uid/1",
+                                retrieved_at=retrieved_at,
+                                license="NCBI BioSample public metadata; NCBI terms apply",
+                                source_url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi",
+                            ),
+                            payload={"accession": "SAMN1"},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    species=species,
+                    total_count=1,
+                    requested_limit=limit,
+                    fetched_count=1,
+                    page_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/ncbi-biosamples",
+                {"species": "Aedes aegypti", "limit": 1, "page_size": 1, "delay_seconds": 0},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_ncbi_biosample_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["ncbi_biosamples"], 1)
 
     def test_ingest_vector_competence_assays_adds_records_without_removing_existing_sources(self):
         from tests.test_vector_competence_assays_source import write_assay_literature_fixture

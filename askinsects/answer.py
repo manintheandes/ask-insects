@@ -87,6 +87,41 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
+    if any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates")) or (
+        "sra" in q and "reanalysis" not in q and "raw read" not in q and "runinfo" not in q
+    ):
+        generic_terms = {
+            "aedes",
+            "aegypti",
+            "biosample",
+            "biosamples",
+            "from",
+            "show",
+            "sample",
+            "samples",
+            "strain",
+            "strains",
+            "isolate",
+            "isolates",
+            "sra",
+            "the",
+            "what",
+            "which",
+        }
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9]+", question)
+            if token.lower() not in generic_terms
+        ]
+        queries = []
+        if salient:
+            queries.append(f"Aedes aegypti {' '.join(salient)}")
+            queries.append(" ".join(salient))
+        queries.extend(["NCBI BioSample Aedes aegypti", "BioSample", "sample strain isolate SRA"])
+        species = _requested_species(question)
+        if species:
+            queries.append(species)
+        return list(dict.fromkeys(queries))
     if "mosquito alert" in q:
         return ["Mosquito Alert Aedes aegypti", "Mosquito Alert", "citizen-science observation", question]
     if "dryad" in q:
@@ -274,6 +309,16 @@ def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
 
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates")) or (
+        "sra" in q and "reanalysis" not in q and "raw read" not in q and "runinfo" not in q
+    ):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "ncbi_biosamples" else 1,
+                0 if record.lane == "biosamples" else 1,
+            ),
+        )
     if not any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p")):
         return records
 

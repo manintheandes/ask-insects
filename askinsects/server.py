@@ -38,6 +38,7 @@ from .sources.inaturalist import (
 )
 from .sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetch_irmapper_records
 from .sources.mosquito_alert import MOSQUITO_ALERT_SOURCE_ID, fetch_mosquito_alert_records
+from .sources.ncbi_biosample import DEFAULT_BIOSAMPLE_SPECIES, fetch_ncbi_biosample_records
 from .sources.pathogen_taxonomy import PATHOGEN_TAXONOMY_SOURCE_ID, fetch_pathogen_taxonomy_records
 from .sources.public_health import (
     DEFAULT_PUBLIC_HEALTH_SOURCES,
@@ -1384,6 +1385,7 @@ def dispatch_request(
     fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
     fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
+    fetch_ncbi_biosample_records_fn: Callable[..., object] = fetch_ncbi_biosample_records,
     fetch_pathogen_taxonomy_records_fn: Callable[..., object] = fetch_pathogen_taxonomy_records,
     fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
 ) -> Response:
@@ -1468,6 +1470,20 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_pathogen_taxonomy_records_fn=fetch_pathogen_taxonomy_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/ncbi-biosamples":
+            from scripts.ingest_ncbi_biosamples import ingest_ncbi_biosamples
+
+            body = payload or {}
+            result = ingest_ncbi_biosamples(
+                artifact_dir=artifact_dir,
+                species=str(body.get("species") or DEFAULT_BIOSAMPLE_SPECIES),
+                limit=int(body.get("limit") or 1000),
+                page_size=int(body.get("page_size") or 200),
+                delay_seconds=float(body.get("delay_seconds") if body.get("delay_seconds") is not None else 0.34),
+                fetch_ncbi_biosample_records_fn=fetch_ncbi_biosample_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

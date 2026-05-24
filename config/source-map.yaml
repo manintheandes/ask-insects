@@ -99,6 +99,18 @@ sources:
       - proteins
     provenance_required: true
     live_fetch: package_path_required
+  - id: ncbi_biosamples
+    name: NCBI BioSample Aedes aegypti sample metadata
+    source_type: public_api
+    boundary: Bounded NCBI BioSample records for Aedes aegypti, including accession, organism, sample name, strain or isolate when present, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when NCBI exposes them
+    query_plane: ncbi_eutils_biosample_esearch_esummary_to_sqlite
+    api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+    artifact_dir: artifacts/mosquito-v1/raw/ncbi_biosamples
+    ingest_script: scripts/ingest_ncbi_biosamples.py
+    lanes:
+      - biosamples
+    provenance_required: true
+    live_fetch: opt_in_bounded
   - id: bold_api
     name: BOLD public Aedes aegypti DNA barcode records
     source_type: public_api

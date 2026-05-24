@@ -53,8 +53,11 @@ Genome assembly metadata, GFF annotation features, gene rows, transcript rows, a
 Sources:
 
 - `ncbi_datasets_genome`: parsed NCBI Datasets package for `Aedes aegypti` assembly `GCF_002204515.2`.
+- `ncbi_biosamples`: bounded NCBI BioSample metadata for `Aedes aegypti` samples, strains, isolates, collection dates, geographies, tissues, isolation sources, organizations, and linked SRA identifiers when present.
 
 The genomics lane indexes useful atoms, not every DNA base. Raw NCBI package files remain the source artifacts. SQLite rows cite locators such as `assembly_data_report.jsonl#line/1`, `genomic.gff#line/42`, or `protein.faa#protein/XP_001`.
+
+NCBI BioSample rows cite saved ESummary batches under `raw/ncbi_biosamples/`. The ingest is bounded by default; if NCBI reports more `Aedes aegypti` BioSamples than were fetched, Ask Insects writes a structured `biosample_limit_applied` source gap.
 
 Current genomics lanes:
 
@@ -64,6 +67,7 @@ Current genomics lanes:
 - `genome_features`
 - `proteins`
 - `dna_barcodes`
+- `biosamples`
 
 ## DNA Barcodes
 

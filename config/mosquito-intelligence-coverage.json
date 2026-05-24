@@ -54,6 +54,7 @@
       "target_state": "Reference genomes, genes, proteins, transcripts, variants, orthology, barcodes, expression summaries, microbiome links, strains, and resistance markers for Aedes aegypti.",
       "current_sources": [
         "ncbi_datasets_genome",
+        "ncbi_biosamples",
         "bold_api"
       ],
       "current_gates": {
@@ -65,12 +66,13 @@
       },
       "current_evidence": [
         "ncbi_datasets_genome records in the installed source index",
+        "ncbi_biosamples maps bounded NCBI BioSample records for Aedes aegypti into queryable sample metadata atoms with accession, strain or isolate, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when exposed by NCBI.",
         "config/source-map.yaml"
       ],
       "required_next_sources": [
         "VectorBase or successor vector genomics resources",
-        "NCBI variation and BioSample links",
-        "additional Aedes aegypti reference, strain, variation, BioSample, and expression packages",
+        "NCBI variation links and a larger or complete BioSample mirror beyond the bounded live ingest",
+        "additional Aedes aegypti reference, strain, variation, and expression packages",
         "orthology and resistance mutation references"
       ],
       "completion_evidence": [

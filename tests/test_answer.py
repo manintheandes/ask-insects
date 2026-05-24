@@ -146,6 +146,25 @@ def barcode_record(record_id, marker):
     )
 
 
+def biosample_record(record_id, text):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="biosamples",
+        source="ncbi_biosamples",
+        title=f"Aedes aegypti BioSample {record_id}",
+        text=text,
+        species="Aedes aegypti",
+        url="https://www.ncbi.nlm.nih.gov/biosample/SAMN1",
+        media_url=None,
+        provenance=Provenance(
+            source_id="ncbi_biosamples",
+            locator=f"raw/ncbi_biosamples/esummary.json#{record_id}",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="NCBI BioSample public metadata",
+        ),
+    )
+
+
 def resistance_record(record_id, source):
     return EvidenceRecord(
         record_id=record_id,
@@ -194,6 +213,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
+        self.assertEqual(plan_question("show Aedes aegypti BioSamples from China").lanes[0], "biosamples")
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
         self.assertEqual(plan_question("what neuron data exists for the Aedes aegypti brain?").answer_shape, "neurobiology")
         self.assertEqual(plan_question("what brain regions process smell in mosquitoes?").lanes[0], "neurobiology")
@@ -743,6 +763,48 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["record_id"], "GBAAW12253-24")
             self.assertIn("Marker: COI-5P", answer["evidence"][0]["text"])
+
+    def test_biosample_questions_prefer_ncbi_biosamples(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="ncbi:gene:LOC5566000",
+                        lane="genes",
+                        source="ncbi_datasets_genome",
+                        title="Aedes aegypti gene LOC5566000",
+                        text="Aedes aegypti genome gene record.",
+                        species="Aedes aegypti",
+                        url="https://example.org/gene",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="ncbi_datasets_genome",
+                            locator="raw/ncbi_genome#gff",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="NCBI",
+                        ),
+                    ),
+                    biosample_record(
+                        "ncbi:biosample:SAMN2",
+                        "NCBI BioSample SAMN2 for Aedes aegypti. Geography: unknown geography. Strain or breed: Liverpool. Linked SRA: SRS2.",
+                    ),
+                    biosample_record(
+                        "ncbi:biosample:SAMN1",
+                        "NCBI BioSample SAMN1 for Aedes aegypti. Geography: China: Chongqing. Strain or breed: Rockefeller. Linked SRA: SRS29208944.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti BioSamples from China", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "ncbi_biosamples")
+            self.assertEqual(answer["evidence"][0]["lane"], "biosamples")
+            self.assertEqual(answer["evidence"][0]["record_id"], "ncbi:biosample:SAMN1")
 
     def test_resistance_questions_prefer_dedicated_irmapper_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

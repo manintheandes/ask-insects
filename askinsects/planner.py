@@ -100,6 +100,15 @@ def plan_question(question: str) -> QueryPlan:
         "genome",
         "gene",
         "genes",
+        "biosample",
+        "biosamples",
+        "sample",
+        "samples",
+        "strain",
+        "strains",
+        "isolate",
+        "isolates",
+        "sra",
         "transcript",
         "transcripts",
         "protein",
@@ -119,6 +128,8 @@ def plan_question(question: str) -> QueryPlan:
             lanes = ("dna_barcodes", "genes", "proteins", "literature", "taxonomy")
         elif any(term in q for term in ("receptor", "receptors", "odorant", "gustatory", "ionotropic", "orco")):
             lanes = ("proteins", "transcripts", "genome_features", "genes", "genome_assemblies", "literature", "taxonomy")
+        elif any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates", "sra")):
+            lanes = ("biosamples", "genome_assemblies", "genes", "transcripts", "proteins", "literature", "taxonomy")
         elif "assembly" in q or "genome" in q:
             lanes = ("genome_assemblies", "genes", "transcripts", "proteins", "genome_features", "literature", "taxonomy")
         else:

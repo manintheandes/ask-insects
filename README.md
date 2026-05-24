@@ -168,6 +168,18 @@ python3 -m askinsects search vector_competence "dengue pathogen taxonomy"
 
 The lane uses source id `aedes_pathogen_taxonomy`. It writes NCBI E-utilities taxonomy summary JSON under `raw/pathogen_taxonomy/`, normalizes one `vector_competence` record per configured pathogen, stores the raw taxonomy summary in SQLite payloads, and preserves provenance to the saved summary plus the NCBI request URL. This is a pathogen identity layer, not yet structured extraction of every vector-competence assay table.
 
+## NCBI BioSample Source Lane
+
+NCBI BioSample gives `Aedes aegypti` sample, strain, collection, geography, tissue, and linked SRA metadata:
+
+```bash
+python3 -m askinsects ingest-ncbi-biosamples --limit 1000
+python3 -m askinsects ask "show Aedes aegypti BioSamples from China" --json
+python3 -m askinsects search biosamples "Rockefeller SRA"
+```
+
+The lane uses source id `ncbi_biosamples`. It writes bounded NCBI ESearch and ESummary JSON under `raw/ncbi_biosamples/`, normalizes one `biosamples` record per accession, stores parsed XML attributes and the raw summary in SQLite payloads, and preserves provenance to the saved ESummary batch plus the NCBI request URL. NCBI currently reports more `Aedes aegypti` BioSamples than the default bounded ingest installs; when the reported count exceeds the fetched limit, the lane writes a structured `biosample_limit_applied` gap instead of pretending the mirror is complete.
+
 ## Vector-Competence Assay Candidate Lane
 
 Indexed Aedes literature and legal full-text chunks can be parsed into structured vector-competence assay candidates:

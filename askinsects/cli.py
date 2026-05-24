@@ -156,6 +156,13 @@ def main(argv: list[str] | None = None) -> int:
     ingest_pathogen_taxonomy = sub.add_parser("ingest-pathogen-taxonomy")
     ingest_pathogen_taxonomy.add_argument("--hosted", action="store_true")
 
+    ingest_ncbi_biosamples = sub.add_parser("ingest-ncbi-biosamples")
+    ingest_ncbi_biosamples.add_argument("--hosted", action="store_true")
+    ingest_ncbi_biosamples.add_argument("--species", default="Aedes aegypti")
+    ingest_ncbi_biosamples.add_argument("--limit", type=int, default=1000)
+    ingest_ncbi_biosamples.add_argument("--page-size", type=int, default=200)
+    ingest_ncbi_biosamples.add_argument("--delay-seconds", type=float, default=0.34)
+
     ingest_vector_competence_assays = sub.add_parser("ingest-vector-competence-assays")
     ingest_vector_competence_assays.add_argument("--hosted", action="store_true")
 
@@ -380,6 +387,31 @@ def main(argv: list[str] | None = None) -> int:
             "/ingest/pathogen-taxonomy",
             {},
             timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-ncbi-biosamples":
+        if not args.hosted:
+            from scripts.ingest_ncbi_biosamples import ingest_ncbi_biosamples
+
+            payload = ingest_ncbi_biosamples(
+                artifact_dir=artifact_dir,
+                species=args.species,
+                limit=args.limit,
+                page_size=args.page_size,
+                delay_seconds=args.delay_seconds,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/ncbi-biosamples",
+            {
+                "species": args.species,
+                "limit": args.limit,
+                "page_size": args.page_size,
+                "delay_seconds": args.delay_seconds,
+            },
+            timeout=7200,
         )
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-vector-competence-assays":

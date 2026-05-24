@@ -177,6 +177,14 @@ OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/l
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
+NCBI BioSample records use source id `ncbi_biosamples` and lane `biosamples`. The ingest fetches bounded `"Aedes aegypti"[Organism]` BioSample ESearch and ESummary JSON, saves it under `artifacts/mosquito-v1/raw/ncbi_biosamples/`, parses sample XML attributes, and stores accessions, sample names, strain or isolate fields, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when present.
+
+```bash
+python3 -m askinsects ingest-ncbi-biosamples --limit 1000
+python3 -m askinsects ask "show Aedes aegypti BioSamples from China" --json
+python3 -m askinsects search biosamples "Rockefeller SRA"
+```
+
 Neurobiology records use source id `aedes_neurobiology_sources`. Metadata-only builds index source records for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies. Artifact-cache builds additionally index GEO matrix summaries and features, SRA `SRP290992` run/sample metadata, raw SRA access and reanalysis workflow records, Zenodo file and ZIP-member inventory, H5AD AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, coordinate-queryable voxel access locators, public Aedes EM/CATMAID project, stack, annotation, volume, skeleton-manifest, skeleton-filter, and skeleton-ID metadata, public Aedes EM/CATMAID CSV inventories, and a searchable whole-brain connectome source-gap row. Exact voxel values are available on demand:
 
 ```bash
