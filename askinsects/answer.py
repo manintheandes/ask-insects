@@ -89,6 +89,8 @@ def _search_queries(question: str) -> list[str]:
     q = question.lower()
     if "mosquito alert" in q:
         return ["Mosquito Alert Aedes aegypti", "Mosquito Alert", "citizen-science observation", question]
+    if "dryad" in q:
+        return ["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset", question]
     if "coi-5p" in q or re.search(r"\bcoi\b", q):
         return ["COI-5P", "Marker COI", question]
     if "bold" in q and ("barcode" in q or "barcodes" in q):
@@ -297,6 +299,14 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
 
 def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if "dryad" in q:
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "dryad_aedes_behavior_videos" else 1,
+                0 if record.lane in {"media", "behavior"} else 1,
+            ),
+        )
     if "mosquito alert" not in q:
         return records
 

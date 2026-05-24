@@ -7,6 +7,7 @@ from askinsects.builder import build_fixture_index
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.server import activate_source_staging, copy_artifact_to_staging, dispatch_request, prepare_mutable_staging
+from askinsects.sources.dryad_behavior_videos import DryadBehaviorVideoResult
 from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
@@ -703,6 +704,71 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(payload_rows[0]["record_id"], "mosquito_alert:observation:4909387174")
             provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select provenance_json from records where source='mosquito_alert_gbif'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_dryad_behavior_videos_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*args, raw_dir, retrieved_at):
+                raw_path = raw_dir / "10_5061_dryad_example_files.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"_embedded":{"stash:files":[]}}', encoding="utf-8")
+                return DryadBehaviorVideoResult(
+                    source_id="dryad_aedes_behavior_videos",
+                    records=[
+                        EvidenceRecord(
+                            record_id="dryad:file:10_5061_dryad_example:host_seeking_videos_zip",
+                            lane="media",
+                            source="dryad_aedes_behavior_videos",
+                            title="Aedes aegypti Dryad video/archive file host_seeking_videos.zip",
+                            text="Dryad video archive for Aedes aegypti host seeking behavior.",
+                            species="Aedes aegypti",
+                            url="https://datadryad.org/dataset/doi%3A10.5061%2Fdryad.example",
+                            media_url="https://datadryad.org/api/v2/files/10/download",
+                            provenance=Provenance(
+                                source_id="dryad_aedes_behavior_videos",
+                                locator=f"{raw_path}#file/1",
+                                retrieved_at=retrieved_at,
+                                license="https://spdx.org/licenses/CC0-1.0.html",
+                                source_url="https://datadryad.org/api/v2/files/10/download",
+                            ),
+                            payload={"raw_file": {"path": "host_seeking_videos.zip"}},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_dois=["10.5061/dryad.example"],
+                    dataset_count=1,
+                    file_count=1,
+                    media_file_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/dryad-behavior-videos",
+                {"dois": ["10.5061/dryad.example"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_dryad_behavior_video_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["dryad_aedes_behavior_videos"], 1)
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id from record_payloads where source='dryad_aedes_behavior_videos'",
+            )
+            self.assertEqual(payload_rows[0]["record_id"], "dryad:file:10_5061_dryad_example:host_seeking_videos_zip")
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='dryad_aedes_behavior_videos'",
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])

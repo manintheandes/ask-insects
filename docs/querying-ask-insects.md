@@ -81,6 +81,14 @@ python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
 ```
 
+To add public Dryad `Aedes aegypti` behavior/video dataset manifests:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-dryad-behavior-videos
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Dryad Aedes aegypti behavior videos" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search behavior "thermal infrared host seeking"
+```
+
 To add Mosquito Alert `Aedes aegypti` citizen-science observations and still images:
 
 ```bash
@@ -139,6 +147,8 @@ Mosquito Alert records use source id `mosquito_alert_gbif`. Raw GBIF dataset and
 
 PMC video records use source id `pmc_open_access_videos`. Raw article HTML is saved under `artifacts/mosquito-v1/raw/pmc_videos/`. Each media record stores the article URL, downloadable video URL, parsed article title, DOI when present, license text when present, and a provenance locator into the saved raw HTML.
 
+Dryad behavior/video records use source id `dryad_aedes_behavior_videos`. Raw dataset, version, and file-manifest JSON is saved under `artifacts/mosquito-v1/raw/dryad_behavior_videos/`. Dataset records use lane `behavior`; video/archive file records use lane `media`; README/source-data files use lane `behavior`. Each record stores the DOI, behavior labels, license, file size, checksum, download URL when present, raw manifest payload, and a provenance locator into the saved Dryad API JSON. The default ingest indexes metadata and download locators only; it does not mirror large video archives.
+
 IR Mapper resistance records use source id `irmapper_aedes`. Raw public API JSON is saved under `artifacts/mosquito-v1/raw/irmapper/`. Each resistance record stores the raw row payload, the installed species filter, and a provenance locator into the saved raw JSON row.
 
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
@@ -174,6 +184,7 @@ python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrenc
 python3 -m askinsects ingest-inaturalist --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
+python3 -m askinsects ingest-dryad-behavior-videos --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"
 python3 -m askinsects search fulltext "microbiota Aedes aegypti" --hosted

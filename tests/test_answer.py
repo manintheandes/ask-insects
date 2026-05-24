@@ -521,6 +521,56 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "pmc_open_access_videos")
 
+    def test_dryad_video_questions_prefer_dryad_behavior_video_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="pmc:video:PMC1:video1.mp4",
+                        lane="media",
+                        source="pmc_open_access_videos",
+                        title="Aedes aegypti PMC supplementary video video1.mp4",
+                        text="PMC open-access supplementary video for Aedes aegypti behavior.",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC1/",
+                        media_url="https://pmc.ncbi.nlm.nih.gov/articles/instance/1/bin/video1.mp4",
+                        provenance=Provenance(
+                            source_id="pmc_open_access_videos",
+                            locator="raw/pmc_videos/PMC1.html#video/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                            source_url="https://pmc.ncbi.nlm.nih.gov/articles/PMC1/",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="dryad:file:10_5061_dryad_example:host_seeking_videos_zip",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad video/archive file host_seeking_videos.zip",
+                        text="Dryad video archive for Aedes aegypti host seeking behavior.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/dataset/doi%3A10.5061%2Fdryad.example",
+                        media_url="https://datadryad.org/api/v2/files/10/download",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/files.json#file/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                            source_url="https://datadryad.org/api/v2/files/10/download",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Dryad Aedes aegypti behavior videos", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["source"], "dryad_aedes_behavior_videos")
+
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)

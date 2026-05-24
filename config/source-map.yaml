@@ -122,6 +122,26 @@ sources:
       - media
     provenance_required: true
     live_fetch: opt_in
+  - id: dryad_aedes_behavior_videos
+    name: Dryad Aedes aegypti behavior and video dataset manifests
+    source_type: public_dataset_api
+    boundary: Public Dryad datasets with materially Aedes aegypti behavior/video data, including host-seeking, visual-threat, flight-escape, mating, courtship, and thermal-infrared assay files
+    query_plane: dryad_dataset_version_file_manifest_to_sqlite
+    api_base: https://datadryad.org/api/v2
+    artifact_dir: artifacts/mosquito-v1/raw/dryad_behavior_videos
+    ingest_script: scripts/ingest_dryad_behavior_videos.py
+    lanes:
+      - behavior
+      - media
+    provenance_required: true
+    live_fetch: opt_in
+    default_dois:
+      - 10.5061/dryad.547d7wmh3
+      - 10.5061/dryad.j6q573nr3
+      - 10.5061/dryad.ttdz08m09
+      - 10.5061/dryad.qz612jmrb
+      - 10.5061/dryad.tb2rbp04x
+      - 10.5061/dryad.z8w9ghxfv
   - id: irmapper_aedes
     name: IR Mapper Aedes aegypti resistance records
     source_type: public_api

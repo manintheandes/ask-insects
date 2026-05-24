@@ -32,11 +32,13 @@ Sources:
 
 - `inaturalist_api`: still-image media URLs from iNaturalist observation photos.
 - `pmc_open_access_videos`: curated public PMC article supplementary videos for Aedes behavior, biting, host-seeking, threat avoidance, and photopreference studies.
+- `dryad_aedes_behavior_videos`: public Dryad dataset, version, and file manifests for Aedes host-seeking, visual-threat, flight-escape, mating/courtship, male host-attraction, and visual-tracking behavior video archives and source-data files.
 
-Moving-image video coverage is now source-grade for the bounded PMC supplementary-video seed set. It is not comprehensive yet; larger Dryad, OSF, Mendeley, and challenge-video datasets remain follow-on work.
+Moving-image video coverage is source-grade for the bounded PMC supplementary-video seed set and Dryad file-manifest layer. It is not comprehensive yet; OSF, Mendeley, and challenge-video datasets remain follow-on work.
 Deep iNaturalist ingest paginates the public API and saves one raw page artifact per request. Each normalized iNaturalist observation and media row also gets a matching `record_payloads` row with the raw observation and photo payload.
 Mosquito Alert ingest saves the GBIF dataset metadata and Aedes occurrence pages under `raw/mosquito_alert/`. It creates one `observations` record per occurrence and one `media` record per still image, with occurrence-level and image-level license fields preserved separately in provenance and payloads.
 The PMC video ingest saves one raw article HTML artifact per article, extracts downloadable video links, stores video records in `media`, stores the raw article/video payload per record, and keeps provenance locators pointing back to the saved HTML.
+The Dryad behavior/video ingest saves one raw dataset, version, and file-manifest JSON artifact per DOI under `raw/dryad_behavior_videos/`. It indexes one `behavior` record per dataset, file-level `media` records for video/archive files, and file-level `behavior` records for README or source-data files. It preserves DOI, license, size, checksum, behavior labels, download URL, and raw manifest payloads without mirroring multi-gigabyte binary archives by default.
 
 ## Hosted Boundary
 

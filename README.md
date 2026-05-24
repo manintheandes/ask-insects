@@ -119,7 +119,19 @@ python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
 ```
 
-The lane stores raw PMC article HTML under `raw/pmc_videos/`, extracts downloadable MP4/WebM/AVI/MOV supplementary links, normalizes them as `media` records from source `pmc_open_access_videos`, stores per-record payloads in SQLite, and records the article URL, video URL, license text, DOI, and raw HTML locator. This is the first source-grade video layer, not the final video corpus. Larger Dryad and OSF motion datasets remain follow-on targets.
+The lane stores raw PMC article HTML under `raw/pmc_videos/`, extracts downloadable MP4/WebM/AVI/MOV supplementary links, normalizes them as `media` records from source `pmc_open_access_videos`, stores per-record payloads in SQLite, and records the article URL, video URL, license text, DOI, and raw HTML locator. This is one source-grade video layer, not the final video corpus. OSF, Mendeley, and other motion datasets remain follow-on targets.
+
+## Dryad Behavior And Video Source Lane
+
+Dryad public datasets add file-grained behavior and video archive manifests for `Aedes aegypti` host-seeking, visual-threat, flight-escape, mating/courtship, male host-attraction, and visual-tracking studies:
+
+```bash
+python3 -m askinsects ingest-dryad-behavior-videos
+python3 -m askinsects ask "show Dryad Aedes aegypti behavior videos" --json
+python3 -m askinsects search behavior "thermal infrared host seeking"
+```
+
+The lane uses source id `dryad_aedes_behavior_videos`. It writes Dryad dataset, version, and file-manifest API responses under `raw/dryad_behavior_videos/`, normalizes one `behavior` record per dataset plus file-level `media` records for video/archive files and `behavior` records for README/source-data files, stores raw manifest payloads in SQLite, and preserves DOI, license, size, checksum, behavior labels, and download URL provenance. It indexes manifest metadata by default; it does not mirror multi-gigabyte video archives unless a future repo plan explicitly requires binary mirroring.
 
 ## IR Mapper Resistance Source Lane
 

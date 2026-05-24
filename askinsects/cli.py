@@ -149,6 +149,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_mosquito_alert.add_argument("--occurrence-limit", type=int, default=1000)
     ingest_mosquito_alert.add_argument("--occurrence-page-size", type=int, default=300)
 
+    ingest_dryad_behavior_videos = sub.add_parser("ingest-dryad-behavior-videos")
+    ingest_dryad_behavior_videos.add_argument("--hosted", action="store_true")
+    ingest_dryad_behavior_videos.add_argument("--doi", action="append", default=[])
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -338,6 +342,23 @@ def main(argv: list[str] | None = None) -> int:
                 "occurrence_limit": args.occurrence_limit,
                 "occurrence_page_size": args.occurrence_page_size,
             },
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-dryad-behavior-videos":
+        if not args.hosted:
+            from scripts.ingest_dryad_behavior_videos import ingest_dryad_behavior_videos
+
+            payload = ingest_dryad_behavior_videos(
+                artifact_dir=artifact_dir,
+                dois=args.doi or None,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/dryad-behavior-videos",
+            {"dois": args.doi},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

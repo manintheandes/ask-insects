@@ -15,6 +15,7 @@ from typing import Callable
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR, build_source_index
 from .index import SourceIndex
+from .sources.dryad_behavior_videos import DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, fetch_dryad_behavior_video_records
 from .sources.gbif import (
     GBIF_SOURCE_ID,
     GBIFClient,
@@ -1113,6 +1114,142 @@ def ingest_mosquito_alert(
     return response
 
 
+def write_dryad_behavior_video_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(source_payload["retrieved_at"])
+    sources = [source for source in counts if source != DRYAD_BEHAVIOR_VIDEO_SOURCE_ID]
+    if counts.get(DRYAD_BEHAVIOR_VIDEO_SOURCE_ID):
+        sources.append(DRYAD_BEHAVIOR_VIDEO_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": True,
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[DRYAD_BEHAVIOR_VIDEO_SOURCE_ID] = source_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            "dryad_behavior_videos": source_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, "dryad_behavior_videos": source_payload}
+
+
+def ingest_dryad_behavior_videos(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_dryad_behavior_video_records_fn: Callable[..., object] = fetch_dryad_behavior_video_records,
+) -> dict[str, object]:
+    dois_payload = payload.get("dois")
+    if dois_payload is not None and not (
+        isinstance(dois_payload, list) and all(isinstance(doi, str) for doi in dois_payload)
+    ):
+        raise ValueError("dois must be a list of DOI strings")
+    staging = artifact_dir.parent / f".{artifact_dir.name}.dryad-behavior-videos-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        staging.mkdir(parents=True, exist_ok=True)
+        retrieved_at = utc_now()
+        if dois_payload:
+            from .sources.dryad_behavior_videos import DryadDatasetSpec
+
+            dataset_specs = [DryadDatasetSpec(doi=doi, behavior_labels=("behavior", "video")) for doi in dois_payload]
+            result = fetch_dryad_behavior_video_records_fn(
+                dataset_specs,
+                raw_dir=staging / "raw" / "dryad_behavior_videos",
+                retrieved_at=retrieved_at,
+            )
+        else:
+            result = fetch_dryad_behavior_video_records_fn(
+                raw_dir=staging / "raw" / "dryad_behavior_videos",
+                retrieved_at=retrieved_at,
+            )
+        old = staging.as_posix()
+        new = artifact_dir.as_posix()
+        records = replace_record_path_strings(result.records, old, new)
+        raw_target = artifact_dir / "raw" / "dryad_behavior_videos"
+        raw_backup = raw_target.parent / ".dryad_behavior_videos.previous"
+        raw_target.parent.mkdir(parents=True, exist_ok=True)
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+        staged_raw = staging / "raw" / "dryad_behavior_videos"
+        if staged_raw.exists():
+            if raw_target.exists():
+                raw_target.replace(raw_backup)
+            staged_raw.replace(raw_target)
+            if raw_backup.exists():
+                shutil.rmtree(raw_backup)
+
+        index = SourceIndex(artifact_dir / "source_index.sqlite")
+        index.initialize()
+        index.delete_source(DRYAD_BEHAVIOR_VIDEO_SOURCE_ID)
+        index.upsert_records(records)
+        old_gaps = read_json(artifact_dir / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [
+            gap
+            for gap in old_gaps
+            if not (isinstance(gap, dict) and gap.get("source") == DRYAD_BEHAVIOR_VIDEO_SOURCE_ID)
+        ]
+        gaps.extend(result.gaps)
+        raw_artifacts = replace_path_strings(result.raw_artifacts, old, new)
+        if not isinstance(raw_artifacts, list):
+            raw_artifacts = result.raw_artifacts
+        source_payload = {
+            "requested_dois": result.requested_dois,
+            "dataset_count": result.dataset_count,
+            "file_count": result.file_count,
+            "media_file_count": result.media_file_count,
+            "raw_artifacts": raw_artifacts,
+            "record_count": len(records),
+            "gap_count": len(result.gaps),
+            "retrieved_at": retrieved_at,
+        }
+        response = write_dryad_behavior_video_metadata(artifact_dir, source_payload, gaps)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    shutil.rmtree(staging, ignore_errors=True)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -1123,6 +1260,7 @@ def dispatch_request(
     token: str,
     build_source_index_fn: Callable[..., dict[str, object]] = build_source_index,
     fetch_gbif_records_fn: Callable[..., object] = fetch_gbif_records,
+    fetch_dryad_behavior_video_records_fn: Callable[..., object] = fetch_dryad_behavior_video_records,
     fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
     fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
@@ -1193,6 +1331,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_mosquito_alert_records_fn=fetch_mosquito_alert_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/dryad-behavior-videos":
+            result = ingest_dryad_behavior_videos(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_dryad_behavior_video_records_fn=fetch_dryad_behavior_video_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

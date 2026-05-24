@@ -68,6 +68,7 @@ REQUIRED_FILES = (
     "askinsects/sources/pmc_videos.py",
     "askinsects/sources/irmapper.py",
     "askinsects/sources/mosquito_alert.py",
+    "askinsects/sources/dryad_behavior_videos.py",
     "askinsects/sources/public_health.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
@@ -82,6 +83,7 @@ REQUIRED_FILES = (
     "scripts/ingest_pmc_videos.py",
     "scripts/ingest_irmapper.py",
     "scripts/ingest_mosquito_alert_observations.py",
+    "scripts/ingest_dryad_behavior_videos.py",
     "scripts/ingest_public_health_guidance.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
@@ -112,6 +114,8 @@ REQUIRED_FILES = (
     "tests/test_irmapper_source.py",
     "tests/test_mosquito_alert_source.py",
     "tests/test_ingest_mosquito_alert_observations.py",
+    "tests/test_dryad_behavior_videos_source.py",
+    "tests/test_ingest_dryad_behavior_videos.py",
     "tests/test_public_health_source.py",
     "tests/test_ingest_public_health_guidance.py",
 )
@@ -144,6 +148,8 @@ UNIT_TEST_MODULES = (
     "tests.test_irmapper_source",
     "tests.test_mosquito_alert_source",
     "tests.test_ingest_mosquito_alert_observations",
+    "tests.test_dryad_behavior_videos_source",
+    "tests.test_ingest_dryad_behavior_videos",
     "tests.test_public_health_source",
     "tests.test_ingest_public_health_guidance",
 )
@@ -205,6 +211,7 @@ def check_literature_source_map() -> None:
         "aedes_literature_openalex",
         "pmc_open_access_videos",
         "irmapper_aedes",
+        "dryad_aedes_behavior_videos",
         "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
         "sqlite_payload_table: record_payloads",
         "sqlite_fulltext_table: literature_fulltext_units",
@@ -231,6 +238,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_literature_facets",
         "aedes_public_health_guidance",
         "mosquito_alert_gbif",
+        "dryad_aedes_behavior_videos",
     )
     for term in required_terms:
         if term not in readme:
@@ -247,6 +255,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("mosquito_alert_gbif", "scripts/ingest_mosquito_alert_observations.py", "observations", "media"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Mosquito Alert term: {term}")
+    for term in ("dryad_aedes_behavior_videos", "scripts/ingest_dryad_behavior_videos.py", "behavior", "media"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Dryad behavior/video term: {term}")
 
 
 def check_cli() -> None:
