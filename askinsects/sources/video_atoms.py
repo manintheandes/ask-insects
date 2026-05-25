@@ -103,6 +103,10 @@ DISCOVERY_REPOSITORIES = (
 )
 
 
+class VideoDownloadNotVideoError(ValueError):
+    """Raised when a video URL returns HTML or another clearly non-video payload."""
+
+
 @dataclass(frozen=True)
 class AedesVideoAtomsResult:
     source_id: str
@@ -326,12 +330,18 @@ def _record_for_asset(
 def _default_fetch_video_bytes(url: str, max_bytes: int) -> bytes:
     request = Request(url, headers={"User-Agent": "AskInsects/0.1 video-atoms"})
     with urlopen(request, timeout=120) as response:
+        content_type = str(response.headers.get("content-type") or "").lower()
+        if "text/html" in content_type or "application/xhtml" in content_type:
+            raise VideoDownloadNotVideoError(f"download content-type is not video: {content_type}")
         content_length = response.headers.get("content-length")
         if content_length and int(content_length) > max_bytes:
             raise ValueError(f"video exceeds max bytes: {content_length} > {max_bytes}")
         data = response.read(max_bytes + 1)
     if len(data) > max_bytes:
         raise ValueError(f"video exceeds max bytes: {len(data)} > {max_bytes}")
+    prefix = data[:512].lstrip().lower()
+    if prefix.startswith((b"<!doctype html", b"<html", b"<?xml")):
+        raise VideoDownloadNotVideoError("download payload is HTML/XML, not video bytes")
     return data
 
 
@@ -519,6 +529,9 @@ def _mirror_candidate(
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_too_large"), None
     try:
         data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
+    except VideoDownloadNotVideoError as exc:
+        gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_download_not_video", "record_id": candidate.source_record_id, "error": str(exc)})
+        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None
     except Exception as exc:
         gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_download_failed", "record_id": candidate.source_record_id, "error": str(exc)})
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_failed"), None

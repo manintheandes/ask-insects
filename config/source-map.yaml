@@ -269,7 +269,7 @@ sources:
   - id: aedes_video_atoms
     name: Aedes aegypti verified video atoms and motion rows
     source_type: derived_sqlite_source
-    boundary: Derived Aedes aegypti video intelligence records from indexed PMC, Dryad, Mendeley, OSF, repository-discovery candidates, bounded mirrored videos, ffprobe metadata, inspectable thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and explicit structured gaps for huge files, unclear licenses, missing downloads, failed probes, or out-of-scope discoveries
+    boundary: Derived Aedes aegypti video intelligence records from indexed PMC, Dryad, Mendeley, OSF, repository-discovery candidates, bounded mirrored videos, ffprobe metadata, inspectable thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and explicit structured gaps for huge files, unclear licenses, missing downloads, non-video download responses, failed probes, or out-of-scope discoveries
     query_plane: indexed_video_records_motion_tables_and_repository_discovery_to_sqlite_video_atoms
     artifact_dir: artifacts/mosquito-v1/raw/video_atoms
     ingest_script: scripts/ingest_video_atoms.py
@@ -301,6 +301,14 @@ sources:
     provenance_required: true
     live_fetch: derived_from_indexed_video_sources
     binary_policy: bounded_mirror_when_license_and_size_allow_else_structured_gap
+    gap_reasons:
+      - video_download_not_video
+      - video_download_failed
+      - video_download_url_missing
+      - video_license_unclear
+      - video_too_large
+      - video_probe_failed
+      - video_probe_tool_missing
     source_contract:
       mirror_or_gap:
         - checksum

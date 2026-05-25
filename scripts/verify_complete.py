@@ -529,6 +529,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "scripts/ingest_video_atoms.py",
         "indexed_video_records_motion_tables_and_repository_discovery_to_sqlite_video_atoms",
         "bounded_mirror_when_license_and_size_allow_else_structured_gap",
+        "video_download_not_video",
         "video_license_unclear",
         "thumbnails",
         "keyframes",
