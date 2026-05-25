@@ -1009,6 +1009,8 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
             self.assertNotIn(".staging", payload_rows[0]["payload_json"])
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["source_counts"]["aedes_cdc_dengue_surveillance"], 1)
 
     def test_ingest_vectorbase_genomics_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

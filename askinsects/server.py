@@ -1141,6 +1141,7 @@ def write_cdc_dengue_surveillance_metadata(staging: Path, source_payload: dict[s
         {
             "source_id": sources[0] if sources else CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
             "sources": receipt_sources,
+            "source_counts": counts,
             "artifact_dir": staging.as_posix(),
             "sqlite_index": (staging / "source_index.sqlite").as_posix(),
             "generated_at": generated_at,
