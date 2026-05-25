@@ -355,39 +355,48 @@ def _wants_mosquito_repellent_external_discovery(question: str) -> bool:
     return _wants_mosquito_repellent_literature(question) and any(term in q for term in external_terms)
 
 
+def _mosquito_repellent_external_preferred_lanes(question: str) -> list[str]:
+    q = question.lower()
+    lanes: list[str] = []
+    if any(term in q for term in ("patent", "patents", "patentsview", "uspto")):
+        lanes.append("patents")
+    if any(
+        term in q
+        for term in (
+            "dataset",
+            "datasets",
+            "repository",
+            "repositories",
+            "datacite",
+            "zenodo",
+            "figshare",
+            "dryad",
+            "osf",
+        )
+    ):
+        lanes.append("datasets")
+    if any(
+        term in q
+        for term in (
+            "preprint",
+            "biorxiv",
+            "medrxiv",
+            "openalex",
+            "europe pmc",
+            "semantic scholar",
+            "agricola",
+            "usda",
+            "cabi",
+            "google scholar",
+        )
+    ):
+        lanes.append("literature")
+    return lanes
+
+
 def _mosquito_repellent_external_rank(question: str, record: EvidenceRecord) -> tuple[int, int]:
     q = question.lower()
-    patent_terms = ("patent", "patents", "patentsview", "uspto")
-    dataset_terms = (
-        "dataset",
-        "datasets",
-        "repository",
-        "repositories",
-        "datacite",
-        "zenodo",
-        "figshare",
-        "dryad",
-        "osf",
-    )
-    literature_terms = (
-        "preprint",
-        "biorxiv",
-        "medrxiv",
-        "openalex",
-        "europe pmc",
-        "semantic scholar",
-        "agricola",
-        "usda",
-        "cabi",
-        "google scholar",
-    )
-    preferred_lanes: set[str] = set()
-    if any(term in q for term in patent_terms):
-        preferred_lanes.add("patents")
-    if any(term in q for term in dataset_terms):
-        preferred_lanes.add("datasets")
-    if any(term in q for term in literature_terms):
-        preferred_lanes.add("literature")
+    preferred_lanes = set(_mosquito_repellent_external_preferred_lanes(question))
     lane_rank = 0 if record.lane in preferred_lanes else 1 if record.lane in {"literature", "datasets", "patents"} else 2
 
     haystack = " ".join(
@@ -2781,6 +2790,16 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
         if _source_count(index, MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID) > 0:
             external_records: list[EvidenceRecord] = []
+            preferred_external_lanes = _mosquito_repellent_external_preferred_lanes(plan.question)
+            if preferred_external_lanes:
+                external_records.extend(
+                    _source_records(
+                        index,
+                        MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID,
+                        preferred_external_lanes,
+                        limit=max(limit * 5, 20),
+                    )
+                )
             for lane in ("literature", "datasets", "patents"):
                 external_records.extend(
                     _source_search_records(

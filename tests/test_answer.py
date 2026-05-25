@@ -745,55 +745,59 @@ class AnswerTests(unittest.TestCase):
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             index = SourceIndex(artifact_dir / "source_index.sqlite")
             index.initialize()
-            index.upsert_records(
-                [
-                    EvidenceRecord(
-                        record_id="mosquito_repellent_literature:pubmed:42000001",
-                        lane="literature",
-                        source="mosquito_repellent_literature",
-                        title="Mosquito repellent article",
-                        text="Mosquito repellent literature candidate since 2020.",
-                        species="Culicidae",
-                        url="https://pubmed.ncbi.nlm.nih.gov/42000001/",
-                        media_url=None,
-                        provenance=Provenance(
-                            source_id="mosquito_repellent_literature",
-                            locator="raw/mosquito_repellent_literature/pubmed_esummary_0001.json#result/42000001",
-                            retrieved_at="2026-05-25T00:00:00Z",
-                        ),
+            records = [
+                EvidenceRecord(
+                    record_id="mosquito_repellent_literature:pubmed:42000001",
+                    lane="literature",
+                    source="mosquito_repellent_literature",
+                    title="Mosquito repellent article",
+                    text="Mosquito repellent literature candidate since 2020.",
+                    species="Culicidae",
+                    url="https://pubmed.ncbi.nlm.nih.gov/42000001/",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="mosquito_repellent_literature",
+                        locator="raw/mosquito_repellent_literature/pubmed_esummary_0001.json#result/42000001",
+                        retrieved_at="2026-05-25T00:00:00Z",
                     ),
+                )
+            ]
+            for offset in range(6):
+                records.append(
                     EvidenceRecord(
-                        record_id="mosquito_repellent_external_discovery:doi:10.5281/zenodo.123",
+                        record_id=f"mosquito_repellent_external_discovery:doi:10.5281/zenodo.{offset}",
                         lane="datasets",
                         source="mosquito_repellent_external_discovery",
-                        title="DataCite mosquito repellent dataset",
+                        title=f"DataCite mosquito repellent dataset {offset}",
                         text="Mosquito repellent external discovery source candidate. source_family=datacite artifact_type=dataset_manifest.",
                         species="Culicidae",
-                        url="https://doi.org/10.5281/zenodo.123",
+                        url=f"https://doi.org/10.5281/zenodo.{offset}",
                         media_url=None,
                         provenance=Provenance(
                             source_id="mosquito_repellent_external_discovery",
-                            locator="raw/mosquito_repellent_external_discovery/datacite_0001.json#data/0",
+                            locator=f"raw/mosquito_repellent_external_discovery/datacite_0001.json#data/{offset}",
                             retrieved_at="2026-05-25T00:00:00Z",
                         ),
+                    )
+                )
+            records.append(
+                EvidenceRecord(
+                    record_id="mosquito_repellent_external_discovery:gap:patentsview:patentsview_migrated_or_unavailable_json_api",
+                    lane="patents",
+                    source="mosquito_repellent_external_discovery",
+                    title="Mosquito repellent source gap: patentsview patentsview_migrated_or_unavailable_json_api",
+                    text="Mosquito repellent source gap for patent metadata.",
+                    species="Culicidae",
+                    url="https://patentsview.org/apis/api-endpoints",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="mosquito_repellent_external_discovery",
+                        locator="https://patentsview.org/apis/api-endpoints",
+                        retrieved_at="2026-05-25T00:00:00Z",
                     ),
-                    EvidenceRecord(
-                        record_id="mosquito_repellent_external_discovery:gap:patentsview:patentsview_migrated_or_unavailable_json_api",
-                        lane="patents",
-                        source="mosquito_repellent_external_discovery",
-                        title="Mosquito repellent source gap: patentsview patentsview_migrated_or_unavailable_json_api",
-                        text="Mosquito repellent source gap for patent metadata.",
-                        species="Culicidae",
-                        url="https://patentsview.org/apis/api-endpoints",
-                        media_url=None,
-                        provenance=Provenance(
-                            source_id="mosquito_repellent_external_discovery",
-                            locator="https://patentsview.org/apis/api-endpoints",
-                            retrieved_at="2026-05-25T00:00:00Z",
-                        ),
-                    ),
-                ]
+                )
             )
+            index.upsert_records(records)
 
             answer = answer_question("show mosquito repellent patent sources", artifact_dir=artifact_dir)
 
