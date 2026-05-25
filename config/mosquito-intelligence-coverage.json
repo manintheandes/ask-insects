@@ -362,6 +362,7 @@
         "aedes_occurrence_ecology",
         "vectornet_aedes_surveillance",
         "aedes_worldclim_climate",
+        "harvard_dataverse_aedes_suitability",
         "aedes_global_compendium_occurrence",
         "aedes_vectorbyte_traits"
       ],
@@ -379,6 +380,7 @@
         "aedes_occurrence_ecology joins indexed GBIF, iNaturalist, and Mosquito Alert observation payloads into country, country-month, seasonality, range, and public habitat ecology records.",
         "vectornet_aedes_surveillance adds official ECDC/EFSA regional surveillance ecology summaries by country and degree of establishment, preserving detection, absence-surveillance, and unclear-status counts.",
         "aedes_worldclim_climate maps WorldClim historical and monthly climate source pages into queryable ecology source records and, in the May 25, 2026 hosted refresh, added 500 bounded WorldClim v2.1 10-minute bioclim raster samples joined to global-compendium occurrence coordinates with annual mean temperature, annual precipitation, raw ZIP locators, and occurrence-row provenance.",
+        "harvard_dataverse_aedes_suitability maps Harvard Dataverse Aedes aegypti dengue-transmission suitability and risk GeoTIFF file manifests into ecology records with dataset DOI, file DOI, file ID, filename, content type, byte size, checksum, scenario terms, license, access locator, and explicit file-download gaps when Dataverse metadata says the binary is not public-downloadable.",
         "aedes_global_compendium_occurrence contributes row-level global Aedes aegypti occurrence records for compendium-specific ecology and distribution questions.",
         "aedes_vectorbyte_traits adds trait rows with temperature, habitat, location, and lab-versus-field context where supplied by VectorByte/VecTraits.",
         "The May 24, 2026 hosted ingest installed 1,985 aedes_occurrence_ecology records from 88,065 Aedes observation inputs, and the May 25, 2026 hosted WorldClim refresh brought the hosted ecology lane to 9,875 records.",
@@ -386,8 +388,8 @@
       ],
       "required_next_sources": [
         "climate-linked GBIF and iNaturalist observation joins",
-        "climate and land-use layers with clear licenses",
-        "range and suitability model outputs",
+        "additional climate and land-use layers with clear licenses beyond WorldClim and Harvard Dataverse suitability manifests",
+        "deeper range and suitability model outputs beyond bounded Harvard Dataverse raster manifests",
         "breeding-site and larval-habitat records from literature and surveillance reports"
       ],
       "completion_evidence": [

@@ -17,6 +17,7 @@ from .sources.aedes_deep_sources import (
 )
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
+from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
 from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
@@ -1755,11 +1756,14 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
             "precipitation",
             "temperature",
             "suitability",
+            "dataverse",
+            "transmission risk",
         )
     ):
         return records
 
     wants_worldclim = any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability"))
+    wants_dataverse_suitability = any(term in q for term in ("dataverse", "suitability", "transmission risk", "dengue transmission"))
     wants_compendium = any(term in q for term in ("global compendium", "compendium", "occurrence compendium"))
     focus_tokens = {
         token.lower()
@@ -1785,12 +1789,14 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
 
     def score(record: EvidenceRecord) -> tuple[object, ...]:
         worldclim_rank = 0 if wants_worldclim and record.source == AEDES_WORLDCLIM_SOURCE_ID else 1
+        dataverse_rank = 0 if wants_dataverse_suitability and record.source == HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID else 1
         compendium_rank = 0 if wants_compendium and record.source == AEDES_GLOBAL_COMPENDIUM_SOURCE_ID else 1
         haystack = f"{record.title}\n{record.text}".lower()
         focus_rank = 0 if not focus_tokens or any(token in haystack for token in focus_tokens) else 1
         extracted_rank = 0 if _wants_extracted_facts(question) and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         vectornet_rank = 0 if "vectornet" in q and record.source == "vectornet_aedes_surveillance" else 1
         return (
+            dataverse_rank,
             worldclim_rank,
             compendium_rank,
             focus_rank,
@@ -2477,6 +2483,26 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "ecology":
         q = plan.question.lower()
+        if any(term in q for term in ("dataverse", "suitability", "transmission risk", "dengue transmission")):
+            matched_dataverse = False
+            for search_query in (f"Harvard Dataverse {plan.question}", f"Aedes aegypti suitability {plan.question}", plan.question):
+                query_records = index.search(search_query, lane="ecology", limit=max(limit * 20, 50))
+                for record in query_records:
+                    if record.source != HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID or record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+                    matched_dataverse = True
+                    if len([item for item in all_records if item.source == HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID]) >= limit:
+                        break
+                if matched_dataverse:
+                    break
+            if not matched_dataverse:
+                for record in _source_records(index, HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID, ["ecology"], limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
         if any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability")):
             matched_worldclim = False
             focus_query = " ".join(

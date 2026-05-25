@@ -390,6 +390,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show CDC ArboNET dengue surveillance current cases").answer_shape, "public_health")
         self.assertEqual(plan_question("show Aedes aegypti taxonomy synonyms from authority sources").lanes[0], "taxonomy")
         self.assertEqual(plan_question("show WorldClim climate context for Aedes aegypti ecology").answer_shape, "ecology")
+        self.assertEqual(plan_question("show Harvard Dataverse suitability rasters for Aedes aegypti dengue transmission").answer_shape, "ecology")
         self.assertEqual(plan_question("show global Aedes aegypti occurrence compendium rows for Brazil").answer_shape, "ecology")
         self.assertEqual(plan_question("show Aedes aegypti population genomics BioProject evidence").lanes[0], "genome_features")
         self.assertEqual(plan_question("show NCBI dbSNP variant records for Aedes aegypti").lanes[0], "genome_features")
@@ -2645,6 +2646,22 @@ class AnswerTests(unittest.TestCase):
                         ),
                     ),
                     EvidenceRecord(
+                        record_id="ecology:dataverse_suitability:3623893",
+                        lane="ecology",
+                        source="harvard_dataverse_aedes_suitability",
+                        title="Aedes aegypti Dataverse suitability raster TCurMean30Sum_97ae.tif",
+                        text="Harvard Dataverse Aedes aegypti suitability raster manifest. Dataset: Global current Aedes aegypti suitability for dengue transmission at 97.5% CI. File: TCurMean30Sum_97ae.tif. Scenario terms: current, 97.5% ci.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.7910/DVN/NSG5UH",
+                        media_url="https://dataverse.harvard.edu/api/access/datafile/3623893",
+                        provenance=Provenance(
+                            source_id="harvard_dataverse_aedes_suitability",
+                            locator="raw/harvard_dataverse_suitability/search.json#data/items/1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="CC0 1.0",
+                        ),
+                    ),
+                    EvidenceRecord(
                         record_id="occurrence:global_compendium:aedes_aegypti:1",
                         lane="observations",
                         source="aedes_global_compendium_occurrence",
@@ -2683,12 +2700,14 @@ class AnswerTests(unittest.TestCase):
             taxonomy = answer_question("show Aedes aegypti taxonomy synonyms from authority sources", artifact_dir=artifact_dir)
             worldclim = answer_question("show WorldClim climate context for Aedes aegypti ecology", artifact_dir=artifact_dir)
             worldclim_brazil = answer_question("show WorldClim annual mean temperature and precipitation samples for Aedes aegypti Brazil", artifact_dir=artifact_dir)
+            dataverse = answer_question("show Harvard Dataverse suitability rasters for Aedes aegypti dengue transmission", artifact_dir=artifact_dir)
             compendium = answer_question("show global Aedes aegypti occurrence compendium rows for Brazil", artifact_dir=artifact_dir)
             population = answer_question("show Aedes aegypti population genomics BioProject evidence", artifact_dir=artifact_dir)
 
             self.assertEqual(taxonomy["evidence"][0]["source"], "aedes_taxonomy_authorities")
             self.assertEqual(worldclim["evidence"][0]["source"], "aedes_worldclim_climate")
             self.assertEqual(worldclim_brazil["evidence"][0]["record_id"], "ecology:worldclim:sample:global_compendium:402")
+            self.assertEqual(dataverse["evidence"][0]["source"], "harvard_dataverse_aedes_suitability")
             self.assertEqual(compendium["evidence"][0]["source"], "aedes_global_compendium_occurrence")
             self.assertEqual(population["evidence"][0]["source"], "aedes_population_genomics")
 

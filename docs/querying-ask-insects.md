@@ -115,6 +115,13 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show WHO Aedes i
 
 These five source IDs are `aedes_taxonomy_authorities`, `aedes_worldclim_climate`, `aedes_global_compendium_occurrence`, `aedes_population_genomics`, and `aedes_who_resistance_guidance`. Each record cites a raw HTML page, mirrored PDF plus extracted text sidecar, CSV row, NCBI ESummary locator, or WorldClim raster ZIP locator under `raw/aedes_deep_sources/`. Disabled or failed WorldClim raster sampling remains an explicit source gap.
 
+Harvard Dataverse Aedes suitability records use source id `harvard_dataverse_aedes_suitability`. They are separate from the five-lane deep-source ingest because Dataverse file-search freshness is its own source boundary. Raw search and dataset-detail JSON are saved under `artifacts/mosquito-v1/raw/harvard_dataverse_suitability/`. Each ecology record stores dataset DOI, file DOI, file ID, filename, content type, byte size, checksum, scenario terms, license, access URL, and raw locator. If Dataverse metadata says the binary is not public-downloadable, Ask Insects keeps a queryable `dataverse_file_download_not_public` gap.
+
+```bash
+python3 -m askinsects ingest-harvard-dataverse-suitability
+python3 -m askinsects ask "show Harvard Dataverse suitability rasters for Aedes aegypti dengue transmission" --json
+```
+
 To add `Aedes aegypti` brain and neuron source metadata:
 
 ```bash

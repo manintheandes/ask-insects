@@ -207,6 +207,35 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_harvard_dataverse_suitability_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 2}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-harvard-dataverse-suitability",
+                "--hosted",
+                "--query",
+                '"Aedes aegypti" suitability',
+                "--per-page",
+                "10",
+                "--dataset-limit",
+                "3",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/harvard-dataverse-suitability")
+        self.assertEqual(calls[0][2]["queries"], ['"Aedes aegypti" suitability'])
+        self.assertEqual(calls[0][2]["per_page"], 10)
+        self.assertEqual(calls[0][2]["dataset_limit"], 3)
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_public_health_ingest_sends_source_urls(self):
         calls = []
 

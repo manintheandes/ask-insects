@@ -130,6 +130,7 @@ REQUIRED_FILES = (
     "askinsects/sources/image_atoms.py",
     "askinsects/sources/aedes_deep_sources.py",
     "askinsects/sources/ncbi_snp_variation.py",
+    "askinsects/sources/harvard_dataverse_suitability.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -170,6 +171,7 @@ REQUIRED_FILES = (
     "scripts/ingest_video_atoms.py",
     "scripts/ingest_image_atoms.py",
     "scripts/ingest_aedes_deep_sources.py",
+    "scripts/ingest_harvard_dataverse_suitability.py",
     "scripts/refresh_artifact_receipts.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
@@ -253,6 +255,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_image_atoms.py",
     "tests/test_aedes_deep_sources.py",
     "tests/test_ingest_aedes_deep_sources.py",
+    "tests/test_harvard_dataverse_suitability_source.py",
+    "tests/test_ingest_harvard_dataverse_suitability.py",
     "tests/test_refresh_artifact_receipts.py",
 )
 
@@ -335,6 +339,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_image_atoms",
     "tests.test_aedes_deep_sources",
     "tests.test_ingest_aedes_deep_sources",
+    "tests.test_harvard_dataverse_suitability_source",
+    "tests.test_ingest_harvard_dataverse_suitability",
     "tests.test_refresh_artifact_receipts",
 )
 
@@ -755,6 +761,14 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_occurrence_ecology", "scripts/ingest_occurrence_ecology.py", "indexed_observation_payloads_to_sqlite_ecology_records", "GBIF and iNaturalist observation joins"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing occurrence ecology term: {term}")
+    for term in (
+        "harvard_dataverse_aedes_suitability",
+        "scripts/ingest_harvard_dataverse_suitability.py",
+        "harvard_dataverse_search_and_dataset_json_to_sqlite_ecology_records",
+        "dataverse_file_download_not_public",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Harvard Dataverse suitability term: {term}")
     for term in (
         "aedes_image_atoms",
         "scripts/ingest_image_atoms.py",

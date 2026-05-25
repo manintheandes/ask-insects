@@ -206,7 +206,7 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "public_health", ("public_health", "observations", "literature", "taxonomy"), question)
-    if any(
+    if not any(term in q for term in ("dataverse", "suitability", "transmission risk", "climate change")) and any(
         term in q
         for term in (
             "vector competence",

@@ -156,6 +156,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_who_malaria_threats_resistance.add_argument("--sample-limit", type=int, default=5)
     ingest_who_malaria_threats_resistance.add_argument("--aedes-limit", type=int, default=100)
 
+    ingest_harvard_dataverse_suitability = sub.add_parser("ingest-harvard-dataverse-suitability")
+    ingest_harvard_dataverse_suitability.add_argument("--hosted", action="store_true")
+    ingest_harvard_dataverse_suitability.add_argument("--query", action="append", default=[])
+    ingest_harvard_dataverse_suitability.add_argument("--per-page", type=int, default=25)
+    ingest_harvard_dataverse_suitability.add_argument("--dataset-limit", type=int, default=12)
+
     ingest_public_health = sub.add_parser("ingest-public-health")
     ingest_public_health.add_argument("--hosted", action="store_true")
     ingest_public_health.add_argument("--source-url", action="append", default=[])
@@ -500,6 +506,32 @@ def main(argv: list[str] | None = None) -> int:
                 "species": args.species,
                 "sample_limit": args.sample_limit,
                 "aedes_limit": args.aedes_limit,
+            },
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-harvard-dataverse-suitability":
+        from askinsects.sources.harvard_dataverse_suitability import DEFAULT_QUERIES
+
+        queries = tuple(args.query) if args.query else DEFAULT_QUERIES
+        if not args.hosted:
+            from scripts.ingest_harvard_dataverse_suitability import ingest_harvard_dataverse_suitability
+
+            payload = ingest_harvard_dataverse_suitability(
+                artifact_dir=artifact_dir,
+                queries=queries,
+                per_page=args.per_page,
+                dataset_limit=args.dataset_limit,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/harvard-dataverse-suitability",
+            {
+                "queries": list(queries),
+                "per_page": args.per_page,
+                "dataset_limit": args.dataset_limit,
             },
             timeout=3600,
         )

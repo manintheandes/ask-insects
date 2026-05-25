@@ -42,6 +42,7 @@ from .sources.inaturalist import (
     safe_name as inaturalist_safe_name,
     write_raw_json as write_inaturalist_raw_json,
 )
+from .sources.harvard_dataverse_suitability import fetch_harvard_dataverse_suitability_records
 from .sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetch_irmapper_records
 from .sources.mendeley_behavior_media import MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, fetch_mendeley_behavior_media_records
 from .sources.mosquito_alert import MOSQUITO_ALERT_SOURCE_ID, fetch_mosquito_alert_records
@@ -1015,6 +1016,26 @@ def ingest_who_malaria_threats_resistance(
         sample_limit=int(payload.get("sample_limit") or 5),
         aedes_limit=int(payload.get("aedes_limit") or 100),
         fetch_who_malaria_threats_resistance_records_fn=fetch_who_malaria_threats_resistance_records_fn,
+    )
+
+
+def ingest_harvard_dataverse_suitability(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_harvard_dataverse_suitability_records_fn: Callable[..., object] = fetch_harvard_dataverse_suitability_records,
+) -> dict[str, object]:
+    from askinsects.sources.harvard_dataverse_suitability import DEFAULT_QUERIES
+    from scripts.ingest_harvard_dataverse_suitability import ingest_harvard_dataverse_suitability as ingest_script
+
+    queries = payload.get("queries")
+    query_tuple = tuple(str(query) for query in queries) if isinstance(queries, list) and queries else DEFAULT_QUERIES
+    return ingest_script(
+        artifact_dir=artifact_dir,
+        queries=query_tuple,
+        per_page=int(payload.get("per_page") or 25),
+        dataset_limit=int(payload.get("dataset_limit") or 12),
+        fetch_harvard_dataverse_suitability_records_fn=fetch_harvard_dataverse_suitability_records_fn,
     )
 
 
@@ -2809,6 +2830,7 @@ def dispatch_request(
     fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
     fetch_who_malaria_threats_resistance_records_fn: Callable[..., object] = fetch_who_malaria_threats_resistance_records,
+    fetch_harvard_dataverse_suitability_records_fn: Callable[..., object] = fetch_harvard_dataverse_suitability_records,
     fetch_mendeley_behavior_media_records_fn: Callable[..., object] = fetch_mendeley_behavior_media_records,
     fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
     fetch_ncbi_biosample_records_fn: Callable[..., object] = fetch_ncbi_biosample_records,
@@ -2883,6 +2905,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_who_malaria_threats_resistance_records_fn=fetch_who_malaria_threats_resistance_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/harvard-dataverse-suitability":
+            result = ingest_harvard_dataverse_suitability(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_harvard_dataverse_suitability_records_fn=fetch_harvard_dataverse_suitability_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

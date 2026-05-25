@@ -193,6 +193,16 @@ python3 -m askinsects ask "show WHO Aedes insecticide resistance bioassay guidan
 
 Raw artifacts are saved under `artifacts/mosquito-v1/raw/aedes_deep_sources/`. The ingest refreshes only those five source IDs, writes source receipts, preserves row, page, or raster-zip locators, and records structured gaps for blocked authority pages or disabled/failed raster sampling.
 
+Harvard Dataverse suitability is a separate ecology lane because it is a live file-search boundary rather than a fixed five-source bundle:
+
+```bash
+python3 -m askinsects ingest-harvard-dataverse-suitability
+python3 -m askinsects ask "show Harvard Dataverse suitability rasters for Aedes aegypti dengue transmission" --json
+python3 -m askinsects sql "select source, lane, count(*) as n from records where source='harvard_dataverse_aedes_suitability' group by source, lane"
+```
+
+This lane uses source id `harvard_dataverse_aedes_suitability`. It saves bounded Harvard Dataverse search and dataset-detail JSON under `raw/harvard_dataverse_suitability/`, indexes ecology file manifests with dataset DOI, file DOI, file ID, filename, content type, byte size, checksum, scenario terms, license, and access locator, and keeps explicit `dataverse_file_download_not_public` gaps when Dataverse says a raster binary is not public-downloadable.
+
 ## BOLD DNA Barcode Source Lane
 
 BOLD is the public DNA barcode source lane for `Aedes aegypti` specimen and COI-style marker records:
@@ -348,7 +358,7 @@ python3 -m askinsects ask "what seasonality evidence exists for Aedes aegypti in
 python3 -m askinsects sql "select json_extract(payload_json, '$.country') as country, count(*) as n from record_payloads where source='aedes_occurrence_ecology' and json_extract(payload_json, '$.aggregation_type')='country_month_summary' group by country order by n desc" --limit 20
 ```
 
-The lane uses source id `aedes_occurrence_ecology`. It creates `ecology` records from existing `gbif_api`, `inaturalist_api`, and `mosquito_alert_gbif` observation payloads, stores input source counts, observation counts, date ranges, coordinate counts, bounding boxes, sample input record IDs, and sample URLs in SQLite payloads, and preserves provenance to the derived observation join. The May 24, 2026 hosted ingest installed 1,985 occurrence ecology records from 88,065 Aedes observation inputs. The May 25, 2026 hosted WorldClim refresh added 500 bounded 10-minute bioclim raster samples with annual mean temperature, annual precipitation, coordinates, occurrence-row provenance, and raw ZIP locators. This is occurrence-derived and climate-sample ecology coverage; land-use layers, mechanistic suitability models, and surveillance completeness remain follow-on sources.
+The lane uses source id `aedes_occurrence_ecology`. It creates `ecology` records from existing `gbif_api`, `inaturalist_api`, and `mosquito_alert_gbif` observation payloads, stores input source counts, observation counts, date ranges, coordinate counts, bounding boxes, sample input record IDs, and sample URLs in SQLite payloads, and preserves provenance to the derived observation join. The May 24, 2026 hosted ingest installed 1,985 occurrence ecology records from 88,065 Aedes observation inputs. The May 25, 2026 hosted WorldClim refresh added 500 bounded 10-minute bioclim raster samples with annual mean temperature, annual precipitation, coordinates, occurrence-row provenance, and raw ZIP locators. The Harvard Dataverse suitability lane adds file-grained suitability/risk raster manifests with dataset/file DOI, checksum, byte size, license, and download gaps. This is occurrence-derived, climate-sample, and suitability-manifest ecology coverage; land-use layers, decoded model rasters, and surveillance completeness remain follow-on sources.
 
 ## Official Public-Health Guidance Source Lane
 

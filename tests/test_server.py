@@ -21,6 +21,7 @@ from askinsects.sources.cdc_dengue_surveillance import CdcDengueSurveillanceResu
 from askinsects.sources.dryad_behavior_videos import DryadBehaviorVideoResult
 from askinsects.sources.figshare_aedes_videos import FigshareAedesVideoResult
 from askinsects.sources.gbif import GBIFBuildResult
+from askinsects.sources.harvard_dataverse_suitability import HarvardDataverseSuitabilityResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
 from askinsects.sources.literature import FullTextUnit
@@ -942,6 +943,78 @@ class ServerTests(unittest.TestCase):
             counts = {row["source"]: row["n"] for row in rows}
             self.assertEqual(counts["mosquito_v1_fixtures"], 7)
             self.assertEqual(counts["who_malaria_threats_resistance_audit"], 2)
+
+    def test_ingest_harvard_dataverse_suitability_adds_ecology_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, queries, per_page, dataset_limit, fetch_json, retrieved_at):
+                raw_path = raw_dir / "search.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"data":{"items":[]}}', encoding="utf-8")
+                return HarvardDataverseSuitabilityResult(
+                    source_id="harvard_dataverse_aedes_suitability",
+                    records=[
+                        EvidenceRecord(
+                            record_id="ecology:dataverse_suitability:3623893",
+                            lane="ecology",
+                            source="harvard_dataverse_aedes_suitability",
+                            title="Aedes aegypti Dataverse suitability raster TCurMean30Sum_97ae.tif",
+                            text="Harvard Dataverse Aedes aegypti suitability raster manifest.",
+                            species="Aedes aegypti",
+                            url="https://doi.org/10.7910/DVN/NSG5UH",
+                            media_url="https://dataverse.harvard.edu/api/access/datafile/3623893",
+                            provenance=Provenance(
+                                source_id="harvard_dataverse_aedes_suitability",
+                                locator=f"{raw_path}#data/items/1",
+                                retrieved_at=retrieved_at,
+                                license="CC0 1.0",
+                            ),
+                            payload={"filename": "TCurMean30Sum_97ae.tif"},
+                        ),
+                        EvidenceRecord(
+                            record_id="ecology:dataverse_suitability:gap:download",
+                            lane="ecology",
+                            source="harvard_dataverse_aedes_suitability",
+                            title="Aedes aegypti Dataverse suitability source gap: dataverse_file_download_not_public",
+                            text="Harvard Dataverse Aedes suitability source gap: dataverse_file_download_not_public.",
+                            species="Aedes aegypti",
+                            url="https://doi.org/10.7910/DVN/NSG5UH",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="harvard_dataverse_aedes_suitability",
+                                locator=f"{raw_path}#data/items/1",
+                                retrieved_at=retrieved_at,
+                                license="CC0 1.0",
+                            ),
+                            payload={"gap": {"reason": "dataverse_file_download_not_public"}},
+                        ),
+                    ],
+                    gaps=[{"source": "harvard_dataverse_aedes_suitability", "reason": "dataverse_file_download_not_public"}],
+                    raw_artifacts=[raw_path.as_posix()],
+                    query_count=len(queries),
+                    search_item_count=1,
+                    dataset_count=1,
+                    file_record_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/harvard-dataverse-suitability",
+                {"queries": ['"Aedes aegypti" suitability'], "per_page": 10, "dataset_limit": 2},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_harvard_dataverse_suitability_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["harvard_dataverse_aedes_suitability"], 2)
 
     def test_ingest_public_health_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
