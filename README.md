@@ -232,6 +232,17 @@ python3 -m askinsects search behavior "FlightTrackAI flight behavior"
 
 The lane uses source id `osf_flighttrackai_aedes_videos`. It writes the OSF project JSON, provider JSON, and recursive `osfstorage` manifests under `raw/osf_flighttrackai_videos/`, normalizes the project and folders as `behavior`, MP4 files as `media`, and executable, model, and instruction files as `behavior`. It preserves file size, OSF download URL, API locator, raw file payload, and provenance. It indexes manifest metadata by default; it does not mirror multi-gigabyte binaries unless a future repo plan explicitly requires binary mirroring.
 
+## Zenodo Aedes Video Source Lane
+
+Zenodo search adds bounded `Aedes aegypti` video file manifests:
+
+```bash
+python3 -m askinsects ingest-zenodo-aedes-videos --query '"Aedes aegypti" (video OR movie OR mp4 OR tracking)' --size 25
+python3 -m askinsects ask "show Zenodo Aedes aegypti videos" --json
+```
+
+The lane uses source id `zenodo_aedes_videos`. It writes raw Zenodo search JSON under `raw/zenodo_aedes_videos/` and normalizes materially Aedes video files as `media` rows. It preserves Zenodo record ID, file name, download URL, source URL, license, byte size, source-provided hashes, raw record/file payloads, and exact search-result locators. Search terms alone are not species evidence.
+
 ## Aedes Video Atoms Source Lane
 
 `aedes_video_atoms` turns video manifests and source tables into inspectable, queryable evidence:
@@ -242,7 +253,7 @@ python3 -m askinsects ask "show Aedes aegypti keyframes and previews" --json
 python3 -m askinsects ask "show Aedes aegypti motion trajectory coordinates" --json
 ```
 
-The lane derives from PMC, Dryad, Mendeley, OSF, and repository-discovery candidates. For each downloadable video it stores checksum, byte size, duration, fps, resolution, codec, source paper or dataset, license, and exact locator when mirroring and probing are allowed. If the file is too large, missing a download URL, blocked by license uncertainty, cannot be probed, is not actually video, or comes from a repository sweep with no usable candidates, the ingest writes a queryable `video_gap` record instead of pretending coverage exists. Gap records preserve the source download URL, source URL, byte size, source-provided hashes when available, license text, source dataset, repository, and locator. Discovery scope is strict: repository search terms do not count as Aedes evidence unless the source title, description, file name, citation, species field, or equivalent material metadata names `Aedes aegypti`. When artifact generation is enabled it emits thumbnails, keyframes, preview clips, and frame manifests under `raw/video_atoms/`. Motion table inputs become `behavior` rows with behavior type, life stage, sex, assay, stimulus, arena, frame/time, track ID, coordinates, and confidence when present. `--discover-sources` runs bounded PMC OA, Dryad, Mendeley, OSF, Zenodo, Figshare, institutional Dataverse-style, and indexed paper-supplement discovery.
+The lane derives from PMC, Dryad, Mendeley, OSF, Zenodo, and repository-discovery candidates. For each downloadable video it stores checksum, byte size, duration, fps, resolution, codec, source paper or dataset, license, and exact locator when mirroring and probing are allowed. If the file is too large, missing a download URL, blocked by license uncertainty, cannot be probed, is not actually video, or comes from a repository sweep with no usable candidates, the ingest writes a queryable `video_gap` record instead of pretending coverage exists. Gap records preserve the source download URL, source URL, byte size, source-provided hashes when available, license text, source dataset, repository, and locator. Discovery scope is strict: repository search terms do not count as Aedes evidence unless the source title, description, file name, citation, species field, or equivalent material metadata names `Aedes aegypti`. When artifact generation is enabled it emits thumbnails, keyframes, preview clips, and frame manifests under `raw/video_atoms/`. Motion table inputs become `behavior` rows with behavior type, life stage, sex, assay, stimulus, arena, frame/time, track ID, coordinates, and confidence when present. `--discover-sources` runs bounded PMC OA, Dryad, Mendeley, OSF, Zenodo, Figshare, institutional Dataverse-style, and indexed paper-supplement discovery.
 
 ## Aedes Image Atoms Source Lane
 

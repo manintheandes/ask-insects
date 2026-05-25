@@ -214,6 +214,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_osf_flighttrackai_videos = sub.add_parser("ingest-osf-flighttrackai-videos")
     ingest_osf_flighttrackai_videos.add_argument("--hosted", action="store_true")
 
+    ingest_zenodo_aedes_videos = sub.add_parser("ingest-zenodo-aedes-videos")
+    ingest_zenodo_aedes_videos.add_argument("--hosted", action="store_true")
+    ingest_zenodo_aedes_videos.add_argument("--query", default='"Aedes aegypti" (video OR movie OR mp4 OR tracking)')
+    ingest_zenodo_aedes_videos.add_argument("--size", type=int, default=25)
+
     ingest_mendeley_behavior_media = sub.add_parser("ingest-mendeley-behavior-media")
     ingest_mendeley_behavior_media.add_argument("--hosted", action="store_true")
     ingest_mendeley_behavior_media.add_argument("--dataset", action="append", default=[])
@@ -661,6 +666,24 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/osf-flighttrackai-videos",
             {},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-zenodo-aedes-videos":
+        if not args.hosted:
+            from scripts.ingest_zenodo_aedes_videos import ingest_zenodo_aedes_videos
+
+            payload = ingest_zenodo_aedes_videos(
+                artifact_dir=artifact_dir,
+                query=args.query,
+                size=args.size,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/zenodo-aedes-videos",
+            {"query": args.query, "size": args.size},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

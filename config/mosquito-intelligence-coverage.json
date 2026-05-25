@@ -203,6 +203,7 @@
         "dryad_aedes_behavior_videos",
         "mendeley_aedes_behavior_media",
         "osf_flighttrackai_aedes_videos",
+        "zenodo_aedes_videos",
         "aedes_video_atoms"
       ],
       "current_gates": {
@@ -219,6 +220,7 @@
         "Mendeley behavior/media manifests add file-grained public Aedes high-speed video, wingbeat sound, flight-tone hearing, and locomotory video-analysis dataset records without mirroring giant binaries.",
         "Mendeley public behavior table files are parsed into queryable sheet and row records where the file is in Aedes aegypti scope.",
         "OSF FlightTrackAI manifests add file-grained public Aedes aegypti processed/unprocessed flight videos, executable bundle, trained model, and installation-instruction records without mirroring multi-gigabyte binaries.",
+        "Zenodo Aedes video sweeps add first-class bounded Zenodo search/file-manifest records for materially Aedes aegypti video files, preserving download URL, source URL, license, byte size, source hashes, and exact raw-search locators.",
         "Aedes video atoms derive video asset rows, optional bounded mirrors, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and structured gaps for oversized or license-unclear files.",
         "Video discovery now requires source-provided material metadata to name Aedes aegypti; repository search terms and synthetic query strings do not count as Aedes evidence.",
         "Video gap records preserve source download URL, source URL, byte size, source-provided hashes when available, license text, source dataset, repository, and locator so huge or license-unclear videos remain inspectable as gaps.",

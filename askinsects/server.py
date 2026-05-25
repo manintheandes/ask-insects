@@ -65,6 +65,7 @@ from .sources.vectornet_surveillance import (
     VECTORNET_SOURCE_ID,
     fetch_vectornet_surveillance_records,
 )
+from .sources.zenodo_aedes_videos import ZENODO_AEDES_VIDEO_SOURCE_ID, fetch_zenodo_aedes_video_records
 
 
 @dataclass(frozen=True)
@@ -2001,6 +2002,42 @@ def ingest_osf_flighttrackai_videos(
     return response
 
 
+def ingest_zenodo_aedes_videos(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_zenodo_aedes_video_records_fn: Callable[..., object] = fetch_zenodo_aedes_video_records,
+) -> dict[str, object]:
+    query = payload.get("query", '"Aedes aegypti" (video OR movie OR mp4 OR tracking)')
+    size = payload.get("size", 25)
+    if not isinstance(query, str):
+        raise ValueError("query must be a string")
+    if not isinstance(size, int):
+        raise ValueError("size must be an integer")
+    if fetch_zenodo_aedes_video_records_fn is fetch_zenodo_aedes_video_records:
+        from scripts.ingest_zenodo_aedes_videos import ingest_zenodo_aedes_videos as ingest_local
+
+        result = ingest_local(artifact_dir=artifact_dir, query=query, size=size, retrieved_at=utc_now())
+        result["activated_artifact_dir"] = str(artifact_dir)
+        return result
+
+    from scripts.ingest_zenodo_aedes_videos import _update_metadata
+
+    retrieved_at = utc_now()
+    source_result = fetch_zenodo_aedes_video_records_fn(
+        raw_dir=artifact_dir / "raw" / "zenodo_aedes_videos",
+        retrieved_at=retrieved_at,
+        query=query,
+        size=size,
+    )
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    index.replace_source_records(ZENODO_AEDES_VIDEO_SOURCE_ID, source_result.records)
+    response = _update_metadata(artifact_dir, source_result, retrieved_at)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def write_pathogen_taxonomy_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
     index = SourceIndex(staging / "source_index.sqlite")
     summary = index.summary()
@@ -2460,6 +2497,7 @@ def dispatch_request(
     fetch_cdc_dengue_surveillance_records_fn: Callable[..., object] = fetch_cdc_dengue_surveillance_records,
     fetch_vectorbase_genomics_records_fn: Callable[..., object] = fetch_vectorbase_genomics_records,
     fetch_vectornet_surveillance_records_fn: Callable[..., object] = fetch_vectornet_surveillance_records,
+    fetch_zenodo_aedes_video_records_fn: Callable[..., object] = fetch_zenodo_aedes_video_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -2598,6 +2636,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_osf_flighttrackai_video_records_fn=fetch_osf_flighttrackai_video_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/zenodo-aedes-videos":
+            result = ingest_zenodo_aedes_videos(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_zenodo_aedes_video_records_fn=fetch_zenodo_aedes_video_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

@@ -383,6 +383,47 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(result.video_asset_count, 0)
         self.assertEqual(result.records, [])
 
+    def test_builds_video_candidates_from_zenodo_source_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="zenodo:aedes-video:101:oviposition_mp4",
+                        lane="media",
+                        source="zenodo_aedes_videos",
+                        title="Aedes aegypti Zenodo video file oviposition.mp4",
+                        text="Zenodo Aedes aegypti video file oviposition.mp4.",
+                        species="Aedes aegypti",
+                        url="https://zenodo.org/records/101",
+                        media_url="https://zenodo.org/api/records/101/files/oviposition.mp4/content",
+                        provenance=Provenance(
+                            source_id="zenodo_aedes_videos",
+                            locator="raw/zenodo_aedes_videos/search.json#hits/1/files/1",
+                            retrieved_at=RETRIEVED_AT,
+                            license="cc-by-4.0",
+                            source_url="https://zenodo.org/api/records/101/files/oviposition.mp4/content",
+                        ),
+                        payload={
+                            "filename": "oviposition.mp4",
+                            "download_url": "https://zenodo.org/api/records/101/files/oviposition.mp4/content",
+                            "source_byte_size": 123456,
+                            "source_hashes": {"md5": "0123456789abcdef0123456789abcdef"},
+                        },
+                    )
+                ]
+            )
+
+            result = build_video_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        assets = [record for record in result.records if record.payload.get("atom_type") == "video_asset"]
+        self.assertEqual(len(assets), 1)
+        self.assertEqual(assets[0].payload["repository"], "zenodo")
+        self.assertEqual(assets[0].payload["source_byte_size"], 123456)
+        self.assertEqual(assets[0].payload["source_hashes"]["md5"], "0123456789abcdef0123456789abcdef")
+
     def test_generates_inspectable_video_artifacts(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -635,6 +676,9 @@ class VideoAtomsSourceTests(unittest.TestCase):
                         "source_url": "https://osf.io/aedes-larvae/",
                         "license": "institutional repository license not supplied",
                         "repository": "osf",
+                        "locator": "https://api.osf.io/v2/nodes/aedes-larvae/files/osfstorage/#file/1",
+                        "size": 123456,
+                        "sha256": "b" * 64,
                     }
                 ],
                 "paper_supplements": lambda: [],
@@ -665,6 +709,17 @@ class VideoAtomsSourceTests(unittest.TestCase):
             if gap.get("repository") == "osf" and gap.get("title") == "Thermal video of rodent motion"
         ]
         self.assertEqual({gap["reason"] for gap in polluted_osf}, {"video_discovery_not_aedes_scope"})
+        license_gap = next(
+            gap
+            for gap in result.gaps
+            if gap.get("repository") == "osf" and gap.get("reason") == "video_discovery_license_unclear"
+        )
+        self.assertEqual(license_gap["download_url"], "https://osf.io/download/aedes-larvae.mp4")
+        self.assertEqual(license_gap["source_url"], "https://osf.io/aedes-larvae/")
+        self.assertEqual(license_gap["locator"], "https://api.osf.io/v2/nodes/aedes-larvae/files/osfstorage/#file/1")
+        self.assertEqual(license_gap["source_byte_size"], 123456)
+        self.assertEqual(license_gap["source_hashes"]["sha256"], "b" * 64)
+        self.assertEqual(license_gap["license"], "institutional repository license not supplied")
 
     def test_dataverse_search_terms_do_not_count_as_aedes_scope(self):
         payload = {

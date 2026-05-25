@@ -31,6 +31,7 @@ from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from askinsects.sources.vectorbase_genomics import VectorBaseGenomicsResult
 from askinsects.sources.vectornet_surveillance import VectorNetBuildResult
+from askinsects.sources.zenodo_aedes_videos import ZenodoAedesVideoResult
 from tests.test_inaturalist_source import observation
 from tests.test_image_atoms_source import write_image_fixture
 from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
@@ -1505,6 +1506,65 @@ class ServerTests(unittest.TestCase):
                 "select record_id from record_payloads where source='osf_flighttrackai_aedes_videos'",
             )
             self.assertEqual(payload_rows[0]["record_id"], "osf:flighttrackai:file:video_a")
+            self.assertEqual(response.payload["media_file_count"], 1)
+
+    def test_ingest_zenodo_aedes_videos_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, retrieved_at, query, size):
+                raw_path = raw_dir / "search_fixture.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"hits":{"hits":[]}}', encoding="utf-8")
+                return ZenodoAedesVideoResult(
+                    source_id="zenodo_aedes_videos",
+                    records=[
+                        EvidenceRecord(
+                            record_id="zenodo:aedes-video:101:oviposition_mp4",
+                            lane="media",
+                            source="zenodo_aedes_videos",
+                            title="Aedes aegypti Zenodo video file oviposition.mp4",
+                            text="Zenodo video file for Aedes aegypti oviposition behavior.",
+                            species="Aedes aegypti",
+                            url="https://zenodo.org/records/101",
+                            media_url="https://zenodo.org/api/records/101/files/oviposition.mp4/content",
+                            provenance=Provenance(
+                                source_id="zenodo_aedes_videos",
+                                locator=f"{raw_path}#hits/1/files/1",
+                                retrieved_at=retrieved_at,
+                                license="cc-by-4.0",
+                                source_url="https://zenodo.org/api/records/101/files/oviposition.mp4/content",
+                            ),
+                            payload={"filename": "oviposition.mp4", "source_byte_size": 123456},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    query=query,
+                    search_result_count=1,
+                    material_record_count=1,
+                    file_count=1,
+                    media_file_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/zenodo-aedes-videos",
+                {"query": '"Aedes aegypti" mp4', "size": 7},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_zenodo_aedes_video_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["zenodo_aedes_videos"], 1)
+            self.assertEqual(response.payload["query"], '"Aedes aegypti" mp4')
             self.assertEqual(response.payload["media_file_count"], 1)
 
     def test_ingest_pathogen_taxonomy_adds_records_without_removing_existing_sources(self):

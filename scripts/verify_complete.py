@@ -107,6 +107,7 @@ REQUIRED_FILES = (
     "askinsects/sources/dryad_behavior_videos.py",
     "askinsects/sources/mendeley_behavior_media.py",
     "askinsects/sources/osf_flighttrackai_videos.py",
+    "askinsects/sources/zenodo_aedes_videos.py",
     "askinsects/sources/public_health.py",
     "askinsects/sources/paho_surveillance.py",
     "askinsects/sources/cdc_dengue_surveillance.py",
@@ -140,6 +141,7 @@ REQUIRED_FILES = (
     "scripts/ingest_dryad_behavior_videos.py",
     "scripts/ingest_mendeley_behavior_media.py",
     "scripts/ingest_osf_flighttrackai_videos.py",
+    "scripts/ingest_zenodo_aedes_videos.py",
     "scripts/ingest_public_health_guidance.py",
     "scripts/ingest_paho_dengue_surveillance.py",
     "scripts/ingest_cdc_dengue_surveillance.py",
@@ -195,6 +197,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_mendeley_behavior_media.py",
     "tests/test_osf_flighttrackai_videos_source.py",
     "tests/test_ingest_osf_flighttrackai_videos.py",
+    "tests/test_zenodo_aedes_videos_source.py",
+    "tests/test_ingest_zenodo_aedes_videos.py",
     "tests/test_public_health_source.py",
     "tests/test_ingest_public_health_guidance.py",
     "tests/test_paho_surveillance_source.py",
@@ -265,6 +269,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_mendeley_behavior_media",
     "tests.test_osf_flighttrackai_videos_source",
     "tests.test_ingest_osf_flighttrackai_videos",
+    "tests.test_zenodo_aedes_videos_source",
+    "tests.test_ingest_zenodo_aedes_videos",
     "tests.test_public_health_source",
     "tests.test_ingest_public_health_guidance",
     "tests.test_paho_surveillance_source",
@@ -525,6 +531,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_wolbachia_interventions",
         "aedes_vectorbyte_traits",
         "osf_flighttrackai_aedes_videos",
+        "zenodo_aedes_videos",
         "aedes_video_atoms",
         "aedes_image_atoms",
     )
@@ -593,6 +600,15 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing OSF FlightTrackAI term: {term}")
+    for term in (
+        "zenodo_aedes_videos",
+        "scripts/ingest_zenodo_aedes_videos.py",
+        "zenodo_records_search_file_manifest_to_sqlite_media_records",
+        "metadata_and_download_locators_only_by_default",
+        "source_hashes",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Zenodo Aedes video term: {term}")
     for term in (
         "aedes_video_atoms",
         "scripts/ingest_video_atoms.py",

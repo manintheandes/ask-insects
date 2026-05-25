@@ -24,6 +24,7 @@ VIDEO_SOURCE_IDS = {
     "dryad_aedes_behavior_videos",
     "mendeley_aedes_behavior_media",
     "osf_flighttrackai_aedes_videos",
+    "zenodo_aedes_videos",
 }
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 NON_VIDEO_MEDIA_EXTENSIONS = (
@@ -236,11 +237,12 @@ def _repository_for_source(source: str) -> str | None:
         "dryad_aedes_behavior_videos": "dryad",
         "mendeley_aedes_behavior_media": "mendeley",
         "osf_flighttrackai_aedes_videos": "osf",
+        "zenodo_aedes_videos": "zenodo",
     }.get(source)
 
 
 def _size_from_candidate(candidate: VideoCandidate) -> int | None:
-    for key in ("size", "size_bytes", "byte_size"):
+    for key in ("size", "size_bytes", "byte_size", "source_byte_size"):
         value = candidate.payload.get(key)
         if isinstance(value, int):
             return value
@@ -252,6 +254,11 @@ def _size_from_candidate(candidate: VideoCandidate) -> int | None:
 
 def _source_hashes_from_candidate(candidate: VideoCandidate) -> dict[str, str]:
     hashes: dict[str, str] = {}
+    source_hashes = candidate.payload.get("source_hashes")
+    if isinstance(source_hashes, dict):
+        for key, value in source_hashes.items():
+            if isinstance(value, str) and value.strip():
+                hashes[str(key)] = value.strip()
     for key in ("sha256", "md5", "checksum", "digest"):
         value = candidate.payload.get(key)
         if isinstance(value, str) and value.strip():
@@ -262,12 +269,31 @@ def _source_hashes_from_candidate(candidate: VideoCandidate) -> dict[str, str]:
         if isinstance(attrs, dict):
             extra = attrs.get("extra")
             if isinstance(extra, dict):
-                raw_hashes = extra.get("hashes")
-                if isinstance(raw_hashes, dict):
-                    for key, value in raw_hashes.items():
-                        if isinstance(value, str) and value.strip():
-                            hashes[str(key)] = value.strip()
+                    raw_hashes = extra.get("hashes")
+                    if isinstance(raw_hashes, dict):
+                        for key, value in raw_hashes.items():
+                            if isinstance(value, str) and value.strip():
+                                hashes[str(key)] = value.strip()
     return hashes
+
+
+def _source_hashes_from_raw(raw: dict[str, object]) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for key in ("sha256", "md5", "checksum", "digest"):
+        value = raw.get(key)
+        if isinstance(value, str) and value.strip():
+            hashes[key] = value.strip()
+    return hashes
+
+
+def _size_from_raw(raw: dict[str, object]) -> int | None:
+    for key in ("size", "size_bytes", "byte_size", "source_byte_size"):
+        value = raw.get(key)
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+    return None
 
 
 def _candidate_source_payload(candidate: VideoCandidate) -> dict[str, object]:
@@ -302,13 +328,38 @@ def _gap_context(candidate: VideoCandidate, reason: str, **extra: object) -> dic
     return {key: value for key, value in context.items() if value not in (None, "", {})}
 
 
+def _discovery_gap(raw: dict[str, object], reason: str, repository: str, title: str) -> dict[str, object]:
+    download_url = raw.get("download_url") or raw.get("media_url")
+    source_url = raw.get("source_url") or raw.get("url")
+    context: dict[str, object] = {
+        "source": VIDEO_ATOMS_SOURCE_ID,
+        "lane": "media",
+        "reason": reason,
+        "repository": repository,
+        "title": title,
+        "filename": raw.get("filename") or raw.get("name") or raw.get("path"),
+        "download_url": download_url,
+        "source_url": source_url,
+        "license": raw.get("license"),
+        "source_dataset": raw.get("source_dataset") or raw.get("dataset_name") or title,
+        "locator": raw.get("locator"),
+    }
+    size = _size_from_raw(raw)
+    if size is not None:
+        context["source_byte_size"] = size
+    hashes = _source_hashes_from_raw(raw)
+    if hashes:
+        context["source_hashes"] = hashes
+    return {key: value for key, value in context.items() if value not in (None, "", {})}
+
+
 def _candidate_rows(index: SourceIndex) -> list[VideoCandidate]:
     rows = index.sql(
         """
         SELECT r.*, p.payload_json
         FROM records r
         LEFT JOIN record_payloads p ON p.record_id = r.record_id
-        WHERE r.source IN ('pmc_open_access_videos', 'dryad_aedes_behavior_videos', 'mendeley_aedes_behavior_media', 'osf_flighttrackai_aedes_videos')
+        WHERE r.source IN ('pmc_open_access_videos', 'dryad_aedes_behavior_videos', 'mendeley_aedes_behavior_media', 'osf_flighttrackai_aedes_videos', 'zenodo_aedes_videos')
           AND lower(coalesce(r.species, '')) = 'aedes aegypti'
           AND r.lane = 'media'
         ORDER BY r.record_id
@@ -1339,16 +1390,16 @@ def _candidate_from_discovery(raw: dict[str, object]) -> VideoCandidate | dict[s
     repository = str(raw.get("repository") or "unknown")
     title = str(raw.get("title") or "")
     if not _has_discovery_aedes_scope(raw):
-        return {"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_not_aedes_scope", "repository": repository, "title": title}
+        return _discovery_gap(raw, "video_discovery_not_aedes_scope", repository, title)
     download_url = raw.get("download_url") or raw.get("media_url")
     if not isinstance(download_url, str) or not download_url:
-        return {"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_no_download_url", "repository": repository, "title": title}
+        return _discovery_gap(raw, "video_discovery_no_download_url", repository, title)
     filename = raw.get("filename") or raw.get("name") or raw.get("path")
     if not _looks_like_video(filename, download_url, title, raw.get("description")):
-        return {"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_not_video_media", "repository": repository, "title": title}
+        return _discovery_gap(raw, "video_discovery_not_video_media", repository, title)
     license_value = raw.get("license")
     if _license_is_unclear(license_value):
-        return {"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_license_unclear", "repository": repository, "title": title}
+        return _discovery_gap(raw, "video_discovery_license_unclear", repository, title)
     record_id = f"discovery:{repository}:{_digest(title, download_url)}"
     provenance = {
         "source_id": f"video_discovery_{repository}",
