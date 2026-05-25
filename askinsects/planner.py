@@ -85,6 +85,23 @@ def plan_question(question: str) -> QueryPlan:
     )
     if any(term in q for term in video_media_terms):
         return QueryPlan(question, "media", ("media",), question)
+    if any(
+        term in q
+        for term in (
+            "geo",
+            "gene expression",
+            "expression data",
+            "expression omics",
+            "rna-seq",
+            "rnaseq",
+            "transcriptome",
+            "transcriptomic",
+            "transcriptomics",
+            "sra run",
+            "sra runs",
+        )
+    ):
+        return QueryPlan(question, "expression", ("expression", "transcripts", "genes", "proteins", "literature"), question)
     if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
     if any(
@@ -113,6 +130,10 @@ def plan_question(question: str) -> QueryPlan:
             "case fatality",
             "cases",
             "deaths",
+            "wolbachia",
+            "world mosquito program",
+            "wmp",
+            "yogyakarta",
         )
     ):
         return QueryPlan(question, "public_health", ("public_health", "observations", "literature", "taxonomy"), question)
@@ -294,6 +315,9 @@ def plan_question(question: str) -> QueryPlan:
         "ncbi linkout",
         "protein",
         "proteins",
+        "uniprot",
+        "protein function",
+        "proteome",
         "receptor",
         "receptors",
         "odorant",
@@ -333,6 +357,8 @@ def plan_question(question: str) -> QueryPlan:
             lanes = ("genome_features", "genes", "proteins", "transcripts", "genome_assemblies", "literature", "taxonomy")
         elif any(term in q for term in ("receptor", "receptors", "odorant", "gustatory", "ionotropic", "orco")):
             lanes = ("proteins", "transcripts", "genome_features", "genes", "genome_assemblies", "literature", "taxonomy")
+        elif any(term in q for term in ("uniprot", "protein function", "proteome", "protein", "proteins")):
+            lanes = ("proteins", "genes", "transcripts", "genome_features", "genome_assemblies", "literature", "taxonomy")
         elif any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates", "sra")):
             lanes = ("biosamples", "genome_assemblies", "genes", "transcripts", "proteins", "literature", "taxonomy")
         elif "assembly" in q or "genome" in q:

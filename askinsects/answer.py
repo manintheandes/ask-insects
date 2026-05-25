@@ -294,6 +294,8 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
         return f"From the Ask Insects literature index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "media":
         return f"I found {len(records)} indexed Ask Insects media record(s)."
+    if plan.answer_shape == "expression":
+        return f"From the Ask Insects expression omics index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "genomics":
         return f"From the local mosquito genomics index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "neurobiology":
@@ -396,6 +398,63 @@ def _search_queries(question: str) -> list[str]:
         species = _requested_species(question)
         if species:
             queries.append(species)
+        return list(dict.fromkeys(queries))
+    if any(
+        term in q
+        for term in (
+            "geo",
+            "gene expression",
+            "expression data",
+            "expression omics",
+            "rna-seq",
+            "rnaseq",
+            "transcriptome",
+            "transcriptomic",
+            "transcriptomics",
+            "sra run",
+            "sra runs",
+        )
+    ):
+        generic_terms = {
+            "aedes",
+            "aegypti",
+            "data",
+            "expression",
+            "for",
+            "geo",
+            "omics",
+            "rna",
+            "rnaseq",
+            "run",
+            "runs",
+            "seq",
+            "show",
+            "sra",
+            "the",
+            "transcriptome",
+            "transcriptomic",
+            "transcriptomics",
+        }
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9]+", question)
+            if token.lower() not in generic_terms
+        ]
+        queries = []
+        if salient:
+            queries.append(" ".join(salient))
+            queries.append(f"Aedes aegypti expression {' '.join(salient)}")
+        queries.extend(["GEO RNA-seq expression Aedes aegypti", "SRA RNA-seq Aedes aegypti", question])
+        return list(dict.fromkeys(queries))
+    if any(term in q for term in ("uniprot", "protein function", "proteome")):
+        accession_terms = [
+            token
+            for token in re.findall(r"\b(?:[OPQ][0-9][A-Z0-9]{3}[0-9]|A0A[A-Z0-9]+|UP[0-9]{9}|AAEL[0-9A-Za-z-]+)\b", question, flags=re.IGNORECASE)
+        ]
+        queries = []
+        queries.extend(accession_terms)
+        queries.extend(f"UniProt {term}" for term in accession_terms)
+        queries.extend(["UniProt Aedes aegypti protein function", "UniProt proteome Aedes aegypti", question])
         return list(dict.fromkeys(queries))
     if any(
         term in q
@@ -568,8 +627,19 @@ def _search_queries(question: str) -> list[str]:
             "cases",
             "deaths",
             "public health",
+            "wolbachia",
+            "world mosquito program",
+            "wmp",
+            "yogyakarta",
         )
     ):
+        if any(term in q for term in ("wolbachia", "world mosquito program", "wmp", "yogyakarta")):
+            return [
+                "World Mosquito Program Wolbachia Yogyakarta",
+                "Wolbachia intervention Aedes aegypti",
+                "Yogyakarta Wolbachia dengue reduction",
+                question,
+            ]
         if "ecdc" in q:
             return [
                 "ECDC Aedes aegypti factsheet",
@@ -880,6 +950,14 @@ def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
 
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if any(term in q for term in ("uniprot", "protein function", "proteome")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "aedes_uniprot_proteins" else 1,
+                0 if record.lane == "proteins" else 1,
+            ),
+        )
     if any(
         term in q
         for term in (
@@ -945,6 +1023,67 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
 
 def _like_escape(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
+def _uniprot_direct_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    terms = _uniprot_exact_terms(question)
+    if not terms:
+        return []
+
+    records: list[EvidenceRecord] = []
+    seen_record_ids: set[str] = set()
+    with index.connect() as conn:
+        for term in terms:
+            clauses: list[tuple[str, tuple[object, ...]]] = []
+            if term.startswith("UP"):
+                clauses.append(("record_id = ?", (f"uniprot:proteome:{term}",)))
+            elif term.startswith("AAEL"):
+                like = f"%{_like_escape(term)}%"
+                clauses.append(
+                    (
+                        "(title LIKE ? ESCAPE '\\' OR text LIKE ? ESCAPE '\\')",
+                        (like, like),
+                    )
+                )
+            else:
+                clauses.append(("record_id = ?", (f"uniprot:protein:{term}",)))
+
+            for where_sql, params in clauses:
+                rows = conn.execute(
+                    f"""
+                    SELECT *
+                    FROM records
+                    WHERE source = 'aedes_uniprot_proteins'
+                      AND lane = 'proteins'
+                      AND {where_sql}
+                    ORDER BY record_id
+                    LIMIT ?
+                    """,
+                    (*params, limit),
+                ).fetchall()
+                for row in rows:
+                    record = EvidenceRecord.from_row(dict(row))
+                    if record.record_id in seen_record_ids:
+                        continue
+                    records.append(record)
+                    seen_record_ids.add(record.record_id)
+                    if len(records) >= limit:
+                        return records
+    return records
+
+
+def _uniprot_exact_terms(question: str) -> list[str]:
+    q = question.lower()
+    if not any(term in q for term in ("uniprot", "protein function", "proteome")):
+        return []
+    return [
+        term.upper()
+        for term in re.findall(
+            r"\b(?:[OPQ][0-9][A-Z0-9]{3}[0-9]|A0A[A-Z0-9]+|UP[0-9]{9}|AAEL[0-9A-Za-z-]+)\b",
+            question,
+            flags=re.IGNORECASE,
+        )
+    ]
 
 
 def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
@@ -1110,6 +1249,14 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
 
 def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if any(term in q for term in ("wolbachia", "world mosquito program", "wmp", "yogyakarta")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "aedes_wolbachia_interventions" else 1,
+                0 if record.lane == "public_health" else 1,
+            ),
+        )
     if "vectornet" in q:
         return sorted(
             records,
@@ -1630,7 +1777,16 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "genomics":
+        uniprot_exact_terms = _uniprot_exact_terms(plan.question)
+        uniprot_records = _uniprot_direct_records(index, plan.question, limit=limit)
+        if uniprot_exact_terms and not uniprot_records:
+            return source_gap(plan, "The Ask Insects UniProt lane has no matching record for the requested accession or identifier.")
+        for record in uniprot_records:
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
         for record in _vectorbase_auxiliary_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
             all_records.append(record)
             seen_record_ids.add(record.record_id)
 

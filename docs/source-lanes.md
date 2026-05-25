@@ -66,12 +66,15 @@ Sources:
 - `ncbi_datasets_genome`: parsed NCBI Datasets package for `Aedes aegypti` assembly `GCF_002204515.2`.
 - `ncbi_biosamples`: bounded NCBI BioSample metadata for `Aedes aegypti` samples, strains, isolates, collection dates, geographies, tissues, isolation sources, organizations, and linked SRA identifiers when present.
 - `vectorbase_aedes_genomics`: official VectorBase/VEuPathDB `AaegyptiLVP_AGWG` current-release GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut downloads parsed into genes, transcripts, proteins, CDS sequence summaries, transcript sequence summaries, GO annotation, codon usage, ID history, and cross-reference records.
+- `aedes_expression_omics`: bounded NCBI GEO/SRA expression, RNA-seq, and transcriptome metadata parsed into GEO dataset records and SRA run records in the `expression` lane.
+- `aedes_uniprot_proteins`: bounded UniProtKB protein and UniProt proteome metadata for taxonomy 7159, parsed into function, cross-reference, and proteome records in the `proteins` lane.
 
 The genomics lane indexes useful atoms, not every DNA base. Raw NCBI package files remain the source artifacts. SQLite rows cite locators such as `assembly_data_report.jsonl#line/1`, `genomic.gff#line/42`, or `protein.faa#protein/XP_001`.
 
 NCBI BioSample rows cite saved ESummary batches under `raw/ncbi_biosamples/`. The ingest is bounded by default; if NCBI reports more `Aedes aegypti` BioSamples than were fetched, Ask Insects writes a structured `biosample_limit_applied` source gap.
 
 VectorBase rows cite saved files under `raw/vectorbase_genomics/`, with locators such as `VectorBase-68_AaegyptiLVP_AGWG.gff#line/42`, `VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta#line/12`, `VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta#line/12`, `VectorBase-68_AaegyptiLVP_AGWG_AnnotatedTranscripts.fasta#line/12`, `VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz#line/200`, `VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt#line/2`, `VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab#line/1`, or `VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml#link/1`. VectorBase-specific questions, AAEL IDs, CDS or transcript sequence questions, GO annotation, codon usage, identifier-history, and LinkOut questions prefer this source over generic NCBI genome records.
+Expression-omics rows cite saved GEO/SRA ESummary JSON under `raw/expression_omics/`, with locators such as `gds_esummary.json#result/200000001` or `sra_esummary.json#result/44630001/run/1`. This lane exposes study/run metadata, not computed expression matrices. UniProt rows cite saved UniProt REST JSON under `raw/uniprot_proteins/`, with locators such as `uniprotkb_aedes_aegypti.json#results/1` and `uniprot_proteomes_aedes_aegypti.json#results/1`.
 
 Current genomics lanes:
 
@@ -80,6 +83,7 @@ Current genomics lanes:
 - `transcripts`
 - `genome_features`
 - `proteins`
+- `expression`
 - `dna_barcodes`
 - `biosamples`
 
@@ -211,6 +215,7 @@ Sources:
 
 - `aedes_literature_facets`: literature-derived public-health facets while deeper operational lanes are built.
 - `aedes_public_health_guidance`: official WHO, PAHO, CDC, and ECDC guidance pages parsed into `public_health` records with raw HTML receipts and source URLs.
+- `aedes_wolbachia_interventions`: World Mosquito Program Wolbachia method, deployment progress, and Yogyakarta trial evidence pages parsed into `public_health` intervention-evidence records with source-mentioned metrics and raw HTML receipts.
 - `aedes_paho_dengue_surveillance`: official PAHO dengue situation report, dashboard landing pages, and PAHO/EIH Core Indicators ZIP/CSV parsed at report, subregion, serotype, figure/table, dashboard locator, and annual country/territory dengue-case row grain with raw receipts and PAHO locators.
 
-The guidance lane is source-grade at the guidance-page grain: each page is mapped, fetched, raw-saved, indexed, payload-preserved, and queryable through public-health questions. The default set includes official dengue, Zika, Aedes life-cycle, vector-control, travel-medicine, Wolbachia, community prevention, and ECDC Aedes aegypti species-factsheet pages. The PAHO dengue surveillance lane adds report-grain surveillance records for the Region of the Americas, including weekly and year-to-date indicators, subregional case-change notes, serotype circulation notes, figure/table media locators, dashboard page or iframe locator records, and stable machine-readable PAHO/EIH Core Indicators annual country/territory dengue-case CSV rows. PAHO/PLISA dashboard locator records are queryable, but country-week Tableau/PHIP rows remain a source gap until a stable weekly unauthenticated CSV, JSON, or API endpoint is available or explicit authorized access is obtained.
+The guidance lane is source-grade at the guidance-page grain: each page is mapped, fetched, raw-saved, indexed, payload-preserved, and queryable through public-health questions. The default set includes official dengue, Zika, Aedes life-cycle, vector-control, travel-medicine, Wolbachia, community prevention, and ECDC Aedes aegypti species-factsheet pages. The Wolbachia intervention lane is source-grade at the WMP page grain and is preferred for World Mosquito Program, Wolbachia, and Yogyakarta intervention-evidence questions. The PAHO dengue surveillance lane adds report-grain surveillance records for the Region of the Americas, including weekly and year-to-date indicators, subregional case-change notes, serotype circulation notes, figure/table media locators, dashboard page or iframe locator records, and stable machine-readable PAHO/EIH Core Indicators annual country/territory dengue-case CSV rows. PAHO/PLISA dashboard locator records are queryable, but country-week Tableau/PHIP rows remain a source gap until a stable weekly unauthenticated CSV, JSON, or API endpoint is available or explicit authorized access is obtained.

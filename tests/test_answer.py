@@ -222,6 +222,45 @@ def public_health_record(record_id, source, text):
     )
 
 
+def expression_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="expression",
+        source="aedes_expression_omics",
+        title="GEO expression dataset GSE999999: Aedes aegypti midgut RNA-seq",
+        text="GEO Aedes aegypti expression omics dataset GSE999999. Title: Aedes aegypti midgut RNA-seq after dengue exposure. Samples: 12. Summary: infected and control midguts.",
+        species="Aedes aegypti",
+        url="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE999999",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_expression_omics",
+            locator="raw/expression_omics/gds_esummary.json#result/200000001",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="NCBI GEO public metadata",
+        ),
+    )
+
+
+def uniprot_record(record_id):
+    accession = record_id.rsplit(":", 1)[-1]
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="proteins",
+        source="aedes_uniprot_proteins",
+        title=f"UniProt protein {accession}: Putative salivary protein 1",
+        text=f"UniProt reviewed Aedes aegypti protein record {accession}. Protein: Putative salivary protein 1. Gene names: ptp1. Function: May function during blood feeding. VectorBase cross-references: AAEL012345.",
+        species="Aedes aegypti",
+        url="https://www.uniprot.org/uniprotkb/A0A6I8TCE0/entry",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_uniprot_proteins",
+            locator="raw/uniprot_proteins/uniprotkb_aedes_aegypti.json#results/1",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="UniProt public data; CC BY 4.0",
+        ),
+    )
+
+
 def gbif_observation_record(record_id, country):
     return EvidenceRecord(
         record_id=record_id,
@@ -283,6 +322,9 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what voxel volume files exist in MosquitoBrains?").lanes[0], "neurobiology")
         self.assertEqual(plan_question("where is Aedes aegypti observed by month in Brazil?").answer_shape, "ecology")
         self.assertEqual(plan_question("what range and seasonality evidence exists for Aedes aegypti?").lanes[0], "ecology")
+        self.assertEqual(plan_question("show GEO RNA-seq expression data for Aedes aegypti midgut").answer_shape, "expression")
+        self.assertEqual(plan_question("show UniProt protein function for AAEL012345").lanes[0], "proteins")
+        self.assertEqual(plan_question("show World Mosquito Program Wolbachia intervention evidence from Yogyakarta").answer_shape, "public_health")
 
     def test_answers_include_provenance_or_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -303,6 +345,91 @@ class AnswerTests(unittest.TestCase):
             media_gap = answer_question("show mosquito videos from Brazil", artifact_dir=artifact_dir)
             self.assertFalse(media_gap["ok"])
             self.assertEqual(media_gap["source_gap"]["lane"], "media")
+
+    def test_expression_questions_prefer_expression_omics_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([expression_record("expression:geo:GSE999999")])
+
+            answer = answer_question("show GEO RNA-seq expression data for Aedes aegypti midgut", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "expression")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_expression_omics")
+
+    def test_uniprot_questions_prefer_uniprot_protein_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:protein:AAEL026087-PA",
+                        lane="proteins",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase protein AAEL026087-PA",
+                        text="VectorBase protein annotated as salivary allergen [Source:UniProtKB/Swiss-Prot;Acc:P18153].",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/example",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/proteins.fasta#line/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase public data",
+                        ),
+                    ),
+                    uniprot_record("uniprot:protein:P18153"),
+                ]
+            )
+
+            answer = answer_question("show UniProt protein function for P18153", artifact_dir=artifact_dir, limit=1)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_uniprot_proteins")
+
+    def test_uniprot_exact_identifier_questions_gap_without_exact_record(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([uniprot_record("uniprot:protein:P18153")])
+
+            answer = answer_question("show UniProt protein function for AAEL999999", artifact_dir=artifact_dir)
+
+            self.assertFalse(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertIn("UniProt lane has no matching record", answer["source_gap"]["reason"])
+
+    def test_wolbachia_questions_prefer_intervention_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "wolbachia:intervention:yogyakarta",
+                        "aedes_wolbachia_interventions",
+                        "World Mosquito Program Wolbachia intervention evidence for Aedes aegypti. Topic: Yogyakarta randomized controlled trial. Metrics mentioned: 77%.",
+                    ),
+                    public_health_record(
+                        "public_health:guidance:wolbachia",
+                        "aedes_public_health_guidance",
+                        "CDC mosquitoes with Wolbachia guidance for Aedes aegypti.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show World Mosquito Program Wolbachia intervention evidence from Yogyakarta", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_wolbachia_interventions")
 
     def test_literature_questions_prefer_paper_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:

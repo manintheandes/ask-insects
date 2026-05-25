@@ -59,6 +59,8 @@
         "ncbi_datasets_genome",
         "ncbi_biosamples",
         "vectorbase_aedes_genomics",
+        "aedes_expression_omics",
+        "aedes_uniprot_proteins",
         "bold_api"
       ],
       "current_gates": {
@@ -72,12 +74,14 @@
         "ncbi_datasets_genome records in the installed source index",
         "ncbi_biosamples maps bounded NCBI BioSample records for Aedes aegypti into queryable sample metadata atoms with accession, strain or isolate, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when exposed by NCBI.",
         "vectorbase_aedes_genomics maps official VectorBase/VEuPathDB AaegyptiLVP_AGWG GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut downloads into queryable genes, transcripts, proteins, CDS sequence summaries, transcript sequence summaries, GO annotation, codon usage, ID history, and genome cross-reference records with raw-file provenance.",
+        "aedes_expression_omics maps bounded NCBI GEO/SRA expression, RNA-seq, and transcriptome metadata into GEO dataset records and SRA run records with raw ESummary provenance.",
+        "aedes_uniprot_proteins maps bounded UniProtKB protein and UniProt proteome metadata into protein records with accession, function comments, gene names, GO and VectorBase cross-references, reviewed status, proteome IDs, and raw JSON provenance.",
         "config/source-map.yaml"
       ],
       "required_next_sources": [
         "NCBI variation links and a larger or complete BioSample mirror beyond the bounded live ingest",
-        "additional Aedes aegypti reference, strain, variation, and expression packages",
-        "orthology, variant, and expression resources not exposed as stable current-release VectorBase auxiliary downloads"
+        "computed expression matrices, differential-expression outputs, and raw-read reanalysis receipts for priority GEO/SRA studies",
+        "orthology and variant resources not exposed as stable current-release VectorBase auxiliary downloads"
       ],
       "completion_evidence": [
         "Ask Insects can answer gene, protein, variant, strain, barcode, and orthology questions with provenance"
@@ -369,6 +373,7 @@
         "aedes_literature_facets",
         "aedes_extracted_facts",
         "aedes_public_health_guidance",
+        "aedes_wolbachia_interventions",
         "aedes_paho_dengue_surveillance"
       ],
       "current_gates": {
@@ -382,6 +387,7 @@
         "aedes_literature_facets creates public_health records from source-grade Aedes literature metadata and legal full-text units.",
         "Installed local and hosted artifacts contain 8,261 public_health records from aedes_literature_facets.",
         "aedes_public_health_guidance maps official WHO, PAHO, CDC, and ECDC guidance pages into public_health records with raw HTML receipts and source URLs.",
+        "aedes_wolbachia_interventions maps World Mosquito Program Wolbachia method, deployment progress, and Yogyakarta trial evidence pages into public_health records with source-mentioned metrics and raw HTML provenance.",
         "aedes_paho_dengue_surveillance parses official PAHO dengue situation report HTML into regional week, year-to-date, subregion, serotype, figure/table, dashboard page, and iframe locator public_health records with raw HTML receipts and PAHO media locators.",
         "aedes_paho_dengue_surveillance parses PAHO/EIH Core Indicators ZIP/CSV rows where indicator_name is Dengue cases into annual country/territory public_health records with raw ZIP, CSV member, and row-number provenance.",
         "PAHO/EIH Core Indicators annual country/territory dengue rows are proven machine-readable via ZIP/CSV, but underlying PAHO/PLISA country-week Tableau/PHIP rows remain a structured source gap until a stable weekly machine-readable CSV, JSON, or API endpoint is available or authorized access is obtained.",

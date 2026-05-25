@@ -328,6 +328,67 @@ class ServerTests(unittest.TestCase):
             self.assertTrue(response.payload["ok"])
             self.assertEqual(response.payload["rows"][0]["lane"], "literature_fulltext")
 
+    def test_ingest_expression_omics_route_passes_limits(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_expression_omics.ingest_expression_omics") as ingest:
+                ingest.return_value = {"ok": True, "source": "aedes_expression_omics", "record_count": 3}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/expression-omics",
+                    {"geo_limit": 7, "sra_limit": 9},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(artifact_dir=artifact_dir, geo_limit=7, sra_limit=9)
+
+    def test_ingest_uniprot_proteins_route_passes_limits(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_uniprot_proteins.ingest_uniprot_proteins") as ingest:
+                ingest.return_value = {"ok": True, "source": "aedes_uniprot_proteins", "record_count": 3}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/uniprot-proteins",
+                    {"protein_limit": 12, "proteome_limit": 4},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(artifact_dir=artifact_dir, protein_limit=12, proteome_limit=4)
+
+    def test_ingest_wolbachia_interventions_route_passes_source_urls(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            source_urls = ["https://www.worldmosquitoprogram.org/example"]
+            with mock.patch("scripts.ingest_wolbachia_interventions.ingest_wolbachia_interventions") as ingest:
+                ingest.return_value = {"ok": True, "source": "aedes_wolbachia_interventions", "record_count": 1}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/wolbachia-interventions",
+                    {"source_urls": source_urls},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(artifact_dir=artifact_dir, source_urls=source_urls)
+
     def test_ingest_inaturalist_uses_staging_then_activates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

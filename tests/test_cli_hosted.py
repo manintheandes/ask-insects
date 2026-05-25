@@ -245,6 +245,81 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 7200)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_expression_omics_ingest_sends_limits(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 20}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-expression-omics",
+                "--hosted",
+                "--geo-limit",
+                "7",
+                "--sra-limit",
+                "9",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/expression-omics")
+        self.assertEqual(calls[0][2]["geo_limit"], 7)
+        self.assertEqual(calls[0][2]["sra_limit"], 9)
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_uniprot_proteins_ingest_sends_limits(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 250}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-uniprot-proteins",
+                "--hosted",
+                "--protein-limit",
+                "12",
+                "--proteome-limit",
+                "3",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/uniprot-proteins")
+        self.assertEqual(calls[0][2]["protein_limit"], 12)
+        self.assertEqual(calls[0][2]["proteome_limit"], 3)
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_wolbachia_interventions_ingest_sends_source_urls(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 5}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-wolbachia-interventions",
+                "--hosted",
+                "--source-url",
+                "https://www.worldmosquitoprogram.org/example",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/wolbachia-interventions")
+        self.assertEqual(calls[0][2]["source_urls"], ["https://www.worldmosquitoprogram.org/example"])
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_mosquito_alert_ingest_sends_options(self):
         calls = []
 

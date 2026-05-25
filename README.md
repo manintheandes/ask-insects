@@ -134,6 +134,30 @@ python3 -m askinsects ask "show VectorBase CDS sequence for AAEL000016" --json
 
 This writes official GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut downloads under `artifacts/mosquito-v1/raw/vectorbase_genomics/`, normalizes records into `genes`, `transcripts`, `proteins`, and `genome_features`, stores parsed payloads in SQLite, and keeps provenance to the saved file line, FASTA header, or LinkOut entry. FASTA sequence records store sequence metadata and observed lengths, not every nucleotide as answer text.
 
+## Expression Omics Source Lane
+
+`aedes_expression_omics` is the bounded GEO/SRA metadata lane for `Aedes aegypti` expression, RNA-seq, and transcriptome studies:
+
+```bash
+python3 -m askinsects ingest-expression-omics --geo-limit 25 --sra-limit 25
+python3 -m askinsects ask "show GEO RNA-seq expression data for Aedes aegypti midgut" --json
+python3 -m askinsects search expression "Yogyakarta"
+```
+
+This writes NCBI E-utilities GEO and SRA search/summary JSON under `raw/expression_omics/`, indexes GEO series summaries and SRA run atoms into the `expression` lane, stores raw metadata payloads in SQLite, and preserves provenance to the saved ESummary result. It is study/run metadata coverage, not a computed count-matrix or differential-expression reanalysis.
+
+## UniProt Protein Source Lane
+
+`aedes_uniprot_proteins` is the UniProt protein-function and proteome metadata lane for `Aedes aegypti`:
+
+```bash
+python3 -m askinsects ingest-uniprot-proteins --protein-limit 250 --proteome-limit 10
+python3 -m askinsects ask "show UniProt protein function for AAEL012345" --json
+python3 -m askinsects search proteins "UniProt protein"
+```
+
+This writes UniProtKB and UniProt proteome JSON under `raw/uniprot_proteins/`, indexes bounded protein and proteome atoms into the `proteins` lane, and preserves accession, reviewed status, protein name, gene names, function comments, GO and VectorBase cross-references, keywords, proteome IDs, and raw JSON locators.
+
 ## BOLD DNA Barcode Source Lane
 
 BOLD is the public DNA barcode source lane for `Aedes aegypti` specimen and COI-style marker records:
@@ -264,6 +288,18 @@ python3 -m askinsects ask "what vector control guidance exists for Aedes aegypti
 ```
 
 The lane writes raw official guidance HTML under `raw/public_health_guidance/`, normalizes one `public_health` record per guidance page from source `aedes_public_health_guidance`, stores page metadata in SQLite payloads, and preserves provenance to the saved HTML plus the official source URL. The default set includes official dengue, Zika, Aedes life-cycle, vector-control, travel-medicine, Wolbachia, community prevention, and ECDC species-factsheet pages. This is guidance coverage, not yet a full surveillance dashboard or outbreak time-series lane.
+
+## Wolbachia Intervention Source Lane
+
+`aedes_wolbachia_interventions` is the World Mosquito Program intervention-evidence lane for `Aedes aegypti` Wolbachia replacement:
+
+```bash
+python3 -m askinsects ingest-wolbachia-interventions
+python3 -m askinsects ask "show World Mosquito Program Wolbachia intervention evidence from Yogyakarta" --json
+python3 -m askinsects search public_health "Wolbachia 77% Yogyakarta"
+```
+
+This writes WMP public pages and media releases under `raw/wolbachia_interventions/`, indexes one `public_health` evidence record per page, extracts source-mentioned metrics such as percentage reductions, stores page metadata in SQLite payloads, and keeps provenance to the saved HTML and source URL. It complements public-health guidance: guidance explains what to do, while this lane captures intervention evidence and deployment claims at source-page grain.
 
 ## PAHO Dengue Surveillance Source Lane
 
@@ -403,6 +439,9 @@ python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrenc
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-public-health --hosted
+python3 -m askinsects ingest-expression-omics --hosted --geo-limit 25 --sra-limit 25
+python3 -m askinsects ingest-uniprot-proteins --hosted --protein-limit 250 --proteome-limit 10
+python3 -m askinsects ingest-wolbachia-interventions --hosted
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-extracted-facts --hosted

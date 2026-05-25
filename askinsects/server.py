@@ -2220,6 +2220,56 @@ def ingest_image_atoms_staged(
     return response
 
 
+def ingest_expression_omics_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_expression_omics import ingest_expression_omics
+
+    geo_limit = int(payload.get("geo_limit", 25))
+    sra_limit = int(payload.get("sra_limit", 25))
+    response = ingest_expression_omics(artifact_dir=artifact_dir, geo_limit=geo_limit, sra_limit=sra_limit)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_uniprot_proteins_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_uniprot_proteins import ingest_uniprot_proteins
+
+    protein_limit = int(payload.get("protein_limit", 250))
+    proteome_limit = int(payload.get("proteome_limit", 10))
+    response = ingest_uniprot_proteins(artifact_dir=artifact_dir, protein_limit=protein_limit, proteome_limit=proteome_limit)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_wolbachia_interventions_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_wolbachia_interventions import ingest_wolbachia_interventions
+
+    source_urls = payload.get("source_urls")
+    if source_urls is None:
+        source_urls_list: list[str] | None = None
+    elif isinstance(source_urls, list) and all(isinstance(item, str) for item in source_urls):
+        source_urls_list = source_urls
+    else:
+        raise ValueError("source_urls must be a list of strings")
+    response = ingest_wolbachia_interventions(artifact_dir=artifact_dir, source_urls=source_urls_list)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -2317,6 +2367,18 @@ def dispatch_request(
                 artifact_dir=artifact_dir,
                 fetch_vectorbase_genomics_records_fn=fetch_vectorbase_genomics_records_fn,
             )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/expression-omics":
+            result = ingest_expression_omics_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/uniprot-proteins":
+            result = ingest_uniprot_proteins_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/wolbachia-interventions":
+            result = ingest_wolbachia_interventions_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectornet-surveillance":

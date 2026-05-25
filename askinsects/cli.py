@@ -171,6 +171,20 @@ def main(argv: list[str] | None = None) -> int:
     ingest_vectorbase_genomics.add_argument("--id-events-url")
     ingest_vectorbase_genomics.add_argument("--ncbi-linkout-url")
 
+    ingest_expression_omics = sub.add_parser("ingest-expression-omics")
+    ingest_expression_omics.add_argument("--hosted", action="store_true")
+    ingest_expression_omics.add_argument("--geo-limit", type=int, default=25)
+    ingest_expression_omics.add_argument("--sra-limit", type=int, default=25)
+
+    ingest_uniprot_proteins = sub.add_parser("ingest-uniprot-proteins")
+    ingest_uniprot_proteins.add_argument("--hosted", action="store_true")
+    ingest_uniprot_proteins.add_argument("--protein-limit", type=int, default=250)
+    ingest_uniprot_proteins.add_argument("--proteome-limit", type=int, default=10)
+
+    ingest_wolbachia_interventions = sub.add_parser("ingest-wolbachia-interventions")
+    ingest_wolbachia_interventions.add_argument("--hosted", action="store_true")
+    ingest_wolbachia_interventions.add_argument("--source-url", action="append", default=[])
+
     ingest_mosquito_alert = sub.add_parser("ingest-mosquito-alert")
     ingest_mosquito_alert.add_argument("--hosted", action="store_true")
     ingest_mosquito_alert.add_argument("--occurrence-limit", type=int, default=1000)
@@ -471,6 +485,59 @@ def main(argv: list[str] | None = None) -> int:
             "/ingest/vectorbase-genomics",
             {"file_urls": file_urls},
             timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-expression-omics":
+        if not args.hosted:
+            from scripts.ingest_expression_omics import ingest_expression_omics
+
+            payload = ingest_expression_omics(
+                artifact_dir=artifact_dir,
+                geo_limit=args.geo_limit,
+                sra_limit=args.sra_limit,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/expression-omics",
+            {"geo_limit": args.geo_limit, "sra_limit": args.sra_limit},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-uniprot-proteins":
+        if not args.hosted:
+            from scripts.ingest_uniprot_proteins import ingest_uniprot_proteins
+
+            payload = ingest_uniprot_proteins(
+                artifact_dir=artifact_dir,
+                protein_limit=args.protein_limit,
+                proteome_limit=args.proteome_limit,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/uniprot-proteins",
+            {"protein_limit": args.protein_limit, "proteome_limit": args.proteome_limit},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-wolbachia-interventions":
+        if not args.hosted:
+            from scripts.ingest_wolbachia_interventions import ingest_wolbachia_interventions
+
+            payload = ingest_wolbachia_interventions(
+                artifact_dir=artifact_dir,
+                source_urls=args.source_url,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/wolbachia-interventions",
+            {"source_urls": args.source_url},
+            timeout=3600,
         )
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-mosquito-alert":

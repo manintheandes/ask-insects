@@ -50,6 +50,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-mendeley-behavior-table-deep-parse-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-osf-flighttrackai-video-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-extracted-facts-design.md",
+    "docs/superpowers/specs/2026-05-25-aedes-wave1-expression-uniprot-wolbachia-design.md",
     "docs/superpowers/specs/2026-05-24-open-insects-public-identity-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
@@ -72,6 +73,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-extracted-facts.md",
     "docs/superpowers/plans/2026-05-24-aedes-video-atoms.md",
     "docs/superpowers/plans/2026-05-25-aedes-image-atoms.md",
+    "docs/superpowers/plans/2026-05-25-aedes-wave1-expression-uniprot-wolbachia.md",
     "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -108,6 +110,9 @@ REQUIRED_FILES = (
     "askinsects/sources/resistance_markers.py",
     "askinsects/sources/occurrence_ecology.py",
     "askinsects/sources/extracted_facts.py",
+    "askinsects/sources/expression_omics.py",
+    "askinsects/sources/uniprot_proteins.py",
+    "askinsects/sources/wolbachia_interventions.py",
     "askinsects/sources/video_atoms.py",
     "askinsects/sources/image_atoms.py",
     "scripts/build_source_index.py",
@@ -136,6 +141,9 @@ REQUIRED_FILES = (
     "scripts/ingest_resistance_markers.py",
     "scripts/ingest_occurrence_ecology.py",
     "scripts/ingest_extracted_facts.py",
+    "scripts/ingest_expression_omics.py",
+    "scripts/ingest_uniprot_proteins.py",
+    "scripts/ingest_wolbachia_interventions.py",
     "scripts/ingest_video_atoms.py",
     "scripts/ingest_image_atoms.py",
     "scripts/refresh_artifact_receipts.py",
@@ -194,6 +202,10 @@ REQUIRED_FILES = (
     "tests/test_ingest_occurrence_ecology.py",
     "tests/test_extracted_facts_source.py",
     "tests/test_ingest_extracted_facts.py",
+    "tests/test_expression_omics_source.py",
+    "tests/test_uniprot_proteins_source.py",
+    "tests/test_wolbachia_interventions_source.py",
+    "tests/test_ingest_wave1_sources.py",
     "tests/test_video_atoms_source.py",
     "tests/test_ingest_video_atoms.py",
     "tests/test_image_atoms_source.py",
@@ -255,6 +267,10 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_occurrence_ecology",
     "tests.test_extracted_facts_source",
     "tests.test_ingest_extracted_facts",
+    "tests.test_expression_omics_source",
+    "tests.test_uniprot_proteins_source",
+    "tests.test_wolbachia_interventions_source",
+    "tests.test_ingest_wave1_sources",
     "tests.test_video_atoms_source",
     "tests.test_ingest_video_atoms",
     "tests.test_image_atoms_source",
@@ -484,6 +500,9 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_vector_competence_assays",
         "aedes_occurrence_ecology",
         "vectorbase_aedes_genomics",
+        "aedes_expression_omics",
+        "aedes_uniprot_proteins",
+        "aedes_wolbachia_interventions",
         "osf_flighttrackai_aedes_videos",
         "aedes_video_atoms",
         "aedes_image_atoms",
@@ -569,6 +588,22 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("vectorbase_aedes_genomics", "scripts/ingest_vectorbase_genomics.py", "vectorbase_current_release_downloads_to_sqlite", "VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing VectorBase genomics term: {term}")
+    for term in (
+        "aedes_expression_omics",
+        "scripts/ingest_expression_omics.py",
+        "ncbi_eutils_geo_sra_to_sqlite_expression_records",
+        "raw_esummary_locator",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing expression omics term: {term}")
+    for term in (
+        "aedes_uniprot_proteins",
+        "scripts/ingest_uniprot_proteins.py",
+        "uniprot_rest_to_sqlite_protein_records",
+        "go_and_vectorbase_cross_references",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing UniProt proteins term: {term}")
     for term in ("aedes_vector_competence_assays", "scripts/ingest_vector_competence_assays.py", "literature_fulltext_units", "legal_fulltext_only"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing vector competence assay term: {term}")
@@ -602,6 +637,14 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing extracted facts term: {term}")
+    for term in (
+        "aedes_wolbachia_interventions",
+        "scripts/ingest_wolbachia_interventions.py",
+        "world_mosquito_program_html_to_sqlite_public_health_records",
+        "metrics_mentioned",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Wolbachia intervention term: {term}")
 
 
 def check_cli() -> None:

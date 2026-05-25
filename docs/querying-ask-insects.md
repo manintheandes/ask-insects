@@ -78,6 +78,22 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show VectorBase 
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show VectorBase CDS sequence for AAEL000016" --json
 ```
 
+To add bounded GEO/SRA `Aedes aegypti` expression, RNA-seq, and transcriptome metadata:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-expression-omics --geo-limit 25 --sra-limit 25
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show GEO RNA-seq expression data for Aedes aegypti midgut" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search expression "RNA-seq transcriptome"
+```
+
+To add bounded UniProt protein-function and proteome metadata:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-uniprot-proteins --protein-limit 250 --proteome-limit 10
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show UniProt protein function for AAEL012345" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search proteins "UniProt protein"
+```
+
 To add `Aedes aegypti` brain and neuron source metadata:
 
 ```bash
@@ -208,6 +224,8 @@ Resistance-marker records use source id `aedes_resistance_markers`. They are der
 Occurrence ecology records use source id `aedes_occurrence_ecology`. They are derived from indexed GBIF, iNaturalist, and Mosquito Alert observation payloads already in SQLite. Each `ecology` record stores an aggregation type such as country summary, country-month summary, or public habitat summary; source counts; observation counts; sample input record IDs; sample URLs; coordinate count; bounding box when coordinates exist; and first and last observed dates. Provenance points back to the SQLite observation join. The May 24, 2026 hosted ingest installed 1,985 occurrence ecology records from 88,065 Aedes observation inputs. Refresh it with `python3 -m askinsects ingest-occurrence-ecology`, then ask range and seasonality questions such as `what seasonality evidence exists for Aedes aegypti in Brazil by month?`.
 
 PAHO dengue surveillance records use source id `aedes_paho_dengue_surveillance`. They parse official PAHO dengue situation report HTML into `public_health` records for regional week summaries, year-to-date indicators, subregional case-change notes, serotype circulation notes, figure/table media locators, and dashboard page or iframe locator records. They also parse PAHO/EIH Core Indicators ZIP/CSV rows where `indicator_name` is `Dengue cases`, making annual country/territory dengue cases machine-readable and provenance-backed. Refresh it with `python3 -m askinsects ingest-paho-dengue-surveillance`, then ask public-health questions such as `show PAHO dengue surveillance evidence for Aedes aegypti`, `show PAHO Open Data annual dengue cases for Brazil`, or `show PAHO PLISA dashboard locator evidence for Aedes aegypti`. PAHO/PLISA country-week dashboard rows remain a source gap until there is stable weekly machine-readable CSV, JSON, or API access.
+
+World Mosquito Program Wolbachia intervention records use source id `aedes_wolbachia_interventions`. Raw WMP HTML is saved under `artifacts/mosquito-v1/raw/wolbachia_interventions/`. Each `public_health` record stores organization, topic, intervention type, source-mentioned metrics, source URL, and a provenance locator into the saved HTML. Refresh it with `python3 -m askinsects ingest-wolbachia-interventions`, then ask questions such as `show World Mosquito Program Wolbachia intervention evidence from Yogyakarta`.
 
 Pathogen taxonomy records use source id `aedes_pathogen_taxonomy`. Raw NCBI E-utilities taxonomy summary JSON is saved under `artifacts/mosquito-v1/raw/pathogen_taxonomy/`. Each `vector_competence` record stores a configured pathogen label, taxid, pathogen group, Aedes relevance note, raw taxonomy summary, and provenance locator into the saved NCBI summary JSON. This lane gives pathogen-specific questions stable identifiers while assay-level table extraction remains a source gap.
 

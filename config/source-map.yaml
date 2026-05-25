@@ -204,6 +204,34 @@ sources:
       - biosamples
     provenance_required: true
     live_fetch: opt_in_bounded
+  - id: aedes_expression_omics
+    name: Aedes aegypti GEO/SRA expression omics metadata
+    source_type: public_api_composite
+    boundary: Bounded NCBI GEO DataSets and SRA metadata for Aedes aegypti expression, RNA-seq, and transcriptome studies, including GEO series summaries and SRA run-level atoms where NCBI exposes run accessions
+    query_plane: ncbi_eutils_geo_sra_to_sqlite_expression_records
+    api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+    artifact_dir: artifacts/mosquito-v1/raw/expression_omics
+    ingest_script: scripts/ingest_expression_omics.py
+    lanes:
+      - expression
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      geo_records:
+        - accession
+        - title
+        - sample_count_when_supplied
+        - platform_when_supplied
+        - summary
+        - raw_esummary_locator
+      sra_run_records:
+        - run_accession
+        - experiment_accession
+        - bioproject_when_supplied
+        - biosample_when_supplied
+        - platform_when_supplied
+        - total_spots_and_bases_when_supplied
+        - raw_esummary_locator
   - id: vectorbase_aedes_genomics
     name: VectorBase/VEuPathDB Aedes aegypti genomics downloads
     source_type: public_bulk_download
@@ -228,6 +256,33 @@ sources:
       - genome_features
     provenance_required: true
     live_fetch: opt_in
+  - id: aedes_uniprot_proteins
+    name: UniProt Aedes aegypti protein and proteome metadata
+    source_type: public_api
+    boundary: Bounded UniProtKB protein records and UniProt proteome records for NCBI taxonomy 7159, preserving accession, protein name, gene names, function comments, GO and VectorBase cross-references, keywords, reviewed status, and proteome metadata when exposed by UniProt
+    query_plane: uniprot_rest_to_sqlite_protein_records
+    api_base: https://rest.uniprot.org
+    artifact_dir: artifacts/mosquito-v1/raw/uniprot_proteins
+    ingest_script: scripts/ingest_uniprot_proteins.py
+    lanes:
+      - proteins
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      protein_records:
+        - accession
+        - uniprot_id
+        - reviewed_status
+        - protein_name
+        - gene_names
+        - function_comment_when_supplied
+        - go_and_vectorbase_cross_references
+        - raw_uniprot_json_locator
+      proteome_records:
+        - proteome_id
+        - description
+        - protein_count_when_supplied
+        - raw_proteome_json_locator
   - id: bold_api
     name: BOLD public Aedes aegypti DNA barcode records
     source_type: public_api
@@ -515,6 +570,27 @@ sources:
       - public_health
     provenance_required: true
     live_fetch: opt_in
+  - id: aedes_wolbachia_interventions
+    name: World Mosquito Program Wolbachia intervention evidence
+    source_type: public_web_intervention_evidence
+    boundary: World Mosquito Program public pages and releases for Aedes aegypti Wolbachia method, deployment progress, and Yogyakarta randomized controlled trial evidence, indexed at page-grain with metrics mentioned in source text
+    query_plane: world_mosquito_program_html_to_sqlite_public_health_records
+    artifact_dir: artifacts/mosquito-v1/raw/wolbachia_interventions
+    ingest_script: scripts/ingest_wolbachia_interventions.py
+    default_organizations:
+      - World Mosquito Program
+    lanes:
+      - public_health
+    provenance_required: true
+    live_fetch: opt_in
+    source_contract:
+      intervention_page_records:
+        - organization
+        - topic
+        - intervention_type
+        - metrics_mentioned
+        - source_url
+        - raw_html_locator
   - id: aedes_paho_dengue_surveillance
     name: PAHO dengue surveillance for Aedes aegypti public-health intelligence
     source_type: public_health_surveillance_report
