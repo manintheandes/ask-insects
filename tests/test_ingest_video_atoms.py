@@ -7,6 +7,7 @@ import unittest
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
+from askinsects.sources import video_atoms
 from scripts.ingest_video_atoms import ingest_video_atoms
 from tests.test_mendeley_behavior_media_source import tiny_xlsx
 from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
@@ -130,6 +131,61 @@ class IngestVideoAtomsTests(unittest.TestCase):
             self.assertEqual(payload["behavior_type"], "Walking")
             self.assertEqual(payload["velocity_mean_cm_s"], 3.25)
             self.assertIn("raw/mendeley_behavior_media/table_files/movement.xlsx#sheet/1/row/2", rows[0]["provenance_json"])
+
+    def test_ingest_preserves_existing_mirror_and_artifact_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            safe_id = video_atoms._safe_id("pmc:video:PMC123:video1.mp4")
+            asset_path = artifact_dir / "raw" / "video_atoms" / "assets" / f"{safe_id}_existing.mp4"
+            asset_path.parent.mkdir(parents=True, exist_ok=True)
+            asset_path.write_bytes(b"existing-video-bytes")
+            probe = {
+                "duration_seconds": 4.0,
+                "fps": 24.0,
+                "width": 640,
+                "height": 480,
+                "codec": "h264",
+            }
+            first = video_atoms.build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                probe_video_file_fn=lambda path: probe,
+            )
+            asset = next(record for record in first.records if record.payload["source_video_record_id"] == "pmc:video:PMC123:video1.mp4")
+            output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / video_atoms._safe_id(asset.record_id)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "thumbnail.jpg").write_bytes(b"jpg")
+            (output_dir / "preview.mp4").write_bytes(b"mp4")
+            (output_dir / "frames.json").write_text(json.dumps({"probe": probe}), encoding="utf-8")
+
+            result = ingest_video_atoms(
+                artifact_dir=artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                probe_video_file_fn=lambda path: probe,
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["mirrored_video_count"], 1)
+            self.assertEqual(result["verified_video_count"], 1)
+            self.assertEqual(result["artifact_count"], 4)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                """
+                select json_extract(payload_json, '$.atom_type') as atom_type,
+                       json_extract(payload_json, '$.verification_status') as status,
+                       count(*) as n
+                from record_payloads
+                where source='aedes_video_atoms'
+                group by atom_type, status
+                """,
+                limit=20,
+            )
+            counts = {(row["atom_type"], row["status"]): int(row["n"]) for row in rows}
+            self.assertEqual(counts[("video_asset", "verified")], 1)
+            self.assertEqual(counts[("video_thumbnail", None)], 1)
+            self.assertEqual(counts[("video_keyframe", None)], 1)
+            self.assertEqual(counts[("video_preview_clip", None)], 1)
+            self.assertEqual(counts[("video_frame_manifest", None)], 1)
 
 
 if __name__ == "__main__":

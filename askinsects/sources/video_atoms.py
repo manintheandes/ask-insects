@@ -1014,6 +1014,98 @@ def _asset_extension(candidate: VideoCandidate) -> str:
     return suffix if suffix in VIDEO_EXTENSIONS else ".mp4"
 
 
+def _existing_mirror_path(candidate: VideoCandidate, artifact_dir: Path) -> Path | None:
+    assets_dir = artifact_dir / "raw" / "video_atoms" / "assets"
+    if not assets_dir.exists():
+        return None
+    prefix = _safe_id(candidate.source_record_id)
+    paths = [
+        path
+        for path in assets_dir.glob(f"{prefix}_*")
+        if path.is_file() and path.suffix.lower() in VIDEO_EXTENSIONS
+    ]
+    if not paths:
+        return None
+    return max(paths, key=lambda path: path.stat().st_mtime)
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _asset_probe_payload(
+    path: Path,
+    candidate: VideoCandidate,
+    *,
+    probe_video_file_fn: Callable[[Path], dict[str, object]],
+    gaps: list[dict[str, object]],
+    gap_reason_prefix: str,
+) -> tuple[dict[str, object], str]:
+    probe_payload: dict[str, object] = {}
+    try:
+        probe_payload = probe_video_file_fn(path)
+    except FileNotFoundError as exc:
+        gaps.append(
+            {
+                "source": VIDEO_ATOMS_SOURCE_ID,
+                "reason": f"{gap_reason_prefix}_tool_missing",
+                "record_id": candidate.source_record_id,
+                "path": path.as_posix(),
+                "error": str(exc),
+            }
+        )
+    except Exception as exc:
+        gaps.append(
+            {
+                "source": VIDEO_ATOMS_SOURCE_ID,
+                "reason": f"{gap_reason_prefix}_failed",
+                "record_id": candidate.source_record_id,
+                "path": path.as_posix(),
+                "error": str(exc),
+            }
+        )
+    probe_verified = any(probe_payload.get(key) is not None for key in ("duration_seconds", "fps", "width", "height", "codec"))
+    return probe_payload, "verified" if probe_verified else "mirrored_unverified"
+
+
+def _record_for_existing_mirror(
+    candidate: VideoCandidate,
+    path: Path,
+    *,
+    artifact_dir: Path,
+    retrieved_at: str,
+    probe_video_file_fn: Callable[[Path], dict[str, object]],
+    gaps: list[dict[str, object]],
+) -> tuple[EvidenceRecord, Path]:
+    digest = _sha256_file(path)
+    probe_payload, verification_status = _asset_probe_payload(
+        path,
+        candidate,
+        probe_video_file_fn=probe_video_file_fn,
+        gaps=gaps,
+        gap_reason_prefix="video_existing_probe",
+    )
+    extra_payload = {
+        "sha256": digest,
+        "byte_size": path.stat().st_size,
+        "raw_asset_path": path.relative_to(artifact_dir).as_posix(),
+        **{key: value for key, value in probe_payload.items() if value is not None},
+    }
+    return (
+        _record_for_asset(
+            candidate,
+            retrieved_at=retrieved_at,
+            verification_status=verification_status,
+            extra_payload=extra_payload,
+        ),
+        path,
+    )
+
+
 def _mirror_candidate(
     candidate: VideoCandidate,
     *,
@@ -1061,21 +1153,19 @@ def _mirror_candidate(
     raw_dir.mkdir(parents=True, exist_ok=True)
     raw_path = raw_dir / f"{_safe_id(candidate.source_record_id)}_{digest[:12]}{_asset_extension(candidate)}"
     raw_path.write_bytes(data)
-    probe_payload: dict[str, object] = {}
-    try:
-        probe_payload = probe_video_file_fn(raw_path)
-    except FileNotFoundError as exc:
-        gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_probe_tool_missing", "record_id": candidate.source_record_id, "error": str(exc)})
-    except Exception as exc:
-        gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_probe_failed", "record_id": candidate.source_record_id, "error": str(exc)})
-    probe_verified = any(probe_payload.get(key) is not None for key in ("duration_seconds", "fps", "width", "height", "codec"))
+    probe_payload, verification_status = _asset_probe_payload(
+        raw_path,
+        candidate,
+        probe_video_file_fn=probe_video_file_fn,
+        gaps=gaps,
+        gap_reason_prefix="video_probe",
+    )
     extra_payload = {
         "sha256": digest,
         "byte_size": len(data),
         "raw_asset_path": raw_path.relative_to(artifact_dir).as_posix(),
         **{key: value for key, value in probe_payload.items() if value is not None},
     }
-    verification_status = "verified" if probe_verified else "mirrored_unverified"
     return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status=verification_status, extra_payload=extra_payload), raw_path
 
 
@@ -1130,6 +1220,28 @@ def _artifact_records(
     if isinstance(frame_manifest, str):
         add_record("video_frame_manifest", frame_manifest)
     return records
+
+
+def _existing_artifact_payload(source_asset: EvidenceRecord, artifact_dir: Path) -> dict[str, object] | None:
+    output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / _safe_id(source_asset.record_id)
+    if not output_dir.exists():
+        return None
+    thumbnail = output_dir / "thumbnail.jpg"
+    preview = output_dir / "preview.mp4"
+    frames = output_dir / "frames.json"
+    keyframes = sorted(output_dir.glob("keyframe*.jpg"))
+    if not keyframes and thumbnail.exists():
+        keyframes = [thumbnail]
+    payload: dict[str, object] = {}
+    if thumbnail.exists():
+        payload["thumbnail_path"] = thumbnail.relative_to(artifact_dir).as_posix()
+    if keyframes:
+        payload["keyframe_paths"] = [path.relative_to(artifact_dir).as_posix() for path in keyframes]
+    if preview.exists():
+        payload["preview_clip_path"] = preview.relative_to(artifact_dir).as_posix()
+    if frames.exists():
+        payload["frame_manifest_path"] = frames.relative_to(artifact_dir).as_posix()
+    return payload or None
 
 
 def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> EvidenceRecord:
@@ -1510,7 +1622,20 @@ def build_video_atom_records(
     artifact_fn = artifact_generator_fn or generate_video_artifacts
     for candidate in candidates:
         asset_path: Path | None = None
-        if mirror_videos:
+        existing_asset_path = _existing_mirror_path(candidate, artifact_dir)
+        if existing_asset_path is not None:
+            asset, asset_path = _record_for_existing_mirror(
+                candidate,
+                existing_asset_path,
+                artifact_dir=artifact_dir,
+                retrieved_at=retrieved_at,
+                probe_video_file_fn=probe_fn,
+                gaps=gaps,
+            )
+            mirrored_video_count += 1
+            if asset.payload.get("verification_status") == "verified":
+                verified_video_count += 1
+        elif mirror_videos:
             asset, asset_path = _mirror_candidate(
                 candidate,
                 artifact_dir=artifact_dir,
@@ -1529,7 +1654,12 @@ def build_video_atom_records(
         else:
             asset = _record_for_asset(candidate, retrieved_at=retrieved_at)
         records.append(asset)
-        if generate_artifacts and asset_path is not None and asset.payload.get("verification_status") == "verified":
+        existing_artifacts = _existing_artifact_payload(asset, artifact_dir)
+        if existing_artifacts:
+            artifact_records = _artifact_records(asset, existing_artifacts, retrieved_at=retrieved_at)
+            artifact_count += len(artifact_records)
+            records.extend(artifact_records)
+        elif generate_artifacts and asset_path is not None and asset.payload.get("verification_status") == "verified":
             try:
                 output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / _safe_id(asset.record_id)
                 artifact_payload = artifact_fn(asset_path, output_dir, asset.payload)

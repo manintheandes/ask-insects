@@ -205,6 +205,42 @@ class VideoAtomsSourceTests(unittest.TestCase):
             self.assertEqual(result.mirrored_video_count, 1)
             self.assertEqual(result.verified_video_count, 1)
 
+    def test_uses_existing_mirrored_asset_when_present(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            video_bytes = b"existing-video-bytes"
+            safe_id = video_atoms._safe_id("pmc:video:PMC123:video1.mp4")
+            asset_path = artifact_dir / "raw" / "video_atoms" / "assets" / f"{safe_id}_existing.mp4"
+            asset_path.parent.mkdir(parents=True, exist_ok=True)
+            asset_path.write_bytes(video_bytes)
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=False,
+                probe_video_file_fn=lambda path: {
+                    "duration_seconds": 8.5,
+                    "fps": 60.0,
+                    "width": 1280,
+                    "height": 720,
+                    "codec": "h264",
+                },
+            )
+
+        asset = next(record for record in result.records if record.payload["source_video_record_id"] == "pmc:video:PMC123:video1.mp4")
+        self.assertEqual(asset.payload["verification_status"], "verified")
+        self.assertEqual(asset.payload["sha256"], hashlib.sha256(video_bytes).hexdigest())
+        self.assertEqual(asset.payload["byte_size"], len(video_bytes))
+        self.assertEqual(asset.payload["duration_seconds"], 8.5)
+        self.assertEqual(asset.payload["fps"], 60.0)
+        self.assertEqual(asset.payload["width"], 1280)
+        self.assertEqual(asset.payload["height"], 720)
+        self.assertEqual(asset.payload["codec"], "h264")
+        self.assertTrue(asset.payload["raw_asset_path"].endswith("_existing.mp4"))
+        self.assertEqual(result.mirrored_video_count, 1)
+        self.assertEqual(result.verified_video_count, 1)
+
     def test_mirrored_video_with_failed_probe_is_not_counted_as_verified(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -517,6 +553,54 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertIn("video_frame_manifest", atom_types)
         self.assertEqual(result.artifact_count, 5)
         self.assertTrue(all(record.payload["source_video_record_id"] == "pmc:video:PMC123:video1.mp4" for record in artifact_records))
+
+    def test_rehydrates_existing_inspectable_video_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            safe_id = video_atoms._safe_id("pmc:video:PMC123:video1.mp4")
+            asset_path = artifact_dir / "raw" / "video_atoms" / "assets" / f"{safe_id}_existing.mp4"
+            asset_path.parent.mkdir(parents=True, exist_ok=True)
+            asset_path.write_bytes(b"existing-video-bytes")
+            probe = {
+                "duration_seconds": 4.0,
+                "fps": 24.0,
+                "width": 640,
+                "height": 480,
+                "codec": "h264",
+            }
+            first = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                probe_video_file_fn=lambda path: probe,
+            )
+            asset = next(record for record in first.records if record.payload["source_video_record_id"] == "pmc:video:PMC123:video1.mp4")
+            output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / video_atoms._safe_id(asset.record_id)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "thumbnail.jpg").write_bytes(b"jpg")
+            (output_dir / "preview.mp4").write_bytes(b"mp4")
+            (output_dir / "frames.json").write_text(json.dumps({"probe": probe}), encoding="utf-8")
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=False,
+                generate_artifacts=False,
+                probe_video_file_fn=lambda path: probe,
+            )
+
+        artifact_records = [
+            record
+            for record in result.records
+            if str(record.payload.get("atom_type", "")).startswith("video_")
+            and record.payload["atom_type"] not in {"video_asset", "video_gap"}
+        ]
+        self.assertEqual(
+            {record.payload["atom_type"] for record in artifact_records},
+            {"video_thumbnail", "video_keyframe", "video_preview_clip", "video_frame_manifest"},
+        )
+        self.assertEqual(result.artifact_count, 4)
+        self.assertTrue(all(record.media_url and record.media_url.startswith("raw/video_atoms/artifacts/") for record in artifact_records))
 
     def test_parses_motion_rows_from_existing_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
