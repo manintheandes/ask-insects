@@ -43,6 +43,7 @@ from .sources.ncbi_biosample import DEFAULT_BIOSAMPLE_SPECIES, fetch_ncbi_biosam
 from .sources.osf_flighttrackai_videos import OSF_FLIGHTTRACKAI_SOURCE_ID, fetch_osf_flighttrackai_video_records
 from .sources.pathogen_taxonomy import PATHOGEN_TAXONOMY_SOURCE_ID, fetch_pathogen_taxonomy_records
 from .sources.paho_surveillance import (
+    DEFAULT_PAHO_CORE_INDICATOR_PAGES,
     DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES,
     DEFAULT_PAHO_DENGUE_REPORTS,
     PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
@@ -1049,7 +1050,7 @@ def write_paho_dengue_surveillance_metadata(staging: Path, source_payload: dict[
             "boundary": "Aedes aegypti first",
             "generated_at": generated_at,
             "fully_parsed": not gaps,
-            "parsed_scope": "PAHO dengue report/page grain; dashboard row-level data is complete only when no source gaps are present",
+            "parsed_scope": "PAHO dengue report/page grain plus annual Core Indicators ZIP/CSV rows; weekly dashboard row-level data is complete only when no source gaps are present",
             "record_count": summary["record_count"],
             "species_count": summary["species_count"],
             "lanes": summary["lanes"],
@@ -1185,6 +1186,14 @@ def ingest_paho_dengue_surveillance(
     else:
         raise ValueError("dashboard_pages must be a list of strings")
 
+    core_indicator_pages = payload.get("core_indicator_pages")
+    if core_indicator_pages is None or core_indicator_pages == []:
+        core_pages = list(DEFAULT_PAHO_CORE_INDICATOR_PAGES)
+    elif isinstance(core_indicator_pages, list) and all(isinstance(item, str) for item in core_indicator_pages):
+        core_pages = core_indicator_pages
+    else:
+        raise ValueError("core_indicator_pages must be a list of strings")
+
     staging = artifact_dir.parent / f".{artifact_dir.name}.paho-dengue-surveillance-staging"
     if staging.exists():
         shutil.rmtree(staging)
@@ -1202,6 +1211,7 @@ def ingest_paho_dengue_surveillance(
             raw_dir=staging / "raw" / "paho_dengue_surveillance",
             retrieved_at=retrieved_at,
             dashboard_pages=dashboard_urls,
+            core_indicator_pages=core_pages,
         )
         index.upsert_records(result.records)
         old_gaps = read_json(staging / "gaps.json", [])
@@ -1216,7 +1226,11 @@ def ingest_paho_dengue_surveillance(
             "gap_count": len(result.gaps),
             "report_count": result.report_count,
             "dashboard_page_count": result.dashboard_page_count,
+            "core_indicator_page_count": result.core_indicator_page_count,
+            "core_indicator_download_count": result.core_indicator_download_count,
+            "core_indicator_row_count": result.core_indicator_row_count,
             "retrieved_at": retrieved_at,
+            "method": "official PAHO dengue situation report HTML plus PAHO/EIH Open Data Core Indicators ZIP/CSV dengue rows parsed into Aedes aegypti-relevant public-health surveillance records; weekly dashboard cells remain a source gap until stable weekly CSV or JSON access is proven",
         }
         response = write_paho_dengue_surveillance_metadata(staging, source_payload, gaps)
         response = rewrite_artifact_references(staging, artifact_dir, response)

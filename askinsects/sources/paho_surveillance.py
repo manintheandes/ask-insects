@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
 from html import unescape
+from io import BytesIO, TextIOWrapper
 from pathlib import Path
 import hashlib
 import re
 from urllib.parse import urljoin
 from urllib.request import Request, urlopen
+from zipfile import BadZipFile, ZipFile
 
 from ..records import EvidenceRecord, Provenance
 
@@ -29,6 +32,10 @@ DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES: tuple[str, ...] = (
     "https://www.paho.org/en/arbo-portal/dengue-data-and-analysis/dengue-analysis-country",
 )
 
+DEFAULT_PAHO_CORE_INDICATOR_PAGES: tuple[str, ...] = (
+    "https://opendata.paho.org/en/core-indicators/download-dataset",
+)
+
 
 @dataclass(frozen=True)
 class PahoDengueSurveillanceResult:
@@ -39,12 +46,21 @@ class PahoDengueSurveillanceResult:
     requested_urls: list[str]
     report_count: int
     dashboard_page_count: int
+    core_indicator_page_count: int
+    core_indicator_download_count: int
+    core_indicator_row_count: int
 
 
 def _default_fetch_text(url: str) -> str:
     request = Request(url, headers={"User-Agent": USER_AGENT})
     with urlopen(request, timeout=90) as response:
         return response.read().decode("utf-8", "replace")
+
+
+def _default_fetch_bytes(url: str) -> bytes:
+    request = Request(url, headers={"User-Agent": USER_AGENT})
+    with urlopen(request, timeout=180) as response:
+        return response.read()
 
 
 def _clean_text(value: str) -> str:
@@ -79,6 +95,18 @@ def _float_value(value: str | None) -> float | None:
         return None
     try:
         return float(value.replace(",", ""))
+    except ValueError:
+        return None
+
+
+def _number_value(value: str | None) -> float | None:
+    if value is None:
+        return None
+    normalized = value.replace(",", "").strip()
+    if not normalized:
+        return None
+    try:
+        return float(normalized)
     except ValueError:
         return None
 
@@ -438,6 +466,120 @@ def _serotype_record(
     )
 
 
+def _core_indicator_zip_urls(page_url: str, html: str) -> list[str]:
+    urls: list[str] = []
+    for href in re.findall(r"href=[\"']([^\"']+\.zip(?:\?[^\"']*)?)[\"']", html, flags=re.IGNORECASE):
+        url = urljoin(page_url, unescape(href))
+        if "paho-core-indicators" in url.lower() and url not in urls:
+            urls.append(url)
+    return urls
+
+
+def _core_indicator_record(
+    *,
+    row: dict[str, str],
+    row_number: int,
+    csv_name: str,
+    raw_zip_path: Path,
+    zip_url: str,
+    download_page_url: str,
+    retrieved_at: str,
+) -> EvidenceRecord | None:
+    country_code = (row.get("spatial_dim") or "").strip()
+    country_name = (row.get("spatial_dim_en") or row.get("spatial_dim_es") or country_code).strip()
+    year = (row.get("time_dim") or "").strip()
+    numeric_value = _number_value(row.get("numeric_value") or row.get("value_as_string"))
+    if not country_code or not year or numeric_value is None:
+        return None
+    display_value = int(numeric_value) if numeric_value.is_integer() else numeric_value
+    source_url = (row.get("source_url") or "").strip() or download_page_url
+    record_id = (
+        "public_health:surveillance:paho_dengue:"
+        f"core_indicator:dengue_cases:{_normalize_id(country_code)}:{_normalize_id(year)}"
+    )
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="public_health",
+        source=PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+        title=f"PAHO Core Indicators dengue cases: {country_name} {year}",
+        text=(
+            f"PAHO/EIH Core Indicators annual dengue cases for {country_name} ({country_code}) in {year}: "
+            f"{display_value} cases. This is a stable machine-readable PAHO Open Data CSV row, not a dashboard screenshot. "
+            "Aedes aegypti relevance: dengue public-health surveillance is indexed as Aedes-relevant vector intelligence."
+        ),
+        species="Aedes aegypti",
+        url=source_url,
+        media_url=zip_url,
+        provenance=Provenance(
+            source_id=PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+            locator=f"{raw_zip_path.as_posix()}#csv/{csv_name}/row/{row_number}",
+            retrieved_at=retrieved_at,
+            license="PAHO/EIH Open Data Core Indicators; source page terms and CC BY-NC 3.0 IGO apply unless otherwise indicated",
+            source_url=zip_url,
+        ),
+        payload={
+            "organization": "PAHO/WHO",
+            "disease": "dengue",
+            "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+            "aggregation_type": "paho_core_indicator_dengue_cases",
+            "feed_status": "machine_readable_csv_proven",
+            "indicator_id": (row.get("paho_indicator_id") or "").strip(),
+            "indicator_name": (row.get("indicator_name") or "").strip(),
+            "country_code": country_code,
+            "country_name": country_name,
+            "country_name_es": (row.get("spatial_dim_es") or "").strip(),
+            "spatial_dim_type": (row.get("spatial_dim_type") or "").strip(),
+            "year": year,
+            "time_dim_type": (row.get("time_dim_type") or "").strip(),
+            "numeric_value": numeric_value,
+            "value_as_string": (row.get("value_as_string") or "").strip(),
+            "source_url": source_url,
+            "published_at": (row.get("published_at") or "").strip(),
+            "accessed_at": (row.get("accessed_at") or "").strip(),
+            "download_page_url": download_page_url,
+            "zip_url": zip_url,
+            "csv_name": csv_name,
+            "csv_row_number": row_number,
+            "raw_zip_path": raw_zip_path.as_posix(),
+        },
+    )
+
+
+def _core_indicator_records_from_zip(
+    *,
+    zip_bytes: bytes,
+    raw_zip_path: Path,
+    zip_url: str,
+    download_page_url: str,
+    retrieved_at: str,
+) -> list[EvidenceRecord]:
+    records: list[EvidenceRecord] = []
+    with ZipFile(BytesIO(zip_bytes)) as archive:
+        for csv_name in archive.namelist():
+            if not csv_name.lower().endswith(".csv"):
+                continue
+            with archive.open(csv_name) as csv_file:
+                text = TextIOWrapper(csv_file, encoding="utf-8-sig", newline="")
+                reader = csv.DictReader(text)
+                for row_number, row in enumerate(reader, start=2):
+                    indicator_name = (row.get("indicator_name") or "").strip().lower()
+                    indicator_name_es = (row.get("nombre_indicador") or "").strip().lower()
+                    if indicator_name != "dengue cases" and indicator_name_es != "casos de dengue":
+                        continue
+                    record = _core_indicator_record(
+                        row=row,
+                        row_number=row_number,
+                        csv_name=csv_name,
+                        raw_zip_path=raw_zip_path,
+                        zip_url=zip_url,
+                        download_page_url=download_page_url,
+                        retrieved_at=retrieved_at,
+                    )
+                    if record is not None:
+                        records.append(record)
+    return records
+
+
 def _dashboard_gap(url: str, html: str, raw_path: Path, retrieved_at: str) -> dict[str, object]:
     iframe_urls = re.findall(r"<iframe[^>]+src=[\"']([^\"']+)[\"']", html, flags=re.IGNORECASE)
     return {
@@ -508,10 +650,13 @@ def fetch_paho_dengue_surveillance_records(
     *,
     raw_dir: Path,
     fetch_text=None,
+    fetch_bytes=None,
     retrieved_at: str,
     dashboard_pages: list[str] | tuple[str, ...] = DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES,
+    core_indicator_pages: list[str] | tuple[str, ...] = DEFAULT_PAHO_CORE_INDICATOR_PAGES,
 ) -> PahoDengueSurveillanceResult:
     fetch = fetch_text or _default_fetch_text
+    fetch_binary = fetch_bytes or _default_fetch_bytes
     raw_dir.mkdir(parents=True, exist_ok=True)
     records: list[EvidenceRecord] = []
     gaps: list[dict[str, object]] = []
@@ -519,6 +664,9 @@ def fetch_paho_dengue_surveillance_records(
     requested_urls: list[str] = []
     report_count = 0
     dashboard_page_count = 0
+    core_indicator_page_count = 0
+    core_indicator_download_count = 0
+    core_indicator_row_count = 0
 
     for report in reports:
         url = str(report.get("url") or "")
@@ -594,6 +742,98 @@ def fetch_paho_dengue_surveillance_records(
         gaps.append(_dashboard_gap(url, html, raw_path, retrieved_at))
         dashboard_page_count += 1
 
+    for page_url in core_indicator_pages:
+        requested_urls.append(page_url)
+        try:
+            html = fetch(page_url)
+        except Exception as exc:
+            gaps.append(
+                {
+                    "source": PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+                    "lane": "public_health",
+                    "reason": "paho_core_indicators_download_page_fetch_failed",
+                    "url": page_url,
+                    "error": str(exc),
+                    "retrieved_at": retrieved_at,
+                }
+            )
+            continue
+        page_raw_path = raw_dir / f"core_indicators_download_page_{hashlib.sha1(page_url.encode('utf-8')).hexdigest()[:8]}.html"
+        page_raw_path.write_text(html, encoding="utf-8")
+        raw_artifacts.append(page_raw_path.as_posix())
+        core_indicator_page_count += 1
+        zip_urls = _core_indicator_zip_urls(page_url, html)
+        if not zip_urls:
+            gaps.append(
+                {
+                    "source": PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+                    "lane": "public_health",
+                    "reason": "paho_core_indicators_zip_link_missing",
+                    "url": page_url,
+                    "raw_html_path": page_raw_path.as_posix(),
+                    "retrieved_at": retrieved_at,
+                }
+            )
+            continue
+        for zip_url in zip_urls:
+            requested_urls.append(zip_url)
+            try:
+                zip_bytes = fetch_binary(zip_url)
+            except Exception as exc:
+                gaps.append(
+                    {
+                        "source": PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+                        "lane": "public_health",
+                        "reason": "paho_core_indicators_zip_fetch_failed",
+                        "url": zip_url,
+                        "download_page_url": page_url,
+                        "error": str(exc),
+                        "retrieved_at": retrieved_at,
+                    }
+                )
+                continue
+            raw_zip_path = raw_dir / f"core_indicators_{hashlib.sha1(zip_url.encode('utf-8')).hexdigest()[:8]}.zip"
+            raw_zip_path.write_bytes(zip_bytes)
+            raw_artifacts.append(raw_zip_path.as_posix())
+            try:
+                parsed_records = _core_indicator_records_from_zip(
+                    zip_bytes=zip_bytes,
+                    raw_zip_path=raw_zip_path,
+                    zip_url=zip_url,
+                    download_page_url=page_url,
+                    retrieved_at=retrieved_at,
+                )
+            except BadZipFile as exc:
+                gaps.append(
+                    {
+                        "source": PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+                        "lane": "public_health",
+                        "reason": "paho_core_indicators_zip_parse_failed",
+                        "url": zip_url,
+                        "download_page_url": page_url,
+                        "raw_zip_path": raw_zip_path.as_posix(),
+                        "error": str(exc),
+                        "retrieved_at": retrieved_at,
+                    }
+                )
+                continue
+            if not parsed_records:
+                gaps.append(
+                    {
+                        "source": PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
+                        "lane": "public_health",
+                        "reason": "paho_core_indicators_no_dengue_rows",
+                        "url": zip_url,
+                        "download_page_url": page_url,
+                        "raw_zip_path": raw_zip_path.as_posix(),
+                        "retrieved_at": retrieved_at,
+                    }
+                )
+                continue
+            records.extend(parsed_records)
+            core_indicator_download_count += 1
+            core_indicator_row_count += len(parsed_records)
+
     return PahoDengueSurveillanceResult(
         source_id=PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
         records=records,
@@ -602,4 +842,7 @@ def fetch_paho_dengue_surveillance_records(
         requested_urls=requested_urls,
         report_count=report_count,
         dashboard_page_count=dashboard_page_count,
+        core_indicator_page_count=core_indicator_page_count,
+        core_indicator_download_count=core_indicator_download_count,
+        core_indicator_row_count=core_indicator_row_count,
     )

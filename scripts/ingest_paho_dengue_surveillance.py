@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
 from askinsects.sources.paho_surveillance import (
+    DEFAULT_PAHO_CORE_INDICATOR_PAGES,
     DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES,
     DEFAULT_PAHO_DENGUE_REPORTS,
     PAHO_DENGUE_SURVEILLANCE_SOURCE_ID,
@@ -55,8 +56,11 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         "gap_count": len(result.gaps),
         "report_count": result.report_count,
         "dashboard_page_count": result.dashboard_page_count,
+        "core_indicator_page_count": result.core_indicator_page_count,
+        "core_indicator_download_count": result.core_indicator_download_count,
+        "core_indicator_row_count": result.core_indicator_row_count,
         "retrieved_at": retrieved_at,
-        "method": "official PAHO dengue situation report parsed into Aedes aegypti-relevant public-health surveillance records; dashboard pages mapped as source gaps until cell-level CSV or JSON access is proven",
+        "method": "official PAHO dengue situation report HTML plus PAHO/EIH Open Data Core Indicators ZIP/CSV dengue rows parsed into Aedes aegypti-relevant public-health surveillance records; weekly dashboard cells remain a source gap until stable weekly CSV or JSON access is proven",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -79,7 +83,7 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload["lanes"] = summary["lanes"]
         payload["gap_count"] = gap_count
         payload["fully_parsed"] = gap_count == 0
-        payload["parsed_scope"] = "PAHO dengue report/page grain; dashboard row-level data is complete only when no source gaps are present"
+        payload["parsed_scope"] = "PAHO dengue report/page grain plus annual Core Indicators ZIP/CSV rows; weekly dashboard row-level data is complete only when no source gaps are present"
         payload["aedes_paho_dengue_surveillance"] = source_payload
         write_json(path, payload)
     return {
@@ -89,6 +93,9 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         "gap_count": len(result.gaps),
         "report_count": result.report_count,
         "dashboard_page_count": result.dashboard_page_count,
+        "core_indicator_page_count": result.core_indicator_page_count,
+        "core_indicator_download_count": result.core_indicator_download_count,
+        "core_indicator_row_count": result.core_indicator_row_count,
         "source_counts": source_counts,
         "artifact_dir": artifact_dir.as_posix(),
         "lanes": summary["lanes"],
@@ -100,7 +107,9 @@ def ingest_paho_dengue_surveillance(
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     report_urls: list[str] | None = None,
     dashboard_pages: list[str] | None = None,
+    core_indicator_pages: list[str] | None = None,
     fetch_text=None,
+    fetch_bytes=None,
     retrieved_at: str | None = None,
 ) -> dict[str, object]:
     retrieved = retrieved_at or utc_now()
@@ -108,12 +117,15 @@ def ingest_paho_dengue_surveillance(
     if report_urls:
         reports = [{"url": url, "landing_url": url, "organization": "PAHO/WHO", "topic": "custom PAHO dengue surveillance report"} for url in report_urls]
     dashboard_urls = list(DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES) if dashboard_pages is None else dashboard_pages
+    core_pages = list(DEFAULT_PAHO_CORE_INDICATOR_PAGES) if core_indicator_pages is None else core_indicator_pages
     result = fetch_paho_dengue_surveillance_records(
         reports,
         raw_dir=artifact_dir / "raw" / "paho_dengue_surveillance",
         fetch_text=fetch_text,
+        fetch_bytes=fetch_bytes,
         retrieved_at=retrieved,
         dashboard_pages=dashboard_urls,
+        core_indicator_pages=core_pages,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
@@ -126,12 +138,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
     parser.add_argument("--report-url", action="append", help="Override default PAHO dengue situation report URL. Can be passed multiple times.")
     parser.add_argument("--dashboard-page", action="append", help="Override default PAHO dengue dashboard landing page URLs. Can be passed multiple times.")
+    parser.add_argument("--core-indicator-page", action="append", help="Override default PAHO Core Indicators download page URL. Can be passed multiple times.")
     parser.add_argument("--retrieved-at")
     args = parser.parse_args(argv)
     result = ingest_paho_dengue_surveillance(
         artifact_dir=Path(args.artifact_dir),
         report_urls=args.report_url,
         dashboard_pages=args.dashboard_page,
+        core_indicator_pages=args.core_indicator_page,
         retrieved_at=args.retrieved_at,
     )
     print(json.dumps(result, sort_keys=True))

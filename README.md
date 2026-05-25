@@ -263,7 +263,7 @@ python3 -m askinsects ingest-paho-dengue-surveillance
 python3 -m askinsects ask "show PAHO dengue surveillance evidence for Aedes aegypti" --json
 ```
 
-The lane uses source id `aedes_paho_dengue_surveillance`. It writes raw PAHO dengue situation report and dashboard landing HTML under `raw/paho_dengue_surveillance/`, parses regional week, year-to-date, subregion, serotype, figure/table, dashboard page, and iframe locator records into the `public_health` lane, stores metrics and PAHO image or dashboard locators in SQLite payloads, and preserves provenance to the saved HTML plus official PAHO URLs. PAHO/PLISA dashboard pages and iframe URLs are queryable locator records, but country-week Tableau/PHIP rows remain a source gap until there is a stable machine-readable CSV, JSON, or API endpoint or explicit authorized access.
+The lane uses source id `aedes_paho_dengue_surveillance`. It writes raw PAHO dengue situation report HTML, dashboard landing HTML, PAHO/EIH Core Indicators download-page HTML, and the released Core Indicators ZIP under `raw/paho_dengue_surveillance/`. It parses regional week, year-to-date, subregion, serotype, figure/table, dashboard page, iframe locator, and annual Core Indicators dengue-case CSV rows into the `public_health` lane, stores metrics and PAHO locators in SQLite payloads, and preserves provenance to the saved raw artifact plus official PAHO URLs. PAHO/EIH Core Indicators annual country/territory dengue rows are now a proven stable machine-readable feed. PAHO/PLISA dashboard pages and iframe URLs remain queryable locator records, but country-week Tableau/PHIP dashboard rows remain a source gap until there is a stable weekly CSV, JSON, or API endpoint or explicit authorized access.
 
 ## Pathogen Taxonomy Source Lane
 

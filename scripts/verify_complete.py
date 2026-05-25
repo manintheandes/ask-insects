@@ -492,7 +492,13 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health", "ECDC"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing public-health guidance term: {term}")
-    for term in ("aedes_paho_dengue_surveillance", "scripts/ingest_paho_dengue_surveillance.py", "official_paho_dengue_report_html_to_sqlite_public_health_records", "PAHO/PLISA country-week dashboard data remains a source gap"):
+    for term in (
+        "aedes_paho_dengue_surveillance",
+        "scripts/ingest_paho_dengue_surveillance.py",
+        "official_paho_dengue_report_html_and_core_indicators_csv_to_sqlite_public_health_records",
+        "PAHO/EIH Core Indicators annual country/territory dengue rows are proven machine-readable via ZIP/CSV",
+        "PAHO/PLISA country-week dashboard data remains a source gap",
+    ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing PAHO dengue surveillance term: {term}")
     for term in ("mosquito_alert_gbif", "scripts/ingest_mosquito_alert_observations.py", "observations", "media"):

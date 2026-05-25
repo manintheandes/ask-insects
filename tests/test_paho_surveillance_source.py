@@ -1,6 +1,8 @@
 import tempfile
 import unittest
+from io import BytesIO
 from pathlib import Path
+from zipfile import ZipFile
 
 from askinsects.sources.paho_surveillance import fetch_paho_dengue_surveillance_records
 
@@ -48,26 +50,59 @@ DASHBOARD_HTML = """
 """
 
 
+CORE_INDICATORS_HTML = """
+<html><body>
+<a href="https://opendata.paho.org/sites/default/files/data/2026-04/paho-core-indicators-2026-20260413.zip">Download all data</a>
+</body></html>
+"""
+
+
+def _core_indicators_zip() -> bytes:
+    csv_text = "\n".join(
+        [
+            "paho_indicator_id,indicator_name,nombre_indicador,spatial_dim_type,spatial_dim,spatial_dim_en,spatial_dim_es,time_dim_type,time_dim,numeric_value,value_as_string,low,high,technical_note,nota_tecnica,data_source_type,data_source_specific,data_provider_type,data_provider_specific,data_secondary_source,type_statistics,public_private,public_private_sp,source_url,preliminary,published_at,accessed_at",
+            "24,Dengue cases,Casos de dengue,Country,BRA,Brazil,Brasil,Year,2025,6010000,6010000,,,,National surveillance,Autoridad sanitaria nacional,National health authority,National health authority,Ministry of Health,,Crude,Public,Público,https://www3.paho.org/data/index.php/en/mnu-topics/indicadores-dengue-en/dengue-nacional-en/252-dengue-pais-ano-en.html,false,2025-09-29,2025-09-20",
+            "24,Dengue cases,Casos de dengue,Country,COL,Colombia,Colombia,Year,2025,330000,330000,,,,National surveillance,Autoridad sanitaria nacional,National health authority,National health authority,Ministry of Health,,Crude,Public,Público,https://www3.paho.org/data/index.php/en/mnu-topics/indicadores-dengue-en/dengue-nacional-en/252-dengue-pais-ano-en.html,false,2025-09-29,2025-09-20",
+            "126,Malaria cases,Casos de malaria,Country,BRA,Brazil,Brasil,Year,2025,10,10,,,,National surveillance,Autoridad sanitaria nacional,National health authority,National health authority,Ministry of Health,,Crude,Public,Público,https://example.org/malaria,false,2025-09-29,2025-09-20",
+        ]
+    )
+    buffer = BytesIO()
+    with ZipFile(buffer, "w") as archive:
+        archive.writestr("PAHO-Core-Indicators-2026-20260413.csv", csv_text)
+    return buffer.getvalue()
+
+
 class PahoSurveillanceSourceTests(unittest.TestCase):
     def test_fetch_paho_dengue_surveillance_records_parses_report_and_dashboard_gaps(self):
         def fake_fetch(url):
             if "dashboard" in url:
                 return DASHBOARD_HTML
+            if "core-indicators" in url:
+                return CORE_INDICATORS_HTML
             return REPORT_HTML
+
+        def fake_fetch_bytes(url):
+            if url.endswith(".zip"):
+                return _core_indicators_zip()
+            raise AssertionError(f"unexpected byte fetch {url}")
 
         with tempfile.TemporaryDirectory() as tmpdir:
             result = fetch_paho_dengue_surveillance_records(
                 [{"url": "https://example.org/report", "landing_url": "https://example.org/landing"}],
                 raw_dir=Path(tmpdir) / "raw",
                 fetch_text=fake_fetch,
+                fetch_bytes=fake_fetch_bytes,
                 retrieved_at="2026-05-24T00:00:00Z",
                 dashboard_pages=["https://example.org/dashboard"],
+                core_indicator_pages=["https://example.org/core-indicators/download-dataset"],
             )
 
             self.assertEqual(result.source_id, "aedes_paho_dengue_surveillance")
-            self.assertGreaterEqual(len(result.records), 7)
+            self.assertGreaterEqual(len(result.records), 9)
             self.assertEqual(result.report_count, 1)
             self.assertEqual(result.dashboard_page_count, 1)
+            self.assertEqual(result.core_indicator_row_count, 2)
+            self.assertEqual(result.core_indicator_download_count, 1)
             weekly = next(record for record in result.records if record.payload["aggregation_type"] == "regional_week_summary")
             self.assertEqual(weekly.lane, "public_health")
             self.assertEqual(weekly.species, "Aedes aegypti")
@@ -93,6 +128,12 @@ class PahoSurveillanceSourceTests(unittest.TestCase):
             self.assertEqual(dashboard.media_url, "https://phip.paho.org/trusted/example/views/1001en/Numeralia")
             self.assertEqual(dashboard.payload["machine_readable_cell_status"], "not_proven")
             self.assertIn("not a country-week", dashboard.text)
+            core_row = next(record for record in result.records if record.payload["aggregation_type"] == "paho_core_indicator_dengue_cases")
+            self.assertEqual(core_row.record_id, "public_health:surveillance:paho_dengue:core_indicator:dengue_cases:BRA:2025")
+            self.assertEqual(core_row.payload["country_code"], "BRA")
+            self.assertEqual(core_row.payload["numeric_value"], 6010000.0)
+            self.assertEqual(core_row.media_url, "https://opendata.paho.org/sites/default/files/data/2026-04/paho-core-indicators-2026-20260413.zip")
+            self.assertIn("#csv/PAHO-Core-Indicators-2026-20260413.csv/row/2", core_row.provenance.locator)
             self.assertEqual(result.gaps[0]["reason"], "paho_dashboard_data_not_yet_cell_queryable")
             self.assertTrue(Path(result.raw_artifacts[0]).exists())
 
@@ -104,6 +145,7 @@ class PahoSurveillanceSourceTests(unittest.TestCase):
                 fetch_text=lambda url: (_ for _ in ()).throw(RuntimeError("offline")),
                 retrieved_at="2026-05-24T00:00:00Z",
                 dashboard_pages=(),
+                core_indicator_pages=(),
             )
 
             self.assertFalse(result.records)
@@ -117,6 +159,7 @@ class PahoSurveillanceSourceTests(unittest.TestCase):
                 fetch_text=lambda url: "<html>not a PAHO report</html>",
                 retrieved_at="2026-05-24T00:00:00Z",
                 dashboard_pages=(),
+                core_indicator_pages=(),
             )
 
             self.assertFalse(result.records)

@@ -158,6 +158,7 @@ def main(argv: list[str] | None = None) -> int:
     ingest_paho_dengue_surveillance.add_argument("--hosted", action="store_true")
     ingest_paho_dengue_surveillance.add_argument("--report-url", action="append", default=[])
     ingest_paho_dengue_surveillance.add_argument("--dashboard-page", action="append", default=[])
+    ingest_paho_dengue_surveillance.add_argument("--core-indicator-page", action="append", default=[])
 
     ingest_vectorbase_genomics = sub.add_parser("ingest-vectorbase-genomics")
     ingest_vectorbase_genomics.add_argument("--hosted", action="store_true")
@@ -423,13 +424,18 @@ def main(argv: list[str] | None = None) -> int:
                 artifact_dir=artifact_dir,
                 report_urls=args.report_url,
                 dashboard_pages=args.dashboard_page if args.dashboard_page else None,
+                core_indicator_pages=args.core_indicator_page if args.core_indicator_page else None,
             )
             emit(payload)
             return 0 if payload.get("ok") else 2
         payload = emit_hosted(
             "POST",
             "/ingest/paho-dengue-surveillance",
-            {"report_urls": args.report_url, "dashboard_pages": args.dashboard_page},
+            {
+                "report_urls": args.report_url,
+                "dashboard_pages": args.dashboard_page,
+                "core_indicator_pages": args.core_indicator_page,
+            },
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

@@ -1991,6 +1991,35 @@ class AnswerTests(unittest.TestCase):
                 "public_health:surveillance:paho_dengue:dashboard_locator:abc123",
             )
 
+    def test_paho_open_data_questions_prefer_core_indicator_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:surveillance:paho_dengue:regional_week_summary:2024:week50",
+                        "aedes_paho_dengue_surveillance",
+                        "Official PAHO dengue surveillance regional week summary for Aedes aegypti public-health intelligence.",
+                    ),
+                    public_health_record(
+                        "public_health:surveillance:paho_dengue:core_indicator:dengue_cases:BRA:2025",
+                        "aedes_paho_dengue_surveillance",
+                        "PAHO/EIH Core Indicators annual dengue cases for Brazil in 2025 from a stable machine-readable Open Data CSV row.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show PAHO Open Data annual dengue cases for Brazil", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(
+                answer["evidence"][0]["record_id"],
+                "public_health:surveillance:paho_dengue:core_indicator:dengue_cases:BRA:2025",
+            )
+
     def test_neurobiology_questions_prefer_brain_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

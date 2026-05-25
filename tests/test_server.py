@@ -801,7 +801,7 @@ class ServerTests(unittest.TestCase):
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             build_fixture_index(artifact_dir=artifact_dir)
 
-            def fake_fetch(reports, *, raw_dir, retrieved_at, dashboard_pages):
+            def fake_fetch(reports, *, raw_dir, retrieved_at, dashboard_pages, core_indicator_pages):
                 raw_path = raw_dir / "paho.html"
                 raw_path.parent.mkdir(parents=True, exist_ok=True)
                 raw_path.write_text("<html>PAHO dengue surveillance.</html>", encoding="utf-8")
@@ -839,12 +839,19 @@ class ServerTests(unittest.TestCase):
                     requested_urls=["https://ais.paho.org/example"],
                     report_count=1,
                     dashboard_page_count=len(dashboard_pages),
+                    core_indicator_page_count=len(core_indicator_pages),
+                    core_indicator_download_count=0,
+                    core_indicator_row_count=0,
                 )
 
             response = dispatch_request(
                 "POST",
                 "/ingest/paho-dengue-surveillance",
-                {"report_urls": ["https://ais.paho.org/example"], "dashboard_pages": ["https://www.paho.org/dashboard"]},
+                {
+                    "report_urls": ["https://ais.paho.org/example"],
+                    "dashboard_pages": ["https://www.paho.org/dashboard"],
+                    "core_indicator_pages": [],
+                },
                 headers={"Authorization": "Bearer secret"},
                 artifact_dir=artifact_dir,
                 token="secret",

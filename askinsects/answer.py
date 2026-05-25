@@ -95,10 +95,40 @@ IMAGE_ATOM_QUERY_TERMS = (
     "still image",
 )
 
+PUBLIC_HEALTH_QUERY_STOPWORDS = {
+    "aedes",
+    "aegypti",
+    "annual",
+    "case",
+    "cases",
+    "core",
+    "data",
+    "dengue",
+    "for",
+    "from",
+    "indicator",
+    "indicators",
+    "open",
+    "paho",
+    "show",
+    "the",
+}
+
 
 def _wants_extracted_facts(question: str) -> bool:
     q = question.lower()
     return any(term in q for term in ("extracted", "extracted fact", "extracted facts", "supplement", "supplementary", "table", "tables", "row", "rows"))
+
+
+def _public_health_focus_terms(question: str) -> list[str]:
+    terms: list[str] = []
+    for token in re.findall(r"[A-Za-z][A-Za-z.-]{2,}", question):
+        normalized = token.strip(".-")
+        if normalized.lower() in PUBLIC_HEALTH_QUERY_STOPWORDS:
+            continue
+        if normalized not in terms:
+            terms.append(normalized)
+    return terms
 
 
 def _wants_video_atoms(question: str) -> bool:
@@ -548,6 +578,18 @@ def _search_queries(question: str) -> list[str]:
                 question,
             ]
         if any(term in q for term in ("paho", "plisa", "surveillance", "dengue", "cases", "deaths")):
+            if any(term in q for term in ("core indicator", "core indicators", "open data", "annual", "country", "territory", "csv", "machine-readable", "machine readable")):
+                focus_terms = _public_health_focus_terms(question)
+                focus_queries = []
+                for term in focus_terms[:3]:
+                    focus_queries.extend([term, f"PAHO Core Indicators {term}"])
+                return focus_queries + [
+                    question,
+                    "PAHO Core Indicators dengue cases",
+                    "PAHO Open Data annual dengue cases",
+                    "paho_core_indicator_dengue_cases",
+                    "PAHO dengue surveillance",
+                ]
             if any(term in q for term in ("dashboard", "plisa", "iframe", "tableau")):
                 return [
                     "PAHO PLISA dashboard locator",
@@ -1052,7 +1094,9 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
         )
     )
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int]:
+    requested_years = set(re.findall(r"\b(?:19|20)\d{2}\b", q))
+
+    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int, int]:
         haystack = f"{record.title}\n{record.text}\n{record.url or ''}".lower()
         if "ecdc" in q:
             organization_rank = 0 if "ecdc" in haystack else 1
@@ -1066,26 +1110,43 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
         guidance_rank = 0 if wants_guidance and record.source == "aedes_public_health_guidance" else 1
         paho_rank = 0 if not wants_guidance and any(term in q for term in ("paho", "plisa", "surveillance")) and record.source == "aedes_paho_dengue_surveillance" else 1
         if record.source == "aedes_paho_dengue_surveillance" and any(term in q for term in ("paho", "plisa", "surveillance")):
-            if any(term in q for term in ("dashboard", "plisa", "iframe", "tableau")) and "dashboard_locator" in record.record_id:
+            if any(term in q for term in ("core indicator", "core indicators", "open data", "annual", "country", "territory", "csv", "machine-readable", "machine readable")) and "core_indicator" in record.record_id:
                 record_rank = 0
+                year_match = re.search(r":(\d{4})$", record.record_id)
+                if year_match and requested_years:
+                    recency_rank = 0 if year_match.group(1) in requested_years else 1
+                elif year_match:
+                    recency_rank = -int(year_match.group(1))
+                else:
+                    recency_rank = 0
+            elif any(term in q for term in ("dashboard", "plisa", "iframe", "tableau")) and "dashboard_locator" in record.record_id:
+                record_rank = 0
+                recency_rank = 0
             elif "regional_week_summary" in record.record_id:
                 record_rank = 0
+                recency_rank = 0
             elif "regional_year_to_date_summary" in record.record_id:
                 record_rank = 1
+                recency_rank = 0
             elif "subregion" in record.record_id:
                 record_rank = 2
+                recency_rank = 0
             elif "serotypes" in record.record_id:
                 record_rank = 3
+                recency_rank = 0
             else:
                 record_rank = 4
+                recency_rank = 0
         else:
             record_rank = 0
+            recency_rank = 0
         return (
             paho_rank,
             guidance_rank,
             organization_rank,
             factsheet_rank,
             record_rank if record.lane == "public_health" else 9,
+            recency_rank,
         )
 
     return sorted(records, key=score)
@@ -1506,7 +1567,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 else _search_queries(plan.search_query)
             )
             for search_query in search_queries:
-                query_records = index.search(search_query, lane=lane, limit=limit)
+                query_limit = max(limit * 20, 50) if plan.answer_shape == "public_health" else limit
+                query_records = index.search(search_query, lane=lane, limit=query_limit)
                 for record in query_records:
                     if record.record_id in seen_record_ids:
                         continue
