@@ -61,6 +61,7 @@
         "vectorbase_aedes_genomics",
         "aedes_expression_omics",
         "aedes_uniprot_proteins",
+        "aedes_population_genomics",
         "bold_api"
       ],
       "current_gates": {
@@ -76,6 +77,7 @@
         "vectorbase_aedes_genomics maps official VectorBase/VEuPathDB AaegyptiLVP_AGWG GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut downloads into queryable genes, transcripts, proteins, CDS sequence summaries, transcript sequence summaries, GO annotation, codon usage, ID history, and genome cross-reference records with raw-file provenance.",
         "aedes_expression_omics maps bounded NCBI GEO/SRA expression, RNA-seq, and transcriptome metadata into GEO dataset records and SRA run records with raw ESummary provenance.",
         "aedes_uniprot_proteins maps bounded UniProtKB protein and UniProt proteome metadata into protein records with accession, function comments, gene names, GO and VectorBase cross-references, reviewed status, proteome IDs, and raw JSON provenance.",
+        "aedes_population_genomics maps bounded NCBI BioProject population-genomics metadata into genome_features records with accession, title, description, data type, target scope, submitter, registration date, and raw ESummary provenance.",
         "config/source-map.yaml"
       ],
       "required_next_sources": [
@@ -136,7 +138,8 @@
         "gbif_api",
         "inaturalist_api",
         "mosquito_alert_gbif",
-        "vectornet_aedes_surveillance"
+        "vectornet_aedes_surveillance",
+        "aedes_global_compendium_occurrence"
       ],
       "current_gates": {
         "mapped": "partial",
@@ -150,6 +153,7 @@
         "Hosted artifact contains deep Aedes aegypti iNaturalist observation records with raw page artifacts and provenance.",
         "Mosquito Alert Aedes aegypti citizen-science observations are mapped through GBIF dataset 1fef1ead-3d02-495e-8ff1-6aeb01123408 with raw occurrence pages, media metadata, and provenance.",
         "VectorNet ECDC/EFSA regional surveillance rows for Aedes aegypti are mapped from the public IPT Darwin Core Archive with raw archive, filtered-row TSV, row-level observations, ecology summaries, CC-BY-4.0 license, and exact row provenance.",
+        "aedes_global_compendium_occurrence maps the Kraemer et al. global Aedes occurrence compendium into row-level Aedes aegypti occurrence records with country, coordinates, year, status, and raw CSV row provenance where exposed.",
         "GBIF, iNaturalist, Mosquito Alert, and VectorNet lanes exist, but Ask Insects is not yet a comprehensive observation mirror across all public surveillance systems."
       ],
       "required_next_sources": [
@@ -315,7 +319,8 @@
         "irmapper_aedes",
         "aedes_literature_facets",
         "aedes_extracted_facts",
-        "aedes_resistance_markers"
+        "aedes_resistance_markers",
+        "aedes_who_resistance_guidance"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -330,6 +335,7 @@
         "Installed local and hosted artifacts contain 2,843 resistance records from aedes_literature_facets.",
         "Hosted artifact contains 6,449 aedes_resistance_markers records mapping kdr, VGSC, and metabolic-resistance marker mentions from indexed Aedes literature and legal full-text units into queryable resistance records with marker payloads, source locators, and zero marker-source gaps.",
         "General resistance questions prefer the dedicated irmapper_aedes lane, while kdr and metabolic-marker questions prefer aedes_resistance_markers before literature-derived resistance facets.",
+        "aedes_who_resistance_guidance maps WHO Aedes insecticide-resistance method and discriminating-concentration pages into resistance records with method terms and raw HTML provenance.",
         "aedes_extracted_facts emits resistance candidate facts, supplement manifests, and parsed supported supplement table rows from indexed Aedes literature, with matched insecticide, assay, mortality, knockdown, LC value, mutation, genotype-frequency, and country terms when detected."
       ],
       "required_next_sources": [
@@ -350,6 +356,8 @@
         "aedes_extracted_facts",
         "aedes_occurrence_ecology",
         "vectornet_aedes_surveillance",
+        "aedes_worldclim_climate",
+        "aedes_global_compendium_occurrence",
         "aedes_vectorbyte_traits"
       ],
       "current_gates": {
@@ -365,6 +373,8 @@
         "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available.",
         "aedes_occurrence_ecology joins indexed GBIF, iNaturalist, and Mosquito Alert observation payloads into country, country-month, seasonality, range, and public habitat ecology records.",
         "vectornet_aedes_surveillance adds official ECDC/EFSA regional surveillance ecology summaries by country and degree of establishment, preserving detection, absence-surveillance, and unclear-status counts.",
+        "aedes_worldclim_climate maps WorldClim historical and monthly climate source pages into queryable ecology source records, with raster sampling represented as a structured gap until GeoTIFFs are mirrored and sampled.",
+        "aedes_global_compendium_occurrence contributes row-level global Aedes aegypti occurrence records for compendium-specific ecology and distribution questions.",
         "aedes_vectorbyte_traits adds trait rows with temperature, habitat, location, and lab-versus-field context where supplied by VectorByte/VecTraits.",
         "The May 24, 2026 hosted ingest installed 1,985 aedes_occurrence_ecology records from 88,065 Aedes observation inputs, bringing the hosted ecology lane to 7,238 records.",
         "aedes_extracted_facts emits ecology candidate facts from indexed Aedes literature and legal full-text units, plus parsed supported supplement table rows, including habitat, breeding-site, climate, seasonality, range, and location terms when detected."

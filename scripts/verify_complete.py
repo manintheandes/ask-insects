@@ -126,6 +126,7 @@ REQUIRED_FILES = (
     "askinsects/sources/vectorbyte_traits.py",
     "askinsects/sources/video_atoms.py",
     "askinsects/sources/image_atoms.py",
+    "askinsects/sources/aedes_deep_sources.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -162,6 +163,7 @@ REQUIRED_FILES = (
     "scripts/ingest_vectorbyte_traits.py",
     "scripts/ingest_video_atoms.py",
     "scripts/ingest_image_atoms.py",
+    "scripts/ingest_aedes_deep_sources.py",
     "scripts/refresh_artifact_receipts.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
@@ -237,6 +239,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_video_atoms.py",
     "tests/test_image_atoms_source.py",
     "tests/test_ingest_image_atoms.py",
+    "tests/test_aedes_deep_sources.py",
+    "tests/test_ingest_aedes_deep_sources.py",
     "tests/test_refresh_artifact_receipts.py",
 )
 
@@ -311,6 +315,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_video_atoms",
     "tests.test_image_atoms_source",
     "tests.test_ingest_image_atoms",
+    "tests.test_aedes_deep_sources",
+    "tests.test_ingest_aedes_deep_sources",
     "tests.test_refresh_artifact_receipts",
 )
 
@@ -550,6 +556,11 @@ def check_mosquito_intelligence_coverage() -> None:
         "figshare_aedes_videos",
         "aedes_video_atoms",
         "aedes_image_atoms",
+        "aedes_taxonomy_authorities",
+        "aedes_worldclim_climate",
+        "aedes_global_compendium_occurrence",
+        "aedes_population_genomics",
+        "aedes_who_resistance_guidance",
     )
     for term in required_terms:
         if term not in readme:
@@ -738,6 +749,23 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing VectorByte traits term: {term}")
+    for term in (
+        "aedes_taxonomy_authorities",
+        "aedes_worldclim_climate",
+        "aedes_global_compendium_occurrence",
+        "aedes_population_genomics",
+        "aedes_who_resistance_guidance",
+        "scripts/ingest_aedes_deep_sources.py",
+        "authority_html_to_sqlite_taxonomy_records",
+        "worldclim_html_to_sqlite_ecology_source_records",
+        "zenodo_record_csv_to_sqlite_observation_records",
+        "ncbi_eutils_bioproject_esearch_esummary_to_sqlite_genome_feature_records",
+        "who_resistance_guidance_html_to_sqlite_resistance_records",
+        "worldclim_raster_sampling_not_enabled",
+        "taxonomy_authority_fetch_failed",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Aedes deep-source term: {term}")
 
 
 def check_aedes_source_plane_benchmark() -> None:

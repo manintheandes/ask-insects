@@ -45,6 +45,14 @@ metadata, parser grain, and known gaps.
 - VectorByte/VecTraits records from `aedes_vectorbyte_traits` preserve
   upstream VectorByte/VBD Hub terms, dataset IDs, row IDs, source URLs,
   citations, DOIs, and raw JSON row provenance where available.
+- ECDC, OECD, Mosquito Taxonomic Inventory or WRBU-style authority pages,
+  WorldClim climate pages, Zenodo/Dryad global Aedes occurrence compendium
+  files, NCBI BioProject metadata, and WHO Aedes resistance guidance from
+  `aedes_taxonomy_authorities`, `aedes_worldclim_climate`,
+  `aedes_global_compendium_occurrence`, `aedes_population_genomics`, and
+  `aedes_who_resistance_guidance` preserve upstream source URLs, access terms,
+  page/file locators, row locators where applicable, and explicit fetch or
+  raster-sampling gaps.
 - OpenAlex, PubMed, Unpaywall, and PMC Open Access literature and media lanes
   preserve article, publisher, and open-access licenses. Ask Insects should
   only parse legal full text and should keep source gaps for restricted text.

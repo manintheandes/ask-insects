@@ -350,6 +350,11 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show VectorByte temperature trait data for Aedes aegypti fecundity").lanes[0], "traits")
         self.assertEqual(plan_question("show World Mosquito Program Wolbachia intervention evidence from Yogyakarta").answer_shape, "public_health")
         self.assertEqual(plan_question("show CDC ArboNET dengue surveillance current cases").answer_shape, "public_health")
+        self.assertEqual(plan_question("show Aedes aegypti taxonomy synonyms from authority sources").lanes[0], "taxonomy")
+        self.assertEqual(plan_question("show WorldClim climate context for Aedes aegypti ecology").answer_shape, "ecology")
+        self.assertEqual(plan_question("show global Aedes aegypti occurrence compendium rows for Brazil").answer_shape, "ecology")
+        self.assertEqual(plan_question("show Aedes aegypti population genomics BioProject evidence").lanes[0], "genome_features")
+        self.assertEqual(plan_question("show WHO Aedes insecticide resistance bioassay guidance").answer_shape, "resistance")
 
     def test_answers_include_provenance_or_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2359,6 +2364,39 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_resistance_markers")
             self.assertIn("V1016G", answer["evidence"][0]["text"])
 
+    def test_who_resistance_method_questions_prefer_who_guidance_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    resistance_record("irmapper:aedes:1", "irmapper_aedes"),
+                    EvidenceRecord(
+                        record_id="resistance:who_guidance:bioassay",
+                        lane="resistance",
+                        source="aedes_who_resistance_guidance",
+                        title="WHO Aedes resistance guidance: bioassays",
+                        text="WHO Aedes insecticide-resistance method source with test procedures, discriminating concentrations, filter paper and bottle bioassays.",
+                        species="Aedes aegypti",
+                        url="https://www.who.int/publications-detail-redirect/monitoring-and-managing-insecticide-resistance-in-aedes-mosquito-populations",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_who_resistance_guidance",
+                            locator="raw/aedes_deep_sources/who_resistance_guidance/page.html#page",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="WHO public web page; source terms apply",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show WHO Aedes insecticide resistance bioassay guidance", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_who_resistance_guidance")
+
     def test_ecology_questions_prefer_occurrence_ecology_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -2393,6 +2431,90 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "ecology")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_occurrence_ecology")
             self.assertIn("Brazil", answer["evidence"][0]["text"])
+
+    def test_deep_source_questions_prefer_taxonomy_climate_compendium_and_population_lanes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="taxonomy:authority:aedes_aegypti:test",
+                        lane="taxonomy",
+                        source="aedes_taxonomy_authorities",
+                        title="Aedes aegypti taxonomy authority",
+                        text="Aedes aegypti taxonomy authority. Synonym/name evidence: Stegomyia aegypti. Classification terms: Diptera, Culicidae.",
+                        species="Aedes aegypti",
+                        url="https://example.org/taxonomy",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_taxonomy_authorities",
+                            locator="raw/aedes_deep_sources/taxonomy_authorities/source.html#page",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="ecology:worldclim:source:test",
+                        lane="ecology",
+                        source="aedes_worldclim_climate",
+                        title="WorldClim climate source",
+                        text="WorldClim climate source for Aedes aegypti ecology joins. Variables mentioned: temperature, precipitation, GeoTiff.",
+                        species="Aedes aegypti",
+                        url="https://www.worldclim.org/data/worldclim21.html",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_worldclim_climate",
+                            locator="raw/aedes_deep_sources/worldclim/page.html#page",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="occurrence:global_compendium:aedes_aegypti:1",
+                        lane="observations",
+                        source="aedes_global_compendium_occurrence",
+                        title="Global compendium Aedes aegypti occurrence row 1",
+                        text="Global Aedes occurrence compendium row for Aedes aegypti. Country: Brazil. Coordinates: -12.1, -44.2. Year: 2014.",
+                        species="Aedes aegypti",
+                        url="https://zenodo.org/records/4946792",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_global_compendium_occurrence",
+                            locator="raw/aedes_deep_sources/global_compendium_occurrence/aegypti_albopictus.csv#row/1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="population_genomics:bioproject:PRJNA1090933",
+                        lane="genome_features",
+                        source="aedes_population_genomics",
+                        title="Aedes population genomics BioProject PRJNA1090933",
+                        text="NCBI BioProject population-genomics record PRJNA1090933 for Aedes aegypti. Description: divergence and introgression in population genomics.",
+                        species="Aedes aegypti",
+                        url="https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1090933",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_population_genomics",
+                            locator="raw/aedes_deep_sources/population_genomics/summary.json#result/PRJNA1090933",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                ]
+            )
+
+            taxonomy = answer_question("show Aedes aegypti taxonomy synonyms from authority sources", artifact_dir=artifact_dir)
+            worldclim = answer_question("show WorldClim climate context for Aedes aegypti ecology", artifact_dir=artifact_dir)
+            compendium = answer_question("show global Aedes aegypti occurrence compendium rows for Brazil", artifact_dir=artifact_dir)
+            population = answer_question("show Aedes aegypti population genomics BioProject evidence", artifact_dir=artifact_dir)
+
+            self.assertEqual(taxonomy["evidence"][0]["source"], "aedes_taxonomy_authorities")
+            self.assertEqual(worldclim["evidence"][0]["source"], "aedes_worldclim_climate")
+            self.assertEqual(compendium["evidence"][0]["source"], "aedes_global_compendium_occurrence")
+            self.assertEqual(population["evidence"][0]["source"], "aedes_population_genomics")
 
     def test_vectornet_questions_prefer_vectornet_surveillance_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

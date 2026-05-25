@@ -439,6 +439,30 @@ class ServerTests(unittest.TestCase):
                 search_limit=25,
             )
 
+    def test_ingest_aedes_deep_sources_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_aedes_deep_sources.ingest_aedes_deep_sources") as ingest:
+                ingest.return_value = {"ok": True, "sources": ["aedes_taxonomy_authorities"], "record_count": 5}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/aedes-deep-sources",
+                    {"compendium_row_limit": 25, "bioproject_limit": 7},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                compendium_row_limit=25,
+                bioproject_limit=7,
+            )
+
     def test_ingest_inaturalist_uses_staging_then_activates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

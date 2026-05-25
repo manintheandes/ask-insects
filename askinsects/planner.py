@@ -126,8 +126,48 @@ def plan_question(question: str) -> QueryPlan:
             ("traits", "behavior", "ecology", "vector_competence", "literature"),
             question,
         )
+    if (
+        not any(term in q for term in ("pathogen", "dengue", "zika", "chikungunya", "yellow fever", "mayaro", "west nile"))
+        and any(
+        term in q
+        for term in (
+            "taxonomy",
+            "taxonomic",
+            "synonym",
+            "synonyms",
+            "stegomyia",
+            "mosquito taxonomic inventory",
+            "mti",
+            "wrbu",
+            "authority",
+            "authorities",
+        )
+        )
+    ):
+        return QueryPlan(question, "identity", ("taxonomy", "literature", "observations"), question)
     if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
+    if any(
+        term in q
+        for term in (
+            "insecticide resistance",
+            "pyrethroid resistance",
+            "metabolic resistance",
+            "resistance marker",
+            "resistance markers",
+            "kdr",
+            "knockdown resistance",
+            "susceptibility",
+            "bioassay",
+            "bioassays",
+            "discriminating concentration",
+            "discriminating concentrations",
+            "resistance mutation",
+            "vgsc",
+            "vssc",
+        )
+    ):
+        return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
     if any(
         term in q
         for term in (
@@ -248,7 +288,10 @@ def plan_question(question: str) -> QueryPlan:
             "breeding site",
             "ecology",
             "climate",
+            "worldclim",
             "rainfall",
+            "precipitation",
+            "temperature",
             "seasonality",
             "seasonal",
             "range",
@@ -259,6 +302,11 @@ def plan_question(question: str) -> QueryPlan:
             "month",
             "monthly",
             "environmental suitability",
+            "suitability",
+            "occurrence",
+            "occurrences",
+            "global compendium",
+            "compendium",
             "land use",
         )
     ):
@@ -318,6 +366,15 @@ def plan_question(question: str) -> QueryPlan:
         "genome",
         "gene",
         "genes",
+        "bioproject",
+        "bioprojects",
+        "population genomics",
+        "population-genomics",
+        "variation",
+        "variant",
+        "variants",
+        "introgression",
+        "divergence",
         "biosample",
         "biosamples",
         "sample",
@@ -362,6 +419,8 @@ def plan_question(question: str) -> QueryPlan:
     if any(term in q for term in genomics_terms):
         if any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p")):
             lanes = ("dna_barcodes", "genes", "proteins", "literature", "taxonomy")
+        elif any(term in q for term in ("bioproject", "bioprojects", "population genomics", "population-genomics", "variation", "variant", "variants", "introgression", "divergence")):
+            lanes = ("genome_features", "genes", "genome_assemblies", "literature", "taxonomy")
         elif any(
             term in q
             for term in (

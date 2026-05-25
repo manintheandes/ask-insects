@@ -8,6 +8,13 @@ from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
 from .planner import QueryPlan, plan_question
 from .records import EvidenceRecord
+from .sources.aedes_deep_sources import (
+    AEDES_GLOBAL_COMPENDIUM_SOURCE_ID,
+    AEDES_POPULATION_GENOMICS_SOURCE_ID,
+    AEDES_TAXONOMY_AUTHORITIES_SOURCE_ID,
+    AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID,
+    AEDES_WORLDCLIM_SOURCE_ID,
+)
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
@@ -364,6 +371,65 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
+    if (
+        not any(term in q for term in ("pathogen", "dengue", "zika", "chikungunya", "yellow fever", "mayaro", "west nile"))
+        and any(term in q for term in ("taxonomy", "taxonomic", "synonym", "synonyms", "stegomyia", "mosquito taxonomic inventory", "mti", "wrbu"))
+    ):
+        return [
+            "Aedes aegypti taxonomy authority",
+            "Aedes Stegomyia aegypti synonym",
+            "Mosquito Taxonomic Inventory Stegomyia",
+            "ECDC Aedes aegypti factsheet",
+            question,
+        ]
+    if any(term in q for term in ("who", "world health organization", "discriminating concentration", "discriminating concentrations", "bioassay", "bioassays")) and any(
+        term in q for term in ("insecticide resistance", "resistance", "bioassay", "bioassays", "discriminating concentration", "discriminating concentrations")
+    ):
+        return [
+            "WHO Aedes insecticide-resistance method",
+            "discriminating concentrations bioassays Aedes",
+            "WHO test procedures Aedes resistance",
+            question,
+        ]
+    if any(term in q for term in ("worldclim", "climate", "precipitation", "rainfall", "environmental suitability", "suitability")):
+        return [
+            "WorldClim climate source Aedes aegypti ecology",
+            "WorldClim historical climate precipitation temperature",
+            "WorldClim Aedes aegypti suitability",
+            question,
+        ]
+    if any(term in q for term in ("global compendium", "compendium", "occurrence compendium")):
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9]+", question)
+            if token.lower()
+            not in {
+                "aedes",
+                "aegypti",
+                "ae",
+                "global",
+                "compendium",
+                "occurrence",
+                "occurrences",
+                "row",
+                "rows",
+                "show",
+                "the",
+                "for",
+            }
+        ]
+        queries = []
+        if salient:
+            queries.append(f"Global Aedes occurrence compendium {' '.join(salient)}")
+        queries.extend(["Global Aedes occurrence compendium", "Aedes aegypti occurrence compendium", question])
+        return list(dict.fromkeys(queries))
+    if any(term in q for term in ("bioproject", "bioprojects", "population genomics", "population-genomics", "variation", "variant", "variants", "introgression", "divergence")):
+        return [
+            "NCBI BioProject population-genomics Aedes aegypti",
+            "Aedes aegypti population genomics BioProject",
+            "introgression divergence Aedes aegypti population genomics",
+            question,
+        ]
     if _wants_vectorbyte_traits(question):
         generic_terms = {
             "aedes",
@@ -1066,6 +1132,14 @@ def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
 
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if any(term in q for term in ("bioproject", "bioprojects", "population genomics", "population-genomics", "variation", "variant", "variants", "introgression", "divergence")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == AEDES_POPULATION_GENOMICS_SOURCE_ID else 1,
+                0 if record.lane == "genome_features" else 1,
+            ),
+        )
     if any(term in q for term in ("uniprot", "protein function", "proteome")):
         return sorted(
             records,
@@ -1431,14 +1505,18 @@ def _resistance_marker_terms(question: str) -> list[str]:
 def _prioritize_resistance_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     wants_marker = bool(_resistance_marker_terms(question))
     wants_extracted = _wants_extracted_facts(question)
+    q = question.lower()
+    wants_who_guidance = any(term in q for term in ("who", "world health organization", "guidance", "method", "methods", "bioassay", "bioassays", "discriminating concentration", "discriminating concentrations"))
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int, int]:
+    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int]:
         extracted_rank = 0 if wants_extracted and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         marker_rank = 0 if wants_marker and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
+        who_guidance_rank = 0 if wants_who_guidance and record.source == AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID else 1
         irmapper_rank = 0 if not wants_marker and record.source == "irmapper_aedes" else 1
         return (
             extracted_rank,
             marker_rank,
+            who_guidance_rank,
             irmapper_rank,
             0 if record.lane == "resistance" else 1,
         )
@@ -1632,16 +1710,28 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
             "habitat",
             "occurrence",
             "observed",
+            "global compendium",
+            "compendium",
+            "worldclim",
+            "climate",
+            "precipitation",
+            "temperature",
+            "suitability",
         )
     ):
         return records
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int, int]:
+    wants_worldclim = any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability"))
+    wants_compendium = any(term in q for term in ("global compendium", "compendium", "occurrence compendium"))
+
+    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int, int]:
         extracted_rank = 0 if _wants_extracted_facts(question) and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         vectornet_rank = 0 if "vectornet" in q and record.source == "vectornet_aedes_surveillance" else 1
         return (
             extracted_rank,
             vectornet_rank,
+            0 if wants_worldclim and record.source == AEDES_WORLDCLIM_SOURCE_ID else 1,
+            0 if wants_compendium and record.source == AEDES_GLOBAL_COMPENDIUM_SOURCE_ID else 1,
             0 if record.source == OCCURRENCE_ECOLOGY_SOURCE_ID else 1,
             0 if record.lane == "ecology" else 1,
         )
@@ -1746,6 +1836,23 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             key=lambda record: (
                 0 if record.source == "aedes_image_atoms" else 1,
                 0 if record.lane == "media" else 1,
+            ),
+        )
+    if not any(term in q for term in ("pathogen", "dengue", "zika", "chikungunya", "yellow fever", "mayaro", "west nile")) and any(term in q for term in ("taxonomy", "taxonomic", "synonym", "synonyms", "stegomyia", "mosquito taxonomic inventory", "mti", "wrbu")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == AEDES_TAXONOMY_AUTHORITIES_SOURCE_ID else 1,
+                0 if record.lane == "taxonomy" else 1,
+            ),
+        )
+    if any(term in q for term in ("worldclim", "global compendium", "compendium")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if "worldclim" in q and record.source == AEDES_WORLDCLIM_SOURCE_ID else 1,
+                0 if "compendium" in q and record.source == AEDES_GLOBAL_COMPENDIUM_SOURCE_ID else 1,
+                0 if record.lane in {"ecology", "observations"} else 1,
             ),
         )
     if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
@@ -2181,6 +2288,46 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 continue
             all_records.append(record)
             seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "identity" and not any(
+        term in plan.question.lower() for term in ("pathogen", "dengue", "zika", "chikungunya", "yellow fever", "mayaro", "west nile")
+    ) and any(
+        term in plan.question.lower() for term in ("taxonomy", "taxonomic", "synonym", "synonyms", "stegomyia", "mosquito taxonomic inventory", "mti", "wrbu")
+    ):
+        for record in _source_records(index, AEDES_TAXONOMY_AUTHORITIES_SOURCE_ID, ["taxonomy"], limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "ecology":
+        q = plan.question.lower()
+        if any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability")):
+            for record in _source_records(index, AEDES_WORLDCLIM_SOURCE_ID, ["ecology"], limit=limit):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
+        if any(term in q for term in ("global compendium", "compendium", "occurrence compendium")):
+            matched_compendium = False
+            for search_query in _search_queries(plan.question):
+                query_records = index.search(search_query, lane="observations", limit=max(limit * 20, 50))
+                for record in query_records:
+                    if record.source != AEDES_GLOBAL_COMPENDIUM_SOURCE_ID or record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+                    matched_compendium = True
+                    if len([item for item in all_records if item.source == AEDES_GLOBAL_COMPENDIUM_SOURCE_ID]) >= limit:
+                        break
+                if matched_compendium:
+                    break
+            if not matched_compendium:
+                for record in _source_records(index, AEDES_GLOBAL_COMPENDIUM_SOURCE_ID, ["observations"], limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
 
     if not all_records:
         for lane in plan.lanes:

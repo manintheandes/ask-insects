@@ -279,6 +279,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
 
+    ingest_aedes_deep_sources = sub.add_parser("ingest-aedes-deep-sources")
+    ingest_aedes_deep_sources.add_argument("--hosted", action="store_true")
+    ingest_aedes_deep_sources.add_argument("--compendium-row-limit", type=int, default=5000)
+    ingest_aedes_deep_sources.add_argument("--bioproject-limit", type=int, default=20)
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -923,6 +928,24 @@ def main(argv: list[str] | None = None) -> int:
             "/ingest/occurrence-ecology",
             {},
             timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-aedes-deep-sources":
+        request_payload = {
+            "compendium_row_limit": args.compendium_row_limit,
+            "bioproject_limit": args.bioproject_limit,
+        }
+        if not args.hosted:
+            from scripts.ingest_aedes_deep_sources import ingest_aedes_deep_sources
+
+            payload = ingest_aedes_deep_sources(artifact_dir=artifact_dir, **request_payload)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/aedes-deep-sources",
+            request_payload,
+            timeout=7200,
         )
         return 0 if payload.get("ok") else 2
     parser.error("unknown command")

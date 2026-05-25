@@ -172,6 +172,27 @@ python3 -m askinsects search traits "fecundity temperature"
 
 This writes VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte_traits/`, indexes one `traits` record per Aedes aegypti source row, and preserves dataset ID, row ID, trait name, value, unit, temperature, stage, sex, habitat, lab/field context, location, citation, DOI, and raw JSON locators.
 
+## Aedes Deep Source Expansion Lane
+
+`ingest-aedes-deep-sources` installs five bounded Aedes-specific source expansions at once:
+
+- `aedes_taxonomy_authorities`: ECDC, OECD, and MTI/WRBU-style taxonomy authority pages at page grain.
+- `aedes_worldclim_climate`: WorldClim climate source pages for climate and suitability joins, with raster sampling kept as an explicit gap until GeoTIFFs are mirrored and sampled.
+- `aedes_global_compendium_occurrence`: global Aedes occurrence compendium rows filtered to `Aedes aegypti`.
+- `aedes_population_genomics`: NCBI BioProject population-genomics metadata in `genome_features`.
+- `aedes_who_resistance_guidance`: WHO Aedes insecticide-resistance method and discriminating-concentration pages in `resistance`.
+
+```bash
+python3 -m askinsects ingest-aedes-deep-sources --compendium-row-limit 5000 --bioproject-limit 20
+python3 -m askinsects ask "show Aedes aegypti taxonomy synonyms from authority sources" --json
+python3 -m askinsects ask "show WorldClim climate context for Aedes aegypti ecology" --json
+python3 -m askinsects ask "show global Aedes aegypti occurrence compendium rows for Brazil" --json
+python3 -m askinsects ask "show Aedes aegypti population genomics BioProject evidence" --json
+python3 -m askinsects ask "show WHO Aedes insecticide resistance bioassay guidance" --json
+```
+
+Raw artifacts are saved under `artifacts/mosquito-v1/raw/aedes_deep_sources/`. The ingest refreshes only those five source IDs, writes source receipts, preserves row or page locators, and records structured gaps for blocked authority pages or unimplemented raster sampling.
+
 ## BOLD DNA Barcode Source Lane
 
 BOLD is the public DNA barcode source lane for `Aedes aegypti` specimen and COI-style marker records:

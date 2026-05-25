@@ -16,6 +16,7 @@ from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR, build_source_index
 from .index import SourceIndex
 from .sources.dryad_behavior_videos import DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, fetch_dryad_behavior_video_records
+from .sources.aedes_deep_sources import fetch_aedes_deep_source_records
 from .sources.cdc_dengue_surveillance import (
     CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
     DEFAULT_CDC_DENGUE_PAGES,
@@ -2659,6 +2660,25 @@ def ingest_vectorbyte_traits_hosted(
     return response
 
 
+def ingest_aedes_deep_sources_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_aedes_deep_sources import ingest_aedes_deep_sources
+
+    compendium_row_limit = int(payload.get("compendium_row_limit", 5000))
+    bioproject_limit = int(payload.get("bioproject_limit", 20))
+    response = ingest_aedes_deep_sources(
+        artifact_dir=artifact_dir,
+        compendium_row_limit=compendium_row_limit,
+        bioproject_limit=bioproject_limit,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -2685,6 +2705,7 @@ def dispatch_request(
     fetch_vectornet_surveillance_records_fn: Callable[..., object] = fetch_vectornet_surveillance_records,
     fetch_zenodo_aedes_video_records_fn: Callable[..., object] = fetch_zenodo_aedes_video_records,
     fetch_figshare_aedes_video_records_fn: Callable[..., object] = fetch_figshare_aedes_video_records,
+    fetch_aedes_deep_source_records_fn: Callable[..., object] = fetch_aedes_deep_source_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -2792,6 +2813,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectorbyte-traits":
             result = ingest_vectorbyte_traits_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/aedes-deep-sources":
+            result = ingest_aedes_deep_sources_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectornet-surveillance":

@@ -12,6 +12,9 @@ Sources:
 
 - `mosquito_v1_fixtures`: deterministic repo seed records.
 - `gbif_api`: live GBIF species match records when explicitly fetched. Hosted deep refreshes are currently focused on `Aedes aegypti`.
+- `aedes_taxonomy_authorities`: ECDC, OECD, and Mosquito Taxonomic Inventory or WRBU-style authority pages for `Aedes aegypti`, indexed at page grain with classification and synonym/name evidence when source text exposes it.
+
+Taxonomy-authority rows cite saved raw HTML under `raw/aedes_deep_sources/taxonomy_authorities/`. If MTI or a similar authority blocks automated access, Ask Insects writes a structured `taxonomy_authority_fetch_failed` gap rather than treating the lane as complete.
 
 ## Observations And Images
 
@@ -24,6 +27,7 @@ Sources:
 - `inaturalist_api`: bounded iNaturalist observations with licensed photos when explicitly fetched. Local and hosted incremental ingests refresh only `inaturalist_api` rows, preserving literature, genomics, neurobiology, BOLD, and derived facet lanes.
 - `mosquito_alert_gbif`: Mosquito Alert Dataset records for `Aedes aegypti`, fetched through GBIF with dataset and taxon pins, preserving expert-validated citizen-science observation fields and still-image metadata.
 - `vectornet_aedes_surveillance`: official VectorNet ECDC/EFSA Darwin Core Archive rows where the source row identifies `Aedes aegypti`, preserving row-level surveillance fields and derived regional ecology summaries.
+- `aedes_global_compendium_occurrence`: the Kraemer et al. global Aedes occurrence compendium from Zenodo/Dryad, filtered to `Aedes aegypti` rows and indexed with country, coordinates, year, status, source URL, and raw CSV row locator where exposed.
 - `aedes_image_atoms`: derived still-image asset, source-label, and gap records from indexed iNaturalist and Mosquito Alert media rows.
 
 The Aedes image-atoms ingest writes derived records under source `aedes_image_atoms`. Image-asset records preserve the source image record ID, source observation record ID, image URL, source URL, license, attribution or creator, rights holder, observed date or event date, place or country, coordinates when supplied, quality grade when supplied, image format when supplied, and exact upstream locator. With `--mirror-images`, the ingest also performs bounded licensed image-byte mirrors, preserving SHA-256 checksum, byte size, detected dimensions, image format, EXIF presence when detectable, and a raw asset path. Image-label records are deterministic source metadata only, such as iNaturalist quality grade and annotations or Mosquito Alert life stage, basis of record, occurrence status, media format, and media type. If source metadata does not provide life stage, sex, anatomy, or body-part labels, or if mirroring is capped, too large, license-unclear, or fails, the ingest writes queryable `image_gap` records instead of inventing labels or pretending bytes were verified.
@@ -79,6 +83,7 @@ Sources:
 
 - `ncbi_datasets_genome`: parsed NCBI Datasets package for `Aedes aegypti` assembly `GCF_002204515.2`.
 - `ncbi_biosamples`: bounded NCBI BioSample metadata for `Aedes aegypti` samples, strains, isolates, collection dates, geographies, tissues, isolation sources, organizations, and linked SRA identifiers when present.
+- `aedes_population_genomics`: bounded NCBI BioProject metadata records returned by `Aedes aegypti` population-genomics queries, indexed into `genome_features` with BioProject accession, title, description, data type, target scope, submitter, registration date, and raw ESummary locator.
 - `vectorbase_aedes_genomics`: official VectorBase/VEuPathDB `AaegyptiLVP_AGWG` current-release GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut downloads parsed into genes, transcripts, proteins, CDS sequence summaries, transcript sequence summaries, GO annotation, codon usage, ID history, and cross-reference records.
 - `aedes_expression_omics`: bounded NCBI GEO/SRA expression, RNA-seq, and transcriptome metadata parsed into GEO dataset records and SRA run records in the `expression` lane.
 - `aedes_uniprot_proteins`: bounded UniProtKB protein and UniProt proteome metadata for taxonomy 7159, parsed into function, cross-reference, and proteome records in the `proteins` lane.
@@ -89,6 +94,7 @@ NCBI BioSample rows cite saved ESummary batches under `raw/ncbi_biosamples/`. Th
 
 VectorBase rows cite saved files under `raw/vectorbase_genomics/`, with locators such as `VectorBase-68_AaegyptiLVP_AGWG.gff#line/42`, `VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta#line/12`, `VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta#line/12`, `VectorBase-68_AaegyptiLVP_AGWG_AnnotatedTranscripts.fasta#line/12`, `VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz#line/200`, `VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt#line/2`, `VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab#line/1`, or `VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml#link/1`. VectorBase-specific questions, AAEL IDs, CDS or transcript sequence questions, GO annotation, codon usage, identifier-history, and LinkOut questions prefer this source over generic NCBI genome records.
 Expression-omics rows cite saved GEO/SRA ESummary JSON under `raw/expression_omics/`, with locators such as `gds_esummary.json#result/200000001` or `sra_esummary.json#result/44630001/run/1`. This lane exposes study/run metadata, not computed expression matrices. UniProt rows cite saved UniProt REST JSON under `raw/uniprot_proteins/`, with locators such as `uniprotkb_aedes_aegypti.json#results/1` and `uniprot_proteomes_aedes_aegypti.json#results/1`.
+Population-genomics rows cite saved NCBI BioProject ESearch and ESummary JSON under `raw/aedes_deep_sources/population_genomics/`, with locators such as `ncbi_bioproject_population_genomics_summary.json#result/PRJNA1090933`. This lane is project metadata and study discovery, not variant-table extraction.
 
 Current genomics lanes:
 
@@ -195,12 +201,14 @@ Sources:
 
 - `irmapper_aedes`: live IR Mapper Aedes JSON endpoint, filtered by default to `Aedes aegypti` and `Ae. aegypti`.
 - `aedes_resistance_markers`: deterministic kdr, VGSC, and metabolic-resistance marker extraction from indexed Aedes literature records and legal full-text units.
+- `aedes_who_resistance_guidance`: WHO Aedes insecticide-resistance method and discriminating-concentration pages indexed at guidance-page grain with method terms such as test procedures, filter paper, bottle bioassays, larvae, adults, pyriproxyfen, and Bti when present.
 - `aedes_literature_facets`: literature-derived resistance facets while deeper source lanes are built.
 - `aedes_extracted_facts`: cross-lane candidate facts and supplement manifests from indexed Aedes literature, payload supplement metadata, and legal full-text units.
 
 The IR Mapper lane indexes one SQLite `resistance` row per matching public API row, stores the raw IR Mapper row in `record_payloads`, and cites a provenance locator such as `raw/irmapper/Aedes_aegypti.json#row/1`. It preserves source fields for country, locality, coordinates, collection year, developmental stage, test method, insecticide class, insecticide, dosage, mode of action, mortality, resistance status, mechanism, mutation frequency, reference, and source URL when present.
 
 The resistance-marker lane indexes one SQLite `resistance` row per marker candidate, stores marker ID, marker class, gene or family, matched aliases, context terms, insecticide terms, source paper ID, and full-text unit ID when present in `record_payloads`, and cites provenance back to `records#<paper_id>` plus `literature_fulltext_units#<unit_id>` when legal full text is available. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. It covers candidate marker evidence such as kdr/VGSC substitutions and metabolic-resistance genes or families; validated genotype-frequency and haplotype table extraction remains follow-on work.
+WHO resistance-guidance rows cite saved raw HTML under `raw/aedes_deep_sources/who_resistance_guidance/`. Method questions that mention WHO, bioassays, or discriminating concentrations prefer this lane before general IR Mapper phenotype rows.
 
 ## Ecology
 
@@ -209,9 +217,12 @@ Habitat, seasonality, range, and distribution records for `Aedes aegypti`.
 Sources:
 
 - `aedes_occurrence_ecology`: derived country, country-month, seasonality, range, and public habitat summaries from indexed GBIF, iNaturalist, and Mosquito Alert observation payloads.
+- `aedes_worldclim_climate`: WorldClim historical and monthly climate source pages indexed as ecology source records, with temperature, precipitation, GeoTIFF, and related variable terms when present.
+- `aedes_global_compendium_occurrence`: global Aedes occurrence compendium rows filtered to `Aedes aegypti`, exposed in the observations lane and preferred for compendium-specific ecology questions.
 - `aedes_literature_facets`: literature-derived ecology facets while deeper climate, land-use, suitability, breeding-site, and surveillance lanes are built.
 
 The occurrence ecology lane indexes one SQLite `ecology` row per country summary, country-month summary, and public iNaturalist habitat-field summary. Payloads store aggregation type, country, month when applicable, source counts, observation count, sample input record IDs, sample URLs, coordinate count, bounding box, and observed date range. Provenance points to the derived observation join over `gbif_api`, `inaturalist_api`, and `mosquito_alert_gbif`. The source id is `aedes_occurrence_ecology`, and it is refreshed with `scripts/ingest_occurrence_ecology.py`. The May 24, 2026 hosted ingest installed 1,985 occurrence ecology records from 88,065 Aedes observation inputs. Climate rasters, land-use layers, model outputs, and surveillance completeness remain explicit source gaps.
+WorldClim rows cite saved raw HTML under `raw/aedes_deep_sources/worldclim/`. They make the climate source boundary queryable today, while per-observation raster joins remain an explicit `worldclim_raster_sampling_not_enabled` gap until GeoTIFF mirroring and bounded raster sampling are added.
 
 ## Action Notes
 

@@ -749,6 +749,110 @@ sources:
         - citation
         - doi
         - raw_json_locator
+  - id: aedes_taxonomy_authorities
+    name: Aedes aegypti taxonomy authority pages
+    source_type: public_web_authority_pages
+    boundary: Authoritative Aedes aegypti taxonomy and identity pages from ECDC, OECD, and Mosquito Taxonomic Inventory or WRBU-style authority surfaces, indexed at page grain with classification and synonym/name evidence when present
+    query_plane: authority_html_to_sqlite_taxonomy_records
+    artifact_dir: artifacts/mosquito-v1/raw/aedes_deep_sources/taxonomy_authorities
+    ingest_script: scripts/ingest_aedes_deep_sources.py
+    lanes:
+      - taxonomy
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_gap: MTI pages may be mapped but inaccessible from automated fetches when Cloudflare blocks the runtime; that failure is receipted as a taxonomy_authority_fetch_failed gap instead of treated as coverage.
+    source_contract:
+      authority_page_records:
+        - authority
+        - title
+        - classification_terms
+        - synonym_evidence
+        - source_url
+        - raw_html_locator
+  - id: aedes_worldclim_climate
+    name: WorldClim climate source metadata for Aedes aegypti ecology joins
+    source_type: public_climate_source_pages
+    boundary: WorldClim v2.1 historical and monthly climate source pages relevant to future Aedes aegypti climate and suitability joins, indexed at source-page grain with climate-variable evidence
+    query_plane: worldclim_html_to_sqlite_ecology_source_records
+    artifact_dir: artifacts/mosquito-v1/raw/aedes_deep_sources/worldclim
+    ingest_script: scripts/ingest_aedes_deep_sources.py
+    lanes:
+      - ecology
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_gap: Source pages are queryable, but per-observation raster value joins remain a structured gap until GeoTIFFs are mirrored and sampled under a bounded job.
+    source_contract:
+      climate_source_records:
+        - authority
+        - title
+        - variables
+        - source_url
+        - raw_html_locator
+      structured_gaps:
+        - worldclim_raster_sampling_not_enabled
+  - id: aedes_global_compendium_occurrence
+    name: Global Aedes aegypti occurrence compendium rows
+    source_type: public_dataset
+    boundary: Kraemer et al. global compendium of Aedes aegypti and Ae. albopictus occurrence, filtered to Aedes aegypti source rows with country, coordinates, year, status, and row-level provenance where exposed
+    query_plane: zenodo_record_csv_to_sqlite_observation_records
+    api_base: https://zenodo.org/api/records/4946792
+    dataset_doi: 10.5061/dryad.47v3c
+    artifact_dir: artifacts/mosquito-v1/raw/aedes_deep_sources/global_compendium_occurrence
+    ingest_script: scripts/ingest_aedes_deep_sources.py
+    lanes:
+      - observations
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      occurrence_row_records:
+        - row_index
+        - species
+        - country
+        - latitude_longitude_when_supplied
+        - year
+        - status
+        - source_url
+        - raw_csv_locator
+  - id: aedes_population_genomics
+    name: Aedes aegypti population genomics BioProject metadata
+    source_type: public_api
+    boundary: Bounded NCBI BioProject records returned by Aedes aegypti population-genomics queries, preserving BioProject accession, title, description, data type, target scope, submitter, registration date, and raw ESummary provenance
+    query_plane: ncbi_eutils_bioproject_esearch_esummary_to_sqlite_genome_feature_records
+    api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+    artifact_dir: artifacts/mosquito-v1/raw/aedes_deep_sources/population_genomics
+    ingest_script: scripts/ingest_aedes_deep_sources.py
+    lanes:
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      bioproject_records:
+        - accession
+        - title
+        - description
+        - data_type
+        - target_scope
+        - submitter
+        - registration_date
+        - raw_esummary_locator
+  - id: aedes_who_resistance_guidance
+    name: WHO Aedes insecticide-resistance methods and guidance
+    source_type: public_web_guidance
+    boundary: WHO Aedes insecticide-resistance method and discriminating-concentration pages indexed at page grain with method terms such as test procedures, discriminating concentrations, filter paper, bottle bioassays, larvae, adults, pyriproxyfen, and Bti when present
+    query_plane: who_resistance_guidance_html_to_sqlite_resistance_records
+    artifact_dir: artifacts/mosquito-v1/raw/aedes_deep_sources/who_resistance_guidance
+    ingest_script: scripts/ingest_aedes_deep_sources.py
+    lanes:
+      - resistance
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      guidance_page_records:
+        - organization
+        - title
+        - method_terms
+        - source_url
+        - raw_html_locator
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects
