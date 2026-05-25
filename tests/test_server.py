@@ -32,6 +32,7 @@ from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from askinsects.sources.vectorbase_genomics import VectorBaseGenomicsResult
 from askinsects.sources.vectornet_surveillance import VectorNetBuildResult
+from askinsects.sources.who_dengue_surveillance import WhoDengueSurveillanceResult
 from askinsects.sources.zenodo_aedes_videos import ZenodoAedesVideoResult
 from tests.test_inaturalist_source import observation
 from tests.test_image_atoms_source import write_image_fixture
@@ -1039,6 +1040,81 @@ class ServerTests(unittest.TestCase):
             self.assertNotIn(".staging", payload_rows[0]["payload_json"])
             receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
             self.assertEqual(receipt["source_counts"]["aedes_cdc_dengue_surveillance"], 1)
+
+    def test_ingest_who_dengue_surveillance_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(sources, *, raw_dir, retrieved_at):
+                raw_path = raw_dir / "who.html"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text("<html>WHO dengue surveillance.</html>", encoding="utf-8")
+                return WhoDengueSurveillanceResult(
+                    source_id="aedes_who_dengue_surveillance",
+                    records=[
+                        EvidenceRecord(
+                            record_id="public_health:surveillance:who_dengue:wer_global_update:test",
+                            lane="public_health",
+                            source="aedes_who_dengue_surveillance",
+                            title="WHO WER dengue global update",
+                            text="Official WHO dengue global situation, surveillance and progress update for Aedes aegypti public-health intelligence.",
+                            species="Aedes aegypti",
+                            url="https://www.who.int/publications/i/item/who-wer10052-665-678",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="aedes_who_dengue_surveillance",
+                                locator=f"{raw_path}#page",
+                                retrieved_at=retrieved_at,
+                                license="WHO public page; source page terms apply",
+                                source_url="https://www.who.int/publications/i/item/who-wer10052-665-678",
+                            ),
+                            payload={"page_kind": "wer_global_update", "raw_html_path": raw_path.as_posix()},
+                        )
+                    ],
+                    gaps=[
+                        {
+                            "source": "aedes_who_dengue_surveillance",
+                            "lane": "public_health",
+                            "reason": "who_dengue_dashboard_export_not_machine_readable",
+                            "retrieved_at": retrieved_at,
+                        }
+                    ],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_urls=["https://www.who.int/publications/i/item/who-wer10052-665-678"],
+                    page_count=1,
+                    situation_report_count=0,
+                    archive_count=0,
+                    publication_count=0,
+                    dashboard_locator_count=0,
+                    export_locator_count=0,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/who-dengue-surveillance",
+                {"source_urls": ["https://www.who.int/publications/i/item/who-wer10052-665-678"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_who_dengue_surveillance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_who_dengue_surveillance"], 1)
+            self.assertFalse(response.payload["fully_parsed"])
+            self.assertEqual(response.payload["aedes_who_dengue_surveillance"]["page_count"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_who_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["source_counts"]["aedes_who_dengue_surveillance"], 1)
 
     def test_ingest_vectorbase_genomics_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

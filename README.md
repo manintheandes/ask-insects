@@ -348,6 +348,18 @@ python3 -m askinsects ask "show PAHO dengue surveillance evidence for Aedes aegy
 
 The lane uses source id `aedes_paho_dengue_surveillance`. It writes raw PAHO dengue situation report HTML, dashboard landing HTML, PAHO/EIH Core Indicators download-page HTML, and the released Core Indicators ZIP under `raw/paho_dengue_surveillance/`. It parses regional week, year-to-date, subregion, serotype, figure/table, dashboard page, iframe locator, and annual Core Indicators dengue-case CSV rows into the `public_health` lane, stores metrics and PAHO locators in SQLite payloads, and preserves provenance to the saved raw artifact plus official PAHO URLs. PAHO/EIH Core Indicators annual country/territory dengue rows are now a proven stable machine-readable feed. PAHO/PLISA dashboard pages and iframe URLs remain queryable locator records, but country-week Tableau/PHIP dashboard rows remain a source gap until there is a stable weekly CSV, JSON, or API endpoint or explicit authorized access.
 
+## WHO Dengue Surveillance Source Lane
+
+WHO dengue surveillance is indexed as `Aedes aegypti` public-health intelligence at the official page, report, and dashboard-locator grain:
+
+```bash
+python3 -m askinsects ingest-who-dengue-surveillance
+python3 -m askinsects ask "show WHO dengue surveillance evidence for Aedes aegypti" --json
+python3 -m askinsects ask "show WHO dengue dashboard locator evidence for Aedes aegypti" --json
+```
+
+The lane uses source id `aedes_who_dengue_surveillance`. It writes raw WHO dengue surveillance page HTML, WHO WER global update page HTML, WHO Western Pacific situation-update landing HTML, and WHO Western Pacific Health Data Platform dengue dashboard locator HTML under `raw/who_dengue_surveillance/`. It indexes one `public_health` record per WHO page, linked situation-report/update/archive records, publication download locators, parsed headline metrics when present in page HTML, and dashboard locator records. Dashboard locator records are queryable, but country/time dashboard cells remain a source gap until WHO exposes a stable machine-readable CSV, ZIP, XLSX, JSON, or API endpoint or explicit authorized access is obtained.
+
 ## CDC Dengue Surveillance Source Lane
 
 CDC dengue ArboNET surveillance is indexed as U.S. `Aedes aegypti` public-health intelligence at page, visualization-config, CSV row, and limitation grain:
@@ -496,6 +508,7 @@ python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-extracted-facts --hosted
 python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
 python3 -m askinsects ingest-vectornet-surveillance --hosted
+python3 -m askinsects ingest-who-dengue-surveillance --hosted
 python3 -m askinsects ingest-cdc-dengue-surveillance --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```

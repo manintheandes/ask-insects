@@ -653,6 +653,39 @@ sources:
     provenance_required: true
     live_fetch: opt_in
     source_gap: PAHO/EIH Core Indicators annual country/territory dengue rows are proven machine-readable via ZIP/CSV, but PAHO/PLISA country-week dashboard data remains a source gap until PAHO exposes a stable weekly machine-readable download/API or explicit authorized access is obtained
+  - id: aedes_who_dengue_surveillance
+    name: WHO dengue surveillance for Aedes aegypti public-health intelligence
+    source_type: public_health_surveillance_page_and_report
+    boundary: Official WHO dengue surveillance pages, WER global dengue update pages, WHO Western Pacific situation-update pages and archives, and WHO Western Pacific Health Data Platform dengue dashboard locators, indexed at WHO page/report/dashboard-locator grain with direct export locators when exposed
+    query_plane: who_dengue_pages_reports_and_dashboard_locators_to_sqlite_public_health_records
+    artifact_dir: artifacts/mosquito-v1/raw/who_dengue_surveillance
+    ingest_script: scripts/ingest_who_dengue_surveillance.py
+    default_pages:
+      - https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue
+      - https://www.who.int/publications/i/item/who-wer10052-665-678
+      - https://data.wpro.who.int/topic/dengue
+      - https://data.wpro.who.int/dengue-surveillance-2021
+    lanes:
+      - public_health
+    provenance_required: true
+    live_fetch: opt_in
+    source_contract:
+      page_records:
+        - organization
+        - page_kind
+        - topic
+        - source_url
+        - raw_html_locator
+      linked_report_records:
+        - label
+        - linked_url
+        - source_page_url
+        - raw_html_locator
+      dashboard_locator_records:
+        - dashboard_url
+        - machine_readable_cell_status
+        - raw_html_locator
+    source_gap: WHO page/report/dashboard-locator grain is mapped and queryable, but dashboard row-level data remains a source gap until WHO exposes a stable unauthenticated machine-readable CSV, ZIP, XLSX, JSON, or API endpoint or explicit authorized access is obtained
   - id: aedes_cdc_dengue_surveillance
     name: CDC dengue ArboNET surveillance for Aedes aegypti public-health intelligence
     source_type: public_health_surveillance_dashboard

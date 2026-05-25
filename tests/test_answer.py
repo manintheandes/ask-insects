@@ -2401,6 +2401,87 @@ class AnswerTests(unittest.TestCase):
                 "public_health:surveillance:paho_dengue:core_indicator:dengue_cases:BRA:2025",
             )
 
+    def test_who_surveillance_questions_prefer_who_public_health_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:guidance:who-dengue",
+                        "aedes_public_health_guidance",
+                        "Official WHO dengue guidance for Aedes aegypti prevention.",
+                    ),
+                    public_health_record(
+                        "public_health:surveillance:who_dengue:wer_global_update:abc123",
+                        "aedes_who_dengue_surveillance",
+                        "Official WHO WER dengue global situation, surveillance and progress update for Aedes aegypti public-health intelligence.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show WHO dengue surveillance evidence for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_who_dengue_surveillance")
+
+    def test_who_dashboard_questions_prefer_dashboard_locator_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:surveillance:who_dengue:wer_global_update:abc123",
+                        "aedes_who_dengue_surveillance",
+                        "Official WHO WER dengue global situation, surveillance and progress update.",
+                    ),
+                    public_health_record(
+                        "public_health:surveillance:who_dengue:dashboard_locator:def456",
+                        "aedes_who_dengue_surveillance",
+                        "Official WHO dengue dashboard locator for Western Pacific Health Data Platform. Not a country-time cell row yet.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show WHO dengue dashboard locator evidence for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(
+                answer["evidence"][0]["record_id"],
+                "public_health:surveillance:who_dengue:dashboard_locator:def456",
+            )
+
+    def test_who_fact_sheet_questions_still_prefer_guidance(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:surveillance:who_dengue:wer_global_update:abc123",
+                        "aedes_who_dengue_surveillance",
+                        "Official WHO WER dengue global situation, surveillance and progress update.",
+                    ),
+                    public_health_record(
+                        "public_health:guidance:who-dengue",
+                        "aedes_public_health_guidance",
+                        "Official WHO dengue fact sheet and prevention guidance for Aedes aegypti.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show WHO dengue fact sheet guidance for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_public_health_guidance")
+
     def test_neurobiology_questions_prefer_brain_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

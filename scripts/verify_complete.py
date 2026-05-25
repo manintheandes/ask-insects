@@ -111,6 +111,7 @@ REQUIRED_FILES = (
     "askinsects/sources/figshare_aedes_videos.py",
     "askinsects/sources/public_health.py",
     "askinsects/sources/paho_surveillance.py",
+    "askinsects/sources/who_dengue_surveillance.py",
     "askinsects/sources/cdc_dengue_surveillance.py",
     "askinsects/sources/pathogen_taxonomy.py",
     "askinsects/sources/ncbi_biosample.py",
@@ -146,6 +147,7 @@ REQUIRED_FILES = (
     "scripts/ingest_figshare_aedes_videos.py",
     "scripts/ingest_public_health_guidance.py",
     "scripts/ingest_paho_dengue_surveillance.py",
+    "scripts/ingest_who_dengue_surveillance.py",
     "scripts/ingest_cdc_dengue_surveillance.py",
     "scripts/ingest_pathogen_taxonomy.py",
     "scripts/ingest_ncbi_biosamples.py",
@@ -207,6 +209,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_public_health_guidance.py",
     "tests/test_paho_surveillance_source.py",
     "tests/test_ingest_paho_dengue_surveillance.py",
+    "tests/test_who_dengue_surveillance_source.py",
+    "tests/test_ingest_who_dengue_surveillance.py",
     "tests/test_cdc_dengue_surveillance_source.py",
     "tests/test_ingest_cdc_dengue_surveillance.py",
     "tests/test_pathogen_taxonomy_source.py",
@@ -281,6 +285,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_public_health_guidance",
     "tests.test_paho_surveillance_source",
     "tests.test_ingest_paho_dengue_surveillance",
+    "tests.test_who_dengue_surveillance_source",
+    "tests.test_ingest_who_dengue_surveillance",
     "tests.test_cdc_dengue_surveillance_source",
     "tests.test_ingest_cdc_dengue_surveillance",
     "tests.test_pathogen_taxonomy_source",
@@ -525,6 +531,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_literature_facets",
         "aedes_public_health_guidance",
         "aedes_paho_dengue_surveillance",
+        "aedes_who_dengue_surveillance",
         "aedes_cdc_dengue_surveillance",
         "mosquito_alert_gbif",
         "vectornet_aedes_surveillance",
@@ -567,6 +574,15 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing PAHO dengue surveillance term: {term}")
+    for term in (
+        "aedes_who_dengue_surveillance",
+        "scripts/ingest_who_dengue_surveillance.py",
+        "who_dengue_pages_reports_and_dashboard_locators_to_sqlite_public_health_records",
+        "WHO page/report/dashboard-locator grain",
+        "dashboard row-level data remains a source gap",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing WHO dengue surveillance term: {term}")
     for term in (
         "aedes_cdc_dengue_surveillance",
         "scripts/ingest_cdc_dengue_surveillance.py",

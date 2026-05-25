@@ -682,6 +682,7 @@ def _search_queries(question: str) -> list[str]:
             "recommendation",
             "recommendations",
             "who",
+            "wer",
             "paho",
             "plisa",
             "surveillance",
@@ -717,6 +718,27 @@ def _search_queries(question: str) -> list[str]:
                 "CDC ArboNET dengue surveillance",
                 "CDC dengue current historic CSV",
                 "CDC dengue cases by jurisdiction county week",
+                question,
+            ]
+        if "who" in q and any(term in q for term in ("wer", "surveillance", "situation update", "dashboard", "health data", "global update", "cases", "deaths")):
+            if any(term in q for term in ("dashboard", "health data", "data platform", "shiny")):
+                return [
+                    "WHO dengue dashboard locator",
+                    "WHO Western Pacific Health Data Platform dengue",
+                    "WHO dengue surveillance dashboard",
+                    question,
+                ]
+            if any(term in q for term in ("wer", "global update", "publication", "2024")):
+                return [
+                    "WHO WER dengue global situation surveillance progress",
+                    "WHO dengue global situation surveillance progress 2024 update",
+                    "WHO dengue publication download",
+                    question,
+                ]
+            return [
+                "WHO dengue surveillance situation update",
+                "WHO Western Pacific dengue situation update",
+                "WHO dengue surveillance",
                 question,
             ]
         if any(term in q for term in ("guidance", "prevention", "prevent", "recommendation", "recommendations", "cdc", "ecdc", "who")):
@@ -1292,6 +1314,39 @@ def _paho_surveillance_records(index: SourceIndex, question: str, *, limit: int)
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _who_surveillance_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if "who" not in q and "wer" not in q:
+        return []
+    if not any(term in q for term in ("surveillance", "situation", "dashboard", "health data", "wer", "global update", "cases", "deaths")):
+        return []
+
+    clauses = ["source = ?"]
+    params: list[object] = ["aedes_who_dengue_surveillance"]
+    if any(term in q for term in ("dashboard", "health data", "data platform", "shiny")):
+        clauses.append("record_id LIKE ?")
+        params.append("%dashboard_locator%")
+    elif any(term in q for term in ("wer", "global update", "publication", "download", "2024")):
+        clauses.append("(record_id LIKE ? OR record_id LIKE ? OR lower(text) LIKE ?)")
+        params.extend(["%wer_global_update%", "%publication_download%", "%global%"])
+    elif any(term in q for term in ("situation update", "situation report", "bi-weekly", "biweekly")):
+        clauses.append("(record_id LIKE ? OR record_id LIKE ?)")
+        params.extend(["%situation_report%", "%archive%"])
+
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT *
+            FROM records
+            WHERE {" AND ".join(clauses)}
+            ORDER BY record_id DESC
+            LIMIT ?
+            """,
+            (*params, max(limit * 10, 20)),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def _cdc_surveillance_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
     q = question.lower()
     if not any(term in q for term in ("cdc", "arbonet")):
@@ -1415,6 +1470,7 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
             "fact sheet",
             "factsheet",
             "guidance",
+            "wer",
             "paho",
             "plisa",
             "surveillance",
@@ -1439,10 +1495,36 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
             "who",
         )
     )
+    wants_who_surveillance = ("who" in q or "world health organization" in q or "wer" in q) and any(
+        term in q
+        for term in (
+            "wer",
+            "surveillance",
+            "situation",
+            "dashboard",
+            "health data",
+            "global update",
+            "cases",
+            "deaths",
+        )
+    )
+    if wants_who_surveillance:
+        wants_guidance = any(
+            term in q
+            for term in (
+                "fact sheet",
+                "factsheet",
+                "guidance",
+                "prevention",
+                "prevent",
+                "recommendation",
+                "recommendations",
+            )
+        )
 
     requested_years = set(re.findall(r"\b(?:19|20)\d{2}\b", q))
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int, int]:
+    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int, int, int]:
         haystack = f"{record.title}\n{record.text}\n{record.url or ''}".lower()
         if "ecdc" in q:
             organization_rank = 0 if "ecdc" in haystack else 1
@@ -1454,8 +1536,19 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
             organization_rank = 0
         factsheet_rank = 0 if not any(term in q for term in ("fact sheet", "factsheet")) or any(term in haystack for term in ("fact sheet", "factsheet")) else 1
         guidance_rank = 0 if wants_guidance and record.source == "aedes_public_health_guidance" else 1
+        who_rank = 0 if wants_who_surveillance and record.source == "aedes_who_dengue_surveillance" else 1
         paho_rank = 0 if not wants_guidance and any(term in q for term in ("paho", "plisa", "surveillance")) and record.source == "aedes_paho_dengue_surveillance" else 1
-        if record.source == "aedes_paho_dengue_surveillance" and any(term in q for term in ("paho", "plisa", "surveillance")):
+        if record.source == "aedes_who_dengue_surveillance" and wants_who_surveillance:
+            if any(term in q for term in ("dashboard", "health data", "data platform", "shiny")) and "dashboard_locator" in record.record_id:
+                record_rank = 0
+            elif any(term in q for term in ("wer", "global update", "publication", "2024")) and ("wer_global_update" in record.record_id or "publication_download" in record.record_id):
+                record_rank = 0
+            elif any(term in q for term in ("situation", "bi-weekly", "biweekly")) and ("situation_report" in record.record_id or "archive" in record.record_id):
+                record_rank = 0
+            else:
+                record_rank = 1
+            recency_rank = 0
+        elif record.source == "aedes_paho_dengue_surveillance" and any(term in q for term in ("paho", "plisa", "surveillance")):
             if any(term in q for term in ("core indicator", "core indicators", "open data", "annual", "country", "territory", "csv", "machine-readable", "machine readable")) and "core_indicator" in record.record_id:
                 record_rank = 0
                 year_match = re.search(r":(\d{4})$", record.record_id)
@@ -1487,6 +1580,7 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
             record_rank = 0
             recency_rank = 0
         return (
+            who_rank,
             paho_rank,
             guidance_rank,
             organization_rank,
@@ -1996,7 +2090,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "public_health":
+        for record in _who_surveillance_records(index, plan.question, limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
         for record in _paho_surveillance_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
             all_records.append(record)
             seen_record_ids.add(record.record_id)
         for record in _cdc_surveillance_records(index, plan.question, limit=limit):
