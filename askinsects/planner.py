@@ -14,6 +14,23 @@ class QueryPlan:
 
 def plan_question(question: str) -> QueryPlan:
     q = question.lower()
+    advanced_orthology_terms = (
+        "orthogroup",
+        "orthogroups",
+        "coortholog",
+        "coorthologs",
+        "inparalog",
+        "inparalogs",
+        "current id resolution",
+        "current-id resolution",
+    )
+    if any(term in q for term in advanced_orthology_terms):
+        return QueryPlan(
+            question,
+            "genomics",
+            ("genome_features", "genes", "proteins", "transcripts", "genome_assemblies", "literature", "taxonomy"),
+            question,
+        )
     video_motion_terms = (
         "motion",
         "velocity",
@@ -93,6 +110,12 @@ def plan_question(question: str) -> QueryPlan:
             "gene expression",
             "expression data",
             "expression omics",
+            "expression matrix",
+            "expression matrices",
+            "count matrix",
+            "count matrices",
+            "differential expression",
+            "differential-expression",
             "rna-seq",
             "rnaseq",
             "transcriptome",
@@ -483,6 +506,14 @@ def plan_question(question: str) -> QueryPlan:
         "orthologs",
         "orthology",
         "orthomcl",
+        "orthogroup",
+        "orthogroups",
+        "coortholog",
+        "coorthologs",
+        "inparalog",
+        "inparalogs",
+        "current id resolution",
+        "current-id resolution",
         "protein",
         "proteins",
         "uniprot",
@@ -532,6 +563,14 @@ def plan_question(question: str) -> QueryPlan:
                 "orthologs",
                 "orthology",
                 "orthomcl",
+                "orthogroup",
+                "orthogroups",
+                "coortholog",
+                "coorthologs",
+                "inparalog",
+                "inparalogs",
+                "current id resolution",
+                "current-id resolution",
             )
         ):
             lanes = ("genome_features", "genes", "proteins", "transcripts", "genome_assemblies", "literature", "taxonomy")

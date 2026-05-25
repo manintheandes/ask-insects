@@ -17,6 +17,25 @@ USER_AGENT = "AskInsects/0.1 source-plane"
 EUTILS_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 GEO_TERM = '"Aedes aegypti"[Organism] AND (expression OR RNA-seq OR transcriptome)'
 SRA_TERM = '"Aedes aegypti"[Organism] AND RNA-Seq'
+ANALYSIS_SCOPE_GAPS = (
+    {
+        "reason": "raw_sra_reanalysis_not_performed",
+        "title": "Aedes aegypti raw SRA reanalysis source gap",
+        "text": (
+            "Aedes aegypti expression omics source gap: raw SRA reanalysis into "
+            "count matrices and normalized expression matrices has not yet been "
+            "performed as source-grade Ask Insects rows."
+        ),
+    },
+    {
+        "reason": "differential_expression_outputs_not_indexed",
+        "title": "Aedes aegypti differential-expression output source gap",
+        "text": (
+            "Aedes aegypti expression omics source gap: differential-expression "
+            "outputs are not yet indexed as queryable source-grade rows."
+        ),
+    },
+)
 
 
 @dataclass(frozen=True)
@@ -50,6 +69,68 @@ def _write_raw(raw_dir: Path, filename: str, payload: dict[str, object]) -> Path
     path = raw_dir / filename
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
+
+
+def _analysis_scope_boundary(raw_dir: Path, retrieved_at: str) -> tuple[Path, list[dict[str, object]]]:
+    gaps = [
+        {
+            "source": EXPRESSION_OMICS_SOURCE_ID,
+            "lane": "expression",
+            "reason": str(gap["reason"]),
+            "retrieved_at": retrieved_at,
+            "scope": (
+                "Current expression omics coverage indexes NCBI GEO dataset metadata "
+                "and SRA run metadata. It does not yet perform raw-read reanalysis, "
+                "count-matrix construction, normalized expression matrices, or "
+                "differential-expression output extraction."
+            ),
+        }
+        for gap in ANALYSIS_SCOPE_GAPS
+    ]
+    path = _write_raw(
+        raw_dir,
+        "source_boundary.json",
+        {
+            "source": EXPRESSION_OMICS_SOURCE_ID,
+            "retrieved_at": retrieved_at,
+            "gaps": gaps,
+        },
+    )
+    return path, gaps
+
+
+def _analysis_scope_gap_records(boundary_path: Path, gaps: list[dict[str, object]], *, retrieved_at: str) -> list[EvidenceRecord]:
+    gap_text_by_reason = {str(gap["reason"]): str(gap["text"]) for gap in ANALYSIS_SCOPE_GAPS}
+    gap_title_by_reason = {str(gap["reason"]): str(gap["title"]) for gap in ANALYSIS_SCOPE_GAPS}
+    records: list[EvidenceRecord] = []
+    for gap in gaps:
+        reason = str(gap["reason"])
+        records.append(
+            EvidenceRecord(
+                record_id=f"expression:gap:{reason}",
+                lane="expression",
+                source=EXPRESSION_OMICS_SOURCE_ID,
+                title=gap_title_by_reason.get(reason, f"Aedes aegypti expression omics source gap {reason}"),
+                text=gap_text_by_reason.get(reason, f"Aedes aegypti expression omics source gap: {reason}."),
+                species="Aedes aegypti",
+                url="https://www.ncbi.nlm.nih.gov/sra",
+                media_url=None,
+                provenance=Provenance(
+                    source_id=EXPRESSION_OMICS_SOURCE_ID,
+                    locator=f"{boundary_path.as_posix()}#gap/{reason}",
+                    retrieved_at=retrieved_at,
+                    license="Ask Insects source boundary audit",
+                    source_url="https://www.ncbi.nlm.nih.gov/sra",
+                ),
+                payload={
+                    "atom_type": "source_gap",
+                    "reason": reason,
+                    "gap": gap,
+                    "raw_json_path": boundary_path.as_posix(),
+                },
+            )
+        )
+    return records
 
 
 def _clean(value: object) -> str:
@@ -272,6 +353,10 @@ def fetch_expression_omics_records(
     requested_urls: list[str] = []
     search_page_size = max(1, int(search_page_size))
     summary_batch_size = max(1, int(summary_batch_size))
+    boundary_path, analysis_gaps = _analysis_scope_boundary(raw_dir, retrieved_at)
+    raw_artifacts.append(boundary_path.as_posix())
+    gaps.extend(analysis_gaps)
+    records.extend(_analysis_scope_gap_records(boundary_path, analysis_gaps, retrieved_at=retrieved_at))
 
     for db, term, limit, no_result_reason in (
         ("gds", GEO_TERM, geo_limit, "expression_omics_no_geo_results"),

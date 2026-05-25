@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import gzip
+import json
 import re
 import shutil
 from pathlib import Path
@@ -32,6 +33,17 @@ DEFAULT_VECTORBASE_FILE_URLS = {
     "orthologs": f"{ORTHOMCL_CORE_PAIRS_URL}/orthologs.txt.gz",
 }
 DEFAULT_VECTORBASE_SPECIES = "Aedes aegypti"
+ADVANCED_ORTHOLOGY_GAP = {
+    "source": VECTORBASE_GENOMICS_SOURCE_ID,
+    "lane": "genome_features",
+    "reason": "advanced_orthology_current_id_resolution",
+    "scope": (
+        "Current Ask Insects VectorBase/OrthoMCL coverage indexes first-pass "
+        "OrthoMCL CURRENT ortholog-pair rows where either side starts with "
+        "aaeg-old|AAEL. It does not yet include coorthologs, inparalogs, "
+        "orthogroups, or current-ID resolution."
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -79,6 +91,48 @@ def _safe_download_name(kind: str, url: str) -> str:
 
 def _record_id_piece(value: str) -> str:
     return re.sub(r"[^A-Za-z0-9_.:-]+", "_", value.strip()) or "unknown"
+
+
+def _write_source_boundary(raw_dir: Path, retrieved_at: str) -> Path:
+    path = raw_dir / "source_boundary.json"
+    payload = {
+        "source": VECTORBASE_GENOMICS_SOURCE_ID,
+        "retrieved_at": retrieved_at,
+        "gaps": [{**ADVANCED_ORTHOLOGY_GAP, "retrieved_at": retrieved_at}],
+    }
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def _advanced_orthology_gap_record(boundary_path: Path, retrieved_at: str) -> EvidenceRecord:
+    gap = {**ADVANCED_ORTHOLOGY_GAP, "retrieved_at": retrieved_at}
+    return EvidenceRecord(
+        record_id="vectorbase:gap:advanced_orthology_current_id_resolution",
+        lane="genome_features",
+        source=VECTORBASE_GENOMICS_SOURCE_ID,
+        title="Aedes aegypti VectorBase advanced orthology source gap",
+        text=(
+            "VectorBase genomics source gap: Ask Insects currently indexes first-pass "
+            "OrthoMCL CURRENT ortholog-pair rows in the old AAEL namespace, not "
+            "coorthologs, inparalogs, orthogroups, or current-ID resolution."
+        ),
+        species=DEFAULT_VECTORBASE_SPECIES,
+        url=ORTHOMCL_CORE_PAIRS_URL,
+        media_url=None,
+        provenance=Provenance(
+            source_id=VECTORBASE_GENOMICS_SOURCE_ID,
+            locator=f"{boundary_path.as_posix()}#gap/advanced_orthology_current_id_resolution",
+            retrieved_at=retrieved_at,
+            license="Ask Insects source boundary audit",
+            source_url=ORTHOMCL_CORE_PAIRS_URL,
+        ),
+        payload={
+            "atom_type": "source_gap",
+            "reason": "advanced_orthology_current_id_resolution",
+            "gap": gap,
+            "raw_json_path": boundary_path.as_posix(),
+        },
+    )
 
 
 def _feature_lane(feature_type: str) -> str | None:
@@ -790,6 +844,10 @@ def fetch_vectorbase_genomics_records(
     records: list[EvidenceRecord] = []
     gaps: list[dict[str, object]] = []
     raw_artifacts: list[str] = []
+    boundary_path = _write_source_boundary(raw_dir, retrieved)
+    raw_artifacts.append(boundary_path.as_posix())
+    gaps.append({**ADVANCED_ORTHOLOGY_GAP, "retrieved_at": retrieved})
+    records.append(_advanced_orthology_gap_record(boundary_path, retrieved))
 
     downloaded: dict[str, Path] = {}
     for kind, url in urls.items():

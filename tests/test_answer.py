@@ -284,6 +284,26 @@ def expression_record(record_id):
     )
 
 
+def expression_gap_record(record_id, text):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="expression",
+        source="aedes_expression_omics",
+        title="Aedes aegypti expression omics source gap",
+        text=text,
+        species="Aedes aegypti",
+        url="https://www.ncbi.nlm.nih.gov/sra",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_expression_omics",
+            locator="raw/expression_omics/source_boundary.json#gap/raw_sra_reanalysis_not_performed",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="Ask Insects source boundary audit",
+        ),
+        payload={"atom_type": "source_gap", "reason": "raw_sra_reanalysis_not_performed"},
+    )
+
+
 def uniprot_record(record_id):
     accession = record_id.rsplit(":", 1)[-1]
     return EvidenceRecord(
@@ -410,6 +430,8 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("where is Aedes aegypti observed by month in Brazil?").answer_shape, "ecology")
         self.assertEqual(plan_question("what range and seasonality evidence exists for Aedes aegypti?").lanes[0], "ecology")
         self.assertEqual(plan_question("show GEO RNA-seq expression data for Aedes aegypti midgut").answer_shape, "expression")
+        self.assertEqual(plan_question("show Aedes aegypti expression matrix differential expression data").answer_shape, "expression")
+        self.assertEqual(plan_question("show Aedes aegypti raw SRA reanalysis count matrix").answer_shape, "expression")
         self.assertEqual(plan_question("show UniProt protein function for AAEL012345").lanes[0], "proteins")
         self.assertEqual(plan_question("show VectorByte temperature trait data for Aedes aegypti fecundity").lanes[0], "traits")
         self.assertEqual(plan_question("show World Mosquito Program Wolbachia intervention evidence from Yogyakarta").answer_shape, "public_health")
@@ -420,6 +442,10 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show global Aedes aegypti occurrence compendium rows for Brazil").answer_shape, "ecology")
         self.assertEqual(plan_question("show Aedes aegypti population genomics BioProject evidence").lanes[0], "genome_features")
         self.assertEqual(plan_question("show NCBI dbSNP variant records for Aedes aegypti").lanes[0], "genome_features")
+        self.assertEqual(
+            plan_question("show Aedes aegypti orthogroups coorthologs inparalogs current ID resolution").answer_shape,
+            "genomics",
+        )
         self.assertEqual(plan_question("show WHO Aedes insecticide resistance bioassay guidance").answer_shape, "resistance")
 
     def test_answers_include_provenance_or_gap(self):
@@ -454,6 +480,44 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "expression")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_expression_omics")
+
+    def test_expression_matrix_questions_prefer_queryable_source_gap_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    expression_gap_record(
+                        "expression:gap:raw_sra_reanalysis_not_performed",
+                        "Aedes aegypti expression omics source gap: raw SRA reanalysis, count matrices, normalized expression matrices, and differential-expression outputs are not yet indexed as source-grade rows.",
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:asset:irrelevant",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video asset irrelevant",
+                        text="Aedes aegypti video asset with a source table.",
+                        species="Aedes aegypti",
+                        url="https://example.org/video",
+                        media_url="https://example.org/video.mp4",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/assets.json#asset/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti raw SRA reanalysis count matrix", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "expression")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_expression_omics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "expression:gap:raw_sra_reanalysis_not_performed")
+            self.assertIn("count matrices", answer["answer"])
 
     def test_uniprot_questions_prefer_uniprot_protein_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2604,6 +2668,60 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:ortholog:aaeg-old_AAEL000076:aaeo_O67680:1")
+
+    def test_advanced_orthology_questions_prefer_queryable_source_gap_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:gap:advanced_orthology_current_id_resolution",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase advanced orthology source gap",
+                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog-pair rows in the old AAEL namespace, not coorthologs, inparalogs, orthogroups, or current-ID resolution.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/source_boundary.json#gap/advanced_orthology_current_id_resolution",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="Ask Insects source boundary audit",
+                        ),
+                        payload={"atom_type": "source_gap", "reason": "advanced_orthology_current_id_resolution"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:asset:irrelevant",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video asset irrelevant",
+                        text="Aedes aegypti video asset with a source table.",
+                        species="Aedes aegypti",
+                        url="https://example.org/video",
+                        media_url="https://example.org/video.mp4",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/assets.json#asset/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Aedes aegypti orthogroups coorthologs inparalogs current ID resolution",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "vectorbase_aedes_genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:gap:advanced_orthology_current_id_resolution")
+            self.assertIn("not coorthologs", answer["answer"])
 
     def test_vectorbase_auxiliary_genomics_questions_route_to_genome_features(self):
         with tempfile.TemporaryDirectory() as tmpdir:

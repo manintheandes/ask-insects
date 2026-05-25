@@ -58,7 +58,7 @@ class IngestWave1SourceTests(unittest.TestCase):
                 )
             }
             self.assertEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 4)
-            self.assertEqual(counts[("aedes_expression_omics", "expression")], 2)
+            self.assertEqual(counts[("aedes_expression_omics", "expression")], 4)
             self.assertEqual(counts[("aedes_uniprot_proteins", "proteins")], 2)
             self.assertEqual(counts[("aedes_wolbachia_interventions", "public_health")], 1)
             sources_status = (artifact_dir / "source_status.json").read_text(encoding="utf-8")
@@ -130,7 +130,7 @@ class IngestWave1SourceTests(unittest.TestCase):
                     limit=100,
                 )
             }
-            self.assertEqual(counts["aedes_expression_omics"], 2)
+            self.assertEqual(counts["aedes_expression_omics"], 4)
             self.assertEqual(counts["aedes_uniprot_proteins"], 2)
             self.assertEqual(counts["aedes_wolbachia_interventions"], 1)
 
@@ -177,7 +177,15 @@ class IngestWave1SourceTests(unittest.TestCase):
             self.assertTrue(expression["preserved_existing"])
             index = SourceIndex(artifact_dir / "source_index.sqlite")
             rows = index.sql("select record_id from records where source='aedes_expression_omics' order by record_id", limit=10)
-            self.assertEqual([row["record_id"] for row in rows], ["expression:geo:GSE999999", "expression:sra_run:SRR999001"])
+            self.assertEqual(
+                [row["record_id"] for row in rows],
+                [
+                    "expression:gap:differential_expression_outputs_not_indexed",
+                    "expression:gap:raw_sra_reanalysis_not_performed",
+                    "expression:geo:GSE999999",
+                    "expression:sra_run:SRR999001",
+                ],
+            )
 
 
 if __name__ == "__main__":

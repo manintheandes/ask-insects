@@ -157,9 +157,15 @@ class VectorBaseGenomicsSourceTests(unittest.TestCase):
             self.assertEqual(ortholog.payload["partner_species_code"], "aaeo")
             self.assertEqual(ortholog.payload["partner_id"], "O67680")
             self.assertEqual(ortholog.payload["score"], 0.352)
+            advanced_gap = next(record for record in result.records if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution")
+            self.assertEqual(advanced_gap.lane, "genome_features")
+            self.assertIn("not coorthologs, inparalogs, orthogroups, or current-ID resolution", advanced_gap.text)
+            self.assertEqual(advanced_gap.payload["atom_type"], "source_gap")
+            self.assertEqual(advanced_gap.payload["reason"], "advanced_orthology_current_id_resolution")
             self.assertTrue(any(gap["reason"] == "malformed_gff_row" for gap in result.gaps))
             self.assertTrue(any(gap["reason"] == "malformed_orthomcl_score" for gap in result.gaps))
             self.assertTrue(any(gap["reason"] == "malformed_orthomcl_pair_row" for gap in result.gaps))
+            self.assertTrue(any(gap["reason"] == "advanced_orthology_current_id_resolution" for gap in result.gaps))
 
     def test_vectorbase_payloads_are_queryable_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:

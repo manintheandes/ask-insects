@@ -51,7 +51,7 @@ class IngestVectorBaseGenomicsTests(unittest.TestCase):
             self.assertEqual(counts[("vectorbase_aedes_genomics", "genes")], 1)
             self.assertEqual(counts[("vectorbase_aedes_genomics", "transcripts")], 2)
             self.assertEqual(counts[("vectorbase_aedes_genomics", "proteins")], 1)
-            self.assertEqual(counts[("vectorbase_aedes_genomics", "genome_features")], 7)
+            self.assertEqual(counts[("vectorbase_aedes_genomics", "genome_features")], 8)
             ortholog_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select record_id from records where record_id like 'vectorbase:ortholog:%' order by record_id"
             )
@@ -59,7 +59,7 @@ class IngestVectorBaseGenomicsTests(unittest.TestCase):
             payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select count(*) as n from record_payloads where source='vectorbase_aedes_genomics'"
             )
-            self.assertEqual(payload_rows[0]["n"], 11)
+            self.assertEqual(payload_rows[0]["n"], 12)
 
 
 if __name__ == "__main__":

@@ -149,6 +149,20 @@ def _public_health_focus_terms(question: str) -> list[str]:
 
 def _wants_video_atoms(question: str) -> bool:
     q = question.lower()
+    if any(
+        term in q
+        for term in (
+            "orthogroup",
+            "orthogroups",
+            "coortholog",
+            "coorthologs",
+            "inparalog",
+            "inparalogs",
+            "current id resolution",
+            "current-id resolution",
+        )
+    ):
+        return False
     atom_specific_terms = (
         "keyframe",
         "keyframes",
@@ -810,6 +824,14 @@ def _search_queries(question: str) -> list[str]:
             "gene expression",
             "expression data",
             "expression omics",
+            "expression matrix",
+            "expression matrices",
+            "count matrix",
+            "count matrices",
+            "differential expression",
+            "differential-expression",
+            "raw sra reanalysis",
+            "sra reanalysis",
             "rna-seq",
             "rnaseq",
             "transcriptome",
@@ -848,6 +870,10 @@ def _search_queries(question: str) -> list[str]:
         if salient:
             queries.append(" ".join(salient))
             queries.append(f"Aedes aegypti expression {' '.join(salient)}")
+        if any(term in q for term in ("count matrix", "count matrices", "expression matrix", "expression matrices", "differential expression", "differential-expression")):
+            queries.extend(["count matrices differential-expression outputs source gap", "expression matrix source gap"])
+        if any(term in q for term in ("raw sra reanalysis", "sra reanalysis", "raw read reanalysis", "raw reads reanalysis")):
+            queries.append("raw SRA reanalysis count matrices source gap")
         queries.extend(["GEO RNA-seq expression Aedes aegypti", "SRA RNA-seq Aedes aegypti", question])
         return list(dict.fromkeys(queries))
     if any(term in q for term in ("uniprot", "protein function", "proteome")):
@@ -887,6 +913,14 @@ def _search_queries(question: str) -> list[str]:
             "orthologs",
             "orthology",
             "orthomcl",
+            "orthogroup",
+            "orthogroups",
+            "coortholog",
+            "coorthologs",
+            "inparalog",
+            "inparalogs",
+            "current id resolution",
+            "current-id resolution",
         )
     ):
         generic_terms = {
@@ -914,6 +948,14 @@ def _search_queries(question: str) -> list[str]:
             "orthologs",
             "orthology",
             "orthomcl",
+            "orthogroup",
+            "orthogroups",
+            "coortholog",
+            "coorthologs",
+            "inparalog",
+            "inparalogs",
+            "current",
+            "resolution",
             "show",
             "term",
             "terms",
@@ -937,6 +979,14 @@ def _search_queries(question: str) -> list[str]:
             queries.append(" ".join(salient))
         if any(term in q for term in ("homolog", "homologs", "ortholog", "orthologs", "orthology", "orthomcl")):
             queries.extend(["OrthoMCL ortholog Aedes aegypti", "aaeg-old AAEL ortholog", "VectorBase Aedes orthology"])
+        if any(term in q for term in ("orthogroup", "orthogroups", "coortholog", "coorthologs", "inparalog", "inparalogs", "current id resolution", "current-id resolution")):
+            queries.extend(
+                [
+                    "advanced orthology current-ID resolution source gap",
+                    "coorthologs inparalogs orthogroups current-ID resolution",
+                    "first-pass OrthoMCL CURRENT ortholog-pair rows old AAEL namespace",
+                ]
+            )
         queries.extend(["VectorBase Aedes aegypti", "Aedes aegypti VectorBase", question])
         return list(dict.fromkeys(queries))
     if "mosquito alert" in q:
@@ -1493,6 +1543,14 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
             "orthologs",
             "orthology",
             "orthomcl",
+            "orthogroup",
+            "orthogroups",
+            "coortholog",
+            "coorthologs",
+            "inparalog",
+            "inparalogs",
+            "current id resolution",
+            "current-id resolution",
         )
     ):
         aael_terms = [token.lower() for token in re.findall(r"AAEL[A-Za-z0-9-]+", question, flags=re.IGNORECASE)]
@@ -1508,6 +1566,7 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
             records,
             key=lambda record: (
                 0 if record.source == "vectorbase_aedes_genomics" else 1,
+                0 if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution" else 1,
                 0 if record.lane in {"genes", "proteins", "transcripts", "genome_features"} else 1,
             ),
         )
@@ -1533,6 +1592,19 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
         )
 
     return sorted(records, key=score)
+
+
+def _prioritize_neurobiology_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    q = question.lower()
+    if "sra" in q and ("reanalysis" in q or "workflow" in q or "align" in q or "alignment" in q):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.record_id.endswith(":reanalysis-workflow") else 1,
+                0 if "reanalysis workflow" in f"{record.title} {record.text}".lower() else 1,
+            ),
+        )
+    return records
 
 
 def _like_escape(value: str) -> str:
@@ -1624,6 +1696,14 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
             "orthologs",
             "orthology",
             "orthomcl",
+            "orthogroup",
+            "orthogroups",
+            "coortholog",
+            "coorthologs",
+            "inparalog",
+            "inparalogs",
+            "current id resolution",
+            "current-id resolution",
             "aael",
         )
     ):
@@ -3194,6 +3274,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "genomics":
         all_records = _prioritize_genomics_records(plan.question, all_records)
+
+    if plan.answer_shape == "neurobiology":
+        all_records = _prioritize_neurobiology_records(plan.question, all_records)
 
     if plan.answer_shape == "resistance":
         all_records = _prioritize_resistance_records(plan.question, all_records)

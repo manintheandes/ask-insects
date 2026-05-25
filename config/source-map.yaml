@@ -452,7 +452,7 @@ sources:
   - id: aedes_expression_omics
     name: Aedes aegypti GEO/SRA expression omics metadata
     source_type: public_api_composite
-    boundary: Bounded, paginated NCBI GEO DataSets and SRA metadata for Aedes aegypti expression, RNA-seq, and transcriptome studies, including GEO dataset or sample summaries and SRA run-level atoms where NCBI exposes run accessions
+    boundary: Bounded, paginated NCBI GEO DataSets and SRA metadata for Aedes aegypti expression, RNA-seq, and transcriptome studies, including GEO dataset or sample summaries, SRA run-level atoms where NCBI exposes run accessions, and explicit source-gap records for raw SRA reanalysis, count matrices, normalized expression matrices, and differential-expression outputs not yet indexed
     query_plane: ncbi_eutils_geo_sra_to_sqlite_expression_records
     api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
     artifact_dir: artifacts/mosquito-v1/raw/expression_omics
@@ -477,6 +477,9 @@ sources:
         - platform_when_supplied
         - total_spots_and_bases_when_supplied
         - raw_esummary_batch_locator
+      structured_gaps:
+        - raw_sra_reanalysis_not_performed
+        - differential_expression_outputs_not_indexed
   - id: vectorbase_aedes_genomics
     name: VectorBase/VEuPathDB Aedes aegypti genomics downloads
     source_type: public_bulk_download
@@ -514,6 +517,8 @@ sources:
         - inparalogs_not_claimed
         - orthogroups_not_claimed
         - current_id_resolution_not_claimed
+      structured_gaps:
+        - advanced_orthology_current_id_resolution
   - id: aedes_uniprot_proteins
     name: UniProt Aedes aegypti protein and proteome metadata
     source_type: public_api
