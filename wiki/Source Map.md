@@ -36,6 +36,8 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `dryad_aedes_behavior_videos` | Dryad Aedes behavior and video dataset manifests. |
 | `mendeley_aedes_behavior_media` | Mendeley Data Aedes behavior, media, sound, video, and parsed table records. |
 | `osf_flighttrackai_aedes_videos` | OSF FlightTrackAI Aedes flight-behavior video, executable, model, and file manifests. |
+| `zenodo_aedes_videos` | Zenodo Aedes video search and file-manifest records. |
+| `figshare_aedes_videos` | Figshare Aedes article-detail and file-manifest records. |
 | `aedes_neurobiology_sources` | Aedes neurobiology records, atlas artifacts, H5AD internals, voxel access, CATMAID metadata, skeleton manifests, and connectome gaps. |
 | `irmapper_aedes` | Public IR Mapper Aedes aegypti resistance records. |
 | `aedes_resistance_markers` | Literature-derived kdr, VGSC, and metabolic-resistance marker records. |

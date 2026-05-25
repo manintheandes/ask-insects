@@ -48,9 +48,10 @@ metadata, parser grain, and known gaps.
 - OpenAlex, PubMed, Unpaywall, and PMC Open Access literature and media lanes
   preserve article, publisher, and open-access licenses. Ask Insects should
   only parse legal full text and should keep source gaps for restricted text.
-- Dryad, Mendeley Data, and OSF behavior or media lanes preserve dataset
-  licenses, DOI or project locators, file manifests, checksums, and download
-  URLs without mirroring multi-gigabyte binaries by default.
+- Dryad, Mendeley Data, OSF, Zenodo, and Figshare behavior or media lanes
+  preserve dataset or article licenses, DOI or project locators, file
+  manifests, checksums, and download URLs without mirroring multi-gigabyte
+  binaries by default.
 - WHO, PAHO, CDC, and ECDC public-health lanes preserve official page URLs,
   report locators, agency source identity, machine-readable CSV row locators
   where exposed by the agency, and explicit gaps for row-level surveillance

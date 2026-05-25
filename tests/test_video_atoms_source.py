@@ -119,6 +119,46 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(pmc.payload["verification_status"], "candidate")
         self.assertEqual(pmc.payload["source_video_provenance"]["source_id"], "pmc_open_access_videos")
 
+    def test_builds_video_candidates_from_figshare_source_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="figshare:aedes-video:101:oviposition_mp4",
+                        lane="media",
+                        source="figshare_aedes_videos",
+                        title="Aedes aegypti Figshare oviposition video file oviposition.mp4",
+                        text="Figshare video file for Aedes aegypti oviposition behavior.",
+                        species="Aedes aegypti",
+                        url="https://figshare.com/articles/dataset/101",
+                        media_url="https://ndownloader.figshare.com/files/202",
+                        provenance=Provenance(
+                            source_id="figshare_aedes_videos",
+                            locator="raw/figshare_aedes_videos/article_101.json#files/1",
+                            retrieved_at=RETRIEVED_AT,
+                            license="CC BY 4.0",
+                            source_url="https://ndownloader.figshare.com/files/202",
+                        ),
+                        payload={
+                            "filename": "oviposition.mp4",
+                            "source_byte_size": 123456,
+                            "source_hashes": {"md5": "a" * 32},
+                        },
+                    )
+                ]
+            )
+
+            result = build_video_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        asset = next(record for record in result.records if record.payload.get("source_video_record_id") == "figshare:aedes-video:101:oviposition_mp4")
+        self.assertEqual(asset.payload["repository"], "figshare")
+        self.assertEqual(asset.payload["source_byte_size"], 123456)
+        self.assertEqual(asset.payload["source_hashes"]["md5"], "a" * 32)
+        self.assertEqual(asset.payload["source_video_provenance"]["source_id"], "figshare_aedes_videos")
+
     def test_mirrors_and_probes_downloadable_videos(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

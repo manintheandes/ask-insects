@@ -59,6 +59,7 @@ from .sources.public_health import (
     PUBLIC_HEALTH_SOURCE_ID,
     fetch_public_health_guidance_records,
 )
+from .sources.figshare_aedes_videos import FIGSHARE_AEDES_VIDEO_SOURCE_ID, fetch_figshare_aedes_video_records
 from .sources.vectorbase_genomics import fetch_vectorbase_genomics_records
 from .sources.vectornet_surveillance import (
     DEFAULT_VECTORNET_SPECIES,
@@ -2038,6 +2039,42 @@ def ingest_zenodo_aedes_videos(
     return response
 
 
+def ingest_figshare_aedes_videos(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_figshare_aedes_video_records_fn: Callable[..., object] = fetch_figshare_aedes_video_records,
+) -> dict[str, object]:
+    query = payload.get("query", "Aedes aegypti video")
+    page_size = payload.get("page_size", 25)
+    if not isinstance(query, str):
+        raise ValueError("query must be a string")
+    if not isinstance(page_size, int):
+        raise ValueError("page_size must be an integer")
+    if fetch_figshare_aedes_video_records_fn is fetch_figshare_aedes_video_records:
+        from scripts.ingest_figshare_aedes_videos import ingest_figshare_aedes_videos as ingest_local
+
+        result = ingest_local(artifact_dir=artifact_dir, query=query, page_size=page_size, retrieved_at=utc_now())
+        result["activated_artifact_dir"] = str(artifact_dir)
+        return result
+
+    from scripts.ingest_figshare_aedes_videos import _update_metadata
+
+    retrieved_at = utc_now()
+    source_result = fetch_figshare_aedes_video_records_fn(
+        raw_dir=artifact_dir / "raw" / "figshare_aedes_videos",
+        retrieved_at=retrieved_at,
+        query=query,
+        page_size=page_size,
+    )
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    index.replace_source_records(FIGSHARE_AEDES_VIDEO_SOURCE_ID, source_result.records)
+    response = _update_metadata(artifact_dir, source_result, retrieved_at)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def write_pathogen_taxonomy_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
     index = SourceIndex(staging / "source_index.sqlite")
     summary = index.summary()
@@ -2498,6 +2535,7 @@ def dispatch_request(
     fetch_vectorbase_genomics_records_fn: Callable[..., object] = fetch_vectorbase_genomics_records,
     fetch_vectornet_surveillance_records_fn: Callable[..., object] = fetch_vectornet_surveillance_records,
     fetch_zenodo_aedes_video_records_fn: Callable[..., object] = fetch_zenodo_aedes_video_records,
+    fetch_figshare_aedes_video_records_fn: Callable[..., object] = fetch_figshare_aedes_video_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -2644,6 +2682,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_zenodo_aedes_video_records_fn=fetch_zenodo_aedes_video_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/figshare-aedes-videos":
+            result = ingest_figshare_aedes_videos(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_figshare_aedes_video_records_fn=fetch_figshare_aedes_video_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

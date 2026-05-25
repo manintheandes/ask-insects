@@ -219,6 +219,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_zenodo_aedes_videos.add_argument("--query", default='"Aedes aegypti" (video OR movie OR mp4 OR tracking)')
     ingest_zenodo_aedes_videos.add_argument("--size", type=int, default=25)
 
+    ingest_figshare_aedes_videos = sub.add_parser("ingest-figshare-aedes-videos")
+    ingest_figshare_aedes_videos.add_argument("--hosted", action="store_true")
+    ingest_figshare_aedes_videos.add_argument("--query", default="Aedes aegypti video")
+    ingest_figshare_aedes_videos.add_argument("--page-size", type=int, default=25)
+
     ingest_mendeley_behavior_media = sub.add_parser("ingest-mendeley-behavior-media")
     ingest_mendeley_behavior_media.add_argument("--hosted", action="store_true")
     ingest_mendeley_behavior_media.add_argument("--dataset", action="append", default=[])
@@ -684,6 +689,24 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/zenodo-aedes-videos",
             {"query": args.query, "size": args.size},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-figshare-aedes-videos":
+        if not args.hosted:
+            from scripts.ingest_figshare_aedes_videos import ingest_figshare_aedes_videos
+
+            payload = ingest_figshare_aedes_videos(
+                artifact_dir=artifact_dir,
+                query=args.query,
+                page_size=args.page_size,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/figshare-aedes-videos",
+            {"query": args.query, "page_size": args.page_size},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

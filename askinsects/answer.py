@@ -161,7 +161,7 @@ def _wants_video_atoms(question: str) -> bool:
         "failure",
         "discovery",
     )
-    if any(term in q for term in ("dryad", "mendeley", "osf", "flighttrackai", "flighttrack", "pmc")) and not any(
+    if any(term in q for term in ("dryad", "mendeley", "osf", "flighttrackai", "flighttrack", "pmc", "figshare")) and not any(
         term in q for term in atom_specific_terms
     ):
         return False
@@ -274,6 +274,18 @@ def _video_discovery_repository(question: str) -> str | None:
     if "pmc oa" in q or "pmc open access" in q:
         return "pmc_oa"
     return next((repository for repository in VIDEO_DISCOVERY_REPOSITORIES if repository in q), None)
+
+
+def _video_repository_source_id(repository: str | None) -> str | None:
+    return {
+        "pmc": "pmc_open_access_videos",
+        "pmc_oa": "pmc_open_access_videos",
+        "dryad": "dryad_aedes_behavior_videos",
+        "mendeley": "mendeley_aedes_behavior_media",
+        "osf": "osf_flighttrackai_aedes_videos",
+        "zenodo": "zenodo_aedes_videos",
+        "figshare": "figshare_aedes_videos",
+    }.get(str(repository or ""))
 
 
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
@@ -1695,6 +1707,14 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 0 if record.lane in {"media", "behavior"} else 1,
             ),
         )
+    if "figshare" in q:
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "figshare_aedes_videos" else 1,
+                0 if record.lane == "media" else 1,
+            ),
+        )
     if "mendeley" in q or any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime", "temperature gradient", "temperature gradients")):
         wants_table_rows = any(term in q for term in ("table", "tables", "row", "rows", "xlsx", "csv", "temperature", "gradient", "gradients"))
         return sorted(
@@ -1947,6 +1967,20 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             all_records.append(record)
             seen_record_ids.add(record.record_id)
 
+    named_video_repository = _video_discovery_repository(plan.question) if plan.answer_shape == "media" else None
+    if named_video_repository and not all_records:
+        source_id = _video_repository_source_id(named_video_repository)
+        if source_id:
+            for record in _source_records(index, source_id, ["media", "behavior"], limit=limit):
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
+        if not all_records:
+            for record in _video_atom_records(index, f"{plan.question} discovery", list(plan.lanes), limit=limit):
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
+        if not all_records:
+            return source_gap(plan, "The Ask Insects video discovery lane has no matching records for that repository.")
+
     if plan.answer_shape == "genomics":
         uniprot_exact_terms = _uniprot_exact_terms(plan.question)
         uniprot_records = _uniprot_direct_records(index, plan.question, limit=limit)
@@ -1997,7 +2031,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "media":
-        if _wants_video_gaps(plan.question) or _wants_video_discovery(plan.question):
+        if _wants_video_gaps(plan.question) or _wants_video_discovery(plan.question) or named_video_repository:
             media_records = [
                 record
                 for record in all_records

@@ -18,6 +18,7 @@ from askinsects.server import (
 )
 from askinsects.sources.cdc_dengue_surveillance import CdcDengueSurveillanceResult
 from askinsects.sources.dryad_behavior_videos import DryadBehaviorVideoResult
+from askinsects.sources.figshare_aedes_videos import FigshareAedesVideoResult
 from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
 from askinsects.sources.irmapper import IRMapperBuildResult
@@ -1565,6 +1566,65 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(counts["mosquito_v1_fixtures"], 7)
             self.assertEqual(counts["zenodo_aedes_videos"], 1)
             self.assertEqual(response.payload["query"], '"Aedes aegypti" mp4')
+            self.assertEqual(response.payload["media_file_count"], 1)
+
+    def test_ingest_figshare_aedes_videos_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, retrieved_at, query, page_size):
+                raw_path = raw_dir / "article_101.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"id":101,"files":[]}', encoding="utf-8")
+                return FigshareAedesVideoResult(
+                    source_id="figshare_aedes_videos",
+                    records=[
+                        EvidenceRecord(
+                            record_id="figshare:aedes-video:101:oviposition_mp4",
+                            lane="media",
+                            source="figshare_aedes_videos",
+                            title="Aedes aegypti Figshare video file oviposition.mp4",
+                            text="Figshare video file for Aedes aegypti oviposition behavior.",
+                            species="Aedes aegypti",
+                            url="https://figshare.com/articles/dataset/101",
+                            media_url="https://ndownloader.figshare.com/files/202",
+                            provenance=Provenance(
+                                source_id="figshare_aedes_videos",
+                                locator=f"{raw_path}#files/1",
+                                retrieved_at=retrieved_at,
+                                license="CC BY 4.0",
+                                source_url="https://ndownloader.figshare.com/files/202",
+                            ),
+                            payload={"filename": "oviposition.mp4", "source_byte_size": 123456},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    query=query,
+                    search_result_count=1,
+                    material_record_count=1,
+                    file_count=1,
+                    media_file_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/figshare-aedes-videos",
+                {"query": "Aedes aegypti mp4", "page_size": 7},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_figshare_aedes_video_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["figshare_aedes_videos"], 1)
+            self.assertEqual(response.payload["query"], "Aedes aegypti mp4")
             self.assertEqual(response.payload["media_file_count"], 1)
 
     def test_ingest_pathogen_taxonomy_adds_records_without_removing_existing_sources(self):

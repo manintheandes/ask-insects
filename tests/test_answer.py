@@ -1347,6 +1347,53 @@ class AnswerTests(unittest.TestCase):
             self.assertFalse(answer["ok"])
             self.assertIn("no matching records for that repository", answer["source_gap"]["reason"])
 
+    def test_figshare_video_questions_use_figshare_gap_not_other_video_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="osf:flighttrackai:file:video-a",
+                        lane="media",
+                        source="osf_flighttrackai_aedes_videos",
+                        title="Aedes aegypti OSF FlightTrackAI video file Video A.mp4",
+                        text="OSF Aedes aegypti video.",
+                        species="Aedes aegypti",
+                        url="https://osf.io/cx762/",
+                        media_url="https://osf.io/download/video-a/",
+                        provenance=Provenance(
+                            source_id="osf_flighttrackai_aedes_videos",
+                            locator="raw/osf/file.json#files/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:gap:figshare",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_discovery_no_candidates",
+                        text="Aedes aegypti video source gap: video_discovery_no_candidates. Repository: figshare.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="gaps.json#aedes_video_atoms/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "repository": "figshare"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Figshare Aedes aegypti videos", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "video_atom:gap:figshare")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+
     def test_mendeley_table_questions_prefer_parsed_behavior_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -1728,6 +1775,48 @@ class AnswerTests(unittest.TestCase):
         )
 
         self.assertEqual(ranked[0].record_id, "extracted_fact:vector_competence:WZZZ:dengue")
+
+    def test_figshare_questions_prefer_figshare_video_source_rows(self):
+        from askinsects.answer import _prioritize_named_source_records
+
+        generic = EvidenceRecord(
+            record_id="video_atom:asset:figshare:101",
+            lane="media",
+            source="aedes_video_atoms",
+            title="Aedes aegypti derived Figshare video atom",
+            text="Derived video atom from a Figshare Aedes aegypti video source.",
+            species="Aedes aegypti",
+            url="https://figshare.com/articles/dataset/101",
+            media_url="https://ndownloader.figshare.com/files/202",
+            provenance=Provenance(
+                source_id="aedes_video_atoms",
+                locator="records#figshare:aedes-video:101:oviposition_mp4",
+                retrieved_at="2026-05-24T00:00:00Z",
+                license="CC BY 4.0",
+                source_url="https://ndownloader.figshare.com/files/202",
+            ),
+        )
+        first_class = EvidenceRecord(
+            record_id="figshare:aedes-video:101:oviposition_mp4",
+            lane="media",
+            source="figshare_aedes_videos",
+            title="Aedes aegypti Figshare video file oviposition.mp4",
+            text="Figshare video file for Aedes aegypti oviposition behavior.",
+            species="Aedes aegypti",
+            url="https://figshare.com/articles/dataset/101",
+            media_url="https://ndownloader.figshare.com/files/202",
+            provenance=Provenance(
+                source_id="figshare_aedes_videos",
+                locator="raw/figshare_aedes_videos/article_101.json#files/1",
+                retrieved_at="2026-05-24T00:00:00Z",
+                license="CC BY 4.0",
+                source_url="https://ndownloader.figshare.com/files/202",
+            ),
+        )
+
+        ranked = _prioritize_named_source_records("show Figshare Aedes aegypti videos", [generic, first_class])
+
+        self.assertEqual(ranked[0].source, "figshare_aedes_videos")
 
     def test_genomics_questions_prefer_genome_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:

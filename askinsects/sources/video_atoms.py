@@ -25,6 +25,7 @@ VIDEO_SOURCE_IDS = {
     "mendeley_aedes_behavior_media",
     "osf_flighttrackai_aedes_videos",
     "zenodo_aedes_videos",
+    "figshare_aedes_videos",
 }
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 NON_VIDEO_MEDIA_EXTENSIONS = (
@@ -238,6 +239,7 @@ def _repository_for_source(source: str) -> str | None:
         "mendeley_aedes_behavior_media": "mendeley",
         "osf_flighttrackai_aedes_videos": "osf",
         "zenodo_aedes_videos": "zenodo",
+        "figshare_aedes_videos": "figshare",
     }.get(source)
 
 
@@ -359,7 +361,7 @@ def _candidate_rows(index: SourceIndex) -> list[VideoCandidate]:
         SELECT r.*, p.payload_json
         FROM records r
         LEFT JOIN record_payloads p ON p.record_id = r.record_id
-        WHERE r.source IN ('pmc_open_access_videos', 'dryad_aedes_behavior_videos', 'mendeley_aedes_behavior_media', 'osf_flighttrackai_aedes_videos', 'zenodo_aedes_videos')
+        WHERE r.source IN ('pmc_open_access_videos', 'dryad_aedes_behavior_videos', 'mendeley_aedes_behavior_media', 'osf_flighttrackai_aedes_videos', 'zenodo_aedes_videos', 'figshare_aedes_videos')
           AND lower(coalesce(r.species, '')) = 'aedes aegypti'
           AND r.lane = 'media'
         ORDER BY r.record_id
@@ -535,7 +537,7 @@ def _default_zenodo_discovery_client() -> list[dict[str, object]]:
 
 def _default_figshare_discovery_client() -> list[dict[str, object]]:
     query = urlencode({"search_for": "Aedes aegypti video", "page_size": "25"})
-    payload = _fetch_json(f"https://api.figshare.com/v2/articles/search?{query}")
+    payload = _fetch_json(f"https://api.figshare.com/v2/articles?{query}")
     summaries = payload if isinstance(payload, list) else []
     discovered: list[dict[str, object]] = []
     for summary in summaries:

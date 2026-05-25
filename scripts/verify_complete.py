@@ -108,6 +108,7 @@ REQUIRED_FILES = (
     "askinsects/sources/mendeley_behavior_media.py",
     "askinsects/sources/osf_flighttrackai_videos.py",
     "askinsects/sources/zenodo_aedes_videos.py",
+    "askinsects/sources/figshare_aedes_videos.py",
     "askinsects/sources/public_health.py",
     "askinsects/sources/paho_surveillance.py",
     "askinsects/sources/cdc_dengue_surveillance.py",
@@ -142,6 +143,7 @@ REQUIRED_FILES = (
     "scripts/ingest_mendeley_behavior_media.py",
     "scripts/ingest_osf_flighttrackai_videos.py",
     "scripts/ingest_zenodo_aedes_videos.py",
+    "scripts/ingest_figshare_aedes_videos.py",
     "scripts/ingest_public_health_guidance.py",
     "scripts/ingest_paho_dengue_surveillance.py",
     "scripts/ingest_cdc_dengue_surveillance.py",
@@ -199,6 +201,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_osf_flighttrackai_videos.py",
     "tests/test_zenodo_aedes_videos_source.py",
     "tests/test_ingest_zenodo_aedes_videos.py",
+    "tests/test_figshare_aedes_videos_source.py",
+    "tests/test_ingest_figshare_aedes_videos.py",
     "tests/test_public_health_source.py",
     "tests/test_ingest_public_health_guidance.py",
     "tests/test_paho_surveillance_source.py",
@@ -271,6 +275,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_osf_flighttrackai_videos",
     "tests.test_zenodo_aedes_videos_source",
     "tests.test_ingest_zenodo_aedes_videos",
+    "tests.test_figshare_aedes_videos_source",
+    "tests.test_ingest_figshare_aedes_videos",
     "tests.test_public_health_source",
     "tests.test_ingest_public_health_guidance",
     "tests.test_paho_surveillance_source",
@@ -376,6 +382,8 @@ def check_open_source_boundary() -> None:
         "Dryad",
         "Mendeley Data",
         "OSF",
+        "Zenodo",
+        "Figshare",
         "WHO",
         "PAHO",
         "CDC",
@@ -532,6 +540,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_vectorbyte_traits",
         "osf_flighttrackai_aedes_videos",
         "zenodo_aedes_videos",
+        "figshare_aedes_videos",
         "aedes_video_atoms",
         "aedes_image_atoms",
     )
@@ -609,6 +618,16 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Zenodo Aedes video term: {term}")
+    for term in (
+        "figshare_aedes_videos",
+        "scripts/ingest_figshare_aedes_videos.py",
+        "figshare_article_search_detail_file_manifest_to_sqlite_media_records",
+        "metadata_and_download_locators_only_by_default",
+        "figshare_article_id",
+        "figshare_file_id",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Figshare Aedes video term: {term}")
     for term in (
         "aedes_video_atoms",
         "scripts/ingest_video_atoms.py",
