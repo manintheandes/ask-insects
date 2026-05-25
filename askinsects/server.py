@@ -133,7 +133,14 @@ def replace_record_path_strings(records: list[object], old: str, new: str) -> li
     rewritten = []
     for record in records:
         provenance = replace(record.provenance, locator=record.provenance.locator.replace(old, new))
-        rewritten.append(replace(record, provenance=provenance))
+        payload = record.payload
+        if payload is not None:
+            rewritten_payload = replace_path_strings(payload, old, new)
+            if not isinstance(rewritten_payload, dict):
+                rewritten_payload = payload
+        else:
+            rewritten_payload = None
+        rewritten.append(replace(record, provenance=provenance, payload=rewritten_payload))
     return rewritten
 
 
@@ -1194,35 +1201,46 @@ def ingest_paho_dengue_surveillance(
     else:
         raise ValueError("core_indicator_pages must be a list of strings")
 
-    staging = artifact_dir.parent / f".{artifact_dir.name}.paho-dengue-surveillance-staging"
-    if staging.exists():
-        shutil.rmtree(staging)
+    raw_staging = artifact_dir.parent / f".{artifact_dir.name}.paho-dengue-surveillance-raw-staging"
+    raw_final = artifact_dir / "raw" / "paho_dengue_surveillance"
+    raw_backup = raw_final.parent / f".{raw_final.name}.previous"
+    raw_activated = False
+    if raw_staging.exists():
+        shutil.rmtree(raw_staging)
     try:
-        if artifact_dir.exists():
-            copy_artifact_to_staging(artifact_dir, staging)
-        else:
-            staging.mkdir(parents=True, exist_ok=True)
-        index = SourceIndex(staging / "source_index.sqlite")
-        index.initialize()
-        index.delete_source(PAHO_DENGUE_SURVEILLANCE_SOURCE_ID)
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        db_path = artifact_dir / "source_index.sqlite"
+        index = SourceIndex(db_path)
+        if not db_path.exists():
+            index.initialize()
         retrieved_at = utc_now()
         result = fetch_paho_dengue_surveillance_records_fn(
             reports,
-            raw_dir=staging / "raw" / "paho_dengue_surveillance",
+            raw_dir=raw_staging,
             retrieved_at=retrieved_at,
             dashboard_pages=dashboard_urls,
             core_indicator_pages=core_pages,
         )
-        index.upsert_records(result.records)
-        old_gaps = read_json(staging / "gaps.json", [])
+        raw_staging.mkdir(parents=True, exist_ok=True)
+        records = replace_record_path_strings(result.records, str(raw_staging), str(raw_final))
+        raw_artifacts = [artifact.replace(str(raw_staging), str(raw_final)) for artifact in result.raw_artifacts]
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+        if raw_final.exists():
+            raw_final.replace(raw_backup)
+        raw_final.parent.mkdir(parents=True, exist_ok=True)
+        raw_staging.replace(raw_final)
+        raw_activated = True
+        replace_source_records(index, PAHO_DENGUE_SURVEILLANCE_SOURCE_ID, records)
+        old_gaps = read_json(artifact_dir / "gaps.json", [])
         if not isinstance(old_gaps, list):
             old_gaps = []
         gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == PAHO_DENGUE_SURVEILLANCE_SOURCE_ID)]
         gaps.extend(result.gaps)
         source_payload = {
             "requested_urls": result.requested_urls,
-            "raw_artifacts": result.raw_artifacts,
-            "record_count": len(result.records),
+            "raw_artifacts": raw_artifacts,
+            "record_count": len(records),
             "gap_count": len(result.gaps),
             "report_count": result.report_count,
             "dashboard_page_count": result.dashboard_page_count,
@@ -1232,12 +1250,16 @@ def ingest_paho_dengue_surveillance(
             "retrieved_at": retrieved_at,
             "method": "official PAHO dengue situation report HTML plus PAHO/EIH Open Data Core Indicators ZIP/CSV dengue rows parsed into Aedes aegypti-relevant public-health surveillance records; weekly dashboard cells remain a source gap until stable weekly CSV or JSON access is proven",
         }
-        response = write_paho_dengue_surveillance_metadata(staging, source_payload, gaps)
-        response = rewrite_artifact_references(staging, artifact_dir, response)
-        activate_staging_artifact(staging, artifact_dir)
+        response = write_paho_dengue_surveillance_metadata(artifact_dir, source_payload, gaps)
     except Exception:
-        shutil.rmtree(staging, ignore_errors=True)
+        shutil.rmtree(raw_staging, ignore_errors=True)
+        if raw_activated and raw_backup.exists():
+            if raw_final.exists():
+                shutil.rmtree(raw_final)
+            raw_backup.replace(raw_final)
         raise
+    if raw_backup.exists():
+        shutil.rmtree(raw_backup)
     response["activated_artifact_dir"] = str(artifact_dir)
     return response
 
