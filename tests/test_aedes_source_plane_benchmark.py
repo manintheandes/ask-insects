@@ -59,6 +59,7 @@ class AedesSourcePlaneBenchmarkTests(unittest.TestCase):
         self.assertIn("vectorbase_aedes_genomics", proof["hosted_sources"])
         self.assertIn("aedes_video_atoms", proof["hosted_sources"])
         self.assertIn("zenodo_aedes_videos", proof["hosted_sources"])
+        self.assertIn("figshare_aedes_videos", proof["hosted_sources"])
 
     def test_benchmark_doc_has_claim_ladder_and_table(self):
         text = BENCHMARK_DOC_PATH.read_text(encoding="utf-8")
