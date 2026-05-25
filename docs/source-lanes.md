@@ -206,6 +206,7 @@ Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay pro
 Sources:
 
 - `irmapper_aedes`: live IR Mapper Aedes JSON endpoint, filtered by default to `Aedes aegypti` and `Ae. aegypti`.
+- `who_malaria_threats_resistance_audit`: WHO Malaria Threats Map global insecticide-resistance database audit through the public `FACT_PREVENTION_VIEW` endpoint, indexed as returned Aedes resistance rows or as a queryable Aedes source gap when the public species filter returns no Aedes records.
 - `aedes_resistance_markers`: deterministic kdr, VGSC, and metabolic-resistance marker extraction from indexed Aedes literature records and legal full-text units.
 - `aedes_who_resistance_guidance`: WHO Aedes insecticide-resistance method and discriminating-concentration pages indexed at guidance-page grain with method terms such as test procedures, filter paper, bottle bioassays, larvae, adults, pyriproxyfen, and Bti when present.
 - `aedes_literature_facets`: literature-derived resistance facets while deeper source lanes are built.

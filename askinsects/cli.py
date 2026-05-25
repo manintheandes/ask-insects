@@ -150,6 +150,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_irmapper.add_argument("--hosted", action="store_true")
     ingest_irmapper.add_argument("--species", default="Aedes aegypti")
 
+    ingest_who_malaria_threats_resistance = sub.add_parser("ingest-who-malaria-threats-resistance")
+    ingest_who_malaria_threats_resistance.add_argument("--hosted", action="store_true")
+    ingest_who_malaria_threats_resistance.add_argument("--species", default="Aedes aegypti")
+    ingest_who_malaria_threats_resistance.add_argument("--sample-limit", type=int, default=5)
+    ingest_who_malaria_threats_resistance.add_argument("--aedes-limit", type=int, default=100)
+
     ingest_public_health = sub.add_parser("ingest-public-health")
     ingest_public_health.add_argument("--hosted", action="store_true")
     ingest_public_health.add_argument("--source-url", action="append", default=[])
@@ -472,6 +478,29 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/irmapper",
             {"species": args.species},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-who-malaria-threats-resistance":
+        if not args.hosted:
+            from scripts.ingest_who_malaria_threats_resistance import ingest_who_malaria_threats_resistance
+
+            payload = ingest_who_malaria_threats_resistance(
+                artifact_dir=artifact_dir,
+                species=args.species,
+                sample_limit=args.sample_limit,
+                aedes_limit=args.aedes_limit,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/who-malaria-threats-resistance",
+            {
+                "species": args.species,
+                "sample_limit": args.sample_limit,
+                "aedes_limit": args.aedes_limit,
+            },
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

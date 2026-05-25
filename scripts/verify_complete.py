@@ -102,6 +102,7 @@ REQUIRED_FILES = (
     "askinsects/sources/neurobiology.py",
     "askinsects/sources/pmc_videos.py",
     "askinsects/sources/irmapper.py",
+    "askinsects/sources/who_malaria_threats_resistance.py",
     "askinsects/sources/mosquito_alert.py",
     "askinsects/sources/vectornet_surveillance.py",
     "askinsects/sources/dryad_behavior_videos.py",
@@ -141,6 +142,7 @@ REQUIRED_FILES = (
     "scripts/ingest_inaturalist_observations.py",
     "scripts/ingest_pmc_videos.py",
     "scripts/ingest_irmapper.py",
+    "scripts/ingest_who_malaria_threats_resistance.py",
     "scripts/ingest_mosquito_alert_observations.py",
     "scripts/ingest_vectornet_surveillance.py",
     "scripts/ingest_dryad_behavior_videos.py",
@@ -197,6 +199,8 @@ REQUIRED_FILES = (
     "tests/test_pmc_video_source.py",
     "tests/test_ingest_irmapper.py",
     "tests/test_irmapper_source.py",
+    "tests/test_who_malaria_threats_resistance_source.py",
+    "tests/test_ingest_who_malaria_threats_resistance.py",
     "tests/test_mosquito_alert_source.py",
     "tests/test_ingest_mosquito_alert_observations.py",
     "tests/test_vectornet_surveillance_source.py",
@@ -279,6 +283,8 @@ UNIT_TEST_MODULES = (
     "tests.test_pmc_video_source",
     "tests.test_ingest_irmapper",
     "tests.test_irmapper_source",
+    "tests.test_who_malaria_threats_resistance_source",
+    "tests.test_ingest_who_malaria_threats_resistance",
     "tests.test_mosquito_alert_source",
     "tests.test_ingest_mosquito_alert_observations",
     "tests.test_vectornet_surveillance_source",
@@ -738,6 +744,14 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_resistance_markers", "scripts/ingest_resistance_markers.py", "literature_records_and_fulltext_units_to_sqlite_resistance_marker_records", "legal_fulltext_only"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing resistance marker term: {term}")
+    for term in (
+        "who_malaria_threats_resistance_audit",
+        "scripts/ingest_who_malaria_threats_resistance.py",
+        "who_malaria_threats_fact_prevention_view_to_sqlite_resistance_or_gap_records",
+        "who_malaria_threats_no_aedes_rows",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing WHO Malaria Threats resistance term: {term}")
     for term in ("aedes_occurrence_ecology", "scripts/ingest_occurrence_ecology.py", "indexed_observation_payloads_to_sqlite_ecology_records", "GBIF and iNaturalist observation joins"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing occurrence ecology term: {term}")

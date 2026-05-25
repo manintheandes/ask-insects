@@ -321,6 +321,7 @@
       "target_state": "Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay protocol, geography, and time records for Aedes aegypti.",
       "current_sources": [
         "irmapper_aedes",
+        "who_malaria_threats_resistance_audit",
         "aedes_literature_facets",
         "aedes_extracted_facts",
         "aedes_resistance_markers",
@@ -335,6 +336,7 @@
       },
       "current_evidence": [
         "IR Mapper public Aedes JSON endpoint is mapped as irmapper_aedes and filtered by default to Aedes aegypti and Ae. aegypti rows.",
+        "who_malaria_threats_resistance_audit maps the WHO global insecticide-resistance database exposed through the Malaria Threats Map FACT_PREVENTION_VIEW public data endpoint and audits it for Aedes aegypti rows. The current public species-filter query returns no Aedes rows, so Ask Insects preserves a queryable resistance source-gap record with reason who_malaria_threats_no_aedes_rows.",
         "Installed records store raw IR Mapper rows in record_payloads with provenance to raw/irmapper/Aedes_aegypti.json row locators.",
         "Installed local and hosted artifacts contain 2,843 resistance records from aedes_literature_facets.",
         "Hosted artifact contains 6,449 aedes_resistance_markers records mapping kdr, VGSC, and metabolic-resistance marker mentions from indexed Aedes literature and legal full-text units into queryable resistance records with marker payloads, source locators, and zero marker-source gaps.",
@@ -343,7 +345,6 @@
         "aedes_extracted_facts emits resistance candidate facts, supplement manifests, and parsed supported supplement table rows from indexed Aedes literature, with matched insecticide, assay, mortality, knockdown, LC value, mutation, genotype-frequency, and country terms when detected."
       ],
       "required_next_sources": [
-        "WHO insecticide resistance database availability review",
         "validated marker-frequency, haplotype, and genotype table extraction from papers and supplements beyond deterministic supported-format rows"
       ],
       "completion_evidence": [

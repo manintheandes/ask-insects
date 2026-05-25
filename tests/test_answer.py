@@ -342,6 +342,25 @@ def ecology_record(record_id, source):
     )
 
 
+def who_malaria_threats_record(record_id, text):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="resistance",
+        source="who_malaria_threats_resistance_audit",
+        title="WHO Malaria Threats Map resistance audit",
+        text=text,
+        species="Aedes aegypti",
+        url="https://apps.who.int/malaria/maps/threats/",
+        media_url=None,
+        provenance=Provenance(
+            source_id="who_malaria_threats_resistance_audit",
+            locator=f"raw/who_malaria_threats_resistance/aedes.json#{record_id}",
+            retrieved_at="2026-05-25T00:00:00Z",
+            license="WHO public data",
+        ),
+    )
+
+
 class AnswerTests(unittest.TestCase):
     def test_planner_routes_identity_evidence_action_and_gap(self):
         self.assertEqual(plan_question("what do we know about Aedes aegypti?").answer_shape, "identity")
@@ -2459,6 +2478,28 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "resistance")
             self.assertEqual(answer["evidence"][0]["source"], "irmapper_aedes")
+
+    def test_who_database_resistance_questions_prefer_malaria_threats_audit(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    resistance_record("irmapper:aedes:1", "irmapper_aedes"),
+                    who_malaria_threats_record(
+                        "who:malaria-threats:resistance:gap:aedes_aegypti:who_malaria_threats_no_aedes_rows",
+                        "WHO Malaria Threats Map resistance audit found no rows matching Aedes aegypti.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show the WHO insecticide resistance database rows for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "who_malaria_threats_resistance_audit")
+            self.assertIn("no rows matching Aedes aegypti", answer["answer"])
 
     def test_marker_resistance_questions_prefer_marker_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

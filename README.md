@@ -314,6 +314,18 @@ python3 -m askinsects sql "select country, count(*) from (select json_extract(pa
 
 The lane writes the raw IR Mapper Aedes JSON under `raw/irmapper/`, normalizes `Aedes aegypti` and abbreviated `Ae. aegypti` rows into `resistance` records from source `irmapper_aedes`, stores the raw row payload in SQLite, and records provenance to the saved JSON row. Other Aedes species in the endpoint are comparison material, not installed by default for this Aedes-first push.
 
+## WHO Malaria Threats Resistance Audit Lane
+
+WHO's global insecticide-resistance database is audited as a bounded public source:
+
+```bash
+python3 -m askinsects ingest-who-malaria-threats-resistance
+python3 -m askinsects ask "show the WHO insecticide resistance database rows for Aedes aegypti" --json
+python3 -m askinsects sql "select source, lane, count(*) as n from records where source='who_malaria_threats_resistance_audit' group by source, lane"
+```
+
+The lane uses source id `who_malaria_threats_resistance_audit`. It saves a bounded `FACT_PREVENTION_VIEW` CSV sample from the WHO Malaria Threats Map public data endpoint, queries the same endpoint for Aedes species rows, and indexes returned resistance rows if present. The current public species-filter query returns no Aedes rows, so Ask Insects installs a queryable `resistance` source-gap record with reason `who_malaria_threats_no_aedes_rows` instead of claiming WHO database Aedes rows are indexed.
+
 ## Resistance Marker Source Lane
 
 Indexed Aedes literature and legal full-text chunks can be parsed into kdr, VGSC, and metabolic-resistance marker records:

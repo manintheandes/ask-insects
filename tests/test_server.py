@@ -36,6 +36,7 @@ from askinsects.sources.public_health import PublicHealthGuidanceResult
 from askinsects.sources.vectorbase_genomics import VectorBaseGenomicsResult
 from askinsects.sources.vectornet_surveillance import VectorNetBuildResult
 from askinsects.sources.who_dengue_surveillance import WhoDengueSurveillanceResult
+from askinsects.sources.who_malaria_threats_resistance import WhoMalariaThreatsResistanceResult
 from askinsects.sources.zenodo_aedes_videos import ZenodoAedesVideoResult
 from tests.test_inaturalist_source import observation
 from tests.test_image_atoms_source import write_image_fixture
@@ -871,6 +872,76 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_who_malaria_threats_resistance_adds_gap_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, species, sample_limit, aedes_limit, fetch_bytes, retrieved_at):
+                raw_path = raw_dir / "FACT_PREVENTION_VIEW_Aedes_aegypti.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"value":[]}', encoding="utf-8")
+                return WhoMalariaThreatsResistanceResult(
+                    source_id="who_malaria_threats_resistance_audit",
+                    records=[
+                        EvidenceRecord(
+                            record_id="who:malaria-threats:resistance:source",
+                            lane="resistance",
+                            source="who_malaria_threats_resistance_audit",
+                            title="WHO Malaria Threats Map insecticide-resistance database availability",
+                            text="WHO Malaria Threats Map exposes the WHO global insecticide-resistance database.",
+                            species="mosquito vectors",
+                            url="https://www.who.int/teams/global-malaria-programme/prevention/vector-control/global-database-on-insecticide-resistance-in-malaria-vectors",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="who_malaria_threats_resistance_audit",
+                                locator=f"{raw_path}#sample",
+                                retrieved_at=retrieved_at,
+                                license="WHO public data; WHO terms apply",
+                            ),
+                        ),
+                        EvidenceRecord(
+                            record_id="who:malaria-threats:resistance:gap:aedes_aegypti:who_malaria_threats_no_aedes_rows",
+                            lane="resistance",
+                            source="who_malaria_threats_resistance_audit",
+                            title="WHO Malaria Threats Map Aedes resistance source gap",
+                            text="WHO Malaria Threats Map resistance audit found no rows matching Aedes aegypti.",
+                            species="Aedes aegypti",
+                            url="https://apps.who.int/malaria/maps/threats/",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="who_malaria_threats_resistance_audit",
+                                locator=f"{raw_path}#gap/who_malaria_threats_no_aedes_rows",
+                                retrieved_at=retrieved_at,
+                                license="WHO public data; WHO terms apply",
+                            ),
+                            payload={"gap": {"reason": "who_malaria_threats_no_aedes_rows"}},
+                        ),
+                    ],
+                    gaps=[{"source": "who_malaria_threats_resistance_audit", "reason": "who_malaria_threats_no_aedes_rows"}],
+                    raw_artifacts=[raw_path.as_posix()],
+                    species=species,
+                    sample_row_count=1,
+                    aedes_row_count=0,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/who-malaria-threats-resistance",
+                {"species": "Aedes aegypti", "sample_limit": 2, "aedes_limit": 10},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_who_malaria_threats_resistance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["who_malaria_threats_resistance_audit"], 2)
 
     def test_ingest_public_health_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

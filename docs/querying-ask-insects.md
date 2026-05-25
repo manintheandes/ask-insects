@@ -248,6 +248,13 @@ Dryad behavior/video records use source id `dryad_aedes_behavior_videos`. Raw da
 
 IR Mapper resistance records use source id `irmapper_aedes`. Raw public API JSON is saved under `artifacts/mosquito-v1/raw/irmapper/`. Each resistance record stores the raw row payload, the installed species filter, and a provenance locator into the saved raw JSON row.
 
+WHO Malaria Threats Map resistance audit records use source id `who_malaria_threats_resistance_audit`. The ingest saves a bounded `FACT_PREVENTION_VIEW` CSV sample from the WHO public data endpoint under `artifacts/mosquito-v1/raw/who_malaria_threats_resistance/`, then queries the endpoint for Aedes species rows. The current public species-filter query returns no Aedes rows, so Ask Insects installs a queryable source-gap record with reason `who_malaria_threats_no_aedes_rows`.
+
+```bash
+python3 -m askinsects ingest-who-malaria-threats-resistance
+python3 -m askinsects ask "show the WHO insecticide resistance database rows for Aedes aegypti" --json
+```
+
 Resistance-marker records use source id `aedes_resistance_markers`. They are derived from source-grade literature rows and legal full-text units already in SQLite. Each record stores marker ID, marker class, gene or family, matched aliases, context terms, insecticide terms, source paper ID, full-text unit ID when present, and snippet. Provenance points back to `records#<paper_id>` and, when available, `literature_fulltext_units#<unit_id>`. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. This lane is legal full-text only and does not use private cookies, institutional access, or Sci-Hub.
 
 Occurrence ecology records use source id `aedes_occurrence_ecology`. They are derived from indexed GBIF, iNaturalist, and Mosquito Alert observation payloads already in SQLite. Each `ecology` record stores an aggregation type such as country summary, country-month summary, or public habitat summary; source counts; observation counts; sample input record IDs; sample URLs; coordinate count; bounding box when coordinates exist; and first and last observed dates. Provenance points back to the SQLite observation join. The May 24, 2026 hosted ingest installed 1,985 occurrence ecology records from 88,065 Aedes observation inputs. Refresh it with `python3 -m askinsects ingest-occurrence-ecology`, then ask range and seasonality questions such as `what seasonality evidence exists for Aedes aegypti in Brazil by month?`.

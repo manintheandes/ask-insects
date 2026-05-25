@@ -20,6 +20,7 @@ from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
+from .sources.who_malaria_threats_resistance import WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID
 
 
 LITERATURE_QUERY_STOPWORDS = {
@@ -1539,14 +1540,17 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
     wants_marker = bool(_resistance_marker_terms(question))
     wants_extracted = _wants_extracted_facts(question)
     q = question.lower()
+    wants_who_database = any(term in q for term in ("malaria threats", "who database", "global database", "who resistance database", "who insecticide resistance database"))
     wants_who_guidance = any(term in q for term in ("who", "world health organization", "guidance", "method", "methods", "bioassay", "bioassays", "discriminating concentration", "discriminating concentrations"))
 
     def score(record: EvidenceRecord) -> tuple[object, ...]:
+        who_database_rank = 0 if wants_who_database and record.source == WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID else 1
         who_guidance_rank = 0 if wants_who_guidance and record.source == AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID else 1
         extracted_rank = 0 if wants_extracted and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         marker_rank = 0 if wants_marker and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
         irmapper_rank = 0 if not wants_marker and record.source == "irmapper_aedes" else 1
         return (
+            who_database_rank,
             who_guidance_rank,
             extracted_rank,
             marker_rank,
@@ -2419,6 +2423,22 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             all_records.append(record)
             seen_record_ids.add(record.record_id)
         for record in _cdc_surveillance_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "resistance" and any(
+        term in plan.question.lower()
+        for term in (
+            "malaria threats",
+            "who database",
+            "global database",
+            "who resistance database",
+            "who insecticide resistance database",
+        )
+    ):
+        for record in _source_records(index, WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID, ["resistance"], limit=limit):
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

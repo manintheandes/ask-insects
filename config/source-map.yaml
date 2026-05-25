@@ -578,6 +578,40 @@ sources:
       - resistance
     provenance_required: true
     live_fetch: opt_in
+  - id: who_malaria_threats_resistance_audit
+    name: WHO Malaria Threats Map insecticide-resistance database Aedes audit
+    source_type: public_api_audit
+    boundary: WHO global insecticide-resistance database exposed through the Malaria Threats Map FACT_PREVENTION_VIEW public data endpoint, audited for Aedes aegypti rows; current public species-filter query returns no Aedes rows, so Ask Insects preserves a queryable resistance source-gap record instead of claiming WHO database Aedes rows are indexed
+    query_plane: who_malaria_threats_fact_prevention_view_to_sqlite_resistance_or_gap_records
+    api_base: https://xmart-api-public.who.int/MAL_THREATS
+    source_page: https://www.who.int/teams/global-malaria-programme/prevention/vector-control/global-database-on-insecticide-resistance-in-malaria-vectors
+    map_page: https://apps.who.int/malaria/maps/threats/
+    artifact_dir: artifacts/mosquito-v1/raw/who_malaria_threats_resistance
+    ingest_script: scripts/ingest_who_malaria_threats_resistance.py
+    lanes:
+      - resistance
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      availability_records:
+        - source_page_url
+        - map_url
+        - fact_prevention_view_sample_locator
+        - sample_row_count
+      resistance_records:
+        - species
+        - country_or_iso2
+        - site
+        - assay_type
+        - insecticide_class
+        - insecticide_type
+        - mortality_adjusted
+        - resistance_status
+        - raw_row_locator
+      structured_gaps:
+        - who_malaria_threats_no_aedes_rows
+        - who_malaria_threats_sample_fetch_failed
+        - who_malaria_threats_aedes_query_failed
   - id: aedes_resistance_markers
     name: Aedes aegypti resistance marker records
     source_type: derived_sqlite_source

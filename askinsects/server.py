@@ -63,6 +63,7 @@ from .sources.who_dengue_surveillance import (
     fetch_who_dengue_surveillance_records,
     who_dengue_source_spec,
 )
+from .sources.who_malaria_threats_resistance import fetch_who_malaria_threats_resistance_records
 from .sources.public_health import (
     DEFAULT_PUBLIC_HEALTH_SOURCES,
     PUBLIC_HEALTH_SOURCE_ID,
@@ -998,6 +999,23 @@ def ingest_irmapper(
         raise
     response["activated_artifact_dir"] = str(artifact_dir)
     return response
+
+
+def ingest_who_malaria_threats_resistance(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_who_malaria_threats_resistance_records_fn: Callable[..., object] = fetch_who_malaria_threats_resistance_records,
+) -> dict[str, object]:
+    from scripts.ingest_who_malaria_threats_resistance import ingest_who_malaria_threats_resistance as ingest_script
+
+    return ingest_script(
+        artifact_dir=artifact_dir,
+        species=str(payload.get("species") or "Aedes aegypti"),
+        sample_limit=int(payload.get("sample_limit") or 5),
+        aedes_limit=int(payload.get("aedes_limit") or 100),
+        fetch_who_malaria_threats_resistance_records_fn=fetch_who_malaria_threats_resistance_records_fn,
+    )
 
 
 def write_public_health_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
@@ -2790,6 +2808,7 @@ def dispatch_request(
     fetch_dryad_behavior_video_records_fn: Callable[..., object] = fetch_dryad_behavior_video_records,
     fetch_inaturalist_records_fn: Callable[..., object] = fetch_inaturalist_records,
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
+    fetch_who_malaria_threats_resistance_records_fn: Callable[..., object] = fetch_who_malaria_threats_resistance_records,
     fetch_mendeley_behavior_media_records_fn: Callable[..., object] = fetch_mendeley_behavior_media_records,
     fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
     fetch_ncbi_biosample_records_fn: Callable[..., object] = fetch_ncbi_biosample_records,
@@ -2856,6 +2875,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_irmapper_records_fn=fetch_irmapper_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/who-malaria-threats-resistance":
+            result = ingest_who_malaria_threats_resistance(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_who_malaria_threats_resistance_records_fn=fetch_who_malaria_threats_resistance_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
