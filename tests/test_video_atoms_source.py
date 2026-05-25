@@ -196,6 +196,23 @@ class VideoAtomsSourceTests(unittest.TestCase):
             index.upsert_records(
                 [
                     EvidenceRecord(
+                        record_id="dryad:file:oversized",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti oversized video.mp4",
+                        text="Video file. Size bytes: 999999.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://example.org/oversized.mp4",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad/file.json#files/1",
+                            retrieved_at=RETRIEVED_AT,
+                            license="https://spdx.org/licenses/CC0-1.0.html",
+                        ),
+                        payload={"size": 999_999},
+                    ),
+                    EvidenceRecord(
                         record_id="osf:unclear:video.mp4",
                         lane="media",
                         source="osf_flighttrackai_aedes_videos",
@@ -226,6 +243,13 @@ class VideoAtomsSourceTests(unittest.TestCase):
         reasons = {gap["reason"] for gap in result.gaps}
         self.assertIn("video_license_unclear", reasons)
         self.assertIn("video_too_large", reasons)
+        asset_statuses = {
+            record.payload["source_video_record_id"]: record.payload["verification_status"]
+            for record in result.records
+            if record.payload and record.payload.get("atom_type") == "video_asset"
+        }
+        self.assertEqual(asset_statuses["dryad:file:oversized"], "gapped_too_large")
+        self.assertEqual(asset_statuses["osf:unclear:video.mp4"], "gapped_license_unclear")
         gap_records = [record for record in result.records if record.payload and record.payload.get("atom_type") == "video_gap"]
         self.assertEqual({record.payload["reason"] for record in gap_records}, reasons)
         self.assertTrue(all(record.source == VIDEO_ATOMS_SOURCE_ID for record in gap_records))

@@ -483,7 +483,7 @@ def _mirror_candidate(
 ) -> tuple[EvidenceRecord, Path | None]:
     if not candidate.media_url:
         gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_download_url_missing", "record_id": candidate.source_record_id})
-        return _record_for_asset(candidate, retrieved_at=retrieved_at), None
+        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_url_missing"), None
     if not allow_unclear_license and not _is_allowed_license(candidate.provenance.get("license"), allowed_licenses):
         gaps.append(
             {
@@ -504,7 +504,7 @@ def _mirror_candidate(
                     "max_video_bytes": max_video_bytes,
                 }
             )
-        return _record_for_asset(candidate, retrieved_at=retrieved_at), None
+        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_license_unclear"), None
     size = _size_from_candidate(candidate)
     if size is not None and size > max_video_bytes:
         gaps.append(
@@ -516,12 +516,12 @@ def _mirror_candidate(
                 "max_video_bytes": max_video_bytes,
             }
         )
-        return _record_for_asset(candidate, retrieved_at=retrieved_at), None
+        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_too_large"), None
     try:
         data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
     except Exception as exc:
         gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_download_failed", "record_id": candidate.source_record_id, "error": str(exc)})
-        return _record_for_asset(candidate, retrieved_at=retrieved_at), None
+        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_failed"), None
     if len(data) > max_video_bytes:
         gaps.append(
             {
@@ -532,7 +532,7 @@ def _mirror_candidate(
                 "max_video_bytes": max_video_bytes,
             }
         )
-        return _record_for_asset(candidate, retrieved_at=retrieved_at), None
+        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_too_large"), None
     digest = hashlib.sha256(data).hexdigest()
     raw_dir = artifact_dir / "raw" / "video_atoms" / "assets"
     raw_dir.mkdir(parents=True, exist_ok=True)
