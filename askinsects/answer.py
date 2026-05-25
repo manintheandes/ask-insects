@@ -18,6 +18,7 @@ from .sources.aedes_deep_sources import (
 from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
+from .sources.expression_omics import EXPRESSION_OMICS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
 from .sources.mosquito_repellent_literature import MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID
 from .sources.mosquito_repellent_external_discovery import MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID
@@ -1490,6 +1491,118 @@ def _wants_snp_variation(question: str) -> bool:
     return any(term in q for term in ("dbsnp", "snp", "snps", "variant", "variants", "variation"))
 
 
+def _record_payload_reason(record: EvidenceRecord) -> str:
+    if record.payload:
+        return str(record.payload.get("reason") or "")
+    if ":gap:" in record.record_id:
+        return record.record_id.rsplit(":gap:", 1)[-1]
+    return ""
+
+
+def _wants_expression_computed_outputs(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "count matrix",
+            "count matrices",
+            "expression matrix",
+            "expression matrices",
+            "normalized expression",
+            "normalised expression",
+            "differential expression",
+            "differential-expression",
+            "raw sra reanalysis",
+            "sra reanalysis",
+            "raw read reanalysis",
+            "raw reads reanalysis",
+        )
+    )
+
+
+def _expression_computed_gap_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    if not _wants_expression_computed_outputs(question):
+        return []
+    q = question.lower()
+    preferred_reasons: list[str] = []
+    if any(term in q for term in ("raw sra", "sra reanalysis", "raw read", "raw reads", "count matrix", "count matrices")):
+        preferred_reasons.append("raw_sra_reanalysis_not_performed")
+    if any(
+        term in q
+        for term in (
+            "differential expression",
+            "differential-expression",
+            "expression matrix",
+            "expression matrices",
+            "normalized expression",
+            "normalised expression",
+        )
+    ):
+        preferred_reasons.append("differential_expression_outputs_not_indexed")
+    preferred_reasons.extend(["raw_sra_reanalysis_not_performed", "differential_expression_outputs_not_indexed"])
+    reason_rank = {reason: index for index, reason in enumerate(dict.fromkeys(preferred_reasons))}
+    records = [
+        record
+        for record in _source_records(index, EXPRESSION_OMICS_SOURCE_ID, ["expression"], limit=max(limit * 20, 50))
+        if record.record_id.startswith("expression:gap:")
+    ]
+    return sorted(records, key=lambda record: reason_rank.get(_record_payload_reason(record), len(reason_rank)))[:limit]
+
+
+def _prioritize_expression_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    if not _wants_expression_computed_outputs(question):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == EXPRESSION_OMICS_SOURCE_ID else 1,
+                0 if record.lane == "expression" else 1,
+            ),
+        )
+    q = question.lower()
+    raw_terms = ("raw sra", "sra reanalysis", "raw read", "raw reads", "count matrix", "count matrices")
+    differential_terms = (
+        "differential expression",
+        "differential-expression",
+        "expression matrix",
+        "expression matrices",
+        "normalized expression",
+        "normalised expression",
+    )
+    preferred: list[str] = []
+    if any(term in q for term in raw_terms):
+        preferred.append("raw_sra_reanalysis_not_performed")
+    if any(term in q for term in differential_terms):
+        preferred.append("differential_expression_outputs_not_indexed")
+    preferred.extend(["raw_sra_reanalysis_not_performed", "differential_expression_outputs_not_indexed"])
+    reason_rank = {reason: index for index, reason in enumerate(dict.fromkeys(preferred))}
+    return sorted(
+        records,
+        key=lambda record: (
+            0 if record.source == EXPRESSION_OMICS_SOURCE_ID else 1,
+            0 if record.record_id.startswith("expression:gap:") else 1,
+            reason_rank.get(_record_payload_reason(record), len(reason_rank)),
+            0 if record.lane == "expression" else 1,
+        ),
+    )
+
+
+def _wants_advanced_orthology_boundary(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "orthogroup",
+            "orthogroups",
+            "coortholog",
+            "coorthologs",
+            "inparalog",
+            "inparalogs",
+            "current id resolution",
+            "current-id resolution",
+        )
+    )
+
+
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
     if _wants_snp_variation(question):
@@ -1712,6 +1825,8 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
     records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
     clauses: list[tuple[str, tuple[object, ...]]] = []
+    if _wants_advanced_orthology_boundary(question):
+        clauses.append(("record_id = ?", ("vectorbase:gap:advanced_orthology_current_id_resolution",)))
     if "codon" in q:
         for codon in re.findall(r"\b[AUCGT]{3}\b", question.upper()):
             clauses.append(("record_id = ?", (f"vectorbase:codon_usage:{codon.replace('T', 'U')}",)))
@@ -2916,6 +3031,13 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             all_records.append(record)
             seen_record_ids.add(record.record_id)
 
+    if plan.answer_shape == "expression":
+        for record in _expression_computed_gap_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
     if plan.answer_shape == "literature" and _wants_olfaction_literature(plan.question):
         if _source_count(index, AEDES_OLFACTION_LITERATURE_SOURCE_ID) == 0:
             return source_gap(plan, "The Ask Insects Aedes olfaction literature audit lane is not installed in this source index.")
@@ -3274,6 +3396,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "genomics":
         all_records = _prioritize_genomics_records(plan.question, all_records)
+
+    if plan.answer_shape == "expression":
+        all_records = _prioritize_expression_records(plan.question, all_records)
 
     if plan.answer_shape == "neurobiology":
         all_records = _prioritize_neurobiology_records(plan.question, all_records)

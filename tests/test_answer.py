@@ -284,7 +284,7 @@ def expression_record(record_id):
     )
 
 
-def expression_gap_record(record_id, text):
+def expression_gap_record(record_id, text, reason="raw_sra_reanalysis_not_performed"):
     return EvidenceRecord(
         record_id=record_id,
         lane="expression",
@@ -296,11 +296,11 @@ def expression_gap_record(record_id, text):
         media_url=None,
         provenance=Provenance(
             source_id="aedes_expression_omics",
-            locator="raw/expression_omics/source_boundary.json#gap/raw_sra_reanalysis_not_performed",
+            locator=f"raw/expression_omics/source_boundary.json#gap/{reason}",
             retrieved_at="2026-05-24T00:00:00Z",
             license="Ask Insects source boundary audit",
         ),
-        payload={"atom_type": "source_gap", "reason": "raw_sra_reanalysis_not_performed"},
+        payload={"atom_type": "source_gap", "reason": reason},
     )
 
 
@@ -518,6 +518,30 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_expression_omics")
             self.assertEqual(answer["evidence"][0]["record_id"], "expression:gap:raw_sra_reanalysis_not_performed")
             self.assertIn("count matrices", answer["answer"])
+
+    def test_differential_expression_questions_prefer_computed_output_gap_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    expression_record("expression:geo:GSE999999"),
+                    expression_gap_record(
+                        "expression:gap:differential_expression_outputs_not_indexed",
+                        "Aedes aegypti expression omics source gap: differential-expression outputs and normalized expression matrices are not yet indexed as source-grade rows.",
+                        reason="differential_expression_outputs_not_indexed",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti expression matrix differential expression data", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "expression")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_expression_omics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "expression:gap:differential_expression_outputs_not_indexed")
+            self.assertIn("differential-expression outputs", answer["answer"])
 
     def test_uniprot_questions_prefer_uniprot_protein_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
