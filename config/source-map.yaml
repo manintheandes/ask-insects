@@ -445,7 +445,7 @@ sources:
     ingest_script: scripts/ingest_extracted_facts.py
     api_base:
       europe_pmc: https://www.ebi.ac.uk/europepmc/webservices/rest/search
-      pmc_oa: https://pmc.ncbi.nlm.nih.gov/utils/oa/oa.fcgi
+      pmc_oa: https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi
       figshare: https://api.figshare.com/v2/articles
     input_sources:
       - aedes_literature_openalex

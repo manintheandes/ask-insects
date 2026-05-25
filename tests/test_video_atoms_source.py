@@ -8,7 +8,14 @@ import unittest
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
-from askinsects.sources.video_atoms import AedesVideoAtomsResult, VIDEO_ATOMS_SOURCE_ID, VideoDownloadNotVideoError, build_video_atom_records
+from askinsects.sources.video_atoms import (
+    AedesVideoAtomsResult,
+    DISCOVERY_REPOSITORIES,
+    VIDEO_ATOMS_SOURCE_ID,
+    VideoDownloadNotVideoError,
+    build_video_atom_records,
+    default_discovery_clients,
+)
 from tests.test_mendeley_behavior_media_source import tiny_xlsx
 
 
@@ -543,6 +550,7 @@ class VideoAtomsSourceTests(unittest.TestCase):
                         "license": "CC-BY-4.0",
                         "repository": "zenodo",
                         "species_scope": "Aedes aegypti",
+                        "locator": "zenodo-api#record/1/file/movie.mp4",
                     }
                 ],
                 "figshare": lambda: [
@@ -588,12 +596,19 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(len(discovered), 1)
         self.assertEqual(discovered[0].payload["atom_type"], "video_asset")
         self.assertEqual(discovered[0].payload["download_url"], "https://zenodo.org/record/1/files/movie.mp4")
+        self.assertEqual(discovered[0].provenance.locator, "zenodo-api#record/1/file/movie.mp4")
         reasons = {gap["reason"] for gap in result.gaps}
         self.assertIn("video_discovery_not_aedes_scope", reasons)
         self.assertIn("video_discovery_not_video_media", reasons)
         self.assertIn("video_discovery_no_download_url", reasons)
         self.assertIn("video_discovery_client_missing", reasons)
         self.assertIn("video_discovery_no_candidates", reasons)
+
+    def test_default_discovery_clients_cover_declared_repositories(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            clients = default_discovery_clients(Path(tmpdir) / "mosquito-v1")
+
+        self.assertEqual(set(DISCOVERY_REPOSITORIES), set(clients))
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ import re
 import shutil
 import subprocess
 from typing import Callable, Iterable
-from urllib.parse import urlencode, urlparse
+from urllib.parse import quote, urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 
 from askinsects.index import SourceIndex
@@ -318,7 +318,7 @@ def _record_for_asset(
         media_url=candidate.media_url,
         provenance=Provenance(
             source_id=VIDEO_ATOMS_SOURCE_ID,
-            locator=f"records#{candidate.source_record_id}",
+            locator=str(candidate.provenance.get("locator") or f"records#{candidate.source_record_id}") if candidate.discovery_repository else f"records#{candidate.source_record_id}",
             retrieved_at=retrieved_at,
             license=candidate.provenance.get("license") if isinstance(candidate.provenance.get("license"), str) else None,
             source_url=candidate.provenance.get("source_url") if isinstance(candidate.provenance.get("source_url"), str) else candidate.url,
@@ -349,6 +349,12 @@ def _fetch_json(url: str) -> object:
     request = Request(url, headers={"User-Agent": "AskInsects/0.1 video-discovery"})
     with urlopen(request, timeout=60) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def _fetch_text(url: str) -> str:
+    request = Request(url, headers={"User-Agent": "AskInsects/0.1 video-discovery"})
+    with urlopen(request, timeout=90) as response:
+        return response.read().decode("utf-8", "replace")
 
 
 def _default_zenodo_discovery_client() -> list[dict[str, object]]:
@@ -438,10 +444,398 @@ def _default_figshare_discovery_client() -> list[dict[str, object]]:
     return discovered
 
 
-def default_discovery_clients() -> dict[str, Callable[[], list[dict[str, object]]]]:
+def _default_dryad_discovery_client() -> list[dict[str, object]]:
+    from askinsects.sources.dryad_behavior_videos import DRYAD_API_BASE, DryadClient, _file_rows, _link
+
+    client = DryadClient()
+    queries = (
+        '"Aedes aegypti" video',
+        '"Aedes aegypti" flight',
+        '"Aedes aegypti" tracking',
+        '"Aedes aegypti" wingbeat',
+    )
+    discovered: list[dict[str, object]] = []
+    seen_dois: set[str] = set()
+    for query in queries:
+        search_url = f"{DRYAD_API_BASE}/api/v2/search?{urlencode({'q': query, 'page': 1, 'per_page': 10})}"
+        search_payload = _fetch_json(search_url)
+        search_payload = search_payload if isinstance(search_payload, dict) else {}
+        embedded = search_payload.get("_embedded") if isinstance(search_payload.get("_embedded"), dict) else {}
+        datasets = embedded.get("stash:datasets") if isinstance(embedded.get("stash:datasets"), list) else []
+        for dataset in datasets:
+            if not isinstance(dataset, dict):
+                continue
+            identifier = str(dataset.get("identifier") or "")
+            doi = identifier.removeprefix("doi:") if identifier.startswith("doi:") else identifier
+            if not doi or doi in seen_dois:
+                continue
+            seen_dois.add(doi)
+            version_href = _link(dataset, "stash:version")
+            if not version_href:
+                continue
+            version_url, version_payload = client.linked(version_href)
+            files_href = _link(version_payload, "stash:files")
+            if not files_href:
+                continue
+            files_url, files_payload = client.linked(files_href)
+            for file_index, file_payload in enumerate(_file_rows(files_payload), start=1):
+                path = str(file_payload.get("path") or f"file-{file_index}")
+                mime_type = str(file_payload.get("mimeType") or "")
+                download_href = _link(file_payload, "stash:download")
+                download_url = urljoin(DRYAD_API_BASE, download_href) if download_href else ""
+                if not download_url:
+                    continue
+                discovered.append(
+                    {
+                        "repository": "dryad",
+                        "title": str(dataset.get("title") or f"Dryad Aedes dataset {doi}"),
+                        "description": str(dataset.get("abstract") or dataset.get("title") or ""),
+                        "filename": path,
+                        "download_url": download_url,
+                        "source_url": f"{DRYAD_API_BASE}/dataset/{quote(f'doi:{doi}', safe='')}",
+                        "license": dataset.get("license"),
+                        "species_scope": f"Aedes aegypti {query} {dataset.get('title') or ''} {dataset.get('abstract') or ''}",
+                        "retrieved_at": utc_now(),
+                        "locator": f"{files_url}#file/{file_index}",
+                        "doi": doi,
+                        "size": file_payload.get("size"),
+                        "mime_type": mime_type,
+                        "digest": file_payload.get("digest"),
+                        "digest_type": file_payload.get("digestType"),
+                    }
+                )
+    return discovered
+
+
+def _default_osf_discovery_client() -> list[dict[str, object]]:
+    from askinsects.sources.osf_flighttrackai_videos import OSF_API_BASE, _attrs, _data, _links, _next_href, _related_href
+
+    search_url = f"{OSF_API_BASE}/search/?{urlencode({'q': '\"Aedes aegypti\" video', 'page[size]': 5})}"
+    search_payload = _fetch_json(search_url)
+    search_payload = search_payload if isinstance(search_payload, dict) else {}
+    discovered: list[dict[str, object]] = []
+    for node in _data(search_payload):
+        attrs = _attrs(node)
+        node_id = str(node.get("id") or "")
+        if not node_id:
+            continue
+        title = str(attrs.get("title") or f"OSF Aedes video project {node_id}")
+        description = str(attrs.get("description") or "")
+        links = _links(node)
+        source_url = str(links.get("html") or f"https://osf.io/{node_id}/")
+        license_payload = attrs.get("node_license") if isinstance(attrs.get("node_license"), dict) else {}
+        license_value = license_payload.get("name") or license_payload.get("id") if isinstance(license_payload, dict) else None
+        queue = [f"{OSF_API_BASE}/nodes/{node_id}/files/osfstorage/"]
+        seen_urls: set[str] = set()
+        file_index = 0
+        while queue:
+            url = queue.pop(0)
+            if url in seen_urls:
+                continue
+            seen_urls.add(url)
+            payload = _fetch_json(url)
+            payload = payload if isinstance(payload, dict) else {}
+            for item in _data(payload):
+                item_attrs = _attrs(item)
+                if item_attrs.get("kind") == "folder":
+                    href = _related_href(item, "files")
+                    if href:
+                        queue.append(href)
+                    continue
+                if item_attrs.get("kind") != "file":
+                    continue
+                file_index += 1
+                name = str(item_attrs.get("name") or item.get("id") or f"file-{file_index}")
+                download_url = _links(item).get("download")
+                if not isinstance(download_url, str) or not download_url:
+                    continue
+                discovered.append(
+                    {
+                        "repository": "osf",
+                        "title": title,
+                        "description": f"{description} OSF file: {name}.",
+                        "filename": name,
+                        "download_url": download_url,
+                        "source_url": source_url,
+                        "license": license_value,
+                        "species_scope": f"Aedes aegypti {title} {description}",
+                        "retrieved_at": utc_now(),
+                        "locator": f"{url}#file/{file_index}",
+                        "project_id": node_id,
+                        "file_id": item.get("id"),
+                        "materialized_path": item_attrs.get("materialized_path"),
+                        "size": item_attrs.get("size"),
+                    }
+                )
+            next_url = _next_href(payload)
+            if next_url:
+                queue.append(next_url)
+    return discovered
+
+
+def _default_mendeley_discovery_client() -> list[dict[str, object]]:
+    from askinsects.sources.mendeley_behavior_media import (
+        DEFAULT_MENDELEY_DATASETS,
+        MendeleyClient,
+        _content_details,
+        _dataset_web_url,
+        _file_folder_path,
+        _folder_path,
+        _is_media_file,
+        _license,
+    )
+
+    client = MendeleyClient()
+    discovered: list[dict[str, object]] = []
+    for spec in DEFAULT_MENDELEY_DATASETS:
+        snapshot_url, snapshot = client.snapshot(spec.dataset_id, spec.version)
+        folders_url, folders = client.folders(spec.dataset_id, spec.version)
+        folder_by_id = {str(folder.get("id")): folder for folder in folders if folder.get("id")}
+        folder_paths = {folder_id: _folder_path(folder, folder_by_id) for folder_id, folder in folder_by_id.items()}
+        for folder in folders:
+            folder_id = str(folder.get("id") or "")
+            if not folder_id:
+                continue
+            files_url, file_groups = client.files(spec.dataset_id, spec.version, folder_id)
+            for group in file_groups:
+                files = group.get("files") if isinstance(group.get("files"), list) else [group]
+                for file_payload in files:
+                    if not isinstance(file_payload, dict):
+                        continue
+                    filename = str(file_payload.get("filename") or file_payload.get("name") or "")
+                    details = _content_details(file_payload)
+                    content_type = str(details.get("content_type") or "")
+                    if not _is_media_file(filename, content_type):
+                        continue
+                    download_url = details.get("download_url")
+                    if not isinstance(download_url, str) or not download_url:
+                        continue
+                    folder_path = _file_folder_path(file_payload, folder_paths)
+                    discovered.append(
+                        {
+                            "repository": "mendeley",
+                            "title": str(snapshot.get("name") or f"Mendeley Aedes dataset {spec.dataset_id}"),
+                            "description": (
+                                f"Mendeley Data Aedes aegypti media file {filename}. "
+                                f"Folder path: {folder_path}. Dataset API: {snapshot_url}. Files API: {files_url}."
+                            ),
+                            "filename": filename,
+                            "download_url": download_url,
+                            "source_url": _dataset_web_url(snapshot, spec),
+                            "license": _license(snapshot),
+                            "species_scope": f"Aedes aegypti {' '.join(spec.behavior_labels)} {snapshot.get('description') or ''}",
+                            "retrieved_at": utc_now(),
+                            "locator": f"{files_url}#file/{file_payload.get('id') or filename}",
+                            "size": details.get("size") if details.get("size") is not None else file_payload.get("size"),
+                            "sha256": details.get("sha256_hash"),
+                        }
+                    )
+    return discovered
+
+
+def _default_pmc_oa_discovery_client() -> list[dict[str, object]]:
+    from askinsects.sources.pmc_videos import DEFAULT_PMC_VIDEO_ARTICLES, _license_text, _meta, _pmcid, _video_links
+
+    article_urls: list[str] = list(DEFAULT_PMC_VIDEO_ARTICLES)
+    query = urlencode(
+        {
+            "query": '"Aedes aegypti" video OPEN_ACCESS:y',
+            "format": "json",
+            "pageSize": "10",
+            "resultType": "lite",
+        }
+    )
+    payload = _fetch_json(f"https://www.ebi.ac.uk/europepmc/webservices/rest/search?{query}")
+    payload = payload if isinstance(payload, dict) else {}
+    result_list = payload.get("resultList") if isinstance(payload.get("resultList"), dict) else {}
+    results = result_list.get("result") if isinstance(result_list.get("result"), list) else []
+    discovered: list[dict[str, object]] = []
+    for result in results:
+        if not isinstance(result, dict):
+            continue
+        pmcid = result.get("pmcid")
+        if not isinstance(pmcid, str) or not pmcid:
+            fulltext_ids = result.get("fullTextIdList") if isinstance(result.get("fullTextIdList"), dict) else {}
+            ids = fulltext_ids.get("fullTextId") if isinstance(fulltext_ids.get("fullTextId"), list) else []
+            pmcid = next((str(value) for value in ids if str(value).startswith("PMC")), "")
+        if not pmcid:
+            continue
+        article_urls.append(f"https://pmc.ncbi.nlm.nih.gov/articles/{pmcid}/")
+    seen_articles: set[str] = set()
+    for article_url in article_urls:
+        if article_url in seen_articles:
+            continue
+        seen_articles.add(article_url)
+        try:
+            html = _fetch_text(article_url)
+        except Exception:
+            continue
+        article_title = _meta(html, "citation_title") or article_url
+        doi = _meta(html, "citation_doi")
+        license_text = _license_text(html)
+        normalized_pmcid = _pmcid(article_url, html)
+        for index, video_url in enumerate(_video_links(article_url, html), start=1):
+            discovered.append(
+                {
+                    "repository": "pmc_oa",
+                    "title": article_title,
+                    "description": f"PMC OA supplementary video candidate from {article_title}. DOI: {doi}.",
+                    "filename": Path(urlparse(video_url).path).name,
+                    "download_url": video_url,
+                    "source_url": article_url,
+                    "license": license_text,
+                    "species_scope": f"Aedes aegypti {article_title}",
+                    "retrieved_at": utc_now(),
+                    "locator": f"{article_url}#video/{index}",
+                    "pmcid": normalized_pmcid,
+                    "doi": doi,
+                }
+            )
+    return discovered
+
+
+def _default_paper_supplements_discovery_client(artifact_dir: Path) -> list[dict[str, object]]:
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    rows = index.sql(
+        """
+        SELECT r.record_id, r.title, r.text, r.url, r.provenance_json, p.payload_json
+        FROM records r
+        LEFT JOIN record_payloads p ON p.record_id = r.record_id
+        WHERE r.source IN ('aedes_literature_openalex', 'aedes_extracted_facts')
+          AND (lower(coalesce(r.text, '')) LIKE '%.mp4%'
+               OR lower(coalesce(r.text, '')) LIKE '%.mov%'
+               OR lower(coalesce(p.payload_json, '')) LIKE '%.mp4%'
+               OR lower(coalesce(p.payload_json, '')) LIKE '%.mov%')
+        ORDER BY r.record_id
+        """,
+        limit=250,
+    )
+    discovered: list[dict[str, object]] = []
+    for row in rows:
+        payload_text = str(row.get("payload_json") or "")
+        text = f"{row.get('title') or ''} {row.get('text') or ''} {payload_text}"
+        urls = re.findall(r"https?://[^\s\"'<>]+?\.(?:mp4|mov|avi|webm|m4v)(?:\?[^\s\"'<>]+)?", text, flags=re.I)
+        provenance = _safe_json(row.get("provenance_json"))
+        for index, url in enumerate(dict.fromkeys(urls), start=1):
+            discovered.append(
+                {
+                    "repository": "paper_supplements",
+                    "title": str(row.get("title") or "Aedes aegypti paper supplement video"),
+                    "description": str(row.get("text") or row.get("title") or ""),
+                    "filename": Path(urlparse(url).path).name,
+                    "download_url": url,
+                    "source_url": str(row.get("url") or provenance.get("source_url") or ""),
+                    "license": provenance.get("license") or "paper supplement license not supplied",
+                    "species_scope": text,
+                    "retrieved_at": provenance.get("retrieved_at") or utc_now(),
+                    "locator": f"records#{row.get('record_id')}/supplement-video/{index}",
+                    "source_record_id": row.get("record_id"),
+                }
+            )
+    return discovered
+
+
+def _default_institutional_discovery_client(artifact_dir: Path) -> list[dict[str, object]]:
+    discovered = _dataverse_institutional_discovery_candidates()
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    rows = index.sql(
+        """
+        SELECT r.record_id, r.title, r.text, r.url, r.provenance_json, p.payload_json
+        FROM records r
+        LEFT JOIN record_payloads p ON p.record_id = r.record_id
+        WHERE lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%aedes aegypti%'
+          AND (lower(coalesce(r.url, '')) LIKE '%.mp4%'
+               OR lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%.mp4%'
+               OR lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%.mov%')
+        ORDER BY r.record_id
+        """,
+        limit=250,
+    )
+    known_hosts = ("zenodo.org", "figshare.com", "mendeley.com", "datadryad.org", "osf.io", "pmc.ncbi.nlm.nih.gov")
+    for row in rows:
+        provenance = _safe_json(row.get("provenance_json"))
+        text = f"{row.get('url') or ''} {row.get('text') or ''} {row.get('payload_json') or ''}"
+        urls = re.findall(r"https?://[^\s\"'<>]+?\.(?:mp4|mov|avi|webm|m4v)(?:\?[^\s\"'<>]+)?", text, flags=re.I)
+        for index, url in enumerate(dict.fromkeys(urls), start=1):
+            host = urlparse(url).netloc.lower()
+            if any(known in host for known in known_hosts):
+                continue
+            discovered.append(
+                {
+                    "repository": "institutional",
+                    "title": str(row.get("title") or "Aedes aegypti institutional video candidate"),
+                    "description": str(row.get("text") or row.get("title") or ""),
+                    "filename": Path(urlparse(url).path).name,
+                    "download_url": url,
+                    "source_url": str(row.get("url") or provenance.get("source_url") or ""),
+                    "license": provenance.get("license") or "institutional repository license not supplied",
+                    "species_scope": text,
+                    "retrieved_at": provenance.get("retrieved_at") or utc_now(),
+                    "locator": f"records#{row.get('record_id')}/institutional-video/{index}",
+                    "source_record_id": row.get("record_id"),
+                }
+            )
+    return discovered
+
+
+def _dataverse_institutional_discovery_candidates() -> list[dict[str, object]]:
+    queries = (
+        '"Aedes aegypti" mp4',
+        '"Aedes aegypti" video',
+        '"Aedes aegypti" movie',
+    )
+    discovered: list[dict[str, object]] = []
+    seen_urls: set[str] = set()
+    for query in queries:
+        url = f"https://dataverse.harvard.edu/api/search?{urlencode({'q': query, 'type': 'file', 'per_page': 50})}"
+        payload = _fetch_json(url)
+        payload = payload if isinstance(payload, dict) else {}
+        data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+        items = data.get("items") if isinstance(data.get("items"), list) else []
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            filename = str(item.get("name") or "")
+            content_type = str(item.get("file_content_type") or item.get("file_type") or "")
+            download_url = item.get("url")
+            if not isinstance(download_url, str) or not download_url or download_url in seen_urls:
+                continue
+            if not _looks_like_video(filename, content_type, item.get("dataset_name"), item.get("description")):
+                continue
+            seen_urls.add(download_url)
+            discovered.append(
+                {
+                    "repository": "institutional",
+                    "title": str(item.get("dataset_name") or item.get("name") or "Aedes aegypti Dataverse video candidate"),
+                    "description": str(item.get("description") or item.get("dataset_citation") or item.get("name") or ""),
+                    "filename": filename,
+                    "download_url": download_url,
+                    "source_url": str(item.get("url") or item.get("dataset_persistent_id") or ""),
+                    "license": item.get("license") or item.get("termsOfUse"),
+                    "species_scope": f"Aedes aegypti {item.get('dataset_name') or ''} {item.get('description') or ''} {item.get('dataset_citation') or ''}",
+                    "retrieved_at": utc_now(),
+                    "locator": f"{url}#file/{item.get('file_id') or filename}",
+                    "file_id": item.get("file_id"),
+                    "dataset_persistent_id": item.get("dataset_persistent_id"),
+                    "size": item.get("size_in_bytes"),
+                    "checksum": item.get("checksum"),
+                    "content_type": content_type,
+                }
+            )
+    return discovered
+
+
+def default_discovery_clients(artifact_dir: Path | None = None) -> dict[str, Callable[[], list[dict[str, object]]]]:
+    artifact_dir = Path(artifact_dir) if artifact_dir is not None else Path(".")
     return {
+        "pmc_oa": _default_pmc_oa_discovery_client,
+        "dryad": _default_dryad_discovery_client,
+        "mendeley": _default_mendeley_discovery_client,
+        "osf": _default_osf_discovery_client,
         "zenodo": _default_zenodo_discovery_client,
         "figshare": _default_figshare_discovery_client,
+        "institutional": lambda: _default_institutional_discovery_client(artifact_dir),
+        "paper_supplements": lambda: _default_paper_supplements_discovery_client(artifact_dir),
     }
 
 
@@ -882,7 +1276,7 @@ def _candidate_from_discovery(raw: dict[str, object]) -> VideoCandidate | dict[s
     record_id = f"discovery:{repository}:{_digest(title, download_url)}"
     provenance = {
         "source_id": f"video_discovery_{repository}",
-        "locator": f"discovery#{repository}:{_digest(title, download_url)}",
+        "locator": raw.get("locator") or f"discovery#{repository}:{_digest(title, download_url)}",
         "retrieved_at": raw.get("retrieved_at") or utc_now(),
         "license": license_value,
         "source_url": raw.get("source_url"),
@@ -935,6 +1329,18 @@ def _discover_candidates(
     return candidates, count
 
 
+def _dedupe_candidates(candidates: Iterable[VideoCandidate]) -> list[VideoCandidate]:
+    deduped: list[VideoCandidate] = []
+    seen: set[str] = set()
+    for candidate in candidates:
+        key = str(candidate.media_url or candidate.source_record_id or "")
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(candidate)
+    return deduped
+
+
 def build_video_atom_records(
     artifact_dir: Path,
     *,
@@ -962,9 +1368,10 @@ def build_video_atom_records(
     candidates = _candidate_rows(index)
     discovery_candidate_count = 0
     if discover_sources:
-        discovery_clients = discovery_clients if discovery_clients is not None else default_discovery_clients()
+        discovery_clients = discovery_clients if discovery_clients is not None else default_discovery_clients(artifact_dir)
         discovered, discovery_candidate_count = _discover_candidates(discovery_clients, max_discovery_results=max_discovery_results, gaps=gaps)
         candidates.extend(discovered)
+    candidates = _dedupe_candidates(candidates)
 
     mirrored_video_count = 0
     verified_video_count = 0

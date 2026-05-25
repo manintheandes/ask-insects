@@ -71,7 +71,7 @@ VIDEO_ATOM_QUERY_TERMS = (
     "failure",
     "discovery",
 )
-VIDEO_DISCOVERY_REPOSITORIES = ("pmc_oa", "pmc", "dryad", "mendeley", "osf", "zenodo", "figshare", "institutional")
+VIDEO_DISCOVERY_REPOSITORIES = ("pmc_oa", "pmc", "dryad", "mendeley", "osf", "zenodo", "figshare", "institutional", "paper_supplements")
 IMAGE_ATOM_QUERY_TERMS = (
     "image",
     "images",
