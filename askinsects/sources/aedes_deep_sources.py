@@ -52,6 +52,16 @@ DEFAULT_TAXONOMY_SOURCES: tuple[dict[str, str], ...] = (
         "url": "https://mosquito-taxonomic-inventory.myspecies.info/subgenus-stegomyia-theobald-1901",
         "authority": "Mosquito Taxonomic Inventory",
     },
+    {
+        "name": "NCBI Taxonomy Browser Aedes aegypti",
+        "url": "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?command=show&id=7159&lvl=&mode=node",
+        "authority": "NCBI Taxonomy",
+    },
+    {
+        "name": "USDA NAL Thesaurus Aedes aegypti",
+        "url": "https://lod.nal.usda.gov/nalt/en/page/4449",
+        "authority": "USDA NAL Thesaurus",
+    },
 )
 
 DEFAULT_WORLDCLIM_SOURCES: tuple[dict[str, str], ...] = (

@@ -752,7 +752,7 @@ sources:
   - id: aedes_taxonomy_authorities
     name: Aedes aegypti taxonomy authority pages
     source_type: public_web_authority_pages
-    boundary: Authoritative Aedes aegypti taxonomy and identity pages from ECDC, OECD, and Mosquito Taxonomic Inventory or WRBU-style authority surfaces, indexed at page grain with classification and synonym/name evidence when present
+    boundary: Authoritative Aedes aegypti taxonomy and identity pages from ECDC, OECD, Mosquito Taxonomic Inventory or WRBU-style authority surfaces, NCBI Taxonomy, and USDA NAL Thesaurus, indexed at page grain with classification and synonym/name evidence when present
     query_plane: authority_html_to_sqlite_taxonomy_records
     artifact_dir: artifacts/mosquito-v1/raw/aedes_deep_sources/taxonomy_authorities
     ingest_script: scripts/ingest_aedes_deep_sources.py
@@ -760,7 +760,7 @@ sources:
       - taxonomy
     provenance_required: true
     live_fetch: opt_in_bounded
-    source_gap: MTI pages may be mapped but inaccessible from automated fetches when Cloudflare blocks the runtime; that failure is receipted as a taxonomy_authority_fetch_failed gap instead of treated as coverage.
+    source_gap: OECD or MTI pages may be mapped but inaccessible from automated fetches when upstream protection blocks the runtime; those failures are receipted as taxonomy_authority_fetch_failed gaps while accessible ECDC, NCBI, and NAL authority records still populate the taxonomy lane.
     source_contract:
       authority_page_records:
         - authority
