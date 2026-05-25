@@ -218,6 +218,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_osf_flighttrackai_videos = sub.add_parser("ingest-osf-flighttrackai-videos")
     ingest_osf_flighttrackai_videos.add_argument("--hosted", action="store_true")
 
+    ingest_pmc_videos = sub.add_parser("ingest-pmc-videos")
+    ingest_pmc_videos.add_argument("--hosted", action="store_true")
+    ingest_pmc_videos.add_argument("--article-url", action="append")
+    ingest_pmc_videos.add_argument("--retrieved-at")
+
     ingest_zenodo_aedes_videos = sub.add_parser("ingest-zenodo-aedes-videos")
     ingest_zenodo_aedes_videos.add_argument("--hosted", action="store_true")
     ingest_zenodo_aedes_videos.add_argument("--query", default='"Aedes aegypti" (video OR movie OR mp4 OR tracking)')
@@ -703,6 +708,24 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/osf-flighttrackai-videos",
             {},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-pmc-videos":
+        if not args.hosted:
+            from scripts.ingest_pmc_videos import ingest_pmc_videos
+
+            payload = ingest_pmc_videos(
+                artifact_dir=artifact_dir,
+                article_urls=args.article_url,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/pmc-videos",
+            {"article_urls": args.article_url, "retrieved_at": args.retrieved_at},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

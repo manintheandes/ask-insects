@@ -124,7 +124,8 @@ python3 scripts/build_source_index.py --fixtures --neurobiology
 To add bounded public PMC supplementary videos:
 
 ```bash
-python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-pmc-videos
+python3 -m askinsects ingest-pmc-videos --hosted
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
 ```
 

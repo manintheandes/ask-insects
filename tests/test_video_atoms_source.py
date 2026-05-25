@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from urllib.parse import parse_qs, urlparse
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
@@ -1013,6 +1014,24 @@ class VideoAtomsSourceTests(unittest.TestCase):
             clients = default_discovery_clients(Path(tmpdir) / "mosquito-v1")
 
         self.assertEqual(set(DISCOVERY_REPOSITORIES), set(clients))
+
+    def test_figshare_discovery_uses_broader_page_size(self):
+        requested_urls: list[str] = []
+
+        def fake_fetch_json(url: str) -> object:
+            requested_urls.append(url)
+            return []
+
+        original_fetch_json = video_atoms._fetch_json
+        try:
+            video_atoms._fetch_json = fake_fetch_json
+            discovered = video_atoms._default_figshare_discovery_client()
+        finally:
+            video_atoms._fetch_json = original_fetch_json
+
+        self.assertEqual(discovered, [])
+        query = parse_qs(urlparse(requested_urls[0]).query)
+        self.assertEqual(query["page_size"], ["100"])
 
 
 if __name__ == "__main__":

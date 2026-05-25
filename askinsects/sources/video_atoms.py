@@ -105,6 +105,7 @@ DISCOVERY_REPOSITORIES = (
     "institutional",
     "paper_supplements",
 )
+FIGSHARE_DISCOVERY_PAGE_SIZE = 100
 
 
 class VideoDownloadNotVideoError(ValueError):
@@ -542,7 +543,7 @@ def _default_zenodo_discovery_client() -> list[dict[str, object]]:
 
 
 def _default_figshare_discovery_client() -> list[dict[str, object]]:
-    query = urlencode({"search_for": "Aedes aegypti video", "page_size": "25"})
+    query = urlencode({"search_for": "Aedes aegypti video", "page_size": str(FIGSHARE_DISCOVERY_PAGE_SIZE)})
     payload = _fetch_json(f"https://api.figshare.com/v2/articles?{query}")
     summaries = payload if isinstance(payload, list) else []
     discovered: list[dict[str, object]] = []

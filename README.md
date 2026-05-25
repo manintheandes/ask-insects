@@ -211,7 +211,8 @@ If the public API blocks the runtime IP, use `--tsv-path path/to/Aedes_aegypti_b
 PMC open-access article pages are the first moving-image lane for `Aedes aegypti` videos:
 
 ```bash
-python3 scripts/ingest_pmc_videos.py --artifact-dir artifacts/mosquito-v1
+python3 -m askinsects ingest-pmc-videos
+python3 -m askinsects ingest-pmc-videos --hosted
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti videos" --json
 ```
 
@@ -269,7 +270,7 @@ The lane uses source id `zenodo_aedes_videos`. It writes raw Zenodo search JSON 
 Figshare article search adds bounded `Aedes aegypti` video file manifests:
 
 ```bash
-python3 -m askinsects ingest-figshare-aedes-videos --query "Aedes aegypti video" --page-size 25
+python3 -m askinsects ingest-figshare-aedes-videos --query "Aedes aegypti video" --page-size 100
 python3 -m askinsects ask "show Figshare Aedes aegypti videos" --json
 ```
 

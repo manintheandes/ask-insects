@@ -48,6 +48,7 @@ from .sources.mosquito_alert import MOSQUITO_ALERT_SOURCE_ID, fetch_mosquito_ale
 from .sources.ncbi_biosample import DEFAULT_BIOSAMPLE_SPECIES, fetch_ncbi_biosample_records
 from .sources.osf_flighttrackai_videos import OSF_FLIGHTTRACKAI_SOURCE_ID, fetch_osf_flighttrackai_video_records
 from .sources.pathogen_taxonomy import PATHOGEN_TAXONOMY_SOURCE_ID, fetch_pathogen_taxonomy_records
+from .sources.pmc_videos import PMC_VIDEO_SOURCE_ID, fetch_pmc_video_records
 from .sources.paho_surveillance import (
     DEFAULT_PAHO_CORE_INDICATOR_PAGES,
     DEFAULT_PAHO_DENGUE_DASHBOARD_PAGES,
@@ -2139,6 +2140,47 @@ def ingest_osf_flighttrackai_videos(
     return response
 
 
+def ingest_pmc_videos(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_pmc_video_records_fn: Callable[..., object] = fetch_pmc_video_records,
+) -> dict[str, object]:
+    article_urls = payload.get("article_urls")
+    if article_urls is not None and not (
+        isinstance(article_urls, list) and all(isinstance(value, str) for value in article_urls)
+    ):
+        raise ValueError("article_urls must be a list of strings")
+    retrieved_at = payload.get("retrieved_at")
+    if retrieved_at is not None and not isinstance(retrieved_at, str):
+        raise ValueError("retrieved_at must be a string")
+
+    from scripts.ingest_pmc_videos import ingest_pmc_videos as ingest_local
+
+    if fetch_pmc_video_records_fn is fetch_pmc_video_records:
+        result = ingest_local(
+            artifact_dir=artifact_dir,
+            article_urls=article_urls,
+            retrieved_at=retrieved_at or utc_now(),
+        )
+        result["activated_artifact_dir"] = str(artifact_dir)
+        return result
+
+    from scripts.ingest_pmc_videos import _update_metadata
+
+    source_result = fetch_pmc_video_records_fn(
+        article_urls=article_urls,
+        raw_dir=artifact_dir / "raw" / "pmc_videos",
+        retrieved_at=retrieved_at or utc_now(),
+    )
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    index.replace_source_records(PMC_VIDEO_SOURCE_ID, source_result.records)
+    response = _update_metadata(artifact_dir, source_result)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def ingest_zenodo_aedes_videos(
     payload: dict[str, object],
     *,
@@ -2698,6 +2740,7 @@ def dispatch_request(
     fetch_mosquito_alert_records_fn: Callable[..., object] = fetch_mosquito_alert_records,
     fetch_ncbi_biosample_records_fn: Callable[..., object] = fetch_ncbi_biosample_records,
     fetch_osf_flighttrackai_video_records_fn: Callable[..., object] = fetch_osf_flighttrackai_video_records,
+    fetch_pmc_video_records_fn: Callable[..., object] = fetch_pmc_video_records,
     fetch_pathogen_taxonomy_records_fn: Callable[..., object] = fetch_pathogen_taxonomy_records,
     fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
     fetch_paho_dengue_surveillance_records_fn: Callable[..., object] = fetch_paho_dengue_surveillance_records,
@@ -2858,6 +2901,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_osf_flighttrackai_video_records_fn=fetch_osf_flighttrackai_video_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/pmc-videos":
+            result = ingest_pmc_videos(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_pmc_video_records_fn=fetch_pmc_video_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

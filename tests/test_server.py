@@ -30,6 +30,7 @@ from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
 from askinsects.sources.osf_flighttrackai_videos import OSFFlightTrackAIResult
 from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
 from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
+from askinsects.sources.pmc_videos import PMCVideosResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from askinsects.sources.vectorbase_genomics import VectorBaseGenomicsResult
 from askinsects.sources.vectornet_surveillance import VectorNetBuildResult
@@ -1629,6 +1630,61 @@ class ServerTests(unittest.TestCase):
             )
             self.assertEqual(payload_rows[0]["record_id"], "osf:flighttrackai:file:video_a")
             self.assertEqual(response.payload["media_file_count"], 1)
+
+    def test_ingest_pmc_videos_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, article_urls, raw_dir, retrieved_at):
+                raw_path = raw_dir / "PMC123.html"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text("<html>video</html>", encoding="utf-8")
+                return PMCVideosResult(
+                    source_id="pmc_open_access_videos",
+                    records=[
+                        EvidenceRecord(
+                            record_id="pmc:video:PMC123:video1.mp4",
+                            lane="media",
+                            source="pmc_open_access_videos",
+                            title="Aedes aegypti PMC supplementary video video1.mp4",
+                            text="PMC Aedes aegypti supplementary video.",
+                            species="Aedes aegypti",
+                            url=article_urls[0],
+                            media_url="https://cdn.ncbi.nlm.nih.gov/pmc/blobs/example/video1.mp4",
+                            provenance=Provenance(
+                                source_id="pmc_open_access_videos",
+                                locator=f"{raw_path}#video/1",
+                                retrieved_at=retrieved_at,
+                                license="Creative Commons Attribution License",
+                                source_url=article_urls[0],
+                            ),
+                            payload={"filename": "video1.mp4", "raw_html": raw_path.as_posix()},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    article_count=1,
+                    video_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/pmc-videos",
+                {"article_urls": ["https://pmc.ncbi.nlm.nih.gov/articles/PMC123/"], "retrieved_at": RETRIEVED_AT},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_pmc_video_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["pmc_open_access_videos"], 1)
+            self.assertEqual(response.payload["video_count"], 1)
 
     def test_ingest_zenodo_aedes_videos_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
