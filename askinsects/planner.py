@@ -176,6 +176,42 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "literature", ("literature", "datasets", "patents", "taxonomy", "observations"), question)
+    if any(
+        term in q
+        for term in (
+            "olfaction",
+            "olfactory",
+            "odor",
+            "odour",
+            "odorant",
+            "chemosensory",
+            "antenna",
+            "antennal",
+            "orco",
+        )
+    ) and not any(
+        term in q
+        for term in (
+            "brain",
+            "neuron",
+            "neurons",
+            "neural",
+            "connectome",
+            "cell atlas",
+            "h5ad",
+            "sra",
+            "gene",
+            "genes",
+            "genome",
+            "genomic",
+            "protein",
+            "proteins",
+            "transcript",
+            "transcripts",
+            "aael",
+        )
+    ):
+        return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
     if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
     if any(

@@ -254,7 +254,28 @@ def _wants_olfaction_literature(question: str) -> bool:
             "antennal",
             "orco",
         )
-    ) and any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research", "pubmed"))
+    ) and any(
+        term in q
+        for term in (
+            "paper",
+            "papers",
+            "literature",
+            "study",
+            "studies",
+            "research",
+            "pubmed",
+            "full text",
+            "fulltext",
+            "figure",
+            "fig.",
+            "caption",
+        )
+    )
+
+
+def _wants_literature_fulltext(question: str) -> bool:
+    q = question.lower()
+    return any(term in q for term in ("full text", "fulltext", "figure", "fig.", "caption"))
 
 
 def _wants_crossref_literature_audit(question: str) -> bool:
@@ -3109,7 +3130,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     all_records = _prioritize_named_source_records(plan.question, all_records)
 
     if plan.answer_shape == "literature":
-        if _wants_mosquito_repellent_literature(plan.question):
+        if _wants_literature_fulltext(plan.question):
+            literature_records = _fulltext_literature_records(index, plan.question, limit=limit)
+        elif _wants_mosquito_repellent_literature(plan.question):
             literature_records = [record for record in all_records if record.lane in {"literature", "datasets", "patents"}]
         else:
             literature_records = [record for record in all_records if record.lane == "literature"]
