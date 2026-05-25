@@ -2246,6 +2246,24 @@ def _vector_competence_assay_records(index: SourceIndex, question: str, *, limit
         )
     ):
         return []
+    if _wants_extracted_facts(question):
+        with index.connect() as conn:
+            rows = conn.execute(
+                """
+                SELECT r.*
+                FROM records r
+                JOIN record_payloads p ON p.record_id = r.record_id
+                WHERE r.source = 'aedes_vector_competence_assays'
+                  AND r.lane = 'vector_competence'
+                  AND json_extract(p.payload_json, '$.confidence') = 'parsed_table_schema_validated'
+                ORDER BY r.record_id
+                LIMIT ?
+                """,
+                (max(limit * 50, 250),),
+            ).fetchall()
+        records = [EvidenceRecord.from_row(dict(row)) for row in rows]
+        if records:
+            return _prioritize_named_source_records(question, records)[:limit]
     records = _source_search_records(
         index,
         "aedes_vector_competence_assays",
