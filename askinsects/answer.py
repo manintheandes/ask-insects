@@ -2293,6 +2293,26 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             all_records.append(record)
             seen_record_ids.add(record.record_id)
 
+    if plan.answer_shape == "resistance" and any(
+        term in plan.question.lower()
+        for term in (
+            "who",
+            "world health organization",
+            "guidance",
+            "method",
+            "methods",
+            "bioassay",
+            "bioassays",
+            "discriminating concentration",
+            "discriminating concentrations",
+        )
+    ):
+        for record in _source_records(index, AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID, ["resistance"], limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
     if plan.answer_shape == "identity" and not any(
         term in plan.question.lower() for term in ("pathogen", "dengue", "zika", "chikungunya", "yellow fever", "mayaro", "west nile")
     ) and any(
