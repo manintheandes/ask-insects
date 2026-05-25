@@ -2388,6 +2388,7 @@ class AnswerTests(unittest.TestCase):
                             license="WHO public web page; source terms apply",
                         ),
                     ),
+                    resistance_record("extracted_fact:resistance:who-bioassay", "aedes_extracted_facts"),
                 ]
             )
 
@@ -2487,6 +2488,7 @@ class AnswerTests(unittest.TestCase):
                             license="test",
                         ),
                     ),
+                    ecology_record("extracted_fact:ecology:global-compendium-row", "aedes_extracted_facts"),
                     EvidenceRecord(
                         record_id="population_genomics:bioproject:PRJNA1090933",
                         lane="genome_features",

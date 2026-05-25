@@ -1508,17 +1508,18 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
     q = question.lower()
     wants_who_guidance = any(term in q for term in ("who", "world health organization", "guidance", "method", "methods", "bioassay", "bioassays", "discriminating concentration", "discriminating concentrations"))
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int]:
+    def score(record: EvidenceRecord) -> tuple[object, ...]:
+        who_guidance_rank = 0 if wants_who_guidance and record.source == AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID else 1
         extracted_rank = 0 if wants_extracted and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         marker_rank = 0 if wants_marker and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
-        who_guidance_rank = 0 if wants_who_guidance and record.source == AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID else 1
         irmapper_rank = 0 if not wants_marker and record.source == "irmapper_aedes" else 1
         return (
+            who_guidance_rank,
             extracted_rank,
             marker_rank,
-            who_guidance_rank,
             irmapper_rank,
             0 if record.lane == "resistance" else 1,
+            record.record_id,
         )
 
     return sorted(records, key=score)
@@ -1624,7 +1625,7 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
 
     requested_years = set(re.findall(r"\b(?:19|20)\d{2}\b", q))
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int, int, int]:
+    def score(record: EvidenceRecord) -> tuple[object, ...]:
         haystack = f"{record.title}\n{record.text}\n{record.url or ''}".lower()
         if "ecdc" in q:
             organization_rank = 0 if "ecdc" in haystack else 1
@@ -1724,16 +1725,19 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
     wants_worldclim = any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability"))
     wants_compendium = any(term in q for term in ("global compendium", "compendium", "occurrence compendium"))
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int, int, int, int]:
+    def score(record: EvidenceRecord) -> tuple[object, ...]:
+        worldclim_rank = 0 if wants_worldclim and record.source == AEDES_WORLDCLIM_SOURCE_ID else 1
+        compendium_rank = 0 if wants_compendium and record.source == AEDES_GLOBAL_COMPENDIUM_SOURCE_ID else 1
         extracted_rank = 0 if _wants_extracted_facts(question) and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         vectornet_rank = 0 if "vectornet" in q and record.source == "vectornet_aedes_surveillance" else 1
         return (
+            worldclim_rank,
+            compendium_rank,
             extracted_rank,
             vectornet_rank,
-            0 if wants_worldclim and record.source == AEDES_WORLDCLIM_SOURCE_ID else 1,
-            0 if wants_compendium and record.source == AEDES_GLOBAL_COMPENDIUM_SOURCE_ID else 1,
             0 if record.source == OCCURRENCE_ECOLOGY_SOURCE_ID else 1,
             0 if record.lane == "ecology" else 1,
+            record.record_id,
         )
 
     return sorted(records, key=score)
