@@ -132,6 +132,49 @@ class IngestVideoAtomsTests(unittest.TestCase):
             self.assertEqual(payload["velocity_mean_cm_s"], 3.25)
             self.assertIn("raw/mendeley_behavior_media/table_files/movement.xlsx#sheet/1/row/2", rows[0]["provenance_json"])
 
+    def test_ingest_writes_video_discovery_sweep_receipts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            discovery_clients = {
+                repository: (lambda repository=repository: [
+                    {
+                        "title": f"Aedes aegypti {repository} video",
+                        "download_url": f"https://example.org/{repository}.mp4",
+                        "source_url": f"https://example.org/{repository}",
+                        "license": "CC-BY",
+                        "repository": repository,
+                        "species_scope": "Aedes aegypti",
+                    }
+                ])
+                for repository in video_atoms.DISCOVERY_REPOSITORIES
+            }
+
+            result = ingest_video_atoms(
+                artifact_dir=artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                discover_sources=True,
+                discovery_clients=discovery_clients,
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual({receipt["repository"] for receipt in result["discovery_sweep_receipts"]}, set(video_atoms.DISCOVERY_REPOSITORIES))
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(
+                {item["repository"] for item in status["aedes_video_atoms"]["discovery_sweep_receipts"]},
+                set(video_atoms.DISCOVERY_REPOSITORIES),
+            )
+            self.assertEqual(
+                {item["repository"] for item in receipt["aedes_video_atoms"]["discovery_sweep_receipts"]},
+                set(video_atoms.DISCOVERY_REPOSITORIES),
+            )
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select json_extract(payload_json, '$.repository') as repository from record_payloads where source='aedes_video_atoms' and json_extract(payload_json, '$.atom_type')='video_sweep'",
+                limit=20,
+            )
+            self.assertEqual({row["repository"] for row in rows}, set(video_atoms.DISCOVERY_REPOSITORIES))
+
     def test_ingest_preserves_existing_mirror_and_artifact_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

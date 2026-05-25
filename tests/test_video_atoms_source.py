@@ -958,6 +958,12 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(license_gap["source_byte_size"], 123456)
         self.assertEqual(license_gap["source_hashes"]["sha256"], "b" * 64)
         self.assertEqual(license_gap["license"], "institutional repository license not supplied")
+        receipts = {receipt["repository"]: receipt for receipt in result.discovery_sweep_receipts}
+        self.assertEqual(set(receipts), set(DISCOVERY_REPOSITORIES))
+        self.assertEqual(receipts["zenodo"]["status"], "accepted_candidates")
+        self.assertEqual(receipts["paper_supplements"]["status"], "no_candidates")
+        sweep_records = [record for record in result.records if record.payload.get("atom_type") == "video_sweep"]
+        self.assertEqual({record.payload["repository"] for record in sweep_records}, set(DISCOVERY_REPOSITORIES))
 
     def test_discovery_not_aedes_scope_gap_is_suppressed_for_source_backed_video(self):
         with tempfile.TemporaryDirectory() as tmpdir:

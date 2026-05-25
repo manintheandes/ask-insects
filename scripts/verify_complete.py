@@ -1149,6 +1149,19 @@ def _video_repository_counts(conn: sqlite3.Connection) -> dict[str, int]:
     return {str(row["repository"]): int(row["n"]) for row in rows}
 
 
+def _video_sweep_repository_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    rows = conn.execute(
+        """
+        select json_extract(payload_json, '$.repository') as repository, count(*) as n
+        from record_payloads
+        where source='aedes_video_atoms'
+          and json_extract(payload_json, '$.atom_type')='video_sweep'
+        group by repository
+        """
+    ).fetchall()
+    return {str(row["repository"]): int(row["n"]) for row in rows if row["repository"] is not None}
+
+
 def _has_motion_table_inputs(artifact_dir: Path) -> bool:
     roots = (
         artifact_dir / "raw" / "pmc_videos",
@@ -1201,6 +1214,7 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
         source_records = int(conn.execute("select count(*) from records where source='aedes_video_atoms'").fetchone()[0])
         atom_counts = _video_atom_counts(conn)
         repository_counts = _video_repository_counts(conn)
+        sweep_repository_counts = _video_sweep_repository_counts(conn)
         verified_assets = int(
             conn.execute(
                 """
@@ -1258,6 +1272,31 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
     missing_targets = [target for target in VIDEO_DISCOVERY_TARGETS if repository_counts.get(target, 0) == 0]
     if missing_targets:
         raise RuntimeError("Aedes video discovery targets lack queryable asset or gap records: " + ", ".join(missing_targets))
+    sweep_receipts = video_status.get("discovery_sweep_receipts")
+    if not isinstance(sweep_receipts, list):
+        raise RuntimeError("Aedes video atoms receipt missing discovery_sweep_receipts")
+    receipt_by_target = {
+        str(receipt.get("repository")): receipt
+        for receipt in sweep_receipts
+        if isinstance(receipt, dict) and receipt.get("repository")
+    }
+    missing_receipts = [target for target in VIDEO_DISCOVERY_TARGETS if target not in receipt_by_target]
+    if missing_receipts:
+        raise RuntimeError("Aedes video discovery targets lack sweep receipts: " + ", ".join(missing_receipts))
+    incomplete_receipts = []
+    for target, receipt in receipt_by_target.items():
+        if target not in VIDEO_DISCOVERY_TARGETS:
+            continue
+        if not receipt.get("status") or (
+            int(receipt.get("raw_candidate_count") or 0) == 0
+            and int(receipt.get("gap_count") or 0) == 0
+        ):
+            incomplete_receipts.append(target)
+    if incomplete_receipts:
+        raise RuntimeError("Aedes video discovery sweep receipts lack candidate or gap proof: " + ", ".join(sorted(incomplete_receipts)))
+    missing_sweep_records = [target for target in VIDEO_DISCOVERY_TARGETS if sweep_repository_counts.get(target, 0) == 0]
+    if missing_sweep_records:
+        raise RuntimeError("Aedes video discovery sweep records are not queryable for all targets: " + ", ".join(missing_sweep_records))
 
 
 def _image_source_payload(status: dict[str, object]) -> dict[str, object]:

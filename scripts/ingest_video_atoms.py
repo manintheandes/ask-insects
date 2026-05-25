@@ -52,6 +52,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "artifact_count": result.artifact_count,
         "motion_row_count": result.motion_row_count,
         "discovery_candidate_count": result.discovery_candidate_count,
+        "discovery_sweep_receipts": result.discovery_sweep_receipts,
         "gap_count": len(result.gaps),
         "method": "derived Aedes aegypti video atoms from indexed video manifests, bounded mirrors, ffprobe metadata, inspectable artifacts, motion tables, and repository discovery gaps",
     }
@@ -87,6 +88,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "artifact_count": result.artifact_count,
         "motion_row_count": result.motion_row_count,
         "discovery_candidate_count": result.discovery_candidate_count,
+        "discovery_sweep_receipts": result.discovery_sweep_receipts,
         "gap_count": len(result.gaps),
         "source_counts": source_counts,
         "artifact_dir": artifact_dir.as_posix(),

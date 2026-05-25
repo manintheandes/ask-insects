@@ -127,6 +127,7 @@ class AedesVideoAtomsResult:
     artifact_count: int
     motion_row_count: int
     discovery_candidate_count: int
+    discovery_sweep_receipts: list[dict[str, object]]
 
 
 @dataclass(frozen=True)
@@ -1319,6 +1320,40 @@ def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> Evi
     )
 
 
+def _sweep_record(receipt: dict[str, object], *, retrieved_at: str) -> EvidenceRecord:
+    repository = str(receipt.get("repository") or "unknown")
+    status = str(receipt.get("status") or "unknown")
+    raw_count = int(receipt.get("raw_candidate_count") or 0)
+    accepted_count = int(receipt.get("accepted_candidate_count") or 0)
+    gap_count = int(receipt.get("gap_count") or 0)
+    locator = str(receipt.get("locator") or f"raw/video_atoms/discovery_sweeps.json#{repository}")
+    title = f"Aedes aegypti video discovery sweep: {repository}"
+    text = (
+        f"Aedes aegypti video discovery sweep for {repository}: status {status}; "
+        f"raw candidates {raw_count}; accepted video assets {accepted_count}; structured gaps {gap_count}."
+    )
+    if receipt.get("limit_applied"):
+        text += f" Limit applied at {receipt.get('max_discovery_results')} discovery candidates."
+    return EvidenceRecord(
+        record_id=f"video_atom:sweep:{_safe_id(repository)}",
+        lane="media",
+        source=VIDEO_ATOMS_SOURCE_ID,
+        title=title,
+        text=text,
+        species="Aedes aegypti",
+        url=str(receipt.get("source_url") or "") or None,
+        media_url=None,
+        provenance=Provenance(
+            source_id=VIDEO_ATOMS_SOURCE_ID,
+            locator=locator,
+            retrieved_at=retrieved_at,
+            license="Ask Insects source boundary audit",
+            source_url=str(receipt.get("source_url") or "") or None,
+        ),
+        payload={"atom_type": "video_sweep", **receipt},
+    )
+
+
 def _load_upstream_manifest_gap_contexts(artifact_dir: Path) -> list[dict[str, object]]:
     gaps_path = artifact_dir / "gaps.json"
     if not gaps_path.exists():
@@ -1626,37 +1661,70 @@ def _discover_candidates(
     max_discovery_results: int,
     gaps: list[dict[str, object]],
     known_download_urls: set[str] | None = None,
-) -> tuple[list[VideoCandidate], int]:
+) -> tuple[list[VideoCandidate], int, list[dict[str, object]]]:
     candidates: list[VideoCandidate] = []
+    sweep_receipts: list[dict[str, object]] = []
     known_download_urls = known_download_urls or set()
     count = 0
     for repository in DISCOVERY_REPOSITORIES:
+        receipt: dict[str, object] = {
+            "repository": repository,
+            "status": "not_started",
+            "raw_candidate_count": 0,
+            "accepted_candidate_count": 0,
+            "gap_count": 0,
+            "locator": f"raw/video_atoms/discovery_sweeps.json#{repository}",
+        }
         client = discovery_clients.get(repository)
         if client is None:
             gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_client_missing", "repository": repository})
+            receipt.update({"status": "client_missing", "gap_count": 1})
+            sweep_receipts.append(receipt)
             continue
         try:
             raw_items = client()
         except Exception as exc:
             gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_fetch_failed", "repository": repository, "error": str(exc)})
+            receipt.update({"status": "fetch_failed", "gap_count": 1, "error": str(exc)})
+            sweep_receipts.append(receipt)
             continue
         if not raw_items:
             gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_no_candidates", "repository": repository})
+            receipt.update({"status": "no_candidates", "gap_count": 1})
+            sweep_receipts.append(receipt)
             continue
+        receipt["raw_candidate_count"] = len(raw_items)
         for raw in raw_items:
             if count >= max_discovery_results:
                 gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_limit_applied", "max_discovery_results": max_discovery_results})
-                return candidates, count
+                receipt.update(
+                    {
+                        "status": "limit_applied",
+                        "limit_applied": True,
+                        "max_discovery_results": max_discovery_results,
+                    }
+                )
+                sweep_receipts.append(receipt)
+                return candidates, count, sweep_receipts
             count += 1
             normalized = _candidate_from_discovery({**raw, "repository": raw.get("repository") or repository})
             if isinstance(normalized, VideoCandidate):
                 candidates.append(normalized)
+                receipt["accepted_candidate_count"] = int(receipt.get("accepted_candidate_count") or 0) + 1
             else:
                 download_url = raw.get("download_url") or raw.get("media_url")
                 if normalized.get("reason") == "video_discovery_not_aedes_scope" and isinstance(download_url, str) and download_url in known_download_urls:
                     continue
                 gaps.append(normalized)
-    return candidates, count
+                receipt["gap_count"] = int(receipt.get("gap_count") or 0) + 1
+        if int(receipt.get("accepted_candidate_count") or 0):
+            receipt["status"] = "accepted_candidates"
+        elif int(receipt.get("gap_count") or 0):
+            receipt["status"] = "all_candidates_gapped"
+        else:
+            receipt["status"] = "all_candidates_deduped"
+        sweep_receipts.append(receipt)
+    return candidates, count, sweep_receipts
 
 
 def _dedupe_candidates(candidates: Iterable[VideoCandidate]) -> list[VideoCandidate]:
@@ -1697,16 +1765,21 @@ def build_video_atom_records(
     records: list[EvidenceRecord] = []
     candidates = _candidate_rows(index)
     discovery_candidate_count = 0
+    discovery_sweep_receipts: list[dict[str, object]] = []
     if discover_sources:
         discovery_clients = discovery_clients if discovery_clients is not None else default_discovery_clients(artifact_dir)
         known_download_urls = {candidate.media_url for candidate in candidates if candidate.media_url}
-        discovered, discovery_candidate_count = _discover_candidates(
+        discovered, discovery_candidate_count, discovery_sweep_receipts = _discover_candidates(
             discovery_clients,
             max_discovery_results=max_discovery_results,
             gaps=gaps,
             known_download_urls=known_download_urls,
         )
         candidates.extend(discovered)
+        if discovery_sweep_receipts:
+            sweep_path = artifact_dir / "raw" / "video_atoms" / "discovery_sweeps.json"
+            sweep_path.parent.mkdir(parents=True, exist_ok=True)
+            sweep_path.write_text(json.dumps(discovery_sweep_receipts, indent=2, sort_keys=True), encoding="utf-8")
     candidates = _dedupe_candidates(candidates)
 
     mirrored_video_count = 0
@@ -1775,6 +1848,7 @@ def build_video_atom_records(
     motion_records = _parse_motion_tables(motion_table_paths, artifact_dir=artifact_dir, retrieved_at=retrieved_at, gaps=gaps)
     records.extend(motion_records)
     gaps.extend(_load_upstream_manifest_gap_contexts(artifact_dir))
+    records.extend(_sweep_record(receipt, retrieved_at=retrieved_at) for receipt in discovery_sweep_receipts)
     records.extend(_gap_record(gap, retrieved_at=retrieved_at, index=index) for index, gap in enumerate(gaps, start=1))
     return AedesVideoAtomsResult(
         source_id=VIDEO_ATOMS_SOURCE_ID,
@@ -1786,4 +1860,5 @@ def build_video_atom_records(
         artifact_count=artifact_count,
         motion_row_count=len(motion_records),
         discovery_candidate_count=discovery_candidate_count,
+        discovery_sweep_receipts=discovery_sweep_receipts,
     )

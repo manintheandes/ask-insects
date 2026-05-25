@@ -2782,9 +2782,9 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     q = question.lower()
     atom_types: list[str]
     if _wants_video_gaps(question):
-        atom_types = ["video_gap"]
+        atom_types = ["video_sweep", "video_gap"] if (_video_discovery_repository(question) or "repository" in q or "sweep" in q) else ["video_gap"]
     elif _wants_video_discovery(question):
-        atom_types = ["video_asset", "video_gap"]
+        atom_types = ["video_sweep", "video_asset", "video_gap"]
     elif any(term in q for term in ("motion", "velocity", "distance moved", "movement", "locomotory", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
         atom_types = ["video_motion_row"]
     elif any(term in q for term in ("fps", "codec", "duration", "resolution")):
@@ -2860,6 +2860,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
                 ORDER BY
                   {motion_metric_order}
                   CASE json_extract(p.payload_json, '$.atom_type')
+                    WHEN 'video_sweep' THEN 0
                     WHEN 'video_keyframe' THEN 0
                     WHEN 'video_preview_clip' THEN 1
                     WHEN 'video_thumbnail' THEN 2
@@ -3352,7 +3353,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 record
                 for record in all_records
                 if record.lane == "media"
-                and (record.media_url or "video gap" in f"{record.title} {record.text}".lower())
+                and (record.media_url or any(term in f"{record.title} {record.text}".lower() for term in ("video gap", "video discovery sweep")))
             ]
         else:
             media_records = [
