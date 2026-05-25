@@ -908,6 +908,61 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(license_gap["source_hashes"]["sha256"], "b" * 64)
         self.assertEqual(license_gap["license"], "institutional repository license not supplied")
 
+    def test_discovery_not_aedes_scope_gap_is_suppressed_for_source_backed_video(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="pmc:video:PMC7535929:video1.mp4",
+                        lane="media",
+                        source="pmc_open_access_videos",
+                        title="Aedes aegypti PMC supplementary video video1.mp4",
+                        text="BiteOscope Aedes aegypti supplementary video.",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC7535929/",
+                        media_url="https://cdn.ncbi.nlm.nih.gov/pmc/blobs/example/video1.mp4",
+                        provenance=Provenance(
+                            source_id="pmc_open_access_videos",
+                            locator="raw/pmc_videos/PMC7535929.html#video/1",
+                            retrieved_at=RETRIEVED_AT,
+                            license="Creative Commons Attribution License",
+                            source_url="https://pmc.ncbi.nlm.nih.gov/articles/PMC7535929/",
+                        ),
+                        payload={
+                            "filename": "video1.mp4",
+                            "download_url": "https://cdn.ncbi.nlm.nih.gov/pmc/blobs/example/video1.mp4",
+                            "article_title": "BiteOscope, an open platform to study mosquito biting behavior",
+                        },
+                    )
+                ]
+            )
+
+            discovery_clients = {repository: (lambda: []) for repository in DISCOVERY_REPOSITORIES}
+            discovery_clients["pmc_oa"] = lambda: [
+                {
+                    "repository": "pmc_oa",
+                    "title": "BiteOscope, an open platform to study mosquito biting behavior",
+                    "description": "Mosquito biting behavior video.",
+                    "filename": "video1.mp4",
+                    "download_url": "https://cdn.ncbi.nlm.nih.gov/pmc/blobs/example/video1.mp4",
+                    "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7535929/",
+                    "license": "Creative Commons Attribution License",
+                }
+            ]
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                discover_sources=True,
+                discovery_clients=discovery_clients,
+            )
+
+        self.assertFalse(any(gap["reason"] == "video_discovery_not_aedes_scope" for gap in result.gaps))
+        self.assertEqual(result.video_asset_count, 1)
+
     def test_dataverse_search_terms_do_not_count_as_aedes_scope(self):
         payload = {
             "data": {

@@ -1562,8 +1562,10 @@ def _discover_candidates(
     *,
     max_discovery_results: int,
     gaps: list[dict[str, object]],
+    known_download_urls: set[str] | None = None,
 ) -> tuple[list[VideoCandidate], int]:
     candidates: list[VideoCandidate] = []
+    known_download_urls = known_download_urls or set()
     count = 0
     for repository in DISCOVERY_REPOSITORIES:
         client = discovery_clients.get(repository)
@@ -1587,6 +1589,9 @@ def _discover_candidates(
             if isinstance(normalized, VideoCandidate):
                 candidates.append(normalized)
             else:
+                download_url = raw.get("download_url") or raw.get("media_url")
+                if normalized.get("reason") == "video_discovery_not_aedes_scope" and isinstance(download_url, str) and download_url in known_download_urls:
+                    continue
                 gaps.append(normalized)
     return candidates, count
 
@@ -1631,7 +1636,13 @@ def build_video_atom_records(
     discovery_candidate_count = 0
     if discover_sources:
         discovery_clients = discovery_clients if discovery_clients is not None else default_discovery_clients(artifact_dir)
-        discovered, discovery_candidate_count = _discover_candidates(discovery_clients, max_discovery_results=max_discovery_results, gaps=gaps)
+        known_download_urls = {candidate.media_url for candidate in candidates if candidate.media_url}
+        discovered, discovery_candidate_count = _discover_candidates(
+            discovery_clients,
+            max_discovery_results=max_discovery_results,
+            gaps=gaps,
+            known_download_urls=known_download_urls,
+        )
         candidates.extend(discovered)
     candidates = _dedupe_candidates(candidates)
 
