@@ -510,7 +510,8 @@ def _default_dryad_discovery_client() -> list[dict[str, object]]:
 def _default_osf_discovery_client() -> list[dict[str, object]]:
     from askinsects.sources.osf_flighttrackai_videos import OSF_API_BASE, _attrs, _data, _links, _next_href, _related_href
 
-    search_url = f"{OSF_API_BASE}/search/?{urlencode({'q': '\"Aedes aegypti\" video', 'page[size]': 5})}"
+    search_query = '"Aedes aegypti" video'
+    search_url = f"{OSF_API_BASE}/search/?{urlencode({'q': search_query, 'page[size]': 5})}"
     search_payload = _fetch_json(search_url)
     search_payload = search_payload if isinstance(search_payload, dict) else {}
     discovered: list[dict[str, object]] = []
