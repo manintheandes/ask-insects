@@ -492,6 +492,30 @@ class ServerTests(unittest.TestCase):
                 page_size=50,
             )
 
+    def test_ingest_crossref_literature_audit_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_aedes_crossref_literature_audit.ingest_aedes_crossref_literature_audit") as ingest:
+                ingest.return_value = {"ok": True, "source": "aedes_crossref_literature_audit", "record_count": 200}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/crossref-literature-audit",
+                    {"max_results": 250, "page_size": 50},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                max_results=250,
+                page_size=50,
+            )
+
     def test_ingest_inaturalist_uses_staging_then_activates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

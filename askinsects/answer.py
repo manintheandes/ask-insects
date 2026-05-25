@@ -15,6 +15,7 @@ from .sources.aedes_deep_sources import (
     AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID,
     AEDES_WORLDCLIM_SOURCE_ID,
 )
+from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
@@ -251,6 +252,22 @@ def _wants_olfaction_literature(question: str) -> bool:
             "orco",
         )
     ) and any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research", "pubmed"))
+
+
+def _wants_crossref_literature_audit(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "crossref",
+            "doi audit",
+            "doi reconciliation",
+            "publisher metadata",
+            "publisher identifier",
+            "literature audit",
+            "literature reconciliation",
+        )
+    )
 
 
 def _wants_image_labels(question: str) -> bool:
@@ -2463,6 +2480,24 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         if not olfaction_records:
             olfaction_records = _source_records(index, AEDES_OLFACTION_LITERATURE_SOURCE_ID, ["literature"], limit=limit)
         for record in olfaction_records:
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "literature" and _wants_crossref_literature_audit(plan.question):
+        if _source_count(index, AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID) == 0:
+            return source_gap(plan, "The Ask Insects Aedes Crossref literature audit lane is not installed in this source index.")
+        crossref_records = _source_search_records(
+            index,
+            AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID,
+            "literature",
+            plan.search_query,
+            limit=max(limit * 20, 50),
+        )
+        if not crossref_records:
+            crossref_records = _source_records(index, AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID, ["literature"], limit=limit)
+        for record in crossref_records:
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

@@ -520,6 +520,44 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_vectorbyte_traits")
             self.assertEqual(answer["evidence"][0]["lane"], "traits")
 
+    def test_crossref_literature_audit_questions_prefer_crossref_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    literature_record(
+                        "literature:openalex:W123",
+                        "Aedes aegypti larval habitat surveillance",
+                        "OpenAlex Aedes aegypti literature metadata.",
+                    ),
+                    EvidenceRecord(
+                        record_id="aedes_crossref_literature_audit:doi:10.1016_j.example.2025.01.001",
+                        lane="literature",
+                        source="aedes_crossref_literature_audit",
+                        title="Aedes aegypti larval habitat surveillance in Brazil",
+                        text="Aedes aegypti Crossref literature audit candidate since 2020. coverage_status=crossref_metadata_ingested doi=10.1016/j.example.2025.01.001 publisher=Example Publisher",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1016/j.example.2025.01.001",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_crossref_literature_audit",
+                            locator="raw/aedes_crossref_literature_audit/crossref_works_0001.json#items/0",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="Crossref public metadata; source terms apply",
+                        ),
+                    ),
+                ]
+            )
+
+            self.assertEqual(plan_question("show Crossref DOI audit literature for Aedes aegypti").answer_shape, "literature")
+            answer = answer_question("show Crossref DOI audit literature for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "literature")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_crossref_literature_audit")
+
     def test_cdc_arbonet_questions_prefer_cdc_surveillance_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

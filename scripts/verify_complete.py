@@ -55,6 +55,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-25-aedes-wave1-expression-uniprot-wolbachia-design.md",
     "docs/superpowers/specs/2026-05-25-aedes-cdc-dengue-surveillance-design.md",
     "docs/superpowers/specs/2026-05-25-aedes-vectorbyte-traits-design.md",
+    "docs/superpowers/specs/2026-05-25-aedes-crossref-literature-audit-design.md",
     "docs/superpowers/specs/2026-05-24-open-insects-public-identity-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
@@ -80,6 +81,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-25-aedes-wave1-expression-uniprot-wolbachia.md",
     "docs/superpowers/plans/2026-05-25-aedes-cdc-dengue-surveillance.md",
     "docs/superpowers/plans/2026-05-25-aedes-vectorbyte-traits.md",
+    "docs/superpowers/plans/2026-05-25-aedes-crossref-literature-audit.md",
     "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -124,6 +126,7 @@ REQUIRED_FILES = (
     "askinsects/sources/extracted_facts.py",
     "askinsects/sources/expression_omics.py",
     "askinsects/sources/aedes_olfaction_literature.py",
+    "askinsects/sources/aedes_crossref_literature_audit.py",
     "askinsects/sources/uniprot_proteins.py",
     "askinsects/sources/wolbachia_interventions.py",
     "askinsects/sources/vectorbyte_traits.py",
@@ -167,6 +170,7 @@ REQUIRED_FILES = (
     "scripts/ingest_extracted_facts.py",
     "scripts/ingest_expression_omics.py",
     "scripts/ingest_aedes_olfaction_literature.py",
+    "scripts/ingest_aedes_crossref_literature_audit.py",
     "scripts/ingest_uniprot_proteins.py",
     "scripts/ingest_wolbachia_interventions.py",
     "scripts/ingest_vectorbyte_traits.py",
@@ -248,6 +252,8 @@ REQUIRED_FILES = (
     "tests/test_expression_omics_source.py",
     "tests/test_aedes_olfaction_literature_source.py",
     "tests/test_ingest_aedes_olfaction_literature.py",
+    "tests/test_aedes_crossref_literature_audit_source.py",
+    "tests/test_ingest_aedes_crossref_literature_audit.py",
     "tests/test_uniprot_proteins_source.py",
     "tests/test_wolbachia_interventions_source.py",
     "tests/test_vectorbyte_traits_source.py",
@@ -567,6 +573,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "Aedes",
         "aedes_literature_facets",
         "aedes_olfaction_literature",
+        "aedes_crossref_literature_audit",
         "aedes_public_health_guidance",
         "aedes_paho_dengue_surveillance",
         "aedes_who_dengue_surveillance",
@@ -617,6 +624,16 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Aedes olfaction literature term: {term}")
+    for term in (
+        "aedes_crossref_literature_audit",
+        "scripts/ingest_aedes_crossref_literature_audit.py",
+        "crossref_works_cursor_pages_to_sqlite_literature_audit_records",
+        "raw_crossref_page_locator",
+        "aedes_crossref_result_limit_applied",
+        "aedes_crossref_no_canonical_literature_rows",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Aedes Crossref literature term: {term}")
     for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health", "ECDC"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing public-health guidance term: {term}")

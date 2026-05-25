@@ -301,9 +301,13 @@ The Aedes olfaction audit lane uses source id `aedes_olfaction_literature`. It f
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-aedes-olfaction-literature --max-results 500 --page-size 100
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search literature "Aedes aegypti olfaction coverage_status"
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(p.payload_json, '$.coverage_status') as status, count(*) as n from records r join record_payloads p on p.record_id=r.record_id where r.source='aedes_olfaction_literature' group by status"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-crossref-literature-audit --max-results 500 --page-size 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Crossref DOI audit literature for Aedes aegypti" --json
 ```
 
 OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/literature/` when that artifact directory is used. PubMed and Unpaywall enrichment payloads are stored per record in SQLite `record_payloads.payload_json`. Legal direct PDF/XML/text chunks are stored in `literature_fulltext_units` and mirrored into `literature_fulltext_fts`. Normal `ask` and `search literature` use metadata and abstracts first; literature answers fall back to legal full-text chunks, and `search fulltext` queries those chunks directly. Gaps are structured in `gaps.json`, including missing DOI, missing PMID, missing abstract, topic search gaps, Unpaywall no-full-text cases, landing-page-only cases, fetch failures, and parse failures.
+
+Crossref literature-audit records use source id `aedes_crossref_literature_audit`. Raw Crossref `/works` pages are saved under `artifacts/mosquito-v1/raw/aedes_crossref_literature_audit/`. Each audit record stores DOI, title, publisher, container title, issued date, Crossref member, reference count, license links, `coverage_status`, matched Ask Insects record IDs, and a raw page locator. Structured gaps include `aedes_crossref_fetch_failed`, `aedes_crossref_result_limit_applied`, `aedes_crossref_no_material_aedes_records`, and `aedes_crossref_no_canonical_literature_rows`.
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
@@ -354,6 +358,7 @@ python3 -m askinsects ingest-dryad-behavior-videos --hosted
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-vectorbyte-traits --hosted --dataset-limit 20 --row-limit 5000
+python3 -m askinsects ingest-crossref-literature-audit --hosted --max-results 500 --page-size 100
 python3 -m askinsects ingest-extracted-facts --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"

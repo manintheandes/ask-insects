@@ -320,6 +320,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_aedes_olfaction_literature.add_argument("--max-results", type=int, default=500)
     ingest_aedes_olfaction_literature.add_argument("--page-size", type=int, default=100)
 
+    ingest_crossref_literature_audit = sub.add_parser("ingest-crossref-literature-audit")
+    ingest_crossref_literature_audit.add_argument("--hosted", action="store_true")
+    ingest_crossref_literature_audit.add_argument("--max-results", type=int, default=500)
+    ingest_crossref_literature_audit.add_argument("--page-size", type=int, default=100)
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -1115,6 +1120,24 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/aedes-olfaction-literature",
+            request_payload,
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-crossref-literature-audit":
+        request_payload = {
+            "max_results": args.max_results,
+            "page_size": args.page_size,
+        }
+        if not args.hosted:
+            from scripts.ingest_aedes_crossref_literature_audit import ingest_aedes_crossref_literature_audit
+
+            payload = ingest_aedes_crossref_literature_audit(artifact_dir=artifact_dir, **request_payload)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/crossref-literature-audit",
             request_payload,
             timeout=3600,
         )

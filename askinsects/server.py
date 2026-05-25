@@ -2837,6 +2837,25 @@ def ingest_aedes_olfaction_literature_hosted(
     return response
 
 
+def ingest_crossref_literature_audit_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_aedes_crossref_literature_audit import ingest_aedes_crossref_literature_audit
+
+    max_results = int(payload.get("max_results", 500))
+    page_size = int(payload.get("page_size", 100))
+    response = ingest_aedes_crossref_literature_audit(
+        artifact_dir=artifact_dir,
+        max_results=max_results,
+        page_size=page_size,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -2999,6 +3018,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/aedes-olfaction-literature":
             result = ingest_aedes_olfaction_literature_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/crossref-literature-audit":
+            result = ingest_crossref_literature_audit_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectornet-surveillance":

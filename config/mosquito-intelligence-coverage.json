@@ -25,6 +25,7 @@
       "current_sources": [
         "aedes_literature_openalex",
         "aedes_olfaction_literature",
+        "aedes_crossref_literature_audit",
         "aedes_extracted_facts"
       ],
       "current_gates": {
@@ -39,11 +40,11 @@
         "artifacts/aedes-literature-2020/literature_enrichment_receipt.json",
         "artifacts/aedes-literature-2020/gaps.json",
         "aedes_olfaction_literature maps bounded PubMed ESearch and ESummary candidates for Aedes aegypti olfaction papers since 2020 into one literature record per PMID, with coverage_status, matched_record_ids, and raw ESummary provenance. The May 25, 2026 hosted ingest installed 183 PubMed olfaction candidates, compared them against 10,683 canonical OpenAlex literature rows, matched 156 already-indexed papers, added 27 PubMed-metadata-only candidates, and recorded zero hosted gaps.",
+        "aedes_crossref_literature_audit maps bounded Crossref works where source metadata materially names Aedes aegypti into one literature audit record per DOI/work, preserving publisher, container, issued date, Crossref member, reference count, license links, coverage_status, matched_record_ids, and raw Crossref page locators.",
         "literature_fulltext_units and literature_fulltext_fts are searchable through search fulltext and literature-answer fallback",
         "aedes_extracted_facts can discover Europe PMC, PMC, and Figshare supplement metadata when opted in and parse supported CSV, TSV, XLSX, DOCX, XML, and HTML supplement tables into row-level fact records with raw-file provenance."
       ],
       "required_next_sources": [
-        "Crossref reconciliation for remaining missing DOI and publisher identifier gaps outside the PubMed olfaction audit",
         "deeper PDF, archive, image-table, and claim extraction across behavior, resistance, vector competence, ecology, and public-health papers beyond supported deterministic table formats"
       ],
       "completion_evidence": [

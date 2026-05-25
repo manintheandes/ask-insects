@@ -530,6 +530,16 @@ python3 -m askinsects sql "select json_extract(p.payload_json, '$.coverage_statu
 
 The lane writes PubMed raw ESearch pages, ESummary batches, and `coverage_audit.json` under `artifacts/mosquito-v1/raw/aedes_olfaction_literature/`, then updates `source_index.sqlite`, `source_status.json`, `source_receipt.json`, and `gaps.json` in `artifacts/mosquito-v1/`. Structured gaps record PubMed fetch failures, result-limit frontiers, no-result runs, and runs where the current artifact has no canonical `aedes_literature_openalex` rows to compare against.
 
+`aedes_crossref_literature_audit` is the Crossref publisher-metadata reconciliation lane for `Aedes aegypti` literature since 2020. It fetches bounded Crossref `/works` cursor pages where source metadata materially names `Aedes aegypti`, saves raw JSON under `artifacts/mosquito-v1/raw/aedes_crossref_literature_audit/`, and writes one `literature` audit record per DOI/work. Each record preserves DOI, title, publisher, container title, issued date, Crossref member, reference count, license links, `coverage_status`, matched Ask Insects record IDs, and raw Crossref page locators.
+
+```bash
+python3 -m askinsects ingest-crossref-literature-audit --max-results 500 --page-size 100
+python3 -m askinsects ask "show Crossref DOI audit literature for Aedes aegypti" --json
+python3 -m askinsects sql "select json_extract(p.payload_json, '$.coverage_status') as status, count(*) as n from records r join record_payloads p on p.record_id=r.record_id where r.source='aedes_crossref_literature_audit' group by status"
+```
+
+Structured Crossref audit gaps include `aedes_crossref_fetch_failed`, `aedes_crossref_result_limit_applied`, `aedes_crossref_no_material_aedes_records`, and `aedes_crossref_no_canonical_literature_rows`. Crossref is an audit and enrichment lane, not a replacement for canonical OpenAlex discovery or legal full-text parsing.
+
 Legal direct full-text units are searchable through the normal CLI and used as a fallback for literature answers when metadata and abstracts are not enough:
 
 ```bash
@@ -581,6 +591,7 @@ python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
 python3 -m askinsects ingest-vectornet-surveillance --hosted
 python3 -m askinsects ingest-who-dengue-surveillance --hosted
 python3 -m askinsects ingest-cdc-dengue-surveillance --hosted
+python3 -m askinsects ingest-crossref-literature-audit --hosted --max-results 500 --page-size 100
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```
 

@@ -253,6 +253,40 @@ sources:
         - aedes_olfaction_no_pubmed_results
         - aedes_olfaction_no_canonical_literature_rows
         - aedes_olfaction_no_canonical_literature_rows
+  - id: aedes_crossref_literature_audit
+    name: Aedes aegypti Crossref literature audit since 2020
+    source_type: public_api_audit
+    boundary: Bounded Crossref works where Aedes aegypti is material in title, abstract, subject, container, or equivalent publisher metadata from 2020-01-01 through run date, compared against existing Ask Insects literature records by DOI and normalized title
+    query_plane: crossref_works_cursor_pages_to_sqlite_literature_audit_records
+    api_base: https://api.crossref.org
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/aedes_crossref_literature_audit
+    ingest_script: scripts/ingest_aedes_crossref_literature_audit.py
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      record_grain:
+        - one_crossref_work_candidate_per_record
+        - doi_when_supplied
+        - title
+        - publisher
+        - container_title
+        - issued_date
+        - crossref_member
+        - reference_count
+        - license_links_when_supplied
+        - coverage_status
+        - matched_record_ids
+        - matched_sources
+        - canonical_literature_row_count
+        - raw_crossref_page_locator
+      structured_gaps:
+        - aedes_crossref_fetch_failed
+        - aedes_crossref_result_limit_applied
+        - aedes_crossref_no_material_aedes_records
+        - aedes_crossref_no_canonical_literature_rows
   - id: ncbi_datasets_genome
     name: NCBI Datasets Aedes aegypti genome package
     source_type: local_or_hosted_dataset_package
