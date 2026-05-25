@@ -158,6 +158,54 @@ class AedesOlfactionLiteratureSourceTests(unittest.TestCase):
         self.assertEqual(len(figure_units), 1)
         self.assertIn("Antennal lobe response", figure_units[0].text)
 
+    def test_fetch_extracts_figure_captions_from_pdf_text(self):
+        def fake_fetch_json(url):
+            if "esearch.fcgi" in url:
+                return {"esearchresult": {"idlist": ["42063565"], "count": "1"}}
+            if "esummary.fcgi" in url:
+                return {
+                    "result": {
+                        "uids": ["42063565"],
+                        "42063565": ESUMMARY["result"]["42063565"],
+                    }
+                }
+            if "api.unpaywall.org" in url:
+                return {
+                    "best_oa_location": {
+                        "url_for_pdf": "https://example.org/open/aedes-olfaction.pdf",
+                        "license": "cc-by",
+                    },
+                }
+            raise AssertionError(url)
+
+        def fake_fetch_bytes(url):
+            return (b"%PDF-1.4 fake", "application/pdf")
+
+        def fake_pdf_parser(path):
+            return (
+                "Aedes aegypti olfactory receptors respond to odor. "
+                "Figure 3. Antennal neuron responses to human odor blends across Orco mutants. "
+                "References"
+            )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_aedes_olfaction_literature_records(
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fake_fetch_json,
+                fetch_bytes=fake_fetch_bytes,
+                pdf_parser=fake_pdf_parser,
+                retrieved_at="2026-05-25T00:00:00Z",
+                max_results=1,
+                page_size=1,
+                unpaywall_email="sources@openinsects.org",
+                delay_seconds=0,
+            )
+
+        self.assertEqual(result.open_fulltext_count, 1)
+        self.assertEqual(result.figure_caption_unit_count, 1)
+        figure_unit = next(unit for unit in result.fulltext_units if "figure-caption" in unit.unit_id)
+        self.assertIn("Antennal neuron responses", figure_unit.text)
+
 
 if __name__ == "__main__":
     unittest.main()

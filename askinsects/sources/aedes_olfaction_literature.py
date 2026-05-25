@@ -223,6 +223,25 @@ def _extract_figure_captions(markup: str) -> list[str]:
     return captions
 
 
+def _extract_text_figure_captions(text: str) -> list[str]:
+    cleaned = re.sub(r"\s+", " ", text).strip()
+    if not cleaned:
+        return []
+    captions: list[str] = []
+    pattern = re.compile(
+        r"(?is)\b((?:fig(?:ure)?\.?)\s*\d+[a-z]?(?:[.:)\-\s]+).{30,1600}?)(?=\bfig(?:ure)?\.?\s*\d+[a-z]?(?:[.:)\-\s]+)|\breferences\b|\backnowledg|$)"
+    )
+    for match in pattern.finditer(cleaned):
+        caption = match.group(1).strip(" .;")
+        caption = re.sub(r"\s+", " ", caption)
+        if len(caption) < 40:
+            continue
+        if caption.lower() in {existing.lower() for existing in captions}:
+            continue
+        captions.append(caption)
+    return captions
+
+
 def _chunk_text(text: str, *, max_chars: int = 3600) -> list[str]:
     cleaned = re.sub(r"\s+", " ", text).strip()
     if not cleaned:
@@ -270,7 +289,10 @@ def _text_from_fulltext_bytes(
         with tempfile.NamedTemporaryFile(suffix=".pdf") as handle:
             handle.write(payload)
             handle.flush()
-            return pdf_parser(Path(handle.name)), [], extension
+            parsed = pdf_parser(Path(handle.name))
+            if _looks_like_access_challenge(parsed):
+                raise RuntimeError("direct full-text URL returned an access challenge page")
+            return parsed, _extract_text_figure_captions(parsed), extension
     markup_or_text = _decode_text(payload)
     figure_captions = _extract_figure_captions(markup_or_text)
     if extension in {"xml", "html"}:
@@ -281,7 +303,7 @@ def _text_from_fulltext_bytes(
     decoded = _decode_text(payload)
     if _looks_like_access_challenge(decoded):
         raise RuntimeError("direct full-text URL returned an access challenge page")
-    return decoded, figure_captions, extension
+    return decoded, figure_captions + _extract_text_figure_captions(decoded), extension
 
 
 def _fulltext_units_for_record(
