@@ -1374,6 +1374,70 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "evidence")
             self.assertEqual(answer["evidence"][0]["record_id"], "image_atom:asset:inat_media_99")
 
+    def test_image_source_questions_filter_to_named_upstream_source(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="image_atom:asset:inat_media_01",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image asset from inaturalist_api",
+                        text="Aedes aegypti source image asset derived from inaturalist_api.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/1",
+                        media_url="raw/image_atoms/assets/inat_media_01.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#inat:media:1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "image_asset",
+                            "source": "inaturalist_api",
+                            "input_source": "inaturalist_api",
+                            "verification_status": "verified",
+                            "sha256": "inat",
+                            "width": 75,
+                            "height": 75,
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="image_atom:asset:mosquito_alert_media_01",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image asset from mosquito_alert_gbif",
+                        text="Aedes aegypti source image asset derived from mosquito_alert_gbif.",
+                        species="Aedes aegypti",
+                        url="https://www.gbif.org/occurrence/1",
+                        media_url="raw/image_atoms/assets/mosquito_alert_media_01.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#mosquito_alert:media:1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "image_asset",
+                            "source": "mosquito_alert_gbif",
+                            "input_source": "mosquito_alert_gbif",
+                            "verification_status": "verified",
+                            "sha256": "mosquito-alert",
+                            "width": 75,
+                            "height": 75,
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Mosquito Alert Aedes image mirrors with checksum and dimensions", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertEqual(answer["evidence"][0]["record_id"], "image_atom:asset:mosquito_alert_media_01")
+
     def test_video_discovery_questions_do_not_fall_back_to_other_repositories(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

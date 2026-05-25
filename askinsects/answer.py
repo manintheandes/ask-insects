@@ -2040,6 +2040,23 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     label_filter = ""
     if filters:
         label_filter = "AND (" + " OR ".join(filters) + ")"
+    source_filter = ""
+    if "mosquito alert" in q or "mosquito_alert" in q:
+        source_filter = """
+              AND (
+                json_extract(p.payload_json, '$.source') = 'mosquito_alert_gbif'
+                OR json_extract(p.payload_json, '$.input_source') = 'mosquito_alert_gbif'
+                OR json_extract(p.payload_json, '$.upstream_source') = 'mosquito_alert_gbif'
+              )
+        """
+    elif "inaturalist" in q or "inat" in q:
+        source_filter = """
+              AND (
+                json_extract(p.payload_json, '$.source') = 'inaturalist_api'
+                OR json_extract(p.payload_json, '$.input_source') = 'inaturalist_api'
+                OR json_extract(p.payload_json, '$.upstream_source') = 'inaturalist_api'
+              )
+        """
     params.append(limit)
     with index.connect() as conn:
         rows = conn.execute(
@@ -2051,6 +2068,7 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
               AND r.lane IN ({lane_placeholders})
               AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
               {label_filter}
+              {source_filter}
             ORDER BY
               CASE
                 WHEN json_extract(p.payload_json, '$.verification_status')='verified' THEN 0
