@@ -326,6 +326,51 @@ sources:
         - mosquito_repellent_crossref_result_limit_applied
         - mosquito_repellent_no_candidates
         - mosquito_repellent_no_canonical_literature_rows
+  - id: mosquito_repellent_external_discovery
+    name: Mosquito repellent external discovery since 2020
+    source_type: public_api_composite_discovery
+    boundary: Bounded external metadata discovery for mosquito repellent research since 2020 across OpenAlex, Europe PMC, AGRICOLA-via-Europe-PMC, Semantic Scholar, Crossref posted-content preprints for bioRxiv/medRxiv-style coverage, DataCite dataset DOI metadata, Zenodo repository records, Figshare public article search, and explicit queryable source gaps for bioRxiv/medRxiv native text search, PatentsView/USPTO patent access, CABI, and Google Scholar when no supported public API is available in this repo
+    query_plane: external_repellent_metadata_to_sqlite_literature_dataset_patent_records
+    api_base:
+      - https://api.openalex.org
+      - https://www.ebi.ac.uk/europepmc/webservices/rest
+      - https://api.semanticscholar.org
+      - https://api.crossref.org
+      - https://api.datacite.org
+      - https://zenodo.org/api
+      - https://api.figshare.com
+      - https://api.biorxiv.org
+      - https://patentsview.org/apis/api-endpoints
+      - https://data.uspto.gov/apis/patent-file-wrapper/search
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/mosquito_repellent_external_discovery
+    ingest_script: scripts/ingest_mosquito_repellent_external_discovery.py
+    lanes:
+      - literature
+      - datasets
+      - patents
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      record_grain:
+        - one_external_repellent_metadata_candidate_or_source_gap_per_record
+        - source_family
+        - artifact_type
+        - doi_when_supplied
+        - external_id_when_supplied
+        - title
+        - publication_date
+        - venue_or_repository
+        - source_url
+        - matched_terms
+        - raw_external_locator
+      structured_gaps:
+        - semantic_scholar_fetch_failed
+        - biorxiv_medrxiv_no_text_search_api
+        - patentsview_migrated_or_unavailable_json_api
+        - uspto_open_data_portal_requires_api_access
+        - cabi_no_public_metadata_api_configured
+        - google_scholar_no_public_api
   - id: ncbi_datasets_genome
     name: NCBI Datasets Aedes aegypti genome package
     source_type: local_or_hosted_dataset_package

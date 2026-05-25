@@ -740,6 +740,52 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "literature")
             self.assertEqual(answer["evidence"][0]["source"], "mosquito_repellent_literature")
 
+    def test_repellent_patent_questions_include_external_discovery_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="mosquito_repellent_literature:pubmed:42000001",
+                        lane="literature",
+                        source="mosquito_repellent_literature",
+                        title="Mosquito repellent article",
+                        text="Mosquito repellent literature candidate since 2020.",
+                        species="Culicidae",
+                        url="https://pubmed.ncbi.nlm.nih.gov/42000001/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="mosquito_repellent_literature",
+                            locator="raw/mosquito_repellent_literature/pubmed_esummary_0001.json#result/42000001",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="mosquito_repellent_external_discovery:gap:patentsview:patentsview_migrated_or_unavailable_json_api",
+                        lane="patents",
+                        source="mosquito_repellent_external_discovery",
+                        title="Mosquito repellent source gap: patentsview patentsview_migrated_or_unavailable_json_api",
+                        text="Mosquito repellent source gap for patent metadata.",
+                        species="Culicidae",
+                        url="https://patentsview.org/apis/api-endpoints",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="mosquito_repellent_external_discovery",
+                            locator="https://patentsview.org/apis/api-endpoints",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show mosquito repellent patent sources", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "literature")
+            self.assertTrue(any(row["source"] == "mosquito_repellent_external_discovery" for row in answer["evidence"]))
+
     def test_literature_species_fallback_requires_topical_match(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "aedes-literature"

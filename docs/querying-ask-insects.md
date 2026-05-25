@@ -304,6 +304,7 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-crossref-literature-audit --max-results 500 --page-size 100
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Crossref DOI audit literature for Aedes aegypti" --json
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-mosquito-repellent-literature --pubmed-max-results 1000 --crossref-max-results 1000 --page-size 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-mosquito-repellent-external-discovery --max-results-per-source 50
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what mosquito repellent papers since 2020 are in the database?" --json
 ```
 
@@ -312,6 +313,8 @@ OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/l
 Crossref literature-audit records use source id `aedes_crossref_literature_audit`. Raw Crossref `/works` pages are saved under `artifacts/mosquito-v1/raw/aedes_crossref_literature_audit/`. Each audit record stores DOI, title, publisher, container title, issued date, Crossref member, reference count, license links, `coverage_status`, matched Ask Insects record IDs, and a raw page locator. Structured gaps include `aedes_crossref_fetch_failed`, `aedes_crossref_result_limit_applied`, `aedes_crossref_no_material_aedes_records`, and `aedes_crossref_no_canonical_literature_rows`.
 
 Mosquito repellent literature records use source id `mosquito_repellent_literature`. Raw PubMed and Crossref pages are saved under `artifacts/mosquito-v1/raw/mosquito_repellent_literature/`. Each record stores PMID or DOI when supplied, title, authors, journal or container, publication date, candidate source, matched mosquito terms, matched repellent terms, `coverage_status`, matched Ask Insects record IDs, and raw PubMed/Crossref locators. Structured gaps include `mosquito_repellent_pubmed_search_failed`, `mosquito_repellent_pubmed_summary_failed`, `mosquito_repellent_pubmed_result_limit_applied`, `mosquito_repellent_crossref_fetch_failed`, `mosquito_repellent_crossref_result_limit_applied`, `mosquito_repellent_no_candidates`, and `mosquito_repellent_no_canonical_literature_rows`.
+
+External repellent discovery records use source id `mosquito_repellent_external_discovery`. Raw OpenAlex, Europe PMC, AGRICOLA-through-Europe-PMC, Semantic Scholar, Crossref posted-content preprint, DataCite, Zenodo, and Figshare pages are saved under `artifacts/mosquito-v1/raw/mosquito_repellent_external_discovery/`. Each `literature`, `datasets`, or `patents` record stores source family, artifact type, DOI or external ID when exposed, publication date, venue or repository, source URL, matched mosquito/repellent terms, and raw locator provenance. Queryable gap rows preserve `biorxiv_medrxiv_no_text_search_api`, `patentsview_migrated_or_unavailable_json_api`, `uspto_open_data_portal_requires_api_access`, `cabi_no_public_metadata_api_configured`, and `google_scholar_no_public_api` instead of pretending those sources were fully ingested.
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
@@ -366,6 +369,7 @@ python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-vectorbyte-traits --hosted --dataset-limit 20 --row-limit 5000
 python3 -m askinsects ingest-crossref-literature-audit --hosted --max-results 500 --page-size 100
 python3 -m askinsects ingest-mosquito-repellent-literature --hosted --pubmed-max-results 1000 --crossref-max-results 1000 --page-size 100
+python3 -m askinsects ingest-mosquito-repellent-external-discovery --hosted --max-results-per-source 50
 python3 -m askinsects ingest-extracted-facts --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"

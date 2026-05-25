@@ -57,6 +57,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-25-aedes-vectorbyte-traits-design.md",
     "docs/superpowers/specs/2026-05-25-aedes-crossref-literature-audit-design.md",
     "docs/superpowers/specs/2026-05-25-mosquito-repellent-literature-design.md",
+    "docs/superpowers/specs/2026-05-25-mosquito-repellent-external-discovery-design.md",
     "docs/superpowers/specs/2026-05-24-open-insects-public-identity-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
@@ -84,6 +85,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-25-aedes-vectorbyte-traits.md",
     "docs/superpowers/plans/2026-05-25-aedes-crossref-literature-audit.md",
     "docs/superpowers/plans/2026-05-25-mosquito-repellent-literature.md",
+    "docs/superpowers/plans/2026-05-25-mosquito-repellent-external-discovery.md",
     "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -130,6 +132,7 @@ REQUIRED_FILES = (
     "askinsects/sources/aedes_olfaction_literature.py",
     "askinsects/sources/aedes_crossref_literature_audit.py",
     "askinsects/sources/mosquito_repellent_literature.py",
+    "askinsects/sources/mosquito_repellent_external_discovery.py",
     "askinsects/sources/uniprot_proteins.py",
     "askinsects/sources/wolbachia_interventions.py",
     "askinsects/sources/vectorbyte_traits.py",
@@ -175,6 +178,7 @@ REQUIRED_FILES = (
     "scripts/ingest_aedes_olfaction_literature.py",
     "scripts/ingest_aedes_crossref_literature_audit.py",
     "scripts/ingest_mosquito_repellent_literature.py",
+    "scripts/ingest_mosquito_repellent_external_discovery.py",
     "scripts/ingest_uniprot_proteins.py",
     "scripts/ingest_wolbachia_interventions.py",
     "scripts/ingest_vectorbyte_traits.py",
@@ -260,6 +264,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_aedes_crossref_literature_audit.py",
     "tests/test_mosquito_repellent_literature_source.py",
     "tests/test_ingest_mosquito_repellent_literature.py",
+    "tests/test_mosquito_repellent_external_discovery_source.py",
+    "tests/test_ingest_mosquito_repellent_external_discovery.py",
     "tests/test_uniprot_proteins_source.py",
     "tests/test_wolbachia_interventions_source.py",
     "tests/test_vectorbyte_traits_source.py",
@@ -350,6 +356,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_aedes_olfaction_literature",
     "tests.test_mosquito_repellent_literature_source",
     "tests.test_ingest_mosquito_repellent_literature",
+    "tests.test_mosquito_repellent_external_discovery_source",
+    "tests.test_ingest_mosquito_repellent_external_discovery",
     "tests.test_uniprot_proteins_source",
     "tests.test_wolbachia_interventions_source",
     "tests.test_ingest_wave1_sources",
@@ -656,6 +664,23 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing mosquito repellent literature term: {term}")
+    for term in (
+        "mosquito_repellent_external_discovery",
+        "scripts/ingest_mosquito_repellent_external_discovery.py",
+        "external_repellent_metadata_to_sqlite_literature_dataset_patent_records",
+        "OpenAlex",
+        "Europe PMC",
+        "Semantic Scholar",
+        "DataCite",
+        "Zenodo",
+        "Figshare",
+        "biorxiv_medrxiv_no_text_search_api",
+        "patentsview_migrated_or_unavailable_json_api",
+        "uspto_open_data_portal_requires_api_access",
+        "google_scholar_no_public_api",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing mosquito repellent external discovery term: {term}")
     for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health", "ECDC"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing public-health guidance term: {term}")

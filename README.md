@@ -550,6 +550,15 @@ python3 -m askinsects sql "select json_extract(p.payload_json, '$.coverage_statu
 
 Structured repellent-literature gaps include `mosquito_repellent_pubmed_search_failed`, `mosquito_repellent_pubmed_summary_failed`, `mosquito_repellent_pubmed_result_limit_applied`, `mosquito_repellent_crossref_fetch_failed`, `mosquito_repellent_crossref_result_limit_applied`, `mosquito_repellent_no_candidates`, and `mosquito_repellent_no_canonical_literature_rows`. This is a public metadata source plane. It does not use private cookies, institutional access, or Sci-Hub.
 
+`mosquito_repellent_external_discovery` is the external breadth lane for repellent discovery. It adds bounded, raw-receipted metadata candidates from OpenAlex, Europe PMC, AGRICOLA through Europe PMC, Semantic Scholar, Crossref posted-content preprints, DataCite dataset DOI metadata, Zenodo, and Figshare. It also writes queryable source-gap records for native bioRxiv/medRxiv text search, PatentsView/USPTO patent APIs, CABI, and Google Scholar when those surfaces are blocked, migrated, credentialed, or unsupported. Records use `literature`, `datasets`, and `patents` lanes so researchers can ask for papers, preprints, repository data, and patent-source status without leaving Ask Insects.
+
+```bash
+python3 -m askinsects ingest-mosquito-repellent-external-discovery --max-results-per-source 50
+python3 -m askinsects search datasets "mosquito repellent"
+python3 -m askinsects search patents "mosquito repellent patent"
+python3 -m askinsects sql "select lane, json_extract(p.payload_json, '$.source_family') as family, count(*) as n from records r join record_payloads p on p.record_id=r.record_id where r.source='mosquito_repellent_external_discovery' group by lane, family order by lane, family"
+```
+
 Legal direct full-text units are searchable through the normal CLI and used as a fallback for literature answers when metadata and abstracts are not enough:
 
 ```bash
@@ -603,6 +612,7 @@ python3 -m askinsects ingest-who-dengue-surveillance --hosted
 python3 -m askinsects ingest-cdc-dengue-surveillance --hosted
 python3 -m askinsects ingest-crossref-literature-audit --hosted --max-results 500 --page-size 100
 python3 -m askinsects ingest-mosquito-repellent-literature --hosted --pubmed-max-results 1000 --crossref-max-results 1000 --page-size 100
+python3 -m askinsects ingest-mosquito-repellent-external-discovery --hosted --max-results-per-source 50
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```
 

@@ -2877,6 +2877,23 @@ def ingest_mosquito_repellent_literature_hosted(
     return response
 
 
+def ingest_mosquito_repellent_external_discovery_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_mosquito_repellent_external_discovery import ingest_mosquito_repellent_external_discovery
+
+    max_results_per_source = int(payload.get("max_results_per_source", 50))
+    response = ingest_mosquito_repellent_external_discovery(
+        artifact_dir=artifact_dir,
+        max_results_per_source=max_results_per_source,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -3047,6 +3064,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/mosquito-repellent-literature":
             result = ingest_mosquito_repellent_literature_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/mosquito-repellent-external-discovery":
+            result = ingest_mosquito_repellent_external_discovery_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectornet-surveillance":

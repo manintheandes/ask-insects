@@ -20,6 +20,7 @@ from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURC
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
 from .sources.mosquito_repellent_literature import MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID
+from .sources.mosquito_repellent_external_discovery import MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID
 from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.observation_climate import OBSERVATION_CLIMATE_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
@@ -289,7 +290,38 @@ def _wants_mosquito_repellent_literature(question: str) -> bool:
         "essential oil",
         "plant extract",
     )
-    literature_terms = ("article", "articles", "paper", "papers", "literature", "study", "studies", "research", "pubmed", "crossref")
+    literature_terms = (
+        "article",
+        "articles",
+        "paper",
+        "papers",
+        "literature",
+        "study",
+        "studies",
+        "research",
+        "pubmed",
+        "crossref",
+        "openalex",
+        "europe pmc",
+        "semantic scholar",
+        "biorxiv",
+        "medrxiv",
+        "preprint",
+        "datacite",
+        "zenodo",
+        "dryad",
+        "figshare",
+        "osf",
+        "agricola",
+        "usda",
+        "cabi",
+        "patent",
+        "patents",
+        "google scholar",
+        "repository",
+        "dataset",
+        "datasets",
+    )
     return any(term in q for term in repellent_terms) and any(term in q for term in literature_terms)
 
 
@@ -2045,8 +2077,10 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
         return sorted(
             records,
             key=lambda record: (
-                0 if record.source == MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID else 1,
-                0 if record.lane == "literature" else 1,
+                0
+                if record.source in {MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID, MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID}
+                else 1,
+                0 if record.lane in {"literature", "datasets", "patents"} else 1,
             ),
         )
     if any(
@@ -2648,6 +2682,30 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 continue
             all_records.append(record)
             seen_record_ids.add(record.record_id)
+        if _source_count(index, MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID) > 0:
+            external_records: list[EvidenceRecord] = []
+            for lane in ("literature", "datasets", "patents"):
+                external_records.extend(
+                    _source_search_records(
+                        index,
+                        MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID,
+                        lane,
+                        plan.search_query,
+                        limit=max(limit * 20, 50),
+                    )
+                )
+            if not external_records:
+                external_records = _source_records(
+                    index,
+                    MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID,
+                    ["literature", "datasets", "patents"],
+                    limit=limit,
+                )
+            for record in external_records:
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "public_health":
         for record in _who_surveillance_records(index, plan.question, limit=limit):
@@ -2888,7 +2946,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     all_records = _prioritize_named_source_records(plan.question, all_records)
 
     if plan.answer_shape == "literature":
-        literature_records = [record for record in all_records if record.lane == "literature"]
+        if _wants_mosquito_repellent_literature(plan.question):
+            literature_records = [record for record in all_records if record.lane in {"literature", "datasets", "patents"}]
+        else:
+            literature_records = [record for record in all_records if record.lane == "literature"]
         species = _requested_species(plan.question)
         if species:
             literature_records = [

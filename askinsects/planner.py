@@ -145,6 +145,36 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "identity", ("taxonomy", "literature", "observations"), question)
+    if any(term in q for term in ("repellent", "repellents", "repellency", "deet", "picaridin", "ir3535", "pmd", "citronella")) and any(
+        term in q
+        for term in (
+            "paper",
+            "papers",
+            "literature",
+            "study",
+            "studies",
+            "research",
+            "article",
+            "articles",
+            "preprint",
+            "patent",
+            "patents",
+            "dataset",
+            "datasets",
+            "repository",
+            "repositories",
+            "openalex",
+            "europe pmc",
+            "semantic scholar",
+            "datacite",
+            "zenodo",
+            "figshare",
+            "agricola",
+            "cabi",
+            "google scholar",
+        )
+    ):
+        return QueryPlan(question, "literature", ("literature", "datasets", "patents", "taxonomy", "observations"), question)
     if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
     if any(

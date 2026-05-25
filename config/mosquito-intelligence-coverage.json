@@ -27,6 +27,7 @@
         "aedes_olfaction_literature",
         "aedes_crossref_literature_audit",
         "mosquito_repellent_literature",
+        "mosquito_repellent_external_discovery",
         "aedes_extracted_facts"
       ],
       "current_gates": {
@@ -43,6 +44,7 @@
         "aedes_olfaction_literature maps bounded PubMed ESearch and ESummary candidates for Aedes aegypti olfaction papers since 2020 into one literature record per PMID, with coverage_status, matched_record_ids, and raw ESummary provenance. The May 25, 2026 hosted ingest installed 183 PubMed olfaction candidates, compared them against 10,683 canonical OpenAlex literature rows, matched 156 already-indexed papers, added 27 PubMed-metadata-only candidates, and recorded zero hosted gaps.",
         "aedes_crossref_literature_audit maps bounded Crossref works where source metadata materially names Aedes aegypti into one literature audit record per DOI/work, preserving publisher, container, issued date, Crossref member, reference count, license links, coverage_status, matched_record_ids, and raw Crossref page locators.",
         "mosquito_repellent_literature maps PubMed and Crossref public metadata for mosquito repellent research since 2020 into deduplicated article records with candidate_sources, repellent_terms, mosquito_terms, coverage_status, matched_record_ids, and raw PubMed or Crossref locators.",
+        "mosquito_repellent_external_discovery maps bounded OpenAlex, Europe PMC, AGRICOLA-through-Europe-PMC, Semantic Scholar, Crossref posted-content preprint, DataCite, Zenodo, and Figshare metadata into literature or dataset records, with queryable patent and blocked-source gap records for PatentsView, USPTO Open Data Portal, CABI, Google Scholar, and native bioRxiv/medRxiv text search.",
         "literature_fulltext_units and literature_fulltext_fts are searchable through search fulltext and literature-answer fallback",
         "aedes_extracted_facts can discover Europe PMC, PMC, and Figshare supplement metadata when opted in and parse supported CSV, TSV, XLSX, DOCX, XML, and HTML supplement tables into row-level fact records with raw-file provenance."
       ],
