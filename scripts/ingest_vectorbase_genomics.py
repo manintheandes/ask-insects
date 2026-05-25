@@ -120,6 +120,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--id-events-url")
     parser.add_argument("--ncbi-linkout-url")
     parser.add_argument("--orthologs-url")
+    parser.add_argument("--coorthologs-url")
+    parser.add_argument("--inparalogs-url")
     parser.add_argument("--retrieved-at")
     args = parser.parse_args(argv)
     file_urls = {
@@ -134,6 +136,8 @@ def main(argv: list[str] | None = None) -> int:
             "id_events": args.id_events_url,
             "ncbi_linkout": args.ncbi_linkout_url,
             "orthologs": args.orthologs_url,
+            "coorthologs": args.coorthologs_url,
+            "inparalogs": args.inparalogs_url,
         }.items()
         if value
     }

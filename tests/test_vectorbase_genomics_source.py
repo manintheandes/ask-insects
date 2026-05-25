@@ -88,6 +88,12 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
         handle.write("aaeo|O1\taaeo|O2\t0.100\n")
         handle.write("aaeg-old|AAELBAD\taaeo|OBAD\tnot-a-score\n")
         handle.write("malformed row\n")
+    coorthologs = root / "coorthologs.txt.gz"
+    with gzip.open(coorthologs, "wt", encoding="utf-8") as handle:
+        handle.write("aaeg-old|AAEL000076\taaec|C076\t0.500\n")
+    inparalogs = root / "inparalogs.txt.gz"
+    with gzip.open(inparalogs, "wt", encoding="utf-8") as handle:
+        handle.write("aaeg-old|AAEL000076\taaeg-old|AAEL999999\t0.900\n")
     return {
         "gff": gff.as_uri(),
         "proteins": proteins.as_uri(),
@@ -98,6 +104,8 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
         "id_events": id_events.as_uri(),
         "ncbi_linkout": ncbi_linkout.as_uri(),
         "orthologs": orthologs.as_uri(),
+        "coorthologs": coorthologs.as_uri(),
+        "inparalogs": inparalogs.as_uri(),
     }
 
 
@@ -157,9 +165,21 @@ class VectorBaseGenomicsSourceTests(unittest.TestCase):
             self.assertEqual(ortholog.payload["partner_species_code"], "aaeo")
             self.assertEqual(ortholog.payload["partner_id"], "O67680")
             self.assertEqual(ortholog.payload["score"], 0.352)
+            coortholog = next(
+                record for record in result.records if record.record_id.startswith("vectorbase:coortholog:aaeg-old_AAEL000076")
+            )
+            self.assertIn("OrthoMCL CURRENT coortholog pair", coortholog.text)
+            self.assertEqual(coortholog.payload["relationship_type"], "coortholog")
+            self.assertEqual(coortholog.payload["partner_species_code"], "aaec")
+            inparalog = next(
+                record for record in result.records if record.record_id.startswith("vectorbase:inparalog:aaeg-old_AAEL000076")
+            )
+            self.assertIn("OrthoMCL CURRENT inparalog pair", inparalog.text)
+            self.assertEqual(inparalog.payload["relationship_type"], "inparalog")
+            self.assertEqual(inparalog.payload["partner_id"], "AAEL999999")
             advanced_gap = next(record for record in result.records if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution")
             self.assertEqual(advanced_gap.lane, "genome_features")
-            self.assertIn("not coorthologs, inparalogs, orthogroups, or current-ID resolution", advanced_gap.text)
+            self.assertIn("not orthogroups or current-ID resolution", advanced_gap.text)
             self.assertEqual(advanced_gap.payload["atom_type"], "source_gap")
             self.assertEqual(advanced_gap.payload["reason"], "advanced_orthology_current_id_resolution")
             self.assertTrue(any(gap["reason"] == "malformed_gff_row" for gap in result.gaps))

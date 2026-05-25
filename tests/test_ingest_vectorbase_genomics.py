@@ -51,15 +51,23 @@ class IngestVectorBaseGenomicsTests(unittest.TestCase):
             self.assertEqual(counts[("vectorbase_aedes_genomics", "genes")], 1)
             self.assertEqual(counts[("vectorbase_aedes_genomics", "transcripts")], 2)
             self.assertEqual(counts[("vectorbase_aedes_genomics", "proteins")], 1)
-            self.assertEqual(counts[("vectorbase_aedes_genomics", "genome_features")], 8)
+            self.assertEqual(counts[("vectorbase_aedes_genomics", "genome_features")], 10)
             ortholog_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select record_id from records where record_id like 'vectorbase:ortholog:%' order by record_id"
             )
             self.assertEqual(len(ortholog_rows), 2)
+            coortholog_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id from records where record_id like 'vectorbase:coortholog:%' order by record_id"
+            )
+            self.assertEqual(len(coortholog_rows), 1)
+            inparalog_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id from records where record_id like 'vectorbase:inparalog:%' order by record_id"
+            )
+            self.assertEqual(len(inparalog_rows), 1)
             payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select count(*) as n from record_payloads where source='vectorbase_aedes_genomics'"
             )
-            self.assertEqual(payload_rows[0]["n"], 12)
+            self.assertEqual(payload_rows[0]["n"], 14)
 
 
 if __name__ == "__main__":

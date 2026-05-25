@@ -978,14 +978,32 @@ def _search_queries(question: str) -> list[str]:
             queries.extend(f"VectorBase {term}" for term in aael_terms)
         if salient:
             queries.append(" ".join(salient))
-        if any(term in q for term in ("homolog", "homologs", "ortholog", "orthologs", "orthology", "orthomcl")):
+        if any(
+            term in q
+            for term in (
+                "homolog",
+                "homologs",
+                "ortholog",
+                "orthologs",
+                "orthology",
+                "orthomcl",
+                "coortholog",
+                "coorthologs",
+                "inparalog",
+                "inparalogs",
+            )
+        ):
             queries.extend(["OrthoMCL ortholog Aedes aegypti", "aaeg-old AAEL ortholog", "VectorBase Aedes orthology"])
-        if any(term in q for term in ("orthogroup", "orthogroups", "coortholog", "coorthologs", "inparalog", "inparalogs", "current id resolution", "current-id resolution")):
+        if any(term in q for term in ("coortholog", "coorthologs")):
+            queries.extend(["OrthoMCL coortholog Aedes aegypti", "aaeg-old AAEL coortholog"])
+        if any(term in q for term in ("inparalog", "inparalogs")):
+            queries.extend(["OrthoMCL inparalog Aedes aegypti", "aaeg-old AAEL inparalog"])
+        if any(term in q for term in ("orthogroup", "orthogroups", "current id resolution", "current-id resolution")):
             queries.extend(
                 [
                     "advanced orthology current-ID resolution source gap",
-                    "coorthologs inparalogs orthogroups current-ID resolution",
-                    "first-pass OrthoMCL CURRENT ortholog-pair rows old AAEL namespace",
+                    "orthogroups current-ID resolution",
+                    "first-pass OrthoMCL CURRENT ortholog coortholog inparalog rows old AAEL namespace",
                 ]
             )
         queries.extend(["VectorBase Aedes aegypti", "Aedes aegypti VectorBase", question])
@@ -1593,10 +1611,6 @@ def _wants_advanced_orthology_boundary(question: str) -> bool:
         for term in (
             "orthogroup",
             "orthogroups",
-            "coortholog",
-            "coorthologs",
-            "inparalog",
-            "inparalogs",
             "current id resolution",
             "current-id resolution",
         )
@@ -1675,11 +1689,16 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
             ]
             if exact_records:
                 records = exact_records
+        wants_advanced_gap = _wants_advanced_orthology_boundary(question)
         return sorted(
             records,
             key=lambda record: (
                 0 if record.source == "vectorbase_aedes_genomics" else 1,
-                0 if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution" else 1,
+                0
+                if wants_advanced_gap and record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution"
+                else 2
+                if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution"
+                else 1,
                 0 if record.lane in {"genes", "proteins", "transcripts", "genome_features"} else 1,
             ),
         )
@@ -1831,31 +1850,46 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
         for codon in re.findall(r"\b[AUCGT]{3}\b", question.upper()):
             clauses.append(("record_id = ?", (f"vectorbase:codon_usage:{codon.replace('T', 'U')}",)))
     for aael_id in re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE):
+        escaped_aael = _like_escape(aael_id.upper())
         if any(term in q for term in ("homolog", "homologs", "ortholog", "orthologs", "orthology", "orthomcl")):
             clauses.append(
                 (
                     "record_id LIKE ? ESCAPE '\\'",
-                    (f"vectorbase:ortholog:aaeg-old_{_like_escape(aael_id.upper())}:%",),
+                    (f"vectorbase:ortholog:aaeg-old_{escaped_aael}:%",),
+                )
+            )
+        if any(term in q for term in ("homolog", "homologs", "orthology", "orthomcl", "coortholog", "coorthologs")):
+            clauses.append(
+                (
+                    "record_id LIKE ? ESCAPE '\\'",
+                    (f"vectorbase:coortholog:aaeg-old_{escaped_aael}:%",),
+                )
+            )
+        if any(term in q for term in ("homolog", "homologs", "orthology", "orthomcl", "inparalog", "inparalogs")):
+            clauses.append(
+                (
+                    "record_id LIKE ? ESCAPE '\\'",
+                    (f"vectorbase:inparalog:aaeg-old_{escaped_aael}:%",),
                 )
             )
         if any(term in q for term in ("cds", "coding sequence", "coding sequences")):
             clauses.append(
                 (
                     "record_id LIKE ? ESCAPE '\\'",
-                    (f"vectorbase:cds:{_like_escape(aael_id.upper())}%",),
+                    (f"vectorbase:cds:{escaped_aael}%",),
                 )
             )
         if "transcript sequence" in q:
             clauses.append(
                 (
                     "record_id LIKE ? ESCAPE '\\'",
-                    (f"vectorbase:transcript_sequence:{_like_escape(aael_id.upper())}%",),
+                    (f"vectorbase:transcript_sequence:{escaped_aael}%",),
                 )
             )
         clauses.append(
             (
                 "record_id LIKE ? ESCAPE '\\'",
-                (f"vectorbase:id_event:{_like_escape(aael_id.upper())}:%",),
+                (f"vectorbase:id_event:{escaped_aael}:%",),
             )
         )
     for linkout_id in re.findall(r"\bAaegL5_[0-9A-Za-z_.-]+\b", question, flags=re.IGNORECASE):

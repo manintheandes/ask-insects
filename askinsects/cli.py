@@ -199,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
     ingest_vectorbase_genomics.add_argument("--id-events-url")
     ingest_vectorbase_genomics.add_argument("--ncbi-linkout-url")
     ingest_vectorbase_genomics.add_argument("--orthologs-url")
+    ingest_vectorbase_genomics.add_argument("--coorthologs-url")
+    ingest_vectorbase_genomics.add_argument("--inparalogs-url")
 
     ingest_expression_omics = sub.add_parser("ingest-expression-omics")
     ingest_expression_omics.add_argument("--hosted", action="store_true")
@@ -676,6 +678,8 @@ def main(argv: list[str] | None = None) -> int:
                 "id_events": args.id_events_url,
                 "ncbi_linkout": args.ncbi_linkout_url,
                 "orthologs": args.orthologs_url,
+                "coorthologs": args.coorthologs_url,
+                "inparalogs": args.inparalogs_url,
             }.items()
             if value
         }

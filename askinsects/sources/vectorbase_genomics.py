@@ -31,6 +31,8 @@ DEFAULT_VECTORBASE_FILE_URLS = {
     "id_events": f"{VECTORBASE_BASE_URL}/txt/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab",
     "ncbi_linkout": f"{VECTORBASE_BASE_URL}/xml/VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml",
     "orthologs": f"{ORTHOMCL_CORE_PAIRS_URL}/orthologs.txt.gz",
+    "coorthologs": f"{ORTHOMCL_CORE_PAIRS_URL}/coorthologs.txt.gz",
+    "inparalogs": f"{ORTHOMCL_CORE_PAIRS_URL}/inparalogs.txt.gz",
 }
 DEFAULT_VECTORBASE_SPECIES = "Aedes aegypti"
 ADVANCED_ORTHOLOGY_GAP = {
@@ -39,9 +41,9 @@ ADVANCED_ORTHOLOGY_GAP = {
     "reason": "advanced_orthology_current_id_resolution",
     "scope": (
         "Current Ask Insects VectorBase/OrthoMCL coverage indexes first-pass "
-        "OrthoMCL CURRENT ortholog-pair rows where either side starts with "
-        "aaeg-old|AAEL. It does not yet include coorthologs, inparalogs, "
-        "orthogroups, or current-ID resolution."
+        "OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows where "
+        "either side starts with aaeg-old|AAEL. It does not yet include "
+        "orthogroups or current-ID resolution."
     ),
 }
 
@@ -113,8 +115,8 @@ def _advanced_orthology_gap_record(boundary_path: Path, retrieved_at: str) -> Ev
         title="Aedes aegypti VectorBase advanced orthology source gap",
         text=(
             "VectorBase genomics source gap: Ask Insects currently indexes first-pass "
-            "OrthoMCL CURRENT ortholog-pair rows in the old AAEL namespace, not "
-            "coorthologs, inparalogs, orthogroups, or current-ID resolution."
+            "OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in "
+            "the old AAEL namespace, not orthogroups or current-ID resolution."
         ),
         species=DEFAULT_VECTORBASE_SPECIES,
         url=ORTHOMCL_CORE_PAIRS_URL,
@@ -821,7 +823,7 @@ def _parse_orthomcl_pairs(
             {
                 "source": VECTORBASE_GENOMICS_SOURCE_ID,
                 "lane": "genome_features",
-                "reason": "orthomcl_no_aedes_ortholog_rows",
+                "reason": f"orthomcl_no_aedes_{relationship_type}_rows",
                 "file": path.as_posix(),
                 "url": source_url,
             }
@@ -919,12 +921,20 @@ def fetch_vectorbase_genomics_records(
         )
         records.extend(parsed)
         gaps.extend(parse_gaps)
-    if "orthologs" in downloaded:
-        parsed, parse_gaps = _parse_orthomcl_pairs(
-            downloaded["orthologs"], source_url=urls["orthologs"], retrieved_at=retrieved
-        )
-        records.extend(parsed)
-        gaps.extend(parse_gaps)
+    for kind, relationship_type in (
+        ("orthologs", "ortholog"),
+        ("coorthologs", "coortholog"),
+        ("inparalogs", "inparalog"),
+    ):
+        if kind in downloaded:
+            parsed, parse_gaps = _parse_orthomcl_pairs(
+                downloaded[kind],
+                source_url=urls[kind],
+                retrieved_at=retrieved,
+                relationship_type=relationship_type,
+            )
+            records.extend(parsed)
+            gaps.extend(parse_gaps)
 
     return VectorBaseGenomicsResult(
         source_id=VECTORBASE_GENOMICS_SOURCE_ID,

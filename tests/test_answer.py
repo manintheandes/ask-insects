@@ -2693,6 +2693,74 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:ortholog:aaeg-old_AAEL000076:aaeo_O67680:1")
 
+    def test_vectorbase_coortholog_inparalog_questions_route_to_orthomcl_pairs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:coortholog:aaeg-old_AAEL000076:aaec_C076:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti OrthoMCL coortholog AAEL000076 to aaec|C076",
+                        text="OrthoMCL CURRENT coortholog pair for Aedes aegypti gene AAEL000076 (aaeg-old|AAEL000076) with partner aaec|C076, score 0.500.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT/coorthologs.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/coorthologs.txt.gz#line/1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="OrthoMCL public download; source terms apply",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:inparalog:aaeg-old_AAEL000076:aaeg-old_AAEL999999:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti OrthoMCL inparalog AAEL000076 to aaeg-old|AAEL999999",
+                        text="OrthoMCL CURRENT inparalog pair for Aedes aegypti gene AAEL000076 (aaeg-old|AAEL000076) with partner aaeg-old|AAEL999999, score 0.900.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT/inparalogs.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/inparalogs.txt.gz#line/1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="OrthoMCL public download; source terms apply",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:gap:advanced_orthology_current_id_resolution",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase advanced orthology source gap",
+                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in the old AAEL namespace, not orthogroups or current-ID resolution.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/source_boundary.json#gap/advanced_orthology_current_id_resolution",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="Ask Insects source boundary audit",
+                        ),
+                        payload={"atom_type": "source_gap", "reason": "advanced_orthology_current_id_resolution"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show AAEL000076 coorthologs and inparalogs for Aedes aegypti", artifact_dir=artifact_dir)
+            evidence_ids = [item["record_id"] for item in answer["evidence"]]
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertIn("vectorbase:coortholog:aaeg-old_AAEL000076:aaec_C076:1", evidence_ids)
+            self.assertIn("vectorbase:inparalog:aaeg-old_AAEL000076:aaeg-old_AAEL999999:1", evidence_ids)
+            self.assertNotEqual(answer["evidence"][0]["record_id"], "vectorbase:gap:advanced_orthology_current_id_resolution")
+
     def test_advanced_orthology_questions_prefer_queryable_source_gap_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -2705,7 +2773,7 @@ class AnswerTests(unittest.TestCase):
                         lane="genome_features",
                         source="vectorbase_aedes_genomics",
                         title="Aedes aegypti VectorBase advanced orthology source gap",
-                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog-pair rows in the old AAEL namespace, not coorthologs, inparalogs, orthogroups, or current-ID resolution.",
+                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in the old AAEL namespace, not orthogroups or current-ID resolution.",
                         species="Aedes aegypti",
                         url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT",
                         media_url=None,
@@ -2737,7 +2805,7 @@ class AnswerTests(unittest.TestCase):
             )
 
             answer = answer_question(
-                "show Aedes aegypti orthogroups coorthologs inparalogs current ID resolution",
+                "show Aedes aegypti orthogroups current ID resolution",
                 artifact_dir=artifact_dir,
             )
 
@@ -2745,7 +2813,7 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "vectorbase_aedes_genomics")
             self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:gap:advanced_orthology_current_id_resolution")
-            self.assertIn("not coorthologs", answer["answer"])
+            self.assertIn("not orthogroups", answer["answer"])
 
     def test_vectorbase_auxiliary_genomics_questions_route_to_genome_features(self):
         with tempfile.TemporaryDirectory() as tmpdir:
