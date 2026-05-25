@@ -483,6 +483,8 @@ OpenAlex is the canonical discovery source. A paper is in-boundary when `Aedes a
 
 `aedes_olfaction_literature` is a narrower PubMed audit lane for a high-value research question: Aedes aegypti olfaction papers since 2020. It fetches bounded PubMed ESearch and ESummary pages for olfaction, odor, chemosensory, antenna, Orco, and receptor terms, creates one `literature` record per PMID, and marks each with `coverage_status` plus any `matched_record_ids` already present in Ask Insects. Receipts also preserve `canonical_literature_row_count`; if the artifact lacks the canonical OpenAlex literature lane, the audit writes `aedes_olfaction_no_canonical_literature_rows` instead of pretending the coverage comparison was meaningful.
 
+The May 25, 2026 hosted ingest installed 183 PubMed olfaction candidates, compared them against 10,683 canonical OpenAlex literature rows, matched 156 already-indexed papers, added 27 PubMed-metadata-only candidates, and recorded zero hosted gaps.
+
 ```bash
 python3 -m askinsects ingest-aedes-olfaction-literature --max-results 500 --page-size 100
 python3 -m askinsects search literature "Aedes aegypti olfaction coverage_status"
