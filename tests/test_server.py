@@ -477,7 +477,15 @@ class ServerTests(unittest.TestCase):
                 response = dispatch_request(
                     "POST",
                     "/ingest/aedes-olfaction-literature",
-                    {"max_results": 250, "page_size": 50},
+                    {
+                        "max_results": 250,
+                        "page_size": 50,
+                        "include_fulltext": True,
+                        "unpaywall_email": "sources@openinsects.org",
+                        "fulltext_limit": 25,
+                        "delay_seconds": 0,
+                        "max_fulltext_bytes": 123456,
+                    },
                     headers={"Authorization": "Bearer secret"},
                     artifact_dir=artifact_dir,
                     token="secret",
@@ -490,6 +498,11 @@ class ServerTests(unittest.TestCase):
                 artifact_dir=artifact_dir,
                 max_results=250,
                 page_size=50,
+                include_fulltext=True,
+                unpaywall_email="sources@openinsects.org",
+                fulltext_limit=25,
+                delay_seconds=0.0,
+                max_fulltext_bytes=123456,
             )
 
     def test_ingest_crossref_literature_audit_route_passes_options(self):

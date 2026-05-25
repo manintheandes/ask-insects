@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -114,6 +115,10 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool 
         "canonical_literature_row_count": result.canonical_literature_row_count,
         "already_indexed_count": result.already_indexed_count,
         "pubmed_metadata_ingested_count": result.pubmed_metadata_ingested_count,
+        "unpaywall_queried_count": result.unpaywall_queried_count,
+        "open_fulltext_count": result.open_fulltext_count,
+        "fulltext_unit_count": result.fulltext_unit_count,
+        "figure_caption_unit_count": result.figure_caption_unit_count,
         "raw_artifacts": result.raw_artifacts,
         "gap_count": len(result.gaps),
         "retrieved_at": retrieved_at,
@@ -152,6 +157,10 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool 
         "canonical_literature_row_count": result.canonical_literature_row_count,
         "already_indexed_count": result.already_indexed_count,
         "pubmed_metadata_ingested_count": result.pubmed_metadata_ingested_count,
+        "unpaywall_queried_count": result.unpaywall_queried_count,
+        "open_fulltext_count": result.open_fulltext_count,
+        "fulltext_unit_count": result.fulltext_unit_count,
+        "figure_caption_unit_count": result.figure_caption_unit_count,
         "gap_count": len(result.gaps),
         "preserved_existing": preserved_existing,
         "artifact_dir": artifact_dir.as_posix(),
@@ -163,11 +172,19 @@ def ingest_aedes_olfaction_literature(
     *,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     fetch_json=None,
+    fetch_bytes=None,
+    pdf_parser=None,
     retrieved_at: str | None = None,
     max_results: int = 500,
     page_size: int = 100,
+    include_fulltext: bool = True,
+    unpaywall_email: str | None = None,
+    fulltext_limit: int | None = None,
+    delay_seconds: float = 1.0,
+    max_fulltext_bytes: int = 60_000_000,
 ) -> dict[str, object]:
     retrieved = retrieved_at or utc_now()
+    resolved_unpaywall_email = unpaywall_email or os.environ.get("ASK_INSECTS_UNPAYWALL_EMAIL") or os.environ.get("UNPAYWALL_EMAIL")
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
     existing_rows = _existing_literature_rows(index)
@@ -175,14 +192,22 @@ def ingest_aedes_olfaction_literature(
         raw_dir=artifact_dir / "raw" / "aedes_olfaction_literature",
         existing_literature_rows=existing_rows,
         fetch_json=fetch_json,
+        fetch_bytes=fetch_bytes,
+        pdf_parser=pdf_parser,
         retrieved_at=retrieved,
         max_results=max_results,
         page_size=page_size,
+        include_fulltext=include_fulltext,
+        unpaywall_email=resolved_unpaywall_email,
+        fulltext_limit=fulltext_limit,
+        delay_seconds=delay_seconds,
+        max_fulltext_bytes=max_fulltext_bytes,
     )
     fatal_gap = any(isinstance(gap, dict) and gap.get("reason") in FATAL_REFRESH_GAP_REASONS for gap in result.gaps)
     refresh_failed = fatal_gap or (not result.records and bool(result.gaps))
     if not refresh_failed:
         index.replace_source_records(AEDES_OLFACTION_LITERATURE_SOURCE_ID, result.records)
+        index.upsert_fulltext_units(result.fulltext_units)
     return _update_metadata(
         artifact_dir,
         result,
@@ -198,12 +223,22 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-results", type=int, default=500)
     parser.add_argument("--page-size", type=int, default=100)
     parser.add_argument("--retrieved-at")
+    parser.add_argument("--skip-fulltext", action="store_true")
+    parser.add_argument("--unpaywall-email")
+    parser.add_argument("--fulltext-limit", type=int)
+    parser.add_argument("--delay-seconds", type=float, default=1.0)
+    parser.add_argument("--max-fulltext-bytes", type=int, default=60_000_000)
     args = parser.parse_args(argv)
     result = ingest_aedes_olfaction_literature(
         artifact_dir=Path(args.artifact_dir),
         max_results=args.max_results,
         page_size=args.page_size,
         retrieved_at=args.retrieved_at,
+        include_fulltext=not args.skip_fulltext,
+        unpaywall_email=args.unpaywall_email,
+        fulltext_limit=args.fulltext_limit,
+        delay_seconds=args.delay_seconds,
+        max_fulltext_bytes=args.max_fulltext_bytes,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result.get("ok") else 2

@@ -49,6 +49,7 @@ class IngestAedesOlfactionLiteratureTests(unittest.TestCase):
                 retrieved_at="2026-05-25T00:00:00Z",
                 max_results=20,
                 page_size=10,
+                include_fulltext=False,
             )
 
             self.assertTrue(result["ok"])
@@ -84,16 +85,71 @@ class IngestAedesOlfactionLiteratureTests(unittest.TestCase):
                 artifact_dir=artifact_dir,
                 fetch_json=fake_fetch_json,
                 retrieved_at="2026-05-25T00:00:00Z",
+                include_fulltext=False,
             )
             failed = ingest_aedes_olfaction_literature(
                 artifact_dir=artifact_dir,
                 fetch_json=lambda url: (_ for _ in ()).throw(RuntimeError("offline")),
                 retrieved_at="2026-05-25T01:00:00Z",
+                include_fulltext=False,
             )
 
             self.assertFalse(failed["ok"])
             self.assertTrue(failed["preserved_existing"])
             self.assertEqual(failed["record_count"], 2)
+
+    def test_ingest_writes_legal_olfaction_fulltext_units(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch_json(url):
+                if "esearch.fcgi" in url:
+                    return {"esearchresult": {"idlist": ["42063565"], "count": "1"}}
+                if "esummary.fcgi" in url:
+                    return {
+                        "result": {
+                            "uids": ["42063565"],
+                            "42063565": ESUMMARY["result"]["42063565"],
+                        }
+                    }
+                if "api.unpaywall.org" in url:
+                    return {
+                        "best_oa_location": {
+                            "url_for_xml": "https://example.org/open/aedes-olfaction.xml",
+                            "license": "cc-by",
+                        }
+                    }
+                raise AssertionError(url)
+
+            def fake_fetch_bytes(url):
+                return (
+                    b"<article><body><p>Aedes aegypti olfactory receptors respond to odor.</p>"
+                    b"<fig><caption><p>Figure 2. Receptor response map.</p></caption></fig></body></article>",
+                    "application/xml",
+                )
+
+            result = ingest_aedes_olfaction_literature(
+                artifact_dir=artifact_dir,
+                fetch_json=fake_fetch_json,
+                fetch_bytes=fake_fetch_bytes,
+                retrieved_at="2026-05-25T00:00:00Z",
+                max_results=1,
+                page_size=1,
+                unpaywall_email="sources@openinsects.org",
+                delay_seconds=0,
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["open_fulltext_count"], 1)
+            self.assertEqual(result["figure_caption_unit_count"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select source, text from literature_fulltext_units order by unit_index",
+                limit=10,
+            )
+            self.assertEqual({row["source"] for row in rows}, {"aedes_olfaction_literature"})
+            self.assertTrue(any("olfactory receptors respond" in row["text"] for row in rows))
+            self.assertTrue(any("Figure 2" in row["text"] for row in rows))
 
 
 if __name__ == "__main__":

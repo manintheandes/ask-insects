@@ -59,6 +59,7 @@ class AedesOlfactionLiteratureSourceTests(unittest.TestCase):
                 retrieved_at="2026-05-25T00:00:00Z",
                 max_results=20,
                 page_size=10,
+                include_fulltext=False,
             )
             self.assertTrue(Path(result.raw_artifacts[0]).exists())
 
@@ -93,10 +94,69 @@ class AedesOlfactionLiteratureSourceTests(unittest.TestCase):
                 retrieved_at="2026-05-25T00:00:00Z",
                 max_results=1,
                 page_size=1,
+                include_fulltext=False,
             )
 
         self.assertIn("aedes_olfaction_result_limit_applied", {gap["reason"] for gap in result.gaps})
         self.assertIn("aedes_olfaction_no_canonical_literature_rows", {gap["reason"] for gap in result.gaps})
+
+    def test_fetch_ingests_legal_open_fulltext_and_figure_captions(self):
+        def fake_fetch_json(url):
+            if "esearch.fcgi" in url:
+                return {"esearchresult": {"idlist": ["42063565"], "count": "1"}}
+            if "esummary.fcgi" in url:
+                return {
+                    "result": {
+                        "uids": ["42063565"],
+                        "42063565": ESUMMARY["result"]["42063565"],
+                    }
+                }
+            if "api.unpaywall.org" in url:
+                return {
+                    "doi": "10.1016/j.isci.2026.115575",
+                    "best_oa_location": {
+                        "url_for_xml": "https://example.org/open/aedes-olfaction.xml",
+                        "license": "cc-by",
+                    },
+                }
+            raise AssertionError(url)
+
+        def fake_fetch_bytes(url):
+            self.assertEqual(url, "https://example.org/open/aedes-olfaction.xml")
+            return (
+                b"""
+                <article><body>
+                  <sec><title>Results</title><p>Aedes aegypti Orco neurons encode host odor blends.</p></sec>
+                  <fig id="f1"><caption><p>Figure 1. Antennal lobe response to human odor.</p></caption></fig>
+                </body></article>
+                """,
+                "application/xml",
+            )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_aedes_olfaction_literature_records(
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fake_fetch_json,
+                fetch_bytes=fake_fetch_bytes,
+                retrieved_at="2026-05-25T00:00:00Z",
+                max_results=1,
+                page_size=1,
+                unpaywall_email="sources@openinsects.org",
+                delay_seconds=0,
+            )
+
+        self.assertEqual(result.open_fulltext_count, 1)
+        self.assertEqual(result.unpaywall_queried_count, 1)
+        self.assertGreaterEqual(result.fulltext_unit_count, 2)
+        self.assertEqual(result.figure_caption_unit_count, 1)
+        record = result.records[0]
+        self.assertEqual(record.payload["fulltext_status"], "open_fulltext_ingested")
+        self.assertEqual(record.payload["open_fulltext_license"], "cc-by")
+        self.assertEqual(result.fulltext_units[0].source, "aedes_olfaction_literature")
+        self.assertIn("Orco neurons encode host odor", result.fulltext_units[0].text)
+        figure_units = [unit for unit in result.fulltext_units if "figure-caption" in unit.unit_id]
+        self.assertEqual(len(figure_units), 1)
+        self.assertIn("Antennal lobe response", figure_units[0].text)
 
 
 if __name__ == "__main__":
