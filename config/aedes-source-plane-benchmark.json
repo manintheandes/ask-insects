@@ -28,7 +28,7 @@
   ],
   "ask_insects_current": {
     "hosted_health_checked_at": "2026-05-25",
-    "hosted_record_count": 823236,
+    "hosted_record_count": 824433,
     "hosted_trait_records": 4972,
     "hosted_image_atom_records": 19439,
     "hosted_verified_image_mirrors": 5828,
@@ -76,7 +76,8 @@
       "aedes_population_genomics",
       "aedes_who_resistance_guidance",
       "zenodo_aedes_videos",
-      "figshare_aedes_videos"
+      "figshare_aedes_videos",
+      "aedes_observation_climate_join"
     ],
     "hosted_lane_counts": {
       "action_notes": 1,
@@ -103,7 +104,8 @@
     "proof_commands": [
       "python3 -m askinsects health --hosted",
       "python3 -m askinsects sql --hosted \"select source, lane, count(*) as n from records group by source, lane order by source, lane\" --limit 200"
-    ]
+    ],
+    "hosted_observation_climate_join_records": 993
   },
   "external_comparators": [
     {
