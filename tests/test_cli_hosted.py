@@ -413,6 +413,8 @@ class HostedCliTests(unittest.TestCase):
                 "https://vectorbase.org/id-events.tab",
                 "--ncbi-linkout-url",
                 "https://vectorbase.org/linkout.xml",
+                "--orthologs-url",
+                "https://orthomcl.org/orthologs.txt.gz",
             )
 
         self.assertEqual(code, 0)
@@ -426,6 +428,7 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][2]["file_urls"]["codon_usage"], "https://vectorbase.org/codon.txt")
         self.assertEqual(calls[0][2]["file_urls"]["id_events"], "https://vectorbase.org/id-events.tab")
         self.assertEqual(calls[0][2]["file_urls"]["ncbi_linkout"], "https://vectorbase.org/linkout.xml")
+        self.assertEqual(calls[0][2]["file_urls"]["orthologs"], "https://orthomcl.org/orthologs.txt.gz")
         self.assertEqual(calls[0][3], 7200)
         self.assertTrue(json.loads(output)["ok"])
 

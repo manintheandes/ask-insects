@@ -68,7 +68,7 @@ To add `Aedes aegypti` genomics from an unpacked NCBI Datasets package:
 python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
 ```
 
-To add official VectorBase/VEuPathDB `Aedes aegypti` gene, transcript, protein, CDS sequence, transcript sequence, GO annotation, codon usage, identifier-history, and NCBI LinkOut downloads:
+To add official VectorBase/VEuPathDB `Aedes aegypti` gene, transcript, protein, CDS sequence, transcript sequence, GO annotation, codon usage, identifier-history, NCBI LinkOut, and OrthoMCL current-release ortholog-pair downloads:
 
 ```bash
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-vectorbase-genomics
@@ -310,6 +310,8 @@ OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/l
 Crossref literature-audit records use source id `aedes_crossref_literature_audit`. Raw Crossref `/works` pages are saved under `artifacts/mosquito-v1/raw/aedes_crossref_literature_audit/`. Each audit record stores DOI, title, publisher, container title, issued date, Crossref member, reference count, license links, `coverage_status`, matched Ask Insects record IDs, and a raw page locator. Structured gaps include `aedes_crossref_fetch_failed`, `aedes_crossref_result_limit_applied`, `aedes_crossref_no_material_aedes_records`, and `aedes_crossref_no_canonical_literature_rows`.
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
+
+VectorBase genomics records use source id `vectorbase_aedes_genomics`. The parser reads official VectorBase/VEuPathDB `AaegyptiLVP_AGWG` GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, NCBI LinkOut, and OrthoMCL CURRENT corePairs ortholog-pair downloads. OrthoMCL rows are parsed only when either side starts with `aaeg-old|AAEL`, and stored as first-pass ortholog-pair `genome_features` records with `left_id`, `right_id`, `score`, and raw-file line provenance. This is OrthoMCL current-release ortholog-pair coverage in the old Aedes AAEL namespace, not coortholog, inparalog, orthogroup, or current-ID-resolution coverage.
 
 NCBI BioSample records use source id `ncbi_biosamples` and lane `biosamples`. The ingest fetches `"Aedes aegypti"[Organism]` BioSample ESearch and ESummary JSON, saves it under `artifacts/mosquito-v1/raw/ncbi_biosamples/`, parses sample XML attributes, and stores accessions, sample names, strain or isolate fields, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when present. The current hosted receipt is complete for the current NCBI count: 20,656 fetched records out of 20,656 reported, with zero hosted gaps.
 

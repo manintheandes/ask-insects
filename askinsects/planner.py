@@ -404,6 +404,12 @@ def plan_question(question: str) -> QueryPlan:
         "identifier history",
         "linkout",
         "ncbi linkout",
+        "homolog",
+        "homologs",
+        "ortholog",
+        "orthologs",
+        "orthology",
+        "orthomcl",
         "protein",
         "proteins",
         "uniprot",
@@ -447,6 +453,12 @@ def plan_question(question: str) -> QueryPlan:
                 "identifier history",
                 "linkout",
                 "ncbi linkout",
+                "homolog",
+                "homologs",
+                "ortholog",
+                "orthologs",
+                "orthology",
+                "orthomcl",
             )
         ):
             lanes = ("genome_features", "genes", "proteins", "transcripts", "genome_assemblies", "literature", "taxonomy")

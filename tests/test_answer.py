@@ -2329,6 +2329,54 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "vectorbase_aedes_genomics")
 
+    def test_vectorbase_ortholog_questions_route_to_orthomcl_pairs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:ortholog:aaeg-old_AAEL000076:aaeo_O67680:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti OrthoMCL ortholog AAEL000076 to aaeo|O67680",
+                        text="OrthoMCL CURRENT ortholog pair for Aedes aegypti gene AAEL000076 (aaeg-old|AAEL000076) with partner aaeo|O67680, score 0.352.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT/orthologs.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/orthologs.txt.gz#line/1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="OrthoMCL public download; source terms apply",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="ncbi:gene:AAEL000076",
+                        lane="genes",
+                        source="ncbi_datasets_genome",
+                        title="Aedes aegypti NCBI gene AAEL000076",
+                        text="NCBI gene AAEL000076 for Aedes aegypti.",
+                        species="Aedes aegypti",
+                        url="https://example.org/ncbi",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="ncbi_datasets_genome",
+                            locator="raw/ncbi_genome#gff",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="NCBI",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show AAEL000076 orthologs for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:ortholog:aaeg-old_AAEL000076:aaeo_O67680:1")
+
     def test_vectorbase_auxiliary_genomics_questions_route_to_genome_features(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -702,6 +702,12 @@ def _search_queries(question: str) -> list[str]:
             "identifier history",
             "linkout",
             "ncbi linkout",
+            "homolog",
+            "homologs",
+            "ortholog",
+            "orthologs",
+            "orthology",
+            "orthomcl",
         )
     ):
         generic_terms = {
@@ -722,7 +728,13 @@ def _search_queries(question: str) -> list[str]:
             "id",
             "identifier",
             "linkout",
+            "homolog",
+            "homologs",
             "ncbi",
+            "ortholog",
+            "orthologs",
+            "orthology",
+            "orthomcl",
             "show",
             "term",
             "terms",
@@ -744,6 +756,8 @@ def _search_queries(question: str) -> list[str]:
             queries.extend(f"VectorBase {term}" for term in aael_terms)
         if salient:
             queries.append(" ".join(salient))
+        if any(term in q for term in ("homolog", "homologs", "ortholog", "orthologs", "orthology", "orthomcl")):
+            queries.extend(["OrthoMCL ortholog Aedes aegypti", "aaeg-old AAEL ortholog", "VectorBase Aedes orthology"])
         queries.extend(["VectorBase Aedes aegypti", "Aedes aegypti VectorBase", question])
         return list(dict.fromkeys(queries))
     if "mosquito alert" in q:
@@ -1254,6 +1268,12 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
             "identifier history",
             "linkout",
             "ncbi linkout",
+            "homolog",
+            "homologs",
+            "ortholog",
+            "orthologs",
+            "orthology",
+            "orthomcl",
         )
     ):
         aael_terms = [token.lower() for token in re.findall(r"AAEL[A-Za-z0-9-]+", question, flags=re.IGNORECASE)]
@@ -1379,6 +1399,12 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
             "identifier history",
             "linkout",
             "ncbi linkout",
+            "homolog",
+            "homologs",
+            "ortholog",
+            "orthologs",
+            "orthology",
+            "orthomcl",
             "aael",
         )
     ):
@@ -1391,6 +1417,13 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
         for codon in re.findall(r"\b[AUCGT]{3}\b", question.upper()):
             clauses.append(("record_id = ?", (f"vectorbase:codon_usage:{codon.replace('T', 'U')}",)))
     for aael_id in re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE):
+        if any(term in q for term in ("homolog", "homologs", "ortholog", "orthologs", "orthology", "orthomcl")):
+            clauses.append(
+                (
+                    "record_id LIKE ? ESCAPE '\\'",
+                    (f"vectorbase:ortholog:aaeg-old_{_like_escape(aael_id.upper())}:%",),
+                )
+            )
         if any(term in q for term in ("cds", "coding sequence", "coding sequences")):
             clauses.append(
                 (

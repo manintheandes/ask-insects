@@ -382,7 +382,7 @@ sources:
   - id: vectorbase_aedes_genomics
     name: VectorBase/VEuPathDB Aedes aegypti genomics downloads
     source_type: public_bulk_download
-    boundary: Official VectorBase current-release AaegyptiLVP_AGWG GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut files for Aedes aegypti genes, transcripts, CDS sequence summaries, protein sequence summaries, GO annotations, codon usage, identifier history, and cross-references
+    boundary: Official VectorBase current-release AaegyptiLVP_AGWG GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, NCBI LinkOut files, and OrthoMCL CURRENT corePairs ortholog-pair rows where either side uses the old Aedes namespace prefix aaeg-old|AAEL, preserving Aedes aegypti genes, transcripts, CDS sequence summaries, protein sequence summaries, GO annotations, codon usage, identifier history, cross-references, and first-pass OrthoMCL current-release ortholog pairs in the old AAEL namespace
     query_plane: vectorbase_current_release_downloads_to_sqlite
     api_base: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG
     artifact_dir: artifacts/mosquito-v1/raw/vectorbase_genomics
@@ -396,6 +396,7 @@ sources:
       codon_usage: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/txt/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt
       id_events: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/txt/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab
       ncbi_linkout: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/xml/VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml
+      orthologs: https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT/orthologs.txt.gz
     lanes:
       - genes
       - transcripts
@@ -403,6 +404,18 @@ sources:
       - genome_features
     provenance_required: true
     live_fetch: opt_in
+    source_contract:
+      ortholog_pair_records:
+        - left_id
+        - right_id
+        - score
+        - aedes_side_with_aaeg_old_prefix
+        - raw_orthologs_file_line_locator
+      exclusions:
+        - coorthologs_not_claimed
+        - inparalogs_not_claimed
+        - orthogroups_not_claimed
+        - current_id_resolution_not_claimed
   - id: aedes_uniprot_proteins
     name: UniProt Aedes aegypti protein and proteome metadata
     source_type: public_api

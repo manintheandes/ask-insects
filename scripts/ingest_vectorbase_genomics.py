@@ -119,6 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--codon-usage-url")
     parser.add_argument("--id-events-url")
     parser.add_argument("--ncbi-linkout-url")
+    parser.add_argument("--orthologs-url")
     parser.add_argument("--retrieved-at")
     args = parser.parse_args(argv)
     file_urls = {
@@ -132,6 +133,7 @@ def main(argv: list[str] | None = None) -> int:
             "codon_usage": args.codon_usage_url,
             "id_events": args.id_events_url,
             "ncbi_linkout": args.ncbi_linkout_url,
+            "orthologs": args.orthologs_url,
         }.items()
         if value
     }

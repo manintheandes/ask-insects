@@ -124,7 +124,7 @@ This stores the package files as raw artifacts and indexes useful atoms into SQL
 
 ## VectorBase Genomics Source Lane
 
-`vectorbase_aedes_genomics` is the VectorBase/VEuPathDB Aedes-specific genomics lane for current-release `AaegyptiLVP_AGWG` annotation and cross-reference downloads:
+`vectorbase_aedes_genomics` is the VectorBase/VEuPathDB Aedes-specific genomics lane for current-release `AaegyptiLVP_AGWG` annotation, cross-reference, and OrthoMCL current-release ortholog-pair downloads:
 
 ```bash
 python3 -m askinsects ingest-vectorbase-genomics
@@ -134,7 +134,7 @@ python3 -m askinsects ask "show VectorBase codon usage AUG for Aedes aegypti" --
 python3 -m askinsects ask "show VectorBase CDS sequence for AAEL000016" --json
 ```
 
-This writes official GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, and NCBI LinkOut downloads under `artifacts/mosquito-v1/raw/vectorbase_genomics/`, normalizes records into `genes`, `transcripts`, `proteins`, and `genome_features`, stores parsed payloads in SQLite, and keeps provenance to the saved file line, FASTA header, or LinkOut entry. FASTA sequence records store sequence metadata and observed lengths, not every nucleotide as answer text.
+This writes official GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, NCBI LinkOut, and OrthoMCL CURRENT corePairs ortholog-pair downloads under `artifacts/mosquito-v1/raw/vectorbase_genomics/`, normalizes records into `genes`, `transcripts`, `proteins`, and `genome_features`, stores parsed payloads in SQLite, and keeps provenance to the saved file line, FASTA header, or LinkOut entry. Ortholog-pair records are parsed only when either side starts with the old Aedes namespace prefix `aaeg-old|AAEL`; they are OrthoMCL current-release ortholog pairs in the old AAEL namespace, not coorthologs, inparalogs, orthogroups, or current-ID resolution. FASTA sequence records store sequence metadata and observed lengths, not every nucleotide as answer text.
 
 ## Expression Omics Source Lane
 

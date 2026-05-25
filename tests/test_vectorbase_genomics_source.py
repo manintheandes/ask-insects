@@ -81,6 +81,13 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
 """,
         encoding="utf-8",
     )
+    orthologs = root / "orthologs.txt.gz"
+    with gzip.open(orthologs, "wt", encoding="utf-8") as handle:
+        handle.write("aaeg-old|AAEL000076\taaeo|O67680\t0.352\n")
+        handle.write("aaeo|O67868\taaeg-old|AAEL000108\t1.353\n")
+        handle.write("aaeo|O1\taaeo|O2\t0.100\n")
+        handle.write("aaeg-old|AAELBAD\taaeo|OBAD\tnot-a-score\n")
+        handle.write("malformed row\n")
     return {
         "gff": gff.as_uri(),
         "proteins": proteins.as_uri(),
@@ -90,6 +97,7 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
         "codon_usage": codon_usage.as_uri(),
         "id_events": id_events.as_uri(),
         "ncbi_linkout": ncbi_linkout.as_uri(),
+        "orthologs": orthologs.as_uri(),
     }
 
 
@@ -141,7 +149,17 @@ class VectorBaseGenomicsSourceTests(unittest.TestCase):
             linkout = next(record for record in result.records if record.record_id.startswith("vectorbase:ncbi_linkout:Nucleotide:AaegL5_1"))
             self.assertIn("NCBI LinkOut", linkout.text)
             self.assertEqual(linkout.payload["query"], "AaegL5_1")
+            ortholog = next(record for record in result.records if record.record_id.startswith("vectorbase:ortholog:aaeg-old_AAEL000076"))
+            self.assertEqual(ortholog.lane, "genome_features")
+            self.assertIn("OrthoMCL CURRENT ortholog pair", ortholog.text)
+            self.assertEqual(ortholog.payload["relationship_type"], "ortholog")
+            self.assertEqual(ortholog.payload["aedes_gene_id"], "AAEL000076")
+            self.assertEqual(ortholog.payload["partner_species_code"], "aaeo")
+            self.assertEqual(ortholog.payload["partner_id"], "O67680")
+            self.assertEqual(ortholog.payload["score"], 0.352)
             self.assertTrue(any(gap["reason"] == "malformed_gff_row" for gap in result.gaps))
+            self.assertTrue(any(gap["reason"] == "malformed_orthomcl_score" for gap in result.gaps))
+            self.assertTrue(any(gap["reason"] == "malformed_orthomcl_pair_row" for gap in result.gaps))
 
     def test_vectorbase_payloads_are_queryable_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:

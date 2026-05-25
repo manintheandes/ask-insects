@@ -17,6 +17,9 @@ VECTORBASE_GENOMICS_SOURCE_ID = "vectorbase_aedes_genomics"
 VECTORBASE_RELEASE = "Current_Release"
 VECTORBASE_ORGANISM = "AaegyptiLVP_AGWG"
 VECTORBASE_BASE_URL = f"https://vectorbase.org/common/downloads/{VECTORBASE_RELEASE}/{VECTORBASE_ORGANISM}"
+ORTHOMCL_RELEASE = "release-6.21"
+ORTHOMCL_CORE_PAIRS_URL = f"https://orthomcl.org/common/downloads/{ORTHOMCL_RELEASE}/corePairs_OrthoMCL-CURRENT"
+ORTHOMCL_AEDES_PREFIX = "aaeg-old|"
 DEFAULT_VECTORBASE_FILE_URLS = {
     "gff": f"{VECTORBASE_BASE_URL}/gff/data/VectorBase-68_AaegyptiLVP_AGWG.gff",
     "proteins": f"{VECTORBASE_BASE_URL}/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta",
@@ -26,6 +29,7 @@ DEFAULT_VECTORBASE_FILE_URLS = {
     "codon_usage": f"{VECTORBASE_BASE_URL}/txt/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt",
     "id_events": f"{VECTORBASE_BASE_URL}/txt/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab",
     "ncbi_linkout": f"{VECTORBASE_BASE_URL}/xml/VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml",
+    "orthologs": f"{ORTHOMCL_CORE_PAIRS_URL}/orthologs.txt.gz",
 }
 DEFAULT_VECTORBASE_SPECIES = "Aedes aegypti"
 
@@ -392,6 +396,12 @@ def _open_gaf(path: Path):
     return path.open(encoding="utf-8")
 
 
+def _open_text_or_gzip(path: Path):
+    if path.suffix == ".gz":
+        return gzip.open(path, "rt", encoding="utf-8")
+    return path.open(encoding="utf-8")
+
+
 def _parse_go(path: Path, *, source_url: str, retrieved_at: str) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
     records: list[EvidenceRecord] = []
     gaps: list[dict[str, object]] = []
@@ -659,6 +669,112 @@ def _parse_ncbi_linkout(path: Path, *, source_url: str, retrieved_at: str) -> tu
     return records, gaps
 
 
+def _split_orthomcl_id(identifier: str) -> tuple[str, str]:
+    if "|" not in identifier:
+        return "", identifier
+    species_code, local_id = identifier.split("|", 1)
+    return species_code, local_id
+
+
+def _parse_orthomcl_pairs(
+    path: Path,
+    *,
+    source_url: str,
+    retrieved_at: str,
+    relationship_type: str = "ortholog",
+) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
+    records: list[EvidenceRecord] = []
+    gaps: list[dict[str, object]] = []
+    with _open_text_or_gzip(path) as handle:
+        for line_number, raw_line in enumerate(handle, start=1):
+            line = raw_line.rstrip("\n")
+            if not line:
+                continue
+            columns = line.split("\t")
+            if len(columns) != 3:
+                gaps.append(
+                    {
+                        "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                        "lane": "genome_features",
+                        "reason": "malformed_orthomcl_pair_row",
+                        "file": path.as_posix(),
+                        "line_number": line_number,
+                    }
+                )
+                continue
+            left_id, right_id, raw_score = [column.strip() for column in columns]
+            if not (left_id.startswith(ORTHOMCL_AEDES_PREFIX) or right_id.startswith(ORTHOMCL_AEDES_PREFIX)):
+                continue
+            try:
+                score = float(raw_score)
+            except ValueError:
+                gaps.append(
+                    {
+                        "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                        "lane": "genome_features",
+                        "reason": "malformed_orthomcl_score",
+                        "file": path.as_posix(),
+                        "line_number": line_number,
+                        "score": raw_score,
+                    }
+                )
+                continue
+            aedes_id = left_id if left_id.startswith(ORTHOMCL_AEDES_PREFIX) else right_id
+            partner_id = right_id if aedes_id == left_id else left_id
+            partner_species_code, partner_local_id = _split_orthomcl_id(partner_id)
+            _, aedes_gene_id = _split_orthomcl_id(aedes_id)
+            records.append(
+                EvidenceRecord(
+                    record_id=(
+                        f"vectorbase:{relationship_type}:"
+                        f"{_record_id_piece(aedes_id)}:{_record_id_piece(partner_id)}:{line_number}"
+                    ),
+                    lane="genome_features",
+                    source=VECTORBASE_GENOMICS_SOURCE_ID,
+                    title=f"Aedes aegypti OrthoMCL {relationship_type} {aedes_gene_id} to {partner_id}",
+                    text=(
+                        f"OrthoMCL CURRENT {relationship_type} pair for Aedes aegypti gene {aedes_gene_id} "
+                        f"({aedes_id}) with partner {partner_id}, score {raw_score}."
+                    ),
+                    species=DEFAULT_VECTORBASE_SPECIES,
+                    url=source_url,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id=VECTORBASE_GENOMICS_SOURCE_ID,
+                        locator=f"{path.as_posix()}#line/{line_number}",
+                        retrieved_at=retrieved_at,
+                        license="OrthoMCL public download; source terms apply",
+                        source_url=source_url,
+                    ),
+                    payload={
+                        "release": VECTORBASE_RELEASE,
+                        "organism": VECTORBASE_ORGANISM,
+                        "orthomcl_release": ORTHOMCL_RELEASE,
+                        "relationship_type": relationship_type,
+                        "aedes_orthomcl_id": aedes_id,
+                        "aedes_gene_id": aedes_gene_id,
+                        "partner_orthomcl_id": partner_id,
+                        "partner_species_code": partner_species_code or None,
+                        "partner_id": partner_local_id,
+                        "score": score,
+                        "line_number": line_number,
+                        "source_file": path.name,
+                    },
+                )
+            )
+    if not records:
+        gaps.append(
+            {
+                "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                "lane": "genome_features",
+                "reason": "orthomcl_no_aedes_ortholog_rows",
+                "file": path.as_posix(),
+                "url": source_url,
+            }
+        )
+    return records, gaps
+
+
 def fetch_vectorbase_genomics_records(
     *,
     raw_dir: Path,
@@ -742,6 +858,12 @@ def fetch_vectorbase_genomics_records(
     if "ncbi_linkout" in downloaded:
         parsed, parse_gaps = _parse_ncbi_linkout(
             downloaded["ncbi_linkout"], source_url=urls["ncbi_linkout"], retrieved_at=retrieved
+        )
+        records.extend(parsed)
+        gaps.extend(parse_gaps)
+    if "orthologs" in downloaded:
+        parsed, parse_gaps = _parse_orthomcl_pairs(
+            downloaded["orthologs"], source_url=urls["orthologs"], retrieved_at=retrieved
         )
         records.extend(parsed)
         gaps.extend(parse_gaps)
