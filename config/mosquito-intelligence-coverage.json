@@ -96,7 +96,8 @@
         "aedes_literature_facets",
         "aedes_extracted_facts",
         "dryad_aedes_behavior_videos",
-        "mendeley_aedes_behavior_media"
+        "mendeley_aedes_behavior_media",
+        "aedes_vectorbyte_traits"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -112,6 +113,7 @@
         "Dryad Aedes behavior/video dataset manifests map public host-seeking, visual-threat, flight-escape, mating/courtship, male host-attraction, and visual-tracking data files to behavior and media records with DOI, file, license, checksum, size, and download provenance.",
         "Mendeley Data Aedes behavior/media manifests map public mate-recognition, wingbeat, hearing, flight-tone, high-speed video, and locomotory video-analysis datasets to behavior and media records with dataset, folder, file, DOI, license, SHA-256, size, content-type, download, and view provenance.",
         "Mendeley public CSV, TSV, and XLSX Aedes behavior table files are parsed into sheet-level and row-level behavior records with headers, row values, row numbers, download URLs, licenses, and raw-file locators.",
+        "aedes_vectorbyte_traits maps VectorByte/VecTraits Aedes aegypti trait rows into queryable trait observations with value, unit, temperature, stage, sex, habitat, location, citation, DOI, and raw dataset JSON provenance.",
         "aedes_extracted_facts emits behavior candidate facts from indexed Aedes literature and legal full-text units, and parsed behavior rows from supported public supplement tables, with matched assay, stimulus, sex, age, strain, response metric fields, and source provenance."
       ],
       "required_next_sources": [
@@ -218,6 +220,8 @@
         "Mendeley public behavior table files are parsed into queryable sheet and row records where the file is in Aedes aegypti scope.",
         "OSF FlightTrackAI manifests add file-grained public Aedes aegypti processed/unprocessed flight videos, executable bundle, trained model, and installation-instruction records without mirroring multi-gigabyte binaries.",
         "Aedes video atoms derive video asset rows, optional bounded mirrors, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and structured gaps for oversized or license-unclear files.",
+        "Video discovery now requires source-provided material metadata to name Aedes aegypti; repository search terms and synthetic query strings do not count as Aedes evidence.",
+        "Video gap records preserve source download URL, source URL, byte size, source-provided hashes when available, license text, source dataset, repository, and locator so huge or license-unclear videos remain inspectable as gaps.",
         "Ask routing now prefers aedes_video_atoms for keyframe, thumbnail, preview, frame, motion, trajectory, tracking, fps, codec, duration, and resolution questions."
       ],
       "required_next_sources": [
@@ -268,7 +272,8 @@
         "aedes_literature_facets",
         "aedes_extracted_facts",
         "aedes_pathogen_taxonomy",
-        "aedes_vector_competence_assays"
+        "aedes_vector_competence_assays",
+        "aedes_vectorbyte_traits"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -283,6 +288,7 @@
         "Vector competence questions route through the vector_competence lane and return provenance back to source literature records and full-text units where available.",
         "aedes_pathogen_taxonomy anchors dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus identities to NCBI Taxonomy records for pathogen-specific Aedes aegypti questions.",
         "aedes_vector_competence_assays extracts pathogen-specific assay-candidate records from indexed Aedes literature and legal full-text units, preserving source paper and full-text-unit provenance plus structured pathogen, infection, dissemination, transmission, dose, temperature, tissue, strain, population, and timepoint fields when detected.",
+        "aedes_vectorbyte_traits contributes temperature-dependent VecTraits rows such as transmission potential where VectorByte exposes Aedes aegypti trait measurements.",
         "aedes_extracted_facts adds cross-lane vector-competence candidate facts, supplement manifests, and parsed supported supplement table rows from indexed literature payloads, Europe PMC or PMC metadata, public supplement files, and legal full-text units."
       ],
       "required_next_sources": [
@@ -336,7 +342,8 @@
         "aedes_literature_facets",
         "aedes_extracted_facts",
         "aedes_occurrence_ecology",
-        "vectornet_aedes_surveillance"
+        "vectornet_aedes_surveillance",
+        "aedes_vectorbyte_traits"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -351,6 +358,7 @@
         "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available.",
         "aedes_occurrence_ecology joins indexed GBIF, iNaturalist, and Mosquito Alert observation payloads into country, country-month, seasonality, range, and public habitat ecology records.",
         "vectornet_aedes_surveillance adds official ECDC/EFSA regional surveillance ecology summaries by country and degree of establishment, preserving detection, absence-surveillance, and unclear-status counts.",
+        "aedes_vectorbyte_traits adds trait rows with temperature, habitat, location, and lab-versus-field context where supplied by VectorByte/VecTraits.",
         "The May 24, 2026 hosted ingest installed 1,985 aedes_occurrence_ecology records from 88,065 Aedes observation inputs, bringing the hosted ecology lane to 7,238 records.",
         "aedes_extracted_facts emits ecology candidate facts from indexed Aedes literature and legal full-text units, plus parsed supported supplement table rows, including habitat, breeding-site, climate, seasonality, range, and location terms when detected."
       ],

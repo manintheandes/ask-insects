@@ -44,6 +44,7 @@ NON_VIDEO_MEDIA_EXTENSIONS = (
 )
 VIDEO_TERMS = ("video", "movie", "flight", "tracking", "high-speed", "wingbeat")
 UNCLEAR_LICENSE_MARKERS = ("not supplied", "unknown", "unclear", "not parsed", "missing")
+AEDES_SCOPE_PATTERN = re.compile(r"\b(?:aedes|ae\.?|a\.)\s*aegypti\b", re.I)
 MOTION_HEADERS = {
     "video",
     "video_id",
@@ -184,6 +185,31 @@ def _looks_like_video(*values: object) -> bool:
     return any(term in text for term in VIDEO_TERMS)
 
 
+def _has_aedes_scope(*values: object) -> bool:
+    return any(AEDES_SCOPE_PATTERN.search(str(value or "")) for value in values)
+
+
+def _has_discovery_aedes_scope(raw: dict[str, object]) -> bool:
+    if _has_aedes_scope(raw.get("species")):
+        return True
+    material_fields = (
+        "title",
+        "description",
+        "filename",
+        "name",
+        "path",
+        "dataset_name",
+        "dataset_citation",
+        "source_title",
+        "source_dataset",
+    )
+    if _has_aedes_scope(*(raw.get(field) for field in material_fields)):
+        return True
+    if not any(raw.get(field) for field in material_fields):
+        return _has_aedes_scope(raw.get("species_scope"))
+    return False
+
+
 def _download_url(row: dict[str, object], payload: dict[str, object]) -> str | None:
     for key in ("download_url", "video_url", "media_url", "url", "source_url"):
         value = payload.get(key) if key in payload else row.get(key)
@@ -222,6 +248,58 @@ def _size_from_candidate(candidate: VideoCandidate) -> int | None:
             return int(value)
     match = re.search(r"size bytes:\s*(\d+)", candidate.text, re.I)
     return int(match.group(1)) if match else None
+
+
+def _source_hashes_from_candidate(candidate: VideoCandidate) -> dict[str, str]:
+    hashes: dict[str, str] = {}
+    for key in ("sha256", "md5", "checksum", "digest"):
+        value = candidate.payload.get(key)
+        if isinstance(value, str) and value.strip():
+            hashes[key] = value.strip()
+    raw_file = candidate.payload.get("raw_file")
+    if isinstance(raw_file, dict):
+        attrs = raw_file.get("attributes")
+        if isinstance(attrs, dict):
+            extra = attrs.get("extra")
+            if isinstance(extra, dict):
+                raw_hashes = extra.get("hashes")
+                if isinstance(raw_hashes, dict):
+                    for key, value in raw_hashes.items():
+                        if isinstance(value, str) and value.strip():
+                            hashes[str(key)] = value.strip()
+    return hashes
+
+
+def _candidate_source_payload(candidate: VideoCandidate) -> dict[str, object]:
+    payload: dict[str, object] = {}
+    size = _size_from_candidate(candidate)
+    if size is not None:
+        payload["source_byte_size"] = size
+    hashes = _source_hashes_from_candidate(candidate)
+    if hashes:
+        payload["source_hashes"] = hashes
+    repository = candidate.discovery_repository or _repository_for_source(candidate.source)
+    if repository:
+        payload["repository"] = repository
+    return payload
+
+
+def _gap_context(candidate: VideoCandidate, reason: str, **extra: object) -> dict[str, object]:
+    context = {
+        "source": VIDEO_ATOMS_SOURCE_ID,
+        "lane": "media",
+        "reason": reason,
+        "record_id": candidate.source_record_id,
+        "title": candidate.title,
+        "download_url": candidate.media_url,
+        "source_url": candidate.url,
+        "license": candidate.provenance.get("license"),
+        "source_dataset": candidate.payload.get("source_dataset") or candidate.title,
+        "locator": candidate.provenance.get("locator"),
+        **_candidate_source_payload(candidate),
+        **extra,
+    }
+    return {key: value for key, value in context.items() if value not in (None, "", {})}
 
 
 def _candidate_rows(index: SourceIndex) -> list[VideoCandidate]:
@@ -285,6 +363,7 @@ def _record_for_asset(
         "verification_status": verification_status,
         "source_video_provenance": candidate.provenance,
         "source_video_payload": candidate.payload,
+        **_candidate_source_payload(candidate),
     }
     if candidate.discovery_repository:
         payload["discovery_repository"] = candidate.discovery_repository
@@ -494,7 +573,8 @@ def _default_dryad_discovery_client() -> list[dict[str, object]]:
                         "download_url": download_url,
                         "source_url": f"{DRYAD_API_BASE}/dataset/{quote(f'doi:{doi}', safe='')}",
                         "license": dataset.get("license"),
-                        "species_scope": f"Aedes aegypti {query} {dataset.get('title') or ''} {dataset.get('abstract') or ''}",
+                        "species_scope": f"{dataset.get('title') or ''} {dataset.get('abstract') or ''} {dataset.get('keywords') or ''}",
+                        "search_query": query,
                         "retrieved_at": utc_now(),
                         "locator": f"{files_url}#file/{file_index}",
                         "doi": doi,
@@ -559,7 +639,8 @@ def _default_osf_discovery_client() -> list[dict[str, object]]:
                         "download_url": download_url,
                         "source_url": source_url,
                         "license": license_value,
-                        "species_scope": f"Aedes aegypti {title} {description}",
+                        "species_scope": f"{title} {description}",
+                        "search_query": search_query,
                         "retrieved_at": utc_now(),
                         "locator": f"{url}#file/{file_index}",
                         "project_id": node_id,
@@ -813,7 +894,13 @@ def _dataverse_institutional_discovery_candidates() -> list[dict[str, object]]:
                     "download_url": download_url,
                     "source_url": str(item.get("url") or item.get("dataset_persistent_id") or ""),
                     "license": item.get("license") or item.get("termsOfUse"),
-                    "species_scope": f"Aedes aegypti {item.get('dataset_name') or ''} {item.get('description') or ''} {item.get('dataset_citation') or ''}",
+                    "species_scope": (
+                        f"{item.get('dataset_name') or ''} "
+                        f"{item.get('description') or ''} "
+                        f"{item.get('dataset_citation') or ''} "
+                        f"{filename}"
+                    ),
+                    "search_query": query,
                     "retrieved_at": utc_now(),
                     "locator": f"{url}#file/{item.get('file_id') or filename}",
                     "file_id": item.get("file_id"),
@@ -887,58 +974,33 @@ def _mirror_candidate(
     gaps: list[dict[str, object]],
 ) -> tuple[EvidenceRecord, Path | None]:
     if not candidate.media_url:
-        gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_download_url_missing", "record_id": candidate.source_record_id})
+        gaps.append(_gap_context(candidate, "video_download_url_missing"))
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_url_missing"), None
     if not allow_unclear_license and not _is_allowed_license(candidate.provenance.get("license"), allowed_licenses):
-        gaps.append(
-            {
-                "source": VIDEO_ATOMS_SOURCE_ID,
-                "reason": "video_license_unclear",
-                "record_id": candidate.source_record_id,
-                "license": candidate.provenance.get("license"),
-            }
-        )
+        gaps.append(_gap_context(candidate, "video_license_unclear"))
         size = _size_from_candidate(candidate)
         if size is not None and size > max_video_bytes:
             gaps.append(
-                {
-                    "source": VIDEO_ATOMS_SOURCE_ID,
-                    "reason": "video_too_large",
-                    "record_id": candidate.source_record_id,
-                    "byte_size": size,
-                    "max_video_bytes": max_video_bytes,
-                }
+                _gap_context(candidate, "video_too_large", byte_size=size, max_video_bytes=max_video_bytes)
             )
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_license_unclear"), None
     size = _size_from_candidate(candidate)
     if size is not None and size > max_video_bytes:
         gaps.append(
-            {
-                "source": VIDEO_ATOMS_SOURCE_ID,
-                "reason": "video_too_large",
-                "record_id": candidate.source_record_id,
-                "byte_size": size,
-                "max_video_bytes": max_video_bytes,
-            }
+            _gap_context(candidate, "video_too_large", byte_size=size, max_video_bytes=max_video_bytes)
         )
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_too_large"), None
     try:
         data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
     except VideoDownloadNotVideoError as exc:
-        gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_download_not_video", "record_id": candidate.source_record_id, "error": str(exc)})
+        gaps.append(_gap_context(candidate, "video_download_not_video", error=str(exc)))
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None
     except Exception as exc:
-        gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_download_failed", "record_id": candidate.source_record_id, "error": str(exc)})
+        gaps.append(_gap_context(candidate, "video_download_failed", error=str(exc)))
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_failed"), None
     if len(data) > max_video_bytes:
         gaps.append(
-            {
-                "source": VIDEO_ATOMS_SOURCE_ID,
-                "reason": "video_too_large",
-                "record_id": candidate.source_record_id,
-                "byte_size": len(data),
-                "max_video_bytes": max_video_bytes,
-            }
+            _gap_context(candidate, "video_too_large", byte_size=len(data), max_video_bytes=max_video_bytes)
         )
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_too_large"), None
     digest = hashlib.sha256(data).hexdigest()
@@ -1029,6 +1091,20 @@ def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> Evi
     text = f"Aedes aegypti video source gap: {reason}. Source record: {source_record_id}."
     if gap.get("repository"):
         text += f" Repository: {gap.get('repository')}."
+    if gap.get("source_dataset"):
+        text += f" Source dataset: {gap.get('source_dataset')}."
+    if gap.get("download_url"):
+        text += f" Download URL: {gap.get('download_url')}."
+    byte_size = gap.get("source_byte_size") or gap.get("byte_size")
+    if byte_size is not None:
+        text += f" Source byte size: {byte_size}."
+    source_hashes = gap.get("source_hashes")
+    if isinstance(source_hashes, dict):
+        sha256 = source_hashes.get("sha256")
+        if sha256:
+            text += f" Source SHA-256: {sha256}."
+    if gap.get("license"):
+        text += f" License: {gap.get('license')}."
     if gap.get("error"):
         text += f" Error: {gap.get('error')}."
     return EvidenceRecord(
@@ -1262,8 +1338,7 @@ def _default_motion_table_paths(artifact_dir: Path) -> list[Path]:
 def _candidate_from_discovery(raw: dict[str, object]) -> VideoCandidate | dict[str, object]:
     repository = str(raw.get("repository") or "unknown")
     title = str(raw.get("title") or "")
-    species_scope = str(raw.get("species_scope") or raw.get("species") or "")
-    if "aedes aegypti" not in species_scope.lower() and "a. aegypti" not in species_scope.lower():
+    if not _has_discovery_aedes_scope(raw):
         return {"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_not_aedes_scope", "repository": repository, "title": title}
     download_url = raw.get("download_url") or raw.get("media_url")
     if not isinstance(download_url, str) or not download_url:

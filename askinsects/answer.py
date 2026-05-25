@@ -247,6 +247,28 @@ def _wants_image_labels(question: str) -> bool:
     )
 
 
+def _wants_vectorbyte_traits(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "vectorbyte",
+            "vectraits",
+            "trait data",
+            "trait observation",
+            "temperature trait",
+            "thermal response",
+            "thermal trait",
+            "fecundity",
+            "longevity",
+            "development time",
+            "body size",
+            "egg rate",
+            "transmission potential",
+        )
+    )
+
+
 def _video_discovery_repository(question: str) -> str | None:
     q = question.lower()
     if "pmc oa" in q or "pmc open access" in q:
@@ -300,7 +322,7 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
         return f"From the local mosquito genomics index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "neurobiology":
         return f"From the local mosquito neurobiology index, {records[0].title}: {records[0].text}"
-    if plan.answer_shape in {"behavior", "vector_competence", "resistance", "ecology", "public_health"}:
+    if plan.answer_shape in {"behavior", "traits", "vector_competence", "resistance", "ecology", "public_health"}:
         label = plan.answer_shape.replace("_", " ")
         return f"From the Ask Insects {label} index, {records[0].title}: {records[0].text}"
     return f"I found {len(records)} indexed Ask Insects record(s)."
@@ -308,6 +330,37 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
+    if _wants_vectorbyte_traits(question):
+        generic_terms = {
+            "aedes",
+            "aegypti",
+            "data",
+            "for",
+            "show",
+            "temperature",
+            "trait",
+            "traits",
+            "vectorbyte",
+            "vectraits",
+        }
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9.-]+", question)
+            if token.lower().strip(".-") not in generic_terms
+        ]
+        queries = []
+        if salient:
+            queries.append(f"Aedes aegypti {' '.join(salient)} trait")
+            queries.append(" ".join(salient))
+        queries.extend(
+            [
+                "VectorByte Aedes aegypti trait",
+                "VecTraits Aedes aegypti temperature",
+                "Aedes aegypti fecundity temperature",
+                question,
+            ]
+        )
+        return list(dict.fromkeys(queries))
     if _wants_video_atoms(question):
         if any(term in q for term in ("motion", "velocity", "distance moved", "movement", "locomotory", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
             return [
@@ -1488,6 +1541,37 @@ def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -
     )
 
 
+def _prioritize_trait_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    return sorted(
+        records,
+        key=lambda record: (
+            0 if record.source == "aedes_vectorbyte_traits" else 1,
+            0 if record.lane == "traits" else 1,
+            0 if _record_matches_any_token(record, _trait_focus_tokens(question)) else 1,
+        ),
+    )
+
+
+def _trait_focus_tokens(question: str) -> set[str]:
+    generic = {
+        "aedes",
+        "aegypti",
+        "data",
+        "for",
+        "show",
+        "temperature",
+        "trait",
+        "traits",
+        "vectorbyte",
+        "vectraits",
+    }
+    return {
+        token.lower().strip(".-")
+        for token in re.findall(r"[A-Za-z0-9.-]+", question)
+        if token.lower().strip(".-") not in generic
+    }
+
+
 def _named_pathogen_terms(question: str) -> list[str]:
     q = question.lower()
     terms = []
@@ -1731,11 +1815,26 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     repository_filter = ""
     params: list[object] = [*lanes, *atom_types]
     motion_metric_order = ""
+    gap_reason_order = ""
+    wants_license_gap_order = False
+    wants_hash_gap_order = False
     if any(term in q for term in ("velocity", "distance moved", "movement", "locomotory")):
         motion_metric_order = """
               CASE WHEN json_extract(p.payload_json, '$.velocity_mean_cm_s') IS NOT NULL THEN 0 ELSE 1 END,
               CASE WHEN json_extract(p.payload_json, '$.distance_moved_total_cm') IS NOT NULL THEN 0 ELSE 1 END,
         """
+    if _wants_video_gaps(question):
+        gap_reason_order = """
+              CASE
+                WHEN ? AND json_extract(p.payload_json, '$.reason') = 'video_license_unclear' THEN 0
+                WHEN ? AND json_extract(p.payload_json, '$.reason') = 'video_discovery_license_unclear' THEN 1
+                WHEN ? AND json_extract(p.payload_json, '$.source_hashes') IS NOT NULL THEN 0
+                WHEN ? AND lower(coalesce(r.text, '')) LIKE '%sha-256%' THEN 0
+                ELSE 2
+              END,
+        """
+        wants_license_gap_order = "license" in q
+        wants_hash_gap_order = any(term in q for term in ("hash", "hashes", "checksum", "sha-256", "sha256"))
     if repository:
         repository_filter = """
               AND (
@@ -1746,6 +1845,8 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
               )
         """
         params.extend([repository, repository, f"%{repository.replace('_', ' ')}%", f"%{repository.replace('_', ' ')}%"])
+    if gap_reason_order:
+        params.extend([wants_license_gap_order, wants_license_gap_order, wants_hash_gap_order, wants_hash_gap_order])
     params.append(limit)
     with index.connect() as conn:
         rows = conn.execute(
@@ -1769,6 +1870,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
                 WHEN 'video_gap' THEN 6
                 ELSE 7
               END,
+              {gap_reason_order}
               r.record_id
             LIMIT ?
             """,
@@ -1945,6 +2047,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "behavior":
         all_records = _prioritize_behavior_records(plan.question, all_records)
+
+    if plan.answer_shape == "traits":
+        all_records = _prioritize_trait_records(plan.question, all_records)
 
     if plan.answer_shape == "public_health":
         all_records = _prioritize_public_health_records(plan.question, all_records)

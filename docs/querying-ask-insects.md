@@ -94,6 +94,14 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show UniProt pro
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search proteins "UniProt protein"
 ```
 
+To add bounded VectorByte/VecTraits `Aedes aegypti` trait observations:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-vectorbyte-traits --dataset-limit 20 --row-limit 5000
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show VectorByte temperature trait data for Aedes aegypti fecundity" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search traits "fecundity temperature"
+```
+
 To add `Aedes aegypti` brain and neuron source metadata:
 
 ```bash
@@ -215,6 +223,8 @@ VectorNet surveillance records use source id `vectornet_aedes_surveillance`. Raw
 
 PMC video records use source id `pmc_open_access_videos`. Raw article HTML is saved under `artifacts/mosquito-v1/raw/pmc_videos/`. Each media record stores the article URL, downloadable video URL, parsed article title, DOI when present, license text when present, and a provenance locator into the saved raw HTML.
 
+Video atom records use source id `aedes_video_atoms`. They derive video assets, mirrors, probes, inspectable artifacts, motion rows, and structured gaps from PMC, Dryad, Mendeley, OSF, repository discovery, and source tables. Discovery records must have `Aedes aegypti` in source-provided material metadata such as title, description, file name, citation, species, or equivalent source text. Search terms alone are not evidence. When a video is blocked by unclear license or size, the gap payload preserves source download URL, source URL, byte size, source-provided hashes when available, license text, source dataset, repository, and locator.
+
 Dryad behavior/video records use source id `dryad_aedes_behavior_videos`. Raw dataset, version, and file-manifest JSON is saved under `artifacts/mosquito-v1/raw/dryad_behavior_videos/`. Dataset records use lane `behavior`; video/archive file records use lane `media`; README/source-data files use lane `behavior`. Each record stores the DOI, behavior labels, license, file size, checksum, download URL when present, raw manifest payload, and a provenance locator into the saved Dryad API JSON. The default ingest indexes metadata and download locators only; it does not mirror large video archives.
 
 IR Mapper resistance records use source id `irmapper_aedes`. Raw public API JSON is saved under `artifacts/mosquito-v1/raw/irmapper/`. Each resistance record stores the raw row payload, the installed species filter, and a provenance locator into the saved raw JSON row.
@@ -228,6 +238,8 @@ PAHO dengue surveillance records use source id `aedes_paho_dengue_surveillance`.
 CDC dengue surveillance records use source id `aedes_cdc_dengue_surveillance`. They parse official CDC dengue current-year and historic pages, CDC WCMS visualization JSON configs, linked CDC CSV datasets, and ArboNET limitation paragraphs into `public_health` records. Refresh it with `python3 -m askinsects ingest-cdc-dengue-surveillance`, then ask questions such as `show CDC ArboNET dengue surveillance current cases`, `show CDC ArboNET county dengue cases`, or `show CDC ArboNET limitations`. CSV-row payloads preserve dimensions such as year, travel status, jurisdiction, county, week, age group, case status, clinical syndrome, serotype, and hospitalization when present, plus numeric or categorical measures from the source row.
 
 World Mosquito Program Wolbachia intervention records use source id `aedes_wolbachia_interventions`. Raw WMP HTML is saved under `artifacts/mosquito-v1/raw/wolbachia_interventions/`. Each `public_health` record stores organization, topic, intervention type, source-mentioned metrics, source URL, and a provenance locator into the saved HTML. Refresh it with `python3 -m askinsects ingest-wolbachia-interventions`, then ask questions such as `show World Mosquito Program Wolbachia intervention evidence from Yogyakarta`.
+
+VectorByte trait records use source id `aedes_vectorbyte_traits`. Raw VBD Hub search JSON and VecTraits dataset JSON are saved under `artifacts/mosquito-v1/raw/vectorbyte_traits/`. Each `traits` record stores dataset ID, row ID, trait name, value, unit, temperature, stage, sex, habitat, lab/field context, location, coordinates when supplied, citation, DOI, and a provenance locator into the saved raw JSON row. Refresh it with `python3 -m askinsects ingest-vectorbyte-traits`, then ask questions such as `show VectorByte temperature trait data for Aedes aegypti fecundity`.
 
 Pathogen taxonomy records use source id `aedes_pathogen_taxonomy`. Raw NCBI E-utilities taxonomy summary JSON is saved under `artifacts/mosquito-v1/raw/pathogen_taxonomy/`. Each `vector_competence` record stores a configured pathogen label, taxid, pathogen group, Aedes relevance note, raw taxonomy summary, and provenance locator into the saved NCBI summary JSON. This lane gives pathogen-specific questions stable identifiers while assay-level table extraction remains a source gap.
 
@@ -288,6 +300,7 @@ python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-dryad-behavior-videos --hosted
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
+python3 -m askinsects ingest-vectorbyte-traits --hosted --dataset-limit 20 --row-limit 5000
 python3 -m askinsects ingest-extracted-facts --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"

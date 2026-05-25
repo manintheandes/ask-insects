@@ -390,6 +390,32 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
             ingest.assert_called_once_with(artifact_dir=artifact_dir, source_urls=source_urls)
 
+    def test_ingest_vectorbyte_traits_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_vectorbyte_traits.ingest_vectorbyte_traits") as ingest:
+                ingest.return_value = {"ok": True, "source": "aedes_vectorbyte_traits", "record_count": 42}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/vectorbyte-traits",
+                    {"query": "Aedes aegypti", "dataset_limit": 3, "row_limit": 250, "search_limit": 25},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                query="Aedes aegypti",
+                dataset_limit=3,
+                row_limit=250,
+                search_limit=25,
+            )
+
     def test_ingest_inaturalist_uses_staging_then_activates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

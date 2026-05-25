@@ -261,6 +261,29 @@ def uniprot_record(record_id):
     )
 
 
+def trait_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="traits",
+        source="aedes_vectorbyte_traits",
+        title="VectorByte trait fecundity rate: dataset 474 row 89092",
+        text=(
+            "VectorByte VecTraits Aedes aegypti observation for fecundity rate. "
+            "Value: 0.0 eggs individual-1 day-1. Temperature: 10.54 Celsius. "
+            "Life stage: adult. Sex: female. Location: Marilia Brazil. Citation: Yang et al. 2009."
+        ),
+        species="Aedes aegypti",
+        url="https://doi.org/10.1017/S0950268809002040",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_vectorbyte_traits",
+            locator="raw/vectorbyte_traits/vectraits_dataset_474.json#results/89092",
+            retrieved_at="2026-05-25T00:00:00Z",
+            license="VectorByte/VBD Hub public data; source terms apply",
+        ),
+    )
+
+
 def gbif_observation_record(record_id, country):
     return EvidenceRecord(
         record_id=record_id,
@@ -324,6 +347,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what range and seasonality evidence exists for Aedes aegypti?").lanes[0], "ecology")
         self.assertEqual(plan_question("show GEO RNA-seq expression data for Aedes aegypti midgut").answer_shape, "expression")
         self.assertEqual(plan_question("show UniProt protein function for AAEL012345").lanes[0], "proteins")
+        self.assertEqual(plan_question("show VectorByte temperature trait data for Aedes aegypti fecundity").lanes[0], "traits")
         self.assertEqual(plan_question("show World Mosquito Program Wolbachia intervention evidence from Yogyakarta").answer_shape, "public_health")
         self.assertEqual(plan_question("show CDC ArboNET dengue surveillance current cases").answer_shape, "public_health")
 
@@ -431,6 +455,25 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "public_health")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_wolbachia_interventions")
+
+    def test_vectorbyte_trait_questions_prefer_trait_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    trait_record("vectorbyte:trait:474:89092"),
+                    ecology_record("occurrence_ecology:country:Brazil", "aedes_occurrence_ecology"),
+                ]
+            )
+
+            answer = answer_question("show VectorByte temperature trait data for Aedes aegypti fecundity", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "traits")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_vectorbyte_traits")
+            self.assertEqual(answer["evidence"][0]["lane"], "traits")
 
     def test_cdc_arbonet_questions_prefer_cdc_surveillance_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1023,6 +1066,64 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
             self.assertIn("video_probe_failed", answer["evidence"][0]["text"])
+
+    def test_video_license_gap_questions_prefer_source_hash_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:gap:osf:not_video",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_discovery_not_video_media",
+                        text="Aedes aegypti video source gap: video_discovery_not_video_media. Repository: osf.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="gaps.json#aedes_video_atoms/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "reason": "video_discovery_not_video_media", "repository": "osf"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:gap:osf:license",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_license_unclear",
+                        text=(
+                            "Aedes aegypti video source gap: video_license_unclear. Repository: osf. "
+                            "Download URL: https://osf.io/download/pu8zf/. Source byte size: 74364708. "
+                            "Source SHA-256: 9583fe1cf288f75b3c1be4cb88f045e4b7789747584ebe8dabe47426b8d00b29. "
+                            "License: OSF project license not supplied."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://osf.io/cx762/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/osf/file.json#files/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "video_gap",
+                            "reason": "video_license_unclear",
+                            "repository": "osf",
+                            "source_hashes": {"sha256": "9583fe1cf288f75b3c1be4cb88f045e4b7789747584ebe8dabe47426b8d00b29"},
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show OSF FlightTrackAI video license gaps with hashes", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "video_atom:gap:osf:license")
+            self.assertIn("Source SHA-256", answer["evidence"][0]["text"])
 
     def test_video_discovery_questions_return_repository_assets_or_gaps(self):
         with tempfile.TemporaryDirectory() as tmpdir:

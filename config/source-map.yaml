@@ -362,7 +362,7 @@ sources:
   - id: aedes_video_atoms
     name: Aedes aegypti verified video atoms and motion rows
     source_type: derived_sqlite_source
-    boundary: Derived Aedes aegypti video intelligence records from indexed PMC, Dryad, Mendeley, OSF, repository-discovery candidates, bounded mirrored videos, ffprobe metadata, inspectable thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and explicit structured gaps for huge files, unclear licenses, missing downloads, non-video download responses, failed probes, or out-of-scope discoveries
+    boundary: Derived Aedes aegypti video intelligence records from indexed PMC, Dryad, Mendeley, OSF, repository-discovery candidates, bounded mirrored videos, ffprobe metadata, inspectable thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and explicit structured gaps for huge files, unclear licenses, missing downloads, non-video download responses, failed probes, or out-of-scope discoveries. Discovery requires source-provided material metadata to name Aedes aegypti; repository search terms alone are not source evidence. Gaps preserve download URL, source URL, byte size, source-provided hashes when available, license text, dataset, repository, and locator.
     query_plane: indexed_video_records_motion_tables_and_repository_discovery_to_sqlite_video_atoms
     artifact_dir: artifacts/mosquito-v1/raw/video_atoms
     ingest_script: scripts/ingest_video_atoms.py
@@ -628,6 +628,34 @@ sources:
       limitation_records:
         - limitation_text
         - raw_html_locator
+  - id: aedes_vectorbyte_traits
+    name: VectorByte VecTraits Aedes aegypti trait observations
+    source_type: public_trait_database_api
+    boundary: VBD Hub VectorByte/VecTraits search results for Aedes aegypti and public VecTraits dataset JSON rows where Interactor1 or genus/species fields identify Aedes aegypti, indexed at individual trait-row grain with trait value, unit, temperature, stage, sex, habitat, location, citation, DOI, and raw JSON provenance
+    query_plane: vbd_hub_search_and_vectraits_dataset_json_to_sqlite_trait_records
+    api_base: https://api.vbdhub.org/search
+    dataset_api_base: https://vectorbyte.crc.nd.edu/portal/api/vectraits-dataset
+    artifact_dir: artifacts/mosquito-v1/raw/vectorbyte_traits
+    ingest_script: scripts/ingest_vectorbyte_traits.py
+    lanes:
+      - traits
+    provenance_required: true
+    live_fetch: opt_in
+    source_contract:
+      trait_row_records:
+        - dataset_id
+        - row_id
+        - trait_name
+        - trait_value
+        - trait_unit
+        - temperature
+        - stage
+        - sex
+        - habitat
+        - location
+        - citation
+        - doi
+        - raw_json_locator
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects

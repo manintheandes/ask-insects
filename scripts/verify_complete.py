@@ -52,6 +52,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-extracted-facts-design.md",
     "docs/superpowers/specs/2026-05-25-aedes-wave1-expression-uniprot-wolbachia-design.md",
     "docs/superpowers/specs/2026-05-25-aedes-cdc-dengue-surveillance-design.md",
+    "docs/superpowers/specs/2026-05-25-aedes-vectorbyte-traits-design.md",
     "docs/superpowers/specs/2026-05-24-open-insects-public-identity-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
@@ -76,6 +77,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-25-aedes-image-atoms.md",
     "docs/superpowers/plans/2026-05-25-aedes-wave1-expression-uniprot-wolbachia.md",
     "docs/superpowers/plans/2026-05-25-aedes-cdc-dengue-surveillance.md",
+    "docs/superpowers/plans/2026-05-25-aedes-vectorbyte-traits.md",
     "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -116,6 +118,7 @@ REQUIRED_FILES = (
     "askinsects/sources/expression_omics.py",
     "askinsects/sources/uniprot_proteins.py",
     "askinsects/sources/wolbachia_interventions.py",
+    "askinsects/sources/vectorbyte_traits.py",
     "askinsects/sources/video_atoms.py",
     "askinsects/sources/image_atoms.py",
     "scripts/build_source_index.py",
@@ -148,6 +151,7 @@ REQUIRED_FILES = (
     "scripts/ingest_expression_omics.py",
     "scripts/ingest_uniprot_proteins.py",
     "scripts/ingest_wolbachia_interventions.py",
+    "scripts/ingest_vectorbyte_traits.py",
     "scripts/ingest_video_atoms.py",
     "scripts/ingest_image_atoms.py",
     "scripts/refresh_artifact_receipts.py",
@@ -211,6 +215,8 @@ REQUIRED_FILES = (
     "tests/test_expression_omics_source.py",
     "tests/test_uniprot_proteins_source.py",
     "tests/test_wolbachia_interventions_source.py",
+    "tests/test_vectorbyte_traits_source.py",
+    "tests/test_ingest_vectorbyte_traits.py",
     "tests/test_ingest_wave1_sources.py",
     "tests/test_video_atoms_source.py",
     "tests/test_ingest_video_atoms.py",
@@ -352,6 +358,7 @@ def check_open_source_boundary() -> None:
         "Mosquito Alert",
         "NCBI",
         "VectorBase",
+        "VectorByte",
         "OpenAlex",
         "PubMed",
         "Unpaywall",
@@ -512,6 +519,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_expression_omics",
         "aedes_uniprot_proteins",
         "aedes_wolbachia_interventions",
+        "aedes_vectorbyte_traits",
         "osf_flighttrackai_aedes_videos",
         "aedes_video_atoms",
         "aedes_image_atoms",
@@ -663,6 +671,15 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Wolbachia intervention term: {term}")
+    for term in (
+        "aedes_vectorbyte_traits",
+        "scripts/ingest_vectorbyte_traits.py",
+        "vbd_hub_search_and_vectraits_dataset_json_to_sqlite_trait_records",
+        "trait_row_records",
+        "raw_json_locator",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing VectorByte traits term: {term}")
 
 
 def check_cli() -> None:

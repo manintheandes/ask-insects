@@ -42,6 +42,9 @@ metadata, parser grain, and known gaps.
 - VectorBase/VEuPathDB records from `vectorbase_aedes_genomics` preserve
   upstream VectorBase/VEuPathDB terms, release identity, file locators, and
   line or header provenance where available.
+- VectorByte/VecTraits records from `aedes_vectorbyte_traits` preserve
+  upstream VectorByte/VBD Hub terms, dataset IDs, row IDs, source URLs,
+  citations, DOIs, and raw JSON row provenance where available.
 - OpenAlex, PubMed, Unpaywall, and PMC Open Access literature and media lanes
   preserve article, publisher, and open-access licenses. Ask Insects should
   only parse legal full text and should keep source gaps for restricted text.

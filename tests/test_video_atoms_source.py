@@ -8,6 +8,7 @@ import unittest
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
+from askinsects.sources import video_atoms
 from askinsects.sources.video_atoms import (
     AedesVideoAtomsResult,
     DISCOVERY_REPOSITORIES,
@@ -257,7 +258,19 @@ class VideoAtomsSourceTests(unittest.TestCase):
                             retrieved_at=RETRIEVED_AT,
                             license="OSF project license not supplied",
                         ),
-                        payload={"size": 999_999},
+                        payload={
+                            "size": 999_999,
+                            "raw_file": {
+                                "attributes": {
+                                    "extra": {
+                                        "hashes": {
+                                            "md5": "0123456789abcdef0123456789abcdef",
+                                            "sha256": "a" * 64,
+                                        }
+                                    }
+                                }
+                            },
+                        },
                     )
                 ]
             )
@@ -280,9 +293,32 @@ class VideoAtomsSourceTests(unittest.TestCase):
         }
         self.assertEqual(asset_statuses["dryad:file:oversized"], "gapped_too_large")
         self.assertEqual(asset_statuses["osf:unclear:video.mp4"], "gapped_license_unclear")
+        osf_asset = next(
+            record
+            for record in result.records
+            if record.payload
+            and record.payload.get("atom_type") == "video_asset"
+            and record.payload["source_video_record_id"] == "osf:unclear:video.mp4"
+        )
+        self.assertEqual(osf_asset.payload["source_byte_size"], 999_999)
+        self.assertEqual(osf_asset.payload["source_hashes"]["sha256"], "a" * 64)
+        osf_license_gap = next(
+            gap
+            for gap in result.gaps
+            if gap["reason"] == "video_license_unclear" and gap["record_id"] == "osf:unclear:video.mp4"
+        )
+        self.assertEqual(osf_license_gap["download_url"], "https://example.org/unclear.mp4")
+        self.assertEqual(osf_license_gap["source_byte_size"], 999_999)
+        self.assertEqual(osf_license_gap["source_hashes"]["md5"], "0123456789abcdef0123456789abcdef")
+        self.assertEqual(osf_license_gap["license"], "OSF project license not supplied")
         gap_records = [record for record in result.records if record.payload and record.payload.get("atom_type") == "video_gap"]
         self.assertEqual({record.payload["reason"] for record in gap_records}, reasons)
         self.assertTrue(all(record.source == VIDEO_ATOMS_SOURCE_ID for record in gap_records))
+        osf_gap_record = next(record for record in gap_records if record.payload["record_id"] == "osf:unclear:video.mp4" and record.payload["reason"] == "video_license_unclear")
+        self.assertIn("Download URL: https://example.org/unclear.mp4", osf_gap_record.text)
+        self.assertIn("Source byte size: 999999", osf_gap_record.text)
+        self.assertIn("Source SHA-256: " + "a" * 64, osf_gap_record.text)
+        self.assertIn("License: OSF project license not supplied", osf_gap_record.text)
 
     def test_ignores_audio_files_from_mixed_media_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -575,11 +611,30 @@ class VideoAtomsSourceTests(unittest.TestCase):
                 ],
                 "institutional": lambda: [
                     {
-                        "title": "Aedes video with missing download",
+                        "title": "Aedes aegypti video with missing download",
                         "source_url": "https://example.edu/aedes-video",
                         "license": "CC-BY",
                         "repository": "institutional",
                         "species_scope": "Aedes aegypti",
+                    }
+                ],
+                "osf": lambda: [
+                    {
+                        "title": "Thermal video of rodent motion",
+                        "description": "Rodent thermal video with a polluted search-scope string.",
+                        "download_url": "https://osf.io/download/rodent.mp4",
+                        "source_url": "https://osf.io/rodent/",
+                        "license": "institutional repository license not supplied",
+                        "repository": "osf",
+                        "species_scope": "Aedes aegypti Thermal video of rodent motion",
+                    },
+                    {
+                        "title": "Aedes aegypti larval motion video",
+                        "description": "Aedes aegypti larval motion assay video.",
+                        "download_url": "https://osf.io/download/aedes-larvae.mp4",
+                        "source_url": "https://osf.io/aedes-larvae/",
+                        "license": "institutional repository license not supplied",
+                        "repository": "osf",
                     }
                 ],
                 "paper_supplements": lambda: [],
@@ -601,8 +656,60 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertIn("video_discovery_not_aedes_scope", reasons)
         self.assertIn("video_discovery_not_video_media", reasons)
         self.assertIn("video_discovery_no_download_url", reasons)
+        self.assertIn("video_discovery_license_unclear", reasons)
         self.assertIn("video_discovery_client_missing", reasons)
         self.assertIn("video_discovery_no_candidates", reasons)
+        polluted_osf = [
+            gap
+            for gap in result.gaps
+            if gap.get("repository") == "osf" and gap.get("title") == "Thermal video of rodent motion"
+        ]
+        self.assertEqual({gap["reason"] for gap in polluted_osf}, {"video_discovery_not_aedes_scope"})
+
+    def test_dataverse_search_terms_do_not_count_as_aedes_scope(self):
+        payload = {
+            "data": {
+                "items": [
+                    {
+                        "name": "unrelated_movie.mp4",
+                        "file_content_type": "video/mp4",
+                        "url": "https://dataverse.harvard.edu/file.xhtml?fileId=1",
+                        "dataset_name": "AI Videos Spreading Bioweapons Disinformation Cite Kremlin",
+                        "description": "Dataset about synthetic media narratives in Africa.",
+                        "dataset_citation": "Unrelated social science dataset.",
+                        "license": "CC0",
+                        "file_id": 1,
+                    }
+                ]
+            }
+        }
+
+        original_fetch_json = video_atoms._fetch_json
+        try:
+            video_atoms._fetch_json = lambda url: payload
+            discovered = video_atoms._dataverse_institutional_discovery_candidates()
+        finally:
+            video_atoms._fetch_json = original_fetch_json
+
+        self.assertEqual(len(discovered), 1)
+        self.assertNotIn("Aedes aegypti", discovered[0]["species_scope"])
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                discover_sources=True,
+                discovery_clients={
+                    "institutional": lambda: discovered,
+                    "paper_supplements": lambda: [],
+                },
+            )
+
+        dataverse_gaps = [gap for gap in result.gaps if gap.get("repository") == "institutional"]
+        self.assertIn("video_discovery_not_aedes_scope", {gap["reason"] for gap in dataverse_gaps})
+        self.assertNotIn("video_discovery_license_unclear", {gap["reason"] for gap in dataverse_gaps})
 
     def test_default_discovery_clients_cover_declared_repositories(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -158,6 +158,18 @@ python3 -m askinsects search proteins "UniProt protein"
 
 This writes UniProtKB and UniProt proteome JSON under `raw/uniprot_proteins/`, indexes bounded protein and proteome atoms into the `proteins` lane, and preserves accession, reviewed status, protein name, gene names, function comments, GO and VectorBase cross-references, keywords, proteome IDs, and raw JSON locators.
 
+## VectorByte Traits Source Lane
+
+`aedes_vectorbyte_traits` is the VectorByte/VecTraits trait-observation lane for `Aedes aegypti`:
+
+```bash
+python3 -m askinsects ingest-vectorbyte-traits --dataset-limit 20 --row-limit 5000
+python3 -m askinsects ask "show VectorByte temperature trait data for Aedes aegypti fecundity" --json
+python3 -m askinsects search traits "fecundity temperature"
+```
+
+This writes VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte_traits/`, indexes one `traits` record per Aedes aegypti source row, and preserves dataset ID, row ID, trait name, value, unit, temperature, stage, sex, habitat, lab/field context, location, citation, DOI, and raw JSON locators.
+
 ## BOLD DNA Barcode Source Lane
 
 BOLD is the public DNA barcode source lane for `Aedes aegypti` specimen and COI-style marker records:
@@ -228,7 +240,7 @@ python3 -m askinsects ask "show Aedes aegypti keyframes and previews" --json
 python3 -m askinsects ask "show Aedes aegypti motion trajectory coordinates" --json
 ```
 
-The lane derives from PMC, Dryad, Mendeley, OSF, and repository-discovery candidates. For each downloadable video it stores checksum, byte size, duration, fps, resolution, codec, source paper or dataset, license, and exact locator when mirroring and probing are allowed. If the file is too large, missing a download URL, blocked by license uncertainty, cannot be probed, is not actually video, or comes from a repository sweep with no usable candidates, the ingest writes a queryable `video_gap` record instead of pretending coverage exists. When artifact generation is enabled it emits thumbnails, keyframes, preview clips, and frame manifests under `raw/video_atoms/`. Motion table inputs become `behavior` rows with behavior type, life stage, sex, assay, stimulus, arena, frame/time, track ID, coordinates, and confidence when present. `--discover-sources` runs bounded PMC OA, Dryad, Mendeley, OSF, Zenodo, Figshare, institutional Dataverse-style, and indexed paper-supplement discovery.
+The lane derives from PMC, Dryad, Mendeley, OSF, and repository-discovery candidates. For each downloadable video it stores checksum, byte size, duration, fps, resolution, codec, source paper or dataset, license, and exact locator when mirroring and probing are allowed. If the file is too large, missing a download URL, blocked by license uncertainty, cannot be probed, is not actually video, or comes from a repository sweep with no usable candidates, the ingest writes a queryable `video_gap` record instead of pretending coverage exists. Gap records preserve the source download URL, source URL, byte size, source-provided hashes when available, license text, source dataset, repository, and locator. Discovery scope is strict: repository search terms do not count as Aedes evidence unless the source title, description, file name, citation, species field, or equivalent material metadata names `Aedes aegypti`. When artifact generation is enabled it emits thumbnails, keyframes, preview clips, and frame manifests under `raw/video_atoms/`. Motion table inputs become `behavior` rows with behavior type, life stage, sex, assay, stimulus, arena, frame/time, track ID, coordinates, and confidence when present. `--discover-sources` runs bounded PMC OA, Dryad, Mendeley, OSF, Zenodo, Figshare, institutional Dataverse-style, and indexed paper-supplement discovery.
 
 ## Aedes Image Atoms Source Lane
 
@@ -454,6 +466,7 @@ python3 -m askinsects ingest-public-health --hosted
 python3 -m askinsects ingest-expression-omics --hosted --geo-limit 25 --sra-limit 25
 python3 -m askinsects ingest-uniprot-proteins --hosted --protein-limit 250 --proteome-limit 10
 python3 -m askinsects ingest-wolbachia-interventions --hosted
+python3 -m askinsects ingest-vectorbyte-traits --hosted --dataset-limit 20 --row-limit 5000
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-extracted-facts --hosted

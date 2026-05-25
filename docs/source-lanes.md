@@ -39,7 +39,7 @@ Sources:
 - `dryad_aedes_behavior_videos`: public Dryad dataset, version, and file manifests for Aedes host-seeking, visual-threat, flight-escape, mating/courtship, male host-attraction, and visual-tracking behavior video archives and source-data files.
 - `mendeley_aedes_behavior_media`: public Mendeley Data snapshots, folders, file manifests, and parsed Aedes table rows for mate-recognition, wingbeat, hearing, flight-tone, high-speed video, and locomotory video-analysis datasets.
 - `osf_flighttrackai_aedes_videos`: public OSF project `cx762` file manifests for FlightTrackAI `Aedes aegypti` flight-behavior videos, processed/unprocessed video folders, executable bundles, installation instructions, and the trained mosquito model.
-- `aedes_video_atoms`: derived video-asset, artifact, motion-row, and discovery-gap records from indexed Aedes video sources and repository sweeps.
+- `aedes_video_atoms`: derived video-asset, artifact, motion-row, and discovery-gap records from indexed Aedes video sources and repository sweeps. Repository search terms do not count as Aedes evidence; title, description, filename, citation, species, or equivalent source metadata must materially name `Aedes aegypti`. License or size gaps preserve source download URL, source URL, byte size, source-provided hashes when available, license text, dataset, repository, and locator.
 
 Moving-image video coverage is source-grade for the bounded PMC supplementary-video seed set, Dryad file-manifest layer, Mendeley behavior/media file-manifest plus table layer, and OSF FlightTrackAI project file-manifest layer. It is not comprehensive yet; challenge-video datasets and deeper binary/video decoding remain follow-on work.
 Deep iNaturalist ingest paginates the public API and saves one raw page artifact per request. Each normalized iNaturalist observation and media row also gets a matching `record_payloads` row with the raw observation and photo payload.
@@ -50,6 +50,16 @@ The Dryad behavior/video ingest saves one raw dataset, version, and file-manifes
 The Mendeley behavior/media ingest saves one raw snapshot JSON, one folder JSON, one combined folder-file manifest JSON per dataset, and public parsed table files under `raw/mendeley_behavior_media/`. It indexes one `behavior` record per dataset, one `behavior` record per folder, file-level `media` records for video, audio, or archive files, file-level `behavior` records for spreadsheet, source-data, README, and code files, parsed sheet records, and parsed table-row records. It preserves DOI, license, folder path, size, content type, SHA-256 hash, download URL, view URL, behavior labels, headers, row values, and raw locators without mirroring large binaries by default.
 The OSF FlightTrackAI ingest saves the OSF project JSON, provider JSON, and recursive `osfstorage` folder/file manifests under `raw/osf_flighttrackai_videos/`. It indexes the project and folders as `behavior`, indexes MP4 files as `media`, indexes software, model, and instruction files as `behavior`, and preserves file size, OSF download URL, API locator, raw item payload, and provenance without mirroring multi-gigabyte binaries by default.
 The Aedes video-atoms ingest writes derived records under source `aedes_video_atoms`. Video-asset records preserve the source paper or dataset, download URL, license, exact locator, checksum, byte size, duration, fps, resolution, and codec when a bounded mirror and probe succeed. If mirroring is too large, license status is unclear, a download URL is missing, probing fails, artifact generation fails, a discovery candidate is out of Aedes scope, or a repository sweep has no candidates, the ingest writes a structured `video_gap` record. Artifact records point to thumbnails, keyframes, preview clips, and frame manifests under `raw/video_atoms/`. Motion-table rows become queryable `behavior` records with behavior type, life stage, sex, assay, stimulus, arena, frame/time range, track ID, coordinates, and confidence where supplied. The default opt-in discovery sweep now covers PMC OA, Dryad, Mendeley, OSF, Zenodo, Figshare, institutional Dataverse-style search, and indexed paper-supplement URLs with bounded candidates plus queryable gaps.
+
+## Traits
+
+Trait records preserve individual measured phenotype or life-history rows, especially temperature-dependent measurements useful for behavior, ecology, and vector-competence questions.
+
+Sources:
+
+- `aedes_vectorbyte_traits`: VectorByte/VecTraits public search and dataset JSON rows where source fields identify `Aedes aegypti`, parsed into `traits` records with trait value, unit, temperature, stage, sex, habitat, location, citation, DOI, and raw JSON provenance.
+
+VectorByte trait rows cite saved VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte_traits/`, with locators such as `vectraits_dataset_474.json#results/89092`. Trait questions mentioning VectorByte, VecTraits, fecundity, longevity, development time, body size, thermal response, temperature traits, or transmission potential prefer this lane before adjacent behavior, ecology, vector-competence, or literature records.
 
 ## Hosted Boundary
 

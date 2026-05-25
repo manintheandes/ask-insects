@@ -2414,6 +2414,29 @@ def ingest_wolbachia_interventions_hosted(
     return response
 
 
+def ingest_vectorbyte_traits_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_vectorbyte_traits import ingest_vectorbyte_traits
+
+    query = str(payload.get("query") or "Aedes aegypti")
+    dataset_limit = int(payload.get("dataset_limit", 20))
+    row_limit = int(payload.get("row_limit", 5000))
+    search_limit = int(payload.get("search_limit", 50))
+    response = ingest_vectorbyte_traits(
+        artifact_dir=artifact_dir,
+        query=query,
+        dataset_limit=dataset_limit,
+        row_limit=row_limit,
+        search_limit=search_limit,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -2532,6 +2555,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/wolbachia-interventions":
             result = ingest_wolbachia_interventions_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/vectorbyte-traits":
+            result = ingest_vectorbyte_traits_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectornet-surveillance":

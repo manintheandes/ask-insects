@@ -102,6 +102,30 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "expression", ("expression", "transcripts", "genes", "proteins", "literature"), question)
+    if any(
+        term in q
+        for term in (
+            "vectorbyte",
+            "vectraits",
+            "trait data",
+            "trait observation",
+            "temperature trait",
+            "thermal response",
+            "thermal trait",
+            "fecundity",
+            "longevity",
+            "development time",
+            "body size",
+            "egg rate",
+            "transmission potential",
+        )
+    ):
+        return QueryPlan(
+            question,
+            "traits",
+            ("traits", "behavior", "ecology", "vector_competence", "literature"),
+            question,
+        )
     if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
     if any(
