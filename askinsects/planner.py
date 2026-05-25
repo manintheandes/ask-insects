@@ -125,6 +125,7 @@ def plan_question(question: str) -> QueryPlan:
             "paho",
             "plisa",
             "cdc",
+            "arbonet",
             "ecdc",
             "world health organization",
             "case fatality",

@@ -51,6 +51,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-osf-flighttrackai-video-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-extracted-facts-design.md",
     "docs/superpowers/specs/2026-05-25-aedes-wave1-expression-uniprot-wolbachia-design.md",
+    "docs/superpowers/specs/2026-05-25-aedes-cdc-dengue-surveillance-design.md",
     "docs/superpowers/specs/2026-05-24-open-insects-public-identity-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
@@ -74,6 +75,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-video-atoms.md",
     "docs/superpowers/plans/2026-05-25-aedes-image-atoms.md",
     "docs/superpowers/plans/2026-05-25-aedes-wave1-expression-uniprot-wolbachia.md",
+    "docs/superpowers/plans/2026-05-25-aedes-cdc-dengue-surveillance.md",
     "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -103,6 +105,7 @@ REQUIRED_FILES = (
     "askinsects/sources/osf_flighttrackai_videos.py",
     "askinsects/sources/public_health.py",
     "askinsects/sources/paho_surveillance.py",
+    "askinsects/sources/cdc_dengue_surveillance.py",
     "askinsects/sources/pathogen_taxonomy.py",
     "askinsects/sources/ncbi_biosample.py",
     "askinsects/sources/vectorbase_genomics.py",
@@ -134,6 +137,7 @@ REQUIRED_FILES = (
     "scripts/ingest_osf_flighttrackai_videos.py",
     "scripts/ingest_public_health_guidance.py",
     "scripts/ingest_paho_dengue_surveillance.py",
+    "scripts/ingest_cdc_dengue_surveillance.py",
     "scripts/ingest_pathogen_taxonomy.py",
     "scripts/ingest_ncbi_biosamples.py",
     "scripts/ingest_vectorbase_genomics.py",
@@ -188,6 +192,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_public_health_guidance.py",
     "tests/test_paho_surveillance_source.py",
     "tests/test_ingest_paho_dengue_surveillance.py",
+    "tests/test_cdc_dengue_surveillance_source.py",
+    "tests/test_ingest_cdc_dengue_surveillance.py",
     "tests/test_pathogen_taxonomy_source.py",
     "tests/test_ingest_pathogen_taxonomy.py",
     "tests/test_ncbi_biosample_source.py",
@@ -253,6 +259,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_public_health_guidance",
     "tests.test_paho_surveillance_source",
     "tests.test_ingest_paho_dengue_surveillance",
+    "tests.test_cdc_dengue_surveillance_source",
+    "tests.test_ingest_cdc_dengue_surveillance",
     "tests.test_pathogen_taxonomy_source",
     "tests.test_ingest_pathogen_taxonomy",
     "tests.test_ncbi_biosample_source",
@@ -492,6 +500,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_literature_facets",
         "aedes_public_health_guidance",
         "aedes_paho_dengue_surveillance",
+        "aedes_cdc_dengue_surveillance",
         "mosquito_alert_gbif",
         "vectornet_aedes_surveillance",
         "dryad_aedes_behavior_videos",
@@ -528,6 +537,15 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing PAHO dengue surveillance term: {term}")
+    for term in (
+        "aedes_cdc_dengue_surveillance",
+        "scripts/ingest_cdc_dengue_surveillance.py",
+        "cdc_dengue_pages_visualization_json_and_csv_to_sqlite_public_health_records",
+        "csv_row_records",
+        "limitation_records",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing CDC dengue surveillance term: {term}")
     for term in ("mosquito_alert_gbif", "scripts/ingest_mosquito_alert_observations.py", "observations", "media"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Mosquito Alert term: {term}")

@@ -325,6 +325,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show GEO RNA-seq expression data for Aedes aegypti midgut").answer_shape, "expression")
         self.assertEqual(plan_question("show UniProt protein function for AAEL012345").lanes[0], "proteins")
         self.assertEqual(plan_question("show World Mosquito Program Wolbachia intervention evidence from Yogyakarta").answer_shape, "public_health")
+        self.assertEqual(plan_question("show CDC ArboNET dengue surveillance current cases").answer_shape, "public_health")
 
     def test_answers_include_provenance_or_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -430,6 +431,32 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "public_health")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_wolbachia_interventions")
+
+    def test_cdc_arbonet_questions_prefer_cdc_surveillance_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:surveillance:cdc_dengue:csv:Data_Bites_Current.csv:row:000003:test",
+                        "aedes_cdc_dengue_surveillance",
+                        "CDC ArboNET dengue surveillance CSV row. Page kind: current_year. Measures: Reported cases: 737. Aedes aegypti relevance.",
+                    ),
+                    public_health_record(
+                        "public_health:guidance:cdc",
+                        "aedes_public_health_guidance",
+                        "CDC dengue prevention guidance for Aedes aegypti.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show CDC ArboNET dengue surveillance current cases", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_cdc_dengue_surveillance")
 
     def test_literature_questions_prefer_paper_evidence(self):
         with tempfile.TemporaryDirectory() as tmpdir:

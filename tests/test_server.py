@@ -16,6 +16,7 @@ from askinsects.server import (
     prepare_mutable_staging,
     rewrite_artifact_references,
 )
+from askinsects.sources.cdc_dengue_surveillance import CdcDengueSurveillanceResult
 from askinsects.sources.dryad_behavior_videos import DryadBehaviorVideoResult
 from askinsects.sources.gbif import GBIFBuildResult
 from askinsects.sources.inaturalist import INaturalistBuildResult
@@ -936,6 +937,75 @@ class ServerTests(unittest.TestCase):
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
             payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select payload_json from record_payloads where source='aedes_paho_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
+            self.assertNotIn(".staging", payload_rows[0]["payload_json"])
+
+    def test_ingest_cdc_dengue_surveillance_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(sources, *, raw_dir, retrieved_at):
+                raw_path = raw_dir / "cdc.csv"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text("Year,Travel status,Jurisdiction,Count\n2026,All,FL,14\n", encoding="utf-8")
+                return CdcDengueSurveillanceResult(
+                    source_id="aedes_cdc_dengue_surveillance",
+                    records=[
+                        EvidenceRecord(
+                            record_id="public_health:surveillance:cdc_dengue:csv:Cases_by_Jurisdiction_Current.csv:row:000001:test",
+                            lane="public_health",
+                            source="aedes_cdc_dengue_surveillance",
+                            title="CDC dengue surveillance CSV row",
+                            text="CDC ArboNET dengue surveillance CSV row for Aedes aegypti.",
+                            species="Aedes aegypti",
+                            url="https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="aedes_cdc_dengue_surveillance",
+                                locator=f"{raw_path}#row/1",
+                                retrieved_at=retrieved_at,
+                                license="CDC public CSV data; source page terms apply",
+                                source_url="https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv",
+                            ),
+                            payload={"aggregation_type": "cdc_dengue_csv_row", "raw_csv_path": raw_path.as_posix()},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_urls=["https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"],
+                    page_count=1,
+                    config_count=1,
+                    dataset_count=1,
+                    dataset_row_count=1,
+                    limitation_count=0,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/cdc-dengue-surveillance",
+                {"source_urls": ["https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_cdc_dengue_surveillance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_cdc_dengue_surveillance"], 1)
+            self.assertEqual(response.payload["aedes_cdc_dengue_surveillance"]["dataset_row_count"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_cdc_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select payload_json from record_payloads where source='aedes_cdc_dengue_surveillance'",
             )
             self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
             self.assertNotIn(".staging", payload_rows[0]["payload_json"])

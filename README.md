@@ -312,6 +312,18 @@ python3 -m askinsects ask "show PAHO dengue surveillance evidence for Aedes aegy
 
 The lane uses source id `aedes_paho_dengue_surveillance`. It writes raw PAHO dengue situation report HTML, dashboard landing HTML, PAHO/EIH Core Indicators download-page HTML, and the released Core Indicators ZIP under `raw/paho_dengue_surveillance/`. It parses regional week, year-to-date, subregion, serotype, figure/table, dashboard page, iframe locator, and annual Core Indicators dengue-case CSV rows into the `public_health` lane, stores metrics and PAHO locators in SQLite payloads, and preserves provenance to the saved raw artifact plus official PAHO URLs. PAHO/EIH Core Indicators annual country/territory dengue rows are now a proven stable machine-readable feed. PAHO/PLISA dashboard pages and iframe URLs remain queryable locator records, but country-week Tableau/PHIP dashboard rows remain a source gap until there is a stable weekly CSV, JSON, or API endpoint or explicit authorized access.
 
+## CDC Dengue Surveillance Source Lane
+
+CDC dengue ArboNET surveillance is indexed as U.S. `Aedes aegypti` public-health intelligence at page, visualization-config, CSV row, and limitation grain:
+
+```bash
+python3 -m askinsects ingest-cdc-dengue-surveillance
+python3 -m askinsects ask "show CDC ArboNET dengue surveillance current cases" --json
+python3 -m askinsects search public_health "CDC ArboNET county dengue cases"
+```
+
+The lane uses source id `aedes_cdc_dengue_surveillance`. It writes raw CDC current-year and historic dengue page HTML, CDC WCMS visualization JSON configs, and linked CDC CSV datasets under `raw/cdc_dengue_surveillance/`. It parses one `public_health` record per page, one record per visualization config, one record per CSV row with dimensions and measures, and one record per ArboNET limitation paragraph. This is human dengue surveillance evidence relevant to Aedes aegypti vector intelligence, not mosquito occurrence evidence.
+
 ## Pathogen Taxonomy Source Lane
 
 NCBI Taxonomy anchors core `Aedes aegypti` arbovirus names to stable pathogen identities for vector-competence and public-health questions:
@@ -447,6 +459,7 @@ python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-extracted-facts --hosted
 python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
 python3 -m askinsects ingest-vectornet-surveillance --hosted
+python3 -m askinsects ingest-cdc-dengue-surveillance --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```
 

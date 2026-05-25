@@ -16,6 +16,11 @@ from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR, build_source_index
 from .index import SourceIndex
 from .sources.dryad_behavior_videos import DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, fetch_dryad_behavior_video_records
+from .sources.cdc_dengue_surveillance import (
+    CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
+    DEFAULT_CDC_DENGUE_PAGES,
+    fetch_cdc_dengue_surveillance_records,
+)
 from .sources.gbif import (
     GBIF_SOURCE_ID,
     GBIFClient,
@@ -1096,6 +1101,61 @@ def write_paho_dengue_surveillance_metadata(staging: Path, source_payload: dict[
     return {"ok": True, "artifact_dir": staging.as_posix(), **status, "aedes_paho_dengue_surveillance": source_payload}
 
 
+def write_cdc_dengue_surveillance_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(source_payload["retrieved_at"])
+    sources = [source for source in counts if source != CDC_DENGUE_SURVEILLANCE_SOURCE_ID]
+    if counts.get(CDC_DENGUE_SURVEILLANCE_SOURCE_ID):
+        sources.append(CDC_DENGUE_SURVEILLANCE_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": not gaps,
+            "parsed_scope": "CDC dengue current and historic pages, visualization configs, linked CSV datasets, and ArboNET limitations",
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[CDC_DENGUE_SURVEILLANCE_SOURCE_ID] = source_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            CDC_DENGUE_SURVEILLANCE_SOURCE_ID: source_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, CDC_DENGUE_SURVEILLANCE_SOURCE_ID: source_payload}
+
+
 def ingest_public_health(
     payload: dict[str, object],
     *,
@@ -1256,6 +1316,89 @@ def ingest_paho_dengue_surveillance(
             "method": "official PAHO dengue situation report HTML plus PAHO/EIH Open Data Core Indicators ZIP/CSV dengue rows parsed into Aedes aegypti-relevant public-health surveillance records; weekly dashboard cells remain a source gap until stable weekly CSV or JSON access is proven",
         }
         response = write_paho_dengue_surveillance_metadata(artifact_dir, source_payload, gaps)
+    except Exception:
+        shutil.rmtree(raw_staging, ignore_errors=True)
+        if raw_activated and raw_backup.exists():
+            if raw_final.exists():
+                shutil.rmtree(raw_final)
+            raw_backup.replace(raw_final)
+        raise
+    if raw_backup.exists():
+        shutil.rmtree(raw_backup)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
+def ingest_cdc_dengue_surveillance(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_cdc_dengue_surveillance_records_fn: Callable[..., object] = fetch_cdc_dengue_surveillance_records,
+) -> dict[str, object]:
+    source_urls = payload.get("source_urls")
+    if source_urls is None or source_urls == []:
+        sources = list(DEFAULT_CDC_DENGUE_PAGES)
+    elif isinstance(source_urls, list) and all(isinstance(item, str) for item in source_urls):
+        sources = [
+            {
+                "organization": "CDC",
+                "url": url,
+                "page_kind": f"custom_{index + 1}",
+                "topic": "custom CDC dengue surveillance page",
+            }
+            for index, url in enumerate(source_urls)
+        ]
+    else:
+        raise ValueError("source_urls must be a list of strings")
+
+    raw_staging = artifact_dir.parent / f".{artifact_dir.name}.cdc-dengue-surveillance-raw-staging"
+    raw_final = artifact_dir / "raw" / "cdc_dengue_surveillance"
+    raw_backup = raw_final.parent / f".{raw_final.name}.previous"
+    raw_activated = False
+    if raw_staging.exists():
+        shutil.rmtree(raw_staging)
+    try:
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        db_path = artifact_dir / "source_index.sqlite"
+        index = SourceIndex(db_path)
+        if not db_path.exists():
+            index.initialize()
+        retrieved_at = utc_now()
+        result = fetch_cdc_dengue_surveillance_records_fn(
+            sources,
+            raw_dir=raw_staging,
+            retrieved_at=retrieved_at,
+        )
+        raw_staging.mkdir(parents=True, exist_ok=True)
+        records = replace_record_path_strings(result.records, str(raw_staging), str(raw_final))
+        raw_artifacts = [artifact.replace(str(raw_staging), str(raw_final)) for artifact in result.raw_artifacts]
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+        if raw_final.exists():
+            raw_final.replace(raw_backup)
+        raw_final.parent.mkdir(parents=True, exist_ok=True)
+        raw_staging.replace(raw_final)
+        raw_activated = True
+        replace_source_records(index, CDC_DENGUE_SURVEILLANCE_SOURCE_ID, records)
+        old_gaps = read_json(artifact_dir / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == CDC_DENGUE_SURVEILLANCE_SOURCE_ID)]
+        gaps.extend(result.gaps)
+        source_payload = {
+            "requested_urls": result.requested_urls,
+            "raw_artifacts": raw_artifacts,
+            "record_count": len(records),
+            "gap_count": len(result.gaps),
+            "page_count": result.page_count,
+            "config_count": result.config_count,
+            "dataset_count": result.dataset_count,
+            "dataset_row_count": result.dataset_row_count,
+            "limitation_count": result.limitation_count,
+            "retrieved_at": retrieved_at,
+            "method": "official CDC dengue current/historic ArboNET HTML pages, CDC WCMS visualization JSON configs, and linked CDC CSV datasets parsed into Aedes aegypti-relevant public-health surveillance records",
+        }
+        response = write_cdc_dengue_surveillance_metadata(artifact_dir, source_payload, gaps)
     except Exception:
         shutil.rmtree(raw_staging, ignore_errors=True)
         if raw_activated and raw_backup.exists():
@@ -2290,6 +2433,7 @@ def dispatch_request(
     fetch_pathogen_taxonomy_records_fn: Callable[..., object] = fetch_pathogen_taxonomy_records,
     fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
     fetch_paho_dengue_surveillance_records_fn: Callable[..., object] = fetch_paho_dengue_surveillance_records,
+    fetch_cdc_dengue_surveillance_records_fn: Callable[..., object] = fetch_cdc_dengue_surveillance_records,
     fetch_vectorbase_genomics_records_fn: Callable[..., object] = fetch_vectorbase_genomics_records,
     fetch_vectornet_surveillance_records_fn: Callable[..., object] = fetch_vectornet_surveillance_records,
 ) -> Response:
@@ -2358,6 +2502,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_paho_dengue_surveillance_records_fn=fetch_paho_dengue_surveillance_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/cdc-dengue-surveillance":
+            result = ingest_cdc_dengue_surveillance(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_cdc_dengue_surveillance_records_fn=fetch_cdc_dengue_surveillance_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

@@ -374,7 +374,8 @@
         "aedes_extracted_facts",
         "aedes_public_health_guidance",
         "aedes_wolbachia_interventions",
-        "aedes_paho_dengue_surveillance"
+        "aedes_paho_dengue_surveillance",
+        "aedes_cdc_dengue_surveillance"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -390,6 +391,7 @@
         "aedes_wolbachia_interventions maps World Mosquito Program Wolbachia method, deployment progress, and Yogyakarta trial evidence pages into public_health records with source-mentioned metrics and raw HTML provenance.",
         "aedes_paho_dengue_surveillance parses official PAHO dengue situation report HTML into regional week, year-to-date, subregion, serotype, figure/table, dashboard page, and iframe locator public_health records with raw HTML receipts and PAHO media locators.",
         "aedes_paho_dengue_surveillance parses PAHO/EIH Core Indicators ZIP/CSV rows where indicator_name is Dengue cases into annual country/territory public_health records with raw ZIP, CSV member, and row-number provenance.",
+        "aedes_cdc_dengue_surveillance parses official CDC dengue current-year and historic pages, CDC WCMS visualization JSON configs, linked CDC CSV datasets, and ArboNET limitations into public_health records with page/config/CSV-row/limitation provenance.",
         "PAHO/EIH Core Indicators annual country/territory dengue rows are proven machine-readable via ZIP/CSV, but underlying PAHO/PLISA country-week Tableau/PHIP rows remain a structured source gap until a stable weekly machine-readable CSV, JSON, or API endpoint is available or authorized access is obtained.",
         "Public-health questions route through the public_health lane and return provenance back to source literature records and full-text units where available.",
         "aedes_extracted_facts emits public-health candidate facts from indexed Aedes literature and legal full-text units, plus parsed supported supplement table rows, including case, death, intervention, location, date, serotype, and source terms when detected."
@@ -397,7 +399,7 @@
       "required_next_sources": [
         "WHO dengue surveillance publications and dashboard exports where legally accessible",
         "PAHO and national dengue or arbovirus reports where public",
-        "CDC ArboNET public summaries and data portals where accessible",
+        "additional CDC ArboNET public export surfaces where accessible beyond current/historic dengue CSV dashboards",
         "structured intervention outcome and vector-control program datasets"
       ],
       "completion_evidence": [

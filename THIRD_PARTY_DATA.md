@@ -49,8 +49,9 @@ metadata, parser grain, and known gaps.
   licenses, DOI or project locators, file manifests, checksums, and download
   URLs without mirroring multi-gigabyte binaries by default.
 - WHO, PAHO, CDC, and ECDC public-health lanes preserve official page URLs,
-  report locators, agency source identity, and explicit gaps for row-level
-  surveillance data that is not stably machine-readable or authorized.
+  report locators, agency source identity, machine-readable CSV row locators
+  where exposed by the agency, and explicit gaps for row-level surveillance
+  data that is not stably machine-readable or authorized.
 - BOLD and IR Mapper records from `bold_api` and `irmapper_aedes` preserve
   upstream terms, specimen or resistance locators, and raw row provenance.
 

@@ -603,6 +603,31 @@ sources:
     provenance_required: true
     live_fetch: opt_in
     source_gap: PAHO/EIH Core Indicators annual country/territory dengue rows are proven machine-readable via ZIP/CSV, but PAHO/PLISA country-week dashboard data remains a source gap until PAHO exposes a stable weekly machine-readable download/API or explicit authorized access is obtained
+  - id: aedes_cdc_dengue_surveillance
+    name: CDC dengue ArboNET surveillance for Aedes aegypti public-health intelligence
+    source_type: public_health_surveillance_dashboard
+    boundary: Official CDC dengue current-year and historic surveillance pages, CDC WCMS visualization JSON configs, linked CDC CSV datasets, and ArboNET limitation text, indexed at page, config, CSV row, and limitation grain
+    query_plane: cdc_dengue_pages_visualization_json_and_csv_to_sqlite_public_health_records
+    artifact_dir: artifacts/mosquito-v1/raw/cdc_dengue_surveillance
+    ingest_script: scripts/ingest_cdc_dengue_surveillance.py
+    default_pages:
+      - https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html
+      - https://www.cdc.gov/dengue/data-research/facts-stats/historic-data.html
+    lanes:
+      - public_health
+    provenance_required: true
+    live_fetch: opt_in
+    source_contract:
+      csv_row_records:
+        - dataset_url
+        - raw_csv_locator
+        - row_number
+        - dimensions
+        - measures
+        - page_kind
+      limitation_records:
+        - limitation_text
+        - raw_html_locator
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects

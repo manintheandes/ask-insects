@@ -647,6 +647,13 @@ def _search_queries(question: str) -> list[str]:
                 question,
                 "official public-health guidance Aedes aegypti",
             ]
+        if "cdc" in q and any(term in q for term in ("arbonet", "surveillance", "current data", "historic data", "cases", "county", "jurisdiction", "week")):
+            return [
+                "CDC ArboNET dengue surveillance",
+                "CDC dengue current historic CSV",
+                "CDC dengue cases by jurisdiction county week",
+                question,
+            ]
         if any(term in q for term in ("guidance", "prevention", "prevent", "recommendation", "recommendations", "cdc", "ecdc", "who")):
             return [
                 "dengue prevention guidance",
@@ -1220,6 +1227,56 @@ def _paho_surveillance_records(index: SourceIndex, question: str, *, limit: int)
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _cdc_surveillance_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not any(term in q for term in ("cdc", "arbonet")):
+        return []
+    if not any(term in q for term in ("dengue", "surveillance", "current", "historic", "cases", "county", "jurisdiction", "week", "limitation")):
+        return []
+
+    clauses = ["source = ?"]
+    params: list[object] = ["aedes_cdc_dengue_surveillance"]
+    if "limitation" in q or "under-report" in q or "underreport" in q or "lag" in q:
+        clauses.append("record_id LIKE ?")
+        params.append("%:limitation:%")
+    elif "current" in q or re.search(r"\b2026\b", q):
+        clauses.append("(record_id LIKE ? OR lower(text) LIKE ?)")
+        params.extend(["%:current_%", "%current%"])
+    elif "historic" in q or "cumulative" in q or re.search(r"\b20(?:1\d|2[0-5])\b", q):
+        clauses.append("(record_id LIKE ? OR lower(text) LIKE ?)")
+        params.extend(["%:historic:%", "%historic%"])
+    focus_terms = _public_health_focus_terms(question)
+    if focus_terms:
+        term_clauses = []
+        for term in focus_terms[:4]:
+            pattern = f"%{term.lower()}%"
+            term_clauses.append("(lower(title) LIKE ? OR lower(text) LIKE ? OR lower(record_id) LIKE ?)")
+            params.extend([pattern, pattern, pattern])
+        clauses.append("(" + " OR ".join(term_clauses) + ")")
+
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT *
+            FROM records
+            WHERE {" AND ".join(clauses)}
+            ORDER BY
+                CASE
+                    WHEN record_id LIKE '%Data_Bites%' THEN 0
+                    WHEN record_id LIKE '%Cases_by_Jurisdiction%' THEN 1
+                    WHEN record_id LIKE '%Cases_by_County%' THEN 2
+                    WHEN record_id LIKE '%Epi_Curve%' THEN 3
+                    WHEN record_id LIKE '%:limitation:%' THEN 4
+                    ELSE 5
+                END,
+                record_id
+            LIMIT ?
+            """,
+            (*params, max(limit * 20, 50)),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def _resistance_marker_terms(question: str) -> list[str]:
     lower = question.lower()
     matched = []
@@ -1263,6 +1320,18 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
             key=lambda record: (
                 0 if record.source == "vectornet_aedes_surveillance" else 1,
                 0 if record.lane in {"observations", "ecology"} else 1,
+            ),
+        )
+    if any(term in q for term in ("cdc", "arbonet")) and any(term in q for term in ("dengue", "surveillance", "current", "historic", "cases", "county", "jurisdiction", "week", "limitation")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "aedes_cdc_dengue_surveillance" else 1,
+                0 if record.lane == "public_health" else 1,
+                0 if "Data_Bites" in record.record_id else 1,
+                0 if "Cases_by_Jurisdiction" in record.record_id else 1,
+                0 if "Cases_by_County" in record.record_id else 1,
+                0 if "Epi_Curve" in record.record_id else 1,
             ),
         )
     if _wants_extracted_facts(question):
@@ -1792,6 +1861,11 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "public_health":
         for record in _paho_surveillance_records(index, plan.question, limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+        for record in _cdc_surveillance_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
             all_records.append(record)
             seen_record_ids.add(record.record_id)
 

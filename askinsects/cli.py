@@ -160,6 +160,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_paho_dengue_surveillance.add_argument("--dashboard-page", action="append", default=[])
     ingest_paho_dengue_surveillance.add_argument("--core-indicator-page", action="append", default=[])
 
+    ingest_cdc_dengue_surveillance = sub.add_parser("ingest-cdc-dengue-surveillance")
+    ingest_cdc_dengue_surveillance.add_argument("--hosted", action="store_true")
+    ingest_cdc_dengue_surveillance.add_argument("--source-url", action="append", default=[])
+
     ingest_vectorbase_genomics = sub.add_parser("ingest-vectorbase-genomics")
     ingest_vectorbase_genomics.add_argument("--hosted", action="store_true")
     ingest_vectorbase_genomics.add_argument("--gff-url")
@@ -456,6 +460,23 @@ def main(argv: list[str] | None = None) -> int:
                 "dashboard_pages": args.dashboard_page,
                 "core_indicator_pages": args.core_indicator_page,
             },
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-cdc-dengue-surveillance":
+        if not args.hosted:
+            from scripts.ingest_cdc_dengue_surveillance import ingest_cdc_dengue_surveillance
+
+            payload = ingest_cdc_dengue_surveillance(
+                artifact_dir=artifact_dir,
+                source_urls=args.source_url,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/cdc-dengue-surveillance",
+            {"source_urls": args.source_url},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2
