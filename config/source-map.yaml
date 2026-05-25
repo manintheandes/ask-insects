@@ -111,6 +111,40 @@ sources:
       - ecology
     provenance_required: true
     live_fetch: derived_from_indexed_observations
+  - id: aedes_observation_climate_join
+    name: Aedes aegypti observation climate joins
+    source_type: derived_sqlite_source
+    boundary: Bounded WorldClim v2.1 10-minute bioclimatic raster samples joined to indexed coordinate-bearing GBIF, iNaturalist, and Mosquito Alert Aedes aegypti observation records
+    query_plane: indexed_observation_payloads_and_worldclim_geotiff_to_sqlite_ecology_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_observation_climate.py
+    input_sources:
+      - gbif_api
+      - inaturalist_api
+      - mosquito_alert_gbif
+      - aedes_worldclim_climate
+    lanes:
+      - ecology
+    provenance_required: true
+    live_fetch: derived_from_indexed_observations_and_local_worldclim_zip
+    source_contract:
+      climate_observation_records:
+        - source_observation_record_id
+        - source_observation_source
+        - observed_date
+        - latitude
+        - longitude
+        - country
+        - place
+        - bio1_annual_mean_temperature_c
+        - bio12_annual_precipitation_mm
+        - raw_zip_locator
+        - source_observation_provenance
+      structured_gaps:
+        - observation_climate_worldclim_zip_missing
+        - observation_climate_no_coordinate_observations
+        - observation_climate_limit_applied
+        - observation_climate_raster_sampling_failed
   - id: aedes_image_atoms
     name: Aedes aegypti still-image assets, labels, and gaps
     source_type: derived_sqlite_source

@@ -2433,6 +2433,27 @@ def ingest_occurrence_ecology(
     return ingest_occurrence_ecology_script(artifact_dir=artifact_dir)
 
 
+def ingest_observation_climate(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_observation_climate import ingest_observation_climate as ingest_observation_climate_script
+
+    input_sources = payload.get("input_sources")
+    if input_sources is not None and not isinstance(input_sources, list):
+        raise ValueError("input_sources must be a list")
+    worldclim_zip_path = payload.get("worldclim_zip_path")
+    if worldclim_zip_path is not None and not isinstance(worldclim_zip_path, str):
+        raise ValueError("worldclim_zip_path must be a string")
+    return ingest_observation_climate_script(
+        artifact_dir=artifact_dir,
+        worldclim_zip_path=Path(worldclim_zip_path) if worldclim_zip_path else None,
+        limit=int(payload.get("limit") or 1000),
+        input_sources=tuple(str(source) for source in input_sources) if input_sources else None,
+    )
+
+
 def ingest_vectorbase_genomics_staged(
     payload: dict[str, object],
     *,
@@ -3092,6 +3113,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/occurrence-ecology":
             result = ingest_occurrence_ecology(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path in {"/ingest/observation-climate", "/ingest/observation-climate-join"}:
+            result = ingest_observation_climate(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
     except (sqlite3.Error, ValueError) as exc:

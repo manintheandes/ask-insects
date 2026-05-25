@@ -2385,5 +2385,34 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn('"observation_count": 3', payload_rows[0]["payload_json"])
 
+    def test_ingest_observation_climate_join_adds_records_without_removing_existing_sources(self):
+        from askinsects.sources.observation_climate import OBSERVATION_CLIMATE_SOURCE_ID
+        from tests.test_observation_climate_source import write_observation_climate_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_observation_climate_fixture(artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/observation-climate-join",
+                {"limit": 10},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts[OBSERVATION_CLIMATE_SOURCE_ID], 2)
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                f"select payload_json from record_payloads where source='{OBSERVATION_CLIMATE_SOURCE_ID}' order by record_id limit 1",
+            )
+            self.assertIn('"bio1_annual_mean_temperature_c": 24.0', payload_rows[0]["payload_json"])
+
 if __name__ == "__main__":
     unittest.main()

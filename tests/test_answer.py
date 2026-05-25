@@ -2646,6 +2646,22 @@ class AnswerTests(unittest.TestCase):
                         ),
                     ),
                     EvidenceRecord(
+                        record_id="ecology:observation_climate:inaturalist_api:inat:observation:1",
+                        lane="ecology",
+                        source="aedes_observation_climate_join",
+                        title="Aedes aegypti observation climate sample: inat:observation:1",
+                        text="WorldClim v2.1 10-minute bioclim raster values joined to an indexed Aedes aegypti observation. Input source: inaturalist_api. Country/place: Brazil; Rio de Janeiro, Brazil. Coordinates: -22.9, -43.17. Annual mean temperature: 24.0 deg C. Annual precipitation: 1432.0 mm.",
+                        species="Aedes aegypti",
+                        url="https://example.org/inat/1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_observation_climate_join",
+                            locator="raw/aedes_deep_sources/worldclim/wc2.1_10m_bio.zip#observation/inat:observation:1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                    EvidenceRecord(
                         record_id="ecology:dataverse_suitability:3623893",
                         lane="ecology",
                         source="harvard_dataverse_aedes_suitability",
@@ -2700,6 +2716,8 @@ class AnswerTests(unittest.TestCase):
             taxonomy = answer_question("show Aedes aegypti taxonomy synonyms from authority sources", artifact_dir=artifact_dir)
             worldclim = answer_question("show WorldClim climate context for Aedes aegypti ecology", artifact_dir=artifact_dir)
             worldclim_brazil = answer_question("show WorldClim annual mean temperature and precipitation samples for Aedes aegypti Brazil", artifact_dir=artifact_dir)
+            observation_climate = answer_question("show climate-linked Aedes aegypti observation ecology in Brazil", artifact_dir=artifact_dir)
+            source_grade_ecology = answer_question("What source-grade Aedes ecology evidence do we have?", artifact_dir=artifact_dir)
             dataverse = answer_question("show Harvard Dataverse suitability rasters for Aedes aegypti dengue transmission", artifact_dir=artifact_dir)
             compendium = answer_question("show global Aedes aegypti occurrence compendium rows for Brazil", artifact_dir=artifact_dir)
             population = answer_question("show Aedes aegypti population genomics BioProject evidence", artifact_dir=artifact_dir)
@@ -2707,6 +2725,9 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(taxonomy["evidence"][0]["source"], "aedes_taxonomy_authorities")
             self.assertEqual(worldclim["evidence"][0]["source"], "aedes_worldclim_climate")
             self.assertEqual(worldclim_brazil["evidence"][0]["record_id"], "ecology:worldclim:sample:global_compendium:402")
+            self.assertEqual(observation_climate["evidence"][0]["source"], "aedes_observation_climate_join")
+            self.assertTrue(source_grade_ecology["ok"])
+            self.assertEqual(source_grade_ecology["answer_shape"], "ecology")
             self.assertEqual(dataverse["evidence"][0]["source"], "harvard_dataverse_aedes_suitability")
             self.assertEqual(compendium["evidence"][0]["source"], "aedes_global_compendium_occurrence")
             self.assertEqual(population["evidence"][0]["source"], "aedes_population_genomics")

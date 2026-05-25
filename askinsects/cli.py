@@ -162,6 +162,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_harvard_dataverse_suitability.add_argument("--per-page", type=int, default=25)
     ingest_harvard_dataverse_suitability.add_argument("--dataset-limit", type=int, default=12)
 
+    ingest_observation_climate = sub.add_parser("ingest-observation-climate", aliases=["ingest-observation-climate-join"])
+    ingest_observation_climate.add_argument("--hosted", action="store_true")
+    ingest_observation_climate.add_argument("--limit", type=int, default=1000)
+    ingest_observation_climate.add_argument("--input-source", action="append", default=[])
+    ingest_observation_climate.add_argument("--worldclim-zip-path")
+
     ingest_public_health = sub.add_parser("ingest-public-health")
     ingest_public_health.add_argument("--hosted", action="store_true")
     ingest_public_health.add_argument("--source-url", action="append", default=[])
@@ -532,6 +538,30 @@ def main(argv: list[str] | None = None) -> int:
                 "queries": list(queries),
                 "per_page": args.per_page,
                 "dataset_limit": args.dataset_limit,
+            },
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command in {"ingest-observation-climate", "ingest-observation-climate-join"}:
+        input_sources = tuple(args.input_source) if args.input_source else None
+        if not args.hosted:
+            from scripts.ingest_observation_climate import ingest_observation_climate
+
+            payload = ingest_observation_climate(
+                artifact_dir=artifact_dir,
+                worldclim_zip_path=Path(args.worldclim_zip_path) if args.worldclim_zip_path else None,
+                limit=args.limit,
+                input_sources=input_sources,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/observation-climate-join",
+            {
+                "limit": args.limit,
+                "input_sources": list(input_sources) if input_sources else None,
+                "worldclim_zip_path": args.worldclim_zip_path,
             },
             timeout=3600,
         )

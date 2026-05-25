@@ -19,6 +19,7 @@ from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURC
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
 from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
+from .sources.observation_climate import OBSERVATION_CLIMATE_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
 from .sources.who_malaria_threats_resistance import WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID
@@ -411,6 +412,15 @@ def _search_queries(question: str) -> list[str]:
             "WHO Aedes insecticide-resistance method",
             "discriminating concentrations bioassays Aedes",
             "WHO test procedures Aedes resistance",
+            question,
+        ]
+    if any(term in q for term in ("climate-linked", "climate linked", "climate join", "observation climate", "joined to", "bioclim")) and any(
+        term in q for term in ("observation", "observations", "occurrence", "coordinates", "country", "temperature", "precipitation")
+    ):
+        return [
+            "WorldClim indexed Aedes aegypti observation climate sample",
+            "bioclim raster values joined to indexed Aedes aegypti observation",
+            "annual mean temperature precipitation observation",
             question,
         ]
     if any(term in q for term in ("worldclim", "climate", "precipitation", "rainfall", "environmental suitability", "suitability")):
@@ -1749,6 +1759,12 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
             "habitat",
             "occurrence",
             "observed",
+            "climate-linked",
+            "climate linked",
+            "climate join",
+            "observation climate",
+            "bioclim",
+            "joined",
             "global compendium",
             "compendium",
             "worldclim",
@@ -1762,6 +1778,9 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
     ):
         return records
 
+    wants_observation_climate = any(term in q for term in ("climate-linked", "climate linked", "climate join", "observation climate", "bioclim", "joined")) and any(
+        term in q for term in ("observation", "observations", "occurrence", "country", "coordinates", "temperature", "precipitation")
+    )
     wants_worldclim = any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability"))
     wants_dataverse_suitability = any(term in q for term in ("dataverse", "suitability", "transmission risk", "dengue transmission"))
     wants_compendium = any(term in q for term in ("global compendium", "compendium", "occurrence compendium"))
@@ -1789,6 +1808,7 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
 
     def score(record: EvidenceRecord) -> tuple[object, ...]:
         worldclim_rank = 0 if wants_worldclim and record.source == AEDES_WORLDCLIM_SOURCE_ID else 1
+        observation_climate_rank = 0 if wants_observation_climate and record.source == OBSERVATION_CLIMATE_SOURCE_ID else 1
         dataverse_rank = 0 if wants_dataverse_suitability and record.source == HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID else 1
         compendium_rank = 0 if wants_compendium and record.source == AEDES_GLOBAL_COMPENDIUM_SOURCE_ID else 1
         haystack = f"{record.title}\n{record.text}".lower()
@@ -1796,6 +1816,7 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
         extracted_rank = 0 if _wants_extracted_facts(question) and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         vectornet_rank = 0 if "vectornet" in q and record.source == "vectornet_aedes_surveillance" else 1
         return (
+            observation_climate_rank,
             dataverse_rank,
             worldclim_rank,
             compendium_rank,
@@ -2483,6 +2504,41 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "ecology":
         q = plan.question.lower()
+        if "source-grade" in q or ("evidence" in q and "ecology" in q):
+            for source_id in (
+                OCCURRENCE_ECOLOGY_SOURCE_ID,
+                OBSERVATION_CLIMATE_SOURCE_ID,
+                AEDES_WORLDCLIM_SOURCE_ID,
+                HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID,
+                "vectornet_aedes_surveillance",
+            ):
+                for record in _source_records(index, source_id, ["ecology"], limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+        if any(term in q for term in ("climate-linked", "climate linked", "climate join", "observation climate", "bioclim", "joined")) and any(
+            term in q for term in ("observation", "observations", "occurrence", "country", "coordinates", "temperature", "precipitation")
+        ):
+            matched_observation_climate = False
+            for search_query in _search_queries(plan.question):
+                query_records = index.search(search_query, lane="ecology", limit=max(limit * 20, 50))
+                for record in query_records:
+                    if record.source != OBSERVATION_CLIMATE_SOURCE_ID or record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+                    matched_observation_climate = True
+                    if len([item for item in all_records if item.source == OBSERVATION_CLIMATE_SOURCE_ID]) >= limit:
+                        break
+                if matched_observation_climate:
+                    break
+            if not matched_observation_climate:
+                for record in _source_records(index, OBSERVATION_CLIMATE_SOURCE_ID, ["ecology"], limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
         if any(term in q for term in ("dataverse", "suitability", "transmission risk", "dengue transmission")):
             matched_dataverse = False
             for search_query in (f"Harvard Dataverse {plan.question}", f"Aedes aegypti suitability {plan.question}", plan.question):

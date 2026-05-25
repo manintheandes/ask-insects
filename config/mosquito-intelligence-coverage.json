@@ -360,6 +360,7 @@
         "aedes_literature_facets",
         "aedes_extracted_facts",
         "aedes_occurrence_ecology",
+        "aedes_observation_climate_join",
         "vectornet_aedes_surveillance",
         "aedes_worldclim_climate",
         "harvard_dataverse_aedes_suitability",
@@ -378,6 +379,7 @@
         "Installed local and hosted artifacts contain 5,253 ecology records from aedes_literature_facets.",
         "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available.",
         "aedes_occurrence_ecology joins indexed GBIF, iNaturalist, and Mosquito Alert observation payloads into country, country-month, seasonality, range, and public habitat ecology records.",
+        "aedes_observation_climate_join joins coordinate-bearing GBIF, iNaturalist, and Mosquito Alert Aedes aegypti observation records to WorldClim v2.1 10-minute bioclim raster values, preserving source observation IDs, coordinates, observed dates, annual mean temperature, annual precipitation, raw ZIP locators, and upstream observation provenance.",
         "vectornet_aedes_surveillance adds official ECDC/EFSA regional surveillance ecology summaries by country and degree of establishment, preserving detection, absence-surveillance, and unclear-status counts.",
         "aedes_worldclim_climate maps WorldClim historical and monthly climate source pages into queryable ecology source records and, in the May 25, 2026 hosted refresh, added 500 bounded WorldClim v2.1 10-minute bioclim raster samples joined to global-compendium occurrence coordinates with annual mean temperature, annual precipitation, raw ZIP locators, and occurrence-row provenance.",
         "harvard_dataverse_aedes_suitability maps Harvard Dataverse Aedes aegypti dengue-transmission suitability and risk GeoTIFF file manifests into ecology records with dataset DOI, file DOI, file ID, filename, content type, byte size, checksum, scenario terms, license, access locator, and explicit file-download gaps when Dataverse metadata says the binary is not public-downloadable.",
@@ -387,7 +389,6 @@
         "aedes_extracted_facts emits ecology candidate facts from indexed Aedes literature and legal full-text units, plus parsed supported supplement table rows, including habitat, breeding-site, climate, seasonality, range, and location terms when detected."
       ],
       "required_next_sources": [
-        "climate-linked GBIF and iNaturalist observation joins",
         "additional climate and land-use layers with clear licenses beyond WorldClim and Harvard Dataverse suitability manifests",
         "deeper range and suitability model outputs beyond bounded Harvard Dataverse raster manifests",
         "breeding-site and larval-habitat records from literature and surveillance reports"

@@ -120,6 +120,7 @@ REQUIRED_FILES = (
     "askinsects/sources/vector_competence_assays.py",
     "askinsects/sources/resistance_markers.py",
     "askinsects/sources/occurrence_ecology.py",
+    "askinsects/sources/observation_climate.py",
     "askinsects/sources/extracted_facts.py",
     "askinsects/sources/expression_omics.py",
     "askinsects/sources/aedes_olfaction_literature.py",
@@ -162,6 +163,7 @@ REQUIRED_FILES = (
     "scripts/ingest_vector_competence_assays.py",
     "scripts/ingest_resistance_markers.py",
     "scripts/ingest_occurrence_ecology.py",
+    "scripts/ingest_observation_climate.py",
     "scripts/ingest_extracted_facts.py",
     "scripts/ingest_expression_omics.py",
     "scripts/ingest_aedes_olfaction_literature.py",
@@ -239,6 +241,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_resistance_markers.py",
     "tests/test_occurrence_ecology_source.py",
     "tests/test_ingest_occurrence_ecology.py",
+    "tests/test_observation_climate_source.py",
+    "tests/test_ingest_observation_climate.py",
     "tests/test_extracted_facts_source.py",
     "tests/test_ingest_extracted_facts.py",
     "tests/test_expression_omics_source.py",
@@ -325,6 +329,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_resistance_markers",
     "tests.test_occurrence_ecology_source",
     "tests.test_ingest_occurrence_ecology",
+    "tests.test_observation_climate_source",
+    "tests.test_ingest_observation_climate",
     "tests.test_extracted_facts_source",
     "tests.test_ingest_extracted_facts",
     "tests.test_expression_omics_source",
@@ -572,6 +578,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "ncbi_biosamples",
         "aedes_vector_competence_assays",
         "aedes_occurrence_ecology",
+        "aedes_observation_climate_join",
         "vectorbase_aedes_genomics",
         "aedes_expression_omics",
         "aedes_uniprot_proteins",
@@ -761,6 +768,17 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_occurrence_ecology", "scripts/ingest_occurrence_ecology.py", "indexed_observation_payloads_to_sqlite_ecology_records", "GBIF and iNaturalist observation joins"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing occurrence ecology term: {term}")
+    for term in (
+        "aedes_observation_climate_join",
+        "scripts/ingest_observation_climate.py",
+        "indexed_observation_payloads_and_worldclim_geotiff_to_sqlite_ecology_records",
+        "observation_climate_worldclim_zip_missing",
+        "observation_climate_limit_applied",
+        "bio1_annual_mean_temperature_c",
+        "bio12_annual_precipitation_mm",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing observation climate join term: {term}")
     for term in (
         "harvard_dataverse_aedes_suitability",
         "scripts/ingest_harvard_dataverse_suitability.py",
