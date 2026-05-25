@@ -70,14 +70,14 @@ from .sources.public_health import (
     PUBLIC_HEALTH_SOURCE_ID,
     fetch_public_health_guidance_records,
 )
-from .sources.figshare_aedes_videos import FIGSHARE_AEDES_VIDEO_SOURCE_ID, fetch_figshare_aedes_video_records
+from .sources.figshare_aedes_videos import DEFAULT_FIGSHARE_PAGE_SIZE, FIGSHARE_AEDES_VIDEO_SOURCE_ID, fetch_figshare_aedes_video_records
 from .sources.vectorbase_genomics import fetch_vectorbase_genomics_records
 from .sources.vectornet_surveillance import (
     DEFAULT_VECTORNET_SPECIES,
     VECTORNET_SOURCE_ID,
     fetch_vectornet_surveillance_records,
 )
-from .sources.zenodo_aedes_videos import ZENODO_AEDES_VIDEO_SOURCE_ID, fetch_zenodo_aedes_video_records
+from .sources.zenodo_aedes_videos import DEFAULT_ZENODO_SIZE, ZENODO_AEDES_VIDEO_SOURCE_ID, fetch_zenodo_aedes_video_records
 
 
 @dataclass(frozen=True)
@@ -2228,7 +2228,7 @@ def ingest_zenodo_aedes_videos(
     fetch_zenodo_aedes_video_records_fn: Callable[..., object] = fetch_zenodo_aedes_video_records,
 ) -> dict[str, object]:
     query = payload.get("query", '"Aedes aegypti" (video OR movie OR mp4 OR tracking)')
-    size = payload.get("size", 25)
+    size = payload.get("size", DEFAULT_ZENODO_SIZE)
     if not isinstance(query, str):
         raise ValueError("query must be a string")
     if not isinstance(size, int):
@@ -2264,7 +2264,7 @@ def ingest_figshare_aedes_videos(
     fetch_figshare_aedes_video_records_fn: Callable[..., object] = fetch_figshare_aedes_video_records,
 ) -> dict[str, object]:
     query = payload.get("query", "Aedes aegypti video")
-    page_size = payload.get("page_size", 25)
+    page_size = payload.get("page_size", DEFAULT_FIGSHARE_PAGE_SIZE)
     if not isinstance(query, str):
         raise ValueError("query must be a string")
     if not isinstance(page_size, int):

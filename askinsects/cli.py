@@ -9,6 +9,8 @@ from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
 from .hosted import CONFIG_PATH as HOSTED_CONFIG_PATH
 from .hosted import HostedConfig, hosted_request, load_config, save_config
+from .sources.zenodo_aedes_videos import DEFAULT_ZENODO_SIZE
+from .sources.figshare_aedes_videos import DEFAULT_FIGSHARE_PAGE_SIZE
 from .index import SourceIndex
 from .voxels import read_voxel_value
 
@@ -245,12 +247,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_zenodo_aedes_videos = sub.add_parser("ingest-zenodo-aedes-videos")
     ingest_zenodo_aedes_videos.add_argument("--hosted", action="store_true")
     ingest_zenodo_aedes_videos.add_argument("--query", default='"Aedes aegypti" (video OR movie OR mp4 OR tracking)')
-    ingest_zenodo_aedes_videos.add_argument("--size", type=int, default=25)
+    ingest_zenodo_aedes_videos.add_argument("--size", type=int, default=DEFAULT_ZENODO_SIZE)
 
     ingest_figshare_aedes_videos = sub.add_parser("ingest-figshare-aedes-videos")
     ingest_figshare_aedes_videos.add_argument("--hosted", action="store_true")
     ingest_figshare_aedes_videos.add_argument("--query", default="Aedes aegypti video")
-    ingest_figshare_aedes_videos.add_argument("--page-size", type=int, default=25)
+    ingest_figshare_aedes_videos.add_argument("--page-size", type=int, default=DEFAULT_FIGSHARE_PAGE_SIZE)
 
     ingest_mendeley_behavior_media = sub.add_parser("ingest-mendeley-behavior-media")
     ingest_mendeley_behavior_media.add_argument("--hosted", action="store_true")

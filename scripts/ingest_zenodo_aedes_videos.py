@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
 from askinsects.sources.zenodo_aedes_videos import (
+    DEFAULT_ZENODO_SIZE,
     ZENODO_AEDES_VIDEO_SOURCE_ID,
     fetch_zenodo_aedes_video_records,
 )
@@ -101,7 +102,7 @@ def ingest_zenodo_aedes_videos(
     fetch_json=None,
     retrieved_at: str | None = None,
     query: str = '"Aedes aegypti" (video OR movie OR mp4 OR tracking)',
-    size: int = 25,
+    size: int = DEFAULT_ZENODO_SIZE,
 ) -> dict[str, object]:
     retrieved = retrieved_at or utc_now()
     result = fetch_zenodo_aedes_video_records(
@@ -122,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
     parser.add_argument("--retrieved-at")
     parser.add_argument("--query", default='"Aedes aegypti" (video OR movie OR mp4 OR tracking)')
-    parser.add_argument("--size", type=int, default=25)
+    parser.add_argument("--size", type=int, default=DEFAULT_ZENODO_SIZE)
     args = parser.parse_args(argv)
     result = ingest_zenodo_aedes_videos(
         artifact_dir=Path(args.artifact_dir),

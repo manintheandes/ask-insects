@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
 from askinsects.sources.figshare_aedes_videos import (
+    DEFAULT_FIGSHARE_PAGE_SIZE,
     FIGSHARE_AEDES_VIDEO_SOURCE_ID,
     fetch_figshare_aedes_video_records,
 )
@@ -122,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
     parser.add_argument("--retrieved-at")
     parser.add_argument("--query", default="Aedes aegypti video")
-    parser.add_argument("--page-size", type=int, default=25)
+    parser.add_argument("--page-size", type=int, default=DEFAULT_FIGSHARE_PAGE_SIZE)
     args = parser.parse_args(argv)
     result = ingest_figshare_aedes_videos(
         artifact_dir=Path(args.artifact_dir),

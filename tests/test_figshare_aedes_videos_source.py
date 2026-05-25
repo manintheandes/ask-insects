@@ -84,11 +84,11 @@ class FigshareAedesVideosSourceTests(unittest.TestCase):
         self.assertEqual(result.search_result_count, 2)
         self.assertEqual(result.material_record_count, 1)
         self.assertEqual(result.media_file_count, 1)
-        self.assertEqual(len(result.records), 1)
+        self.assertEqual(len(result.records), 2)
         self.assertEqual(len(result.raw_artifacts), 3)
         self.assertTrue(any("page_size=10" in url for url in fetcher.urls))
 
-        record = result.records[0]
+        record = next(record for record in result.records if record.payload.get("atom_type") != "video_gap")
         self.assertEqual(record.source, FIGSHARE_AEDES_VIDEO_SOURCE_ID)
         self.assertEqual(record.lane, "media")
         self.assertEqual(record.species, "Aedes aegypti")
@@ -101,6 +101,10 @@ class FigshareAedesVideosSourceTests(unittest.TestCase):
 
         reasons = {gap["reason"] for gap in result.gaps}
         self.assertIn("figshare_article_not_aedes_scope", reasons)
+        gap_record = next(record for record in result.records if record.payload.get("atom_type") == "video_gap")
+        self.assertEqual(gap_record.source, FIGSHARE_AEDES_VIDEO_SOURCE_ID)
+        self.assertEqual(gap_record.payload["reason"], "figshare_article_not_aedes_scope")
+        self.assertEqual(gap_record.payload["gap_type"], "figshare_manifest_gap")
 
     def test_fetch_figshare_aedes_video_records_records_search_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -112,10 +116,31 @@ class FigshareAedesVideosSourceTests(unittest.TestCase):
                 page_size=10,
             )
 
-        self.assertFalse(result.records)
+        self.assertEqual(len(result.records), 1)
         self.assertEqual(result.gaps[0]["source"], FIGSHARE_AEDES_VIDEO_SOURCE_ID)
         self.assertEqual(result.gaps[0]["reason"], "figshare_video_search_no_candidates")
         self.assertEqual(result.gaps[0]["query"], "Aedes aegypti video")
+        self.assertEqual(result.records[0].payload["atom_type"], "video_gap")
+        self.assertEqual(result.records[0].payload["reason"], "figshare_video_search_no_candidates")
+
+    def test_fetch_figshare_aedes_video_records_records_fetch_failure_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            def fail_fetch(url):
+                raise RuntimeError("temporary Figshare failure")
+
+            result = fetch_figshare_aedes_video_records(
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fail_fetch,
+                retrieved_at="2026-05-25T00:00:00Z",
+                query="Aedes aegypti video",
+                page_size=10,
+            )
+
+        self.assertEqual(len(result.records), 1)
+        self.assertEqual(result.gaps[0]["reason"], "figshare_search_fetch_failed")
+        self.assertEqual(result.records[0].payload["atom_type"], "video_gap")
+        self.assertEqual(result.records[0].payload["reason"], "figshare_search_fetch_failed")
+        self.assertIn("temporary Figshare failure", result.records[0].text)
 
 
 if __name__ == "__main__":

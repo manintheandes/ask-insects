@@ -397,6 +397,56 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertIn("Source SHA-256: " + "a" * 64, osf_gap_record.text)
         self.assertIn("License: OSF project license not supplied", osf_gap_record.text)
 
+    def test_promotes_upstream_zenodo_figshare_manifest_gaps_to_queryable_atom_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            gaps_path = artifact_dir / "gaps.json"
+            gaps_path.write_text(
+                json.dumps(
+                    [
+                        {
+                            "source": "zenodo_aedes_videos",
+                            "reason": "zenodo_material_record_no_video_files",
+                            "record_id": 15277051,
+                            "query": '"Aedes aegypti" video',
+                            "source_url": "https://doi.org/10.5281/zenodo.15277051",
+                            "locator": "raw/zenodo_aedes_videos/search.json#hits/1",
+                        },
+                        {
+                            "source": "figshare_aedes_videos",
+                            "reason": "figshare_article_not_aedes_scope",
+                            "article_id": 32400201,
+                            "query": "Aedes aegypti video",
+                            "source_url": "https://figshare.com/articles/poster/32400201",
+                            "locator": "raw/figshare_aedes_videos/article_32400201.json#article",
+                        },
+                        {
+                            "source": "aedes_video_atoms",
+                            "reason": "video_discovery_no_candidates",
+                            "repository": "dryad",
+                        },
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            result = build_video_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        gap_records = [record for record in result.records if record.payload and record.payload.get("atom_type") == "video_gap"]
+        self.assertEqual(len(gap_records), 2)
+        promoted = {(record.payload["original_source"], record.payload["original_reason"]) for record in gap_records}
+        self.assertIn(("zenodo_aedes_videos", "zenodo_material_record_no_video_files"), promoted)
+        self.assertIn(("figshare_aedes_videos", "figshare_article_not_aedes_scope"), promoted)
+        self.assertTrue(all(record.source == VIDEO_ATOMS_SOURCE_ID for record in gap_records))
+        self.assertTrue(all(record.payload["reason"] == "video_manifest_gap" for record in gap_records))
+        zenodo = next(record for record in gap_records if record.payload["original_source"] == "zenodo_aedes_videos")
+        self.assertEqual(zenodo.provenance.locator, "raw/zenodo_aedes_videos/search.json#hits/1")
+        self.assertEqual(zenodo.url, "https://doi.org/10.5281/zenodo.15277051")
+        self.assertIn("Original source: zenodo_aedes_videos", zenodo.text)
+        self.assertIn("Original reason: zenodo_material_record_no_video_files", zenodo.text)
+
     def test_archive_video_candidates_are_gapped_without_download(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

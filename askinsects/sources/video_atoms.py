@@ -27,6 +27,10 @@ VIDEO_SOURCE_IDS = {
     "zenodo_aedes_videos",
     "figshare_aedes_videos",
 }
+UPSTREAM_VIDEO_MANIFEST_GAP_SOURCES = {
+    "zenodo_aedes_videos",
+    "figshare_aedes_videos",
+}
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 ARCHIVE_EXTENSIONS = (".zip", ".tar", ".tar.gz", ".tgz", ".7z")
 NON_VIDEO_MEDIA_EXTENSIONS = (
@@ -378,6 +382,8 @@ def _candidate_rows(index: SourceIndex) -> list[VideoCandidate]:
     candidates: list[VideoCandidate] = []
     for row in rows:
         payload = _safe_json(row.get("payload_json"))
+        if payload.get("atom_type") in {"video_gap", "source_gap"} or payload.get("gap_type"):
+            continue
         download_url = _download_url(row, payload)
         if not _looks_like_video(
             row.get("title"),
@@ -1271,6 +1277,10 @@ def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> Evi
     license_value = gap.get("license")
     title = f"Aedes aegypti video gap {reason}"
     text = f"Aedes aegypti video source gap: {reason}. Source record: {source_record_id}."
+    if gap.get("original_source"):
+        text += f" Original source: {gap.get('original_source')}."
+    if gap.get("original_reason"):
+        text += f" Original reason: {gap.get('original_reason')}."
     if gap.get("repository"):
         text += f" Repository: {gap.get('repository')}."
     if gap.get("source_dataset"):
@@ -1307,6 +1317,58 @@ def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> Evi
         ),
         payload={"atom_type": "video_gap", **gap},
     )
+
+
+def _load_upstream_manifest_gap_contexts(artifact_dir: Path) -> list[dict[str, object]]:
+    gaps_path = artifact_dir / "gaps.json"
+    if not gaps_path.exists():
+        return []
+    try:
+        payload = json.loads(gaps_path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    if not isinstance(payload, list):
+        return []
+    contexts: list[dict[str, object]] = []
+    seen: set[tuple[object, ...]] = set()
+    repository_for_source = {
+        "zenodo_aedes_videos": "zenodo",
+        "figshare_aedes_videos": "figshare",
+    }
+    for index, raw_gap in enumerate(payload, start=1):
+        if not isinstance(raw_gap, dict):
+            continue
+        original_source = raw_gap.get("source")
+        if original_source not in UPSTREAM_VIDEO_MANIFEST_GAP_SOURCES:
+            continue
+        original_reason = str(raw_gap.get("reason") or "manifest_gap")
+        raw_record_id = raw_gap.get("record_id") or raw_gap.get("article_id") or raw_gap.get("file_id") or raw_gap.get("source_url") or f"gap-{index}"
+        key = (original_source, original_reason, raw_record_id, raw_gap.get("locator"))
+        if key in seen:
+            continue
+        seen.add(key)
+        context: dict[str, object] = {
+            "source": VIDEO_ATOMS_SOURCE_ID,
+            "lane": "media",
+            "reason": "video_manifest_gap",
+            "original_source": original_source,
+            "original_reason": original_reason,
+            "repository": repository_for_source.get(str(original_source)),
+            "record_id": f"{original_source}:{raw_record_id}",
+            "title": f"{original_source} manifest gap {original_reason}",
+            "query": raw_gap.get("query"),
+            "source_url": raw_gap.get("source_url") or raw_gap.get("url"),
+            "download_url": raw_gap.get("download_url") or raw_gap.get("media_url"),
+            "license": raw_gap.get("license"),
+            "locator": raw_gap.get("locator") or f"gaps.json#{index}",
+            "article_id": raw_gap.get("article_id"),
+            "file_id": raw_gap.get("file_id"),
+            "source_byte_size": raw_gap.get("source_byte_size") or raw_gap.get("byte_size") or raw_gap.get("size"),
+            "source_hashes": raw_gap.get("source_hashes"),
+            "manifest_gap": raw_gap,
+        }
+        contexts.append({key: value for key, value in context.items() if value not in (None, "", {})})
+    return contexts
 
 
 def generate_video_artifacts(asset_path: Path, output_dir: Path, probe: dict[str, object]) -> dict[str, object]:
@@ -1712,6 +1774,7 @@ def build_video_atom_records(
         motion_table_paths = _default_motion_table_paths(artifact_dir)
     motion_records = _parse_motion_tables(motion_table_paths, artifact_dir=artifact_dir, retrieved_at=retrieved_at, gaps=gaps)
     records.extend(motion_records)
+    gaps.extend(_load_upstream_manifest_gap_contexts(artifact_dir))
     records.extend(_gap_record(gap, retrieved_at=retrieved_at, index=index) for index, gap in enumerate(gaps, start=1))
     return AedesVideoAtomsResult(
         source_id=VIDEO_ATOMS_SOURCE_ID,

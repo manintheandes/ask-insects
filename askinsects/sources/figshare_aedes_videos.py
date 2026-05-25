@@ -16,6 +16,7 @@ from askinsects.records import EvidenceRecord, Provenance
 
 FIGSHARE_AEDES_VIDEO_SOURCE_ID = "figshare_aedes_videos"
 FIGSHARE_API_BASE = "https://api.figshare.com/v2"
+DEFAULT_FIGSHARE_PAGE_SIZE = 100
 USER_AGENT = "AskInsects/0.1 source-plane"
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 AEDES_PATTERN = re.compile(r"\b(?:aedes|ae\.?|a\.)\s*aegypti\b", re.I)
@@ -192,13 +193,46 @@ def _media_record(
     )
 
 
+def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> EvidenceRecord:
+    reason = str(gap.get("reason") or "figshare_video_gap")
+    source_record_id = str(gap.get("article_id") or gap.get("file_id") or gap.get("source_url") or f"gap-{index}")
+    source_url = gap.get("source_url") or gap.get("url")
+    url = str(source_url) if isinstance(source_url, str) and source_url else None
+    locator = str(gap.get("locator") or f"gaps.json#{FIGSHARE_AEDES_VIDEO_SOURCE_ID}/{index}")
+    title = f"Aedes aegypti Figshare video gap {reason}"
+    text = f"Figshare Aedes aegypti video source gap: {reason}. Source record: {source_record_id}."
+    if gap.get("query"):
+        text += f" Query: {gap.get('query')}."
+    if url:
+        text += f" Source URL: {url}."
+    if gap.get("error"):
+        text += f" Error: {gap.get('error')}."
+    return EvidenceRecord(
+        record_id=f"figshare:aedes-video-gap:{_safe_id(source_record_id)}:{_digest(reason, source_record_id, locator, index)}",
+        lane="media",
+        source=FIGSHARE_AEDES_VIDEO_SOURCE_ID,
+        title=title,
+        text=text,
+        species="Aedes aegypti",
+        url=url,
+        media_url=None,
+        provenance=Provenance(
+            source_id=FIGSHARE_AEDES_VIDEO_SOURCE_ID,
+            locator=locator,
+            retrieved_at=retrieved_at,
+            source_url=url,
+        ),
+        payload={"atom_type": "video_gap", "gap_type": "figshare_manifest_gap", **gap},
+    )
+
+
 def fetch_figshare_aedes_video_records(
     *,
     raw_dir: Path,
     fetch_json: Callable[[str], object] | None = None,
     retrieved_at: str | None = None,
     query: str = "Aedes aegypti video",
-    page_size: int = 25,
+    page_size: int = DEFAULT_FIGSHARE_PAGE_SIZE,
 ) -> FigshareAedesVideoResult:
     retrieved = retrieved_at or utc_now()
     if page_size < 1 or page_size > 100:
@@ -211,10 +245,11 @@ def fetch_figshare_aedes_video_records(
     try:
         search_payload = fetcher(search_url)
     except Exception as exc:
+        gap = {"source": FIGSHARE_AEDES_VIDEO_SOURCE_ID, "reason": "figshare_search_fetch_failed", "query": query, "url": search_url, "error": str(exc)}
         return FigshareAedesVideoResult(
             source_id=FIGSHARE_AEDES_VIDEO_SOURCE_ID,
-            records=[],
-            gaps=[{"source": FIGSHARE_AEDES_VIDEO_SOURCE_ID, "reason": "figshare_search_fetch_failed", "query": query, "url": search_url, "error": str(exc)}],
+            records=[_gap_record(gap, retrieved_at=retrieved, index=1)],
+            gaps=[gap],
             raw_artifacts=[],
             query=query,
             search_result_count=0,
@@ -286,6 +321,7 @@ def fetch_figshare_aedes_video_records(
                     "locator": f"{detail_path.as_posix()}#article",
                 }
             )
+    records.extend(_gap_record(gap, retrieved_at=retrieved, index=index) for index, gap in enumerate(gaps, start=1))
     return FigshareAedesVideoResult(
         source_id=FIGSHARE_AEDES_VIDEO_SOURCE_ID,
         records=records,

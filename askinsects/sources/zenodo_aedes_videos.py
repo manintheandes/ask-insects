@@ -16,6 +16,7 @@ from askinsects.records import EvidenceRecord, Provenance
 
 ZENODO_AEDES_VIDEO_SOURCE_ID = "zenodo_aedes_videos"
 ZENODO_API_BASE = "https://zenodo.org/api/records"
+DEFAULT_ZENODO_SIZE = 25
 USER_AGENT = "AskInsects/0.1 source-plane"
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 AEDES_PATTERN = re.compile(r"\b(?:aedes|ae\.?|a\.)\s*aegypti\b", re.I)
@@ -194,13 +195,46 @@ def _media_record(
     )
 
 
+def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> EvidenceRecord:
+    reason = str(gap.get("reason") or "zenodo_video_gap")
+    source_record_id = str(gap.get("record_id") or gap.get("source_url") or f"gap-{index}")
+    source_url = gap.get("source_url") or gap.get("url")
+    url = str(source_url) if isinstance(source_url, str) and source_url else None
+    locator = str(gap.get("locator") or f"gaps.json#{ZENODO_AEDES_VIDEO_SOURCE_ID}/{index}")
+    title = f"Aedes aegypti Zenodo video gap {reason}"
+    text = f"Zenodo Aedes aegypti video source gap: {reason}. Source record: {source_record_id}."
+    if gap.get("query"):
+        text += f" Query: {gap.get('query')}."
+    if url:
+        text += f" Source URL: {url}."
+    if gap.get("error"):
+        text += f" Error: {gap.get('error')}."
+    return EvidenceRecord(
+        record_id=f"zenodo:aedes-video-gap:{_safe_id(source_record_id)}:{_digest(reason, source_record_id, locator, index)}",
+        lane="media",
+        source=ZENODO_AEDES_VIDEO_SOURCE_ID,
+        title=title,
+        text=text,
+        species="Aedes aegypti",
+        url=url,
+        media_url=None,
+        provenance=Provenance(
+            source_id=ZENODO_AEDES_VIDEO_SOURCE_ID,
+            locator=locator,
+            retrieved_at=retrieved_at,
+            source_url=url,
+        ),
+        payload={"atom_type": "video_gap", "gap_type": "zenodo_manifest_gap", **gap},
+    )
+
+
 def fetch_zenodo_aedes_video_records(
     *,
     raw_dir: Path,
     fetch_json: Callable[[str], dict[str, object]] | None = None,
     retrieved_at: str | None = None,
     query: str = '"Aedes aegypti" (video OR movie OR mp4 OR tracking)',
-    size: int = 25,
+    size: int = DEFAULT_ZENODO_SIZE,
 ) -> ZenodoAedesVideoResult:
     retrieved = retrieved_at or utc_now()
     if size < 1 or size > 100:
@@ -213,10 +247,11 @@ def fetch_zenodo_aedes_video_records(
     try:
         payload = fetcher(url)
     except Exception as exc:
+        gap = {"source": ZENODO_AEDES_VIDEO_SOURCE_ID, "reason": "zenodo_search_fetch_failed", "query": query, "url": url, "error": str(exc)}
         return ZenodoAedesVideoResult(
             source_id=ZENODO_AEDES_VIDEO_SOURCE_ID,
-            records=[],
-            gaps=[{"source": ZENODO_AEDES_VIDEO_SOURCE_ID, "reason": "zenodo_search_fetch_failed", "query": query, "url": url, "error": str(exc)}],
+            records=[_gap_record(gap, retrieved_at=retrieved, index=1)],
+            gaps=[gap],
             raw_artifacts=[],
             query=query,
             search_result_count=0,
@@ -274,6 +309,7 @@ def fetch_zenodo_aedes_video_records(
                     "locator": f"{raw_path.as_posix()}#hits/{hit_index}",
                 }
             )
+    records.extend(_gap_record(gap, retrieved_at=retrieved, index=index) for index, gap in enumerate(gaps, start=1))
     return ZenodoAedesVideoResult(
         source_id=ZENODO_AEDES_VIDEO_SOURCE_ID,
         records=records,

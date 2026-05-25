@@ -623,6 +623,7 @@ sources:
     boundary: Bounded Zenodo API search results for Aedes aegypti moving-image files where source-provided title, description, keywords, notes, or equivalent metadata materially names Aedes aegypti; search terms alone do not count as species evidence
     query_plane: zenodo_records_search_file_manifest_to_sqlite_media_records
     api_base: https://zenodo.org/api/records
+    default_size: 25
     artifact_dir: artifacts/mosquito-v1/raw/zenodo_aedes_videos
     ingest_script: scripts/ingest_zenodo_aedes_videos.py
     lanes:
@@ -640,12 +641,19 @@ sources:
         - source_byte_size
         - source_hashes
         - exact_raw_search_locator
+      video_gap_records:
+        - reason
+        - query
+        - record_id
+        - source_url
+        - exact_raw_search_locator
   - id: figshare_aedes_videos
     name: Figshare Aedes aegypti video search results
     source_type: public_dataset_api
     boundary: Bounded Figshare article search and detail API results for Aedes aegypti moving-image files where source-provided title, description, tags, categories, DOI, or equivalent metadata materially names Aedes aegypti; search terms alone do not count as species evidence
     query_plane: figshare_article_search_detail_file_manifest_to_sqlite_media_records
     api_base: https://api.figshare.com/v2/articles
+    default_page_size: 100
     artifact_dir: artifacts/mosquito-v1/raw/figshare_aedes_videos
     ingest_script: scripts/ingest_figshare_aedes_videos.py
     lanes:
@@ -665,10 +673,16 @@ sources:
         - source_byte_size
         - source_hashes
         - exact_article_detail_locator
+      video_gap_records:
+        - reason
+        - query
+        - figshare_article_id
+        - source_url
+        - exact_article_detail_locator
   - id: aedes_video_atoms
     name: Aedes aegypti verified video atoms and motion rows
     source_type: derived_sqlite_source
-    boundary: Derived Aedes aegypti video intelligence records from indexed PMC, Dryad, Mendeley, OSF, Zenodo, repository-discovery candidates, bounded mirrored videos, ffprobe metadata, inspectable thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and explicit structured gaps for huge files, unclear licenses, missing downloads, non-video download responses, failed probes, or out-of-scope discoveries. Discovery requires source-provided material metadata to name Aedes aegypti; repository search terms alone are not source evidence. Gaps preserve download URL, source URL, byte size, source-provided hashes when available, license text, dataset, repository, and locator.
+    boundary: Derived Aedes aegypti video intelligence records from indexed PMC, Dryad, Mendeley, OSF, Zenodo, repository-discovery candidates, upstream Zenodo/Figshare manifest gaps, bounded mirrored videos, ffprobe metadata, inspectable thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and explicit structured gaps for huge files, unclear licenses, missing downloads, non-video download responses, failed probes, upstream manifest rejections, or out-of-scope discoveries. Discovery requires source-provided material metadata to name Aedes aegypti; repository search terms alone are not source evidence. Gaps preserve download URL, source URL, byte size, source-provided hashes when available, license text, dataset, repository, original source/reason when available, and locator.
     query_plane: indexed_video_records_motion_tables_and_repository_discovery_to_sqlite_video_atoms
     artifact_dir: artifacts/mosquito-v1/raw/video_atoms
     ingest_script: scripts/ingest_video_atoms.py
