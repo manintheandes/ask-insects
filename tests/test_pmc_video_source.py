@@ -44,7 +44,7 @@ class PMCVideosSourceTests(unittest.TestCase):
         self.assertNotIn("still image", result.records[0].title.lower())
         self.assertEqual(
             result.records[0].media_url,
-            "https://pmc.ncbi.nlm.nih.gov/articles/instance/7535929/bin/elife-56829-video1.mp4",
+            "https://cdn.ncbi.nlm.nih.gov/pmc/blobs/7535929/elife-56829-video2-pmcvs_normal.mp4",
         )
         self.assertEqual(result.records[0].provenance.license, "CC BY 4.0")
         self.assertIn("raw_html", result.records[0].payload)

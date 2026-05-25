@@ -91,6 +91,9 @@ def _video_links(article_url: str, html: str) -> list[str]:
             continue
         seen.add(url)
         links.append(url)
+    cdn_links = [url for url in links if "cdn.ncbi.nlm.nih.gov" in url]
+    if cdn_links:
+        return cdn_links
     download_links = [url for url in links if "/articles/instance/" in url and "/bin/" in url]
     if download_links:
         return download_links
