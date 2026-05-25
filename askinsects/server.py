@@ -1433,6 +1433,7 @@ def write_vectornet_surveillance_metadata(staging: Path, source_payload: dict[st
             "sqlite_index": (staging / "source_index.sqlite").as_posix(),
             "generated_at": generated_at,
             "record_count": summary["record_count"],
+            "source_counts": counts,
             "lanes": summary["lanes"],
             "vectornet_surveillance": source_payload,
         }

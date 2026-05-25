@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -1144,6 +1145,8 @@ class ServerTests(unittest.TestCase):
             counts = {row["source"]: row["n"] for row in rows}
             self.assertEqual(counts["mosquito_v1_fixtures"], 7)
             self.assertEqual(counts["vectornet_aedes_surveillance"], 2)
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["source_counts"]["vectornet_aedes_surveillance"], 2)
             self.assertEqual(response.payload["vectornet_surveillance"]["matched_row_count"], 1)
             provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select provenance_json from records where source='vectornet_aedes_surveillance'",
