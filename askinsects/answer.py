@@ -325,6 +325,36 @@ def _wants_mosquito_repellent_literature(question: str) -> bool:
     return any(term in q for term in repellent_terms) and any(term in q for term in literature_terms)
 
 
+def _wants_mosquito_repellent_external_discovery(question: str) -> bool:
+    q = question.lower()
+    external_terms = (
+        "dataset",
+        "datasets",
+        "repository",
+        "repositories",
+        "datacite",
+        "zenodo",
+        "figshare",
+        "dryad",
+        "osf",
+        "patent",
+        "patents",
+        "patentsview",
+        "uspto",
+        "preprint",
+        "biorxiv",
+        "medrxiv",
+        "openalex",
+        "europe pmc",
+        "semantic scholar",
+        "agricola",
+        "usda",
+        "cabi",
+        "google scholar",
+    )
+    return _wants_mosquito_repellent_literature(question) and any(term in q for term in external_terms)
+
+
 def _wants_image_labels(question: str) -> bool:
     q = question.lower()
     return _wants_image_atoms(question) and any(
@@ -2074,12 +2104,16 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             ),
         )
     if _wants_mosquito_repellent_literature(question):
+        prefer_external = _wants_mosquito_repellent_external_discovery(question)
         return sorted(
             records,
             key=lambda record: (
                 0
-                if record.source in {MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID, MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID}
-                else 1,
+                if prefer_external and record.source == MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID
+                else 1
+                if record.source
+                in {MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID, MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID}
+                else 2,
                 0 if record.lane in {"literature", "datasets", "patents"} else 1,
             ),
         )
