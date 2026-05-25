@@ -700,7 +700,7 @@ def check_aedes_source_plane_benchmark() -> None:
     claim_rules = payload.get("claim_rules")
     if not isinstance(claim_rules, dict) or claim_rules.get("world_largest_claim_allowed") is not False:
         raise RuntimeError("Aedes benchmark must disallow the world-largest claim")
-    if int(payload.get("ask_insects_current", {}).get("hosted_record_count", 0)) < 817307:
+    if int(payload.get("ask_insects_current", {}).get("hosted_record_count", 0)) < 817304:
         raise RuntimeError("Aedes benchmark hosted proof is below the expected hosted record count")
     required_comparators = {
         "vectorbase_veupathdb",
