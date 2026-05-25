@@ -774,18 +774,35 @@ sources:
   - id: aedes_vector_competence_assays
     name: Aedes aegypti vector-competence assay candidates
     source_type: derived_sqlite_source
-    boundary: Deterministic structured assay-candidate extraction from source-grade Aedes aegypti literature records and legal full-text units, limited to pathogen, infection, dissemination, transmission, dose, temperature, tissue, strain, population, and timepoint mentions
-    query_plane: literature_fulltext_units_to_sqlite_vector_competence_records
+    boundary: Deterministic structured assay-candidate extraction from source-grade Aedes aegypti literature records, legal full-text units, and parsed aedes_extracted_facts supplement table rows that pass schema checks, limited to pathogen, infection, dissemination, transmission, dose, temperature, tissue, strain, population, and timepoint fields
+    query_plane: literature_fulltext_units_and_parsed_extracted_fact_rows_to_sqlite_vector_competence_records
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_vector_competence_assays.py
     input_sources:
       - aedes_literature_openalex
       - literature_fulltext_units
+      - aedes_extracted_facts
     lanes:
       - vector_competence
     provenance_required: true
     live_fetch: derived_from_indexed_literature
     legal_fulltext_only: true
+    confidence_policy: candidate_or_schema_validated_parsed_table_row_not_human_validated
+    source_contract:
+      parsed_table_rows:
+        - source_extracted_fact_record_id
+        - source_record_id
+        - source_extraction_method
+        - confidence parsed_table_schema_validated
+        - validation_status schema_validated
+        - human_validated false
+        - pathogen
+        - assay_fields
+        - metric_fields
+        - table_headers
+        - table_row
+        - table_row_index
+        - extracted_fact_provenance
   - id: aedes_public_health_guidance
     name: Official Aedes aegypti public-health guidance
     source_type: public_web_guidance

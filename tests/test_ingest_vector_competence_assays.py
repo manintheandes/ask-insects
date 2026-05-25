@@ -8,7 +8,7 @@ import unittest
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from scripts.ingest_vector_competence_assays import ingest_vector_competence_assays
-from tests.test_vector_competence_assays_source import write_assay_literature_fixture
+from tests.test_vector_competence_assays_source import write_assay_literature_fixture, write_parsed_extracted_fact_fixture
 
 
 class IngestVectorCompetenceAssaysTests(unittest.TestCase):
@@ -57,6 +57,26 @@ class IngestVectorCompetenceAssaysTests(unittest.TestCase):
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertIn("aedes_vector_competence_assays", status["sources"])
             self.assertEqual(status["aedes_vector_competence_assays"]["record_count"], 1)
+            self.assertEqual(status["aedes_vector_competence_assays"]["parsed_table_row_count"], 0)
+
+    def test_ingest_receipts_parsed_supplement_table_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_parsed_extracted_fact_fixture(artifact_dir)
+
+            result = ingest_vector_competence_assays(
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["record_count"], 1)
+            self.assertEqual(result["parsed_table_row_count"], 1)
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            payload = status["aedes_vector_competence_assays"]
+            self.assertEqual(payload["record_count"], 1)
+            self.assertEqual(payload["parsed_table_row_count"], 1)
+            self.assertIn("schema-validated parsed supplement table rows", payload["method"])
 
 
 if __name__ == "__main__":

@@ -467,7 +467,7 @@ python3 -m askinsects ask "show Zika vector competence assay dose and transmissi
 python3 -m askinsects search vector_competence "dissemination saliva 28 C"
 ```
 
-The lane uses source id `aedes_vector_competence_assays`. It creates one `vector_competence` record per detected pathogen-specific assay candidate, stores structured fields in SQLite payloads, and preserves provenance back to the source paper plus `literature_fulltext_units` when legal full text is available. It is deterministic candidate extraction, not a claim that every table and supplement has been fully parsed or human-validated.
+The lane uses source id `aedes_vector_competence_assays`. It creates one `vector_competence` record per detected pathogen-specific assay candidate, stores structured fields in SQLite payloads, and preserves provenance back to the source paper plus `literature_fulltext_units` when legal full text is available. It also promotes parsed `aedes_extracted_facts` vector-competence supplement table rows when the row passes schema checks for a supported pathogen and infection, dissemination, or transmission evidence. Promoted rows are labeled `parsed_table_schema_validated` with `human_validated: false`; they are inspectable table atoms, not a claim that every table and supplement has been fully parsed or biologically reviewed.
 
 ## Aedes aegypti Neurobiology Source Lane
 

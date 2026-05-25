@@ -56,6 +56,83 @@ def write_assay_literature_fixture(artifact_dir: Path) -> None:
     index.upsert_records_and_fulltext_units([literature], [unit])
 
 
+def write_parsed_extracted_fact_fixture(artifact_dir: Path) -> None:
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    source_paper = EvidenceRecord(
+        record_id="openalex:WTABLE1",
+        lane="literature",
+        source="aedes_literature_openalex",
+        title="Vertically infected Aedes aegypti excrete infectious arboviruses in saliva",
+        text="Aedes aegypti vector competence supplement source paper.",
+        species="Aedes aegypti",
+        url="https://example.org/table-paper",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_literature_openalex",
+            locator="raw/literature/page.json#WTABLE1",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="OpenAlex metadata",
+        ),
+    )
+    parsed_fact = EvidenceRecord(
+        record_id="extracted_fact:vector_competence:openalex:WTABLE1:row3",
+        lane="vector_competence",
+        source="aedes_extracted_facts",
+        title="Aedes aegypti extracted vector competence fact",
+        text=(
+            "Supplement table row. Viral strain (dose provided): DENV-1 (10 7 FFU/mL). "
+            "Aedes aegypti saliva transmission row."
+        ),
+        species="Aedes aegypti",
+        url="https://example.org/supplement.csv",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_extracted_facts",
+            locator="records#openalex:WTABLE1;supplement#0;raw/extracted_facts/supplements/table.csv;row#3",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="CC-BY",
+            source_url="https://example.org/supplement.csv",
+        ),
+        payload={
+            "fact_type": "vector_competence",
+            "confidence": "parsed",
+            "extraction_method": "deterministic_supplement_table_row_extract",
+            "source_record_id": "openalex:WTABLE1",
+            "fulltext_unit_id": None,
+            "evidence_text": "Viral strain (dose provided): DENV-1 (10 7 FFU/mL). Saliva transmission row.",
+            "fields": {
+                "pathogen": ["denv"],
+                "dose_values": ["7 FFU"],
+                "infection": ["infected"],
+                "transmission": ["saliva"],
+                "tissue": ["saliva"],
+                "strain": ["strain"],
+                "table_headers": [
+                    "Viral strain (dose provided)",
+                    "Genotype",
+                    "Year of first isolation/Place/host",
+                    "Viral stock passage history",
+                    "Cell type used for virus passage",
+                    "GenBank accession number",
+                ],
+                "table_row": {
+                    "Viral strain (dose provided)": "DENV-1 (10 7 FFU/mL)",
+                    "Genotype": "genotype V",
+                    "Year of first isolation/Place/host": "2013/Guadeloupe/human",
+                    "Viral stock passage history": "P2",
+                    "Cell type used for virus passage": "C6/36",
+                    "GenBank accession number": "OR486055",
+                },
+                "table_row_index": 3,
+            },
+            "source_provenance": source_paper.provenance.to_dict(),
+            "unit_provenance": None,
+        },
+    )
+    index.upsert_records([source_paper, parsed_fact])
+
+
 class VectorCompetenceAssaySourceTests(unittest.TestCase):
     def test_build_vector_competence_assay_records_extracts_structured_fields(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -78,6 +155,26 @@ class VectorCompetenceAssaySourceTests(unittest.TestCase):
             self.assertIn("dose", record.payload["assay_fields"])
             self.assertIn("temperature", record.payload["assay_fields"])
             self.assertIn("literature_fulltext_units#openalex:WVC1:fulltext:0", record.provenance.locator)
+
+    def test_build_vector_competence_assay_records_promotes_parsed_table_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_parsed_extracted_fact_fixture(artifact_dir)
+
+            result = build_vector_competence_assay_records(artifact_dir, retrieved_at="2026-05-24T00:00:00Z")
+
+            self.assertEqual(result.parsed_table_row_count, 1)
+            record = result.records[0]
+            self.assertEqual(record.source, VECTOR_COMPETENCE_ASSAY_SOURCE_ID)
+            self.assertEqual(record.lane, "vector_competence")
+            self.assertIn("dengue virus", record.title)
+            self.assertEqual(record.payload["pathogen"], "dengue virus")
+            self.assertEqual(record.payload["confidence"], "parsed_table_schema_validated")
+            self.assertEqual(record.payload["validation_status"], "schema_validated")
+            self.assertEqual(record.payload["source_extracted_fact_record_id"], "extracted_fact:vector_competence:openalex:WTABLE1:row3")
+            self.assertEqual(record.payload["source_confidence"], "parsed")
+            self.assertEqual(record.payload["table_row"]["Viral strain (dose provided)"], "DENV-1 (10 7 FFU/mL)")
+            self.assertIn("aedes_extracted_facts#extracted_fact:vector_competence:openalex:WTABLE1:row3", record.provenance.locator)
 
     def test_build_vector_competence_assay_records_records_gap_when_empty(self):
         with tempfile.TemporaryDirectory() as tmpdir:

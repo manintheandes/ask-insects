@@ -1960,6 +1960,63 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
             self.assertEqual(answer["evidence"][0]["lane"], "vector_competence")
 
+    def test_supplement_table_questions_prefer_promoted_vector_assay_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:vector_competence:WZZZ:dengue",
+                        lane="vector_competence",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti extracted vector competence dengue fact",
+                        text="Parsed supplement table row: DENV-1 infection rate 80%, dissemination rate 40%, transmission rate 20%.",
+                        species="Aedes aegypti",
+                        url="https://example.org/dengue",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#WZZZ;supplement#0;raw/extracted_facts/supplements/WZZZ.csv;row#1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC-BY",
+                            source_url="https://example.org/dengue",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="assay_table:vector_competence:WZZZ:dengue",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti parsed vector competence table row: dengue virus",
+                        text=(
+                            "Schema-validated parsed supplement table row for dengue virus in Aedes aegypti. "
+                            "Validation status: schema_validated, not human_validated. "
+                            "Table row: DENV-1 infection rate 80%, dissemination rate 40%, transmission rate 20%."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://example.org/dengue",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="aedes_extracted_facts#extracted_fact:vector_competence:WZZZ:dengue;records#WZZZ;row#1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC-BY",
+                            source_url="https://example.org/dengue",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show dengue vector competence supplement table infection rate for Aedes aegypti",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_vector_competence_assays")
+            self.assertEqual(answer["evidence"][0]["record_id"], "assay_table:vector_competence:WZZZ:dengue")
+
     def test_supplement_table_questions_do_not_let_manifests_crowd_out_parsed_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -190,11 +190,11 @@ Sources:
 
 - `aedes_literature_facets`: literature-derived vector-competence facets while deeper assay extraction is built.
 - `aedes_pathogen_taxonomy`: NCBI Taxonomy summary records for dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus as pathogen identity anchors.
-- `aedes_vector_competence_assays`: deterministic assay-candidate extraction from indexed Aedes literature records and legal full-text units.
+- `aedes_vector_competence_assays`: deterministic assay-candidate extraction from indexed Aedes literature records, legal full-text units, and schema-validated parsed `aedes_extracted_facts` supplement table rows.
 
 The pathogen taxonomy lane saves NCBI E-utilities taxonomy summary JSON under `raw/pathogen_taxonomy/`, indexes one `vector_competence` row per configured pathogen, preserves the raw taxonomy summary in `record_payloads`, and cites locators such as `raw/pathogen_taxonomy/aedes_pathogen_taxonomy_esummary.json#taxonomy/64320`. It is an identity layer, not a substitute for structured extraction of infection, dissemination, and transmission assay tables.
 
-The assay-candidate lane reads source-grade `aedes_literature_openalex` records and legal `literature_fulltext_units`, then emits `vector_competence` records when a text unit contains an Aedes-relevant pathogen plus assay context such as infection, dissemination, transmission, dose, temperature, tissue, strain, population, or timepoint. Payloads preserve the detected pathogen, matched terms, fields, temperature values, dose values, source paper ID, full-text unit ID, and snippet. This is a structured candidate layer; true table and supplement parsing remains a follow-on requirement.
+The assay-candidate lane reads source-grade `aedes_literature_openalex` records and legal `literature_fulltext_units`, then emits `vector_competence` records when a text unit contains an Aedes-relevant pathogen plus assay context such as infection, dissemination, transmission, dose, temperature, tissue, strain, population, or timepoint. It also reads parsed `aedes_extracted_facts` vector-competence supplement table rows and promotes rows that have a supported pathogen, a non-empty table row, and infection, dissemination, or transmission evidence. Payloads preserve the detected pathogen, matched terms, fields, temperature values, dose values, source paper ID, full-text unit ID, extracted-fact record ID, table headers, table row, row index, and provenance. Promoted table rows are schema-validated parsed atoms, not human-validated assay results.
 
 ## Cross-Lane Extracted Facts
 

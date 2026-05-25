@@ -1957,6 +1957,16 @@ def _extracted_fact_grain_rank(question: str, record: EvidenceRecord) -> int:
     return 2
 
 
+def _vector_competence_assay_grain_rank(question: str, record: EvidenceRecord) -> int:
+    if record.source != "aedes_vector_competence_assays":
+        return 3
+    if _wants_extracted_facts(question) and record.record_id.startswith("assay_table:vector_competence:"):
+        return 0
+    if record.record_id.startswith("assay_candidate:vector_competence:"):
+        return 1
+    return 2
+
+
 def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
     if _wants_video_atoms(question):
@@ -2053,6 +2063,8 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             haystack = f"{record.title}\n{record.text}".lower()
             if wants_taxonomy:
                 preferred_source = "aedes_pathogen_taxonomy"
+            elif wants_extracted and wants_assay:
+                preferred_source = "aedes_vector_competence_assays"
             elif wants_extracted:
                 preferred_source = EXTRACTED_FACTS_SOURCE_ID
             elif wants_assay:
@@ -2062,6 +2074,7 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             missing_assay_terms = sum(1 for term in assay_terms if term not in haystack)
             return (
                 0 if record.source == preferred_source else 1,
+                _vector_competence_assay_grain_rank(question, record),
                 _extracted_fact_grain_rank(question, record),
                 0 if record.lane == "vector_competence" else 1,
                 0 if pathogen_terms and any(term in haystack for term in pathogen_terms) else 1,
@@ -2210,6 +2223,39 @@ def _extracted_fact_records(index: SourceIndex, lanes: list[str], *, limit: int)
             [EXTRACTED_FACTS_SOURCE_ID, *params],
         ).fetchall()
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
+def _vector_competence_assay_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not (
+        _wants_extracted_facts(question)
+        or any(
+            term in q
+            for term in (
+                "assay",
+                "infection rate",
+                "dissemination",
+                "transmission",
+                "dose",
+                "temperature",
+                "midgut",
+                "saliva",
+                "salivary",
+                "extrinsic incubation",
+            )
+        )
+    ):
+        return []
+    records = _source_search_records(
+        index,
+        "aedes_vector_competence_assays",
+        "vector_competence",
+        question,
+        limit=max(limit * 20, 50),
+    )
+    if records:
+        return _prioritize_named_source_records(question, records)[:limit]
+    return _source_records(index, "aedes_vector_competence_assays", ["vector_competence"], limit=limit)
 
 
 def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
@@ -2513,6 +2559,13 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             all_records.append(record)
             seen_record_ids.add(record.record_id)
         for record in _cdc_surveillance_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "vector_competence":
+        for record in _vector_competence_assay_records(index, plan.question, limit=limit):
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

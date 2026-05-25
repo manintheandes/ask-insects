@@ -83,6 +83,7 @@ class VectorCompetenceAssayResult:
     candidate_count: int
     source_record_count: int
     fulltext_unit_count: int
+    parsed_table_row_count: int
 
 
 def utc_now() -> str:
@@ -300,6 +301,174 @@ def _record_for_candidate(candidate: AssayCandidate, pathogen: str, pathogen_ter
     )
 
 
+def _as_list(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item).strip()]
+    if value is None:
+        return []
+    text = str(value).strip()
+    return [text] if text else []
+
+
+def _table_text(table_row: dict[str, object]) -> str:
+    parts = []
+    for key, value in table_row.items():
+        parts.append(f"{key}: {value}")
+    return ". ".join(parts)
+
+
+def _field_hits_from_parsed_fields(fields: dict[str, object], combined_text: str) -> dict[str, list[str]]:
+    field_hits = _assay_field_matches(combined_text)
+    for field in ASSAY_FIELD_TERMS:
+        if field in fields:
+            hits = _as_list(fields.get(field))
+            if hits:
+                field_hits.setdefault(field, [])
+                field_hits[field].extend(hit for hit in hits if hit not in field_hits[field])
+    if fields.get("dose_values"):
+        field_hits.setdefault("dose", [])
+        field_hits["dose"].extend(hit for hit in _as_list(fields.get("dose_values")) if hit not in field_hits["dose"])
+    if fields.get("temperature_values"):
+        field_hits.setdefault("temperature", [])
+        field_hits["temperature"].extend(hit for hit in _as_list(fields.get("temperature_values")) if hit not in field_hits["temperature"])
+    if TEMPERATURE_RE.search(combined_text):
+        field_hits.setdefault("temperature", []).append("temperature value")
+    if DOSE_RE.search(combined_text):
+        field_hits.setdefault("dose", []).append("dose value")
+    return {key: list(dict.fromkeys(value)) for key, value in field_hits.items() if value}
+
+
+def _pathogen_hits_from_parsed_fields(fields: dict[str, object], combined_text: str) -> dict[str, list[str]]:
+    hits = _pathogen_matches(combined_text)
+    for value in _as_list(fields.get("pathogen")):
+        for pathogen, terms in PATHOGEN_TERMS.items():
+            if value.lower() in {term.lower() for term in terms} or _pattern_for_term(value).search(" ".join(terms)):
+                hits.setdefault(pathogen, [])
+                if value not in hits[pathogen]:
+                    hits[pathogen].append(value)
+    return hits
+
+
+def _records_from_parsed_extracted_fact_rows(
+    conn: sqlite3.Connection,
+    *,
+    retrieved_at: str,
+) -> tuple[list[EvidenceRecord], int, int]:
+    rows = conn.execute(
+        """
+        SELECT
+          r.record_id,
+          r.title,
+          r.text,
+          r.species,
+          r.url,
+          r.provenance_json,
+          p.payload_json
+        FROM records r
+        JOIN record_payloads p ON p.record_id = r.record_id
+        WHERE r.source = 'aedes_extracted_facts'
+          AND r.lane = 'vector_competence'
+        ORDER BY r.record_id
+        """
+    ).fetchall()
+    records: list[EvidenceRecord] = []
+    parsed_rows_seen = 0
+    skipped_rows = 0
+    for row in rows:
+        try:
+            payload = json.loads(str(row["payload_json"]))
+        except json.JSONDecodeError:
+            skipped_rows += 1
+            continue
+        if payload.get("fact_type") != "vector_competence" or payload.get("confidence") != "parsed":
+            continue
+        fields = payload.get("fields")
+        if not isinstance(fields, dict):
+            skipped_rows += 1
+            continue
+        table_row = fields.get("table_row")
+        if not isinstance(table_row, dict) or not table_row:
+            skipped_rows += 1
+            continue
+        parsed_rows_seen += 1
+        table_row_text = _table_text(table_row)
+        evidence_text = str(payload.get("evidence_text") or "")
+        combined_text = "\n".join([str(row["title"]), str(row["text"]), evidence_text, table_row_text])
+        pathogen_hits = _pathogen_hits_from_parsed_fields(fields, combined_text)
+        field_hits = _field_hits_from_parsed_fields(fields, combined_text)
+        metric_fields = set(field_hits) & {"infection", "dissemination", "transmission"}
+        if not pathogen_hits or not metric_fields:
+            skipped_rows += 1
+            continue
+        source_record_id = str(payload.get("source_record_id") or "")
+        source_provenance = payload.get("source_provenance") if isinstance(payload.get("source_provenance"), dict) else {}
+        extracted_provenance = json.loads(str(row["provenance_json"]))
+        table_headers = fields.get("table_headers") if isinstance(fields.get("table_headers"), list) else list(table_row)
+        table_row_index = fields.get("table_row_index")
+        dose_values = _as_list(fields.get("dose_values"))
+        temperature_values = _as_list(fields.get("temperature_values"))
+        for pathogen, pathogen_terms in pathogen_hits.items():
+            digest = hashlib.sha1(f"{row['record_id']}|{pathogen}|{json.dumps(table_row, sort_keys=True)}".encode("utf-8")).hexdigest()[:12]
+            source_url = row["url"] or extracted_provenance.get("source_url") or source_provenance.get("source_url")
+            locator_parts = [f"aedes_extracted_facts#{row['record_id']}"]
+            if source_record_id:
+                locator_parts.append(f"records#{source_record_id}")
+            locator = extracted_provenance.get("locator")
+            if locator:
+                locator_parts.append(str(locator))
+            title = f"Aedes aegypti parsed vector competence table row: {pathogen}"
+            text = (
+                f"Schema-validated parsed supplement table row for {pathogen} in Aedes aegypti. "
+                f"Validation status: schema_validated, not human_validated. "
+                f"Detected assay fields: {', '.join(sorted(field_hits))}. "
+                f"Table row: {table_row_text}"
+            )
+            records.append(
+                EvidenceRecord(
+                    record_id=f"assay_table:vector_competence:{_normalize_id(str(row['record_id']))}:{digest}",
+                    lane="vector_competence",
+                    source=VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
+                    title=title,
+                    text=text,
+                    species=row["species"] or "Aedes aegypti",
+                    url=source_url,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id=VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
+                        locator=";".join(locator_parts),
+                        retrieved_at=retrieved_at,
+                        license=extracted_provenance.get("license") or source_provenance.get("license"),
+                        source_url=source_url,
+                    ),
+                    payload={
+                        "source_extracted_fact_record_id": row["record_id"],
+                        "source_record_id": source_record_id or None,
+                        "source_title": payload.get("source_title") or row["title"],
+                        "source_confidence": payload.get("confidence"),
+                        "source_extraction_method": payload.get("extraction_method"),
+                        "extraction_source": "aedes_extracted_facts_parsed_supplement_table",
+                        "confidence": "parsed_table_schema_validated",
+                        "validation_status": "schema_validated",
+                        "human_validated": False,
+                        "pathogen": pathogen,
+                        "pathogen_terms": pathogen_terms,
+                        "assay_fields": field_hits,
+                        "metric_fields": sorted(metric_fields),
+                        "dose_values": dose_values,
+                        "temperature_values": temperature_values,
+                        "table_headers": table_headers,
+                        "table_row": table_row,
+                        "table_row_index": table_row_index,
+                        "evidence_text": evidence_text,
+                        "source_payload_schema_version": payload.get("schema_version"),
+                        "source_provenance": source_provenance,
+                        "extracted_fact_provenance": extracted_provenance,
+                    },
+                )
+            )
+    return records, parsed_rows_seen, skipped_rows
+
+
 def build_vector_competence_assay_records(artifact_dir: Path, *, retrieved_at: str | None = None) -> VectorCompetenceAssayResult:
     db_path = artifact_dir / "source_index.sqlite"
     if not db_path.exists():
@@ -308,8 +477,12 @@ def build_vector_competence_assay_records(artifact_dir: Path, *, retrieved_at: s
     with sqlite3.connect(db_path) as conn:
         conn.row_factory = sqlite3.Row
         candidates, literature_count, fulltext_count = _candidate_rows(conn)
+        parsed_table_records, parsed_table_rows_seen, skipped_parsed_table_rows = _records_from_parsed_extracted_fact_rows(
+            conn,
+            retrieved_at=retrieved,
+        )
 
-    records: list[EvidenceRecord] = []
+    records: list[EvidenceRecord] = list(parsed_table_records)
     for candidate in candidates:
         combined_text = "\n".join([candidate.source_title, candidate.text])
         pathogen_hits = _pathogen_matches(combined_text)
@@ -340,6 +513,17 @@ def build_vector_competence_assay_records(artifact_dir: Path, *, retrieved_at: s
                 "retrieved_at": retrieved,
             }
         )
+    elif skipped_parsed_table_rows:
+        gaps.append(
+            {
+                "source": VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
+                "lane": "vector_competence",
+                "reason": "parsed_vector_competence_table_rows_skipped_schema_validation",
+                "parsed_table_rows_seen": parsed_table_rows_seen,
+                "skipped_parsed_table_rows": skipped_parsed_table_rows,
+                "retrieved_at": retrieved,
+            }
+        )
 
     return VectorCompetenceAssayResult(
         source_id=VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
@@ -348,4 +532,5 @@ def build_vector_competence_assay_records(artifact_dir: Path, *, retrieved_at: s
         candidate_count=len(records),
         source_record_count=literature_count,
         fulltext_unit_count=fulltext_count,
+        parsed_table_row_count=len(parsed_table_records),
     )

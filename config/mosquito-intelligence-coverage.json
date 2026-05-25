@@ -304,11 +304,12 @@
         "Vector competence questions route through the vector_competence lane and return provenance back to source literature records and full-text units where available.",
         "aedes_pathogen_taxonomy anchors dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus identities to NCBI Taxonomy records for pathogen-specific Aedes aegypti questions.",
         "aedes_vector_competence_assays extracts pathogen-specific assay-candidate records from indexed Aedes literature and legal full-text units, preserving source paper and full-text-unit provenance plus structured pathogen, infection, dissemination, transmission, dose, temperature, tissue, strain, population, and timepoint fields when detected.",
+        "aedes_vector_competence_assays also promotes parsed aedes_extracted_facts vector-competence supplement table rows into schema-validated assay-table records when the row has a supported pathogen, a non-empty table row, and infection, dissemination, or transmission evidence. These records preserve extracted-fact row provenance and are explicitly not human-validated.",
         "aedes_vectorbyte_traits contributes temperature-dependent VecTraits rows such as transmission potential where VectorByte exposes Aedes aegypti trait measurements.",
         "aedes_extracted_facts adds cross-lane vector-competence candidate facts, supplement manifests, and parsed supported supplement table rows from indexed literature payloads, Europe PMC or PMC metadata, public supplement files, and legal full-text units."
       ],
       "required_next_sources": [
-        "validated table and supplement parsing for vector-competence assay rows beyond deterministic supported-format extraction",
+        "broader parsed table and supplement coverage beyond currently supported deterministic formats and schema-validated extracted-facts rows",
         "manual or model-assisted validation labels for extracted assay candidates"
       ],
       "completion_evidence": [

@@ -49,10 +49,11 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "source": VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
         "record_count": len(result.records),
         "candidate_count": result.candidate_count,
+        "parsed_table_row_count": result.parsed_table_row_count,
         "source_record_count": result.source_record_count,
         "fulltext_unit_count": result.fulltext_unit_count,
         "gap_count": len(result.gaps),
-        "method": "deterministic assay-candidate extraction from Aedes literature records and legal full-text units",
+        "method": "deterministic assay-candidate extraction from Aedes literature records, legal full-text units, and schema-validated parsed supplement table rows from aedes_extracted_facts",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -81,6 +82,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "source": VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
         "record_count": len(result.records),
         "candidate_count": result.candidate_count,
+        "parsed_table_row_count": result.parsed_table_row_count,
         "source_record_count": result.source_record_count,
         "fulltext_unit_count": result.fulltext_unit_count,
         "gap_count": len(result.gaps),
