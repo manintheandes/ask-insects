@@ -305,11 +305,12 @@ This lane emits supplement manifests plus deterministic candidate facts for vect
 
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 
-The Aedes olfaction audit lane uses source id `aedes_olfaction_literature`. It fetches a bounded PubMed ESearch/ESummary candidate set for Aedes olfaction, odor, chemosensory, antenna, Orco, and receptor terms from 2020 onward, writes one `literature` record per PMID, and annotates each record with `coverage_status`, `matched_record_ids`, and `matched_sources`:
+The Aedes olfaction audit lane uses source id `aedes_olfaction_literature`. It fetches a bounded PubMed ESearch/ESummary candidate set for Aedes olfaction, odor, chemosensory, antenna, Orco, and receptor terms from 2020 onward, writes one `literature` record per PMID, and annotates each record with `coverage_status`, `matched_record_ids`, and `matched_sources`. When an Unpaywall email is supplied, the same lane fetches legal direct open XML, PDF, HTML, or text files and stores parsed paper chunks plus figure captions in `literature_fulltext_units`:
 
 ```bash
-python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-aedes-olfaction-literature --max-results 500 --page-size 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-aedes-olfaction-literature --max-results 500 --page-size 100 --unpaywall-email sources@openinsects.org
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search literature "Aedes aegypti olfaction coverage_status"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search fulltext "Aedes aegypti Orco figure"
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(p.payload_json, '$.coverage_status') as status, count(*) as n from records r join record_payloads p on p.record_id=r.record_id where r.source='aedes_olfaction_literature' group by status"
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-crossref-literature-audit --max-results 500 --page-size 100
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Crossref DOI audit literature for Aedes aegypti" --json

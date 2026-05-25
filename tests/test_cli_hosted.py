@@ -145,6 +145,12 @@ class HostedCliTests(unittest.TestCase):
                 "250",
                 "--page-size",
                 "50",
+                "--unpaywall-email",
+                "sources@openinsects.org",
+                "--fulltext-limit",
+                "25",
+                "--delay-seconds",
+                "0",
             )
 
         self.assertEqual(code, 0)
@@ -152,6 +158,10 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][1], "/ingest/aedes-olfaction-literature")
         self.assertEqual(calls[0][2]["max_results"], 250)
         self.assertEqual(calls[0][2]["page_size"], 50)
+        self.assertTrue(calls[0][2]["include_fulltext"])
+        self.assertEqual(calls[0][2]["unpaywall_email"], "sources@openinsects.org")
+        self.assertEqual(calls[0][2]["fulltext_limit"], 25)
+        self.assertEqual(calls[0][2]["delay_seconds"], 0)
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 

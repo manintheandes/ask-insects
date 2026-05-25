@@ -2838,10 +2838,17 @@ def ingest_aedes_olfaction_literature_hosted(
 
     max_results = int(payload.get("max_results", 500))
     page_size = int(payload.get("page_size", 100))
+    fulltext_limit = payload.get("fulltext_limit")
+    parsed_fulltext_limit = int(fulltext_limit) if fulltext_limit is not None else None
     response = ingest_aedes_olfaction_literature(
         artifact_dir=artifact_dir,
         max_results=max_results,
         page_size=page_size,
+        include_fulltext=bool(payload.get("include_fulltext", True)),
+        unpaywall_email=str(payload.get("unpaywall_email") or "") or None,
+        fulltext_limit=parsed_fulltext_limit,
+        delay_seconds=float(payload.get("delay_seconds", 1.0)),
+        max_fulltext_bytes=int(payload.get("max_fulltext_bytes", 60_000_000)),
     )
     response["activated_artifact_dir"] = str(artifact_dir)
     response["updated_in_place"] = True

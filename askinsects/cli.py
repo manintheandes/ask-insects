@@ -323,6 +323,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_aedes_olfaction_literature.add_argument("--hosted", action="store_true")
     ingest_aedes_olfaction_literature.add_argument("--max-results", type=int, default=500)
     ingest_aedes_olfaction_literature.add_argument("--page-size", type=int, default=100)
+    ingest_aedes_olfaction_literature.add_argument("--skip-fulltext", action="store_true")
+    ingest_aedes_olfaction_literature.add_argument("--unpaywall-email")
+    ingest_aedes_olfaction_literature.add_argument("--fulltext-limit", type=int)
+    ingest_aedes_olfaction_literature.add_argument("--delay-seconds", type=float, default=1.0)
+    ingest_aedes_olfaction_literature.add_argument("--max-fulltext-bytes", type=int, default=60_000_000)
 
     ingest_crossref_literature_audit = sub.add_parser("ingest-crossref-literature-audit")
     ingest_crossref_literature_audit.add_argument("--hosted", action="store_true")
@@ -1139,6 +1144,11 @@ def main(argv: list[str] | None = None) -> int:
         request_payload = {
             "max_results": args.max_results,
             "page_size": args.page_size,
+            "include_fulltext": not args.skip_fulltext,
+            "unpaywall_email": args.unpaywall_email,
+            "fulltext_limit": args.fulltext_limit,
+            "delay_seconds": args.delay_seconds,
+            "max_fulltext_bytes": args.max_fulltext_bytes,
         }
         if not args.hosted:
             from scripts.ingest_aedes_olfaction_literature import ingest_aedes_olfaction_literature

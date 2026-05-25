@@ -222,14 +222,18 @@ sources:
   - id: aedes_olfaction_literature
     name: Aedes aegypti olfaction literature audit since 2020
     source_type: public_api_audit
-    boundary: Bounded PubMed ESearch and ESummary candidates for Aedes aegypti olfaction, odor, odorant, odour, chemosensory, antenna, antennal, Orco, odorant receptor, and ionotropic receptor papers from 2020-01-01 through run date, compared against existing Ask Insects literature records by DOI and normalized title
+    boundary: Bounded PubMed ESearch and ESummary candidates for Aedes aegypti olfaction, odor, odorant, odour, chemosensory, antenna, antennal, Orco, odorant receptor, and ionotropic receptor papers from 2020-01-01 through run date, compared against existing Ask Insects literature records by DOI and normalized title, with optional Unpaywall legal direct XML/PDF/text full-text enrichment and figure-caption extraction
     query_plane: pubmed_esearch_esummary_to_sqlite_olfaction_literature_audit_records
+    fulltext_query_plane: unpaywall_legal_direct_fulltext_to_literature_fulltext_units_and_literature_fulltext_fts
     api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+    enrichment_api_base: https://api.unpaywall.org/v2
     artifact_dir: artifacts/mosquito-v1
     raw_artifact_dir: artifacts/mosquito-v1/raw/aedes_olfaction_literature
     ingest_script: scripts/ingest_aedes_olfaction_literature.py
+    sqlite_fulltext_table: literature_fulltext_units
     lanes:
       - literature
+      - literature_fulltext
     provenance_required: true
     live_fetch: opt_in_bounded
     source_contract:
@@ -246,13 +250,23 @@ sources:
         - matched_sources
         - canonical_literature_row_count
         - raw_esummary_locator
+        - open_fulltext_url_when_unpaywall_exposes_legal_direct_file
+        - fulltext_unit_count
+        - figure_caption_unit_count
+        - raw_unpaywall_locator
+        - raw_fulltext_locator
       structured_gaps:
         - aedes_olfaction_pubmed_search_failed
         - aedes_olfaction_pubmed_summary_failed
         - aedes_olfaction_result_limit_applied
         - aedes_olfaction_no_pubmed_results
         - aedes_olfaction_no_canonical_literature_rows
-        - aedes_olfaction_no_canonical_literature_rows
+        - aedes_olfaction_fulltext_email_not_configured
+        - aedes_olfaction_fulltext_missing_doi
+        - aedes_olfaction_unpaywall_fetch_failed
+        - aedes_olfaction_no_legal_direct_fulltext
+        - aedes_olfaction_open_fulltext_fetch_or_parse_failed
+        - aedes_olfaction_open_fulltext_empty_after_parse
   - id: aedes_crossref_literature_audit
     name: Aedes aegypti Crossref literature audit since 2020
     source_type: public_api_audit
