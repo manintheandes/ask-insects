@@ -6,7 +6,17 @@ VM="${ASK_INSECTS_VM:-ask-insects}"
 REMOTE_DIR="${ASK_INSECTS_REMOTE_DIR:-/home/josh/ask-insects}"
 TOKEN="${ASK_INSECTS_TOKEN:?Set ASK_INSECTS_TOKEN before deploying}"
 
-tar --exclude='.git' --exclude='.worktrees' --exclude='.superpowers' --exclude='artifacts' --exclude='demo-recordings' -czf /tmp/ask-insects-deploy.tgz .
+tar \
+  --exclude='.git' \
+  --exclude='.worktrees' \
+  --exclude='.superpowers' \
+  --exclude='.venv' \
+  --exclude='__pycache__' \
+  --exclude='.pytest_cache' \
+  --exclude='._*' \
+  --exclude='artifacts' \
+  --exclude='demo-recordings' \
+  -czf /tmp/ask-insects-deploy.tgz .
 gcloud compute scp /tmp/ask-insects-deploy.tgz "$VM:/tmp/ask-insects-deploy.tgz" --zone "$ZONE"
 
 gcloud compute ssh "$VM" --zone "$ZONE" --command "
