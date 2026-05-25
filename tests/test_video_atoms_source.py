@@ -9,6 +9,7 @@ import unittest
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.sources.video_atoms import AedesVideoAtomsResult, VIDEO_ATOMS_SOURCE_ID, build_video_atom_records
+from tests.test_mendeley_behavior_media_source import tiny_xlsx
 
 
 RETRIEVED_AT = "2026-05-24T00:00:00Z"
@@ -426,6 +427,60 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(len(rows), 1)
         self.assertEqual(result.motion_row_count, 1)
         self.assertIn("raw/mendeley_behavior_media/table_files/Video S1 - Spot Statistics.csv#row/1", rows[0].provenance.locator)
+
+    def test_parses_mendeley_xlsx_locomotory_video_analysis_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = (
+                artifact_dir
+                / "raw"
+                / "mendeley_behavior_media"
+                / "table_files"
+                / "Data_VideoAnalysis_temperature gradients_AeAegypti.xlsx"
+            )
+            table_path.parent.mkdir(parents=True)
+            table_path.write_bytes(
+                tiny_xlsx(
+                    [
+                        [
+                            "Behavioural_Activity",
+                            "Trial",
+                            "Subject",
+                            "Zone",
+                            "Day",
+                            "Temperature",
+                            "Species",
+                            "Feeding_Status",
+                            "Age",
+                            "Velocity.center.point.Mean.cm.s",
+                            "Distance.moved.center.point.Total.cm",
+                        ],
+                        ["Flying", "Trial 1", "Subject 2", "In S 5", "1", "10 - 20", "Aedes aegypti", "non-blood-fed", "5", "15.8844", "10.5939"],
+                    ]
+                )
+            )
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                motion_table_paths=[table_path],
+            )
+
+        rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row.payload["source_video_record_id"], "Data_VideoAnalysis_temperature gradients_AeAegypti")
+        self.assertEqual(row.payload["track_id"], "Subject 2")
+        self.assertEqual(row.payload["behavior_type"], "Flying")
+        self.assertEqual(row.payload["assay"], "locomotory video analysis")
+        self.assertEqual(row.payload["arena"], "In S 5")
+        self.assertEqual(row.payload["temperature"], "10 - 20")
+        self.assertEqual(row.payload["feeding_status"], "non-blood-fed")
+        self.assertEqual(row.payload["age"], 5)
+        self.assertEqual(row.payload["velocity_mean_cm_s"], 15.8844)
+        self.assertEqual(row.payload["distance_moved_total_cm"], 10.5939)
+        self.assertIn("raw/mendeley_behavior_media/table_files/Data_VideoAnalysis_temperature gradients_AeAegypti.xlsx#sheet/1/row/2", row.provenance.locator)
 
     def test_discovers_or_gaps_external_video_candidates(self):
         with tempfile.TemporaryDirectory() as tmpdir:

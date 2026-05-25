@@ -931,7 +931,7 @@ class AnswerTests(unittest.TestCase):
                         lane="behavior",
                         source="aedes_video_atoms",
                         title="Aedes aegypti video motion row host seeking",
-                        text="Aedes aegypti video motion trajectory row with track id, frame, time range, coordinates, assay, stimulus, arena, and confidence.",
+                        text="Aedes aegypti video motion trajectory row with track id, frame, time range, coordinates, assay, stimulus, arena, velocity, and confidence.",
                         species="Aedes aegypti",
                         url=None,
                         media_url=None,
@@ -941,7 +941,7 @@ class AnswerTests(unittest.TestCase):
                             retrieved_at="2026-05-24T00:00:00Z",
                             license="CC BY",
                         ),
-                        payload={"atom_type": "video_motion_row"},
+                        payload={"atom_type": "video_motion_row", "velocity_mean_cm_s": 3.25, "behavior_type": "Flying"},
                     ),
                     EvidenceRecord(
                         record_id="extracted_fact:behavior:motion",
@@ -966,6 +966,12 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "behavior")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+
+            velocity_answer = answer_question("show Aedes aegypti locomotory video analysis velocity", artifact_dir=artifact_dir)
+
+            self.assertTrue(velocity_answer["ok"])
+            self.assertEqual(velocity_answer["answer_shape"], "behavior")
+            self.assertEqual(velocity_answer["evidence"][0]["source"], "aedes_video_atoms")
 
     def test_video_discovery_questions_do_not_fall_back_to_other_repositories(self):
         with tempfile.TemporaryDirectory() as tmpdir:

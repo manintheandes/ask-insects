@@ -111,6 +111,71 @@ class VerifyCompleteTests(unittest.TestCase):
 
             verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
 
+    def test_verify_complete_rejects_stale_receipt_record_count(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            artifact_dir.mkdir()
+            with sqlite3.connect(artifact_dir / "source_index.sqlite") as conn:
+                conn.executescript(
+                    """
+                    create table records (
+                      record_id text primary key,
+                      lane text not null,
+                      source text not null,
+                      title text not null,
+                      text text not null,
+                      species text,
+                      url text,
+                      media_url text,
+                      provenance_json text not null
+                    );
+                    insert into records values ('r1', 'genes', 'vectorbase_aedes_genomics', 'one', 'one', 'Aedes aegypti', null, null, '{}');
+                    insert into records values ('r2', 'genes', 'vectorbase_aedes_genomics', 'two', 'two', 'Aedes aegypti', null, null, '{}');
+                    """
+                )
+            stale = {
+                "record_count": 1,
+                "source_counts": {"vectorbase_aedes_genomics": 1},
+                "vectorbase_aedes_genomics": {"record_count": 1},
+            }
+            (artifact_dir / "source_status.json").write_text(json.dumps(stale), encoding="utf-8")
+            (artifact_dir / "source_receipt.json").write_text(json.dumps(stale), encoding="utf-8")
+
+            with self.assertRaisesRegex(RuntimeError, "record_count mismatch"):
+                verify_complete.check_receipts_match_sqlite(artifact_dir)
+
+    def test_verify_complete_accepts_receipts_matching_sqlite(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            artifact_dir.mkdir()
+            with sqlite3.connect(artifact_dir / "source_index.sqlite") as conn:
+                conn.executescript(
+                    """
+                    create table records (
+                      record_id text primary key,
+                      lane text not null,
+                      source text not null,
+                      title text not null,
+                      text text not null,
+                      species text,
+                      url text,
+                      media_url text,
+                      provenance_json text not null
+                    );
+                    insert into records values ('r1', 'genes', 'vectorbase_aedes_genomics', 'one', 'one', 'Aedes aegypti', null, null, '{}');
+                    insert into records values ('r2', 'genes', 'vectorbase_aedes_genomics', 'two', 'two', 'Aedes aegypti', null, null, '{}');
+                    """
+                )
+            current = {
+                "record_count": 2,
+                "source_counts": {"vectorbase_aedes_genomics": 2},
+                "vectorbase_aedes_genomics": {"record_count": 2},
+            }
+            (artifact_dir / "source_status.json").write_text(json.dumps(current), encoding="utf-8")
+            (artifact_dir / "source_receipt.json").write_text(json.dumps(current), encoding="utf-8")
+
+            verify_complete.check_receipts_match_sqlite(artifact_dir)
+
     def test_verify_complete_rejects_non_queryable_video_gaps(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

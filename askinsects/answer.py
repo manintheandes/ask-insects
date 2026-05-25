@@ -52,6 +52,10 @@ VIDEO_ATOM_QUERY_TERMS = (
     "previews",
     "frame manifest",
     "motion",
+    "velocity",
+    "distance moved",
+    "movement",
+    "locomotory video",
     "trajectory",
     "trajectories",
     "tracking",
@@ -92,7 +96,7 @@ def _wants_video_discovery(question: str) -> bool:
 def _wants_video_motion(question: str) -> bool:
     q = question.lower()
     return _wants_video_atoms(question) and any(
-        term in q for term in ("motion", "trajectory", "trajectories", "tracking", "track id", "coordinates")
+        term in q for term in ("motion", "velocity", "distance moved", "movement", "locomotory", "trajectory", "trajectories", "tracking", "track id", "coordinates")
     )
 
 
@@ -156,9 +160,10 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
     if _wants_video_atoms(question):
-        if any(term in q for term in ("motion", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
+        if any(term in q for term in ("motion", "velocity", "distance moved", "movement", "locomotory", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
             return [
                 "video motion trajectory coordinates",
+                "locomotory video analysis velocity",
                 "motion trajectory coordinates",
                 "track frame time coordinates",
                 question,
@@ -1225,7 +1230,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
         atom_types = ["video_gap"]
     elif _wants_video_discovery(question):
         atom_types = ["video_asset", "video_gap"]
-    elif any(term in q for term in ("motion", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
+    elif any(term in q for term in ("motion", "velocity", "distance moved", "movement", "locomotory", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
         atom_types = ["video_motion_row"]
     elif any(term in q for term in ("fps", "codec", "duration", "resolution")):
         atom_types = ["video_asset"]
@@ -1246,6 +1251,12 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     repository = _video_discovery_repository(question)
     repository_filter = ""
     params: list[object] = [*lanes, *atom_types]
+    motion_metric_order = ""
+    if any(term in q for term in ("velocity", "distance moved", "movement", "locomotory")):
+        motion_metric_order = """
+              CASE WHEN json_extract(p.payload_json, '$.velocity_mean_cm_s') IS NOT NULL THEN 0 ELSE 1 END,
+              CASE WHEN json_extract(p.payload_json, '$.distance_moved_total_cm') IS NOT NULL THEN 0 ELSE 1 END,
+        """
     if repository:
         repository_filter = """
               AND (
@@ -1268,6 +1279,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
               AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
               {repository_filter}
             ORDER BY
+              {motion_metric_order}
               CASE json_extract(p.payload_json, '$.atom_type')
                 WHEN 'video_keyframe' THEN 0
                 WHEN 'video_preview_clip' THEN 1

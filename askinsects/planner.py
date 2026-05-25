@@ -15,6 +15,10 @@ def plan_question(question: str) -> QueryPlan:
     q = question.lower()
     video_motion_terms = (
         "motion",
+        "velocity",
+        "distance moved",
+        "movement",
+        "locomotory video",
         "trajectory",
         "trajectories",
         "tracking",

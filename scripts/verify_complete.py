@@ -133,6 +133,7 @@ REQUIRED_FILES = (
     "scripts/ingest_occurrence_ecology.py",
     "scripts/ingest_extracted_facts.py",
     "scripts/ingest_video_atoms.py",
+    "scripts/refresh_artifact_receipts.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
     "tests/test_builder.py",
@@ -188,6 +189,7 @@ REQUIRED_FILES = (
     "tests/test_ingest_extracted_facts.py",
     "tests/test_video_atoms_source.py",
     "tests/test_ingest_video_atoms.py",
+    "tests/test_refresh_artifact_receipts.py",
 )
 
 UNIT_TEST_MODULES = (
@@ -244,6 +246,7 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_extracted_facts",
     "tests.test_video_atoms_source",
     "tests.test_ingest_video_atoms",
+    "tests.test_refresh_artifact_receipts",
 )
 
 
@@ -646,6 +649,59 @@ def _json_file(path: Path, default: object) -> object:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _sqlite_source_counts(db_path: Path) -> tuple[int, dict[str, int]]:
+    with sqlite3.connect(db_path) as conn:
+        record_count = int(conn.execute("select count(*) from records").fetchone()[0])
+        source_counts = {
+            str(row[0]): int(row[1])
+            for row in conn.execute("select source, count(*) from records group by source order by source")
+        }
+    return record_count, source_counts
+
+
+def _receipt_source_payload(payload: dict[str, object], source: str) -> dict[str, object]:
+    direct = payload.get(source)
+    if isinstance(direct, dict):
+        return direct
+    sources = payload.get("sources")
+    if isinstance(sources, dict):
+        nested = sources.get(source)
+        if isinstance(nested, dict):
+            return nested
+    return {}
+
+
+def check_receipts_match_sqlite(artifact_dir: Path) -> None:
+    db_path = artifact_dir / "source_index.sqlite"
+    if not db_path.exists():
+        raise RuntimeError(f"missing SQLite artifact: {db_path}")
+    record_count, source_counts = _sqlite_source_counts(db_path)
+    for filename in ("source_status.json", "source_receipt.json"):
+        path = artifact_dir / filename
+        if not path.exists():
+            raise RuntimeError(f"missing receipt artifact: {path}")
+        payload = _json_file(path, {})
+        if not isinstance(payload, dict):
+            raise RuntimeError(f"{path} is not a JSON object")
+        if "record_count" in payload and int(payload.get("record_count", -1)) != record_count:
+            raise RuntimeError(
+                f"{path.name} record_count mismatch for {artifact_dir}: SQLite has {record_count}, receipt has {payload.get('record_count')}"
+            )
+        receipt_source_counts = payload.get("source_counts")
+        if isinstance(receipt_source_counts, dict):
+            normalized = {str(key): int(value) for key, value in receipt_source_counts.items()}
+            if normalized != source_counts:
+                raise RuntimeError(
+                    f"{path.name} source_counts mismatch for {artifact_dir}: SQLite has {source_counts}, receipt has {normalized}"
+                )
+        for source, count in source_counts.items():
+            source_payload = _receipt_source_payload(payload, source)
+            if source_payload and "record_count" in source_payload and int(source_payload.get("record_count", -1)) != count:
+                raise RuntimeError(
+                    f"{path.name} {source}.record_count mismatch for {artifact_dir}: SQLite has {count}, receipt has {source_payload.get('record_count')}"
+                )
+
+
 def _video_source_payload(status: dict[str, object]) -> dict[str, object]:
     payload = status.get("aedes_video_atoms")
     if isinstance(payload, dict):
@@ -959,6 +1015,11 @@ def check_literature_artifact() -> None:
         raise RuntimeError("Aedes artifact ask query did not return provenance-bearing evidence")
 
 
+def check_installed_artifact_receipts() -> None:
+    for artifact_dir in (REPO_ROOT / "artifacts/mosquito-v1", REPO_ROOT / "artifacts/aedes-literature-2020"):
+        check_receipts_match_sqlite(artifact_dir)
+
+
 def main() -> int:
     try:
         check_required_files()
@@ -970,6 +1031,7 @@ def main() -> int:
         check_literature_source_map()
         check_mosquito_intelligence_coverage()
         check_cli()
+        check_installed_artifact_receipts()
         check_literature_artifact()
         check_aedes_video_atoms_artifact()
     except Exception as exc:

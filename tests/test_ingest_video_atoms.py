@@ -8,6 +8,7 @@ import unittest
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from scripts.ingest_video_atoms import ingest_video_atoms
+from tests.test_mendeley_behavior_media_source import tiny_xlsx
 from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
 
 
@@ -101,6 +102,34 @@ class IngestVideoAtomsTests(unittest.TestCase):
                 limit=5,
             )
             self.assertIn("raw/video_atoms/motion.csv#row/1", rows[0]["provenance_json"])
+
+    def test_ingest_discovers_default_mendeley_xlsx_motion_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = artifact_dir / "raw" / "mendeley_behavior_media" / "table_files" / "movement.xlsx"
+            table_path.parent.mkdir(parents=True, exist_ok=True)
+            table_path.write_bytes(
+                tiny_xlsx(
+                    [
+                        ["Behavioural_Activity", "Trial", "Subject", "Zone", "Species", "Velocity.center.point.Mean.cm.s"],
+                        ["Walking", "Trial 7", "Subject 9", "In Arena", "Aedes aegypti", "3.25"],
+                    ]
+                )
+            )
+
+            result = ingest_video_atoms(artifact_dir=artifact_dir, retrieved_at=RETRIEVED_AT)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["motion_row_count"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select payload_json, provenance_json from record_payloads where source='aedes_video_atoms' and lane='behavior'",
+                limit=5,
+            )
+            payload = json.loads(rows[0]["payload_json"])
+            self.assertEqual(payload["behavior_type"], "Walking")
+            self.assertEqual(payload["velocity_mean_cm_s"], 3.25)
+            self.assertIn("raw/mendeley_behavior_media/table_files/movement.xlsx#sheet/1/row/2", rows[0]["provenance_json"])
 
 
 if __name__ == "__main__":

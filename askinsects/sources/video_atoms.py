@@ -15,6 +15,7 @@ from urllib.request import Request, urlopen
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
+from askinsects.sources.mendeley_behavior_media import _parse_table, _row_values, _table_layout
 
 
 VIDEO_ATOMS_SOURCE_ID = "aedes_video_atoms"
@@ -78,6 +79,17 @@ MOTION_HEADER_ALIASES = {
     "behavioural_activity": "behavior",
     "behavior_type": "behavior",
     "life stage": "life_stage",
+    "subject": "track_id",
+    "unique_subject": "track_id",
+    "zone": "arena",
+    "feeding_status": "feeding_status",
+    "velocity_center_point_mean_cm_s": "velocity_mean_cm_s",
+    "angular_velocity_absolute_center_point_absolute_mean_deg_s": "angular_velocity_absolute_mean_deg_s",
+    "angular_velocity_center_point_relative_mean_deg_s": "angular_velocity_relative_mean_deg_s",
+    "distance_moved_center_point_total_cm": "distance_moved_total_cm",
+    "in_zone_arena_center_point_mean_s": "zone_mean_seconds",
+    "in_zone_arena_center_point_frequency": "zone_frequency",
+    "in_zone_arena_center_point_cumulative_duration_s": "zone_cumulative_duration_seconds",
 }
 DISCOVERY_REPOSITORIES = (
     "pmc_oa",
@@ -686,9 +698,20 @@ def _normalize_motion_row(row: dict[object, object]) -> dict[str, str]:
     return cleaned
 
 
-def _motion_record(row: dict[str, str], *, table_path: Path, artifact_dir: Path, row_index: int, retrieved_at: str) -> EvidenceRecord:
+def _motion_record(
+    row: dict[str, str],
+    *,
+    table_path: Path,
+    artifact_dir: Path,
+    row_index: int,
+    retrieved_at: str,
+    locator_suffix: str | None = None,
+) -> EvidenceRecord:
     video_id = row.get("video_id") or row.get("video") or row.get("source_video_record_id") or table_path.stem
     behavior = row.get("behavior") or row.get("behavior_type") or "video motion"
+    trial = row.get("trial")
+    arena = row.get("arena")
+    temperature = row.get("temperature")
     payload = {
         "atom_type": "video_motion_row",
         "source_video_record_id": video_id,
@@ -700,14 +723,35 @@ def _motion_record(row: dict[str, str], *, table_path: Path, artifact_dir: Path,
         "behavior_type": behavior,
         "sex": row.get("sex"),
         "life_stage": row.get("life_stage") or row.get("life stage"),
-        "assay": row.get("assay"),
+        "assay": row.get("assay") or ("locomotory video analysis" if any(key in row for key in ("velocity_mean_cm_s", "distance_moved_total_cm", "zone_mean_seconds")) else None),
         "stimulus": row.get("stimulus"),
-        "arena": row.get("arena"),
+        "arena": arena,
         "confidence": row.get("confidence") or "source_table",
+        "trial": trial,
+        "temperature": temperature,
+        "feeding_status": row.get("feeding_status"),
+        "age": _parse_number(row.get("age")),
+        "zone_mean_seconds": _parse_number(row.get("zone_mean_seconds")),
+        "zone_frequency": _parse_number(row.get("zone_frequency")),
+        "zone_cumulative_duration_seconds": _parse_number(row.get("zone_cumulative_duration_seconds")),
+        "velocity_mean_cm_s": _parse_number(row.get("velocity_mean_cm_s")),
+        "angular_velocity_absolute_mean_deg_s": _parse_number(row.get("angular_velocity_absolute_mean_deg_s")),
+        "angular_velocity_relative_mean_deg_s": _parse_number(row.get("angular_velocity_relative_mean_deg_s")),
+        "distance_moved_total_cm": _parse_number(row.get("distance_moved_total_cm")),
         "source_table_row": row,
     }
+    payload = {key: value for key, value in payload.items() if value is not None}
     rel_path = table_path.relative_to(artifact_dir).as_posix()
     digest = _digest(video_id, rel_path, row_index)
+    metrics = []
+    if payload.get("velocity_mean_cm_s") is not None:
+        metrics.append(f"mean velocity {payload.get('velocity_mean_cm_s')} cm/s")
+    if payload.get("distance_moved_total_cm") is not None:
+        metrics.append(f"distance moved {payload.get('distance_moved_total_cm')} cm")
+    if temperature:
+        metrics.append(f"temperature {temperature}")
+    metric_text = f" Metrics: {', '.join(metrics)}." if metrics else ""
+    locator = f"{rel_path}#{locator_suffix or f'row/{row_index}'}"
     return EvidenceRecord(
         record_id=f"video_atom:motion:{_safe_id(video_id)}:{digest}",
         lane="behavior",
@@ -716,19 +760,47 @@ def _motion_record(row: dict[str, str], *, table_path: Path, artifact_dir: Path,
         text=(
             f"Aedes aegypti video motion row for {behavior}. "
             f"Video: {video_id}. Track: {payload.get('track_id')}. Frame: {payload.get('frame')}. "
-            f"Time seconds: {payload.get('time_seconds')}. Coordinates: {payload.get('x')}, {payload.get('y')}."
+            f"Time seconds: {payload.get('time_seconds')}. Coordinates: {payload.get('x')}, {payload.get('y')}.{metric_text}"
         ),
         species="Aedes aegypti",
         url=None,
         media_url=None,
         provenance=Provenance(
             source_id=VIDEO_ATOMS_SOURCE_ID,
-            locator=f"{rel_path}#row/{row_index}",
+            locator=locator,
             retrieved_at=retrieved_at,
             source_url=rel_path,
         ),
         payload=payload,
     )
+
+
+def _parse_delimited_motion_table(table_path: Path) -> list[tuple[int, dict[str, str], str]]:
+    with table_path.open(newline="", encoding="utf-8-sig") as handle:
+        reader = csv.DictReader(handle)
+        headers = {_normalize_motion_header(header) for header in (reader.fieldnames or [])}
+        if not headers & MOTION_HEADERS:
+            return []
+        rows = []
+        for row_index, row in enumerate(reader, start=1):
+            cleaned = _normalize_motion_row(row)
+            if cleaned:
+                rows.append((row_index, cleaned, f"row/{row_index}"))
+        return rows
+
+
+def _parse_xlsx_motion_table(table_path: Path) -> list[tuple[int, dict[str, str], str]]:
+    rows = []
+    for sheet_index, sheet in enumerate(_parse_table(table_path, table_path.name), start=1):
+        headers, data_rows = _table_layout(sheet.rows)
+        normalized_headers = {_normalize_motion_header(header) for header in headers}
+        if not normalized_headers & MOTION_HEADERS:
+            continue
+        for row_number, row in data_rows:
+            cleaned = _normalize_motion_row(_row_values(headers, row))
+            if cleaned:
+                rows.append((row_number, cleaned, f"sheet/{sheet_index}/row/{row_number}"))
+    return rows
 
 
 def _parse_motion_tables(
@@ -741,15 +813,19 @@ def _parse_motion_tables(
     records: list[EvidenceRecord] = []
     for table_path in motion_table_paths:
         try:
-            with Path(table_path).open(newline="", encoding="utf-8-sig") as handle:
-                reader = csv.DictReader(handle)
-                headers = {_normalize_motion_header(header) for header in (reader.fieldnames or [])}
-                if not headers & MOTION_HEADERS:
-                    continue
-                for row_index, row in enumerate(reader, start=1):
-                    cleaned = _normalize_motion_row(row)
-                    if cleaned:
-                        records.append(_motion_record(cleaned, table_path=Path(table_path), artifact_dir=artifact_dir, row_index=row_index, retrieved_at=retrieved_at))
+            path = Path(table_path)
+            parsed_rows = _parse_xlsx_motion_table(path) if path.suffix.lower() == ".xlsx" else _parse_delimited_motion_table(path)
+            for row_index, cleaned, locator_suffix in parsed_rows:
+                records.append(
+                    _motion_record(
+                        cleaned,
+                        table_path=path,
+                        artifact_dir=artifact_dir,
+                        row_index=row_index,
+                        retrieved_at=retrieved_at,
+                        locator_suffix=locator_suffix,
+                    )
+                )
         except Exception as exc:
             gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_motion_table_parse_failed", "path": Path(table_path).as_posix(), "error": str(exc)})
     return records
@@ -766,7 +842,7 @@ def _default_motion_table_paths(artifact_dir: Path) -> list[Path]:
     for root in search_roots:
         if not root.exists():
             continue
-        for path in sorted(root.glob("*.csv")):
+        for path in sorted([*root.glob("*.csv"), *root.glob("*.xlsx")]):
             resolved = path.resolve()
             if resolved in seen:
                 continue
