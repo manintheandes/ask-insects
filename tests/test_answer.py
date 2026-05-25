@@ -401,6 +401,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show Aedes aegypti BioSamples from China").lanes[0], "biosamples")
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
+        self.assertEqual(plan_question("what Aedes aegypti olfaction figure caption mentions elevated CO2?").answer_shape, "literature")
         self.assertEqual(plan_question("what neuron data exists for the Aedes aegypti brain?").answer_shape, "neurobiology")
         self.assertEqual(plan_question("what brain regions process smell in mosquitoes?").lanes[0], "neurobiology")
         self.assertEqual(plan_question("what H5AD data exists in the Mosquito Cell Atlas?").lanes[0], "neurobiology")
@@ -728,6 +729,59 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["source"], "aedes_olfaction_literature")
             self.assertEqual(answer["evidence"][0]["record_id"], "aedes_olfaction_literature:pubmed:37874813")
+
+    def test_olfaction_figure_questions_prefer_fulltext_caption_units(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            paper = EvidenceRecord(
+                record_id="aedes_olfaction_literature:pubmed:40275031",
+                lane="literature",
+                source="aedes_olfaction_literature",
+                title="Impact of elevated CO2 on Aedes aegypti olfactory organs.",
+                text="Aedes aegypti olfaction literature audit candidate from PubMed since 2020.",
+                species="Aedes aegypti",
+                url="https://pubmed.ncbi.nlm.nih.gov/40275031/",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_olfaction_literature",
+                    locator="raw/aedes_olfaction_literature/pubmed_esummary_0001.json#result/40275031",
+                    retrieved_at="2026-05-25T00:00:00Z",
+                ),
+            )
+            index.upsert_records([paper])
+            index.upsert_fulltext_units(
+                [
+                    FullTextUnit(
+                        unit_id="aedes_olfaction_literature:pubmed:40275031:figure-caption:0",
+                        record_id=paper.record_id,
+                        source="aedes_olfaction_literature",
+                        unit_index=0,
+                        text="Figure caption: Elevated CO2 changes gene expression in the peripheral olfactory organs of Aedes aegypti.",
+                        url="https://example.org/paper.pdf",
+                        license="cc-by",
+                        provenance=Provenance(
+                            source_id="aedes_olfaction_literature",
+                            locator="raw/aedes_olfaction_literature/fulltext/paper.pdf#figure-caption/0",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                            source_url="https://example.org/paper.pdf",
+                        ),
+                    )
+                ]
+            )
+
+            answer = answer_question(
+                "what Aedes aegypti olfaction figure caption mentions elevated CO2?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "literature")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_olfaction_literature")
+            self.assertEqual(answer["evidence"][0]["lane"], "literature_fulltext")
+            self.assertIn("Figure caption", answer["evidence"][0]["text"])
 
     def test_repellent_literature_questions_prefer_repellent_lane(self):
         with tempfile.TemporaryDirectory() as tmpdir:
