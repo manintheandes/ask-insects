@@ -76,6 +76,63 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
     }
 
 
+def _existing_source_record_count(index: SourceIndex) -> int:
+    rows = index.sql(
+        f"select count(*) as n from records where source = '{PMC_VIDEO_SOURCE_ID}'",
+        limit=1,
+    )
+    return int(rows[0]["n"]) if rows else 0
+
+
+def _preserve_existing_metadata(artifact_dir: Path, result, existing_count: int) -> dict[str, object]:
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    summary = index.summary()
+    source_counts = {
+        row["source"]: int(row["n"])
+        for row in index.sql("select source, count(*) as n from records group by source order by source", limit=1000)
+    }
+    pmc_payload = {
+        "source": PMC_VIDEO_SOURCE_ID,
+        "article_count": result.article_count,
+        "video_count": existing_count,
+        "raw_artifacts": result.raw_artifacts,
+        "gap_count": len(result.gaps),
+        "refresh_skipped": True,
+        "refresh_skip_reason": "pmc_refresh_returned_zero_records_preserved_existing_source_rows",
+    }
+    gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
+    for filename in ("source_status.json", "source_receipt.json"):
+        path = artifact_dir / filename
+        payload = _read_json(path, {})
+        if not isinstance(payload, dict):
+            payload = {}
+        sources = payload.get("sources")
+        if not isinstance(sources, list):
+            sources = []
+        if PMC_VIDEO_SOURCE_ID not in sources:
+            sources.append(PMC_VIDEO_SOURCE_ID)
+        payload["sources"] = sources
+        payload["source_counts"] = source_counts
+        payload["record_count"] = summary["record_count"]
+        payload["species_count"] = summary["species_count"]
+        payload["lanes"] = summary["lanes"]
+        payload["gap_count"] = gap_count
+        payload["pmc_videos"] = pmc_payload
+        write_json(path, payload)
+    return {
+        "ok": True,
+        "source": PMC_VIDEO_SOURCE_ID,
+        "record_count": existing_count,
+        "refreshed_record_count": 0,
+        "article_count": result.article_count,
+        "video_count": existing_count,
+        "gap_count": len(result.gaps),
+        "refresh_skipped": True,
+        "artifact_dir": artifact_dir.as_posix(),
+        "lanes": summary["lanes"],
+    }
+
+
 def ingest_pmc_videos(
     *,
     artifact_dir: Path,
@@ -92,6 +149,9 @@ def ingest_pmc_videos(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
+    existing_count = _existing_source_record_count(index)
+    if not result.records and existing_count:
+        return _preserve_existing_metadata(artifact_dir, result, existing_count)
     index.replace_source_records(PMC_VIDEO_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result)
 

@@ -46,6 +46,35 @@ class IngestPMCVideosTests(unittest.TestCase):
             sources = (artifact_dir / "source_status.json").read_text(encoding="utf-8")
             self.assertIn("pmc_open_access_videos", sources)
 
+    def test_zero_record_refresh_preserves_existing_pmc_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            first = ingest_pmc_videos(
+                artifact_dir=artifact_dir,
+                article_urls=["https://pmc.ncbi.nlm.nih.gov/articles/PMC12077400/"],
+                fetch_text=lambda url: PMC_HTML,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+            self.assertEqual(first["record_count"], 1)
+
+            second = ingest_pmc_videos(
+                artifact_dir=artifact_dir,
+                article_urls=["https://pmc.ncbi.nlm.nih.gov/articles/PMC12077400/"],
+                fetch_text=lambda url: "<html>No downloadable videos here</html>",
+                retrieved_at="2026-05-25T00:00:00Z",
+            )
+
+            self.assertTrue(second["ok"])
+            self.assertTrue(second["refresh_skipped"])
+            self.assertEqual(second["record_count"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select source, count(*) as n from records group by source",
+                limit=100,
+            )
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["pmc_open_access_videos"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
