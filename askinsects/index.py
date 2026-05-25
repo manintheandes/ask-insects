@@ -142,12 +142,12 @@ class SourceIndex:
         with self.connect() as conn:
             conn.executescript(SCHEMA)
 
-    def upsert_records(self, records: list[EvidenceRecord]) -> None:
+    def upsert_records(self, records: list[EvidenceRecord], *, update_fts: bool = True) -> None:
         if not records:
             return
         with self.connect() as conn:
             for chunk in _record_chunks(records):
-                self._upsert_records(conn, chunk)
+                self._upsert_records(conn, chunk, update_fts=update_fts)
 
     def upsert_fulltext_units(self, units: list[FullTextUnit]) -> None:
         with self.connect() as conn:
@@ -158,7 +158,7 @@ class SourceIndex:
             self._upsert_records(conn, records)
             self._upsert_fulltext_units(conn, units)
 
-    def _upsert_records(self, conn: sqlite3.Connection, records: list[EvidenceRecord]) -> None:
+    def _upsert_records(self, conn: sqlite3.Connection, records: list[EvidenceRecord], *, update_fts: bool = True) -> None:
         if not records:
             return
         rows = [record.to_row() for record in records]
@@ -192,14 +192,15 @@ class SourceIndex:
                     for row in rows
                 ],
         )
-        record_ids = [record.record_id for record in records]
-        for chunk in _chunks(record_ids):
-            placeholders = ",".join("?" for _ in chunk)
-            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
-        conn.executemany(
-            "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
-            [(record.record_id, record.lane, record.species, record.title, record.text) for record in records],
-        )
+        if update_fts:
+            record_ids = [record.record_id for record in records]
+            for chunk in _chunks(record_ids):
+                placeholders = ",".join("?" for _ in chunk)
+                conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+            conn.executemany(
+                "INSERT INTO records_fts(record_id, lane, species, title, text) VALUES (?, ?, ?, ?, ?)",
+                [(record.record_id, record.lane, record.species, record.title, record.text) for record in records],
+            )
 
         empty_payload_record_ids = [record.record_id for record in records if record.payload is None]
         for chunk in _chunks(empty_payload_record_ids):
@@ -270,11 +271,11 @@ class SourceIndex:
         with self.connect() as conn:
             self._delete_source_records(conn, source)
 
-    def replace_source_records(self, source: str, records: list[EvidenceRecord]) -> None:
+    def replace_source_records(self, source: str, records: list[EvidenceRecord], *, update_fts: bool = True) -> None:
         with self.connect() as conn:
             self._delete_source_records(conn, source)
             for chunk in _record_chunks(records):
-                self._upsert_records(conn, chunk)
+                self._upsert_records(conn, chunk, update_fts=update_fts)
 
     def _delete_source_records(self, conn: sqlite3.Connection, source: str) -> None:
         rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()

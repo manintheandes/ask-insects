@@ -403,7 +403,7 @@ def check_atomic_source_replacement() -> None:
         )
 
     index_text = (REPO_ROOT / "askinsects/index.py").read_text(encoding="utf-8")
-    for term in ("def replace_source_records", "self._delete_source_records(conn, source)", "self._upsert_records(conn, chunk)"):
+    for term in ("def replace_source_records", "self._delete_source_records(conn, source)", "self._upsert_records(conn, chunk"):
         if term not in index_text:
             raise RuntimeError(f"askinsects/index.py missing atomic replacement term: {term}")
 
