@@ -1379,12 +1379,23 @@ def _fulltext_literature_records(index: SourceIndex, question: str, *, limit: in
     records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
     for search_query in _fulltext_literature_search_queries(question):
-        query_records = index.search_literature_fulltext(search_query, limit=limit)
+        query_limit = max(limit * 20, 50) if _wants_literature_fulltext(question) else limit
+        query_records = index.search_literature_fulltext(search_query, limit=query_limit)
+        if any(term in question.lower() for term in ("figure", "fig.", "caption")):
+            query_records = sorted(
+                query_records,
+                key=lambda record: (
+                    0 if record.text.lower().startswith("figure caption:") else 1,
+                    0 if record.source == AEDES_OLFACTION_LITERATURE_SOURCE_ID else 1,
+                ),
+            )
         for record in query_records:
             if record.record_id in seen_record_ids:
                 continue
             records.append(record)
             seen_record_ids.add(record.record_id)
+            if len(records) >= limit:
+                break
         if query_records:
             break
     return records
