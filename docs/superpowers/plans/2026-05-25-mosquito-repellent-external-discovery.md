@@ -8,5 +8,5 @@
   questions to the new lane.
 - [x] Update source map, coverage ledger, README, and query docs.
 - [x] Add focused source, ingest, CLI, server, and answer tests.
-- [ ] Run full verification, commit, push, deploy, hosted ingest, and live
+- [x] Run full verification, commit, push, deploy, hosted ingest, and live
   hosted queries.
