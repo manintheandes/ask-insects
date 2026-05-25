@@ -127,7 +127,7 @@ To derive still-image assets, deterministic source labels, and image-label gaps 
 
 ```bash
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-image-atoms
-python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-image-atoms --mirror-images --max-image-mirrors 6000 --max-image-bytes 5000000 --allowed-licenses cc-by,cc-by-nc,cc-by-sa,CC0,Creative Commons
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-image-atoms --mirror-images --max-image-mirrors 6000 --max-image-bytes 10000000 --allowed-licenses cc-by,cc-by-nc,cc-by-sa,CC0,Creative Commons
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti adult image labels" --json
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what Aedes image label gaps are missing sex?" --json
 ```
