@@ -28,7 +28,7 @@
   ],
   "ask_insects_current": {
     "hosted_health_checked_at": "2026-05-25",
-    "hosted_record_count": 817326,
+    "hosted_record_count": 817323,
     "hosted_trait_records": 4972,
     "hosted_sources": [
       "aedes_cdc_dengue_surveillance",
@@ -77,7 +77,7 @@
       "genome_assemblies": 1,
       "genome_features": 178721,
       "literature": 10735,
-      "media": 25785,
+      "media": 25782,
       "neurobiology": 100018,
       "observations": 88607,
       "proteins": 56960,
