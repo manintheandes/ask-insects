@@ -2029,20 +2029,11 @@ def ingest_image_atoms_staged(
         raise ValueError("retrieved_at must be a string")
     staging = artifact_dir.parent / f".{artifact_dir.name}.image-atoms-staging"
     if staging.exists():
-        shutil.rmtree(staging)
-    try:
-        if artifact_dir.exists():
-            prepare_mutable_staging(artifact_dir, staging)
-        else:
-            staging.mkdir(parents=True, exist_ok=True)
-        result = ingest_image_atoms(artifact_dir=staging, retrieved_at=retrieved_at)
-        response = rewrite_artifact_references(staging, artifact_dir, result, source="aedes_image_atoms")
-        activate_source_staging(staging, artifact_dir, Path("raw") / "image_atoms")
-    except Exception:
         shutil.rmtree(staging, ignore_errors=True)
-        raise
+    response = ingest_image_atoms(artifact_dir=artifact_dir, retrieved_at=retrieved_at)
     response["activated_artifact_dir"] = str(artifact_dir)
-    response["staged"] = True
+    response["staged"] = False
+    response["updated_in_place"] = True
     return response
 
 

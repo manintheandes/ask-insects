@@ -155,14 +155,15 @@ class ServerTests(unittest.TestCase):
             self.assertIn("raw/mendeley_behavior_media/table_files/default-motion.csv#row/1", rows[0]["provenance_json"])
             self.assertNotIn(".video-atoms-staging", rows[0]["provenance_json"])
 
-    def test_image_atom_staging_adds_records_without_removing_existing_sources(self):
+    def test_image_atom_ingest_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             write_image_fixture(artifact_dir)
             response = ingest_image_atoms_staged({"retrieved_at": RETRIEVED_AT}, artifact_dir=artifact_dir)
 
             self.assertTrue(response["ok"])
-            self.assertTrue(response["staged"])
+            self.assertFalse(response["staged"])
+            self.assertTrue(response["updated_in_place"])
             self.assertEqual(response["image_asset_count"], 2)
             rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select source, count(*) as n from records group by source",
