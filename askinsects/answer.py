@@ -1945,11 +1945,8 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
             atom_types.append("video_frame_manifest")
         if not atom_types:
             atom_types = ["video_keyframe", "video_preview_clip", "video_thumbnail", "video_frame_manifest", "video_asset"]
-    lane_placeholders = ",".join("?" for _ in lanes)
-    atom_placeholders = ",".join("?" for _ in atom_types)
+    artifact_atom_types = {"video_keyframe", "video_preview_clip", "video_thumbnail", "video_frame_manifest"}
     repository = _video_discovery_repository(question)
-    repository_filter = ""
-    params: list[object] = [*lanes, *atom_types]
     verified_filter = ""
     if "verified" in q:
         verified_filter = "AND json_extract(p.payload_json, '$.verification_status') = 'verified'"
@@ -1974,52 +1971,79 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
         """
         wants_license_gap_order = "license" in q
         wants_hash_gap_order = any(term in q for term in ("hash", "hashes", "checksum", "sha-256", "sha256"))
-    if repository:
-        repository_filter = """
-              AND (
-                json_extract(p.payload_json, '$.discovery_repository') = ?
-                OR json_extract(p.payload_json, '$.repository') = ?
-                OR lower(r.title) LIKE ?
-                OR lower(r.text) LIKE ?
-              )
-        """
-        params.extend([repository, repository, f"%{repository.replace('_', ' ')}%", f"%{repository.replace('_', ' ')}%"])
-    if gap_reason_order:
-        params.extend([wants_license_gap_order, wants_license_gap_order, wants_hash_gap_order, wants_hash_gap_order])
-    params.append(limit)
-    with index.connect() as conn:
-        rows = conn.execute(
-            f"""
-            SELECT r.*
-            FROM records r
-            JOIN record_payloads p ON p.record_id = r.record_id
-            WHERE r.source = 'aedes_video_atoms'
-              AND r.lane IN ({lane_placeholders})
-              AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
-              {repository_filter}
-              {verified_filter}
-            ORDER BY
-              {motion_metric_order}
-              CASE json_extract(p.payload_json, '$.atom_type')
-                WHEN 'video_keyframe' THEN 0
-                WHEN 'video_preview_clip' THEN 1
-                WHEN 'video_thumbnail' THEN 2
-                WHEN 'video_frame_manifest' THEN 3
-                WHEN 'video_asset' THEN 4
-                WHEN 'video_motion_row' THEN 5
-                WHEN 'video_gap' THEN 6
-                ELSE 7
-              END,
-              CASE
-                WHEN json_extract(p.payload_json, '$.verification_status')='verified' THEN 0
-                ELSE 1
-              END,
-              {gap_reason_order}
-              r.record_id
-            LIMIT ?
-            """,
-            params,
-        ).fetchall()
+
+    def fetch_rows(selected_atom_types: list[str], selected_limit: int) -> list[sqlite3.Row]:
+        lane_placeholders = ",".join("?" for _ in lanes)
+        atom_placeholders = ",".join("?" for _ in selected_atom_types)
+        repository_filter = ""
+        params: list[object] = [*lanes, *selected_atom_types]
+        if repository:
+            repository_filter = """
+                  AND (
+                    json_extract(p.payload_json, '$.discovery_repository') = ?
+                    OR json_extract(p.payload_json, '$.repository') = ?
+                    OR lower(r.title) LIKE ?
+                    OR lower(r.text) LIKE ?
+                  )
+            """
+            params.extend([repository, repository, f"%{repository.replace('_', ' ')}%", f"%{repository.replace('_', ' ')}%"])
+        if gap_reason_order:
+            params.extend([wants_license_gap_order, wants_license_gap_order, wants_hash_gap_order, wants_hash_gap_order])
+        params.append(selected_limit)
+        with index.connect() as conn:
+            return conn.execute(
+                f"""
+                SELECT r.*
+                FROM records r
+                JOIN record_payloads p ON p.record_id = r.record_id
+                WHERE r.source = 'aedes_video_atoms'
+                  AND r.lane IN ({lane_placeholders})
+                  AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
+                  {repository_filter}
+                  {verified_filter}
+                ORDER BY
+                  {motion_metric_order}
+                  CASE json_extract(p.payload_json, '$.atom_type')
+                    WHEN 'video_keyframe' THEN 0
+                    WHEN 'video_preview_clip' THEN 1
+                    WHEN 'video_thumbnail' THEN 2
+                    WHEN 'video_frame_manifest' THEN 3
+                    WHEN 'video_asset' THEN 4
+                    WHEN 'video_motion_row' THEN 5
+                    WHEN 'video_gap' THEN 6
+                    ELSE 7
+                  END,
+                  CASE
+                    WHEN json_extract(p.payload_json, '$.verification_status')='verified' THEN 0
+                    ELSE 1
+                  END,
+                  {gap_reason_order}
+                  r.record_id
+                LIMIT ?
+                """,
+                params,
+            ).fetchall()
+
+    if len(atom_types) > 1 and set(atom_types).issubset(artifact_atom_types):
+        buckets = {atom_type: fetch_rows([atom_type], limit) for atom_type in atom_types}
+        rows = []
+        seen: set[str] = set()
+        for offset in range(limit):
+            for atom_type in atom_types:
+                bucket = buckets[atom_type]
+                if offset >= len(bucket):
+                    continue
+                row = bucket[offset]
+                record_id = str(row["record_id"])
+                if record_id in seen:
+                    continue
+                rows.append(row)
+                seen.add(record_id)
+                if len(rows) >= limit:
+                    return [EvidenceRecord.from_row(dict(item)) for item in rows]
+        return [EvidenceRecord.from_row(dict(item)) for item in rows]
+
+    rows = fetch_rows(atom_types, limit)
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 

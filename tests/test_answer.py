@@ -1008,6 +1008,24 @@ class AnswerTests(unittest.TestCase):
                             retrieved_at="2026-05-24T00:00:00Z",
                             license="CC BY",
                         ),
+                        payload={"atom_type": "video_keyframe"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:video_keyframe:pmc_video_2",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video keyframe for BiteOscope second",
+                        text="Second inspectable keyframe derived from an Aedes aegypti video.",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
+                        media_url="raw/video_atoms/artifacts/keyframe_000002.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="records#pmc:video:PMC123:video1.mp4;raw/video_atoms/artifacts/keyframe_000002.jpg",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                        ),
+                        payload={"atom_type": "video_keyframe"},
                     ),
                     EvidenceRecord(
                         record_id="video_atom:video_preview_clip:pmc_video",
@@ -1024,15 +1042,41 @@ class AnswerTests(unittest.TestCase):
                             retrieved_at="2026-05-24T00:00:00Z",
                             license="CC BY",
                         ),
+                        payload={"atom_type": "video_preview_clip"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:video_frame_manifest:pmc_video",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video frame manifest for BiteOscope",
+                        text="Inspectable frame manifest derived from an Aedes aegypti video.",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
+                        media_url="raw/video_atoms/artifacts/frames.json",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="records#pmc:video:PMC123:video1.mp4;raw/video_atoms/artifacts/frames.json",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                        ),
+                        payload={"atom_type": "video_frame_manifest"},
                     ),
                 ]
             )
 
-            answer = answer_question("show Aedes aegypti keyframes and previews", artifact_dir=artifact_dir)
+            answer = answer_question("show Aedes aegypti keyframes previews and frame manifests", artifact_dir=artifact_dir, limit=3)
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
+            self.assertEqual(
+                [item["record_id"] for item in answer["evidence"]],
+                [
+                    "video_atom:video_keyframe:pmc_video",
+                    "video_atom:video_preview_clip:pmc_video",
+                    "video_atom:video_frame_manifest:pmc_video",
+                ],
+            )
 
     def test_verified_video_questions_filter_to_verified_assets(self):
         with tempfile.TemporaryDirectory() as tmpdir:
