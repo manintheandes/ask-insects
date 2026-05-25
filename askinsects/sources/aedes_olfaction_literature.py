@@ -37,6 +37,7 @@ class AedesOlfactionLiteratureResult:
     query: str
     reported_total_count: int
     candidate_count: int
+    canonical_literature_row_count: int
     already_indexed_count: int
     pubmed_metadata_ingested_count: int
 
@@ -161,6 +162,10 @@ def _existing_index(existing_literature_rows: list[dict[str, object]]) -> tuple[
     return by_doi, by_title
 
 
+def _canonical_literature_row_count(existing_literature_rows: list[dict[str, object]]) -> int:
+    return sum(1 for row in existing_literature_rows if row.get("source") == "aedes_literature_openalex")
+
+
 def _coverage_status(
     *,
     doi: str | None,
@@ -264,6 +269,7 @@ def fetch_aedes_olfaction_literature_records(
     fetch = fetch_json or fetch_json_url
     existing_rows = existing_literature_rows or []
     by_doi, by_title = _existing_index(existing_rows)
+    canonical_literature_row_count = _canonical_literature_row_count(existing_rows)
     requested_urls: list[str] = []
     raw_artifacts: list[str] = []
     gaps: list[dict[str, object]] = []
@@ -316,6 +322,17 @@ def fetch_aedes_olfaction_literature_records(
                 "retrieved_at": retrieved,
                 "reported_total_count": reported_total_count,
                 "fetched_candidate_count": len(all_ids),
+            }
+        )
+    if canonical_literature_row_count == 0:
+        gaps.append(
+            {
+                "source": AEDES_OLFACTION_LITERATURE_SOURCE_ID,
+                "lane": "literature",
+                "reason": "aedes_olfaction_no_canonical_literature_rows",
+                "locator": "records where lane='literature' and source='aedes_literature_openalex'",
+                "retrieved_at": retrieved,
+                "detail": "Coverage comparison could not check the canonical OpenAlex literature lane in this artifact.",
             }
         )
 
@@ -374,6 +391,7 @@ def fetch_aedes_olfaction_literature_records(
         "query": PUBMED_QUERY,
         "reported_total_count": reported_total_count,
         "candidate_count": len(all_ids),
+        "canonical_literature_row_count": canonical_literature_row_count,
         "record_count": len(records),
         "already_indexed_count": already_indexed_count,
         "pubmed_metadata_ingested_count": pubmed_metadata_ingested_count,
@@ -390,6 +408,7 @@ def fetch_aedes_olfaction_literature_records(
         query=PUBMED_QUERY,
         reported_total_count=reported_total_count,
         candidate_count=len(all_ids),
+        canonical_literature_row_count=canonical_literature_row_count,
         already_indexed_count=already_indexed_count,
         pubmed_metadata_ingested_count=pubmed_metadata_ingested_count,
     )

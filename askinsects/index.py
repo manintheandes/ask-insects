@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+import time
 from collections.abc import Iterator
 from typing import TYPE_CHECKING
 
@@ -272,10 +273,18 @@ class SourceIndex:
             self._delete_source_records(conn, source)
 
     def replace_source_records(self, source: str, records: list[EvidenceRecord], *, update_fts: bool = True) -> None:
-        with self.connect() as conn:
-            self._delete_source_records(conn, source)
-            for chunk in _record_chunks(records):
-                self._upsert_records(conn, chunk, update_fts=update_fts)
+        attempts = 4
+        for attempt in range(attempts):
+            try:
+                with self.connect() as conn:
+                    self._delete_source_records(conn, source)
+                    for chunk in _record_chunks(records):
+                        self._upsert_records(conn, chunk, update_fts=update_fts)
+                return
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc).lower() or attempt == attempts - 1:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
 
     def _delete_source_records(self, conn: sqlite3.Connection, source: str) -> None:
         rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()

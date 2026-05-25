@@ -2,6 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 import sqlite3
+from unittest import mock
 
 from askinsects.index import SourceIndex, ensure_read_only_sql
 from askinsects.records import EvidenceRecord, Provenance
@@ -329,6 +330,33 @@ class IndexTests(unittest.TestCase):
             self.assertEqual(
                 index.sql("select json_extract(payload_json, '$.version') as version from record_payloads"),
                 [{"version": "old"}],
+            )
+
+    def test_replace_source_records_retries_transient_sqlite_locks(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([sample_record(record_id="obs:old", payload={"version": "old"})])
+            original_delete = index._delete_source_records
+            calls = 0
+
+            def flaky_delete(conn, source):
+                nonlocal calls
+                calls += 1
+                if calls == 1:
+                    raise sqlite3.OperationalError("database is locked")
+                return original_delete(conn, source)
+
+            with mock.patch.object(index, "_delete_source_records", side_effect=flaky_delete), mock.patch("askinsects.index.time.sleep"):
+                index.replace_source_records(
+                    "mosquito_v1_fixtures",
+                    [sample_record(record_id="obs:new", text="retry replacement", payload={"version": "new"})],
+                )
+
+            self.assertEqual(calls, 2)
+            self.assertEqual(
+                index.sql("select record_id from records"),
+                [{"record_id": "obs:new"}],
             )
 
     def test_read_only_sql_guard(self):

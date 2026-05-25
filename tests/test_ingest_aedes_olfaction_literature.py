@@ -54,6 +54,7 @@ class IngestAedesOlfactionLiteratureTests(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertEqual(result["source"], "aedes_olfaction_literature")
             self.assertEqual(result["record_count"], 2)
+            self.assertEqual(result["canonical_literature_row_count"], 1)
             self.assertEqual(result["already_indexed_count"], 1)
             self.assertEqual(result["pubmed_metadata_ingested_count"], 1)
             rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(

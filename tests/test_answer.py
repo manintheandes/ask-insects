@@ -569,6 +569,63 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(payload["evidence"][0]["source"], "aedes_literature_openalex")
             self.assertIn("From the Ask Insects literature index", payload["answer"])
 
+    def test_olfaction_literature_questions_require_audit_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            answer = answer_question("what PubMed papers discuss Aedes aegypti olfaction since 2020?", artifact_dir=artifact_dir)
+
+            self.assertFalse(answer["ok"])
+            self.assertIn("olfaction literature audit lane is not installed", answer["source_gap"]["reason"])
+
+    def test_olfaction_literature_questions_prefer_pubmed_audit_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="literature:openalex:odor",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti odor paper",
+                        text="OpenAlex paper about Aedes aegypti odor and olfaction.",
+                        species="Aedes aegypti",
+                        url="https://example.org/openalex",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="openalex#odor",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="aedes_olfaction_literature:pubmed:37874813",
+                        lane="literature",
+                        source="aedes_olfaction_literature",
+                        title="Odor-evoked transcriptomics of Aedes aegypti mosquitoes.",
+                        text="Aedes aegypti olfaction literature audit candidate from PubMed since 2020. coverage_status=already_indexed pmid=37874813 odor olfaction",
+                        species="Aedes aegypti",
+                        url="https://pubmed.ncbi.nlm.nih.gov/37874813/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_olfaction_literature",
+                            locator="raw/aedes_olfaction_literature/pubmed_esummary_0001.json#result/37874813",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                        payload={"pmid": "37874813", "coverage_status": "already_indexed"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("what PubMed papers discuss Aedes aegypti olfaction since 2020?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_olfaction_literature")
+            self.assertEqual(answer["evidence"][0]["record_id"], "aedes_olfaction_literature:pubmed:37874813")
+
     def test_literature_species_fallback_requires_topical_match(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "aedes-literature"

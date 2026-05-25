@@ -231,6 +231,24 @@ def _wants_image_gaps(question: str) -> bool:
     return _wants_image_atoms(question) and any(term in q for term in ("gap", "gaps", "missing", "unlabeled", "label missing"))
 
 
+def _wants_olfaction_literature(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "olfaction",
+            "olfactory",
+            "odor",
+            "odour",
+            "odorant",
+            "chemosensory",
+            "antenna",
+            "antennal",
+            "orco",
+        )
+    ) and any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research", "pubmed"))
+
+
 def _wants_image_labels(question: str) -> bool:
     q = question.lower()
     return _wants_image_atoms(question) and any(
@@ -2047,6 +2065,33 @@ def _source_records(index: SourceIndex, source: str, lanes: list[str], *, limit:
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _source_count(index: SourceIndex, source: str) -> int:
+    with index.connect() as conn:
+        return int(conn.execute("SELECT COUNT(*) FROM records WHERE source=?", (source,)).fetchone()[0])
+
+
+def _source_search_records(index: SourceIndex, source: str, lane: str, query: str, *, limit: int) -> list[EvidenceRecord]:
+    terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]
+    if not terms:
+        return []
+    match = " AND ".join(f"{term}*" for term in terms)
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT r.*
+            FROM records_fts f
+            JOIN records r ON r.record_id = f.record_id
+            WHERE records_fts MATCH ?
+              AND r.source = ?
+              AND r.lane = ?
+            ORDER BY bm25(records_fts)
+            LIMIT ?
+            """,
+            (match, source, lane, limit),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def _extracted_fact_records(index: SourceIndex, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
     if not lanes:
         return []
@@ -2319,6 +2364,24 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             all_records.append(record)
             seen_record_ids.add(record.record_id)
         for record in _vectorbase_auxiliary_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "literature" and _wants_olfaction_literature(plan.question):
+        if _source_count(index, AEDES_OLFACTION_LITERATURE_SOURCE_ID) == 0:
+            return source_gap(plan, "The Ask Insects Aedes olfaction literature audit lane is not installed in this source index.")
+        olfaction_records = _source_search_records(
+            index,
+            AEDES_OLFACTION_LITERATURE_SOURCE_ID,
+            "literature",
+            plan.search_query,
+            limit=max(limit * 20, 50),
+        )
+        if not olfaction_records:
+            olfaction_records = _source_records(index, AEDES_OLFACTION_LITERATURE_SOURCE_ID, ["literature"], limit=limit)
+        for record in olfaction_records:
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

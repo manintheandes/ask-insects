@@ -65,6 +65,7 @@ class AedesOlfactionLiteratureSourceTests(unittest.TestCase):
         self.assertEqual(result.source_id, "aedes_olfaction_literature")
         self.assertEqual(result.reported_total_count, 2)
         self.assertEqual(result.candidate_count, 2)
+        self.assertEqual(result.canonical_literature_row_count, 1)
         self.assertEqual(len(result.records), 2)
         self.assertEqual(result.gaps, [])
         statuses = {record.payload["pmid"]: record.payload["coverage_status"] for record in result.records}
@@ -95,6 +96,7 @@ class AedesOlfactionLiteratureSourceTests(unittest.TestCase):
             )
 
         self.assertIn("aedes_olfaction_result_limit_applied", {gap["reason"] for gap in result.gaps})
+        self.assertIn("aedes_olfaction_no_canonical_literature_rows", {gap["reason"] for gap in result.gaps})
 
 
 if __name__ == "__main__":

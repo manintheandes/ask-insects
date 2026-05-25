@@ -588,6 +588,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "coverage_status",
         "matched_record_ids",
         "aedes_olfaction_result_limit_applied",
+        "aedes_olfaction_no_canonical_literature_rows",
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Aedes olfaction literature term: {term}")
