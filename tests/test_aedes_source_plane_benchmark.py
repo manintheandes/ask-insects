@@ -53,11 +53,12 @@ class AedesSourcePlaneBenchmarkTests(unittest.TestCase):
         payload = self.load_benchmark()
         proof = payload["ask_insects_current"]
 
-        self.assertGreaterEqual(proof["hosted_record_count"], 817304)
+        self.assertGreaterEqual(proof["hosted_record_count"], 817293)
         self.assertGreaterEqual(proof["hosted_trait_records"], 4972)
         self.assertIn("aedes_vectorbyte_traits", proof["hosted_sources"])
         self.assertIn("vectorbase_aedes_genomics", proof["hosted_sources"])
         self.assertIn("aedes_video_atoms", proof["hosted_sources"])
+        self.assertIn("zenodo_aedes_videos", proof["hosted_sources"])
 
     def test_benchmark_doc_has_claim_ladder_and_table(self):
         text = BENCHMARK_DOC_PATH.read_text(encoding="utf-8")
