@@ -2856,6 +2856,27 @@ def ingest_crossref_literature_audit_hosted(
     return response
 
 
+def ingest_mosquito_repellent_literature_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_mosquito_repellent_literature import ingest_mosquito_repellent_literature
+
+    pubmed_max_results = int(payload.get("pubmed_max_results", 1000))
+    crossref_max_results = int(payload.get("crossref_max_results", 1000))
+    page_size = int(payload.get("page_size", 100))
+    response = ingest_mosquito_repellent_literature(
+        artifact_dir=artifact_dir,
+        pubmed_max_results=pubmed_max_results,
+        crossref_max_results=crossref_max_results,
+        page_size=page_size,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -3022,6 +3043,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/crossref-literature-audit":
             result = ingest_crossref_literature_audit_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/mosquito-repellent-literature":
+            result = ingest_mosquito_repellent_literature_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectornet-surveillance":

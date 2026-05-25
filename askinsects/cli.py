@@ -326,6 +326,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_crossref_literature_audit.add_argument("--max-results", type=int, default=500)
     ingest_crossref_literature_audit.add_argument("--page-size", type=int, default=100)
 
+    ingest_mosquito_repellent_literature = sub.add_parser("ingest-mosquito-repellent-literature")
+    ingest_mosquito_repellent_literature.add_argument("--hosted", action="store_true")
+    ingest_mosquito_repellent_literature.add_argument("--pubmed-max-results", type=int, default=1000)
+    ingest_mosquito_repellent_literature.add_argument("--crossref-max-results", type=int, default=1000)
+    ingest_mosquito_repellent_literature.add_argument("--page-size", type=int, default=100)
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -1140,6 +1146,25 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/crossref-literature-audit",
+            request_payload,
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-mosquito-repellent-literature":
+        request_payload = {
+            "pubmed_max_results": args.pubmed_max_results,
+            "crossref_max_results": args.crossref_max_results,
+            "page_size": args.page_size,
+        }
+        if not args.hosted:
+            from scripts.ingest_mosquito_repellent_literature import ingest_mosquito_repellent_literature
+
+            payload = ingest_mosquito_repellent_literature(artifact_dir=artifact_dir, **request_payload)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/mosquito-repellent-literature",
             request_payload,
             timeout=3600,
         )

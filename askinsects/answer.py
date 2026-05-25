@@ -19,6 +19,7 @@ from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_A
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
+from .sources.mosquito_repellent_literature import MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID
 from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.observation_climate import OBSERVATION_CLIMATE_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
@@ -268,6 +269,28 @@ def _wants_crossref_literature_audit(question: str) -> bool:
             "literature reconciliation",
         )
     )
+
+
+def _wants_mosquito_repellent_literature(question: str) -> bool:
+    q = question.lower()
+    repellent_terms = (
+        "repellent",
+        "repellents",
+        "repellency",
+        "spatial repellent",
+        "topical repellent",
+        "personal protection",
+        "deet",
+        "picaridin",
+        "icaridin",
+        "ir3535",
+        "pmd",
+        "citronella",
+        "essential oil",
+        "plant extract",
+    )
+    literature_terms = ("article", "articles", "paper", "papers", "literature", "study", "studies", "research", "pubmed", "crossref")
+    return any(term in q for term in repellent_terms) and any(term in q for term in literature_terms)
 
 
 def _wants_image_labels(question: str) -> bool:
@@ -2018,6 +2041,14 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 0 if record.lane == "media" else 1,
             ),
         )
+    if _wants_mosquito_repellent_literature(question):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID else 1,
+                0 if record.lane == "literature" else 1,
+            ),
+        )
     if any(
         term in q
         for term in (
@@ -2595,6 +2626,24 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         if not crossref_records:
             crossref_records = _source_records(index, AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID, ["literature"], limit=limit)
         for record in crossref_records:
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "literature" and _wants_mosquito_repellent_literature(plan.question):
+        if _source_count(index, MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID) == 0:
+            return source_gap(plan, "The Ask Insects mosquito repellent literature lane is not installed in this source index.")
+        repellent_records = _source_search_records(
+            index,
+            MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID,
+            "literature",
+            plan.search_query,
+            limit=max(limit * 20, 50),
+        )
+        if not repellent_records:
+            repellent_records = _source_records(index, MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID, ["literature"], limit=limit)
+        for record in repellent_records:
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

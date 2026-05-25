@@ -704,6 +704,42 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_olfaction_literature")
             self.assertEqual(answer["evidence"][0]["record_id"], "aedes_olfaction_literature:pubmed:37874813")
 
+    def test_repellent_literature_questions_prefer_repellent_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    literature_record(
+                        "literature:openalex:repellent",
+                        "Aedes aegypti repellent review",
+                        "OpenAlex paper about repellents.",
+                    ),
+                    EvidenceRecord(
+                        record_id="mosquito_repellent_literature:pubmed:42000001",
+                        lane="literature",
+                        source="mosquito_repellent_literature",
+                        title="Spatial repellent protection against Aedes mosquito host seeking",
+                        text="Mosquito repellent literature candidate since 2020. coverage_status=repellent_metadata_ingested candidate_sources=pubmed_esearch_esummary pmid=42000001 repellent_terms=repellent mosquito_terms=aedes; mosquito",
+                        species="Culicidae",
+                        url="https://pubmed.ncbi.nlm.nih.gov/42000001/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="mosquito_repellent_literature",
+                            locator="raw/mosquito_repellent_literature/pubmed_esummary_0001.json#result/42000001",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("what mosquito repellent papers since 2020 are in the database?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "literature")
+            self.assertEqual(answer["evidence"][0]["source"], "mosquito_repellent_literature")
+
     def test_literature_species_fallback_requires_topical_match(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "aedes-literature"

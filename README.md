@@ -540,6 +540,16 @@ python3 -m askinsects sql "select json_extract(p.payload_json, '$.coverage_statu
 
 Structured Crossref audit gaps include `aedes_crossref_fetch_failed`, `aedes_crossref_result_limit_applied`, `aedes_crossref_no_material_aedes_records`, and `aedes_crossref_no_canonical_literature_rows`. Crossref is an audit and enrichment lane, not a replacement for canonical OpenAlex discovery or legal full-text parsing.
 
+`mosquito_repellent_literature` is the mosquito-wide repellent article lane for papers from 2020 onward. It combines PubMed Title/Abstract search with bounded Crossref publisher metadata queries for mosquito repellents, repellency, spatial repellents, topical repellents, DEET, picaridin, icaridin, IR3535, PMD, citronella, essential oils, and plant-extract repellent research. It deduplicates by DOI, PMID, or normalized title, writes one `literature` record per article candidate, preserves raw PubMed/Crossref locators, and marks each record with `coverage_status`, `candidate_sources`, `repellent_terms`, `mosquito_terms`, and matched Ask Insects record IDs when already indexed.
+
+```bash
+python3 -m askinsects ingest-mosquito-repellent-literature --pubmed-max-results 1000 --crossref-max-results 1000 --page-size 100
+python3 -m askinsects ask "what mosquito repellent papers since 2020 are in the database?" --json
+python3 -m askinsects sql "select json_extract(p.payload_json, '$.coverage_status') as status, count(*) as n from records r join record_payloads p on p.record_id=r.record_id where r.source='mosquito_repellent_literature' group by status"
+```
+
+Structured repellent-literature gaps include `mosquito_repellent_pubmed_search_failed`, `mosquito_repellent_pubmed_summary_failed`, `mosquito_repellent_pubmed_result_limit_applied`, `mosquito_repellent_crossref_fetch_failed`, `mosquito_repellent_crossref_result_limit_applied`, `mosquito_repellent_no_candidates`, and `mosquito_repellent_no_canonical_literature_rows`. This is a public metadata source plane. It does not use private cookies, institutional access, or Sci-Hub.
+
 Legal direct full-text units are searchable through the normal CLI and used as a fallback for literature answers when metadata and abstracts are not enough:
 
 ```bash
@@ -592,6 +602,7 @@ python3 -m askinsects ingest-vectornet-surveillance --hosted
 python3 -m askinsects ingest-who-dengue-surveillance --hosted
 python3 -m askinsects ingest-cdc-dengue-surveillance --hosted
 python3 -m askinsects ingest-crossref-literature-audit --hosted --max-results 500 --page-size 100
+python3 -m askinsects ingest-mosquito-repellent-literature --hosted --pubmed-max-results 1000 --crossref-max-results 1000 --page-size 100
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```
 

@@ -287,6 +287,45 @@ sources:
         - aedes_crossref_result_limit_applied
         - aedes_crossref_no_material_aedes_records
         - aedes_crossref_no_canonical_literature_rows
+  - id: mosquito_repellent_literature
+    name: Mosquito repellent literature since 2020
+    source_type: public_api_composite_audit
+    boundary: Bounded PubMed ESearch/ESummary and Crossref works where source metadata indicates mosquito repellent, repellency, spatial repellent, topical repellent, DEET, picaridin, icaridin, IR3535, PMD, citronella, essential oil, or plant-extract repellent research from 2020-01-01 through run date, deduplicated by DOI, PMID, or normalized title and compared against existing Ask Insects literature records by DOI and normalized title
+    query_plane: pubmed_and_crossref_repellent_metadata_to_sqlite_literature_records
+    api_base:
+      - https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+      - https://api.crossref.org
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/mosquito_repellent_literature
+    ingest_script: scripts/ingest_mosquito_repellent_literature.py
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      record_grain:
+        - one_mosquito_repellent_article_candidate_per_record
+        - pmid_when_supplied
+        - doi_when_supplied
+        - title
+        - authors
+        - journal_or_container
+        - publication_date
+        - candidate_sources
+        - repellent_terms
+        - mosquito_terms
+        - coverage_status
+        - matched_record_ids
+        - matched_sources
+        - raw_pubmed_or_crossref_locator
+      structured_gaps:
+        - mosquito_repellent_pubmed_search_failed
+        - mosquito_repellent_pubmed_summary_failed
+        - mosquito_repellent_pubmed_result_limit_applied
+        - mosquito_repellent_crossref_fetch_failed
+        - mosquito_repellent_crossref_result_limit_applied
+        - mosquito_repellent_no_candidates
+        - mosquito_repellent_no_canonical_literature_rows
   - id: ncbi_datasets_genome
     name: NCBI Datasets Aedes aegypti genome package
     source_type: local_or_hosted_dataset_package

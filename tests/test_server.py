@@ -516,6 +516,31 @@ class ServerTests(unittest.TestCase):
                 page_size=50,
             )
 
+    def test_ingest_mosquito_repellent_literature_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_mosquito_repellent_literature.ingest_mosquito_repellent_literature") as ingest:
+                ingest.return_value = {"ok": True, "source": "mosquito_repellent_literature", "record_count": 300}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/mosquito-repellent-literature",
+                    {"pubmed_max_results": 250, "crossref_max_results": 350, "page_size": 50},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                pubmed_max_results=250,
+                crossref_max_results=350,
+                page_size=50,
+            )
+
     def test_ingest_inaturalist_uses_staging_then_activates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
