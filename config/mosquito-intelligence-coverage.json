@@ -373,10 +373,10 @@
         "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available.",
         "aedes_occurrence_ecology joins indexed GBIF, iNaturalist, and Mosquito Alert observation payloads into country, country-month, seasonality, range, and public habitat ecology records.",
         "vectornet_aedes_surveillance adds official ECDC/EFSA regional surveillance ecology summaries by country and degree of establishment, preserving detection, absence-surveillance, and unclear-status counts.",
-        "aedes_worldclim_climate maps WorldClim historical and monthly climate source pages into queryable ecology source records and can add bounded 10-minute bioclim raster samples joined to global-compendium occurrence coordinates.",
+        "aedes_worldclim_climate maps WorldClim historical and monthly climate source pages into queryable ecology source records and, in the May 25, 2026 hosted refresh, added 100 bounded WorldClim v2.1 10-minute bioclim raster samples joined to global-compendium occurrence coordinates with annual mean temperature, annual precipitation, raw ZIP locators, and occurrence-row provenance.",
         "aedes_global_compendium_occurrence contributes row-level global Aedes aegypti occurrence records for compendium-specific ecology and distribution questions.",
         "aedes_vectorbyte_traits adds trait rows with temperature, habitat, location, and lab-versus-field context where supplied by VectorByte/VecTraits.",
-        "The May 24, 2026 hosted ingest installed 1,985 aedes_occurrence_ecology records from 88,065 Aedes observation inputs, bringing the hosted ecology lane to 7,238 records.",
+        "The May 24, 2026 hosted ingest installed 1,985 aedes_occurrence_ecology records from 88,065 Aedes observation inputs, and the May 25, 2026 hosted WorldClim refresh brought the hosted ecology lane to 9,475 records.",
         "aedes_extracted_facts emits ecology candidate facts from indexed Aedes literature and legal full-text units, plus parsed supported supplement table rows, including habitat, breeding-site, climate, seasonality, range, and location terms when detected."
       ],
       "required_next_sources": [
