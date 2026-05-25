@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-05-25",
+  "primary_taxon": "Aedes aegypti",
+  "claim_status": "not_proven_world_largest",
+  "recommended_claim": "Ask Insects is a broad, integrated, provenance-backed Aedes aegypti source plane with genomics, literature, observations, media, neurobiology, traits, resistance, vector competence, ecology, and public-health lanes. Current evidence supports one of the most comprehensive integrated public query planes for Aedes aegypti, not a proven world-largest claim.",
+  "claim_rules": {
+    "world_largest_claim_allowed": false,
+    "world_deepest_claim_allowed": false,
+    "safe_public_claim": "broad integrated provenance-backed Aedes aegypti query plane",
+    "strong_claim_requires": [
+      "fresh hosted health proof",
+      "external source inventory refresh",
+      "source-by-source atom coverage comparison",
+      "documented gaps for every external source-specific leader"
+    ]
+  },
+  "comparison_axes": [
+    "coverage_lanes",
+    "atomic_queryability",
+    "row_or_file_provenance",
+    "ask_surface_wiring",
+    "media_support",
+    "structured_tables",
+    "hosted_health",
+    "refresh_path",
+    "explicit_source_gaps"
+  ],
+  "ask_insects_current": {
+    "hosted_health_checked_at": "2026-05-25",
+    "hosted_record_count": 817307,
+    "hosted_trait_records": 4972,
+    "hosted_sources": [
+      "aedes_cdc_dengue_surveillance",
+      "aedes_expression_omics",
+      "aedes_extracted_facts",
+      "aedes_image_atoms",
+      "aedes_literature_facets",
+      "aedes_literature_openalex",
+      "aedes_neurobiology_sources",
+      "aedes_occurrence_ecology",
+      "aedes_paho_dengue_surveillance",
+      "aedes_pathogen_taxonomy",
+      "aedes_public_health_guidance",
+      "aedes_resistance_markers",
+      "aedes_uniprot_proteins",
+      "aedes_vector_competence_assays",
+      "aedes_vectorbyte_traits",
+      "aedes_video_atoms",
+      "aedes_wolbachia_interventions",
+      "bold_api",
+      "dryad_aedes_behavior_videos",
+      "gbif_api",
+      "inaturalist_api",
+      "irmapper_aedes",
+      "mendeley_aedes_behavior_media",
+      "mosquito_alert_gbif",
+      "mosquito_v1_fixtures",
+      "ncbi_biosamples",
+      "ncbi_datasets_genome",
+      "osf_flighttrackai_aedes_videos",
+      "pmc_open_access_videos",
+      "vectorbase_aedes_genomics",
+      "vectornet_aedes_surveillance"
+    ],
+    "hosted_lane_counts": {
+      "action_notes": 1,
+      "behavior": 106930,
+      "biosamples": 20656,
+      "dna_barcodes": 3561,
+      "ecology": 9373,
+      "expression": 50,
+      "genes": 39045,
+      "genome_assemblies": 1,
+      "genome_features": 178721,
+      "literature": 10735,
+      "media": 25791,
+      "neurobiology": 100018,
+      "observations": 88607,
+      "proteins": 56960,
+      "public_health": 29538,
+      "resistance": 28089,
+      "taxonomy": 5,
+      "traits": 4972,
+      "transcripts": 102915,
+      "vector_competence": 11339
+    },
+    "proof_commands": [
+      "python3 -m askinsects health --hosted",
+      "python3 -m askinsects sql --hosted \"select source, lane, count(*) as n from records group by source, lane order by source, lane\" --limit 200"
+    ]
+  },
+  "external_comparators": [
+    {
+      "id": "vectorbase_veupathdb",
+      "name": "VectorBase / VEuPathDB",
+      "url": "https://vectorbase.org/",
+      "what_it_leads_in": "official vector genomics, genome browser, gene models, releases, orthology, and analysis tools",
+      "benchmark_note": "Treat VectorBase as the source-specific leader for Aedes genomics. Ask Insects can integrate VectorBase atoms with other lanes, but should not claim deeper VectorBase-native genomics than VectorBase itself.",
+      "ask_insects_advantage": "VectorBase GFF, protein, CDS, transcript, GO, codon-usage, identifier-history, and LinkOut files are normalized into the same query surface as observations, literature, traits, resistance, media, and public-health records.",
+      "ask_insects_gap": "Not a full replacement for every VectorBase web tool, browser track, analysis workflow, variant surface, or future release."
+    },
+    {
+      "id": "ncbi_entrez_datasets",
+      "name": "NCBI Entrez, Datasets, BioSample, SRA, Gene, Protein, PubMed, and PMC",
+      "url": "https://www.ncbi.nlm.nih.gov/home/develop/api/",
+      "what_it_leads_in": "primary biomedical identifiers, sequence records, sample metadata, SRA runs, PubMed records, and PMC records",
+      "benchmark_note": "Treat NCBI as the primary record system for accessioned biological, publication, and sequence metadata.",
+      "ask_insects_advantage": "Ask Insects narrows NCBI material to Aedes aegypti source lanes and connects genome package, BioSample, GEO/SRA expression, pathogen taxonomy, PubMed enrichment, and PMC open-access media to one provenance-backed answer surface.",
+      "ask_insects_gap": "Not a complete mirror of all NCBI databases, SRA raw reads, Gene records, Protein records, or PubMed/PMC literature."
+    },
+    {
+      "id": "gbif",
+      "name": "GBIF",
+      "url": "https://www.gbif.org/species/1651891",
+      "what_it_leads_in": "global biodiversity occurrence aggregation and taxonomic backbone records",
+      "benchmark_note": "Treat GBIF as the global occurrence aggregation leader.",
+      "ask_insects_advantage": "Ask Insects stores a bounded Aedes aegypti GBIF occurrence slice with raw payloads and joins it to iNaturalist, Mosquito Alert, VectorNet, image atoms, and ecology summaries.",
+      "ask_insects_gap": "Not a complete live mirror of every GBIF occurrence, dataset version, download, citation, or taxonomic update."
+    },
+    {
+      "id": "inaturalist",
+      "name": "iNaturalist",
+      "url": "https://www.inaturalist.org/",
+      "what_it_leads_in": "public community observations, photos, quality grades, annotations, and taxonomic activity",
+      "benchmark_note": "Treat iNaturalist as a source-specific leader for living public observation and photo workflows.",
+      "ask_insects_advantage": "Ask Insects converts a bounded Aedes aegypti observation/photo slice into queryable observation, media, payload, and image-atom records with source URLs and license fields.",
+      "ask_insects_gap": "Not a live mirror of all iNaturalist comments, identifications, observers, annotations, projects, taxa, or future observations."
+    },
+    {
+      "id": "mosquito_alert",
+      "name": "Mosquito Alert",
+      "url": "https://ipt.gbif.es/resource?r=mosquitoalert",
+      "what_it_leads_in": "expert-reviewed citizen-science mosquito reports and images for target vector species",
+      "benchmark_note": "Treat Mosquito Alert as a source-specific leader for its own expert-reviewed citizen-science image records.",
+      "ask_insects_advantage": "Ask Insects ingests the Aedes aegypti slice through GBIF/IPT and joins observations and images to the same query plane as other occurrence and media lanes.",
+      "ask_insects_gap": "Not a complete replacement for Mosquito Alert app workflows, expert-review process, BioImage Archive chunks, or future dataset versions."
+    },
+    {
+      "id": "vectornet",
+      "name": "VectorNet",
+      "url": "https://www.ecdc.europa.eu/en/about-us/partnerships-and-networks/disease-and-laboratory-networks/vector-net",
+      "what_it_leads_in": "validated European and neighboring-region vector surveillance and distribution data",
+      "benchmark_note": "Treat VectorNet as the official European surveillance comparator for vector occurrence maps and expert-validated distribution status.",
+      "ask_insects_advantage": "Ask Insects turns the Aedes aegypti Darwin Core Archive slice into row-level observations plus ecology summaries with surveillance fields and locators.",
+      "ask_insects_gap": "Not a substitute for VectorNet expert networks, map products, unpublished validation workflows, or future VectorNet releases."
+    },
+    {
+      "id": "bold",
+      "name": "BOLD Systems",
+      "url": "https://uni.boldsystems.org/index.php/resources/api?type=webservices",
+      "what_it_leads_in": "DNA barcode specimen, sequence, and trace-file retrieval from the public barcode portal",
+      "benchmark_note": "Treat BOLD as the source-specific leader for public DNA barcode records.",
+      "ask_insects_advantage": "Ask Insects stores Aedes aegypti BOLD barcode rows beside genomics, occurrence, trait, resistance, and literature lanes.",
+      "ask_insects_gap": "Not a complete mirror of every BOLD package, trace file, private record, BIN workflow, or future portal update."
+    },
+    {
+      "id": "irmapper",
+      "name": "IR Mapper",
+      "url": "https://irmapper.com/",
+      "what_it_leads_in": "open-access insecticide-resistance maps, filters, and standardized susceptibility records",
+      "benchmark_note": "Treat IR Mapper as the source-specific leader for its curated resistance map and data workflow.",
+      "ask_insects_advantage": "Ask Insects turns Aedes resistance rows into queryable resistance records and combines them with literature-derived marker and mechanism evidence.",
+      "ask_insects_gap": "Not a replacement for IR Mapper maps, monthly update cycle, model layers, or user-upload workflow."
+    },
+    {
+      "id": "vectorbyte_vectraits",
+      "name": "VectorByte / VecTraits",
+      "url": "https://www.vectorbyte.org/",
+      "what_it_leads_in": "global open-access vector trait and abundance data platform, including VecTraits and VecDyn",
+      "benchmark_note": "Treat VectorByte as the source-specific leader for vector trait and abundance database curation.",
+      "ask_insects_advantage": "Ask Insects normalizes Aedes aegypti VecTraits rows into trait atoms with temperature, stage, sex, habitat, location, citation, DOI, and raw JSON locators.",
+      "ask_insects_gap": "Current Ask Insects coverage is a bounded Aedes trait slice, not all VectorByte species, all VecDyn abundance data, or all VectorByte analysis tools."
+    },
+    {
+      "id": "openalex_pubmed_pmc",
+      "name": "OpenAlex, PubMed, and PMC Open Access",
+      "url": "https://developers.openalex.org/api-reference/works",
+      "what_it_leads_in": "literature discovery, biomedical citation records, and legal open full-text article access",
+      "benchmark_note": "Treat these systems as the source-specific leaders for publication discovery, biomedical identifiers, and open-access full text.",
+      "ask_insects_advantage": "Ask Insects narrows literature to material Aedes aegypti work, enriches it with PubMed and open full-text routes where legal, and derives cross-lane candidate facts and supplement rows with provenance.",
+      "ask_insects_gap": "Not a complete mirror of all scholarly records, all PDFs, all supplementary archives, all image tables, or every claim in the literature."
+    },
+    {
+      "id": "paho_cdc_public_health",
+      "name": "PAHO and CDC public-health surveillance and guidance",
+      "url": "https://www.cdc.gov/mosquitoes/",
+      "what_it_leads_in": "official public-health guidance and human disease surveillance context relevant to Aedes-borne disease",
+      "benchmark_note": "Treat public-health agencies as source-specific leaders for official surveillance definitions, current guidance, and public reporting boundaries.",
+      "ask_insects_advantage": "Ask Insects keeps Aedes-relevant dengue, guidance, and Wolbachia intervention context queryable beside vector, trait, resistance, ecology, and genomics records.",
+      "ask_insects_gap": "Public-health rows are human disease and guidance context, not mosquito occurrence records, and do not replace agency dashboards, legal notices, or live public-health reporting."
+    }
+  ],
+  "benchmark_decision": {
+    "plain_english": "Ask Insects is strongest as an integrated source plane. It brings many Aedes aegypti lanes into one atomic query surface, but several upstream systems remain deeper within their own lane. The honest status is broad and unusually integrated, not proven largest or deepest in the world.",
+    "next_benchmark_steps": [
+      "Refresh comparator inventory and hosted counts on a schedule.",
+      "Record per-source atom counts and known upstream total counts where legally and technically available.",
+      "Add source-specific completeness ratios only where upstream totals are explicit.",
+      "Keep structured gaps for every source lane that is not fully mirrored."
+    ]
+  }
+}

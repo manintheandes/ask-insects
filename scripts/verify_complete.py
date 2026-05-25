@@ -27,7 +27,9 @@ REQUIRED_FILES = (
     "pyproject.toml",
     "config/source-map.yaml",
     "config/mosquito-intelligence-coverage.json",
+    "config/aedes-source-plane-benchmark.json",
     "data/fixtures/mosquito_records.json",
+    "docs/aedes-source-plane-benchmark.md",
     "docs/querying-ask-insects.md",
     "docs/source-lanes.md",
     "docs/superpowers/specs/2026-05-23-ask-insects-mosquito-v1-design.md",
@@ -175,6 +177,7 @@ REQUIRED_FILES = (
     "tests/test_server.py",
     "tests/test_verify_complete.py",
     "tests/test_mosquito_intelligence_coverage.py",
+    "tests/test_aedes_source_plane_benchmark.py",
     "tests/test_literature_facets.py",
     "tests/test_ingest_bold_barcodes.py",
     "tests/test_ingest_inaturalist_observations.py",
@@ -244,6 +247,7 @@ UNIT_TEST_MODULES = (
     "tests.test_records",
     "tests.test_server",
     "tests.test_mosquito_intelligence_coverage",
+    "tests.test_aedes_source_plane_benchmark",
     "tests.test_literature_facets",
     "tests.test_ingest_bold_barcodes",
     "tests.test_ingest_inaturalist_observations",
@@ -531,6 +535,8 @@ def check_mosquito_intelligence_coverage() -> None:
             raise RuntimeError(f"docs/source-lanes.md missing coverage term: {term}")
     if "mosquito-intelligence-coverage.json" not in source_map:
         raise RuntimeError("config/source-map.yaml missing coverage ledger link")
+    if "aedes-source-plane-benchmark.json" not in source_map:
+        raise RuntimeError("config/source-map.yaml missing Aedes source-plane benchmark link")
     if "aedes_literature_facets" not in source_map:
         raise RuntimeError("config/source-map.yaml missing aedes_literature_facets")
     for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health", "ECDC"):
@@ -680,6 +686,44 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing VectorByte traits term: {term}")
+
+
+def check_aedes_source_plane_benchmark() -> None:
+    benchmark_path = REPO_ROOT / "config/aedes-source-plane-benchmark.json"
+    doc_path = REPO_ROOT / "docs/aedes-source-plane-benchmark.md"
+    payload = json.loads(benchmark_path.read_text(encoding="utf-8"))
+    doc = doc_path.read_text(encoding="utf-8")
+    if payload.get("primary_taxon") != "Aedes aegypti":
+        raise RuntimeError("Aedes benchmark must declare Aedes aegypti as the primary taxon")
+    if payload.get("claim_status") != "not_proven_world_largest":
+        raise RuntimeError("Aedes benchmark must keep the world-largest claim unproven")
+    claim_rules = payload.get("claim_rules")
+    if not isinstance(claim_rules, dict) or claim_rules.get("world_largest_claim_allowed") is not False:
+        raise RuntimeError("Aedes benchmark must disallow the world-largest claim")
+    if int(payload.get("ask_insects_current", {}).get("hosted_record_count", 0)) < 817307:
+        raise RuntimeError("Aedes benchmark hosted proof is below the expected hosted record count")
+    required_comparators = {
+        "vectorbase_veupathdb",
+        "ncbi_entrez_datasets",
+        "gbif",
+        "inaturalist",
+        "mosquito_alert",
+        "vectornet",
+        "bold",
+        "irmapper",
+        "vectorbyte_vectraits",
+        "openalex_pubmed_pmc",
+        "paho_cdc_public_health",
+    }
+    comparators = payload.get("external_comparators")
+    if not isinstance(comparators, list):
+        raise RuntimeError("Aedes benchmark must declare external_comparators")
+    comparator_ids = {str(item.get("id")) for item in comparators if isinstance(item, dict)}
+    if comparator_ids != required_comparators:
+        raise RuntimeError(f"Aedes benchmark comparator mismatch: {sorted(comparator_ids)}")
+    for term in ("Claim Ladder", "not proven", "VectorBase", "VectorByte", "GBIF", "IR Mapper"):
+        if term not in doc:
+            raise RuntimeError(f"docs/aedes-source-plane-benchmark.md missing term: {term}")
 
 
 def check_cli() -> None:
@@ -1236,6 +1280,7 @@ def main() -> int:
         check_atomic_source_replacement()
         check_literature_source_map()
         check_mosquito_intelligence_coverage()
+        check_aedes_source_plane_benchmark()
         check_cli()
         check_installed_artifact_receipts()
         check_literature_artifact()

@@ -9,11 +9,12 @@ from scripts.verify_mosquito_intelligence_coverage import (
 
 
 class MosquitoIntelligenceCoverageTests(unittest.TestCase):
-    def test_coverage_ledger_declares_world_aedes_scope(self):
+    def test_coverage_ledger_declares_world_aedes_goal_and_benchmark_boundary(self):
         payload = load_coverage()
 
         self.assertEqual(payload["scope"]["primary_taxon"], "Aedes aegypti")
-        self.assertIn("most comprehensive Aedes aegypti intelligence system in the world", payload["scope"]["strategy"])
+        self.assertIn("Build toward the most comprehensive Aedes aegypti intelligence system in the world", payload["scope"]["strategy"])
+        self.assertIn("config/aedes-source-plane-benchmark.json", payload["scope"]["strategy"])
 
     def test_coverage_ledger_has_all_required_domains_and_gates(self):
         payload = load_coverage()

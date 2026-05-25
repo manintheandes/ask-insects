@@ -1,7 +1,7 @@
 {
   "scope": {
     "primary_taxon": "Aedes aegypti",
-    "strategy": "Build the most comprehensive Aedes aegypti intelligence system in the world, full stop.",
+    "strategy": "Build toward the most comprehensive Aedes aegypti intelligence system in the world, while current public claims follow config/aedes-source-plane-benchmark.json.",
     "expansion_order": [
       "Aedes albopictus",
       "Anopheles gambiae complex and other primary Anopheles vectors",

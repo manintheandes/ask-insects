@@ -69,8 +69,10 @@ def verify_coverage(payload: dict[str, object]) -> None:
     if scope.get("primary_taxon") != "Aedes aegypti":
         raise ValueError("coverage ledger must declare Aedes aegypti as primary_taxon")
     strategy = scope.get("strategy")
-    if not isinstance(strategy, str) or "most comprehensive Aedes aegypti intelligence system in the world" not in strategy:
-        raise ValueError("coverage ledger strategy must state the world-comprehensive Aedes goal")
+    if not isinstance(strategy, str) or "Build toward the most comprehensive Aedes aegypti intelligence system in the world" not in strategy:
+        raise ValueError("coverage ledger strategy must state the world-comprehensive Aedes goal as an ambition")
+    if "config/aedes-source-plane-benchmark.json" not in strategy:
+        raise ValueError("coverage ledger strategy must point claim status to the Aedes benchmark")
 
     gates = payload.get("source_contract_gates")
     if not isinstance(gates, list) or set(gates) != REQUIRED_GATES:

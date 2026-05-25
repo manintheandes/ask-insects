@@ -663,8 +663,9 @@ hosted:
   artifact_dir: /home/josh/ask-insects/artifacts/mosquito-v1
   sqlite_index: /home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite
 coverage:
-  comprehensive_strategy: Build the most comprehensive Aedes aegypti intelligence system in the world, full stop.
+  comprehensive_strategy: Build toward the most comprehensive Aedes aegypti intelligence system in the world, while current public claims follow the benchmark ledger.
   ledger: config/mosquito-intelligence-coverage.json
+  benchmark: config/aedes-source-plane-benchmark.json
   required_domains:
     - literature
     - genomics

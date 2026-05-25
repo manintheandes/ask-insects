@@ -22,9 +22,11 @@ The public repository ships code, docs, tests, source maps, small deterministic 
 
 ## Comprehensive Mosquito Intelligence Goal
 
-The current comprehensive-source strategy is Aedes-first: make Ask Insects the most comprehensive `Aedes aegypti` intelligence system in the world, full stop. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for this push. Open Insects expands outward from that source-backed base.
+The current comprehensive-source strategy is Aedes-first: build Ask Insects toward the most comprehensive `Aedes aegypti` intelligence system in the world. That is the goal, not a claim the repo is allowed to make blindly. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for this push. Open Insects expands outward from that source-backed base.
 
 The machine-readable coverage ledger is `config/mosquito-intelligence-coverage.json`. It is the durable backlog for domains that are not source grade yet. Do not treat a domain as covered unless the ledger, source map, receipts, SQLite records, and Ask Insects CLI all agree.
+
+The machine-readable benchmark is `config/aedes-source-plane-benchmark.json`, with the plain-English readout in `docs/aedes-source-plane-benchmark.md`. It currently marks the world-largest/world-deepest claim as not proven. The safe current wording is: Ask Insects is a broad, integrated, provenance-backed `Aedes aegypti` query plane.
 
 ## Quick Start
 
