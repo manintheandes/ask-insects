@@ -331,6 +331,7 @@
         "aedes_literature_facets",
         "aedes_extracted_facts",
         "aedes_resistance_markers",
+        "aedes_resistance_table_rows",
         "aedes_who_resistance_guidance"
       ],
       "current_gates": {
@@ -346,12 +347,13 @@
         "Installed records store raw IR Mapper rows in record_payloads with provenance to raw/irmapper/Aedes_aegypti.json row locators.",
         "Installed local and hosted artifacts contain 2,843 resistance records from aedes_literature_facets.",
         "Hosted artifact contains 6,449 aedes_resistance_markers records mapping kdr, VGSC, and metabolic-resistance marker mentions from indexed Aedes literature and legal full-text units into queryable resistance records with marker payloads, source locators, and zero marker-source gaps.",
+        "aedes_resistance_table_rows promotes parsed resistance supplement rows from aedes_extracted_facts into schema-validated resistance records with insecticide terms, marker or mutation terms, assay terms, metric fields, table headers, table row values, source paper ID, extracted-fact ID, and raw row provenance. When no parsed row passes validation, it installs a queryable source-gap record. These records are not human-validated biological assertions.",
         "General resistance questions prefer the dedicated irmapper_aedes lane, while kdr and metabolic-marker questions prefer aedes_resistance_markers before literature-derived resistance facets.",
         "aedes_who_resistance_guidance maps WHO Aedes insecticide-resistance method and discriminating-concentration pages into resistance records with method terms and raw HTML provenance.",
         "aedes_extracted_facts emits resistance candidate facts, supplement manifests, and parsed supported supplement table rows from indexed Aedes literature, with matched insecticide, assay, mortality, knockdown, LC value, mutation, genotype-frequency, and country terms when detected."
       ],
       "required_next_sources": [
-        "validated marker-frequency, haplotype, and genotype table extraction from papers and supplements beyond deterministic supported-format rows"
+        "human-reviewed marker-frequency, haplotype, and genotype table extraction from papers and supplements beyond deterministic supported-format rows"
       ],
       "completion_evidence": [
         "Ask Insects can answer resistance questions by species, country, insecticide class, assay, mutation, and source"

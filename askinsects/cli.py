@@ -279,6 +279,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_resistance_markers = sub.add_parser("ingest-resistance-markers")
     ingest_resistance_markers.add_argument("--hosted", action="store_true")
 
+    ingest_resistance_table_rows = sub.add_parser("ingest-resistance-table-rows")
+    ingest_resistance_table_rows.add_argument("--hosted", action="store_true")
+
     ingest_extracted_facts = sub.add_parser("ingest-extracted-facts")
     ingest_extracted_facts.add_argument("--hosted", action="store_true")
     ingest_extracted_facts.add_argument("--max-fulltext-units", type=int, default=5000)
@@ -990,6 +993,20 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/resistance-markers",
+            {},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-resistance-table-rows":
+        if not args.hosted:
+            from scripts.ingest_resistance_table_rows import ingest_resistance_table_rows
+
+            payload = ingest_resistance_table_rows(artifact_dir=artifact_dir)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/resistance-table-rows",
             {},
             timeout=3600,
         )

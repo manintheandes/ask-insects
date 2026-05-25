@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import re
 
 
 @dataclass(frozen=True)
@@ -195,8 +196,14 @@ def plan_question(question: str) -> QueryPlan:
             "resistance mutation",
             "vgsc",
             "vssc",
+            "resistance table",
+            "genotype frequency",
+            "allele frequency",
+            "haplotype",
+            "lc50",
+            "lc90",
         )
-    ):
+    ) or re.search(r"\b[A-Z][0-9]{2,4}[A-Z]\b", question):
         return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
     if any(
         term in q

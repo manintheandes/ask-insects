@@ -792,6 +792,21 @@ sources:
     provenance_required: true
     live_fetch: derived_from_indexed_literature
     legal_fulltext_only: true
+  - id: aedes_resistance_table_rows
+    name: Aedes aegypti parsed resistance supplement table rows
+    source_type: derived_sqlite_source
+    boundary: Schema-validated promotion of parsed Aedes aegypti resistance rows from aedes_extracted_facts supported public supplement tables, preserving insecticide terms, marker or mutation terms, assay terms, mortality, knockdown, LC value, genotype-frequency, haplotype fields when detected, table headers, table row values, source paper ID, extracted-fact ID, exact raw table row locator, and a queryable source-gap record when no parsed resistance table row passes validation
+    query_plane: parsed_extracted_facts_resistance_tables_to_sqlite_resistance_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_resistance_table_rows.py
+    input_sources:
+      - aedes_extracted_facts
+    lanes:
+      - resistance
+    provenance_required: true
+    live_fetch: derived_from_indexed_extracted_facts
+    legal_fulltext_only: true
+    validation_status: schema_validated_not_human_validated
   - id: aedes_neurobiology_sources
     name: Aedes aegypti neurobiology sources
     source_type: local_public_artifact_cache

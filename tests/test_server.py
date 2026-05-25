@@ -2336,6 +2336,34 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn("literature_fulltext_units#openalex:WRM1:fulltext:0", provenance_rows[0]["provenance_json"])
 
+    def test_ingest_resistance_table_rows_adds_records_without_removing_existing_sources(self):
+        from tests.test_resistance_table_rows_source import write_resistance_table_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_resistance_table_fixture(artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/resistance-table-rows",
+                {},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_resistance_table_rows"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_resistance_table_rows'",
+            )
+            self.assertIn("aedes_extracted_facts#extracted_fact:resistance:openalex:WRTABLE1:row7", provenance_rows[0]["provenance_json"])
+
     def test_ingest_extracted_facts_adds_cross_lane_records_without_removing_existing_sources(self):
         from tests.test_extracted_facts_source import write_extracted_facts_fixture
 

@@ -25,6 +25,7 @@ from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.observation_climate import OBSERVATION_CLIMATE_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
+from .sources.resistance_table_rows import RESISTANCE_TABLE_ROW_SOURCE_ID
 from .sources.who_malaria_threats_resistance import WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID
 
 
@@ -1781,18 +1782,21 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
     wants_marker = bool(_resistance_marker_terms(question))
     wants_extracted = _wants_extracted_facts(question)
     q = question.lower()
+    wants_table = wants_extracted or any(term in q for term in ("frequency", "frequencies", "haplotype", "genotype", "mortality", "lc50", "lc90", "table row"))
     wants_who_database = any(term in q for term in ("malaria threats", "who database", "global database", "who resistance database", "who insecticide resistance database"))
     wants_who_guidance = any(term in q for term in ("who", "world health organization", "guidance", "method", "methods", "bioassay", "bioassays", "discriminating concentration", "discriminating concentrations"))
 
     def score(record: EvidenceRecord) -> tuple[object, ...]:
         who_database_rank = 0 if wants_who_database and record.source == WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID else 1
         who_guidance_rank = 0 if wants_who_guidance and record.source == AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID else 1
+        table_rank = 0 if wants_table and record.source == RESISTANCE_TABLE_ROW_SOURCE_ID else 1
         extracted_rank = 0 if wants_extracted and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
-        marker_rank = 0 if wants_marker and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
+        marker_rank = 0 if wants_marker and not wants_table and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
         irmapper_rank = 0 if not wants_marker and record.source == "irmapper_aedes" else 1
         return (
             who_database_rank,
             who_guidance_rank,
+            table_rank,
             extracted_rank,
             marker_rank,
             irmapper_rank,
@@ -1801,6 +1805,42 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
         )
 
     return sorted(records, key=score)
+
+
+def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not (
+        _wants_extracted_facts(question)
+        or any(term in q for term in ("frequency", "frequencies", "haplotype", "genotype", "mortality", "lc50", "lc90", "table row"))
+    ):
+        return []
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT r.*
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ?
+              AND r.lane = 'resistance'
+              AND json_extract(p.payload_json, '$.confidence') = 'parsed_table_schema_validated'
+            ORDER BY r.record_id
+            LIMIT ?
+            """,
+            (RESISTANCE_TABLE_ROW_SOURCE_ID, max(limit * 50, 250)),
+        ).fetchall()
+    records = [EvidenceRecord.from_row(dict(row)) for row in rows]
+    if records:
+        return _prioritize_named_source_records(question, records)[:limit]
+    records = _source_search_records(
+        index,
+        RESISTANCE_TABLE_ROW_SOURCE_ID,
+        "resistance",
+        question,
+        limit=max(limit * 20, 50),
+    )
+    if records:
+        return _prioritize_named_source_records(question, records)[:limit]
+    return _source_records(index, RESISTANCE_TABLE_ROW_SOURCE_ID, ["resistance"], limit=limit)
 
 
 def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
@@ -2840,6 +2880,13 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "vector_competence":
         for record in _vector_competence_assay_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "resistance":
+        for record in _resistance_table_row_records(index, plan.question, limit=limit):
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

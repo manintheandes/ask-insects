@@ -184,6 +184,14 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show kdr V1016G 
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.marker_id') as marker, count(*) as n from record_payloads where source='aedes_resistance_markers' group by marker order by n desc" --limit 20
 ```
 
+To promote parsed resistance supplement rows from `aedes_extracted_facts` into table-row resistance records:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-resistance-table-rows
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show parsed resistance table V1016G frequency for Aedes aegypti" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.confidence') as confidence, count(*) as n from record_payloads where source='aedes_resistance_table_rows' group by confidence"
+```
+
 To add NCBI Taxonomy pathogen identity anchors for Aedes-relevant arboviruses:
 
 ```bash
@@ -263,6 +271,8 @@ python3 -m askinsects ask "show the WHO insecticide resistance database rows for
 ```
 
 Resistance-marker records use source id `aedes_resistance_markers`. They are derived from source-grade literature rows and legal full-text units already in SQLite. Each record stores marker ID, marker class, gene or family, matched aliases, context terms, insecticide terms, source paper ID, full-text unit ID when present, and snippet. Provenance points back to `records#<paper_id>` and, when available, `literature_fulltext_units#<unit_id>`. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. This lane is legal full-text only and does not use private cookies, institutional access, or Sci-Hub.
+
+Resistance-table records use source id `aedes_resistance_table_rows`. They are derived from parsed supported-format `aedes_extracted_facts` resistance table rows. Each record stores insecticide terms, marker or mutation terms, assay terms, metric fields, table headers, row values, source extracted-fact ID, source paper ID, and validation status. Provenance points back to the extracted-fact record, source literature record, and raw supplement row locator. These records are schema-validated and not human-validated. If no parsed row passes validation, the lane returns a queryable `source_gap` record that reports how many extracted-fact resistance rows and parsed table rows were checked.
 
 Occurrence ecology records use source id `aedes_occurrence_ecology`. They are derived from indexed GBIF, iNaturalist, and Mosquito Alert observation payloads already in SQLite. Each `ecology` record stores an aggregation type such as country summary, country-month summary, or public habitat summary; source counts; observation counts; sample input record IDs; sample URLs; coordinate count; bounding box when coordinates exist; and first and last observed dates. Provenance points back to the SQLite observation join. The May 24, 2026 hosted ingest installed 1,985 occurrence ecology records from 88,065 Aedes observation inputs. Refresh it with `python3 -m askinsects ingest-occurrence-ecology`, then ask range and seasonality questions such as `what seasonality evidence exists for Aedes aegypti in Brazil by month?`.
 

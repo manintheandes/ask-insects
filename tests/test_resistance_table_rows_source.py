@@ -1,0 +1,135 @@
+from __future__ import annotations
+
+from pathlib import Path
+import tempfile
+import unittest
+
+from askinsects.index import SourceIndex
+from askinsects.records import EvidenceRecord, Provenance
+from askinsects.sources.resistance_table_rows import (
+    RESISTANCE_TABLE_ROW_SOURCE_ID,
+    build_resistance_table_row_records,
+)
+
+
+def write_resistance_table_fixture(artifact_dir: Path) -> None:
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    source_paper = EvidenceRecord(
+        record_id="openalex:WRTABLE1",
+        lane="literature",
+        source="aedes_literature_openalex",
+        title="Insecticide resistance and kdr frequencies in Aedes aegypti field populations",
+        text="Aedes aegypti resistance supplement source paper.",
+        species="Aedes aegypti",
+        url="https://example.org/resistance-table",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_literature_openalex",
+            locator="raw/literature/page.json#WRTABLE1",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="OpenAlex metadata",
+        ),
+    )
+    parsed_fact = EvidenceRecord(
+        record_id="extracted_fact:resistance:openalex:WRTABLE1:row7",
+        lane="resistance",
+        source="aedes_extracted_facts",
+        title="Aedes aegypti extracted resistance table row",
+        text=(
+            "Supplement table row. Population: Brazil field population. "
+            "Insecticide: deltamethrin. Mortality: 43%. V1016G allele frequency: 0.72."
+        ),
+        species="Aedes aegypti",
+        url="https://example.org/resistance-supplement.csv",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_extracted_facts",
+            locator="records#openalex:WRTABLE1;supplement#0;raw/extracted_facts/supplements/resistance.csv;row#7",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="CC-BY",
+            source_url="https://example.org/resistance-supplement.csv",
+        ),
+        payload={
+            "fact_type": "resistance",
+            "confidence": "parsed",
+            "extraction_method": "deterministic_supplement_table_row_extract",
+            "schema_version": "2026-05-24.v1",
+            "source_record_id": "openalex:WRTABLE1",
+            "source_title": "Insecticide resistance and kdr frequencies in Aedes aegypti field populations",
+            "evidence_text": "Deltamethrin mortality 43%; V1016G allele frequency 0.72 in Brazil field population.",
+            "fields": {
+                "insecticide": ["deltamethrin"],
+                "assay": ["WHO tube bioassay"],
+                "mortality": ["43%"],
+                "mutation": ["V1016G"],
+                "genotype_frequency": ["0.72"],
+                "country": ["Brazil"],
+                "table_headers": [
+                    "Population",
+                    "Insecticide",
+                    "Assay",
+                    "Mortality %",
+                    "V1016G allele frequency",
+                ],
+                "table_row": {
+                    "Population": "Brazil field population",
+                    "Insecticide": "deltamethrin",
+                    "Assay": "WHO tube bioassay",
+                    "Mortality %": "43",
+                    "V1016G allele frequency": "0.72",
+                },
+                "table_row_index": 7,
+            },
+            "source_provenance": {
+                "source_id": "aedes_literature_openalex",
+                "locator": "raw/literature/page.json#WRTABLE1",
+                "retrieved_at": "2026-05-24T00:00:00Z",
+                "license": "OpenAlex metadata",
+            },
+        },
+    )
+    index.upsert_records([source_paper, parsed_fact])
+
+
+class ResistanceTableRowSourceTests(unittest.TestCase):
+    def test_build_resistance_table_row_records_promotes_parsed_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_resistance_table_fixture(artifact_dir)
+
+            result = build_resistance_table_row_records(artifact_dir, retrieved_at="2026-05-24T00:00:00Z")
+
+            self.assertEqual(result.source_id, RESISTANCE_TABLE_ROW_SOURCE_ID)
+            self.assertEqual(result.parsed_table_row_count, 1)
+            self.assertEqual(result.skipped_table_row_count, 0)
+            record = result.records[0]
+            self.assertEqual(record.source, RESISTANCE_TABLE_ROW_SOURCE_ID)
+            self.assertEqual(record.lane, "resistance")
+            self.assertIn("deltamethrin", record.text)
+            self.assertEqual(record.payload["confidence"], "parsed_table_schema_validated")
+            self.assertEqual(record.payload["validation_status"], "schema_validated")
+            self.assertFalse(record.payload["human_validated"])
+            self.assertEqual(record.payload["insecticide_terms"], ["deltamethrin"])
+            self.assertEqual(record.payload["marker_terms"], ["V1016G"])
+            self.assertEqual(record.payload["metric_fields"], ["genotype_frequency", "mortality"])
+            self.assertEqual(record.payload["table_row"]["V1016G allele frequency"], "0.72")
+            self.assertEqual(record.payload["source_extracted_fact_record_id"], "extracted_fact:resistance:openalex:WRTABLE1:row7")
+            self.assertIn("aedes_extracted_facts#extracted_fact:resistance:openalex:WRTABLE1:row7", record.provenance.locator)
+
+    def test_build_resistance_table_row_records_records_gap_when_empty(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            SourceIndex(artifact_dir / "source_index.sqlite").initialize()
+
+            result = build_resistance_table_row_records(artifact_dir, retrieved_at="2026-05-24T00:00:00Z")
+
+            self.assertEqual(len(result.records), 1)
+            self.assertEqual(result.records[0].source, RESISTANCE_TABLE_ROW_SOURCE_ID)
+            self.assertEqual(result.records[0].payload["atom_type"], "source_gap")
+            self.assertEqual(result.records[0].payload["reason"], "no_resistance_table_rows_detected")
+            self.assertEqual(result.gaps[0]["source"], RESISTANCE_TABLE_ROW_SOURCE_ID)
+
+
+if __name__ == "__main__":
+    unittest.main()

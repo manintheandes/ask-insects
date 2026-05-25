@@ -46,6 +46,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-24-aedes-vector-competence-assay-candidates-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-ncbi-biosample-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-resistance-marker-lane-design.md",
+    "docs/superpowers/specs/2026-05-25-aedes-resistance-table-rows-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-occurrence-ecology-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-vectorbase-genomics-lane-design.md",
     "docs/superpowers/specs/2026-05-24-aedes-mendeley-behavior-media-lane-design.md",
@@ -72,6 +73,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-vector-competence-assay-candidates.md",
     "docs/superpowers/plans/2026-05-24-aedes-ncbi-biosample-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-resistance-marker-lane.md",
+    "docs/superpowers/plans/2026-05-25-aedes-resistance-table-rows.md",
     "docs/superpowers/plans/2026-05-24-aedes-occurrence-ecology-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-vectorbase-genomics-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-mendeley-behavior-media-lane.md",
@@ -125,6 +127,7 @@ REQUIRED_FILES = (
     "askinsects/sources/vectorbase_genomics.py",
     "askinsects/sources/vector_competence_assays.py",
     "askinsects/sources/resistance_markers.py",
+    "askinsects/sources/resistance_table_rows.py",
     "askinsects/sources/occurrence_ecology.py",
     "askinsects/sources/observation_climate.py",
     "askinsects/sources/extracted_facts.py",
@@ -171,6 +174,7 @@ REQUIRED_FILES = (
     "scripts/ingest_vectorbase_genomics.py",
     "scripts/ingest_vector_competence_assays.py",
     "scripts/ingest_resistance_markers.py",
+    "scripts/ingest_resistance_table_rows.py",
     "scripts/ingest_occurrence_ecology.py",
     "scripts/ingest_observation_climate.py",
     "scripts/ingest_extracted_facts.py",
@@ -251,6 +255,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_vector_competence_assays.py",
     "tests/test_resistance_markers_source.py",
     "tests/test_ingest_resistance_markers.py",
+    "tests/test_resistance_table_rows_source.py",
+    "tests/test_ingest_resistance_table_rows.py",
     "tests/test_occurrence_ecology_source.py",
     "tests/test_ingest_occurrence_ecology.py",
     "tests/test_observation_climate_source.py",
@@ -345,6 +351,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_vector_competence_assays",
     "tests.test_resistance_markers_source",
     "tests.test_ingest_resistance_markers",
+    "tests.test_resistance_table_rows_source",
+    "tests.test_ingest_resistance_table_rows",
     "tests.test_occurrence_ecology_source",
     "tests.test_ingest_occurrence_ecology",
     "tests.test_observation_climate_source",
@@ -563,6 +571,7 @@ def check_literature_source_map() -> None:
         "ncbi_biosamples",
         "aedes_vector_competence_assays",
         "aedes_resistance_markers",
+        "aedes_resistance_table_rows",
         "aedes_occurrence_ecology",
         "aedes_extracted_facts",
         "OpenAlex articles where Aedes aegypti is material in title, abstract, or accepted topic metadata",
@@ -821,6 +830,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_resistance_markers", "scripts/ingest_resistance_markers.py", "literature_records_and_fulltext_units_to_sqlite_resistance_marker_records", "legal_fulltext_only"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing resistance marker term: {term}")
+    for term in ("aedes_resistance_table_rows", "scripts/ingest_resistance_table_rows.py", "parsed_extracted_facts_resistance_tables_to_sqlite_resistance_records", "schema_validated_not_human_validated"):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing resistance table row term: {term}")
     for term in (
         "who_malaria_threats_resistance_audit",
         "scripts/ingest_who_malaria_threats_resistance.py",

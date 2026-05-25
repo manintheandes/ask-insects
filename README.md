@@ -346,7 +346,19 @@ python3 -m askinsects ask "show kdr V1016G resistance markers in Aedes aegypti" 
 python3 -m askinsects sql "select json_extract(payload_json, '$.marker_id') as marker, count(*) as n from record_payloads where source='aedes_resistance_markers' group by marker order by n desc" --limit 20
 ```
 
-The lane uses source id `aedes_resistance_markers`. It creates one `resistance` record per detected marker candidate, stores marker class, gene or family, matched aliases, resistance context, insecticide terms, source paper ID, full-text unit ID when present, and snippet in SQLite payloads, and preserves provenance back to `records#<paper_id>` plus `literature_fulltext_units#<unit_id>` when legal full text is available. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. It is deterministic candidate extraction, not yet validated genotype or marker-frequency table extraction.
+The lane uses source id `aedes_resistance_markers`. It creates one `resistance` record per detected marker candidate, stores marker class, gene or family, matched aliases, resistance context, insecticide terms, source paper ID, full-text unit ID when present, and snippet in SQLite payloads, and preserves provenance back to `records#<paper_id>` plus `literature_fulltext_units#<unit_id>` when legal full text is available. The May 24, 2026 hosted ingest installed 6,449 marker records with zero marker-source gaps. It is deterministic candidate extraction, not validated genotype or marker-frequency table extraction.
+
+## Resistance Table-Row Source Lane
+
+Parsed Aedes resistance supplement rows from `aedes_extracted_facts` can be promoted into schema-validated resistance table records:
+
+```bash
+python3 -m askinsects ingest-resistance-table-rows
+python3 -m askinsects ask "show parsed resistance table V1016G frequency for Aedes aegypti" --json
+python3 -m askinsects sql "select json_extract(payload_json, '$.confidence') as confidence, count(*) as n from record_payloads where source='aedes_resistance_table_rows' group by confidence"
+```
+
+The lane uses source id `aedes_resistance_table_rows`. It creates one `resistance` record per parsed supported-format resistance table row, stores insecticide terms, marker or mutation terms, assay terms, metric fields, table headers, table row values, source extracted-fact record ID, source paper ID, and validation status in SQLite payloads, and preserves provenance back to `aedes_extracted_facts#<record_id>`, `records#<paper_id>`, and the raw supplement row locator. These rows are labeled `parsed_table_schema_validated` with `human_validated: false`; they are inspectable table atoms, not a claim that every resistance table has been parsed or biologically reviewed. When the indexed extracted-fact rows do not contain promotable resistance tables, the lane installs a queryable `source_gap` resistance record instead of silently disappearing.
 
 ## Occurrence Ecology Source Lane
 

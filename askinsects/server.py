@@ -2422,6 +2422,17 @@ def ingest_resistance_markers(
     return ingest_resistance_markers_script(artifact_dir=artifact_dir)
 
 
+def ingest_resistance_table_rows(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_resistance_table_rows import ingest_resistance_table_rows as ingest_resistance_table_rows_script
+
+    _ = payload
+    return ingest_resistance_table_rows_script(artifact_dir=artifact_dir)
+
+
 def ingest_occurrence_ecology(
     payload: dict[str, object],
     *,
@@ -3166,6 +3177,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/resistance-markers":
             result = ingest_resistance_markers(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/resistance-table-rows":
+            result = ingest_resistance_table_rows(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/extracted-facts":

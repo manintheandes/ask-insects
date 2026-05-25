@@ -222,6 +222,30 @@ def resistance_marker_record(record_id):
     )
 
 
+def resistance_table_row_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="resistance",
+        source="aedes_resistance_table_rows",
+        title="Aedes aegypti parsed resistance table row: deltamethrin V1016G",
+        text=(
+            "Schema-validated parsed supplement table row for Aedes aegypti resistance. "
+            "Insecticide terms: deltamethrin. Marker terms: V1016G. "
+            "Metric fields: mortality, genotype_frequency. Table row: Mortality %: 43. V1016G allele frequency: 0.72."
+        ),
+        species="Aedes aegypti",
+        url="https://example.org/resistance-supplement.csv",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_resistance_table_rows",
+            locator="aedes_extracted_facts#extracted_fact:resistance:openalex:WRTABLE1:row7;records#openalex:WRTABLE1;row#7",
+            retrieved_at="2026-05-24T00:00:00Z",
+            license="CC-BY",
+        ),
+        payload={"confidence": "parsed_table_schema_validated", "marker_terms": ["V1016G"], "metric_fields": ["mortality", "genotype_frequency"]},
+    )
+
+
 def public_health_record(record_id, source, text):
     return EvidenceRecord(
         record_id=record_id,
@@ -369,6 +393,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show mosquito videos from Brazil").answer_shape, "media")
         self.assertEqual(plan_question("what insecticide resistance data exists for Aedes aegypti?").answer_shape, "resistance")
         self.assertEqual(plan_question("show CYP9J32 metabolic resistance markers in Aedes aegypti").answer_shape, "resistance")
+        self.assertEqual(plan_question("show parsed resistance table V1016G frequency for Aedes aegypti").answer_shape, "resistance")
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
         self.assertEqual(plan_question("what Mendeley table rows mention temperature gradients?").answer_shape, "behavior")
@@ -2832,6 +2857,46 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "resistance")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_resistance_markers")
             self.assertIn("V1016G", answer["evidence"][0]["text"])
+
+    def test_resistance_table_questions_prefer_schema_validated_table_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    resistance_record("irmapper:aedes:1", "irmapper_aedes"),
+                    resistance_marker_record("resistance_marker:V1016G:openalex:WRM1"),
+                    resistance_table_row_record("resistance_table:openalex:WRTABLE1:row7"),
+                ]
+            )
+
+            answer = answer_question("show parsed resistance table V1016G frequency for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_resistance_table_rows")
+            self.assertIn("0.72", answer["evidence"][0]["text"])
+
+    def test_resistance_table_questions_return_table_gap_record(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    resistance_record(
+                        "resistance_table:gap:no_resistance_table_rows_detected",
+                        "aedes_resistance_table_rows",
+                    )
+                ]
+            )
+
+            answer = answer_question("show parsed resistance table V1016G frequency for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_resistance_table_rows")
 
     def test_who_resistance_method_questions_prefer_who_guidance_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
