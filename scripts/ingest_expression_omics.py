@@ -15,6 +15,12 @@ from askinsects.index import SourceIndex
 from askinsects.sources.expression_omics import EXPRESSION_OMICS_SOURCE_ID, fetch_expression_omics_records
 
 
+FATAL_REFRESH_GAP_REASONS = {
+    "expression_omics_search_failed",
+    "expression_omics_summary_failed",
+}
+
+
 def _read_json(path: Path, default: object) -> object:
     if not path.exists():
         return default
@@ -112,7 +118,8 @@ def ingest_expression_omics(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
+    fatal_gap = any(isinstance(gap, dict) and gap.get("reason") in FATAL_REFRESH_GAP_REASONS for gap in result.gaps)
+    refresh_failed = fatal_gap or (not result.records and bool(result.gaps))
     if not refresh_failed:
         index.replace_source_records(EXPRESSION_OMICS_SOURCE_ID, result.records)
     return _update_metadata(
@@ -120,7 +127,7 @@ def ingest_expression_omics(
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed,
+        preserved_existing=refresh_failed and _source_record_count(index) > 0,
     )
 
 

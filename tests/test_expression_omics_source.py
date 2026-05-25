@@ -125,6 +125,22 @@ class ExpressionOmicsSourceTests(unittest.TestCase):
         self.assertFalse(result.records)
         self.assertEqual({gap["reason"] for gap in result.gaps}, {"expression_omics_no_geo_results", "expression_omics_no_sra_results"})
 
+    def test_fetch_expression_omics_records_does_not_add_empty_gap_after_search_failure(self):
+        def fake_fetch_json(url):
+            if "db=gds" in url:
+                raise RuntimeError("ncbi unavailable")
+            return {"esearchresult": {"idlist": [], "count": "0"}}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_expression_omics_records(
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fake_fetch_json,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+        gds_reasons = {gap["reason"] for gap in result.gaps if gap.get("db") == "gds"}
+        self.assertEqual(gds_reasons, {"expression_omics_search_failed"})
+
     def test_fetch_expression_omics_records_accepts_live_lowercase_esummary_keys(self):
         def fake_fetch_json(url):
             if "db=gds" in url and "esearch.fcgi" in url:
@@ -173,6 +189,58 @@ class ExpressionOmicsSourceTests(unittest.TestCase):
 
         self.assertNotIn("expression:sra_run:44630003", {record.record_id for record in result.records})
         self.assertIn("expression_omics_sra_runs_missing", {gap["reason"] for gap in result.gaps})
+
+    def test_fetch_expression_omics_records_paginates_search_and_batches_summaries(self):
+        calls = []
+
+        def fake_fetch_json(url):
+            calls.append(url)
+            if "db=gds" in url and "esearch.fcgi" in url:
+                if "retstart=0" in url:
+                    return {"esearchresult": {"idlist": ["2001", "2002"], "count": "5"}}
+                if "retstart=2" in url:
+                    return {"esearchresult": {"idlist": ["2003", "2004"], "count": "5"}}
+                if "retstart=4" in url:
+                    return {"esearchresult": {"idlist": ["2005"], "count": "5"}}
+            if "db=gds" in url and "esummary.fcgi" in url:
+                ids = url.split("id=", 1)[1].split("&", 1)[0].split("%2C")
+                return {
+                    "result": {
+                        "uids": ids,
+                        **{
+                            uid: {
+                                "Accession": f"GSE{uid}",
+                                "title": f"Aedes aegypti expression dataset {uid}",
+                                "summary": "Paged expression metadata.",
+                                "taxon": "Aedes aegypti",
+                                "gdsType": "Expression profiling by high throughput sequencing",
+                            }
+                            for uid in ids
+                        },
+                    }
+                }
+            if "db=sra" in url and "esearch.fcgi" in url:
+                return {"esearchresult": {"idlist": [], "count": "0"}}
+            raise AssertionError(url)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_expression_omics_records(
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fake_fetch_json,
+                retrieved_at="2026-05-25T00:00:00Z",
+                geo_limit=5,
+                sra_limit=0,
+                search_page_size=2,
+                summary_batch_size=2,
+            )
+
+        self.assertEqual(len(result.records), 5)
+        self.assertEqual({record.payload["accession"] for record in result.records}, {"GSE2001", "GSE2002", "GSE2003", "GSE2004", "GSE2005"})
+        self.assertTrue(any("retstart=2" in call for call in calls))
+        self.assertTrue(any("retstart=4" in call for call in calls))
+        summary_calls = [call for call in calls if "db=gds" in call and "esummary.fcgi" in call]
+        self.assertEqual(len(summary_calls), 3)
+        self.assertTrue(any("id=2005" in call for call in summary_calls))
 
 
 if __name__ == "__main__":

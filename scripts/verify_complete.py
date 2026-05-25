@@ -757,11 +757,14 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_who_resistance_guidance",
         "scripts/ingest_aedes_deep_sources.py",
         "authority_html_to_sqlite_taxonomy_records",
-        "worldclim_html_to_sqlite_ecology_source_records",
+        "worldclim_html_and_bioclim_geotiff_to_sqlite_ecology_records",
+        "bio1_annual_mean_temperature_c",
+        "bio12_annual_precipitation_mm",
         "zenodo_record_csv_to_sqlite_observation_records",
         "ncbi_eutils_bioproject_esearch_esummary_to_sqlite_genome_feature_records",
         "who_resistance_guidance_html_to_sqlite_resistance_records",
         "worldclim_raster_sampling_not_enabled",
+        "worldclim_raster_sampling_failed",
         "taxonomy_authority_fetch_failed",
     ):
         if term not in source_map:

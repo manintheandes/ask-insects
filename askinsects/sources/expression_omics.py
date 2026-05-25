@@ -125,6 +125,17 @@ def _result_count(payload: dict[str, object]) -> int:
         return 0
 
 
+def _chunked(values: list[str], size: int) -> list[list[str]]:
+    size = max(1, int(size))
+    return [values[index : index + size] for index in range(0, len(values), size)]
+
+
+def _paged_raw_name(db: str, kind: str, ordinal: int, total: int) -> str:
+    if total == 1:
+        return f"{db}_{kind}.json"
+    return f"{db}_{kind}_{ordinal + 1:04d}.json"
+
+
 def _geo_record(uid: str, item: dict[str, object], *, raw_path: Path, retrieved_at: str) -> EvidenceRecord:
     accession = _clean(_field(item, "accession")) or uid
     title = _clean(item.get("title")) or f"GEO expression dataset {accession}"
@@ -250,6 +261,8 @@ def fetch_expression_omics_records(
     retrieved_at: str,
     geo_limit: int = 25,
     sra_limit: int = 25,
+    search_page_size: int = 100,
+    summary_batch_size: int = 100,
 ) -> ExpressionOmicsResult:
     fetch = fetch_json or _default_fetch_json
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -257,24 +270,44 @@ def fetch_expression_omics_records(
     gaps: list[dict[str, object]] = []
     raw_artifacts: list[str] = []
     requested_urls: list[str] = []
+    search_page_size = max(1, int(search_page_size))
+    summary_batch_size = max(1, int(summary_batch_size))
 
     for db, term, limit, no_result_reason in (
         ("gds", GEO_TERM, geo_limit, "expression_omics_no_geo_results"),
         ("sra", SRA_TERM, sra_limit, "expression_omics_no_sra_results"),
     ):
-        if fetch_json is None and requested_urls:
-            time.sleep(0.34)
-        search_url = _eutils_url("esearch", db=db, term=term, retmode="json", retmax=max(0, int(limit)))
-        requested_urls.append(search_url)
-        try:
-            search_payload = fetch(search_url)
-        except Exception as exc:
-            gaps.append({"source": EXPRESSION_OMICS_SOURCE_ID, "lane": "expression", "db": db, "reason": "expression_omics_search_failed", "error": str(exc), "retrieved_at": retrieved_at})
+        limit = max(0, int(limit))
+        ids: list[str] = []
+        total_count = 0
+        search_payloads: list[tuple[int, dict[str, object]]] = []
+        search_failed = False
+        search_starts = [0] if limit == 0 else list(range(0, limit, search_page_size))
+        for retstart in search_starts:
+            if fetch_json is None and requested_urls:
+                time.sleep(0.34)
+            retmax = 0 if limit == 0 else min(search_page_size, limit - len(ids))
+            search_url = _eutils_url("esearch", db=db, term=term, retmode="json", retmax=retmax, retstart=retstart)
+            requested_urls.append(search_url)
+            try:
+                search_payload = fetch(search_url)
+            except Exception as exc:
+                gaps.append({"source": EXPRESSION_OMICS_SOURCE_ID, "lane": "expression", "db": db, "reason": "expression_omics_search_failed", "error": str(exc), "retrieved_at": retrieved_at})
+                search_failed = True
+                break
+            if not search_payloads:
+                total_count = _result_count(search_payload)
+            search_payloads.append((retstart, search_payload))
+            page_ids = _ids(search_payload)
+            ids.extend(page_ids)
+            if limit == 0 or not page_ids or len(ids) >= limit or len(ids) >= total_count:
+                break
+        if search_failed and not search_payloads:
             continue
-        search_raw = _write_raw(raw_dir, f"{db}_esearch.json", search_payload)
-        raw_artifacts.append(search_raw.as_posix())
-        ids = _ids(search_payload)
-        total_count = _result_count(search_payload)
+        for ordinal, (_retstart, search_payload) in enumerate(search_payloads):
+            search_raw = _write_raw(raw_dir, _paged_raw_name(db, "esearch", ordinal, len(search_payloads)), search_payload)
+            raw_artifacts.append(search_raw.as_posix())
+        ids = ids[:limit]
         if total_count > len(ids):
             gaps.append(
                 {
@@ -291,34 +324,36 @@ def fetch_expression_omics_records(
         if not ids:
             gaps.append({"source": EXPRESSION_OMICS_SOURCE_ID, "lane": "expression", "db": db, "reason": no_result_reason, "retrieved_at": retrieved_at})
             continue
-        if fetch_json is None:
-            time.sleep(0.34)
-        summary_url = _eutils_url("esummary", db=db, id=",".join(ids), retmode="json")
-        requested_urls.append(summary_url)
-        try:
-            summary_payload = fetch(summary_url)
-        except Exception as exc:
-            gaps.append({"source": EXPRESSION_OMICS_SOURCE_ID, "lane": "expression", "db": db, "reason": "expression_omics_summary_failed", "error": str(exc), "retrieved_at": retrieved_at})
-            continue
-        summary_raw = _write_raw(raw_dir, f"{db}_esummary.json", summary_payload)
-        raw_artifacts.append(summary_raw.as_posix())
-        for uid, item in _summary_items(summary_payload):
-            if db == "gds":
-                records.append(_geo_record(uid, item, raw_path=summary_raw, retrieved_at=retrieved_at))
-            else:
-                sra_records = _sra_records(uid, item, raw_path=summary_raw, retrieved_at=retrieved_at)
-                if not sra_records:
-                    gaps.append(
-                        {
-                            "source": EXPRESSION_OMICS_SOURCE_ID,
-                            "lane": "expression",
-                            "db": db,
-                            "uid": uid,
-                            "reason": "expression_omics_sra_runs_missing",
-                            "retrieved_at": retrieved_at,
-                        }
-                    )
-                records.extend(sra_records)
+        summary_batches = _chunked(ids, summary_batch_size)
+        for ordinal, summary_ids in enumerate(summary_batches):
+            if fetch_json is None:
+                time.sleep(0.34)
+            summary_url = _eutils_url("esummary", db=db, id=",".join(summary_ids), retmode="json")
+            requested_urls.append(summary_url)
+            try:
+                summary_payload = fetch(summary_url)
+            except Exception as exc:
+                gaps.append({"source": EXPRESSION_OMICS_SOURCE_ID, "lane": "expression", "db": db, "reason": "expression_omics_summary_failed", "error": str(exc), "retrieved_at": retrieved_at, "ids": summary_ids})
+                continue
+            summary_raw = _write_raw(raw_dir, _paged_raw_name(db, "esummary", ordinal, len(summary_batches)), summary_payload)
+            raw_artifacts.append(summary_raw.as_posix())
+            for uid, item in _summary_items(summary_payload):
+                if db == "gds":
+                    records.append(_geo_record(uid, item, raw_path=summary_raw, retrieved_at=retrieved_at))
+                else:
+                    sra_records = _sra_records(uid, item, raw_path=summary_raw, retrieved_at=retrieved_at)
+                    if not sra_records:
+                        gaps.append(
+                            {
+                                "source": EXPRESSION_OMICS_SOURCE_ID,
+                                "lane": "expression",
+                                "db": db,
+                                "uid": uid,
+                                "reason": "expression_omics_sra_runs_missing",
+                                "retrieved_at": retrieved_at,
+                            }
+                        )
+                    records.extend(sra_records)
 
     return ExpressionOmicsResult(
         source_id=EXPRESSION_OMICS_SOURCE_ID,

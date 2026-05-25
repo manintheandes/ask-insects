@@ -134,6 +134,51 @@ class IngestWave1SourceTests(unittest.TestCase):
             self.assertEqual(counts["aedes_uniprot_proteins"], 2)
             self.assertEqual(counts["aedes_wolbachia_interventions"], 1)
 
+    def test_partial_expression_refresh_preserves_existing_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def expression_fetch(url):
+                if "db=gds" in url and "esearch.fcgi" in url:
+                    return GEO_ESEARCH
+                if "db=gds" in url and "esummary.fcgi" in url:
+                    return GEO_ESUMMARY
+                if "db=sra" in url and "esearch.fcgi" in url:
+                    return SRA_ESEARCH
+                if "db=sra" in url and "esummary.fcgi" in url:
+                    return SRA_ESUMMARY
+                raise AssertionError(url)
+
+            ingest_expression_omics(
+                artifact_dir=artifact_dir,
+                fetch_json=expression_fetch,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            def partial_fetch(url):
+                if "db=gds" in url and "esearch.fcgi" in url:
+                    return GEO_ESEARCH
+                if "db=gds" in url and "esummary.fcgi" in url:
+                    return GEO_ESUMMARY
+                if "db=sra" in url and "esearch.fcgi" in url:
+                    return SRA_ESEARCH
+                if "db=sra" in url and "esummary.fcgi" in url:
+                    raise RuntimeError("sra summary timeout")
+                raise AssertionError(url)
+
+            expression = ingest_expression_omics(
+                artifact_dir=artifact_dir,
+                fetch_json=partial_fetch,
+                retrieved_at="2026-05-24T01:00:00Z",
+            )
+
+            self.assertFalse(expression["ok"])
+            self.assertTrue(expression["preserved_existing"])
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            rows = index.sql("select record_id from records where source='aedes_expression_omics' order by record_id", limit=10)
+            self.assertEqual([row["record_id"] for row in rows], ["expression:geo:GSE999999", "expression:sra_run:SRR999001"])
+
 
 if __name__ == "__main__":
     unittest.main()

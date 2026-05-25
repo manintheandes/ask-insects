@@ -815,6 +815,8 @@ class HostedCliTests(unittest.TestCase):
                 "25",
                 "--bioproject-limit",
                 "7",
+                "--worldclim-sample-limit",
+                "3",
             )
 
         self.assertEqual(code, 0, output)
@@ -822,6 +824,7 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][1], "/ingest/aedes-deep-sources")
         self.assertEqual(calls[0][2]["compendium_row_limit"], 25)
         self.assertEqual(calls[0][2]["bioproject_limit"], 7)
+        self.assertEqual(calls[0][2]["worldclim_sample_limit"], 3)
         self.assertEqual(calls[0][3], 7200)
         self.assertTrue(json.loads(output)["ok"])
 

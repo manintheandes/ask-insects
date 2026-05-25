@@ -2669,10 +2669,12 @@ def ingest_aedes_deep_sources_hosted(
 
     compendium_row_limit = int(payload.get("compendium_row_limit", 5000))
     bioproject_limit = int(payload.get("bioproject_limit", 20))
+    worldclim_sample_limit = int(payload.get("worldclim_sample_limit", 0))
     response = ingest_aedes_deep_sources(
         artifact_dir=artifact_dir,
         compendium_row_limit=compendium_row_limit,
         bioproject_limit=bioproject_limit,
+        worldclim_sample_limit=worldclim_sample_limit,
     )
     response["activated_artifact_dir"] = str(artifact_dir)
     response["updated_in_place"] = True

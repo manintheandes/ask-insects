@@ -216,7 +216,7 @@ sources:
   - id: aedes_expression_omics
     name: Aedes aegypti GEO/SRA expression omics metadata
     source_type: public_api_composite
-    boundary: Bounded NCBI GEO DataSets and SRA metadata for Aedes aegypti expression, RNA-seq, and transcriptome studies, including GEO series summaries and SRA run-level atoms where NCBI exposes run accessions
+    boundary: Bounded, paginated NCBI GEO DataSets and SRA metadata for Aedes aegypti expression, RNA-seq, and transcriptome studies, including GEO dataset or sample summaries and SRA run-level atoms where NCBI exposes run accessions
     query_plane: ncbi_eutils_geo_sra_to_sqlite_expression_records
     api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
     artifact_dir: artifacts/mosquito-v1/raw/expression_omics
@@ -232,7 +232,7 @@ sources:
         - sample_count_when_supplied
         - platform_when_supplied
         - summary
-        - raw_esummary_locator
+        - raw_esummary_batch_locator
       sra_run_records:
         - run_accession
         - experiment_accession
@@ -240,7 +240,7 @@ sources:
         - biosample_when_supplied
         - platform_when_supplied
         - total_spots_and_bases_when_supplied
-        - raw_esummary_locator
+        - raw_esummary_batch_locator
   - id: vectorbase_aedes_genomics
     name: VectorBase/VEuPathDB Aedes aegypti genomics downloads
     source_type: public_bulk_download
@@ -770,17 +770,17 @@ sources:
         - source_url
         - raw_html_locator
   - id: aedes_worldclim_climate
-    name: WorldClim climate source metadata for Aedes aegypti ecology joins
-    source_type: public_climate_source_pages
-    boundary: WorldClim v2.1 historical and monthly climate source pages relevant to future Aedes aegypti climate and suitability joins, indexed at source-page grain with climate-variable evidence
-    query_plane: worldclim_html_to_sqlite_ecology_source_records
+    name: WorldClim climate source metadata and bounded raster samples for Aedes aegypti ecology joins
+    source_type: public_climate_source_pages_and_rasters
+    boundary: WorldClim v2.1 historical and monthly climate source pages plus optional bounded 10-minute bioclimatic raster samples joined to Aedes aegypti global-compendium occurrence coordinates
+    query_plane: worldclim_html_and_bioclim_geotiff_to_sqlite_ecology_records
     artifact_dir: artifacts/mosquito-v1/raw/aedes_deep_sources/worldclim
     ingest_script: scripts/ingest_aedes_deep_sources.py
     lanes:
       - ecology
     provenance_required: true
     live_fetch: opt_in_bounded
-    source_gap: Source pages are queryable, but per-observation raster value joins remain a structured gap until GeoTIFFs are mirrored and sampled under a bounded job.
+    source_gap: If worldclim_sample_limit is zero, raster sampling is skipped and receipted as worldclim_raster_sampling_not_enabled; if raster download or sampling fails, the failure is receipted as worldclim_raster_sampling_failed instead of hidden.
     source_contract:
       climate_source_records:
         - authority
@@ -788,8 +788,16 @@ sources:
         - variables
         - source_url
         - raw_html_locator
+      climate_sample_records:
+        - occurrence_record_id
+        - latitude
+        - longitude
+        - bio1_annual_mean_temperature_c
+        - bio12_annual_precipitation_mm
+        - raw_zip_locator
       structured_gaps:
         - worldclim_raster_sampling_not_enabled
+        - worldclim_raster_sampling_failed
   - id: aedes_global_compendium_occurrence
     name: Global Aedes aegypti occurrence compendium rows
     source_type: public_dataset

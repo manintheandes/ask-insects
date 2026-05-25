@@ -81,7 +81,7 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show VectorBase 
 To add bounded GEO/SRA `Aedes aegypti` expression, RNA-seq, and transcriptome metadata:
 
 ```bash
-python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-expression-omics --geo-limit 25 --sra-limit 25
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-expression-omics --geo-limit 120 --sra-limit 300
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show GEO RNA-seq expression data for Aedes aegypti midgut" --json
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search expression "RNA-seq transcriptome"
 ```
@@ -105,7 +105,7 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search traits "fecund
 To add the five Aedes deep source expansions:
 
 ```bash
-python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-aedes-deep-sources --compendium-row-limit 5000 --bioproject-limit 20
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-aedes-deep-sources --compendium-row-limit 5000 --bioproject-limit 20 --worldclim-sample-limit 100
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti taxonomy synonyms from authority sources" --json
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show WorldClim climate context for Aedes aegypti ecology" --json
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show global Aedes aegypti occurrence compendium rows for Brazil" --json
@@ -113,7 +113,7 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegyp
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show WHO Aedes insecticide resistance bioassay guidance" --json
 ```
 
-These five source IDs are `aedes_taxonomy_authorities`, `aedes_worldclim_climate`, `aedes_global_compendium_occurrence`, `aedes_population_genomics`, and `aedes_who_resistance_guidance`. Each record cites a raw HTML, CSV row, or NCBI ESummary locator under `raw/aedes_deep_sources/`. Blocked MTI fetches and missing WorldClim raster sampling are explicit source gaps.
+These five source IDs are `aedes_taxonomy_authorities`, `aedes_worldclim_climate`, `aedes_global_compendium_occurrence`, `aedes_population_genomics`, and `aedes_who_resistance_guidance`. Each record cites a raw HTML, CSV row, NCBI ESummary locator, or WorldClim raster ZIP locator under `raw/aedes_deep_sources/`. Blocked MTI fetches and disabled or failed WorldClim raster sampling are explicit source gaps.
 
 To add `Aedes aegypti` brain and neuron source metadata:
 

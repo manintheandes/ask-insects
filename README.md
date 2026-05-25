@@ -141,12 +141,12 @@ This writes official GFF, annotated protein FASTA, annotated CDS FASTA, annotate
 `aedes_expression_omics` is the bounded GEO/SRA metadata lane for `Aedes aegypti` expression, RNA-seq, and transcriptome studies:
 
 ```bash
-python3 -m askinsects ingest-expression-omics --geo-limit 25 --sra-limit 25
+python3 -m askinsects ingest-expression-omics --geo-limit 120 --sra-limit 300
 python3 -m askinsects ask "show GEO RNA-seq expression data for Aedes aegypti midgut" --json
 python3 -m askinsects search expression "Yogyakarta"
 ```
 
-This writes NCBI E-utilities GEO and SRA search/summary JSON under `raw/expression_omics/`, indexes GEO series summaries and SRA run atoms into the `expression` lane, stores raw metadata payloads in SQLite, and preserves provenance to the saved ESummary result. It is study/run metadata coverage, not a computed count-matrix or differential-expression reanalysis.
+This writes paginated NCBI E-utilities GEO and SRA search/summary JSON under `raw/expression_omics/`, indexes GEO dataset/sample summaries and SRA run atoms into the `expression` lane, stores raw metadata payloads in SQLite, and preserves provenance to the saved ESummary result. ESearch pages and ESummary batches are saved separately when a refresh exceeds one request. The May 25, 2026 hosted refresh installed 420 expression records: 120 GEO records and 300 SRA run records, with two limit-applied gaps preserving the larger NCBI result frontier. It is study/run metadata coverage, not a computed count-matrix or differential-expression reanalysis.
 
 ## UniProt Protein Source Lane
 
@@ -177,13 +177,13 @@ This writes VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte
 `ingest-aedes-deep-sources` installs five bounded Aedes-specific source expansions at once:
 
 - `aedes_taxonomy_authorities`: ECDC, OECD, and MTI/WRBU-style taxonomy authority pages at page grain.
-- `aedes_worldclim_climate`: WorldClim climate source pages for climate and suitability joins, with raster sampling kept as an explicit gap until GeoTIFFs are mirrored and sampled.
+- `aedes_worldclim_climate`: WorldClim climate source pages plus optional bounded 10-minute bioclim raster samples joined to global-compendium occurrence coordinates.
 - `aedes_global_compendium_occurrence`: global Aedes occurrence compendium rows filtered to `Aedes aegypti`.
 - `aedes_population_genomics`: NCBI BioProject population-genomics metadata in `genome_features`.
 - `aedes_who_resistance_guidance`: WHO Aedes insecticide-resistance method and discriminating-concentration pages in `resistance`.
 
 ```bash
-python3 -m askinsects ingest-aedes-deep-sources --compendium-row-limit 5000 --bioproject-limit 20
+python3 -m askinsects ingest-aedes-deep-sources --compendium-row-limit 5000 --bioproject-limit 20 --worldclim-sample-limit 100
 python3 -m askinsects ask "show Aedes aegypti taxonomy synonyms from authority sources" --json
 python3 -m askinsects ask "show WorldClim climate context for Aedes aegypti ecology" --json
 python3 -m askinsects ask "show global Aedes aegypti occurrence compendium rows for Brazil" --json
@@ -191,7 +191,7 @@ python3 -m askinsects ask "show Aedes aegypti population genomics BioProject evi
 python3 -m askinsects ask "show WHO Aedes insecticide resistance bioassay guidance" --json
 ```
 
-Raw artifacts are saved under `artifacts/mosquito-v1/raw/aedes_deep_sources/`. The ingest refreshes only those five source IDs, writes source receipts, preserves row or page locators, and records structured gaps for blocked authority pages or unimplemented raster sampling.
+Raw artifacts are saved under `artifacts/mosquito-v1/raw/aedes_deep_sources/`. The ingest refreshes only those five source IDs, writes source receipts, preserves row, page, or raster-zip locators, and records structured gaps for blocked authority pages or disabled/failed raster sampling.
 
 ## BOLD DNA Barcode Source Lane
 
@@ -522,7 +522,7 @@ python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrenc
 python3 -m askinsects ingest-inaturalist --hosted --species "Aedes aegypti" --observation-limit 10 --page-size 10 --delay-seconds 0
 python3 -m askinsects ingest-irmapper --hosted --species "Aedes aegypti"
 python3 -m askinsects ingest-public-health --hosted
-python3 -m askinsects ingest-expression-omics --hosted --geo-limit 25 --sra-limit 25
+python3 -m askinsects ingest-expression-omics --hosted --geo-limit 120 --sra-limit 300
 python3 -m askinsects ingest-uniprot-proteins --hosted --protein-limit 250 --proteome-limit 10
 python3 -m askinsects ingest-wolbachia-interventions --hosted
 python3 -m askinsects ingest-vectorbyte-traits --hosted --dataset-limit 20 --row-limit 5000

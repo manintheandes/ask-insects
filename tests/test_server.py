@@ -448,7 +448,7 @@ class ServerTests(unittest.TestCase):
                 response = dispatch_request(
                     "POST",
                     "/ingest/aedes-deep-sources",
-                    {"compendium_row_limit": 25, "bioproject_limit": 7},
+                    {"compendium_row_limit": 25, "bioproject_limit": 7, "worldclim_sample_limit": 3},
                     headers={"Authorization": "Bearer secret"},
                     artifact_dir=artifact_dir,
                     token="secret",
@@ -461,6 +461,7 @@ class ServerTests(unittest.TestCase):
                 artifact_dir=artifact_dir,
                 compendium_row_limit=25,
                 bioproject_limit=7,
+                worldclim_sample_limit=3,
             )
 
     def test_ingest_inaturalist_uses_staging_then_activates(self):

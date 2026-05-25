@@ -8,6 +8,7 @@ import hashlib
 import io
 import json
 import re
+import zipfile
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -33,6 +34,7 @@ DEFAULT_NCBI_BIOPROJECT_SEARCH_URL = (
     "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?"
     + urlencode({"db": "bioproject", "term": "Aedes aegypti population genomics", "retmode": "json", "retmax": "20"})
 )
+DEFAULT_WORLDCLIM_BIOCLIM_10M_URL = "https://geodata.ucdavis.edu/climate/worldclim/2_1/base/wc2.1_10m_bio.zip"
 
 DEFAULT_TAXONOMY_SOURCES: tuple[dict[str, str], ...] = (
     {
@@ -126,6 +128,13 @@ def _write_bytes(raw_dir: Path, filename: str, payload: bytes) -> Path:
     path = raw_dir / filename
     path.write_bytes(payload)
     return path
+
+
+def _as_float(value: object) -> float | None:
+    try:
+        return float(str(value).strip())
+    except (TypeError, ValueError):
+        return None
 
 
 def _safe_filename(value: str) -> str:
@@ -299,6 +308,114 @@ def _compendium_records(csv_bytes: bytes, raw_path: Path, retrieved_at: str, sou
     return records
 
 
+def _worldclim_pixel(lon: float, lat: float, width: int, height: int) -> tuple[int, int]:
+    column = int((lon + 180.0) / 360.0 * width)
+    row = int((90.0 - lat) / 180.0 * height)
+    return max(0, min(width - 1, column)), max(0, min(height - 1, row))
+
+
+def _worldclim_rasters(zip_bytes: bytes):
+    from PIL import Image
+
+    rasters = {}
+    with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
+        members = {Path(name).name: name for name in archive.namelist()}
+        wanted = {
+            "bio1_annual_mean_temperature_c": ("wc2.1_10m_bio_1.tif", 0.1),
+            "bio12_annual_precipitation_mm": ("wc2.1_10m_bio_12.tif", 1.0),
+        }
+        for field, (filename, scale) in wanted.items():
+            member = members.get(filename)
+            if not member:
+                continue
+            with archive.open(member) as handle:
+                image = Image.open(io.BytesIO(handle.read()))
+                image.load()
+                rasters[field] = (image, scale)
+    return rasters
+
+
+def _worldclim_raster_values(rasters: dict[str, object], lon: float, lat: float) -> dict[str, float]:
+    values: dict[str, float] = {}
+    for field, image_scale in rasters.items():
+        image, scale = image_scale
+        if not hasattr(image, "width") or not hasattr(image, "height"):
+            continue
+        column, row = _worldclim_pixel(lon, lat, image.width, image.height)
+        value = image.getpixel((column, row))
+        if isinstance(value, tuple):
+            value = value[0]
+        numeric = _as_float(value)
+        if numeric is None or numeric <= -3.0e30:
+            continue
+        values[field] = round(numeric * scale, 3)
+    return values
+
+
+def _worldclim_sample_records(
+    *,
+    compendium_records: list[EvidenceRecord],
+    zip_bytes: bytes,
+    raw_path: Path,
+    retrieved_at: str,
+    source_url: str,
+    limit: int,
+) -> list[EvidenceRecord]:
+    records: list[EvidenceRecord] = []
+    rasters = _worldclim_rasters(zip_bytes)
+    for occurrence in compendium_records:
+        lat = _as_float(occurrence.payload.get("latitude"))
+        lon = _as_float(occurrence.payload.get("longitude"))
+        if lat is None or lon is None:
+            continue
+        values = _worldclim_raster_values(rasters, lon, lat)
+        if not values:
+            continue
+        country = str(occurrence.payload.get("country") or "unknown")
+        row_index = str(occurrence.payload.get("row_index") or occurrence.record_id.rsplit(":", 1)[-1])
+        temp = values.get("bio1_annual_mean_temperature_c")
+        precip = values.get("bio12_annual_precipitation_mm")
+        text = (
+            "WorldClim 10-minute bioclim raster sample joined to a global Aedes aegypti occurrence compendium row. "
+            f"Country: {country}. Coordinates: {lat}, {lon}. "
+            f"Annual mean temperature: {temp if temp is not None else 'not sampled'} deg C. "
+            f"Annual precipitation: {precip if precip is not None else 'not sampled'} mm. "
+            f"Occurrence record: {occurrence.record_id}."
+        )
+        records.append(
+            EvidenceRecord(
+                record_id=f"ecology:worldclim:sample:global_compendium:{row_index}",
+                lane="ecology",
+                source=AEDES_WORLDCLIM_SOURCE_ID,
+                title=f"WorldClim climate sample for Aedes aegypti occurrence row {row_index}",
+                text=text,
+                species="Aedes aegypti",
+                url=source_url,
+                media_url=None,
+                provenance=Provenance(
+                    source_id=AEDES_WORLDCLIM_SOURCE_ID,
+                    locator=f"{raw_path.as_posix()}#occurrence/{occurrence.record_id}",
+                    retrieved_at=retrieved_at,
+                    license="WorldClim public climate data; source terms apply",
+                    source_url=source_url,
+                ),
+                payload={
+                    "record_type": "worldclim_occurrence_sample",
+                    "occurrence_record_id": occurrence.record_id,
+                    "country": country,
+                    "latitude": lat,
+                    "longitude": lon,
+                    "variables": values,
+                    "raster": "WorldClim v2.1 10-minute bioclimatic variables",
+                    "raw_zip_path": raw_path.as_posix(),
+                },
+            )
+        )
+        if len(records) >= limit:
+            break
+    return records
+
+
 def _bioproject_summary_url(ids: list[str]) -> str:
     return "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?" + urlencode({"db": "bioproject", "id": ",".join(ids), "retmode": "json"})
 
@@ -392,6 +509,7 @@ def fetch_aedes_deep_source_records(
     retrieved_at: str,
     compendium_row_limit: int = 5000,
     bioproject_limit: int = 20,
+    worldclim_sample_limit: int = 0,
 ) -> AedesDeepSourcesResult:
     get_text = fetch_text or _default_fetch_text
     get_json = fetch_json or _default_fetch_json
@@ -420,8 +538,8 @@ def fetch_aedes_deep_source_records(
             records.append(_worldclim_record(source, raw_path, html, retrieved_at))
         except Exception as exc:  # noqa: BLE001
             gaps.append({"source": AEDES_WORLDCLIM_SOURCE_ID, "reason": "worldclim_source_fetch_failed", "url": source["url"], "error": str(exc), "retrieved_at": retrieved_at})
-    gaps.append({"source": AEDES_WORLDCLIM_SOURCE_ID, "reason": "worldclim_raster_sampling_not_enabled", "retrieved_at": retrieved_at, "detail": "WorldClim source pages are indexed; per-observation raster value joins require mirrored GeoTIFFs or a bounded raster-sampling job."})
 
+    compendium_records: list[EvidenceRecord] = []
     requested_urls.append(DEFAULT_COMPENDIUM_API_URL)
     try:
         compendium_payload = get_json(DEFAULT_COMPENDIUM_API_URL)
@@ -435,9 +553,34 @@ def fetch_aedes_deep_source_records(
             csv_bytes = get_bytes(csv_url)
             csv_path = _write_bytes(raw_dir / "global_compendium_occurrence", "aegypti_albopictus.csv", csv_bytes)
             raw_artifacts.append(csv_path.as_posix())
-            records.extend(_compendium_records(csv_bytes, csv_path, retrieved_at, csv_url, compendium_row_limit))
+            compendium_records = _compendium_records(csv_bytes, csv_path, retrieved_at, csv_url, compendium_row_limit)
+            records.extend(compendium_records)
     except Exception as exc:  # noqa: BLE001
         gaps.append({"source": AEDES_GLOBAL_COMPENDIUM_SOURCE_ID, "reason": "global_compendium_fetch_failed", "url": DEFAULT_COMPENDIUM_API_URL, "error": str(exc), "retrieved_at": retrieved_at})
+
+    if worldclim_sample_limit > 0:
+        requested_urls.append(DEFAULT_WORLDCLIM_BIOCLIM_10M_URL)
+        if not compendium_records:
+            gaps.append({"source": AEDES_WORLDCLIM_SOURCE_ID, "reason": "worldclim_raster_sampling_no_occurrences", "url": DEFAULT_WORLDCLIM_BIOCLIM_10M_URL, "retrieved_at": retrieved_at})
+        else:
+            try:
+                zip_bytes = get_bytes(DEFAULT_WORLDCLIM_BIOCLIM_10M_URL)
+                zip_path = _write_bytes(raw_dir / "worldclim", "wc2.1_10m_bio.zip", zip_bytes)
+                raw_artifacts.append(zip_path.as_posix())
+                records.extend(
+                    _worldclim_sample_records(
+                        compendium_records=compendium_records,
+                        zip_bytes=zip_bytes,
+                        raw_path=zip_path,
+                        retrieved_at=retrieved_at,
+                        source_url=DEFAULT_WORLDCLIM_BIOCLIM_10M_URL,
+                        limit=worldclim_sample_limit,
+                    )
+                )
+            except Exception as exc:  # noqa: BLE001
+                gaps.append({"source": AEDES_WORLDCLIM_SOURCE_ID, "reason": "worldclim_raster_sampling_failed", "url": DEFAULT_WORLDCLIM_BIOCLIM_10M_URL, "error": str(exc), "retrieved_at": retrieved_at})
+    else:
+        gaps.append({"source": AEDES_WORLDCLIM_SOURCE_ID, "reason": "worldclim_raster_sampling_not_enabled", "retrieved_at": retrieved_at, "detail": "WorldClim source pages are indexed; per-observation raster value joins require mirrored GeoTIFFs or a bounded raster-sampling job."})
 
     requested_urls.append(DEFAULT_NCBI_BIOPROJECT_SEARCH_URL)
     try:

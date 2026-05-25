@@ -35,7 +35,7 @@ class IngestAedesDeepSourcesTests(unittest.TestCase):
                 ]
             )
 
-            def fake_result(raw_dir, fetch_text, fetch_json, fetch_bytes, retrieved_at, compendium_row_limit, bioproject_limit):
+            def fake_result(raw_dir, fetch_text, fetch_json, fetch_bytes, retrieved_at, compendium_row_limit, bioproject_limit, worldclim_sample_limit):
                 return type(
                     "Result",
                     (),
@@ -81,6 +81,7 @@ class IngestAedesDeepSourcesTests(unittest.TestCase):
             payload = ingest_aedes_deep_sources(
                 artifact_dir=artifact_dir,
                 retrieved_at="2026-05-25T00:00:00Z",
+                worldclim_sample_limit=3,
                 fetch_records=fake_result,
             )
 

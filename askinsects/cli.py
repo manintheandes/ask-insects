@@ -283,6 +283,7 @@ def main(argv: list[str] | None = None) -> int:
     ingest_aedes_deep_sources.add_argument("--hosted", action="store_true")
     ingest_aedes_deep_sources.add_argument("--compendium-row-limit", type=int, default=5000)
     ingest_aedes_deep_sources.add_argument("--bioproject-limit", type=int, default=20)
+    ingest_aedes_deep_sources.add_argument("--worldclim-sample-limit", type=int, default=0)
 
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
@@ -934,6 +935,7 @@ def main(argv: list[str] | None = None) -> int:
         request_payload = {
             "compendium_row_limit": args.compendium_row_limit,
             "bioproject_limit": args.bioproject_limit,
+            "worldclim_sample_limit": args.worldclim_sample_limit,
         }
         if not args.hosted:
             from scripts.ingest_aedes_deep_sources import ingest_aedes_deep_sources

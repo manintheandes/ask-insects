@@ -1,7 +1,11 @@
 import json
 import tempfile
 import unittest
+import io
+import zipfile
 from pathlib import Path
+
+from PIL import Image
 
 from askinsects.sources.aedes_deep_sources import (
     AEDES_GLOBAL_COMPENDIUM_SOURCE_ID,
@@ -13,9 +17,20 @@ from askinsects.sources.aedes_deep_sources import (
     DEFAULT_NCBI_BIOPROJECT_SEARCH_URL,
     DEFAULT_TAXONOMY_SOURCES,
     DEFAULT_WHO_RESISTANCE_SOURCES,
+    DEFAULT_WORLDCLIM_BIOCLIM_10M_URL,
     DEFAULT_WORLDCLIM_SOURCES,
     fetch_aedes_deep_source_records,
 )
+
+
+def fake_worldclim_zip() -> bytes:
+    payload = io.BytesIO()
+    with zipfile.ZipFile(payload, "w") as archive:
+        for filename, value in (("wc2.1_10m_bio_1.tif", 241), ("wc2.1_10m_bio_12.tif", 1432)):
+            image_bytes = io.BytesIO()
+            Image.new("I", (4, 2), color=value).save(image_bytes, format="TIFF")
+            archive.writestr(filename, image_bytes.getvalue())
+    return payload.getvalue()
 
 
 class AedesDeepSourcesTests(unittest.TestCase):
@@ -81,6 +96,8 @@ class AedesDeepSourcesTests(unittest.TestCase):
                 raise AssertionError(url)
 
             def fake_bytes(url):
+                if url == DEFAULT_WORLDCLIM_BIOCLIM_10M_URL:
+                    return fake_worldclim_zip()
                 self.assertIn("aegypti_albopictus.csv", url)
                 return (
                     "species,COUNTRY,latitude,longitude,year,status\n"
@@ -97,6 +114,7 @@ class AedesDeepSourcesTests(unittest.TestCase):
                 retrieved_at="2026-05-25T00:00:00Z",
                 compendium_row_limit=10,
                 bioproject_limit=5,
+                worldclim_sample_limit=2,
             )
 
         source_ids = {record.source for record in result.records}
@@ -111,9 +129,11 @@ class AedesDeepSourcesTests(unittest.TestCase):
             },
         )
         self.assertEqual(result.source_record_counts[AEDES_GLOBAL_COMPENDIUM_SOURCE_ID], 2)
+        self.assertEqual(result.source_record_counts[AEDES_WORLDCLIM_SOURCE_ID], 4)
         self.assertEqual(result.source_record_counts[AEDES_POPULATION_GENOMICS_SOURCE_ID], 2)
         self.assertTrue(any(record.lane == "taxonomy" and "Stegomyia" in record.text for record in result.records))
         self.assertTrue(any(record.lane == "ecology" and "WorldClim" in record.text for record in result.records))
+        self.assertTrue(any(record.record_id.startswith("ecology:worldclim:sample:") and "24.1 deg C" in record.text for record in result.records))
         self.assertTrue(any(record.lane == "observations" and "Brazil" in record.text for record in result.records))
         self.assertTrue(any(record.lane == "genome_features" and "PRJNA1090933" in record.text for record in result.records))
         self.assertTrue(any(record.lane == "resistance" and "WHO" in record.text for record in result.records))

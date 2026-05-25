@@ -97,6 +97,7 @@ def ingest_aedes_deep_sources(
     retrieved_at: str | None = None,
     compendium_row_limit: int = 5000,
     bioproject_limit: int = 20,
+    worldclim_sample_limit: int = 0,
     fetch_records=fetch_aedes_deep_source_records,
     fetch_text=None,
     fetch_json=None,
@@ -111,6 +112,7 @@ def ingest_aedes_deep_sources(
         retrieved_at=retrieved,
         compendium_row_limit=compendium_row_limit,
         bioproject_limit=bioproject_limit,
+        worldclim_sample_limit=worldclim_sample_limit,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
@@ -126,12 +128,14 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--retrieved-at")
     parser.add_argument("--compendium-row-limit", type=int, default=5000)
     parser.add_argument("--bioproject-limit", type=int, default=20)
+    parser.add_argument("--worldclim-sample-limit", type=int, default=0)
     args = parser.parse_args(argv)
     result = ingest_aedes_deep_sources(
         artifact_dir=Path(args.artifact_dir),
         retrieved_at=args.retrieved_at,
         compendium_row_limit=args.compendium_row_limit,
         bioproject_limit=args.bioproject_limit,
+        worldclim_sample_limit=args.worldclim_sample_limit,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result.get("ok") else 2
