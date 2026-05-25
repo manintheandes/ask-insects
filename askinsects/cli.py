@@ -176,6 +176,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_mosquito_alert.add_argument("--occurrence-limit", type=int, default=1000)
     ingest_mosquito_alert.add_argument("--occurrence-page-size", type=int, default=300)
 
+    ingest_vectornet_surveillance = sub.add_parser("ingest-vectornet-surveillance")
+    ingest_vectornet_surveillance.add_argument("--hosted", action="store_true")
+    ingest_vectornet_surveillance.add_argument("--species", default="Aedes aegypti")
+    ingest_vectornet_surveillance.add_argument("--archive-url")
+    ingest_vectornet_surveillance.add_argument("--max-records", type=int)
+
     ingest_dryad_behavior_videos = sub.add_parser("ingest-dryad-behavior-videos")
     ingest_dryad_behavior_videos.add_argument("--hosted", action="store_true")
     ingest_dryad_behavior_videos.add_argument("--doi", action="append", default=[])
@@ -485,6 +491,30 @@ def main(argv: list[str] | None = None) -> int:
                 "occurrence_limit": args.occurrence_limit,
                 "occurrence_page_size": args.occurrence_page_size,
             },
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-vectornet-surveillance":
+        request_payload = {
+            "species": args.species,
+            "archive_url": args.archive_url,
+            "max_records": args.max_records,
+        }
+        if not args.hosted:
+            from scripts.ingest_vectornet_surveillance import ingest_vectornet_surveillance
+
+            payload = ingest_vectornet_surveillance(
+                artifact_dir=artifact_dir,
+                species=args.species,
+                archive_url=args.archive_url,
+                max_records=args.max_records,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/vectornet-surveillance",
+            request_payload,
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

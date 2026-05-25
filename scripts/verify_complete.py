@@ -95,6 +95,7 @@ REQUIRED_FILES = (
     "askinsects/sources/pmc_videos.py",
     "askinsects/sources/irmapper.py",
     "askinsects/sources/mosquito_alert.py",
+    "askinsects/sources/vectornet_surveillance.py",
     "askinsects/sources/dryad_behavior_videos.py",
     "askinsects/sources/mendeley_behavior_media.py",
     "askinsects/sources/osf_flighttrackai_videos.py",
@@ -122,6 +123,7 @@ REQUIRED_FILES = (
     "scripts/ingest_pmc_videos.py",
     "scripts/ingest_irmapper.py",
     "scripts/ingest_mosquito_alert_observations.py",
+    "scripts/ingest_vectornet_surveillance.py",
     "scripts/ingest_dryad_behavior_videos.py",
     "scripts/ingest_mendeley_behavior_media.py",
     "scripts/ingest_osf_flighttrackai_videos.py",
@@ -166,6 +168,8 @@ REQUIRED_FILES = (
     "tests/test_irmapper_source.py",
     "tests/test_mosquito_alert_source.py",
     "tests/test_ingest_mosquito_alert_observations.py",
+    "tests/test_vectornet_surveillance_source.py",
+    "tests/test_ingest_vectornet_surveillance.py",
     "tests/test_dryad_behavior_videos_source.py",
     "tests/test_ingest_dryad_behavior_videos.py",
     "tests/test_mendeley_behavior_media_source.py",
@@ -225,6 +229,8 @@ UNIT_TEST_MODULES = (
     "tests.test_irmapper_source",
     "tests.test_mosquito_alert_source",
     "tests.test_ingest_mosquito_alert_observations",
+    "tests.test_vectornet_surveillance_source",
+    "tests.test_ingest_vectornet_surveillance",
     "tests.test_dryad_behavior_videos_source",
     "tests.test_ingest_dryad_behavior_videos",
     "tests.test_mendeley_behavior_media_source",
@@ -335,6 +341,7 @@ def check_open_source_boundary() -> None:
         "ECDC",
         "BOLD",
         "IR Mapper",
+        "VectorNet",
     )
     missing_sources = [term for term in source_terms if term not in data_text]
     if missing_sources:
@@ -470,6 +477,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_public_health_guidance",
         "aedes_paho_dengue_surveillance",
         "mosquito_alert_gbif",
+        "vectornet_aedes_surveillance",
         "dryad_aedes_behavior_videos",
         "aedes_pathogen_taxonomy",
         "ncbi_biosamples",
@@ -504,6 +512,16 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("mosquito_alert_gbif", "scripts/ingest_mosquito_alert_observations.py", "observations", "media"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Mosquito Alert term: {term}")
+    for term in (
+        "vectornet_aedes_surveillance",
+        "scripts/ingest_vectornet_surveillance.py",
+        "vectornet_ipt_darwin_core_archive_to_sqlite_observation_and_ecology_records",
+        "degree_of_establishment",
+        "absence_surveillance_count",
+        "CC-BY-4.0",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing VectorNet surveillance term: {term}")
     for term in ("dryad_aedes_behavior_videos", "scripts/ingest_dryad_behavior_videos.py", "behavior", "media"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Dryad behavior/video term: {term}")

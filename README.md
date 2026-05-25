@@ -96,6 +96,17 @@ python3 -m askinsects ask "show Mosquito Alert Aedes aegypti images from Brazil"
 
 The lane writes GBIF dataset and occurrence pages under `raw/mosquito_alert/`, normalizes one `observations` record per Mosquito Alert occurrence and one `media` record per still image from source `mosquito_alert_gbif`, stores raw occurrence and media payloads in SQLite, and preserves both occurrence-level and image-level license fields. This is a source-specific Aedes slice, not a replacement for the broader GBIF occurrence mirror.
 
+## VectorNet Surveillance Source Lane
+
+`vectornet_aedes_surveillance` is the official VectorNet ECDC/EFSA regional-surveillance lane for `Aedes aegypti` rows in the public Darwin Core Archive:
+
+```bash
+python3 -m askinsects ingest-vectornet-surveillance
+python3 -m askinsects ask "show VectorNet Aedes aegypti surveillance evidence" --json
+```
+
+The lane mirrors the public IPT archive under `raw/vectornet_surveillance/`, writes a filtered TSV of the source `Aedes aegypti` rows, indexes one `observations` record per source row, and adds `ecology` summary records by country and degree of establishment. Records preserve detection versus absence-surveillance status, individual count, life stage, sex, sampling protocol, date range, geography, identification method, CC-BY-4.0 license, and exact archive plus filtered-row locators.
+
 ## NCBI Genomics Source Lane
 
 NCBI Datasets is the first genomics lane. V1 parses an unpacked `Aedes aegypti` genome package for assembly `GCF_002204515.2`:
@@ -396,6 +407,7 @@ python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-extracted-facts --hosted
 python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
+python3 -m askinsects ingest-vectornet-surveillance --hosted
 python3 -m askinsects ask --hosted "show mosquito observations with images in Brazil"
 ```
 

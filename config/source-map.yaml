@@ -58,6 +58,44 @@ sources:
       - media
     provenance_required: true
     live_fetch: opt_in
+  - id: vectornet_aedes_surveillance
+    name: VectorNet ECDC/EFSA Aedes aegypti surveillance rows
+    source_type: public_darwin_core_archive
+    boundary: Official VectorNet ECDC/EFSA Darwin Core Archive rows where scientificName or verbatimIdentification materially identifies Aedes aegypti, preserving detection, absence-surveillance, sampling protocol, geography, date range, life stage, sex, count, and degree-of-establishment fields
+    query_plane: vectornet_ipt_darwin_core_archive_to_sqlite_observation_and_ecology_records
+    api_base: https://ipt.gbif.org
+    dataset_key: 7a5757c3-58f8-4ff6-9662-32296965a2f3
+    resource_url: https://ipt.gbif.org/resource?r=vndatabase
+    archive_url: https://ipt.gbif.org/archive.do?r=vndatabase
+    artifact_dir: artifacts/mosquito-v1/raw/vectornet_surveillance
+    ingest_script: scripts/ingest_vectornet_surveillance.py
+    license: CC-BY-4.0
+    lanes:
+      - observations
+      - ecology
+    provenance_required: true
+    live_fetch: opt_in
+    source_contract:
+      observations:
+        - source_row_number
+        - occurrence_id
+        - event_date
+        - higher_geography
+        - country_code
+        - decimal_latitude_longitude_when_supplied
+        - individual_count
+        - life_stage
+        - sex
+        - sampling_protocol
+        - degree_of_establishment
+        - identification_remarks
+        - exact_archive_and_filtered_row_locator
+      ecology_summaries:
+        - country_summary
+        - degree_of_establishment_summary
+        - presence_evidence_count
+        - absence_surveillance_count
+        - unclear_status_count
   - id: aedes_occurrence_ecology
     name: Aedes aegypti occurrence ecology summaries
     source_type: derived_sqlite_source

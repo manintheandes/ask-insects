@@ -28,6 +28,7 @@ from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
 from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from askinsects.sources.vectorbase_genomics import VectorBaseGenomicsResult
+from askinsects.sources.vectornet_surveillance import VectorNetBuildResult
 from tests.test_inaturalist_source import observation
 from tests.test_image_atoms_source import write_image_fixture
 from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
@@ -1059,6 +1060,97 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+
+    def test_ingest_vectornet_surveillance_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, species, max_records, retrieved_at):
+                raw_path = raw_dir / "dwca-vndatabase-v1.3.zip"
+                filtered_path = raw_dir / "vectornet_aedes_aegypti_occurrence_rows.tsv"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_bytes(b"fake zip")
+                filtered_path.write_text("source_row_number\tid\n2\tVNET-1\n", encoding="utf-8")
+                return VectorNetBuildResult(
+                    source_id="vectornet_aedes_surveillance",
+                    records=[
+                        EvidenceRecord(
+                            record_id="vectornet:observation:VNET_1",
+                            lane="observations",
+                            source="vectornet_aedes_surveillance",
+                            title="VectorNet Aedes aegypti surveillance row VNET-1",
+                            text="Official VectorNet ECDC/EFSA surveillance occurrence row for Aedes aegypti in Georgia.",
+                            species=species,
+                            url="https://ipt.gbif.org/resource?r=vndatabase#occurrence/VNET-1",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="vectornet_aedes_surveillance",
+                                locator=f"{raw_path}#occurrence.txt/row/2;{filtered_path}#row/2",
+                                retrieved_at=retrieved_at,
+                                license="CC-BY-4.0",
+                                source_url="https://ipt.gbif.org/archive.do?r=vndatabase",
+                            ),
+                            payload={"raw_occurrence": {"id": "VNET-1"}, "presence_bucket": "detection_or_presence_evidence"},
+                        ),
+                        EvidenceRecord(
+                            record_id="vectornet:ecology:country_Georgia",
+                            lane="ecology",
+                            source="vectornet_aedes_surveillance",
+                            title="VectorNet Aedes aegypti regional surveillance summary: country:Georgia",
+                            text="VectorNet ECDC/EFSA has 1 Aedes aegypti surveillance row for country:Georgia.",
+                            species=species,
+                            url="https://ipt.gbif.org/resource?r=vndatabase",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="vectornet_aedes_surveillance",
+                                locator=f"{filtered_path}#summary/country_Georgia",
+                                retrieved_at=retrieved_at,
+                                license="CC-BY-4.0",
+                                source_url="https://ipt.gbif.org/resource?r=vndatabase",
+                            ),
+                            payload={"summary_key": "country:Georgia"},
+                        ),
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix(), filtered_path.as_posix()],
+                    dataset_key="7a5757c3-58f8-4ff6-9662-32296965a2f3",
+                    dataset_title="VectorNet",
+                    species=species,
+                    archive_url="https://ipt.gbif.org/archive.do?r=vndatabase",
+                    resource_url="https://ipt.gbif.org/resource?r=vndatabase",
+                    row_count=3,
+                    matched_row_count=1,
+                    observation_record_count=1,
+                    ecology_record_count=1,
+                    filtered_rows_path=filtered_path.as_posix(),
+                    pub_date="2025-02-05",
+                    license="CC-BY-4.0",
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/vectornet-surveillance",
+                {"species": "Aedes aegypti"},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_vectornet_surveillance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["vectornet_aedes_surveillance"], 2)
+            self.assertEqual(response.payload["vectornet_surveillance"]["matched_row_count"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='vectornet_aedes_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn("raw-staging", provenance_rows[0]["provenance_json"])
+            self.assertTrue((artifact_dir / "raw" / "vectornet_surveillance" / "dwca-vndatabase-v1.3.zip").exists())
 
     def test_ingest_dryad_behavior_videos_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

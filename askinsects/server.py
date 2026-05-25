@@ -55,6 +55,11 @@ from .sources.public_health import (
     fetch_public_health_guidance_records,
 )
 from .sources.vectorbase_genomics import fetch_vectorbase_genomics_records
+from .sources.vectornet_surveillance import (
+    DEFAULT_VECTORNET_SPECIES,
+    VECTORNET_SOURCE_ID,
+    fetch_vectornet_surveillance_records,
+)
 
 
 @dataclass(frozen=True)
@@ -1385,6 +1390,147 @@ def ingest_mosquito_alert(
     return response
 
 
+def write_vectornet_surveillance_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(source_payload["retrieved_at"])
+    sources = [source for source in counts if source != VECTORNET_SOURCE_ID]
+    if counts.get(VECTORNET_SOURCE_ID):
+        sources.append(VECTORNET_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else VECTORNET_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": True,
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[VECTORNET_SOURCE_ID] = source_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else VECTORNET_SOURCE_ID,
+            "sources": receipt_sources,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            "vectornet_surveillance": source_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, "vectornet_surveillance": source_payload}
+
+
+def ingest_vectornet_surveillance(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_vectornet_surveillance_records_fn: Callable[..., object] = fetch_vectornet_surveillance_records,
+) -> dict[str, object]:
+    species = str(payload.get("species") or DEFAULT_VECTORNET_SPECIES)
+    archive_url_value = payload.get("archive_url")
+    archive_url = str(archive_url_value) if archive_url_value else None
+    max_records_value = payload.get("max_records")
+    max_records = int(max_records_value) if max_records_value is not None else None
+    raw_staging = artifact_dir.parent / f".{artifact_dir.name}.vectornet-surveillance-raw-staging"
+    raw_final = artifact_dir / "raw" / "vectornet_surveillance"
+    raw_backup = raw_final.parent / f".{raw_final.name}.previous"
+    raw_activated = False
+    if raw_staging.exists():
+        shutil.rmtree(raw_staging)
+    try:
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        db_path = artifact_dir / "source_index.sqlite"
+        index = SourceIndex(db_path)
+        if not db_path.exists():
+            index.initialize()
+        retrieved_at = utc_now()
+        fetch_kwargs: dict[str, object] = {
+            "raw_dir": raw_staging,
+            "species": species,
+            "max_records": max_records,
+            "retrieved_at": retrieved_at,
+        }
+        if archive_url:
+            fetch_kwargs["archive_url"] = archive_url
+        result = fetch_vectornet_surveillance_records_fn(**fetch_kwargs)
+        raw_staging.mkdir(parents=True, exist_ok=True)
+        old = raw_staging.as_posix()
+        new = raw_final.as_posix()
+        records = replace_record_path_strings(result.records, old, new)
+        raw_artifacts = replace_path_strings(result.raw_artifacts, old, new)
+        if not isinstance(raw_artifacts, list):
+            raw_artifacts = result.raw_artifacts
+        filtered_rows_path = result.filtered_rows_path.replace(old, new) if result.filtered_rows_path else None
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+        if raw_final.exists():
+            raw_final.replace(raw_backup)
+        raw_final.parent.mkdir(parents=True, exist_ok=True)
+        raw_staging.replace(raw_final)
+        raw_activated = True
+        replace_source_records(index, VECTORNET_SOURCE_ID, records)
+        old_gaps = read_json(artifact_dir / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == VECTORNET_SOURCE_ID)]
+        gaps.extend(result.gaps)
+        source_payload = {
+            "dataset_key": result.dataset_key,
+            "dataset_title": result.dataset_title,
+            "species": result.species,
+            "archive_url": result.archive_url,
+            "resource_url": result.resource_url,
+            "license": result.license,
+            "pub_date": result.pub_date,
+            "row_count": result.row_count,
+            "matched_row_count": result.matched_row_count,
+            "observation_record_count": result.observation_record_count,
+            "ecology_record_count": result.ecology_record_count,
+            "record_count": len(records),
+            "raw_artifacts": raw_artifacts,
+            "filtered_rows_path": filtered_rows_path,
+            "gap_count": len(result.gaps),
+            "retrieved_at": retrieved_at,
+        }
+        response = write_vectornet_surveillance_metadata(artifact_dir, source_payload, gaps)
+    except Exception:
+        shutil.rmtree(raw_staging, ignore_errors=True)
+        if raw_activated and raw_backup.exists():
+            if raw_final.exists():
+                shutil.rmtree(raw_final)
+            raw_backup.replace(raw_final)
+        raise
+    if raw_backup.exists():
+        shutil.rmtree(raw_backup)
+    shutil.rmtree(raw_staging, ignore_errors=True)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
 def write_dryad_behavior_video_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
     index = SourceIndex(staging / "source_index.sqlite")
     summary = index.summary()
@@ -2094,6 +2240,7 @@ def dispatch_request(
     fetch_public_health_guidance_records_fn: Callable[..., object] = fetch_public_health_guidance_records,
     fetch_paho_dengue_surveillance_records_fn: Callable[..., object] = fetch_paho_dengue_surveillance_records,
     fetch_vectorbase_genomics_records_fn: Callable[..., object] = fetch_vectorbase_genomics_records,
+    fetch_vectornet_surveillance_records_fn: Callable[..., object] = fetch_vectornet_surveillance_records,
 ) -> Response:
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
@@ -2168,6 +2315,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_vectorbase_genomics_records_fn=fetch_vectorbase_genomics_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/vectornet-surveillance":
+            result = ingest_vectornet_surveillance(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_vectornet_surveillance_records_fn=fetch_vectornet_surveillance_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

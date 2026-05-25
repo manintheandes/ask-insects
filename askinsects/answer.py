@@ -464,6 +464,14 @@ def _search_queries(question: str) -> list[str]:
         return list(dict.fromkeys(queries))
     if "mosquito alert" in q:
         return ["Mosquito Alert Aedes aegypti", "Mosquito Alert", "citizen-science observation", question]
+    if "vectornet" in q:
+        return [
+            "VectorNet Aedes aegypti detection presence evidence",
+            "VectorNet Aedes aegypti surveillance",
+            "VectorNet ECDC EFSA Aedes aegypti",
+            "VectorNet regional surveillance",
+            question,
+        ]
     if "gbif" in q and any(term in q for term in ("observation", "observations", "occurrence", "occurrences", "record", "records")):
         generic_terms = {
             "aedes",
@@ -1102,6 +1110,14 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
 
 def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if "vectornet" in q:
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "vectornet_aedes_surveillance" else 1,
+                0 if record.lane in {"observations", "ecology"} else 1,
+            ),
+        )
     if _wants_extracted_facts(question):
         return sorted(
             records,
@@ -1223,10 +1239,12 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
     ):
         return records
 
-    def score(record: EvidenceRecord) -> tuple[int, int, int]:
+    def score(record: EvidenceRecord) -> tuple[int, int, int, int]:
         extracted_rank = 0 if _wants_extracted_facts(question) and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
+        vectornet_rank = 0 if "vectornet" in q and record.source == "vectornet_aedes_surveillance" else 1
         return (
             extracted_rank,
+            vectornet_rank,
             0 if record.source == OCCURRENCE_ECOLOGY_SOURCE_ID else 1,
             0 if record.lane == "ecology" else 1,
         )
@@ -1386,6 +1404,14 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 0 if record.lane in {"media", "behavior"} else 1,
                 0 if wants_table_rows and record.record_id.startswith("mendeley:table-row:") else 1,
                 0 if wants_table_rows and record.record_id.startswith("mendeley:table:") else 1,
+            ),
+        )
+    if "vectornet" in q:
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "vectornet_aedes_surveillance" else 1,
+                0 if record.lane in {"observations", "ecology"} else 1,
             ),
         )
     if "mosquito alert" not in q:

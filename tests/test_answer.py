@@ -1826,6 +1826,43 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_occurrence_ecology")
             self.assertIn("Brazil", answer["evidence"][0]["text"])
 
+    def test_vectornet_questions_prefer_vectornet_surveillance_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:surveillance:paho",
+                        "aedes_paho_dengue_surveillance",
+                        "Official PAHO dengue surveillance evidence for Aedes aegypti public-health intelligence.",
+                    ),
+                    EvidenceRecord(
+                        record_id="vectornet:observation:VNET_1",
+                        lane="observations",
+                        source="vectornet_aedes_surveillance",
+                        title="VectorNet Aedes aegypti surveillance row VNET-1",
+                        text="Official VectorNet ECDC/EFSA surveillance occurrence row for Aedes aegypti in Georgia.",
+                        species="Aedes aegypti",
+                        url="https://ipt.gbif.org/resource?r=vndatabase#occurrence/VNET-1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectornet_aedes_surveillance",
+                            locator="raw/vectornet_surveillance/dwca-vndatabase-v1.3.zip#occurrence.txt/row/2",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="CC-BY-4.0",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show VectorNet Aedes aegypti surveillance evidence", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "vectornet_aedes_surveillance")
+
     def test_guidance_questions_prefer_official_public_health_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

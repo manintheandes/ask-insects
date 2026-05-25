@@ -32,6 +32,9 @@ metadata, parser grain, and known gaps.
   URLs.
 - Mosquito Alert records from `mosquito_alert_gbif` preserve GBIF dataset and
   media licenses for the Mosquito Alert slice.
+- VectorNet records from `vectornet_aedes_surveillance` preserve the ECDC/EFSA
+  VectorNet IPT/GBIF Darwin Core Archive license, archive URL, row locator,
+  filtered-row locator, and source surveillance fields.
 - NCBI Datasets, BioSample, and Taxonomy records from
   `ncbi_datasets_genome`, `ncbi_biosamples`, and `aedes_pathogen_taxonomy`
   preserve NCBI/public database terms, access metadata, and accession-level

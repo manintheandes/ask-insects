@@ -129,7 +129,8 @@
         "mosquito_v1_fixtures",
         "gbif_api",
         "inaturalist_api",
-        "mosquito_alert_gbif"
+        "mosquito_alert_gbif",
+        "vectornet_aedes_surveillance"
       ],
       "current_gates": {
         "mapped": "partial",
@@ -142,10 +143,11 @@
         "Hosted artifact contains 82,237 Aedes aegypti GBIF occurrence records plus one GBIF taxonomy record from source gbif_api, with raw page artifacts, payload rows, and zero GBIF gaps in source receipts.",
         "Hosted artifact contains deep Aedes aegypti iNaturalist observation records with raw page artifacts and provenance.",
         "Mosquito Alert Aedes aegypti citizen-science observations are mapped through GBIF dataset 1fef1ead-3d02-495e-8ff1-6aeb01123408 with raw occurrence pages, media metadata, and provenance.",
-        "GBIF, iNaturalist, and Mosquito Alert lanes exist, but Ask Insects is not yet a comprehensive observation mirror across all public surveillance systems."
+        "VectorNet ECDC/EFSA regional surveillance rows for Aedes aegypti are mapped from the public IPT Darwin Core Archive with raw archive, filtered-row TSV, row-level observations, ecology summaries, CC-BY-4.0 license, and exact row provenance.",
+        "GBIF, iNaturalist, Mosquito Alert, and VectorNet lanes exist, but Ask Insects is not yet a comprehensive observation mirror across all public surveillance systems."
       ],
       "required_next_sources": [
-        "regional surveillance exports where public"
+        "additional national and regional surveillance exports where public"
       ],
       "completion_evidence": [
         "Ask Insects can answer global, country, date, and source-specific Aedes observation questions with counts and provenance"
@@ -329,7 +331,8 @@
       "current_sources": [
         "aedes_literature_facets",
         "aedes_extracted_facts",
-        "aedes_occurrence_ecology"
+        "aedes_occurrence_ecology",
+        "vectornet_aedes_surveillance"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -343,6 +346,7 @@
         "Installed local and hosted artifacts contain 5,253 ecology records from aedes_literature_facets.",
         "Ecology questions route through the ecology lane and return provenance back to source literature records and full-text units where available.",
         "aedes_occurrence_ecology joins indexed GBIF, iNaturalist, and Mosquito Alert observation payloads into country, country-month, seasonality, range, and public habitat ecology records.",
+        "vectornet_aedes_surveillance adds official ECDC/EFSA regional surveillance ecology summaries by country and degree of establishment, preserving detection, absence-surveillance, and unclear-status counts.",
         "The May 24, 2026 hosted ingest installed 1,985 aedes_occurrence_ecology records from 88,065 Aedes observation inputs, bringing the hosted ecology lane to 7,238 records.",
         "aedes_extracted_facts emits ecology candidate facts from indexed Aedes literature and legal full-text units, plus parsed supported supplement table rows, including habitat, breeding-site, climate, seasonality, range, and location terms when detected."
       ],
