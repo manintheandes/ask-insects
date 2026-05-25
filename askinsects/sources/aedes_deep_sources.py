@@ -331,7 +331,7 @@ def _worldclim_rasters(zip_bytes: bytes):
     with zipfile.ZipFile(io.BytesIO(zip_bytes)) as archive:
         members = {Path(name).name: name for name in archive.namelist()}
         wanted = {
-            "bio1_annual_mean_temperature_c": ("wc2.1_10m_bio_1.tif", 0.1),
+            "bio1_annual_mean_temperature_c": ("wc2.1_10m_bio_1.tif", 1.0),
             "bio12_annual_precipitation_mm": ("wc2.1_10m_bio_12.tif", 1.0),
         }
         for field, (filename, scale) in wanted.items():

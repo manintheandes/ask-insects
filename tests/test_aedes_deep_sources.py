@@ -26,7 +26,7 @@ from askinsects.sources.aedes_deep_sources import (
 def fake_worldclim_zip() -> bytes:
     payload = io.BytesIO()
     with zipfile.ZipFile(payload, "w") as archive:
-        for filename, value in (("wc2.1_10m_bio_1.tif", 241), ("wc2.1_10m_bio_12.tif", 1432)):
+        for filename, value in (("wc2.1_10m_bio_1.tif", 24), ("wc2.1_10m_bio_12.tif", 1432)):
             image_bytes = io.BytesIO()
             Image.new("I", (4, 2), color=value).save(image_bytes, format="TIFF")
             archive.writestr(filename, image_bytes.getvalue())
@@ -133,7 +133,7 @@ class AedesDeepSourcesTests(unittest.TestCase):
         self.assertEqual(result.source_record_counts[AEDES_POPULATION_GENOMICS_SOURCE_ID], 2)
         self.assertTrue(any(record.lane == "taxonomy" and "Stegomyia" in record.text for record in result.records))
         self.assertTrue(any(record.lane == "ecology" and "WorldClim" in record.text for record in result.records))
-        self.assertTrue(any(record.record_id.startswith("ecology:worldclim:sample:") and "24.1 deg C" in record.text for record in result.records))
+        self.assertTrue(any(record.record_id.startswith("ecology:worldclim:sample:") and "24.0 deg C" in record.text for record in result.records))
         self.assertTrue(any(record.lane == "observations" and "Brazil" in record.text for record in result.records))
         self.assertTrue(any(record.lane == "genome_features" and "PRJNA1090933" in record.text for record in result.records))
         self.assertTrue(any(record.lane == "resistance" and "WHO" in record.text for record in result.records))

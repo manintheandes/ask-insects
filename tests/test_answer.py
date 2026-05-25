@@ -2473,6 +2473,22 @@ class AnswerTests(unittest.TestCase):
                         ),
                     ),
                     EvidenceRecord(
+                        record_id="ecology:worldclim:sample:global_compendium:402",
+                        lane="ecology",
+                        source="aedes_worldclim_climate",
+                        title="WorldClim climate sample for Aedes aegypti occurrence row 402",
+                        text="WorldClim 10-minute bioclim raster sample joined to a global Aedes aegypti occurrence compendium row. Country: Brazil. Annual mean temperature: 18.5 deg C. Annual precipitation: 1272 mm.",
+                        species="Aedes aegypti",
+                        url="https://geodata.ucdavis.edu/climate/worldclim/2_1/base/wc2.1_10m_bio.zip",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_worldclim_climate",
+                            locator="raw/aedes_deep_sources/worldclim/wc2.1_10m_bio.zip#occurrence/occurrence:global_compendium:aedes_aegypti:402",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="test",
+                        ),
+                    ),
+                    EvidenceRecord(
                         record_id="occurrence:global_compendium:aedes_aegypti:1",
                         lane="observations",
                         source="aedes_global_compendium_occurrence",
@@ -2510,11 +2526,13 @@ class AnswerTests(unittest.TestCase):
 
             taxonomy = answer_question("show Aedes aegypti taxonomy synonyms from authority sources", artifact_dir=artifact_dir)
             worldclim = answer_question("show WorldClim climate context for Aedes aegypti ecology", artifact_dir=artifact_dir)
+            worldclim_brazil = answer_question("show WorldClim annual mean temperature and precipitation samples for Aedes aegypti Brazil", artifact_dir=artifact_dir)
             compendium = answer_question("show global Aedes aegypti occurrence compendium rows for Brazil", artifact_dir=artifact_dir)
             population = answer_question("show Aedes aegypti population genomics BioProject evidence", artifact_dir=artifact_dir)
 
             self.assertEqual(taxonomy["evidence"][0]["source"], "aedes_taxonomy_authorities")
             self.assertEqual(worldclim["evidence"][0]["source"], "aedes_worldclim_climate")
+            self.assertEqual(worldclim_brazil["evidence"][0]["record_id"], "ecology:worldclim:sample:global_compendium:402")
             self.assertEqual(compendium["evidence"][0]["source"], "aedes_global_compendium_occurrence")
             self.assertEqual(population["evidence"][0]["source"], "aedes_population_genomics")
 

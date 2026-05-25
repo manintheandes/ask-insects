@@ -12,7 +12,7 @@ Sources:
 
 - `mosquito_v1_fixtures`: deterministic repo seed records.
 - `gbif_api`: live GBIF species match records when explicitly fetched. Hosted deep refreshes are currently focused on `Aedes aegypti`.
-- `aedes_taxonomy_authorities`: ECDC, OECD, and Mosquito Taxonomic Inventory or WRBU-style authority pages for `Aedes aegypti`, indexed at page grain with classification and synonym/name evidence when source text exposes it.
+- `aedes_taxonomy_authorities`: ECDC, OECD, Mosquito Taxonomic Inventory or WRBU-style, NCBI Taxonomy, and USDA NAL authority pages for `Aedes aegypti`, indexed at page grain with classification and synonym/name evidence when source text exposes it.
 
 Taxonomy-authority rows cite saved raw HTML under `raw/aedes_deep_sources/taxonomy_authorities/`. If MTI or a similar authority blocks automated access, Ask Insects writes a structured `taxonomy_authority_fetch_failed` gap rather than treating the lane as complete.
 

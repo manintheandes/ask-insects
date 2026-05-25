@@ -2,7 +2,7 @@
 
 Ask Insects is building toward a very deep practical `Aedes aegypti` intelligence source plane, but the repo should not claim the world-largest or world-deepest title yet.
 
-The current hosted source plane is broad and integrated: the latest hosted health proof records `822,734` records across genomics, literature, observations, media, neurobiology, traits, resistance, vector competence, ecology, public-health, taxonomy, climate-source, occurrence-compendium, population-genomics, and WHO resistance-guidance lanes. The media lane includes `5,828` verified bounded Aedes image-byte mirrors with checksum, byte size, dimensions, and raw asset paths. That proves a strong integrated query plane. It does not prove that Ask Insects is larger or deeper than every source-specific system in the world.
+The current hosted source plane is broad and integrated: the latest hosted health proof records `822,736` records across genomics, literature, observations, media, neurobiology, traits, resistance, vector competence, ecology, public-health, taxonomy, climate-source, occurrence-compendium, population-genomics, and WHO resistance-guidance lanes. The media lane includes `5,828` verified bounded Aedes image-byte mirrors with checksum, byte size, dimensions, and raw asset paths. That proves a strong integrated query plane. It does not prove that Ask Insects is larger or deeper than every source-specific system in the world.
 
 The machine-readable benchmark lives at `config/aedes-source-plane-benchmark.json`.
 

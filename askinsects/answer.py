@@ -1724,15 +1724,39 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
 
     wants_worldclim = any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability"))
     wants_compendium = any(term in q for term in ("global compendium", "compendium", "occurrence compendium"))
+    focus_tokens = {
+        token.lower()
+        for token in re.findall(r"[A-Za-z0-9]+", question)
+        if token.lower()
+        not in {
+            "aedes",
+            "aegypti",
+            "and",
+            "annual",
+            "climate",
+            "for",
+            "mean",
+            "precipitation",
+            "sample",
+            "samples",
+            "show",
+            "temperature",
+            "the",
+            "worldclim",
+        }
+    }
 
     def score(record: EvidenceRecord) -> tuple[object, ...]:
         worldclim_rank = 0 if wants_worldclim and record.source == AEDES_WORLDCLIM_SOURCE_ID else 1
         compendium_rank = 0 if wants_compendium and record.source == AEDES_GLOBAL_COMPENDIUM_SOURCE_ID else 1
+        haystack = f"{record.title}\n{record.text}".lower()
+        focus_rank = 0 if not focus_tokens or any(token in haystack for token in focus_tokens) else 1
         extracted_rank = 0 if _wants_extracted_facts(question) and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         vectornet_rank = 0 if "vectornet" in q and record.source == "vectornet_aedes_surveillance" else 1
         return (
             worldclim_rank,
             compendium_rank,
+            focus_rank,
             extracted_rank,
             vectornet_rank,
             0 if record.source == OCCURRENCE_ECOLOGY_SOURCE_ID else 1,
@@ -2327,11 +2351,48 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     if plan.answer_shape == "ecology":
         q = plan.question.lower()
         if any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability")):
-            for record in _source_records(index, AEDES_WORLDCLIM_SOURCE_ID, ["ecology"], limit=limit):
-                if record.record_id in seen_record_ids:
-                    continue
-                all_records.append(record)
-                seen_record_ids.add(record.record_id)
+            matched_worldclim = False
+            focus_query = " ".join(
+                token
+                for token in re.findall(r"[A-Za-z0-9]+", plan.question)
+                if token.lower()
+                not in {
+                    "aedes",
+                    "aegypti",
+                    "and",
+                    "annual",
+                    "climate",
+                    "for",
+                    "mean",
+                    "precipitation",
+                    "sample",
+                    "samples",
+                    "show",
+                    "temperature",
+                    "the",
+                    "worldclim",
+                }
+            )
+            search_queries = [f"WorldClim {focus_query}".strip()] if focus_query else []
+            search_queries.extend([f"WorldClim {plan.question}", plan.question])
+            for search_query in search_queries:
+                query_records = index.search(search_query, lane="ecology", limit=max(limit * 20, 50))
+                for record in query_records:
+                    if record.source != AEDES_WORLDCLIM_SOURCE_ID or record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+                    matched_worldclim = True
+                    if len([item for item in all_records if item.source == AEDES_WORLDCLIM_SOURCE_ID]) >= limit:
+                        break
+                if matched_worldclim:
+                    break
+            if not matched_worldclim:
+                for record in _source_records(index, AEDES_WORLDCLIM_SOURCE_ID, ["ecology"], limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
         if any(term in q for term in ("global compendium", "compendium", "occurrence compendium")):
             matched_compendium = False
             for search_query in _search_queries(plan.question):

@@ -51,7 +51,7 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         "raw_artifacts": result.raw_artifacts,
         "gap_count": len(result.gaps),
         "retrieved_at": retrieved_at,
-        "method": "bounded five-lane Aedes ingest for taxonomy authorities, WorldClim climate source metadata, global occurrence compendium rows, NCBI population-genomics BioProjects, and WHO Aedes insecticide-resistance guidance",
+        "method": "bounded five-lane Aedes ingest for taxonomy authorities, WorldClim climate source metadata and optional bioclim raster samples, global occurrence compendium rows, NCBI population-genomics BioProjects, and WHO Aedes insecticide-resistance guidance",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
