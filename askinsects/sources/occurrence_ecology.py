@@ -112,10 +112,12 @@ def _country_from_place(place: object) -> str | None:
         return None
     last = parts[-1]
     aliases = {
+        "Brasil": "Brazil",
         "US": "United States of America",
         "USA": "United States of America",
         "United States": "United States of America",
         "U.S.A.": "United States of America",
+        "AU": "Australia",
         "Suid-Afrika": "South Africa",
     }
     return aliases.get(last, last)

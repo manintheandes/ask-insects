@@ -134,6 +134,52 @@ class ObservationClimateSourceTests(unittest.TestCase):
             self.assertEqual(result.sampled_count, 1)
             self.assertTrue(any(gap["reason"] == "observation_climate_limit_applied" for gap in result.gaps))
 
+    def test_bounded_sampling_round_robins_across_countries(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            records = [
+                observation_record(
+                    f"gbif:occurrence:australia:{index_value}",
+                    "gbif_api",
+                    {
+                        "raw_occurrence": {
+                            "country": "Australia",
+                            "decimalLatitude": -19.26,
+                            "decimalLongitude": 146.81,
+                        }
+                    },
+                )
+                for index_value in range(5)
+            ]
+            records.append(
+                observation_record(
+                    "gbif:occurrence:brazil:1",
+                    "gbif_api",
+                    {
+                        "raw_occurrence": {
+                            "country": "Brazil",
+                            "decimalLatitude": -15.36,
+                            "decimalLongitude": -44.25,
+                        }
+                    },
+                )
+            )
+            index.upsert_records(records)
+            zip_path = artifact_dir / DEFAULT_WORLDCLIM_ZIP_RELATIVE_PATH
+            zip_path.parent.mkdir(parents=True, exist_ok=True)
+            zip_path.write_bytes(fake_worldclim_zip())
+
+            result = build_observation_climate_records(
+                artifact_dir,
+                limit=2,
+                retrieved_at="2026-05-25T00:00:00Z",
+            )
+
+            countries = {record.payload["country"] for record in result.records if record.payload.get("record_type") == "observation_climate_sample"}
+            self.assertEqual(countries, {"Australia", "Brazil"})
+
 
 if __name__ == "__main__":
     unittest.main()

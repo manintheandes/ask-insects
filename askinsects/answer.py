@@ -417,12 +417,35 @@ def _search_queries(question: str) -> list[str]:
     if any(term in q for term in ("climate-linked", "climate linked", "climate join", "observation climate", "joined to", "bioclim")) and any(
         term in q for term in ("observation", "observations", "occurrence", "coordinates", "country", "temperature", "precipitation")
     ):
-        return [
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9]+", question)
+            if token.lower()
+            not in {
+                "aedes",
+                "aegypti",
+                "annual",
+                "climate",
+                "climate-linked",
+                "ecology",
+                "linked",
+                "observation",
+                "observations",
+                "show",
+                "temperature",
+                "the",
+            }
+        ]
+        queries = [question]
+        for token in salient:
+            queries.append(f"{token} observation climate")
+            queries.append(token)
+        queries.extend([
             "WorldClim indexed Aedes aegypti observation climate sample",
             "bioclim raster values joined to indexed Aedes aegypti observation",
             "annual mean temperature precipitation observation",
-            question,
-        ]
+        ])
+        return list(dict.fromkeys(queries))
     if any(term in q for term in ("worldclim", "climate", "precipitation", "rainfall", "environmental suitability", "suitability")):
         return [
             "WorldClim climate source Aedes aegypti ecology",
@@ -1795,7 +1818,12 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
             "annual",
             "climate",
             "for",
+            "in",
+            "linked",
             "mean",
+            "ecology",
+            "observation",
+            "observations",
             "precipitation",
             "sample",
             "samples",
@@ -2531,8 +2559,6 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     matched_observation_climate = True
                     if len([item for item in all_records if item.source == OBSERVATION_CLIMATE_SOURCE_ID]) >= limit:
                         break
-                if matched_observation_climate:
-                    break
             if not matched_observation_climate:
                 for record in _source_records(index, OBSERVATION_CLIMATE_SOURCE_ID, ["ecology"], limit=limit):
                     if record.record_id in seen_record_ids:

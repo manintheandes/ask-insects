@@ -180,6 +180,27 @@ def _observation_rows(conn: sqlite3.Connection, input_sources: tuple[str, ...]) 
     return observations, len(rows), skipped
 
 
+def _bounded_observations(observations: list[ClimateObservation], limit: int) -> list[ClimateObservation]:
+    if len(observations) <= limit:
+        return observations
+    by_country: dict[str, list[ClimateObservation]] = {}
+    for observation in observations:
+        country_key = observation.country or "unknown"
+        by_country.setdefault(country_key, []).append(observation)
+    selected: list[ClimateObservation] = []
+    keys = sorted(by_country)
+    while len(selected) < limit and keys:
+        next_keys: list[str] = []
+        for key in keys:
+            group = by_country[key]
+            if group and len(selected) < limit:
+                selected.append(group.pop(0))
+            if group:
+                next_keys.append(key)
+        keys = next_keys
+    return selected
+
+
 def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> EvidenceRecord:
     reason = _clean(gap.get("reason")) or "observation_climate_gap"
     locator = _clean(gap.get("locator")) or f"gaps.json#{OBSERVATION_CLIMATE_SOURCE_ID}/{index}"
@@ -347,7 +368,8 @@ def build_observation_climate_records(
             }
         )
 
-    for observation in observations:
+    sampled_observations = _bounded_observations(observations, limit)
+    for observation in sampled_observations:
         if len(records) >= limit:
             break
         values = _worldclim_raster_values(rasters, observation.longitude, observation.latitude) if rasters else {}
