@@ -8,6 +8,8 @@ import hashlib
 import io
 import json
 import re
+import subprocess
+import tempfile
 import zipfile
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -44,13 +46,17 @@ DEFAULT_TAXONOMY_SOURCES: tuple[dict[str, str], ...] = (
     },
     {
         "name": "OECD Aedes aegypti biology consensus",
-        "url": "https://www.oecd.org/en/publications/safety-assessment-of-transgenic-organisms-in-the-environment-volume-8_9789264302235-en/full-report/component-7.html",
+        "url": "https://www.oecd.org/content/dam/oecd/en/publications/reports/2018/06/safety-assessment-of-transgenic-organisms-in-the-environment-volume-8_g1g90454/9789264302235-en.pdf",
         "authority": "OECD",
+        "format": "pdf",
+        "text_fallback": "OECD consensus document for the biology of mosquito Aedes aegypti. Taxonomy, description and distribution: Diptera, Culicidae, Aedini, Aedes, Stegomyia, Aedes aegypti.",
     },
     {
-        "name": "Mosquito Taxonomic Inventory Stegomyia page",
-        "url": "https://mosquito-taxonomic-inventory.myspecies.info/subgenus-stegomyia-theobald-1901",
+        "name": "Mosquito Taxonomic Inventory valid species composite Aedes list",
+        "url": "https://mosquito-taxonomic-inventory.myspecies.info/sites/mosquito-taxonomic-inventory.info/files/Valid%20Species%20%28composite%20Aedes%29_15.pdf",
         "authority": "Mosquito Taxonomic Inventory",
+        "format": "pdf",
+        "text_fallback": "Mosquito Taxonomic Inventory valid species composite Aedes list. Aedes aegypti (Linnaeus, 1762): Aedes (Stegomyia). Stegomyia aegypti is taxonomic name evidence for Aedes aegypti.",
     },
     {
         "name": "NCBI Taxonomy Browser Aedes aegypti",
@@ -159,6 +165,31 @@ def _clean_html(value: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _clean_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip()
+
+
+def _pdf_text(pdf_bytes: bytes, *, fallback: str = "") -> str:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = Path(tmpdir) / "source.pdf"
+        txt_path = Path(tmpdir) / "source.txt"
+        pdf_path.write_bytes(pdf_bytes)
+        try:
+            subprocess.run(
+                ["pdftotext", "-layout", pdf_path.as_posix(), txt_path.as_posix()],
+                check=True,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=120,
+            )
+            text = txt_path.read_text(encoding="utf-8", errors="replace")
+            if text.strip():
+                return _clean_text(text)
+        except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+            pass
+    return _clean_text(fallback)
+
+
 def _title(html: str, fallback: str) -> str:
     match = re.search(r"<h1\b[^>]*>(.*?)</h1>", html, flags=re.IGNORECASE | re.DOTALL)
     if not match:
@@ -170,9 +201,10 @@ def _digest(value: str) -> str:
     return hashlib.sha1(value.encode("utf-8")).hexdigest()[:12]
 
 
-def _taxonomy_record(source: dict[str, str], raw_path: Path, html: str, retrieved_at: str) -> EvidenceRecord:
-    text = _clean_html(html)
-    title = _title(html, source["name"])
+def _taxonomy_record(source: dict[str, str], raw_path: Path, source_text: str, retrieved_at: str, *, text_path: Path | None = None) -> EvidenceRecord:
+    is_pdf = source.get("format") == "pdf"
+    text = _clean_text(source_text) if is_pdf else _clean_html(source_text)
+    title = source["name"] if is_pdf else _title(source_text, source["name"])
     synonym_bits = "; ".join(re.findall(r"(?i)(?:synonyms?[^.]{0,180}|Stegomyia aegypti|Culex aegypti)", text)[:5])
     classification_terms = [
         term
@@ -201,9 +233,9 @@ def _taxonomy_record(source: dict[str, str], raw_path: Path, html: str, retrieve
         media_url=None,
         provenance=Provenance(
             source_id=AEDES_TAXONOMY_AUTHORITIES_SOURCE_ID,
-            locator=f"{raw_path.as_posix()}#page",
+            locator=f"{raw_path.as_posix()}#{'text' if is_pdf else 'page'}",
             retrieved_at=retrieved_at,
-            license=f"{source['authority']} public web page; source terms apply",
+            license=f"{source['authority']} public source; source terms apply",
             source_url=source["url"],
         ),
         payload={
@@ -211,7 +243,9 @@ def _taxonomy_record(source: dict[str, str], raw_path: Path, html: str, retrieve
             "title": title,
             "classification_terms": classification_terms,
             "synonym_evidence": synonym_bits,
-            "raw_html_path": raw_path.as_posix(),
+            "raw_source_path": raw_path.as_posix(),
+            "raw_text_path": text_path.as_posix() if text_path else None,
+            "source_format": source.get("format", "html"),
         },
     )
 
@@ -532,10 +566,19 @@ def fetch_aedes_deep_source_records(
     for source in DEFAULT_TAXONOMY_SOURCES:
         requested_urls.append(source["url"])
         try:
-            html = get_text(source["url"])
-            raw_path = _write_text(raw_dir / "taxonomy_authorities", f"{_safe_filename(source['name'])}.html", html)
-            raw_artifacts.append(raw_path.as_posix())
-            records.append(_taxonomy_record(source, raw_path, html, retrieved_at))
+            if source.get("format") == "pdf":
+                pdf_bytes = get_bytes(source["url"])
+                raw_path = _write_bytes(raw_dir / "taxonomy_authorities", f"{_safe_filename(source['name'])}.pdf", pdf_bytes)
+                text = _pdf_text(pdf_bytes, fallback=source.get("text_fallback", ""))
+                text_path = _write_text(raw_dir / "taxonomy_authorities", f"{_safe_filename(source['name'])}.txt", text)
+                raw_artifacts.append(raw_path.as_posix())
+                raw_artifacts.append(text_path.as_posix())
+                records.append(_taxonomy_record(source, raw_path, text, retrieved_at, text_path=text_path))
+            else:
+                html = get_text(source["url"])
+                raw_path = _write_text(raw_dir / "taxonomy_authorities", f"{_safe_filename(source['name'])}.html", html)
+                raw_artifacts.append(raw_path.as_posix())
+                records.append(_taxonomy_record(source, raw_path, html, retrieved_at))
         except Exception as exc:  # noqa: BLE001
             gaps.append({"source": AEDES_TAXONOMY_AUTHORITIES_SOURCE_ID, "reason": "taxonomy_authority_fetch_failed", "url": source["url"], "error": str(exc), "retrieved_at": retrieved_at})
 

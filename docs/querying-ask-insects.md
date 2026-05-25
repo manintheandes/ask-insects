@@ -113,7 +113,7 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegyp
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show WHO Aedes insecticide resistance bioassay guidance" --json
 ```
 
-These five source IDs are `aedes_taxonomy_authorities`, `aedes_worldclim_climate`, `aedes_global_compendium_occurrence`, `aedes_population_genomics`, and `aedes_who_resistance_guidance`. Each record cites a raw HTML, CSV row, NCBI ESummary locator, or WorldClim raster ZIP locator under `raw/aedes_deep_sources/`. Blocked MTI fetches and disabled or failed WorldClim raster sampling are explicit source gaps.
+These five source IDs are `aedes_taxonomy_authorities`, `aedes_worldclim_climate`, `aedes_global_compendium_occurrence`, `aedes_population_genomics`, and `aedes_who_resistance_guidance`. Each record cites a raw HTML page, mirrored PDF plus extracted text sidecar, CSV row, NCBI ESummary locator, or WorldClim raster ZIP locator under `raw/aedes_deep_sources/`. Disabled or failed WorldClim raster sampling remains an explicit source gap.
 
 To add `Aedes aegypti` brain and neuron source metadata:
 

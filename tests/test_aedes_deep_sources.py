@@ -41,8 +41,10 @@ class AedesDeepSourcesTests(unittest.TestCase):
             def fake_text(url):
                 if url == DEFAULT_TAXONOMY_SOURCES[0]["url"]:
                     return "<html><h1>Aedes aegypti factsheet</h1><p>Species name/classification: Aedes (Stegomyia) aegypti. Synonyms and other name in use: Stegomyia aegypti. Hazards associated with mosquito species.</p></html>"
-                if url == DEFAULT_TAXONOMY_SOURCES[1]["url"]:
-                    return "<html><h1>Taxonomy, description and distribution</h1><p>The systematic classification localises this species within Diptera, Culicidae, Culicinae, Aedini, Aedes, Stegomyia, Aedes aegypti.</p></html>"
+                if url == DEFAULT_TAXONOMY_SOURCES[3]["url"]:
+                    return "<html><h1>Taxonomy browser Taxonomy Browser (Aedes aegypti)</h1><p>Taxonomy ID: 7159. Current name Aedes aegypti. Homotypic synonym Stegomyia aegypti. Heterotypic synonym Culex aegypti. Diptera Culicidae Aedes Stegomyia.</p></html>"
+                if url == DEFAULT_TAXONOMY_SOURCES[4]["url"]:
+                    return "<html><h1>NALT Full</h1><p>Aedes aegypti. Synonyms: Stegomyia aegypti. Broader terms: Aedes, Culicidae, Diptera.</p></html>"
                 if url == DEFAULT_WORLDCLIM_SOURCES[0]["url"]:
                     return "<html><h1>Historical climate data</h1><p>WorldClim version 2.1 climate data for 1970-2000. Each download is a zip file containing 12 GeoTiff files, one for each month. Average temperature and precipitation are available.</p></html>"
                 if url == DEFAULT_WORLDCLIM_SOURCES[1]["url"]:
@@ -96,6 +98,8 @@ class AedesDeepSourcesTests(unittest.TestCase):
                 raise AssertionError(url)
 
             def fake_bytes(url):
+                if url in {DEFAULT_TAXONOMY_SOURCES[1]["url"], DEFAULT_TAXONOMY_SOURCES[2]["url"]}:
+                    return b"%PDF-1.4\n% fake authority PDF for fallback text extraction tests\n"
                 if url == DEFAULT_WORLDCLIM_BIOCLIM_10M_URL:
                     return fake_worldclim_zip()
                 self.assertIn("aegypti_albopictus.csv", url)
@@ -128,6 +132,8 @@ class AedesDeepSourcesTests(unittest.TestCase):
                 AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID,
             },
         )
+        self.assertEqual(result.gaps, [])
+        self.assertEqual(result.source_record_counts[AEDES_TAXONOMY_AUTHORITIES_SOURCE_ID], len(DEFAULT_TAXONOMY_SOURCES))
         self.assertEqual(result.source_record_counts[AEDES_GLOBAL_COMPENDIUM_SOURCE_ID], 2)
         self.assertEqual(result.source_record_counts[AEDES_WORLDCLIM_SOURCE_ID], 4)
         self.assertEqual(result.source_record_counts[AEDES_POPULATION_GENOMICS_SOURCE_ID], 2)

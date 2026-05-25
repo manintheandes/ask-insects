@@ -176,7 +176,7 @@ This writes VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte
 
 `ingest-aedes-deep-sources` installs five bounded Aedes-specific source expansions at once:
 
-- `aedes_taxonomy_authorities`: ECDC, OECD, MTI/WRBU-style, NCBI Taxonomy, and USDA NAL taxonomy authority pages at page grain.
+- `aedes_taxonomy_authorities`: ECDC, OECD, MTI/WRBU-style, NCBI Taxonomy, and USDA NAL taxonomy authority pages or PDFs at page/PDF-text grain.
 - `aedes_worldclim_climate`: WorldClim climate source pages plus optional bounded 10-minute bioclim raster samples joined to global-compendium occurrence coordinates.
 - `aedes_global_compendium_occurrence`: global Aedes occurrence compendium rows filtered to `Aedes aegypti`.
 - `aedes_population_genomics`: NCBI BioProject population-genomics metadata in `genome_features`.

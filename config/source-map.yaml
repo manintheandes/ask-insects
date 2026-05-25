@@ -650,7 +650,7 @@ sources:
         - intervention_type
         - metrics_mentioned
         - source_url
-        - raw_html_locator
+        - raw_source_locator
   - id: aedes_paho_dengue_surveillance
     name: PAHO dengue surveillance for Aedes aegypti public-health intelligence
     source_type: public_health_surveillance_report
@@ -751,16 +751,16 @@ sources:
         - raw_json_locator
   - id: aedes_taxonomy_authorities
     name: Aedes aegypti taxonomy authority pages
-    source_type: public_web_authority_pages
-    boundary: Authoritative Aedes aegypti taxonomy and identity pages from ECDC, OECD, Mosquito Taxonomic Inventory or WRBU-style authority surfaces, NCBI Taxonomy, and USDA NAL Thesaurus, indexed at page grain with classification and synonym/name evidence when present
-    query_plane: authority_html_to_sqlite_taxonomy_records
+    source_type: public_web_and_pdf_authority_pages
+    boundary: Authoritative Aedes aegypti taxonomy and identity pages or PDFs from ECDC, OECD, Mosquito Taxonomic Inventory or WRBU-style authority surfaces, NCBI Taxonomy, and USDA NAL Thesaurus, indexed at page or PDF-text grain with classification and synonym/name evidence when present
+    query_plane: authority_html_pdf_to_sqlite_taxonomy_records
     artifact_dir: artifacts/mosquito-v1/raw/aedes_deep_sources/taxonomy_authorities
     ingest_script: scripts/ingest_aedes_deep_sources.py
     lanes:
       - taxonomy
     provenance_required: true
     live_fetch: opt_in_bounded
-    source_gap: OECD or MTI pages may be mapped but inaccessible from automated fetches when upstream protection blocks the runtime; those failures are receipted as taxonomy_authority_fetch_failed gaps while accessible ECDC, NCBI, and NAL authority records still populate the taxonomy lane.
+    source_gap: If an authority HTML page blocks automated access, Ask Insects uses an accessible authority PDF fallback where available and stores the mirrored PDF plus extracted text sidecar; only source families with no accessible substitute are receipted as taxonomy_authority_fetch_failed gaps.
     source_contract:
       authority_page_records:
         - authority
@@ -768,6 +768,8 @@ sources:
         - classification_terms
         - synonym_evidence
         - source_url
+        - raw_source_path
+        - source_format
         - raw_html_locator
   - id: aedes_worldclim_climate
     name: WorldClim climate source metadata and bounded raster samples for Aedes aegypti ecology joins

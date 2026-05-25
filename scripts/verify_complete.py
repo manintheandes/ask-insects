@@ -756,7 +756,6 @@ def check_mosquito_intelligence_coverage() -> None:
         "aedes_population_genomics",
         "aedes_who_resistance_guidance",
         "scripts/ingest_aedes_deep_sources.py",
-        "authority_html_to_sqlite_taxonomy_records",
         "worldclim_html_and_bioclim_geotiff_to_sqlite_ecology_records",
         "bio1_annual_mean_temperature_c",
         "bio12_annual_precipitation_mm",
@@ -765,7 +764,8 @@ def check_mosquito_intelligence_coverage() -> None:
         "who_resistance_guidance_html_to_sqlite_resistance_records",
         "worldclim_raster_sampling_not_enabled",
         "worldclim_raster_sampling_failed",
-        "taxonomy_authority_fetch_failed",
+        "authority_html_pdf_to_sqlite_taxonomy_records",
+        "source_format",
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Aedes deep-source term: {term}")
