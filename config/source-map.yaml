@@ -114,7 +114,7 @@ sources:
   - id: aedes_image_atoms
     name: Aedes aegypti still-image assets, labels, and gaps
     source_type: derived_sqlite_source
-    boundary: Derived Aedes aegypti still-image intelligence records from indexed iNaturalist and Mosquito Alert media rows, preserving image URLs, observation context, licenses, attribution, quality metadata, deterministic source-provided labels, and explicit structured gaps for missing life stage, sex, anatomy, or body-part labels
+    boundary: Derived Aedes aegypti still-image intelligence records from indexed iNaturalist and Mosquito Alert media rows, preserving image URLs, observation context, licenses, attribution, quality metadata, optional bounded image-byte mirrors with checksum, byte size, dimensions, EXIF presence when detectable, deterministic source-provided labels, and explicit structured gaps for missing labels, unclear licenses, failed downloads, or mirror limits
     query_plane: indexed_still_image_media_payloads_to_sqlite_image_atoms
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_image_atoms.py
@@ -140,6 +140,11 @@ sources:
         - latitude_longitude_when_supplied
         - quality_grade_when_supplied
         - image_format_when_supplied
+        - checksum_when_mirrored
+        - byte_size_when_mirrored
+        - dimensions_when_mirrored_or_source_supplied
+        - exif_presence_when_detectable
+        - raw_asset_path_when_mirrored
         - exact_locator
       deterministic_labels:
         - quality_grade
@@ -151,6 +156,10 @@ sources:
         - media_type
       structured_gaps:
         - image_label_missing
+        - image_license_unclear
+        - image_download_failed
+        - image_too_large
+        - image_mirror_limit_applied
   - id: aedes_literature_openalex
     name: Aedes aegypti literature since 2020
     source_type: public_api_composite

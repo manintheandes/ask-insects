@@ -247,6 +247,28 @@ def _wants_image_labels(question: str) -> bool:
     )
 
 
+def _wants_image_asset_metadata(question: str) -> bool:
+    q = question.lower()
+    return _wants_image_atoms(question) and any(
+        term in q
+        for term in (
+            "checksum",
+            "sha-256",
+            "sha256",
+            "byte size",
+            "bytes",
+            "dimension",
+            "dimensions",
+            "width",
+            "height",
+            "exif",
+            "mirror",
+            "mirrored",
+            "raw asset",
+        )
+    )
+
+
 def _wants_vectorbyte_traits(question: str) -> bool:
     q = question.lower()
     return any(
@@ -2000,6 +2022,8 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     q = question.lower()
     if _wants_image_gaps(question):
         atom_types = ["image_gap"]
+    elif _wants_image_asset_metadata(question):
+        atom_types = ["image_asset"]
     elif _wants_image_labels(question):
         atom_types = ["image_label"]
     else:
@@ -2028,9 +2052,13 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
               AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
               {label_filter}
             ORDER BY
+              CASE
+                WHEN json_extract(p.payload_json, '$.verification_status')='verified' THEN 0
+                ELSE 1
+              END,
               CASE json_extract(p.payload_json, '$.atom_type')
-                WHEN 'image_label' THEN 0
-                WHEN 'image_asset' THEN 1
+                WHEN 'image_asset' THEN 0
+                WHEN 'image_label' THEN 1
                 WHEN 'image_gap' THEN 2
                 ELSE 3
               END,

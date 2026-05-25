@@ -2566,10 +2566,23 @@ def ingest_image_atoms_staged(
     retrieved_at = payload.get("retrieved_at")
     if retrieved_at is not None and not isinstance(retrieved_at, str):
         raise ValueError("retrieved_at must be a string")
+    mirror_images = _payload_bool(payload, "mirror_images", False)
+    max_image_bytes = int(payload.get("max_image_bytes") or 5_000_000)
+    max_image_mirrors = int(payload.get("max_image_mirrors") or 250)
+    allow_unclear_license = _payload_bool(payload, "allow_unclear_license", False)
+    allowed_licenses = tuple(_payload_string_list(payload, "allowed_licenses")) or None
     staging = artifact_dir.parent / f".{artifact_dir.name}.image-atoms-staging"
     if staging.exists():
         shutil.rmtree(staging, ignore_errors=True)
-    response = ingest_image_atoms(artifact_dir=artifact_dir, retrieved_at=retrieved_at)
+    response = ingest_image_atoms(
+        artifact_dir=artifact_dir,
+        retrieved_at=retrieved_at,
+        mirror_images=mirror_images,
+        max_image_bytes=max_image_bytes,
+        max_image_mirrors=max_image_mirrors,
+        allow_unclear_license=allow_unclear_license,
+        allowed_licenses=allowed_licenses,
+    )
     response["activated_artifact_dir"] = str(artifact_dir)
     response["staged"] = False
     response["updated_in_place"] = True

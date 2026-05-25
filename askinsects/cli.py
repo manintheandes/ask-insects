@@ -270,6 +270,11 @@ def main(argv: list[str] | None = None) -> int:
 
     ingest_image_atoms = sub.add_parser("ingest-image-atoms")
     ingest_image_atoms.add_argument("--hosted", action="store_true")
+    ingest_image_atoms.add_argument("--mirror-images", action="store_true")
+    ingest_image_atoms.add_argument("--max-image-bytes", type=int, default=5_000_000)
+    ingest_image_atoms.add_argument("--max-image-mirrors", type=int, default=250)
+    ingest_image_atoms.add_argument("--allow-unclear-license", action="store_true")
+    ingest_image_atoms.add_argument("--allowed-licenses")
 
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
@@ -879,13 +884,32 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-image-atoms":
+        allowed_licenses = tuple(part.strip() for part in (args.allowed_licenses or "").split(",") if part.strip()) or None
         if not args.hosted:
             from scripts.ingest_image_atoms import ingest_image_atoms
 
-            payload = ingest_image_atoms(artifact_dir=artifact_dir)
+            payload = ingest_image_atoms(
+                artifact_dir=artifact_dir,
+                mirror_images=args.mirror_images,
+                max_image_bytes=args.max_image_bytes,
+                max_image_mirrors=args.max_image_mirrors,
+                allow_unclear_license=args.allow_unclear_license,
+                allowed_licenses=allowed_licenses,
+            )
             emit(payload)
             return 0 if payload.get("ok") else 2
-        payload = emit_hosted("POST", "/ingest/image-atoms", {}, timeout=3600)
+        payload = emit_hosted(
+            "POST",
+            "/ingest/image-atoms",
+            {
+                "mirror_images": args.mirror_images,
+                "max_image_bytes": args.max_image_bytes,
+                "max_image_mirrors": args.max_image_mirrors,
+                "allow_unclear_license": args.allow_unclear_license,
+                "allowed_licenses": list(allowed_licenses) if allowed_licenses else None,
+            },
+            timeout=7200,
+        )
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-occurrence-ecology":
         if not args.hosted:

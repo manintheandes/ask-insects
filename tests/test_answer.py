@@ -1316,6 +1316,64 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_image_atoms")
             self.assertIn("without source-provided sex", answer["evidence"][0]["text"])
 
+    def test_image_checksum_questions_prefer_verified_image_assets(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="image_atom:label:inat_media_99:quality",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image label quality_grade: research",
+                        text="Aedes aegypti image label from source metadata: quality_grade = research.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/12345",
+                        media_url="https://static.inaturalist.org/photos/99/medium.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#inat:media:99;label/quality_grade",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                        ),
+                        payload={"atom_type": "image_label", "label_type": "quality_grade", "label_value": "research"},
+                    ),
+                    EvidenceRecord(
+                        record_id="image_atom:asset:inat_media_99",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image asset from inaturalist_api",
+                        text="Aedes aegypti source image asset with SHA-256 checksum, byte size, and 1x1 dimensions.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/12345",
+                        media_url="raw/image_atoms/assets/inat_media_99.png",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#inat:media:99",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                        ),
+                        payload={
+                            "atom_type": "image_asset",
+                            "verification_status": "verified",
+                            "sha256": "abc123",
+                            "byte_size": 67,
+                            "width": 1,
+                            "height": 1,
+                            "raw_asset_path": "raw/image_atoms/assets/inat_media_99.png",
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti images with checksum and dimensions", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertEqual(answer["evidence"][0]["record_id"], "image_atom:asset:inat_media_99")
+
     def test_video_discovery_questions_do_not_fall_back_to_other_repositories(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -8,7 +8,7 @@ import unittest
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from scripts.ingest_image_atoms import ingest_image_atoms
-from tests.test_image_atoms_source import RETRIEVED_AT, write_image_fixture
+from tests.test_image_atoms_source import PNG_1X1, RETRIEVED_AT, write_image_fixture
 
 
 class IngestImageAtomsTests(unittest.TestCase):
@@ -50,6 +50,32 @@ class IngestImageAtomsTests(unittest.TestCase):
             self.assertEqual(receipt["aedes_image_atoms"]["record_count"], result["record_count"])
             gaps = json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))
             self.assertTrue(any(gap.get("source") == "aedes_image_atoms" for gap in gaps))
+
+    def test_ingest_records_mirrored_image_counts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_image_fixture(artifact_dir)
+
+            result = ingest_image_atoms(
+                artifact_dir=artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_images=True,
+                max_image_bytes=10_000,
+                allowed_licenses=("cc-by",),
+                fetch_image_bytes_fn=lambda url, max_bytes: (PNG_1X1, "image/png"),
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["mirrored_image_count"], 2)
+            self.assertEqual(result["verified_image_count"], 2)
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            self.assertEqual(status["aedes_image_atoms"]["mirrored_image_count"], 2)
+            self.assertEqual(status["aedes_image_atoms"]["verified_image_count"], 2)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select count(*) as n from record_payloads where source='aedes_image_atoms' and json_extract(payload_json, '$.raw_asset_path') is not null",
+                limit=5,
+            )
+            self.assertEqual(rows[0]["n"], 2)
 
 
 if __name__ == "__main__":

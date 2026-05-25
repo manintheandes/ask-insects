@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -11,6 +13,9 @@ from askinsects.sources.image_atoms import IMAGE_ATOMS_SOURCE_ID, build_image_at
 
 
 RETRIEVED_AT = "2026-05-25T00:00:00Z"
+PNG_1X1 = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII="
+)
 
 
 def write_image_fixture(artifact_dir: Path) -> None:
@@ -151,6 +156,78 @@ class ImageAtomsSourceTests(unittest.TestCase):
             self.assertEqual(result.image_asset_count, 0)
             self.assertEqual(result.records, [])
             self.assertEqual(result.gaps, [])
+
+    def test_mirrors_and_verifies_bounded_image_bytes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_image_fixture(artifact_dir)
+
+            result = build_image_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_images=True,
+                max_image_bytes=10_000,
+                allowed_licenses=("cc-by",),
+                fetch_image_bytes_fn=lambda url, max_bytes: (PNG_1X1, "image/png"),
+            )
+
+        asset = next(
+            record
+            for record in result.records
+            if record.payload and record.payload.get("atom_type") == "image_asset" and record.payload["source"] == "inaturalist_api"
+        )
+        self.assertEqual(asset.payload["verification_status"], "verified")
+        self.assertEqual(asset.payload["sha256"], hashlib.sha256(PNG_1X1).hexdigest())
+        self.assertEqual(asset.payload["byte_size"], len(PNG_1X1))
+        self.assertEqual(asset.payload["width"], 1)
+        self.assertEqual(asset.payload["height"], 1)
+        self.assertEqual(asset.payload["image_format"], "image/png")
+        self.assertTrue(asset.payload["raw_asset_path"].startswith("raw/image_atoms/assets/"))
+        self.assertEqual(asset.media_url, asset.payload["raw_asset_path"])
+        self.assertEqual(result.mirrored_image_count, 2)
+        self.assertEqual(result.verified_image_count, 2)
+
+    def test_rehydrates_existing_image_mirror_without_refetching(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_image_fixture(artifact_dir)
+            safe_id = "inat:media:99"
+            asset_path = artifact_dir / "raw" / "image_atoms" / "assets" / f"{safe_id}_existing.png"
+            asset_path.parent.mkdir(parents=True, exist_ok=True)
+            asset_path.write_bytes(PNG_1X1)
+
+            result = build_image_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        asset = next(
+            record
+            for record in result.records
+            if record.payload and record.payload.get("atom_type") == "image_asset" and record.payload["source_record_id"] == "inat:media:99"
+        )
+        self.assertEqual(asset.payload["verification_status"], "verified")
+        self.assertEqual(asset.payload["sha256"], hashlib.sha256(PNG_1X1).hexdigest())
+        self.assertEqual(asset.payload["raw_asset_path"], "raw/image_atoms/assets/inat:media:99_existing.png")
+        self.assertEqual(result.mirrored_image_count, 1)
+        self.assertEqual(result.verified_image_count, 1)
+
+    def test_records_image_mirror_limit_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_image_fixture(artifact_dir)
+
+            result = build_image_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_images=True,
+                max_image_mirrors=1,
+                allowed_licenses=("cc-by",),
+                fetch_image_bytes_fn=lambda url, max_bytes: (PNG_1X1, "image/png"),
+            )
+
+        self.assertEqual(result.mirrored_image_count, 1)
+        self.assertEqual(result.verified_image_count, 1)
+        self.assertTrue(any(gap["reason"] == "image_mirror_limit_applied" for gap in result.gaps))
+        gap_records = [record for record in result.records if record.payload and record.payload.get("reason") == "image_mirror_limit_applied"]
+        self.assertEqual(len(gap_records), 1)
 
 
 if __name__ == "__main__":

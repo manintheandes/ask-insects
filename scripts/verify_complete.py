@@ -1121,6 +1121,28 @@ def check_aedes_image_atoms_artifact(artifact_dir: Path | None = None) -> None:
         conn.row_factory = sqlite3.Row
         source_records = int(conn.execute("select count(*) from records where source='aedes_image_atoms'").fetchone()[0])
         atom_counts = _image_atom_counts(conn)
+        mirrored_images = int(
+            conn.execute(
+                """
+                select count(*)
+                from record_payloads
+                where source='aedes_image_atoms'
+                  and json_extract(payload_json, '$.atom_type')='image_asset'
+                  and json_extract(payload_json, '$.raw_asset_path') is not null
+                """
+            ).fetchone()[0]
+        )
+        verified_images = int(
+            conn.execute(
+                """
+                select count(*)
+                from record_payloads
+                where source='aedes_image_atoms'
+                  and json_extract(payload_json, '$.atom_type')='image_asset'
+                  and json_extract(payload_json, '$.verification_status')='verified'
+                """
+            ).fetchone()[0]
+        )
         input_media = int(
             conn.execute(
                 """
@@ -1143,6 +1165,8 @@ def check_aedes_image_atoms_artifact(artifact_dir: Path | None = None) -> None:
         "image_asset_count": atom_counts.get("image_asset", 0),
         "image_label_count": atom_counts.get("image_label", 0),
         "image_gap_count": atom_counts.get("image_gap", 0),
+        "mirrored_image_count": mirrored_images,
+        "verified_image_count": verified_images,
     }
     for key, actual in checks.items():
         if key in image_status and int(image_status.get(key, -1)) != actual:
