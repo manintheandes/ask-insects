@@ -291,12 +291,20 @@ OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/l
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
-NCBI BioSample records use source id `ncbi_biosamples` and lane `biosamples`. The ingest fetches bounded `"Aedes aegypti"[Organism]` BioSample ESearch and ESummary JSON, saves it under `artifacts/mosquito-v1/raw/ncbi_biosamples/`, parses sample XML attributes, and stores accessions, sample names, strain or isolate fields, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when present.
+NCBI BioSample records use source id `ncbi_biosamples` and lane `biosamples`. The ingest fetches `"Aedes aegypti"[Organism]` BioSample ESearch and ESummary JSON, saves it under `artifacts/mosquito-v1/raw/ncbi_biosamples/`, parses sample XML attributes, and stores accessions, sample names, strain or isolate fields, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when present. The current hosted receipt is complete for the current NCBI count: 20,656 fetched records out of 20,656 reported, with zero hosted gaps.
 
 ```bash
-python3 -m askinsects ingest-ncbi-biosamples --limit 1000
+python3 -m askinsects ingest-ncbi-biosamples --limit 20656
 python3 -m askinsects ask "show Aedes aegypti BioSamples from China" --json
 python3 -m askinsects search biosamples "Rockefeller SRA"
+```
+
+NCBI dbSNP variation audit records use source id `aedes_ncbi_snp_variation` and lane `genome_features`. The ingest queries dbSNP with `"Aedes aegypti"[Organism]`, saves raw ESearch and ESummary JSON under `artifacts/mosquito-v1/raw/ncbi_snp_variation/`, and indexes returned SNP summaries when NCBI exposes them. The current NCBI dbSNP organism query returns zero records, so Ask Insects installs a queryable source-gap record with reason `ncbi_snp_no_aedes_records`.
+
+```bash
+python3 scripts/ingest_ncbi_snp_variation.py --limit 1000
+python3 -m askinsects search genome_features "dbSNP variation source gap"
+python3 -m askinsects sql "select source, lane, count(*) as n from records where source='aedes_ncbi_snp_variation' group by source, lane"
 ```
 
 Neurobiology records use source id `aedes_neurobiology_sources`. Metadata-only builds index source records for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies. Artifact-cache builds additionally index GEO matrix summaries and features, SRA `SRP290992` run/sample metadata, raw SRA access and reanalysis workflow records, Zenodo file and ZIP-member inventory, H5AD AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, coordinate-queryable voxel access locators, public Aedes EM/CATMAID project, stack, annotation, volume, skeleton-manifest, skeleton-filter, and skeleton-ID metadata, public Aedes EM/CATMAID CSV inventories, and a searchable whole-brain connectome source-gap row. Exact voxel values are available on demand:

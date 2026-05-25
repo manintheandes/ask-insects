@@ -17,6 +17,7 @@ from .sources.aedes_deep_sources import (
 )
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
+from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
 
@@ -1149,9 +1150,22 @@ def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
     return any(re.search(rf"\b{re.escape(token)}\b", haystack) for token in tokens)
 
 
+def _wants_snp_variation(question: str) -> bool:
+    q = question.lower()
+    return any(term in q for term in ("dbsnp", "snp", "snps", "variant", "variants", "variation"))
+
+
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
-    if any(term in q for term in ("bioproject", "bioprojects", "population genomics", "population-genomics", "variation", "variant", "variants", "introgression", "divergence")):
+    if _wants_snp_variation(question):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == NCBI_SNP_VARIATION_SOURCE_ID else 1,
+                0 if record.lane == "genome_features" else 1,
+            ),
+        )
+    if any(term in q for term in ("bioproject", "bioprojects", "population genomics", "population-genomics", "introgression", "divergence")):
         return sorted(
             records,
             key=lambda record: (
@@ -2356,6 +2370,14 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             return source_gap(plan, "The Ask Insects video discovery lane has no matching records for that repository.")
 
     if plan.answer_shape == "genomics":
+        if _wants_snp_variation(plan.question):
+            if _source_count(index, NCBI_SNP_VARIATION_SOURCE_ID) == 0:
+                return source_gap(plan, "The Ask Insects NCBI dbSNP variation audit lane is not installed in this source index.")
+            for record in _source_records(index, NCBI_SNP_VARIATION_SOURCE_ID, ["genome_features"], limit=limit):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
         uniprot_exact_terms = _uniprot_exact_terms(plan.question)
         uniprot_records = _uniprot_direct_records(index, plan.question, limit=limit)
         if uniprot_exact_terms and not uniprot_records:

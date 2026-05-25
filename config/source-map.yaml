@@ -238,7 +238,7 @@ sources:
   - id: ncbi_biosamples
     name: NCBI BioSample Aedes aegypti sample metadata
     source_type: public_api
-    boundary: Bounded NCBI BioSample records for Aedes aegypti, including accession, organism, sample name, strain or isolate when present, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when NCBI exposes them
+    boundary: NCBI BioSample records for Aedes aegypti, including accession, organism, sample name, strain or isolate when present, collection date, geography, tissue, isolation source, organization, and linked SRA identifiers when NCBI exposes them; the current hosted receipt is complete for the current NCBI count of 20,656 fetched and reported records with zero gaps
     query_plane: ncbi_eutils_biosample_esearch_esummary_to_sqlite
     api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
     artifact_dir: artifacts/mosquito-v1/raw/ncbi_biosamples
@@ -247,6 +247,42 @@ sources:
       - biosamples
     provenance_required: true
     live_fetch: opt_in_bounded
+    current_hosted_receipt:
+      reported_total_count: 20656
+      fetched_count: 20656
+      gap_count: 0
+      status: complete_for_current_ncbi_count
+  - id: aedes_ncbi_snp_variation
+    name: NCBI dbSNP Aedes aegypti variation audit
+    source_type: public_api_audit
+    boundary: NCBI dbSNP organism query for Aedes aegypti variation records; the current query returns zero records, so Ask Insects preserves a queryable genome_features source-gap record instead of implying variant coverage
+    query_plane: ncbi_eutils_snp_esearch_esummary_to_sqlite_variation_audit_records
+    api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+    artifact_dir: artifacts/mosquito-v1/raw/ncbi_snp_variation
+    ingest_script: scripts/ingest_ncbi_snp_variation.py
+    organism_query: '"Aedes aegypti"[Organism]'
+    lanes:
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    current_audit:
+      reported_total_count: 0
+      fetched_count: 0
+      queryable_gap_reason: ncbi_snp_no_aedes_records
+    source_contract:
+      variant_records:
+        - rsid_or_uid
+        - chromosome_or_position_when_supplied
+        - allele_or_variation_when_supplied
+        - functional_class_when_supplied
+        - gene_when_supplied
+        - raw_esummary_batch_locator
+      structured_gaps:
+        - ncbi_snp_no_aedes_records
+        - ncbi_snp_search_failed
+        - ncbi_snp_summary_failed
+        - ncbi_snp_summary_missing_result
+        - ncbi_snp_limit_applied
   - id: aedes_expression_omics
     name: Aedes aegypti GEO/SRA expression omics metadata
     source_type: public_api_composite

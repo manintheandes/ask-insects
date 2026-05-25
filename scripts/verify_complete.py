@@ -128,6 +128,7 @@ REQUIRED_FILES = (
     "askinsects/sources/video_atoms.py",
     "askinsects/sources/image_atoms.py",
     "askinsects/sources/aedes_deep_sources.py",
+    "askinsects/sources/ncbi_snp_variation.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -153,6 +154,7 @@ REQUIRED_FILES = (
     "scripts/ingest_cdc_dengue_surveillance.py",
     "scripts/ingest_pathogen_taxonomy.py",
     "scripts/ingest_ncbi_biosamples.py",
+    "scripts/ingest_ncbi_snp_variation.py",
     "scripts/ingest_vectorbase_genomics.py",
     "scripts/ingest_vector_competence_assays.py",
     "scripts/ingest_resistance_markers.py",
@@ -221,6 +223,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_pathogen_taxonomy.py",
     "tests/test_ncbi_biosample_source.py",
     "tests/test_ingest_ncbi_biosamples.py",
+    "tests/test_ncbi_snp_variation_source.py",
+    "tests/test_ingest_ncbi_snp_variation.py",
     "tests/test_vectorbase_genomics_source.py",
     "tests/test_ingest_vectorbase_genomics.py",
     "tests/test_vector_competence_assays_source.py",
@@ -301,6 +305,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_pathogen_taxonomy",
     "tests.test_ncbi_biosample_source",
     "tests.test_ingest_ncbi_biosamples",
+    "tests.test_ncbi_snp_variation_source",
+    "tests.test_ingest_ncbi_snp_variation",
     "tests.test_vectorbase_genomics_source",
     "tests.test_ingest_vectorbase_genomics",
     "tests.test_vector_competence_assays_source",
@@ -699,6 +705,14 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("ncbi_biosamples", "scripts/ingest_ncbi_biosamples.py", "biosamples", "ncbi_eutils_biosample_esearch_esummary_to_sqlite"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing NCBI BioSample term: {term}")
+    for term in (
+        "aedes_ncbi_snp_variation",
+        "scripts/ingest_ncbi_snp_variation.py",
+        "ncbi_eutils_snp_esearch_esummary_to_sqlite_variation_audit_records",
+        "ncbi_snp_no_aedes_records",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing NCBI dbSNP variation term: {term}")
     for term in ("vectorbase_aedes_genomics", "scripts/ingest_vectorbase_genomics.py", "vectorbase_current_release_downloads_to_sqlite", "VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing VectorBase genomics term: {term}")

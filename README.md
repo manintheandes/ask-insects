@@ -413,12 +413,24 @@ The lane uses source id `aedes_pathogen_taxonomy`. It writes NCBI E-utilities ta
 NCBI BioSample gives `Aedes aegypti` sample, strain, collection, geography, tissue, and linked SRA metadata:
 
 ```bash
-python3 -m askinsects ingest-ncbi-biosamples --limit 1000
+python3 -m askinsects ingest-ncbi-biosamples --limit 20656
 python3 -m askinsects ask "show Aedes aegypti BioSamples from China" --json
 python3 -m askinsects search biosamples "Rockefeller SRA"
 ```
 
-The lane uses source id `ncbi_biosamples`. It writes bounded NCBI ESearch and ESummary JSON under `raw/ncbi_biosamples/`, normalizes one `biosamples` record per accession, stores parsed XML attributes and the raw summary in SQLite payloads, and preserves provenance to the saved ESummary batch plus the NCBI request URL. NCBI currently reports more `Aedes aegypti` BioSamples than the default bounded ingest installs; when the reported count exceeds the fetched limit, the lane writes a structured `biosample_limit_applied` gap instead of pretending the mirror is complete.
+The lane uses source id `ncbi_biosamples`. It writes NCBI ESearch and ESummary JSON under `raw/ncbi_biosamples/`, normalizes one `biosamples` record per accession, stores parsed XML attributes and the raw summary in SQLite payloads, and preserves provenance to the saved ESummary batch plus the NCBI request URL. The current hosted receipt is complete for the current NCBI count: 20,656 fetched records out of 20,656 reported, with zero hosted gaps. If NCBI later reports more BioSamples than a bounded refresh fetched, the lane should write a structured `biosample_limit_applied` gap instead of pretending the mirror is complete.
+
+## NCBI dbSNP Variation Audit Lane
+
+NCBI dbSNP is audited as an explicit Aedes variation source boundary:
+
+```bash
+python3 scripts/ingest_ncbi_snp_variation.py --limit 1000
+python3 -m askinsects search genome_features "dbSNP variation source gap"
+python3 -m askinsects sql "select source, lane, count(*) as n from records where source='aedes_ncbi_snp_variation' group by source, lane"
+```
+
+The lane uses source id `aedes_ncbi_snp_variation`. It queries NCBI E-utilities dbSNP with `"Aedes aegypti"[Organism]`, writes raw ESearch and ESummary JSON under `raw/ncbi_snp_variation/`, and would normalize returned SNP summaries into `genome_features` records with rsID, position, allele, function, gene, and raw ESummary provenance when NCBI exposes records. The current NCBI dbSNP organism query returns zero records, so the hosted lane installs a queryable `genome_features` source-gap record with reason `ncbi_snp_no_aedes_records` instead of implying that Aedes variant records are indexed.
 
 ## Vector-Competence Assay Candidate Lane
 

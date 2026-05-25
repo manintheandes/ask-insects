@@ -27,6 +27,7 @@ from askinsects.sources.literature import FullTextUnit
 from askinsects.sources.mendeley_behavior_media import MendeleyBehaviorMediaResult
 from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
 from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
+from askinsects.sources.ncbi_snp_variation import NCBISnpVariationResult
 from askinsects.sources.osf_flighttrackai_videos import OSFFlightTrackAIResult
 from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
 from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
@@ -1997,6 +1998,69 @@ class ServerTests(unittest.TestCase):
             )
             self.assertEqual([row["record_id"] for row in rows], ["ncbi:biosample:old"])
             self.assertFalse((artifact_dir.parent / ".mosquito-v1.ncbi-biosamples-staging").exists())
+
+    def test_ingest_ncbi_snp_variation_adds_gap_record_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(*, raw_dir, species, limit, page_size, delay_seconds, fetch_json, retrieved_at):
+                raw_path = raw_dir / "Aedes_aegypti_snp_esearch_000000.json"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text('{"esearchresult":{"count":"0","idlist":[]}}', encoding="utf-8")
+                return NCBISnpVariationResult(
+                    source_id="aedes_ncbi_snp_variation",
+                    records=[
+                        EvidenceRecord(
+                            record_id="ncbi_snp_variation:gap:aedes_aegypti:ncbi_snp_no_aedes_records",
+                            lane="genome_features",
+                            source="aedes_ncbi_snp_variation",
+                            title="Aedes aegypti NCBI dbSNP variation source gap",
+                            text="NCBI dbSNP returned zero records for Aedes aegypti.",
+                            species="Aedes aegypti",
+                            url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="aedes_ncbi_snp_variation",
+                                locator=f"{raw_path}#gap/ncbi_snp_no_aedes_records",
+                                retrieved_at=retrieved_at,
+                                license="NCBI dbSNP public metadata; NCBI terms apply",
+                                source_url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+                            ),
+                            payload={"gap": {"reason": "ncbi_snp_no_aedes_records"}},
+                        )
+                    ],
+                    gaps=[{"source": "aedes_ncbi_snp_variation", "reason": "ncbi_snp_no_aedes_records"}],
+                    raw_artifacts=[raw_path.as_posix()],
+                    species=species,
+                    total_count=0,
+                    requested_limit=limit,
+                    fetched_count=0,
+                    page_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/ncbi-snp-variation",
+                {"species": "Aedes aegypti", "limit": 1, "page_size": 1, "delay_seconds": 0},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_ncbi_snp_variation_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_ncbi_snp_variation"], 1)
+            self.assertTrue(response.payload["staged"])
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_ncbi_snp_variation'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".ncbi-snp-variation-staging", provenance_rows[0]["provenance_json"])
 
     def test_ingest_vector_competence_assays_adds_records_without_removing_existing_sources(self):
         from tests.test_vector_competence_assays_source import write_assay_literature_fixture

@@ -419,7 +419,9 @@ def plan_question(question: str) -> QueryPlan:
     if any(term in q for term in genomics_terms):
         if any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p")):
             lanes = ("dna_barcodes", "genes", "proteins", "literature", "taxonomy")
-        elif any(term in q for term in ("bioproject", "bioprojects", "population genomics", "population-genomics", "variation", "variant", "variants", "introgression", "divergence")):
+        elif any(term in q for term in ("dbsnp", "snp", "snps", "variant", "variants", "variation")):
+            lanes = ("genome_features", "genes", "genome_assemblies", "literature", "taxonomy")
+        elif any(term in q for term in ("bioproject", "bioprojects", "population genomics", "population-genomics", "introgression", "divergence")):
             lanes = ("genome_features", "genes", "genome_assemblies", "literature", "taxonomy")
         elif any(
             term in q

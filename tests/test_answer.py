@@ -165,6 +165,25 @@ def biosample_record(record_id, text):
     )
 
 
+def snp_variation_record(record_id, text):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="genome_features",
+        source="aedes_ncbi_snp_variation",
+        title=f"Aedes aegypti dbSNP audit {record_id}",
+        text=text,
+        species="Aedes aegypti",
+        url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_ncbi_snp_variation",
+            locator=f"raw/ncbi_snp_variation/esearch.json#{record_id}",
+            retrieved_at="2026-05-25T00:00:00Z",
+            license="NCBI dbSNP public metadata",
+        ),
+    )
+
+
 def resistance_record(record_id, source):
     return EvidenceRecord(
         record_id=record_id,
@@ -354,6 +373,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show WorldClim climate context for Aedes aegypti ecology").answer_shape, "ecology")
         self.assertEqual(plan_question("show global Aedes aegypti occurrence compendium rows for Brazil").answer_shape, "ecology")
         self.assertEqual(plan_question("show Aedes aegypti population genomics BioProject evidence").lanes[0], "genome_features")
+        self.assertEqual(plan_question("show NCBI dbSNP variant records for Aedes aegypti").lanes[0], "genome_features")
         self.assertEqual(plan_question("show WHO Aedes insecticide resistance bioassay guidance").answer_shape, "resistance")
 
     def test_answers_include_provenance_or_gap(self):
@@ -2383,6 +2403,44 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "ncbi_biosamples")
             self.assertEqual(answer["evidence"][0]["lane"], "biosamples")
             self.assertEqual(answer["evidence"][0]["record_id"], "ncbi:biosample:SAMN1")
+
+    def test_variant_questions_prefer_ncbi_snp_variation_audit(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="ncbi:gene:LOC5566000",
+                        lane="genome_features",
+                        source="ncbi_datasets_genome",
+                        title="Aedes aegypti genome feature LOC5566000",
+                        text="Aedes aegypti genome feature record.",
+                        species="Aedes aegypti",
+                        url="https://example.org/gene",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="ncbi_datasets_genome",
+                            locator="raw/ncbi_genome#gff",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="NCBI",
+                        ),
+                    ),
+                    snp_variation_record(
+                        "ncbi_snp_variation:gap:aedes_aegypti:ncbi_snp_no_aedes_records",
+                        "NCBI dbSNP returned zero records for Aedes aegypti using the bounded organism query.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show NCBI dbSNP variant records for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_ncbi_snp_variation")
+            self.assertEqual(answer["evidence"][0]["lane"], "genome_features")
+            self.assertIn("zero records", answer["answer"])
 
     def test_resistance_questions_prefer_dedicated_irmapper_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
