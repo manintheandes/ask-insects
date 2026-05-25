@@ -290,6 +290,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_aedes_deep_sources.add_argument("--bioproject-limit", type=int, default=20)
     ingest_aedes_deep_sources.add_argument("--worldclim-sample-limit", type=int, default=0)
 
+    ingest_aedes_olfaction_literature = sub.add_parser("ingest-aedes-olfaction-literature")
+    ingest_aedes_olfaction_literature.add_argument("--hosted", action="store_true")
+    ingest_aedes_olfaction_literature.add_argument("--max-results", type=int, default=500)
+    ingest_aedes_olfaction_literature.add_argument("--page-size", type=int, default=100)
+
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -971,6 +976,24 @@ def main(argv: list[str] | None = None) -> int:
             "/ingest/aedes-deep-sources",
             request_payload,
             timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-aedes-olfaction-literature":
+        request_payload = {
+            "max_results": args.max_results,
+            "page_size": args.page_size,
+        }
+        if not args.hosted:
+            from scripts.ingest_aedes_olfaction_literature import ingest_aedes_olfaction_literature
+
+            payload = ingest_aedes_olfaction_literature(artifact_dir=artifact_dir, **request_payload)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/aedes-olfaction-literature",
+            request_payload,
+            timeout=3600,
         )
         return 0 if payload.get("ok") else 2
     parser.error("unknown command")

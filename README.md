@@ -481,6 +481,14 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 \
 
 OpenAlex is the canonical discovery source. A paper is in-boundary when `Aedes aegypti` is material in the title, abstract, or accepted OpenAlex topic metadata. PubMed is used only as a cross-check enrichment source, and Unpaywall is used only as a legal open full-text resolver. Ask Insects does not use Sci-Hub, private cookies, or institutional scraping.
 
+`aedes_olfaction_literature` is a narrower PubMed audit lane for a high-value research question: Aedes aegypti olfaction papers since 2020. It fetches bounded PubMed ESearch and ESummary pages for olfaction, odor, chemosensory, antenna, Orco, and receptor terms, creates one `literature` record per PMID, and marks each with `coverage_status` plus any `matched_record_ids` already present in Ask Insects.
+
+```bash
+python3 -m askinsects ingest-aedes-olfaction-literature --max-results 500 --page-size 100
+python3 -m askinsects search literature "Aedes aegypti olfaction coverage_status"
+python3 -m askinsects sql "select json_extract(p.payload_json, '$.coverage_status') as status, count(*) as n from records r join record_payloads p on p.record_id=r.record_id where r.source='aedes_olfaction_literature' group by status"
+```
+
 The lane writes `source_index.sqlite`, `source_status.json`, `source_receipt.json`, `literature_enrichment_receipt.json`, `gaps.json`, and raw OpenAlex cursor artifacts under `artifacts/aedes-literature-2020/`. PubMed and Unpaywall enrichment payloads are stored per record in `record_payloads`. Structured gaps record missing DOI, missing PMID, missing abstract, rejected topic candidates, unavailable full text, landing-page-only full text, fetch failures, and parse failures.
 
 Legal direct full-text units are searchable through the normal CLI and used as a fallback for literature answers when metadata and abstracts are not enough:

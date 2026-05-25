@@ -24,6 +24,7 @@
       "target_state": "All materially relevant Aedes aegypti research papers, with metadata, abstracts, legal full text when available, enrichment payloads, and explicit gaps.",
       "current_sources": [
         "aedes_literature_openalex",
+        "aedes_olfaction_literature",
         "aedes_extracted_facts"
       ],
       "current_gates": {
@@ -37,11 +38,12 @@
         "artifacts/aedes-literature-2020/source_index.sqlite",
         "artifacts/aedes-literature-2020/literature_enrichment_receipt.json",
         "artifacts/aedes-literature-2020/gaps.json",
+        "aedes_olfaction_literature maps bounded PubMed ESearch and ESummary candidates for Aedes aegypti olfaction papers since 2020 into one literature record per PMID, with coverage_status, matched_record_ids, and raw ESummary provenance.",
         "literature_fulltext_units and literature_fulltext_fts are searchable through search fulltext and literature-answer fallback",
         "aedes_extracted_facts can discover Europe PMC, PMC, and Figshare supplement metadata when opted in and parse supported CSV, TSV, XLSX, DOCX, XML, and HTML supplement tables into row-level fact records with raw-file provenance."
       ],
       "required_next_sources": [
-        "Crossref or PubMed reconciliation for missing DOI and PMID gaps",
+        "Crossref reconciliation for remaining missing DOI and publisher identifier gaps outside the PubMed olfaction audit",
         "deeper PDF, archive, image-table, and claim extraction across behavior, resistance, vector competence, ecology, and public-health papers beyond supported deterministic table formats"
       ],
       "completion_evidence": [

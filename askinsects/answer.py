@@ -15,6 +15,7 @@ from .sources.aedes_deep_sources import (
     AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID,
     AEDES_WORLDCLIM_SOURCE_ID,
 )
+from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
@@ -1864,6 +1865,27 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             key=lambda record: (
                 0 if record.source == "aedes_image_atoms" else 1,
                 0 if record.lane == "media" else 1,
+            ),
+        )
+    if any(
+        term in q
+        for term in (
+            "olfaction",
+            "olfactory",
+            "odor",
+            "odour",
+            "odorant",
+            "chemosensory",
+            "antenna",
+            "antennal",
+            "orco",
+        )
+    ) and any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research", "pubmed")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == AEDES_OLFACTION_LITERATURE_SOURCE_ID else 1,
+                0 if record.lane == "literature" else 1,
             ),
         )
     if not any(term in q for term in ("pathogen", "dengue", "zika", "chikungunya", "yellow fever", "mayaro", "west nile")) and any(term in q for term in ("taxonomy", "taxonomic", "synonym", "synonyms", "stegomyia", "mosquito taxonomic inventory", "mti", "wrbu")):

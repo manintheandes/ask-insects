@@ -140,8 +140,11 @@ Sources:
 
 - `mosquito_v1_fixtures`: deterministic repo seed records.
 - `aedes_literature_openalex`: OpenAlex articles from 2020-01-01 through run date where `Aedes aegypti` is material in title, abstract, or accepted topic metadata.
+- `aedes_olfaction_literature`: a bounded PubMed ESearch/ESummary audit lane for `Aedes aegypti` olfaction, odor, odorant, chemosensory, antenna, antennal, Orco, odorant receptor, and ionotropic receptor papers from 2020 onward. Each PubMed candidate becomes one `literature` record with `coverage_status`, `matched_record_ids`, and raw ESummary provenance.
 
 OpenAlex is the canonical source for discovery and record identity. PubMed E-utilities are enrichment only, used for PMID-backed metadata. Unpaywall is enrichment only, used as the legal open full-text resolver. The lane may write legal direct PDF/XML/text chunks to `literature_fulltext_units`, but it must not use Sci-Hub, private cookies, or institutional scraping.
+
+The olfaction audit lane does not replace the broader OpenAlex lane. It is a source-grade coverage check for a high-value subdomain: PubMed defines the bounded candidate set, Ask Insects compares each PMID against existing literature rows by DOI and normalized title, and any paper not already matched is still queryable as PubMed metadata. Raw PubMed ESearch pages, ESummary batches, and `coverage_audit.json` are saved under `raw/aedes_olfaction_literature/`. Structured gaps preserve PubMed fetch failures and result-limit frontiers with `aedes_olfaction_result_limit_applied`.
 
 Legal full-text chunks are an atomic query plane. `search fulltext` reads `literature_fulltext_fts`, returns `literature_fulltext` evidence with provenance to the full-text unit, and literature answers fall back to those chunks when title/abstract metadata does not satisfy the question.
 

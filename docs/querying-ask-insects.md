@@ -279,6 +279,14 @@ This lane emits supplement manifests plus deterministic candidate facts for vect
 
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 
+The Aedes olfaction audit lane uses source id `aedes_olfaction_literature`. It fetches a bounded PubMed ESearch/ESummary candidate set for Aedes olfaction, odor, chemosensory, antenna, Orco, and receptor terms from 2020 onward, writes one `literature` record per PMID, and annotates each record with `coverage_status`, `matched_record_ids`, and `matched_sources`:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-aedes-olfaction-literature --max-results 500 --page-size 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search literature "Aedes aegypti olfaction coverage_status"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(p.payload_json, '$.coverage_status') as status, count(*) as n from records r join record_payloads p on p.record_id=r.record_id where r.source='aedes_olfaction_literature' group by status"
+```
+
 OpenAlex raw cursor pages are saved under `artifacts/aedes-literature-2020/raw/literature/` when that artifact directory is used. PubMed and Unpaywall enrichment payloads are stored per record in SQLite `record_payloads.payload_json`. Legal direct PDF/XML/text chunks are stored in `literature_fulltext_units` and mirrored into `literature_fulltext_fts`. Normal `ask` and `search literature` use metadata and abstracts first; literature answers fall back to legal full-text chunks, and `search fulltext` queries those chunks directly. Gaps are structured in `gaps.json`, including missing DOI, missing PMID, missing abstract, topic search gaps, Unpaywall no-full-text cases, landing-page-only cases, fetch failures, and parse failures.
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.

@@ -121,6 +121,7 @@ REQUIRED_FILES = (
     "askinsects/sources/occurrence_ecology.py",
     "askinsects/sources/extracted_facts.py",
     "askinsects/sources/expression_omics.py",
+    "askinsects/sources/aedes_olfaction_literature.py",
     "askinsects/sources/uniprot_proteins.py",
     "askinsects/sources/wolbachia_interventions.py",
     "askinsects/sources/vectorbyte_traits.py",
@@ -158,6 +159,7 @@ REQUIRED_FILES = (
     "scripts/ingest_occurrence_ecology.py",
     "scripts/ingest_extracted_facts.py",
     "scripts/ingest_expression_omics.py",
+    "scripts/ingest_aedes_olfaction_literature.py",
     "scripts/ingest_uniprot_proteins.py",
     "scripts/ingest_wolbachia_interventions.py",
     "scripts/ingest_vectorbyte_traits.py",
@@ -230,6 +232,8 @@ REQUIRED_FILES = (
     "tests/test_extracted_facts_source.py",
     "tests/test_ingest_extracted_facts.py",
     "tests/test_expression_omics_source.py",
+    "tests/test_aedes_olfaction_literature_source.py",
+    "tests/test_ingest_aedes_olfaction_literature.py",
     "tests/test_uniprot_proteins_source.py",
     "tests/test_wolbachia_interventions_source.py",
     "tests/test_vectorbyte_traits_source.py",
@@ -308,6 +312,8 @@ UNIT_TEST_MODULES = (
     "tests.test_extracted_facts_source",
     "tests.test_ingest_extracted_facts",
     "tests.test_expression_omics_source",
+    "tests.test_aedes_olfaction_literature_source",
+    "tests.test_ingest_aedes_olfaction_literature",
     "tests.test_uniprot_proteins_source",
     "tests.test_wolbachia_interventions_source",
     "tests.test_ingest_wave1_sources",
@@ -500,6 +506,7 @@ def check_literature_source_map() -> None:
     text = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
     required_terms = (
         "aedes_literature_openalex",
+        "aedes_olfaction_literature",
         "pmc_open_access_videos",
         "irmapper_aedes",
         "dryad_aedes_behavior_videos",
@@ -535,6 +542,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "config/mosquito-intelligence-coverage.json",
         "Aedes",
         "aedes_literature_facets",
+        "aedes_olfaction_literature",
         "aedes_public_health_guidance",
         "aedes_paho_dengue_surveillance",
         "aedes_who_dengue_surveillance",
@@ -573,6 +581,16 @@ def check_mosquito_intelligence_coverage() -> None:
         raise RuntimeError("config/source-map.yaml missing Aedes source-plane benchmark link")
     if "aedes_literature_facets" not in source_map:
         raise RuntimeError("config/source-map.yaml missing aedes_literature_facets")
+    for term in (
+        "aedes_olfaction_literature",
+        "scripts/ingest_aedes_olfaction_literature.py",
+        "pubmed_esearch_esummary_to_sqlite_olfaction_literature_audit_records",
+        "coverage_status",
+        "matched_record_ids",
+        "aedes_olfaction_result_limit_applied",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Aedes olfaction literature term: {term}")
     for term in ("aedes_public_health_guidance", "scripts/ingest_public_health_guidance.py", "public_health", "ECDC"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing public-health guidance term: {term}")

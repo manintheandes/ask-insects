@@ -185,6 +185,36 @@ sources:
     enrichment_sources:
       - pubmed_eutilities
       - unpaywall_api
+  - id: aedes_olfaction_literature
+    name: Aedes aegypti olfaction literature audit since 2020
+    source_type: public_api_audit
+    boundary: Bounded PubMed ESearch and ESummary candidates for Aedes aegypti olfaction, odor, odorant, odour, chemosensory, antenna, antennal, Orco, odorant receptor, and ionotropic receptor papers from 2020-01-01 through run date, compared against existing Ask Insects literature records by DOI and normalized title
+    query_plane: pubmed_esearch_esummary_to_sqlite_olfaction_literature_audit_records
+    api_base: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+    artifact_dir: artifacts/mosquito-v1/raw/aedes_olfaction_literature
+    ingest_script: scripts/ingest_aedes_olfaction_literature.py
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      record_grain:
+        - one_pubmed_candidate_per_record
+        - pmid
+        - doi_when_supplied
+        - title
+        - authors
+        - journal
+        - publication_date
+        - coverage_status
+        - matched_record_ids
+        - matched_sources
+        - raw_esummary_locator
+      structured_gaps:
+        - aedes_olfaction_pubmed_search_failed
+        - aedes_olfaction_pubmed_summary_failed
+        - aedes_olfaction_result_limit_applied
+        - aedes_olfaction_no_pubmed_results
   - id: ncbi_datasets_genome
     name: NCBI Datasets Aedes aegypti genome package
     source_type: local_or_hosted_dataset_package
