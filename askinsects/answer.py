@@ -1024,6 +1024,55 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
     return records
 
 
+def _paho_surveillance_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not any(term in q for term in ("paho", "plisa", "core indicator", "core indicators", "open data")):
+        return []
+
+    clauses = ["source = ?"]
+    params: list[object] = ["aedes_paho_dengue_surveillance"]
+    if any(
+        term in q
+        for term in (
+            "core indicator",
+            "core indicators",
+            "open data",
+            "annual",
+            "country",
+            "territory",
+            "csv",
+            "machine-readable",
+            "machine readable",
+        )
+    ):
+        clauses.append("record_id LIKE ?")
+        params.append("%core_indicator%")
+        focus_terms = _public_health_focus_terms(question)
+        if focus_terms:
+            term_clauses = []
+            for term in focus_terms[:4]:
+                pattern = f"%{term.lower()}%"
+                term_clauses.append("(lower(title) LIKE ? OR lower(text) LIKE ? OR lower(record_id) LIKE ?)")
+                params.extend([pattern, pattern, pattern])
+            clauses.append("(" + " OR ".join(term_clauses) + ")")
+    elif any(term in q for term in ("dashboard", "plisa", "iframe", "tableau")):
+        clauses.append("record_id LIKE ?")
+        params.append("%dashboard_locator%")
+
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT *
+            FROM records
+            WHERE {" AND ".join(clauses)}
+            ORDER BY record_id DESC
+            LIMIT ?
+            """,
+            (*params, max(limit * 10, 20)),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def _resistance_marker_terms(question: str) -> list[str]:
     lower = question.lower()
     matched = []
@@ -1556,6 +1605,11 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "genomics":
         for record in _vectorbase_auxiliary_records(index, plan.question, limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "public_health":
+        for record in _paho_surveillance_records(index, plan.question, limit=limit):
             all_records.append(record)
             seen_record_ids.add(record.record_id)
 
