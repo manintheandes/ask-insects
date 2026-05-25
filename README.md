@@ -195,6 +195,18 @@ python3 -m askinsects ask "show Aedes aegypti motion trajectory coordinates" --j
 
 The lane derives from PMC, Dryad, Mendeley, OSF, and repository-discovery candidates. For each downloadable video it stores checksum, byte size, duration, fps, resolution, codec, source paper or dataset, license, and exact locator when mirroring and probing are allowed. If the file is too large, missing a download URL, blocked by license uncertainty, cannot be probed, or comes from an unwired repository sweep, the ingest writes a queryable `video_gap` record instead of pretending coverage exists. When artifact generation is enabled it emits thumbnails, keyframes, preview clips, and frame manifests under `raw/video_atoms/`. Motion table inputs become `behavior` rows with behavior type, life stage, sex, assay, stimulus, arena, frame/time, track ID, coordinates, and confidence when present. `--discover-sources` currently runs bounded Zenodo and Figshare discovery and records explicit missing-client gaps for PMC OA, Dryad, Mendeley, OSF, and institutional search sweeps.
 
+## Aedes Image Atoms Source Lane
+
+`aedes_image_atoms` turns indexed still-image media rows into queryable image assets, source-provided labels, and explicit label gaps:
+
+```bash
+python3 -m askinsects ingest-image-atoms
+python3 -m askinsects ask "show Aedes aegypti adult image labels" --json
+python3 -m askinsects ask "what Aedes image label gaps are missing sex?" --json
+```
+
+The lane derives from `inaturalist_api` and `mosquito_alert_gbif` media records. It preserves image URL, source observation, license, source URL, attribution or creator, rights holder, place or country, observed date or event date, coordinates when supplied, iNaturalist quality grade when supplied, image format when supplied, and exact upstream locator. Label records are deterministic source metadata only. Missing life-stage, sex, anatomy, and body-part labels become queryable `image_gap` records until manual or vision-labeling lanes are added.
+
 ## IR Mapper Resistance Source Lane
 
 IR Mapper is the dedicated insecticide-resistance source lane for `Aedes aegypti`:

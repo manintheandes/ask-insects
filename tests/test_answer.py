@@ -973,6 +973,94 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(velocity_answer["answer_shape"], "behavior")
             self.assertEqual(velocity_answer["evidence"][0]["source"], "aedes_video_atoms")
 
+    def test_image_atom_questions_prefer_queryable_image_labels(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="inat:media:99",
+                        lane="media",
+                        source="inaturalist_api",
+                        title="Aedes aegypti iNaturalist still image 99",
+                        text="iNaturalist still image for Aedes aegypti.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/12345",
+                        media_url="https://static.inaturalist.org/photos/99/medium.jpg",
+                        provenance=Provenance(
+                            source_id="inaturalist_api",
+                            locator="raw/inaturalist/page.json#observations/12345/photos/99",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="image_atom:label:inat_media_99:adult",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image label life_stage: adult",
+                        text="Aedes aegypti image label from source metadata: life_stage = adult. Source image record: inat:media:99.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/12345",
+                        media_url="https://static.inaturalist.org/photos/99/medium.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#inat:media:99;label/life_stage",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                        ),
+                        payload={
+                            "atom_type": "image_label",
+                            "label_type": "life_stage",
+                            "label_value": "adult",
+                            "source_record_id": "inat:media:99",
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti adult image labels", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_image_atoms")
+            self.assertIn("life_stage = adult", answer["evidence"][0]["text"])
+
+    def test_image_gap_questions_return_queryable_gap_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="image_atom:gap:inaturalist_api:sex",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image gap missing sex",
+                        text="Aedes aegypti image label gap: inaturalist_api has 10 image asset(s) without source-provided sex metadata.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="gaps.json#aedes_image_atoms/1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                        payload={"atom_type": "image_gap", "reason": "image_label_missing", "label_type": "sex"},
+                    )
+                ]
+            )
+
+            answer = answer_question("what Aedes image label gaps are missing sex?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_image_atoms")
+            self.assertIn("without source-provided sex", answer["evidence"][0]["text"])
+
     def test_video_discovery_questions_do_not_fall_back_to_other_repositories(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

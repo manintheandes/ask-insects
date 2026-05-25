@@ -222,6 +222,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_video_atoms.add_argument("--motion-table", action="append", default=[])
     ingest_video_atoms.add_argument("--max-discovery-results", type=int, default=1000)
 
+    ingest_image_atoms = sub.add_parser("ingest-image-atoms")
+    ingest_image_atoms.add_argument("--hosted", action="store_true")
+
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
 
@@ -656,6 +659,15 @@ def main(argv: list[str] | None = None) -> int:
             },
             timeout=7200,
         )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-image-atoms":
+        if not args.hosted:
+            from scripts.ingest_image_atoms import ingest_image_atoms
+
+            payload = ingest_image_atoms(artifact_dir=artifact_dir)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted("POST", "/ingest/image-atoms", {}, timeout=3600)
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-occurrence-ecology":
         if not args.hosted:

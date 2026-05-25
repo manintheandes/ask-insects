@@ -158,26 +158,31 @@
       "target_state": "Licensed Aedes aegypti images with observation, body part, life stage, view angle, source, license, and inspectable media locator.",
       "current_sources": [
         "inaturalist_api",
-        "mosquito_alert_gbif"
+        "mosquito_alert_gbif",
+        "aedes_image_atoms"
       ],
       "current_gates": {
-        "mapped": "partial",
-        "accessible": "partial",
+        "mapped": "yes",
+        "accessible": "yes",
         "atomically_queryable": "partial",
-        "receipted": "partial",
-        "ask_surface_wired": "partial"
+        "receipted": "yes",
+        "ask_surface_wired": "yes"
       },
       "current_evidence": [
         "Hosted artifact contains deep Aedes aegypti iNaturalist licensed-photo media records with observation context and provenance.",
         "Mosquito Alert Aedes aegypti still-image records preserve GBIF occurrence context plus image URL, rights holder, creator, and media license payloads.",
-        "Image coverage is not yet enriched with body part, life stage, sex, anatomy, or quality labels."
+        "aedes_image_atoms derives image-asset records, deterministic source-provided labels, and image-label gap records from indexed iNaturalist and Mosquito Alert media payloads.",
+        "Image atoms preserve source image record ID, source observation record ID, image URL, source URL, license, attribution or creator, rights holder, date, country or place, coordinates when supplied, quality grade when supplied, image format when supplied, and exact upstream locator.",
+        "Image coverage still does not claim model-derived body part, anatomy, pose, view-angle, sex, or life-stage labels unless the upstream source metadata provides them."
       ],
       "required_next_sources": [
         "museum or reference-image collections with licensing",
-        "image labels for species, life stage, sex, anatomy, and quality"
+        "image-byte mirrors with checksum, byte size, dimensions, and EXIF when license and storage allow",
+        "validated vision or manual labels for species, life stage, sex, anatomy, body part, view angle, pose, and image quality"
       ],
       "completion_evidence": [
-        "image questions return media records with license, source URL, observation context, and provenance"
+        "image questions return media records with license, source URL, observation context, and provenance",
+        "image label and image gap questions prefer aedes_image_atoms"
       ]
     },
     {

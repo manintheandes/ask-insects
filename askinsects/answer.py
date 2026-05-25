@@ -72,6 +72,28 @@ VIDEO_ATOM_QUERY_TERMS = (
     "discovery",
 )
 VIDEO_DISCOVERY_REPOSITORIES = ("pmc_oa", "pmc", "dryad", "mendeley", "osf", "zenodo", "figshare", "institutional")
+IMAGE_ATOM_QUERY_TERMS = (
+    "image",
+    "images",
+    "photo",
+    "photos",
+    "picture",
+    "pictures",
+    "life stage",
+    "lifestage",
+    "adult",
+    "larva",
+    "larval",
+    "egg",
+    "female",
+    "male",
+    "sex",
+    "anatomy",
+    "body part",
+    "quality",
+    "format",
+    "still image",
+)
 
 
 def _wants_extracted_facts(question: str) -> bool:
@@ -81,7 +103,67 @@ def _wants_extracted_facts(question: str) -> bool:
 
 def _wants_video_atoms(question: str) -> bool:
     q = question.lower()
-    return any(term in q for term in VIDEO_ATOM_QUERY_TERMS)
+    atom_specific_terms = (
+        "keyframe",
+        "keyframes",
+        "thumbnail",
+        "thumbnails",
+        "preview",
+        "previews",
+        "frame manifest",
+        "fps",
+        "codec",
+        "duration",
+        "resolution",
+        "motion",
+        "velocity",
+        "distance moved",
+        "movement",
+        "locomotory",
+        "trajectory",
+        "trajectories",
+        "tracking",
+        "track id",
+        "coordinates",
+        "gap",
+        "gaps",
+        "failed",
+        "failure",
+        "discovery",
+    )
+    if any(term in q for term in ("dryad", "mendeley", "osf", "flighttrackai", "flighttrack", "pmc")) and not any(
+        term in q for term in atom_specific_terms
+    ):
+        return False
+    video_specific_terms = (
+        "video",
+        "videos",
+        "movie",
+        "movies",
+        "moving",
+        "keyframe",
+        "keyframes",
+        "thumbnail",
+        "thumbnails",
+        "preview",
+        "previews",
+        "frame manifest",
+        "fps",
+        "codec",
+        "duration",
+        "resolution",
+        "motion",
+        "velocity",
+        "distance moved",
+        "movement",
+        "locomotory",
+        "trajectory",
+        "trajectories",
+        "tracking",
+        "track id",
+        "coordinates",
+    )
+    return any(term in q for term in video_specific_terms)
 
 
 def _wants_video_gaps(question: str) -> bool:
@@ -97,6 +179,41 @@ def _wants_video_motion(question: str) -> bool:
     q = question.lower()
     return _wants_video_atoms(question) and any(
         term in q for term in ("motion", "velocity", "distance moved", "movement", "locomotory", "trajectory", "trajectories", "tracking", "track id", "coordinates")
+    )
+
+
+def _wants_image_atoms(question: str) -> bool:
+    q = question.lower()
+    video_specific_terms = ("video", "videos", "movie", "movies", "moving", "keyframe", "thumbnail", "preview", "frame manifest", "fps", "codec", "duration", "resolution")
+    return any(term in q for term in IMAGE_ATOM_QUERY_TERMS) and not any(term in q for term in video_specific_terms)
+
+
+def _wants_image_gaps(question: str) -> bool:
+    q = question.lower()
+    return _wants_image_atoms(question) and any(term in q for term in ("gap", "gaps", "missing", "unlabeled", "label missing"))
+
+
+def _wants_image_labels(question: str) -> bool:
+    q = question.lower()
+    return _wants_image_atoms(question) and any(
+        term in q
+        for term in (
+            "label",
+            "labels",
+            "life stage",
+            "lifestage",
+            "adult",
+            "larva",
+            "larval",
+            "egg",
+            "female",
+            "male",
+            "sex",
+            "anatomy",
+            "body part",
+            "quality",
+            "format",
+        )
     )
 
 
@@ -211,6 +328,8 @@ def _search_queries(question: str) -> list[str]:
             "preview",
             "thumbnail",
             "video asset",
+            "video",
+            "videos",
             question,
         ]
     if any(term in q for term in ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates")) or (
@@ -1065,6 +1184,14 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 0 if record.lane in {"media", "behavior"} else 1,
             ),
         )
+    if _wants_image_atoms(question):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "aedes_image_atoms" else 1,
+                0 if record.lane == "media" else 1,
+            ),
+        )
     if "pathogen" in q or any(term in q for term in ("dengue", "zika", "chikungunya", "yellow fever")):
         pathogen_terms = _named_pathogen_terms(question)
         wants_taxonomy = "taxonomy" in q
@@ -1298,6 +1425,55 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
+    media_lanes = [lane for lane in lanes if lane == "media"]
+    if not media_lanes:
+        return []
+    q = question.lower()
+    if _wants_image_gaps(question):
+        atom_types = ["image_gap"]
+    elif _wants_image_labels(question):
+        atom_types = ["image_label"]
+    else:
+        atom_types = ["image_asset", "image_label"]
+    lane_placeholders = ",".join("?" for _ in media_lanes)
+    atom_placeholders = ",".join("?" for _ in atom_types)
+    filters: list[str] = []
+    params: list[object] = [*media_lanes, *atom_types]
+    for token in ("adult", "larva", "larval", "egg", "female", "male", "sex", "anatomy", "body part", "quality", "research", "needs_id", "format"):
+        if token in q:
+            filters.append("(lower(r.title) LIKE ? OR lower(r.text) LIKE ?)")
+            like = f"%{token}%"
+            params.extend([like, like])
+    label_filter = ""
+    if filters:
+        label_filter = "AND (" + " OR ".join(filters) + ")"
+    params.append(limit)
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = 'aedes_image_atoms'
+              AND r.lane IN ({lane_placeholders})
+              AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
+              {label_filter}
+            ORDER BY
+              CASE json_extract(p.payload_json, '$.atom_type')
+                WHEN 'image_label' THEN 0
+                WHEN 'image_asset' THEN 1
+                WHEN 'image_gap' THEN 2
+                ELSE 3
+              END,
+              r.record_id
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, limit: int = 5) -> dict[str, object]:
     plan = plan_question(question)
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
@@ -1312,6 +1488,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
         if _wants_video_discovery(plan.question) and _video_discovery_repository(plan.question) and not all_records:
             return source_gap(plan, "The Ask Insects video discovery lane has no matching records for that repository.")
+    if _wants_image_atoms(plan.question):
+        for record in _image_atom_records(index, plan.question, list(plan.lanes), limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "genomics":
         for record in _vectorbase_auxiliary_records(index, plan.question, limit=limit):

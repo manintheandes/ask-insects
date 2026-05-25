@@ -10,6 +10,7 @@ from askinsects.server import (
     activate_source_staging,
     copy_artifact_to_staging,
     dispatch_request,
+    ingest_image_atoms_staged,
     ingest_video_atoms_staged,
     prepare_mutable_staging,
     rewrite_artifact_references,
@@ -28,6 +29,7 @@ from askinsects.sources.pathogen_taxonomy import PathogenTaxonomyResult
 from askinsects.sources.public_health import PublicHealthGuidanceResult
 from askinsects.sources.vectorbase_genomics import VectorBaseGenomicsResult
 from tests.test_inaturalist_source import observation
+from tests.test_image_atoms_source import write_image_fixture
 from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
 
 
@@ -152,6 +154,25 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn("raw/mendeley_behavior_media/table_files/default-motion.csv#row/1", rows[0]["provenance_json"])
             self.assertNotIn(".video-atoms-staging", rows[0]["provenance_json"])
+
+    def test_image_atom_staging_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_image_fixture(artifact_dir)
+            response = ingest_image_atoms_staged({"retrieved_at": RETRIEVED_AT}, artifact_dir=artifact_dir)
+
+            self.assertTrue(response["ok"])
+            self.assertTrue(response["staged"])
+            self.assertEqual(response["image_asset_count"], 2)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select source, count(*) as n from records group by source",
+                limit=20,
+            )
+            counts = {row["source"]: int(row["n"]) for row in rows}
+            self.assertEqual(counts["inaturalist_api"], 1)
+            self.assertEqual(counts["mosquito_alert_gbif"], 1)
+            self.assertGreater(counts["aedes_image_atoms"], 2)
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.image-atoms-staging").exists())
 
     def test_rewrite_artifact_references_can_limit_sqlite_updates_to_source(self):
         with tempfile.TemporaryDirectory() as tmpdir:

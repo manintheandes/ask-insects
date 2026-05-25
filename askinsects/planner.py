@@ -27,6 +27,39 @@ def plan_question(question: str) -> QueryPlan:
     )
     if any(term in q for term in video_motion_terms):
         return QueryPlan(question, "behavior", ("behavior", "media"), question)
+    image_media_terms = (
+        "image",
+        "images",
+        "photo",
+        "photos",
+        "picture",
+        "pictures",
+        "life stage",
+        "lifestage",
+        "adult image",
+        "larval image",
+        "sex label",
+        "body part",
+        "anatomy",
+        "quality grade",
+    )
+    video_specific_terms = (
+        "video",
+        "videos",
+        "movie",
+        "movies",
+        "moving",
+        "keyframe",
+        "thumbnail",
+        "preview",
+        "frame manifest",
+        "fps",
+        "codec",
+        "duration",
+        "resolution",
+    )
+    if any(term in q for term in image_media_terms) and not any(term in q for term in video_specific_terms):
+        return QueryPlan(question, "evidence", ("observations", "media", "literature"), question)
     video_media_terms = (
         "video",
         "videos",

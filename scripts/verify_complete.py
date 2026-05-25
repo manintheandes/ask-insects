@@ -71,6 +71,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-aedes-osf-flighttrackai-video-lane.md",
     "docs/superpowers/plans/2026-05-24-aedes-extracted-facts.md",
     "docs/superpowers/plans/2026-05-24-aedes-video-atoms.md",
+    "docs/superpowers/plans/2026-05-25-aedes-image-atoms.md",
     "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -107,6 +108,7 @@ REQUIRED_FILES = (
     "askinsects/sources/occurrence_ecology.py",
     "askinsects/sources/extracted_facts.py",
     "askinsects/sources/video_atoms.py",
+    "askinsects/sources/image_atoms.py",
     "scripts/build_source_index.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
@@ -133,6 +135,7 @@ REQUIRED_FILES = (
     "scripts/ingest_occurrence_ecology.py",
     "scripts/ingest_extracted_facts.py",
     "scripts/ingest_video_atoms.py",
+    "scripts/ingest_image_atoms.py",
     "scripts/refresh_artifact_receipts.py",
     "deploy/systemd/ask-insects.service",
     "tests/test_answer.py",
@@ -189,6 +192,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_extracted_facts.py",
     "tests/test_video_atoms_source.py",
     "tests/test_ingest_video_atoms.py",
+    "tests/test_image_atoms_source.py",
+    "tests/test_ingest_image_atoms.py",
     "tests/test_refresh_artifact_receipts.py",
 )
 
@@ -246,6 +251,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_extracted_facts",
     "tests.test_video_atoms_source",
     "tests.test_ingest_video_atoms",
+    "tests.test_image_atoms_source",
+    "tests.test_ingest_image_atoms",
     "tests.test_refresh_artifact_receipts",
 )
 
@@ -471,6 +478,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "vectorbase_aedes_genomics",
         "osf_flighttrackai_aedes_videos",
         "aedes_video_atoms",
+        "aedes_image_atoms",
     )
     for term in required_terms:
         if term not in readme:
@@ -545,6 +553,17 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in ("aedes_occurrence_ecology", "scripts/ingest_occurrence_ecology.py", "indexed_observation_payloads_to_sqlite_ecology_records", "GBIF and iNaturalist observation joins"):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing occurrence ecology term: {term}")
+    for term in (
+        "aedes_image_atoms",
+        "scripts/ingest_image_atoms.py",
+        "indexed_still_image_media_payloads_to_sqlite_image_atoms",
+        "image_label_missing",
+        "source_image_record_id",
+        "quality_grade",
+        "rights_holder",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Aedes image-atoms term: {term}")
     for term in (
         "aedes_extracted_facts",
         "scripts/ingest_extracted_facts.py",
@@ -851,6 +870,90 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
         raise RuntimeError("Aedes video discovery targets lack queryable asset or gap records: " + ", ".join(missing_targets))
 
 
+def _image_source_payload(status: dict[str, object]) -> dict[str, object]:
+    payload = status.get("aedes_image_atoms")
+    if isinstance(payload, dict):
+        return payload
+    sources = status.get("sources")
+    if isinstance(sources, dict):
+        payload = sources.get("aedes_image_atoms")
+        if isinstance(payload, dict):
+            return payload
+    return {}
+
+
+def _image_atom_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    rows = conn.execute(
+        """
+        select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n
+        from record_payloads
+        where source='aedes_image_atoms'
+        group by atom_type
+        """
+    ).fetchall()
+    return {str(row["atom_type"]): int(row["n"]) for row in rows if row["atom_type"] is not None}
+
+
+def check_aedes_image_atoms_artifact(artifact_dir: Path | None = None) -> None:
+    artifact_dir = artifact_dir or (REPO_ROOT / "artifacts/mosquito-v1")
+    db_path = artifact_dir / "source_index.sqlite"
+    status_path = artifact_dir / "source_status.json"
+    gaps_path = artifact_dir / "gaps.json"
+    for path in (db_path, status_path, gaps_path):
+        if not path.exists():
+            raise RuntimeError(f"missing Aedes image artifact file: {path.relative_to(REPO_ROOT)}")
+
+    status = _json_file(status_path, {})
+    if not isinstance(status, dict):
+        raise RuntimeError("source_status.json is not an object")
+    image_status = _image_source_payload(status)
+    if not image_status:
+        raise RuntimeError("source_status.json missing aedes_image_atoms payload")
+    gaps_payload = _json_file(gaps_path, [])
+    if not isinstance(gaps_payload, list):
+        raise RuntimeError("gaps.json is not a list")
+    image_gaps = [gap for gap in gaps_payload if isinstance(gap, dict) and gap.get("source") == "aedes_image_atoms"]
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        source_records = int(conn.execute("select count(*) from records where source='aedes_image_atoms'").fetchone()[0])
+        atom_counts = _image_atom_counts(conn)
+        input_media = int(
+            conn.execute(
+                """
+                select count(*)
+                from records
+                where source in ('inaturalist_api', 'mosquito_alert_gbif')
+                  and lane='media'
+                  and media_url is not null
+                  and lower(coalesce(species, '')) like 'aedes aegypti%'
+                """
+            ).fetchone()[0]
+        )
+
+    expected_record_count = int(image_status.get("record_count", 0))
+    if source_records == 0:
+        raise RuntimeError("Aedes image atoms artifact has no queryable records")
+    if expected_record_count and source_records != expected_record_count:
+        raise RuntimeError(f"Aedes image atom record_count mismatch: SQLite has {source_records}, receipt has {expected_record_count}")
+    checks = {
+        "image_asset_count": atom_counts.get("image_asset", 0),
+        "image_label_count": atom_counts.get("image_label", 0),
+        "image_gap_count": atom_counts.get("image_gap", 0),
+    }
+    for key, actual in checks.items():
+        if key in image_status and int(image_status.get(key, -1)) != actual:
+            raise RuntimeError(f"Aedes image atom {key} mismatch: SQLite has {actual}, receipt has {image_status.get(key)}")
+    if input_media and atom_counts.get("image_asset", 0) != input_media:
+        raise RuntimeError(f"Aedes image atom assets must match indexed still-image media: inputs {input_media}, assets {atom_counts.get('image_asset', 0)}")
+    if atom_counts.get("image_label", 0) == 0:
+        raise RuntimeError("Aedes image atoms artifact has no queryable image_label records")
+    if len(image_gaps) != atom_counts.get("image_gap", 0):
+        raise RuntimeError(
+            f"Aedes image gaps must be queryable: gaps.json has {len(image_gaps)}, SQLite has {atom_counts.get('image_gap', 0)} image_gap records"
+        )
+
+
 def _direct_fulltext_from_payload(payload: dict[str, object]) -> bool:
     unpaywall = payload.get("unpaywall")
     if isinstance(unpaywall, dict) and unpaywall.get("is_oa"):
@@ -1034,6 +1137,7 @@ def main() -> int:
         check_installed_artifact_receipts()
         check_literature_artifact()
         check_aedes_video_atoms_artifact()
+        check_aedes_image_atoms_artifact()
     except Exception as exc:
         return fail(str(exc))
     print("verify_complete ok")

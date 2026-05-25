@@ -99,6 +99,14 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegyp
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti motion trajectory coordinates" --json
 ```
 
+To derive still-image assets, deterministic source labels, and image-label gaps from indexed iNaturalist and Mosquito Alert media:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-image-atoms
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Aedes aegypti adult image labels" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what Aedes image label gaps are missing sex?" --json
+```
+
 To add public Dryad `Aedes aegypti` behavior/video dataset manifests:
 
 ```bash

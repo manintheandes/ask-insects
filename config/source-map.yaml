@@ -73,6 +73,46 @@ sources:
       - ecology
     provenance_required: true
     live_fetch: derived_from_indexed_observations
+  - id: aedes_image_atoms
+    name: Aedes aegypti still-image assets, labels, and gaps
+    source_type: derived_sqlite_source
+    boundary: Derived Aedes aegypti still-image intelligence records from indexed iNaturalist and Mosquito Alert media rows, preserving image URLs, observation context, licenses, attribution, quality metadata, deterministic source-provided labels, and explicit structured gaps for missing life stage, sex, anatomy, or body-part labels
+    query_plane: indexed_still_image_media_payloads_to_sqlite_image_atoms
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_image_atoms.py
+    input_sources:
+      - inaturalist_api
+      - mosquito_alert_gbif
+    lanes:
+      - media
+    provenance_required: true
+    live_fetch: derived_from_indexed_image_sources
+    source_contract:
+      image_assets:
+        - source_image_record_id
+        - source_observation_record_id
+        - image_url
+        - source_url
+        - license
+        - attribution
+        - creator
+        - rights_holder
+        - observed_on_or_event_date
+        - country_or_place
+        - latitude_longitude_when_supplied
+        - quality_grade_when_supplied
+        - image_format_when_supplied
+        - exact_locator
+      deterministic_labels:
+        - quality_grade
+        - life_stage_when_source_provided
+        - sex_when_source_provided
+        - basis_of_record
+        - occurrence_status
+        - image_format
+        - media_type
+      structured_gaps:
+        - image_label_missing
   - id: aedes_literature_openalex
     name: Aedes aegypti literature since 2020
     source_type: public_api_composite

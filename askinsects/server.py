@@ -2017,6 +2017,35 @@ def ingest_video_atoms_staged(
     return response
 
 
+def ingest_image_atoms_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_image_atoms import ingest_image_atoms
+
+    retrieved_at = payload.get("retrieved_at")
+    if retrieved_at is not None and not isinstance(retrieved_at, str):
+        raise ValueError("retrieved_at must be a string")
+    staging = artifact_dir.parent / f".{artifact_dir.name}.image-atoms-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_image_atoms(artifact_dir=staging, retrieved_at=retrieved_at)
+        response = rewrite_artifact_references(staging, artifact_dir, result, source="aedes_image_atoms")
+        activate_source_staging(staging, artifact_dir, Path("raw") / "image_atoms")
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -2179,6 +2208,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/video-atoms":
             result = ingest_video_atoms_staged(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/image-atoms":
+            result = ingest_image_atoms_staged(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/occurrence-ecology":

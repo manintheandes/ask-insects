@@ -23,6 +23,9 @@ Sources:
 - `gbif_api`: GBIF occurrence search records when explicitly fetched. The hosted deep ingest paginates the current `Aedes aegypti` GBIF occurrence set and refreshes only `gbif_api` rows, preserving other hosted lanes. The May 24, 2026 hosted refresh installed 82,237 occurrence records plus the taxonomy row with zero GBIF gaps.
 - `inaturalist_api`: bounded iNaturalist observations with licensed photos when explicitly fetched. Local and hosted incremental ingests refresh only `inaturalist_api` rows, preserving literature, genomics, neurobiology, BOLD, and derived facet lanes.
 - `mosquito_alert_gbif`: Mosquito Alert Dataset records for `Aedes aegypti`, fetched through GBIF with dataset and taxon pins, preserving expert-validated citizen-science observation fields and still-image metadata.
+- `aedes_image_atoms`: derived still-image asset, source-label, and gap records from indexed iNaturalist and Mosquito Alert media rows.
+
+The Aedes image-atoms ingest writes derived records under source `aedes_image_atoms`. Image-asset records preserve the source image record ID, source observation record ID, image URL, source URL, license, attribution or creator, rights holder, observed date or event date, place or country, coordinates when supplied, quality grade when supplied, image format when supplied, and exact upstream locator. Image-label records are deterministic source metadata only, such as iNaturalist quality grade and annotations or Mosquito Alert life stage, basis of record, occurrence status, media format, and media type. If source metadata does not provide life stage, sex, anatomy, or body-part labels, the ingest writes queryable `image_gap` records instead of inventing labels.
 
 ## Videos And Media
 
