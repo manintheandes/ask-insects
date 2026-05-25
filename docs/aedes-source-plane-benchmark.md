@@ -2,7 +2,7 @@
 
 Ask Insects is building toward a very deep practical `Aedes aegypti` intelligence source plane, but the repo should not claim the world-largest or world-deepest title yet.
 
-The current hosted source plane is broad and integrated: the latest hosted health proof records `817,301` records across genomics, literature, observations, media, neurobiology, traits, resistance, vector competence, ecology, and public-health lanes. That proves a strong integrated query plane. It does not prove that Ask Insects is larger or deeper than every source-specific system in the world.
+The current hosted source plane is broad and integrated: the latest hosted health proof records `817,326` records across genomics, literature, observations, media, neurobiology, traits, resistance, vector competence, ecology, and public-health lanes. That proves a strong integrated query plane. It does not prove that Ask Insects is larger or deeper than every source-specific system in the world.
 
 The machine-readable benchmark lives at `config/aedes-source-plane-benchmark.json`.
 
@@ -48,7 +48,7 @@ Ask Insects is the deepest, largest, or most extensive `Aedes aegypti` intellige
 | IR Mapper | Open-access insecticide-resistance maps, filters, and standardized susceptibility records. | Ask Insects indexes Aedes resistance rows and combines them with literature-derived marker evidence. | Not a replacement for maps, monthly updates, model layers, or user uploads. |
 | VectorByte / VecTraits | Vector trait and abundance data curation. | Ask Insects normalizes Aedes VecTraits rows into trait atoms with raw JSON provenance. | Current coverage is a bounded trait slice, not all VectorByte species, VecDyn abundance data, or tools. |
 | OpenAlex / PubMed / PMC Open Access | Literature discovery, biomedical identifiers, and legal open full text. | Ask Insects turns material Aedes literature into queryable papers, full-text chunks, media, and derived candidate facts. | Not a full mirror of all records, PDFs, supplements, image tables, or claims. |
-| PAHO / CDC public health | Official public-health surveillance and guidance context. | Ask Insects keeps Aedes-relevant disease, guidance, and intervention context beside vector records. | Public-health rows are human disease and guidance context, not mosquito occurrence records. |
+| WHO / PAHO / CDC public health | Official public-health surveillance and guidance context. | Ask Insects keeps Aedes-relevant disease, guidance, surveillance reports, dashboard locators, and intervention context beside vector records. | Public-health rows are human disease and guidance context, not mosquito occurrence records; dashboard locator records do not imply row-queryable dashboard cells. |
 
 ## Benchmark Rule
 

@@ -28,7 +28,7 @@
   ],
   "ask_insects_current": {
     "hosted_health_checked_at": "2026-05-25",
-    "hosted_record_count": 817301,
+    "hosted_record_count": 817326,
     "hosted_trait_records": 4972,
     "hosted_sources": [
       "aedes_cdc_dengue_surveillance",
@@ -47,6 +47,7 @@
       "aedes_vector_competence_assays",
       "aedes_vectorbyte_traits",
       "aedes_video_atoms",
+      "aedes_who_dengue_surveillance",
       "aedes_wolbachia_interventions",
       "bold_api",
       "dryad_aedes_behavior_videos",
@@ -80,7 +81,7 @@
       "neurobiology": 100018,
       "observations": 88607,
       "proteins": 56960,
-      "public_health": 29538,
+      "public_health": 29563,
       "resistance": 28089,
       "taxonomy": 5,
       "traits": 4972,
@@ -185,7 +186,7 @@
     },
     {
       "id": "paho_cdc_public_health",
-      "name": "PAHO and CDC public-health surveillance and guidance",
+      "name": "WHO, PAHO, and CDC public-health surveillance and guidance",
       "url": "https://www.cdc.gov/mosquitoes/",
       "what_it_leads_in": "official public-health guidance and human disease surveillance context relevant to Aedes-borne disease",
       "benchmark_note": "Treat public-health agencies as source-specific leaders for official surveillance definitions, current guidance, and public reporting boundaries.",
