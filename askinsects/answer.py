@@ -1378,7 +1378,7 @@ def _literature_topical_tokens(question: str, species: str | None) -> set[str]:
 def _fulltext_literature_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
     records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
-    for search_query in _literature_search_queries(question):
+    for search_query in _fulltext_literature_search_queries(question):
         query_records = index.search_literature_fulltext(search_query, limit=limit)
         for record in query_records:
             if record.record_id in seen_record_ids:
@@ -1388,6 +1388,35 @@ def _fulltext_literature_records(index: SourceIndex, question: str, *, limit: in
         if query_records:
             break
     return records
+
+
+def _fulltext_literature_search_queries(question: str) -> list[str]:
+    species = _requested_species(question)
+    tokens = [token for token in re.findall(r"[A-Za-z][A-Za-z0-9]+", question)]
+    excluded = set(LITERATURE_QUERY_STOPWORDS)
+    excluded.update(
+        {
+            "caption",
+            "captions",
+            "fig",
+            "figure",
+            "figures",
+            "mention",
+            "mentions",
+            "mentioned",
+            "olfaction",
+            "olfactory",
+        }
+    )
+    excluded.update({"aedes", "aegypti", "mosquito", "mosquitoes"})
+    if species:
+        excluded.update(token.lower() for token in re.findall(r"[A-Za-z][A-Za-z0-9]+", species))
+    distinctive = [token for token in tokens if token.lower() not in excluded]
+    queries: list[str] = []
+    if distinctive:
+        queries.append(" ".join(distinctive))
+    queries.extend(_literature_search_queries(question))
+    return list(dict.fromkeys(queries))
 
 
 def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
