@@ -355,6 +355,69 @@ def _wants_mosquito_repellent_external_discovery(question: str) -> bool:
     return _wants_mosquito_repellent_literature(question) and any(term in q for term in external_terms)
 
 
+def _mosquito_repellent_external_rank(question: str, record: EvidenceRecord) -> tuple[int, int]:
+    q = question.lower()
+    patent_terms = ("patent", "patents", "patentsview", "uspto")
+    dataset_terms = (
+        "dataset",
+        "datasets",
+        "repository",
+        "repositories",
+        "datacite",
+        "zenodo",
+        "figshare",
+        "dryad",
+        "osf",
+    )
+    literature_terms = (
+        "preprint",
+        "biorxiv",
+        "medrxiv",
+        "openalex",
+        "europe pmc",
+        "semantic scholar",
+        "agricola",
+        "usda",
+        "cabi",
+        "google scholar",
+    )
+    preferred_lanes: set[str] = set()
+    if any(term in q for term in patent_terms):
+        preferred_lanes.add("patents")
+    if any(term in q for term in dataset_terms):
+        preferred_lanes.add("datasets")
+    if any(term in q for term in literature_terms):
+        preferred_lanes.add("literature")
+    lane_rank = 0 if record.lane in preferred_lanes else 1 if record.lane in {"literature", "datasets", "patents"} else 2
+
+    haystack = " ".join(
+        value
+        for value in (record.record_id, record.title, record.text, record.url or "")
+        if value
+    ).lower()
+    named_family_terms = (
+        "datacite",
+        "zenodo",
+        "figshare",
+        "dryad",
+        "osf",
+        "patentsview",
+        "uspto",
+        "biorxiv",
+        "medrxiv",
+        "openalex",
+        "europe pmc",
+        "semantic scholar",
+        "agricola",
+        "usda",
+        "cabi",
+        "google scholar",
+    )
+    named_terms = [term for term in named_family_terms if term in q]
+    family_rank = 0 if not named_terms or any(term.replace(" ", "_") in haystack or term in haystack for term in named_terms) else 1
+    return lane_rank, family_rank
+
+
 def _wants_image_labels(question: str) -> bool:
     q = question.lower()
     return _wants_image_atoms(question) and any(
@@ -2114,7 +2177,7 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 if record.source
                 in {MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID, MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID}
                 else 2,
-                0 if record.lane in {"literature", "datasets", "patents"} else 1,
+                *_mosquito_repellent_external_rank(question, record),
             ),
         )
     if any(

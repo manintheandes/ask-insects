@@ -763,6 +763,21 @@ class AnswerTests(unittest.TestCase):
                         ),
                     ),
                     EvidenceRecord(
+                        record_id="mosquito_repellent_external_discovery:doi:10.5281/zenodo.123",
+                        lane="datasets",
+                        source="mosquito_repellent_external_discovery",
+                        title="DataCite mosquito repellent dataset",
+                        text="Mosquito repellent external discovery source candidate. source_family=datacite artifact_type=dataset_manifest.",
+                        species="Culicidae",
+                        url="https://doi.org/10.5281/zenodo.123",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="mosquito_repellent_external_discovery",
+                            locator="raw/mosquito_repellent_external_discovery/datacite_0001.json#data/0",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
                         record_id="mosquito_repellent_external_discovery:gap:patentsview:patentsview_migrated_or_unavailable_json_api",
                         lane="patents",
                         source="mosquito_repellent_external_discovery",
