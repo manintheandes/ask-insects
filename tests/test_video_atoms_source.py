@@ -396,6 +396,48 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertIn("Source SHA-256: " + "a" * 64, osf_gap_record.text)
         self.assertIn("License: OSF project license not supplied", osf_gap_record.text)
 
+    def test_archive_video_candidates_are_gapped_without_download(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:file:video-archive",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti behavior video archive.zip",
+                        text="ZIP archive containing Aedes aegypti assay videos.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://datadryad.org/stash/downloads/file_stream/example.zip",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad/file.json#files/1",
+                            retrieved_at=RETRIEVED_AT,
+                            license="https://spdx.org/licenses/CC0-1.0.html",
+                        ),
+                        payload={"filename": "video-archive.zip", "size": 123_456},
+                    )
+                ]
+            )
+
+            def fail_fetch(url: str, max_bytes: int) -> bytes:
+                raise AssertionError("archives should be gapped before download")
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                fetch_video_bytes_fn=fail_fetch,
+            )
+
+        reasons = {gap["reason"] for gap in result.gaps}
+        self.assertIn("video_archive_not_expanded", reasons)
+        asset = next(record for record in result.records if record.payload.get("atom_type") == "video_asset")
+        self.assertEqual(asset.payload["verification_status"], "gapped_archive_not_expanded")
+
     def test_ignores_audio_files_from_mixed_media_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

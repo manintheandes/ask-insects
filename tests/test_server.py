@@ -10,6 +10,7 @@ from askinsects.records import EvidenceRecord, Provenance
 from askinsects.server import (
     activate_source_staging,
     copy_artifact_to_staging,
+    copy_default_video_motion_inputs_to_staging,
     dispatch_request,
     ingest_image_atoms_staged,
     ingest_video_atoms_staged,
@@ -160,6 +161,25 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn("raw/mendeley_behavior_media/table_files/default-motion.csv#row/1", rows[0]["provenance_json"])
             self.assertNotIn(".video-atoms-staging", rows[0]["provenance_json"])
+
+    def test_video_atom_staging_copies_existing_mirrors_and_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            asset = artifact_dir / "raw" / "video_atoms" / "assets" / "existing.mp4"
+            artifact = artifact_dir / "raw" / "video_atoms" / "artifacts" / "existing" / "thumbnail.jpg"
+            csv_path = artifact_dir / "raw" / "video_atoms" / "motion.csv"
+            asset.parent.mkdir(parents=True)
+            artifact.parent.mkdir(parents=True)
+            asset.write_bytes(b"mp4")
+            artifact.write_bytes(b"jpg")
+            csv_path.write_text("video_id,frame\nexisting,1\n", encoding="utf-8")
+
+            staging = Path(tmpdir) / ".mosquito-v1.video-atoms-staging"
+            copy_default_video_motion_inputs_to_staging(artifact_dir, staging)
+
+            self.assertTrue((staging / "raw" / "video_atoms" / "assets" / "existing.mp4").exists())
+            self.assertTrue((staging / "raw" / "video_atoms" / "artifacts" / "existing" / "thumbnail.jpg").exists())
+            self.assertTrue((staging / "raw" / "video_atoms" / "motion.csv").exists())
 
     def test_image_atom_ingest_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

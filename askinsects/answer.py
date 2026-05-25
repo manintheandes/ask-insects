@@ -1950,6 +1950,9 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     repository = _video_discovery_repository(question)
     repository_filter = ""
     params: list[object] = [*lanes, *atom_types]
+    verified_filter = ""
+    if "verified" in q:
+        verified_filter = "AND json_extract(p.payload_json, '$.verification_status') = 'verified'"
     motion_metric_order = ""
     gap_reason_order = ""
     wants_license_gap_order = False
@@ -1994,6 +1997,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
               AND r.lane IN ({lane_placeholders})
               AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
               {repository_filter}
+              {verified_filter}
             ORDER BY
               {motion_metric_order}
               CASE json_extract(p.payload_json, '$.atom_type')
@@ -2005,6 +2009,10 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
                 WHEN 'video_motion_row' THEN 5
                 WHEN 'video_gap' THEN 6
                 ELSE 7
+              END,
+              CASE
+                WHEN json_extract(p.payload_json, '$.verification_status')='verified' THEN 0
+                ELSE 1
               END,
               {gap_reason_order}
               r.record_id

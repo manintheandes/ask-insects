@@ -28,6 +28,7 @@ VIDEO_SOURCE_IDS = {
     "figshare_aedes_videos",
 }
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
+ARCHIVE_EXTENSIONS = (".zip", ".tar", ".tar.gz", ".tgz", ".7z")
 NON_VIDEO_MEDIA_EXTENSIONS = (
     ".aac",
     ".csv",
@@ -176,6 +177,11 @@ def _is_allowed_license(license_value: object, allowed_licenses: Iterable[str] |
 def _contains_non_video_media_file(*values: object) -> bool:
     text = " ".join(str(value or "").lower() for value in values)
     return any(re.search(rf"{re.escape(extension)}(?:\b|$|[?#])", text) for extension in NON_VIDEO_MEDIA_EXTENSIONS)
+
+
+def _looks_like_archive(*values: object) -> bool:
+    text = " ".join(str(value or "").lower() for value in values)
+    return any(re.search(rf"{re.escape(extension)}(?:\b|$|[?#])", text) for extension in ARCHIVE_EXTENSIONS)
 
 
 def _looks_like_video(*values: object) -> bool:
@@ -1121,6 +1127,16 @@ def _mirror_candidate(
     if not candidate.media_url:
         gaps.append(_gap_context(candidate, "video_download_url_missing"))
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_url_missing"), None
+    if _looks_like_archive(
+        candidate.media_url,
+        candidate.url,
+        candidate.title,
+        candidate.payload.get("filename"),
+        candidate.payload.get("name"),
+        candidate.payload.get("materialized_path"),
+    ):
+        gaps.append(_gap_context(candidate, "video_archive_not_expanded"))
+        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_not_expanded"), None
     if not allow_unclear_license and not _is_allowed_license(candidate.provenance.get("license"), allowed_licenses):
         gaps.append(_gap_context(candidate, "video_license_unclear"))
         size = _size_from_candidate(candidate)

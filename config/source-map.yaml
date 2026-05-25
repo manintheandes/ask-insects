@@ -459,6 +459,7 @@ sources:
       - video_download_url_missing
       - video_license_unclear
       - video_too_large
+      - video_archive_not_expanded
       - video_probe_failed
       - video_probe_tool_missing
     source_contract:

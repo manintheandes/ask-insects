@@ -1034,6 +1034,64 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
 
+    def test_verified_video_questions_filter_to_verified_assets(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:asset:gapped",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video asset gapped",
+                        text="Aedes aegypti video asset without a verified probe.",
+                        species="Aedes aegypti",
+                        url="https://example.org/gapped",
+                        media_url="https://example.org/gapped.mp4",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="records#gapped",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                        ),
+                        payload={"atom_type": "video_asset", "verification_status": "gapped_download_failed"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:asset:verified",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video asset verified",
+                        text="Aedes aegypti verified video asset. Duration 12 seconds, 30 fps, 640x480, codec h264.",
+                        species="Aedes aegypti",
+                        url="https://example.org/verified",
+                        media_url="raw/video_atoms/assets/verified.mp4",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="records#verified",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY",
+                        ),
+                        payload={
+                            "atom_type": "video_asset",
+                            "verification_status": "verified",
+                            "duration_seconds": 12,
+                            "fps": 30,
+                            "width": 640,
+                            "height": 480,
+                            "codec": "h264",
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show verified Aedes aegypti videos with duration fps resolution and codec", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(len(answer["evidence"]), 1)
+            self.assertEqual(answer["evidence"][0]["record_id"], "video_atom:asset:verified")
+
     def test_video_gap_questions_return_queryable_gap_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -651,6 +651,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "bounded_mirror_when_license_and_size_allow_else_structured_gap",
         "video_download_not_video",
         "video_license_unclear",
+        "video_archive_not_expanded",
         "thumbnails",
         "keyframes",
         "preview_clips",
