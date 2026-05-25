@@ -88,6 +88,17 @@ def update_receipt_payload(
     payload["species_count"] = summary["species_count"]
     payload["lanes"] = summary["lanes"]
     payload["source_counts"] = summary["source_counts"]
+    source_counts = summary["source_counts"]
+    if isinstance(source_counts, dict):
+        for source, count in source_counts.items():
+            direct_payload = payload.get(source)
+            if isinstance(direct_payload, dict) and "record_count" in direct_payload:
+                direct_payload["record_count"] = count
+            sources = payload.get("sources")
+            if isinstance(sources, dict):
+                nested_payload = sources.get(source)
+                if isinstance(nested_payload, dict) and "record_count" in nested_payload:
+                    nested_payload["record_count"] = count
     if vectorbase_refresh:
         payload["vectorbase_sequence_atom_refresh"] = vectorbase_refresh
         vectorbase_payload = payload.get("vectorbase_genomics")

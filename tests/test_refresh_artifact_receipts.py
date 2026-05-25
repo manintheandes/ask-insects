@@ -34,7 +34,12 @@ class RefreshArtifactReceiptsTests(unittest.TestCase):
             raw_dir = artifact_dir / "raw" / "vectorbase_genomics"
             raw_dir.mkdir(parents=True)
             (raw_dir / "VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta").write_text(">x\nATG\n", encoding="utf-8")
-            stale = {"record_count": 1, "source_counts": {"vectorbase_aedes_genomics": 1}}
+            stale = {
+                "record_count": 1,
+                "source_counts": {"vectorbase_aedes_genomics": 1},
+                "mosquito_v1_fixtures": {"record_count": 99},
+                "sources": {"mosquito_v1_fixtures": {"record_count": 99}},
+            }
             (artifact_dir / "source_status.json").write_text(json.dumps(stale), encoding="utf-8")
             (artifact_dir / "source_receipt.json").write_text(json.dumps(stale), encoding="utf-8")
 
@@ -46,6 +51,8 @@ class RefreshArtifactReceiptsTests(unittest.TestCase):
                 payload = json.loads((artifact_dir / filename).read_text(encoding="utf-8"))
                 self.assertEqual(payload["record_count"], 3)
                 self.assertEqual(payload["source_counts"]["vectorbase_aedes_genomics"], 2)
+                self.assertEqual(payload["mosquito_v1_fixtures"]["record_count"], 1)
+                self.assertEqual(payload["sources"]["mosquito_v1_fixtures"]["record_count"], 1)
                 self.assertEqual(payload["vectorbase_genomics"]["record_count"], 2)
                 refresh = payload["vectorbase_sequence_atom_refresh"]
                 self.assertEqual(refresh["cds_live_count"], 1)
