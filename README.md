@@ -272,11 +272,13 @@ The lane derives from PMC, Dryad, Mendeley, OSF, Zenodo, Figshare, and repositor
 
 ```bash
 python3 -m askinsects ingest-image-atoms
+python3 -m askinsects ingest-image-atoms --mirror-images --max-image-mirrors 250 --max-image-bytes 5000000 --allowed-licenses cc-by,CC0,Creative Commons
 python3 -m askinsects ask "show Aedes aegypti adult image labels" --json
 python3 -m askinsects ask "what Aedes image label gaps are missing sex?" --json
+python3 -m askinsects ask "show Aedes aegypti images with checksum and dimensions" --json
 ```
 
-The lane derives from `inaturalist_api` and `mosquito_alert_gbif` media records. It preserves image URL, source observation, license, source URL, attribution or creator, rights holder, place or country, observed date or event date, coordinates when supplied, iNaturalist quality grade when supplied, image format when supplied, and exact upstream locator. Label records are deterministic source metadata only. Missing life-stage, sex, anatomy, and body-part labels become queryable `image_gap` records until manual or vision-labeling lanes are added.
+The lane derives from `inaturalist_api` and `mosquito_alert_gbif` media records. It preserves image URL, source observation, license, source URL, attribution or creator, rights holder, place or country, observed date or event date, coordinates when supplied, iNaturalist quality grade when supplied, image format when supplied, and exact upstream locator. With `--mirror-images`, it also performs bounded licensed image-byte mirrors and stores SHA-256 checksum, byte size, detected dimensions, image format, EXIF presence when detectable, and local raw asset path. Label records are deterministic source metadata only. Missing life-stage, sex, anatomy, body-part labels, or skipped mirror bytes become queryable `image_gap` records until manual or vision-labeling lanes and larger mirror runs are added.
 
 ## IR Mapper Resistance Source Lane
 

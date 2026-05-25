@@ -182,6 +182,7 @@
         "aedes_image_atoms derives image-asset records, deterministic source-provided labels, and image-label gap records from indexed iNaturalist and Mosquito Alert media payloads.",
         "Image atoms preserve source image record ID, source observation record ID, image URL, source URL, license, attribution or creator, rights holder, date, country or place, coordinates when supplied, quality grade when supplied, image format when supplied, and exact upstream locator.",
         "Image atoms can now optionally perform bounded licensed image-byte mirrors, preserving SHA-256 checksum, byte size, raw asset path, detected image format, dimensions, and EXIF presence when detectable, with queryable gaps for unclear licenses, failed downloads, oversized files, or mirror limits.",
+        "Hosted Ask Insects currently has 100 verified Aedes image-byte mirrors from a bounded licensed run, with 19,440 aedes_image_atoms records and direct checksum/dimension answers.",
         "Image coverage still does not claim model-derived body part, anatomy, pose, view-angle, sex, or life-stage labels unless the upstream source metadata provides them."
       ],
       "required_next_sources": [
