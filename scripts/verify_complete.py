@@ -964,17 +964,22 @@ def _video_repository_counts(conn: sqlite3.Connection) -> dict[str, int]:
 
 def _has_motion_table_inputs(artifact_dir: Path) -> bool:
     roots = (
+        artifact_dir / "raw" / "pmc_videos",
+        artifact_dir / "raw" / "dryad_behavior_videos",
         artifact_dir / "raw" / "mendeley_behavior_media" / "table_files",
         artifact_dir / "raw" / "mendeley_behavior_media",
+        artifact_dir / "raw" / "osf_flighttrackai_videos",
+        artifact_dir / "raw" / "zenodo_aedes_videos",
+        artifact_dir / "raw" / "figshare_aedes_videos",
         artifact_dir / "raw" / "video_atoms",
     )
     for root in roots:
         if not root.exists():
             continue
-        for path in root.glob("*.csv"):
+        for path in sorted([*root.rglob("*.csv"), *root.rglob("*.tsv")]):
             try:
                 with path.open(newline="", encoding="utf-8-sig") as handle:
-                    reader = csv.reader(handle)
+                    reader = csv.reader(handle, delimiter="\t" if path.suffix.lower() == ".tsv" else ",")
                     headers = next(reader, [])
             except (OSError, UnicodeDecodeError, StopIteration, csv.Error):
                 continue

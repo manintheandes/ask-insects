@@ -192,6 +192,15 @@ class VerifyCompleteTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "motion tables exist"):
                 verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
 
+    def test_verify_complete_detects_recursive_video_motion_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            table_path = artifact_dir / "raw" / "dryad_behavior_videos" / "dataset-1" / "tracks" / "trajectory.tsv"
+            table_path.parent.mkdir(parents=True)
+            table_path.write_text("TRACK_ID\tPOSITION_X\tPOSITION_Y\tFRAME\n1\t2\t3\t4\n", encoding="utf-8")
+
+            self.assertTrue(verify_complete._has_motion_table_inputs(artifact_dir))
+
     def test_verify_complete_rejects_missing_video_discovery_targets(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

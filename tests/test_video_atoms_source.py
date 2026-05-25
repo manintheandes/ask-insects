@@ -683,6 +683,27 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(result.motion_row_count, 1)
         self.assertIn("raw/mendeley_behavior_media/table_files/Video S1 - Spot Statistics.csv#row/1", rows[0].provenance.locator)
 
+    def test_discovers_recursive_motion_tables_across_video_source_dirs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = artifact_dir / "raw" / "dryad_behavior_videos" / "dataset-1" / "tracks" / "trajectory.tsv"
+            table_path.parent.mkdir(parents=True)
+            table_path.write_text(
+                "video_id\ttrack_id\tframe\ttime_seconds\tx\ty\tbehavior\n"
+                "dryad-video-1\tadult-7\t42\t1.4\t3.2\t9.8\todor tracking\n",
+                encoding="utf-8",
+            )
+
+            result = build_video_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].payload["source_video_record_id"], "dryad-video-1")
+        self.assertEqual(rows[0].payload["track_id"], "adult-7")
+        self.assertEqual(rows[0].payload["behavior_type"], "odor tracking")
+        self.assertIn("raw/dryad_behavior_videos/dataset-1/tracks/trajectory.tsv#row/1", rows[0].provenance.locator)
+
     def test_parses_mendeley_xlsx_locomotory_video_analysis_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

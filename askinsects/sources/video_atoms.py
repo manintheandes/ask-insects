@@ -1426,7 +1426,7 @@ def _motion_record(
 
 def _parse_delimited_motion_table(table_path: Path) -> list[tuple[int, dict[str, str], str]]:
     with table_path.open(newline="", encoding="utf-8-sig") as handle:
-        reader = csv.DictReader(handle)
+        reader = csv.DictReader(handle, delimiter="\t" if table_path.suffix.lower() == ".tsv" else ",")
         headers = {_normalize_motion_header(header) for header in (reader.fieldnames or [])}
         if not headers & MOTION_HEADERS:
             return []
@@ -1482,8 +1482,13 @@ def _parse_motion_tables(
 
 def _default_motion_table_paths(artifact_dir: Path) -> list[Path]:
     search_roots = (
+        artifact_dir / "raw" / "pmc_videos",
+        artifact_dir / "raw" / "dryad_behavior_videos",
         artifact_dir / "raw" / "mendeley_behavior_media" / "table_files",
         artifact_dir / "raw" / "mendeley_behavior_media",
+        artifact_dir / "raw" / "osf_flighttrackai_videos",
+        artifact_dir / "raw" / "zenodo_aedes_videos",
+        artifact_dir / "raw" / "figshare_aedes_videos",
         artifact_dir / "raw" / "video_atoms",
     )
     paths: list[Path] = []
@@ -1491,7 +1496,7 @@ def _default_motion_table_paths(artifact_dir: Path) -> list[Path]:
     for root in search_roots:
         if not root.exists():
             continue
-        for path in sorted([*root.glob("*.csv"), *root.glob("*.xlsx")]):
+        for path in sorted([*root.rglob("*.csv"), *root.rglob("*.tsv"), *root.rglob("*.xlsx")]):
             resolved = path.resolve()
             if resolved in seen:
                 continue
