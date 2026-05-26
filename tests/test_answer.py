@@ -438,6 +438,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what insecticide resistance data exists for Aedes aegypti?").answer_shape, "resistance")
         self.assertEqual(plan_question("show CYP9J32 metabolic resistance markers in Aedes aegypti").answer_shape, "resistance")
         self.assertEqual(plan_question("show parsed resistance table V1016G frequency for Aedes aegypti").answer_shape, "resistance")
+        self.assertEqual(plan_question("show schema-validated Aedes aegypti resistance supplement table rows").answer_shape, "resistance")
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
         self.assertEqual(plan_question("what Mendeley table rows mention temperature gradients?").answer_shape, "behavior")
@@ -3331,6 +3332,30 @@ class AnswerTests(unittest.TestCase):
             )
 
             answer = answer_question("show parsed resistance table V1016G frequency for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_resistance_table_rows")
+
+    def test_schema_validated_resistance_supplement_questions_return_table_gap_record(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    resistance_record("behavior:noise", "aedes_extracted_facts"),
+                    resistance_record(
+                        "resistance_table:gap:no_resistance_table_rows_detected",
+                        "aedes_resistance_table_rows",
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show schema-validated Aedes aegypti resistance supplement table rows",
+                artifact_dir=artifact_dir,
+            )
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "resistance")

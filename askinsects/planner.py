@@ -258,6 +258,8 @@ def plan_question(question: str) -> QueryPlan:
             "vgsc",
             "vssc",
             "resistance table",
+            "resistance supplement",
+            "schema-validated",
             "genotype frequency",
             "allele frequency",
             "haplotype",
