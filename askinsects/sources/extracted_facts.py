@@ -232,7 +232,9 @@ PERCENT_RE = re.compile(r"\b\d+(?:\.\d+)?\s?%")
 DOSE_RE = re.compile(r"\b(?:10\^?\d+|\d+(?:\.\d+)?)\s?(?:pfu|ffu|tcid50|focus-forming units|plaque-forming units|log10|log)\b", re.I)
 MUTATION_RE = re.compile(r"\b[A-Z][0-9]{2,4}[A-Z]\b")
 CASE_RE = re.compile(r"\b(?:cases|deaths|fatalities)\s+\d[\d,]*|\b\d[\d,]*\s+(?:cases|deaths|fatalities)\b", re.I)
-SUPPORTED_SUPPLEMENT_EXTENSIONS = {".csv", ".tsv", ".xlsx", ".docx", ".xml", ".html", ".htm"}
+SUPPORTED_TABLE_SUPPLEMENT_EXTENSIONS = {".csv", ".tsv", ".xlsx", ".docx", ".xml", ".html", ".htm"}
+SUPPORTED_TEXT_SUPPLEMENT_EXTENSIONS = {".txt", ".md", ".log", ".r"}
+SUPPORTED_SUPPLEMENT_EXTENSIONS = SUPPORTED_TABLE_SUPPLEMENT_EXTENSIONS | SUPPORTED_TEXT_SUPPLEMENT_EXTENSIONS
 EUROPE_PMC_SEARCH_BASE = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 PMC_OA_SERVICE_BASE = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
 FIGSHARE_ARTICLE_API_BASE = "https://api.figshare.com/v2/articles"
@@ -965,6 +967,14 @@ def _supplement_extension(supplement: dict[str, object]) -> str:
         return ".html"
     if "xml" in file_type:
         return ".xml"
+    if file_type in {"txt", "text", "text/plain", "plain"}:
+        return ".txt"
+    if file_type in {"md", "markdown", "text/markdown"}:
+        return ".md"
+    if file_type in {"log", "text/x-log"}:
+        return ".log"
+    if file_type in {"r", "rscript", "text/x-r", "application/r"}:
+        return ".r"
     return suffix
 
 
@@ -1167,6 +1177,13 @@ def _parse_supported_table_rows(data: bytes, extension: str) -> list[dict[str, s
     return []
 
 
+def _parse_supported_text(data: bytes, extension: str) -> str:
+    if extension not in SUPPORTED_TEXT_SUPPLEMENT_EXTENSIONS:
+        return ""
+    text = data.decode("utf-8", errors="replace")
+    return re.sub(r"\s+", " ", text).strip()
+
+
 def _pmc_oa_supplements(data: bytes, *, source_url: str) -> list[dict[str, object]]:
     root = ET.fromstring(data)
     supplements: list[dict[str, object]] = []
@@ -1177,7 +1194,7 @@ def _pmc_oa_supplements(data: bytes, *, source_url: str) -> list[dict[str, objec
         if not href:
             continue
         extension = Path(urlparse(href).path).suffix.lower()
-        if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS:
+        if extension not in SUPPORTED_TABLE_SUPPLEMENT_EXTENSIONS:
             continue
         supplements.append(
             {
@@ -1268,7 +1285,12 @@ def _download_and_parse_supplement_rows(
             downloaded_count += 1
             raw_path = raw_dir / _safe_raw_filename(candidate, index, extension)
             raw_path.write_bytes(data)
-            rows = _parse_supported_table_rows(data, extension)
+            if extension in SUPPORTED_TEXT_SUPPLEMENT_EXTENSIONS:
+                text = _parse_supported_text(data, extension)
+                rows = []
+            else:
+                text = ""
+                rows = _parse_supported_table_rows(data, extension)
         except Exception as exc:
             gaps.append(
                 {
@@ -1278,6 +1300,33 @@ def _download_and_parse_supplement_rows(
                     "url": url,
                     "error": str(exc),
                 }
+            )
+            continue
+        if text:
+            parsed_file_count += 1
+            candidates.append(
+                TextCandidate(
+                    source_record_id=candidate.source_record_id,
+                    source_title=candidate.source_title,
+                    species=candidate.species,
+                    paper_url=candidate.paper_url,
+                    source_provenance=candidate.source_provenance,
+                    extraction_source="supplement_text",
+                    unit_id=None,
+                    unit_index=None,
+                    unit_url=url,
+                    unit_license=candidate.supplement.get("license") if isinstance(candidate.supplement.get("license"), str) else None,
+                    unit_provenance={
+                        "source_id": EXTRACTED_FACTS_SOURCE_ID,
+                        "locator": raw_path.relative_to(artifact_dir).as_posix(),
+                        "retrieved_at": retrieved_at,
+                        "source_url": url,
+                    },
+                    text=text[:MAX_CANDIDATE_TEXT_CHARS],
+                    supplement=candidate.supplement,
+                    supplement_index=index,
+                    raw_file_path=raw_path.relative_to(artifact_dir).as_posix(),
+                )
             )
             continue
         if not rows:
@@ -1421,7 +1470,13 @@ def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[
             "supplement": candidate.supplement,
             "evidence_text": evidence_text,
             "confidence": "parsed" if candidate.table_row else "candidate",
-            "extraction_method": "deterministic_supplement_table_row_extract" if candidate.table_row else "deterministic_fulltext_term_extract",
+            "extraction_method": (
+                "deterministic_supplement_table_row_extract"
+                if candidate.table_row
+                else "deterministic_supplement_text_extract"
+                if candidate.raw_file_path
+                else "deterministic_fulltext_term_extract"
+            ),
             "source_provenance": candidate.source_provenance,
             "unit_provenance": candidate.unit_provenance,
         },

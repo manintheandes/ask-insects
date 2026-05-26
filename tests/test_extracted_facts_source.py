@@ -827,6 +827,70 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(vector.payload["fields"]["table_row"]["infection rate"], "83%")
             self.assertIn(".docx", vector.provenance.locator)
 
+    def test_build_extracted_fact_records_extracts_text_supplement_candidates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WTEXTSUPP",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti vector competence repository supplement",
+                        text="Aedes aegypti supplemental methods and results.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.5281/zenodo.12345",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WTEXTSUPP",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.5281/zenodo.12345"}},
+                    )
+                ]
+            )
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                return [
+                    {
+                        "title": "Vector competence text supplement",
+                        "url": "https://zenodo.org/api/records/12345/files/vector-competence.txt/content",
+                        "file_type": "text/plain",
+                        "source": "zenodo",
+                    }
+                ]
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                self.assertEqual(url, "https://zenodo.org/api/records/12345/files/vector-competence.txt/content")
+                return (
+                    "Aedes aegypti vector competence assay. "
+                    "Dengue virus infection rate was 81% in midgut tissue and transmission was detected in saliva."
+                ).encode("utf-8")
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                fetch_supplement_file_fn=fake_file_fetch,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            vector = next(record for record in result.records if record.payload["fact_type"] == "vector_competence")
+            self.assertEqual(result.downloaded_supplement_file_count, 1)
+            self.assertEqual(result.parsed_supplement_file_count, 1)
+            self.assertEqual(result.parsed_supplement_row_count, 0)
+            self.assertEqual(vector.payload["confidence"], "candidate")
+            self.assertEqual(vector.payload["extraction_method"], "deterministic_supplement_text_extract")
+            self.assertIn("raw/extracted_facts/supplements/", vector.provenance.locator)
+            self.assertIn(".txt", vector.provenance.locator)
+            self.assertFalse(any(gap.get("reason") == "unsupported_supplement_type" for gap in result.gaps))
+
     def test_build_extracted_fact_records_uses_bounded_fulltext_probe(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
