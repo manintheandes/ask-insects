@@ -13,6 +13,7 @@ from askinsects.sources import video_atoms
 from askinsects.sources.video_atoms import (
     AedesVideoAtomsResult,
     DISCOVERY_REPOSITORIES,
+    DiscoverySweepResult,
     VIDEO_ATOMS_SOURCE_ID,
     VideoDownloadNotVideoError,
     build_video_atom_records,
@@ -965,6 +966,43 @@ class VideoAtomsSourceTests(unittest.TestCase):
         sweep_records = [record for record in result.records if record.payload.get("atom_type") == "video_sweep"]
         self.assertEqual({record.payload["repository"] for record in sweep_records}, set(DISCOVERY_REPOSITORIES))
 
+    def test_discovery_sweep_receipts_preserve_page_coverage_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+
+            discovery_clients = {repository: (lambda: []) for repository in DISCOVERY_REPOSITORIES}
+            request_url = "https://zenodo.org/api/records?q=%22Aedes+aegypti%22+video&size=25"
+            discovery_clients["zenodo"] = lambda: DiscoverySweepResult(
+                items=[],
+                receipt={
+                    "coverage_method": "api_search",
+                    "queries": ['"Aedes aegypti" video'],
+                    "request_urls": [request_url],
+                    "page_size": 25,
+                    "page_count": 1,
+                    "cursor_or_page_complete": True,
+                    "candidate_limit": 25,
+                },
+            )
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                discover_sources=True,
+                discovery_clients=discovery_clients,
+            )
+
+        receipt = {item["repository"]: item for item in result.discovery_sweep_receipts}["zenodo"]
+        self.assertEqual(receipt["coverage_method"], "api_search")
+        self.assertEqual(receipt["queries"], ['"Aedes aegypti" video'])
+        self.assertEqual(receipt["request_urls"], [request_url])
+        self.assertEqual(receipt["page_size"], 25)
+        self.assertEqual(receipt["page_count"], 1)
+        self.assertTrue(receipt["cursor_or_page_complete"])
+        sweep_record = next(record for record in result.records if record.record_id == "video_atom:sweep:zenodo")
+        self.assertEqual(sweep_record.payload["request_urls"], [request_url])
+
     def test_discovery_not_aedes_scope_gap_is_suppressed_for_source_backed_video(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -1041,12 +1079,15 @@ class VideoAtomsSourceTests(unittest.TestCase):
         original_fetch_json = video_atoms._fetch_json
         try:
             video_atoms._fetch_json = lambda url: payload
-            discovered = video_atoms._dataverse_institutional_discovery_candidates()
+            discovery_result = video_atoms._dataverse_institutional_discovery_candidates()
         finally:
             video_atoms._fetch_json = original_fetch_json
 
+        discovered = discovery_result.items
         self.assertEqual(len(discovered), 1)
         self.assertNotIn("Aedes aegypti", discovered[0]["species_scope"])
+        self.assertEqual(discovery_result.receipt["coverage_method"], "api_search")
+        self.assertEqual(discovery_result.receipt["page_count"], 3)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -1081,11 +1122,13 @@ class VideoAtomsSourceTests(unittest.TestCase):
         original_fetch_json = video_atoms._fetch_json
         try:
             video_atoms._fetch_json = fake_fetch_json
-            discovered = video_atoms._default_figshare_discovery_client()
+            discovery_result = video_atoms._default_figshare_discovery_client()
         finally:
             video_atoms._fetch_json = original_fetch_json
 
-        self.assertEqual(discovered, [])
+        self.assertEqual(discovery_result.items, [])
+        self.assertEqual(discovery_result.receipt["coverage_method"], "api_search")
+        self.assertEqual(discovery_result.receipt["page_size"], 100)
         query = parse_qs(urlparse(requested_urls[0]).query)
         self.assertEqual(query["page_size"], ["100"])
 

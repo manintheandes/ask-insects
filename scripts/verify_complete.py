@@ -1292,6 +1292,18 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
             and int(receipt.get("gap_count") or 0) == 0
         ):
             incomplete_receipts.append(target)
+        has_coverage_locator = any(
+            isinstance(receipt.get(key), list) and receipt.get(key)
+            for key in ("queries", "request_urls", "raw_artifacts", "input_sources")
+        )
+        if (
+            not receipt.get("coverage_method")
+            or not has_coverage_locator
+            or int(receipt.get("page_count") or 0) < 1
+            or "cursor_or_page_complete" not in receipt
+            or "candidate_limit" not in receipt
+        ):
+            incomplete_receipts.append(target)
     if incomplete_receipts:
         raise RuntimeError("Aedes video discovery sweep receipts lack candidate or gap proof: " + ", ".join(sorted(incomplete_receipts)))
     missing_sweep_records = [target for target in VIDEO_DISCOVERY_TARGETS if sweep_repository_counts.get(target, 0) == 0]

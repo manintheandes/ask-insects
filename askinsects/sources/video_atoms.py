@@ -144,6 +144,12 @@ class VideoCandidate:
     discovery_repository: str | None = None
 
 
+@dataclass(frozen=True)
+class DiscoverySweepResult:
+    items: list[dict[str, object]]
+    receipt: dict[str, object]
+
+
 def utc_now() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
@@ -503,9 +509,12 @@ def _fetch_text(url: str) -> str:
         return response.read().decode("utf-8", "replace")
 
 
-def _default_zenodo_discovery_client() -> list[dict[str, object]]:
-    query = urlencode({"q": '"Aedes aegypti" (video OR movie OR mp4 OR tracking)', "size": "25"})
-    payload = _fetch_json(f"https://zenodo.org/api/records?{query}")
+def _default_zenodo_discovery_client() -> DiscoverySweepResult:
+    search_string = '"Aedes aegypti" (video OR movie OR mp4 OR tracking)'
+    page_size = 25
+    query = urlencode({"q": search_string, "size": str(page_size)})
+    request_url = f"https://zenodo.org/api/records?{query}"
+    payload = _fetch_json(request_url)
     payload = payload if isinstance(payload, dict) else {}
     hits = payload.get("hits")
     records = hits.get("hits") if isinstance(hits, dict) else []
@@ -546,12 +555,26 @@ def _default_zenodo_discovery_client() -> list[dict[str, object]]:
                     "retrieved_at": utc_now(),
                 }
             )
-    return discovered
+    return DiscoverySweepResult(
+        items=discovered,
+        receipt={
+            "coverage_method": "api_search",
+            "queries": [search_string],
+            "request_urls": [request_url],
+            "page_size": page_size,
+            "page_count": 1,
+            "cursor_or_page_complete": True,
+            "candidate_limit": page_size,
+        },
+    )
 
 
-def _default_figshare_discovery_client() -> list[dict[str, object]]:
-    query = urlencode({"search_for": "Aedes aegypti video", "page_size": str(FIGSHARE_DISCOVERY_PAGE_SIZE)})
-    payload = _fetch_json(f"https://api.figshare.com/v2/articles?{query}")
+def _default_figshare_discovery_client() -> DiscoverySweepResult:
+    search_string = "Aedes aegypti video"
+    query = urlencode({"search_for": search_string, "page_size": str(FIGSHARE_DISCOVERY_PAGE_SIZE)})
+    search_url = f"https://api.figshare.com/v2/articles?{query}"
+    request_urls = [search_url]
+    payload = _fetch_json(search_url)
     summaries = payload if isinstance(payload, list) else []
     discovered: list[dict[str, object]] = []
     for summary in summaries:
@@ -560,7 +583,9 @@ def _default_figshare_discovery_client() -> list[dict[str, object]]:
         article_id = summary.get("id")
         if not article_id:
             continue
-        detail = _fetch_json(f"https://api.figshare.com/v2/articles/{article_id}")
+        detail_url = f"https://api.figshare.com/v2/articles/{article_id}"
+        request_urls.append(detail_url)
+        detail = _fetch_json(detail_url)
         title = str(detail.get("title") or summary.get("title") or "Figshare Aedes video candidate")
         description = str(detail.get("description") or "")
         license_payload = detail.get("license") if isinstance(detail.get("license"), dict) else {}
@@ -587,10 +612,21 @@ def _default_figshare_discovery_client() -> list[dict[str, object]]:
                     "retrieved_at": utc_now(),
                 }
             )
-    return discovered
+    return DiscoverySweepResult(
+        items=discovered,
+        receipt={
+            "coverage_method": "api_search",
+            "queries": [search_string],
+            "request_urls": request_urls,
+            "page_size": FIGSHARE_DISCOVERY_PAGE_SIZE,
+            "page_count": 1,
+            "cursor_or_page_complete": True,
+            "candidate_limit": FIGSHARE_DISCOVERY_PAGE_SIZE,
+        },
+    )
 
 
-def _default_dryad_discovery_client() -> list[dict[str, object]]:
+def _default_dryad_discovery_client() -> DiscoverySweepResult:
     from askinsects.sources.dryad_behavior_videos import DRYAD_API_BASE, DryadClient, _file_rows, _link
 
     client = DryadClient()
@@ -602,8 +638,10 @@ def _default_dryad_discovery_client() -> list[dict[str, object]]:
     )
     discovered: list[dict[str, object]] = []
     seen_dois: set[str] = set()
+    request_urls: list[str] = []
     for query in queries:
         search_url = f"{DRYAD_API_BASE}/api/v2/search?{urlencode({'q': query, 'page': 1, 'per_page': 10})}"
+        request_urls.append(search_url)
         search_payload = _fetch_json(search_url)
         search_payload = search_payload if isinstance(search_payload, dict) else {}
         embedded = search_payload.get("_embedded") if isinstance(search_payload.get("_embedded"), dict) else {}
@@ -620,10 +658,12 @@ def _default_dryad_discovery_client() -> list[dict[str, object]]:
             if not version_href:
                 continue
             version_url, version_payload = client.linked(version_href)
+            request_urls.append(version_url)
             files_href = _link(version_payload, "stash:files")
             if not files_href:
                 continue
             files_url, files_payload = client.linked(files_href)
+            request_urls.append(files_url)
             for file_index, file_payload in enumerate(_file_rows(files_payload), start=1):
                 path = str(file_payload.get("path") or f"file-{file_index}")
                 mime_type = str(file_payload.get("mimeType") or "")
@@ -651,14 +691,26 @@ def _default_dryad_discovery_client() -> list[dict[str, object]]:
                         "digest_type": file_payload.get("digestType"),
                     }
                 )
-    return discovered
+    return DiscoverySweepResult(
+        items=discovered,
+        receipt={
+            "coverage_method": "api_search",
+            "queries": list(queries),
+            "request_urls": request_urls,
+            "page_size": 10,
+            "page_count": len(queries),
+            "cursor_or_page_complete": True,
+            "candidate_limit": len(queries) * 10,
+        },
+    )
 
 
-def _default_osf_discovery_client() -> list[dict[str, object]]:
+def _default_osf_discovery_client() -> DiscoverySweepResult:
     from askinsects.sources.osf_flighttrackai_videos import OSF_API_BASE, _attrs, _data, _links, _next_href, _related_href
 
     search_query = '"Aedes aegypti" video'
     search_url = f"{OSF_API_BASE}/search/?{urlencode({'q': search_query, 'page[size]': 5})}"
+    request_urls = [search_url]
     search_payload = _fetch_json(search_url)
     search_payload = search_payload if isinstance(search_payload, dict) else {}
     discovered: list[dict[str, object]] = []
@@ -681,6 +733,7 @@ def _default_osf_discovery_client() -> list[dict[str, object]]:
             if url in seen_urls:
                 continue
             seen_urls.add(url)
+            request_urls.append(url)
             payload = _fetch_json(url)
             payload = payload if isinstance(payload, dict) else {}
             for item in _data(payload):
@@ -719,10 +772,21 @@ def _default_osf_discovery_client() -> list[dict[str, object]]:
             next_url = _next_href(payload)
             if next_url:
                 queue.append(next_url)
-    return discovered
+    return DiscoverySweepResult(
+        items=discovered,
+        receipt={
+            "coverage_method": "api_search",
+            "queries": [search_query],
+            "request_urls": request_urls,
+            "page_size": 5,
+            "page_count": len(request_urls),
+            "cursor_or_page_complete": True,
+            "candidate_limit": 5,
+        },
+    )
 
 
-def _default_mendeley_discovery_client() -> list[dict[str, object]]:
+def _default_mendeley_discovery_client() -> DiscoverySweepResult:
     from askinsects.sources.mendeley_behavior_media import (
         DEFAULT_MENDELEY_DATASETS,
         MendeleyClient,
@@ -736,9 +800,14 @@ def _default_mendeley_discovery_client() -> list[dict[str, object]]:
 
     client = MendeleyClient()
     discovered: list[dict[str, object]] = []
+    request_urls: list[str] = []
+    dataset_ids: list[str] = []
     for spec in DEFAULT_MENDELEY_DATASETS:
+        dataset_ids.append(spec.dataset_id)
         snapshot_url, snapshot = client.snapshot(spec.dataset_id, spec.version)
+        request_urls.append(snapshot_url)
         folders_url, folders = client.folders(spec.dataset_id, spec.version)
+        request_urls.append(folders_url)
         folder_by_id = {str(folder.get("id")): folder for folder in folders if folder.get("id")}
         folder_paths = {folder_id: _folder_path(folder, folder_by_id) for folder_id, folder in folder_by_id.items()}
         for folder in folders:
@@ -746,6 +815,7 @@ def _default_mendeley_discovery_client() -> list[dict[str, object]]:
             if not folder_id:
                 continue
             files_url, file_groups = client.files(spec.dataset_id, spec.version, folder_id)
+            request_urls.append(files_url)
             for group in file_groups:
                 files = group.get("files") if isinstance(group.get("files"), list) else [group]
                 for file_payload in files:
@@ -779,22 +849,37 @@ def _default_mendeley_discovery_client() -> list[dict[str, object]]:
                             "sha256": details.get("sha256_hash"),
                         }
                     )
-    return discovered
+    return DiscoverySweepResult(
+        items=discovered,
+        receipt={
+            "coverage_method": "seed_plus_api",
+            "queries": [f"mendeley_dataset:{dataset_id}" for dataset_id in dataset_ids],
+            "request_urls": request_urls,
+            "page_size": None,
+            "page_count": len(request_urls),
+            "cursor_or_page_complete": True,
+            "input_sources": ["DEFAULT_MENDELEY_DATASETS"],
+            "candidate_limit": len(dataset_ids),
+        },
+    )
 
 
-def _default_pmc_oa_discovery_client() -> list[dict[str, object]]:
+def _default_pmc_oa_discovery_client() -> DiscoverySweepResult:
     from askinsects.sources.pmc_videos import DEFAULT_PMC_VIDEO_ARTICLES, _license_text, _meta, _pmcid, _video_links
 
     article_urls: list[str] = list(DEFAULT_PMC_VIDEO_ARTICLES)
+    search_string = '"Aedes aegypti" video OPEN_ACCESS:y'
     query = urlencode(
         {
-            "query": '"Aedes aegypti" video OPEN_ACCESS:y',
+            "query": search_string,
             "format": "json",
             "pageSize": "10",
             "resultType": "lite",
         }
     )
-    payload = _fetch_json(f"https://www.ebi.ac.uk/europepmc/webservices/rest/search?{query}")
+    search_url = f"https://www.ebi.ac.uk/europepmc/webservices/rest/search?{query}"
+    request_urls = [search_url]
+    payload = _fetch_json(search_url)
     payload = payload if isinstance(payload, dict) else {}
     result_list = payload.get("resultList") if isinstance(payload.get("resultList"), dict) else {}
     results = result_list.get("result") if isinstance(result_list.get("result"), list) else []
@@ -816,6 +901,7 @@ def _default_pmc_oa_discovery_client() -> list[dict[str, object]]:
             continue
         seen_articles.add(article_url)
         try:
+            request_urls.append(article_url)
             html = _fetch_text(article_url)
         except Exception:
             continue
@@ -840,10 +926,22 @@ def _default_pmc_oa_discovery_client() -> list[dict[str, object]]:
                     "doi": doi,
                 }
             )
-    return discovered
+    return DiscoverySweepResult(
+        items=discovered,
+        receipt={
+            "coverage_method": "seed_plus_api",
+            "queries": [search_string, "DEFAULT_PMC_VIDEO_ARTICLES"],
+            "request_urls": request_urls,
+            "page_size": 10,
+            "page_count": 1,
+            "cursor_or_page_complete": True,
+            "input_sources": ["DEFAULT_PMC_VIDEO_ARTICLES"],
+            "candidate_limit": 10 + len(DEFAULT_PMC_VIDEO_ARTICLES),
+        },
+    )
 
 
-def _default_paper_supplements_discovery_client(artifact_dir: Path) -> list[dict[str, object]]:
+def _default_paper_supplements_discovery_client(artifact_dir: Path) -> DiscoverySweepResult:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     rows = index.sql(
         """
@@ -881,11 +979,24 @@ def _default_paper_supplements_discovery_client(artifact_dir: Path) -> list[dict
                     "source_record_id": row.get("record_id"),
                 }
             )
-    return discovered
+    return DiscoverySweepResult(
+        items=discovered,
+        receipt={
+            "coverage_method": "sqlite_scan",
+            "queries": ["paper_supplement_video_url_scan"],
+            "input_sources": ["aedes_literature_openalex", "aedes_extracted_facts"],
+            "raw_artifacts": ["source_index.sqlite"],
+            "page_size": 250,
+            "page_count": 1,
+            "cursor_or_page_complete": True,
+            "candidate_limit": 250,
+        },
+    )
 
 
-def _default_institutional_discovery_client(artifact_dir: Path) -> list[dict[str, object]]:
-    discovered = _dataverse_institutional_discovery_candidates()
+def _default_institutional_discovery_client(artifact_dir: Path) -> DiscoverySweepResult:
+    dataverse_result = _dataverse_institutional_discovery_candidates()
+    discovered = list(dataverse_result.items)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     rows = index.sql(
         """
@@ -924,10 +1035,17 @@ def _default_institutional_discovery_client(artifact_dir: Path) -> list[dict[str
                     "source_record_id": row.get("record_id"),
                 }
             )
-    return discovered
+    receipt = {
+        **dataverse_result.receipt,
+        "coverage_method": "api_plus_sqlite_scan",
+        "queries": [*dataverse_result.receipt.get("queries", []), "institutional_indexed_video_url_scan"],
+        "input_sources": [*dataverse_result.receipt.get("input_sources", []), "source_index.sqlite"],
+        "raw_artifacts": ["source_index.sqlite"],
+    }
+    return DiscoverySweepResult(items=discovered, receipt=receipt)
 
 
-def _dataverse_institutional_discovery_candidates() -> list[dict[str, object]]:
+def _dataverse_institutional_discovery_candidates() -> DiscoverySweepResult:
     queries = (
         '"Aedes aegypti" mp4',
         '"Aedes aegypti" video',
@@ -935,8 +1053,10 @@ def _dataverse_institutional_discovery_candidates() -> list[dict[str, object]]:
     )
     discovered: list[dict[str, object]] = []
     seen_urls: set[str] = set()
+    request_urls: list[str] = []
     for query in queries:
         url = f"https://dataverse.harvard.edu/api/search?{urlencode({'q': query, 'type': 'file', 'per_page': 50})}"
+        request_urls.append(url)
         payload = _fetch_json(url)
         payload = payload if isinstance(payload, dict) else {}
         data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
@@ -977,10 +1097,22 @@ def _dataverse_institutional_discovery_candidates() -> list[dict[str, object]]:
                     "content_type": content_type,
                 }
             )
-    return discovered
+    return DiscoverySweepResult(
+        items=discovered,
+        receipt={
+            "coverage_method": "api_search",
+            "queries": list(queries),
+            "request_urls": request_urls,
+            "page_size": 50,
+            "page_count": len(queries),
+            "cursor_or_page_complete": True,
+            "input_sources": ["Harvard Dataverse API"],
+            "candidate_limit": len(queries) * 50,
+        },
+    )
 
 
-def default_discovery_clients(artifact_dir: Path | None = None) -> dict[str, Callable[[], list[dict[str, object]]]]:
+def default_discovery_clients(artifact_dir: Path | None = None) -> dict[str, Callable[[], list[dict[str, object]] | DiscoverySweepResult]]:
     artifact_dir = Path(artifact_dir) if artifact_dir is not None else Path(".")
     return {
         "pmc_oa": _default_pmc_oa_discovery_client,
@@ -1655,8 +1787,24 @@ def _candidate_from_discovery(raw: dict[str, object]) -> VideoCandidate | dict[s
     )
 
 
+def _normalize_discovery_result(
+    repository: str,
+    result: list[dict[str, object]] | DiscoverySweepResult,
+) -> tuple[list[dict[str, object]], dict[str, object]]:
+    if isinstance(result, DiscoverySweepResult):
+        return result.items, dict(result.receipt)
+    return result, {
+        "coverage_method": "custom_client",
+        "queries": [f"custom_discovery_client:{repository}"],
+        "page_size": len(result),
+        "page_count": 1,
+        "cursor_or_page_complete": True,
+        "candidate_limit": len(result),
+    }
+
+
 def _discover_candidates(
-    discovery_clients: dict[str, Callable[[], list[dict[str, object]]]],
+    discovery_clients: dict[str, Callable[[], list[dict[str, object]] | DiscoverySweepResult]],
     *,
     max_discovery_results: int,
     gaps: list[dict[str, object]],
@@ -1682,7 +1830,8 @@ def _discover_candidates(
             sweep_receipts.append(receipt)
             continue
         try:
-            raw_items = client()
+            raw_items, receipt_metadata = _normalize_discovery_result(repository, client())
+            receipt.update({key: value for key, value in receipt_metadata.items() if value is not None})
         except Exception as exc:
             gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_fetch_failed", "repository": repository, "error": str(exc)})
             receipt.update({"status": "fetch_failed", "gap_count": 1, "error": str(exc)})
@@ -1752,7 +1901,7 @@ def build_video_atom_records(
     fetch_video_bytes_fn: Callable[[str, int], bytes] | None = None,
     probe_video_file_fn: Callable[[Path], dict[str, object]] | None = None,
     artifact_generator_fn: Callable[[Path, Path, dict[str, object]], dict[str, object]] | None = None,
-    discovery_clients: dict[str, Callable[[], list[dict[str, object]]]] | None = None,
+    discovery_clients: dict[str, Callable[[], list[dict[str, object]] | DiscoverySweepResult]] | None = None,
     max_discovery_results: int = 1000,
     motion_table_paths: Iterable[Path] | None = None,
 ) -> AedesVideoAtomsResult:

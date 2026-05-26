@@ -26,6 +26,7 @@ class VerifyCompleteTests(unittest.TestCase):
         include_all_repositories: bool = True,
         include_sweep_receipts: bool = True,
         include_sweep_records: bool = True,
+        include_sweep_coverage: bool = True,
     ) -> None:
         artifact_dir.mkdir(parents=True)
         db_path = artifact_dir / "source_index.sqlite"
@@ -77,18 +78,27 @@ class VerifyCompleteTests(unittest.TestCase):
                     },
                 )
                 if include_sweep_records:
-                    add(
-                        f"video_atom:sweep:{repository}",
-                        "media",
-                        {
-                            "atom_type": "video_sweep",
-                            "repository": repository,
-                            "status": "accepted_candidates",
-                            "raw_candidate_count": 1,
-                            "accepted_candidate_count": 1,
-                            "gap_count": 0,
-                        },
-                    )
+                    sweep_payload = {
+                        "atom_type": "video_sweep",
+                        "repository": repository,
+                        "status": "accepted_candidates",
+                        "raw_candidate_count": 1,
+                        "accepted_candidate_count": 1,
+                        "gap_count": 0,
+                    }
+                    if include_sweep_coverage:
+                        sweep_payload.update(
+                            {
+                                "coverage_method": "api_search",
+                                "queries": [f"{repository} Aedes aegypti video"],
+                                "request_urls": [f"https://example.org/{repository}/search"],
+                                "page_size": 1,
+                                "page_count": 1,
+                                "cursor_or_page_complete": True,
+                                "candidate_limit": 1,
+                            }
+                        )
+                    add(f"video_atom:sweep:{repository}", "media", sweep_payload)
             add("video_atom:thumbnail:1", "media", {"atom_type": "video_thumbnail"})
             add("video_atom:keyframe:1", "media", {"atom_type": "video_keyframe"})
             add("video_atom:preview:1", "media", {"atom_type": "video_preview_clip"})
@@ -114,16 +124,29 @@ class VerifyCompleteTests(unittest.TestCase):
             }
         }
         if include_sweep_receipts:
-            status["aedes_video_atoms"]["discovery_sweep_receipts"] = [
-                {
+            receipts = []
+            for repository in repositories:
+                receipt = {
                     "repository": repository,
                     "status": "accepted_candidates",
                     "raw_candidate_count": 1,
                     "accepted_candidate_count": 1,
                     "gap_count": 0,
                 }
-                for repository in repositories
-            ]
+                if include_sweep_coverage:
+                    receipt.update(
+                        {
+                            "coverage_method": "api_search",
+                            "queries": [f"{repository} Aedes aegypti video"],
+                            "request_urls": [f"https://example.org/{repository}/search"],
+                            "page_size": 1,
+                            "page_count": 1,
+                            "cursor_or_page_complete": True,
+                            "candidate_limit": 1,
+                        }
+                    )
+                receipts.append(receipt)
+            status["aedes_video_atoms"]["discovery_sweep_receipts"] = receipts
         (artifact_dir / "source_status.json").write_text(json.dumps(status), encoding="utf-8")
         (artifact_dir / "gaps.json").write_text(
             json.dumps([{"source": "aedes_video_atoms", "reason": "video_discovery_client_missing", "repository": "paper_supplements"}]),
@@ -241,6 +264,14 @@ class VerifyCompleteTests(unittest.TestCase):
             self._write_video_atom_artifact(artifact_dir, include_sweep_receipts=False)
 
             with self.assertRaisesRegex(RuntimeError, "discovery_sweep_receipts"):
+                verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
+
+    def test_verify_complete_rejects_video_sweep_receipts_without_coverage_proof(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            self._write_video_atom_artifact(artifact_dir, include_sweep_coverage=False)
+
+            with self.assertRaisesRegex(RuntimeError, "sweep receipts"):
                 verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
 
     def test_verify_complete_rejects_missing_video_sweep_records(self):

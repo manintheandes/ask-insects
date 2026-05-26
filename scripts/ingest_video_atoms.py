@@ -13,7 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
 from askinsects.index import SourceIndex
-from askinsects.sources.video_atoms import VIDEO_ATOMS_SOURCE_ID, build_video_atom_records
+from askinsects.sources.video_atoms import DiscoverySweepResult, VIDEO_ATOMS_SOURCE_ID, build_video_atom_records
 
 
 def _read_json(path: Path, default: object) -> object:
@@ -109,7 +109,7 @@ def ingest_video_atoms(
     fetch_video_bytes_fn: Callable[[str, int], bytes] | None = None,
     probe_video_file_fn: Callable[[Path], dict[str, object]] | None = None,
     artifact_generator_fn: Callable[[Path, Path, dict[str, object]], dict[str, object]] | None = None,
-    discovery_clients: dict[str, Callable[[], list[dict[str, object]]]] | None = None,
+    discovery_clients: dict[str, Callable[[], list[dict[str, object]] | DiscoverySweepResult]] | None = None,
     max_discovery_results: int = 1000,
     motion_table_paths: Iterable[Path] | None = None,
 ) -> dict[str, object]:
