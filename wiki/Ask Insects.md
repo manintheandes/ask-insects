@@ -30,11 +30,11 @@ ask-insects ask "where has Aedes aegypti been spotted this year?"
 
 What's inside:
 
-- **436,182 hosted source records:** [[Source Map|Aedes aegypti source lanes]] across public biodiversity, genomics, behavior, neurobiology, literature, public health, and media evidence
-- **88,066 observations / 5,925 media records:** [[Sources/Observations and Images|GBIF, iNaturalist, Mosquito Alert, licensed images, and media locators]]
-- **118,608 genomics records:** [[Sources/Genome and BioSample Evidence|genes, transcripts, proteins, genome features, BioSamples, DNA barcodes, and assembly records]]
+- **1,426,013 hosted source records:** [[Source Map|Aedes aegypti source lanes]] across public biodiversity, genomics, behavior, neurobiology, literature, public health, surveillance, images, videos, repellents, and media evidence
+- **100,736 observations / 26,096 media records:** [[Sources/Observations and Images|GBIF, iNaturalist, Mosquito Alert, licensed images, and media locators]]
+- **1,059,215 genomics records:** [[Sources/Genome and BioSample Evidence|genes, transcripts, proteins, genome features, BioSamples, DNA barcodes, expression metadata, traits, and assembly records]]
 - **100,018 neurobiology records:** [[Sources/Neurobiology and Connectome Evidence|brain atlas, cell atlas, CATMAID skeleton metadata, voxel access, SRA workflow records, and connectome gaps]]
-- **Scientific intelligence lanes:** [[Sources/Research Papers|papers and legal full text]], [[Sources/Behavior Media and Datasets|behavior datasets and videos]], [[Sources/Vector Competence and Pathogens|pathogen/vector competence evidence]], [[Sources/Resistance and Control Evidence|resistance evidence]], [[Sources/Ecology and Occurrence Summaries|ecology summaries]], and [[Sources/Public Health and Surveillance|official public-health guidance]]
+- **Scientific intelligence lanes:** [[Sources/Research Papers|papers and legal full text]], [[Sources/Repellent Discovery|repellent articles, datasets, preprints, patents, and source gaps]], [[Sources/Behavior Media and Datasets|behavior datasets and videos]], [[Sources/Vector Competence and Pathogens|pathogen/vector competence evidence]], [[Sources/Resistance and Control Evidence|resistance evidence]], [[Sources/Ecology and Occurrence Summaries|ecology summaries]], and [[Sources/Public Health and Surveillance|official public-health guidance and dengue surveillance]]
 
 What it does:
 
@@ -80,4 +80,4 @@ ask-insects health --hosted
 - Want to know what skills are installed: use [[Insects Skills]].
 - Want to know what changed: use [[Ask Insects Updates]].
 
-<!-- publish-bump: 2026-05-24T06:51:53-07:00 -->
+<!-- publish-bump: 2026-05-26T11:25:00-07:00 -->

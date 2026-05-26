@@ -8,7 +8,8 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 
 - [[Sources/Observations and Images]] covers GBIF, iNaturalist, Mosquito Alert, taxonomy, occurrence records, licensed still images, and media payloads.
 - [[Sources/Genome and BioSample Evidence]] covers NCBI Datasets, NCBI BioSample, VectorBase/VEuPathDB, and BOLD DNA barcode evidence.
-- [[Sources/Research Papers]] covers Aedes aegypti literature metadata, legal full-text units, and derived paper facets.
+- [[Sources/Research Papers]] covers Aedes aegypti literature metadata, legal full-text units, olfaction audits, Crossref audit records, and derived paper facets.
+- [[Sources/Repellent Discovery]] covers mosquito repellent papers since 2020, external discovery metadata, datasets, preprints, patents, and blocked-source gap rows.
 - [[Sources/Behavior Media and Datasets]] covers behavior records, Dryad datasets, Mendeley datasets and parsed tables, PMC videos, and OSF FlightTrackAI manifests.
 - [[Sources/Neurobiology and Connectome Evidence]] covers brain atlas, cell atlas, MosquitoBrains, GEO/SRA workflow records, CATMAID metadata, skeleton records, and connectome gaps.
 - [[Sources/Vector Competence and Pathogens]] covers pathogen taxonomy anchors and vector-competence assay candidates.
@@ -28,9 +29,17 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `aedes_occurrence_ecology` | Derived ecology records from GBIF, iNaturalist, and Mosquito Alert observations. |
 | `aedes_literature_openalex` | Aedes aegypti literature records, metadata, abstracts, enrichment payloads, and legal full-text units when available. |
 | `aedes_literature_facets` | Literature-derived behavior, vector competence, resistance, ecology, and public-health facets. |
+| `aedes_olfaction_literature` | PubMed audit records for Aedes aegypti olfaction, odor, chemosensory, antenna, Orco, odorant receptor, and ionotropic receptor papers since 2020. |
+| `aedes_crossref_literature_audit` | Crossref publisher metadata audit records for Aedes aegypti literature since 2020. |
+| `mosquito_repellent_literature` | PubMed and Crossref public metadata for mosquito repellent research articles since 2020. |
+| `mosquito_repellent_external_discovery` | OpenAlex, Europe PMC, AGRICOLA-through-Europe-PMC, Semantic Scholar, Crossref preprint, DataCite, Zenodo, Figshare, patent-gap, CABI-gap, Google-Scholar-gap, and native-preprint-gap records for repellent discovery. |
 | `ncbi_datasets_genome` | NCBI Aedes aegypti assembly, GFF features, genes, transcripts, proteins, and genome metadata. |
 | `ncbi_biosamples` | NCBI BioSample sample metadata, strain/isolate fields, geography, collection date, and linked SRA identifiers when exposed. |
-| `vectorbase_aedes_genomics` | VectorBase/VEuPathDB genes, transcripts, proteins, genome features, and GO annotations. |
+| `vectorbase_aedes_genomics` | VectorBase/VEuPathDB genes, transcripts, proteins, CDS/transcript sequence summaries, GO annotations, codon usage, identifier history, current-ID resolution, NCBI LinkOut, OrthoMCL pair records, and orthogroup membership records. |
+| `aedes_expression_omics` | GEO and SRA expression, RNA-seq, and transcriptome metadata plus source-gap records for unexecuted raw reanalysis and matrix outputs. |
+| `aedes_uniprot_proteins` | UniProtKB protein and UniProt proteome metadata for Aedes aegypti. |
+| `aedes_vectorbyte_traits` | VectorByte/VecTraits Aedes aegypti trait records with value, unit, stage, sex, habitat, location, citation, DOI, and provenance. |
+| `aedes_vectorbyte_abundance` | VectorByte Aedes abundance records. |
 | `bold_api` | BOLD Aedes aegypti DNA barcode specimen records. |
 | `pmc_open_access_videos` | Curated open-access article supplementary videos. |
 | `dryad_aedes_behavior_videos` | Dryad Aedes behavior and video dataset manifests. |
@@ -39,9 +48,15 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `zenodo_aedes_videos` | Zenodo Aedes video search and file-manifest records. |
 | `figshare_aedes_videos` | Figshare Aedes article-detail and file-manifest records. |
 | `aedes_neurobiology_sources` | Aedes neurobiology records, atlas artifacts, H5AD internals, voxel access, CATMAID metadata, skeleton manifests, and connectome gaps. |
+| `aedes_image_atoms` | Derived still-image atom records for Aedes aegypti image assets, source provenance, and image metadata. |
+| `aedes_video_atoms` | Derived video atom records for Aedes aegypti video assets, manifests, probes, previews, keyframes, frame metadata, and structured video gaps. |
 | `irmapper_aedes` | Public IR Mapper Aedes aegypti resistance records. |
 | `aedes_resistance_markers` | Literature-derived kdr, VGSC, and metabolic-resistance marker records. |
 | `aedes_pathogen_taxonomy` | NCBI Taxonomy records for dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus. |
 | `aedes_vector_competence_assays` | Literature-derived vector-competence assay candidate records. |
 | `aedes_public_health_guidance` | WHO, PAHO, CDC, and ECDC guidance pages relevant to Aedes aegypti. |
 | `aedes_paho_dengue_surveillance` | PAHO dengue situation report evidence and mapped dashboard source gaps. |
+| `aedes_who_dengue_surveillance` | WHO dengue surveillance pages, WER global update pages, WPRO situation updates, archive links, and dashboard locators. |
+| `aedes_cdc_dengue_surveillance` | CDC dengue current-year and historic ArboNET pages, CDC visualization JSON configs, linked CSV rows, and ArboNET limitation evidence. |
+| `vectornet_aedes_surveillance` | VectorNet Aedes surveillance records. |
+| `who_malaria_threats_resistance_audit` | WHO Malaria Threats Map Aedes resistance audit records and explicit no-row gap when the Aedes filter returns no rows. |

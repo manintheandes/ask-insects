@@ -1,17 +1,18 @@
 # Observations and Images
 
-Source IDs: `gbif_api`, `inaturalist_api`, `mosquito_alert_gbif`, `mosquito_v1_fixtures`
+Source IDs: `gbif_api`, `inaturalist_api`, `mosquito_alert_gbif`, `mosquito_v1_fixtures`, `aedes_image_atoms`
 
 This page covers public Aedes aegypti taxonomy, occurrence, citizen-science, observation, and still-image evidence.
 
 What it contains:
 
-- 88,066 hosted observation records
-- 5,925 hosted media records
+- 100,736 hosted observation records
+- 26,096 hosted media records
+- 19,439 derived still-image atom records
 - GBIF Aedes aegypti taxonomy and occurrence records
 - iNaturalist public observations and licensed still photos
 - Mosquito Alert citizen-science observations and still-image metadata through GBIF
-- source URLs, licenses, observation payloads, and provenance locators
+- source URLs, licenses, observation payloads, image metadata, media locators, and provenance locators
 
 Connects to:
 

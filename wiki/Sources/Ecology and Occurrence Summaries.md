@@ -1,14 +1,18 @@
 # Ecology and Occurrence Summaries
 
-Source IDs: `aedes_occurrence_ecology`, `aedes_literature_facets`
+Source IDs: `aedes_occurrence_ecology`, `aedes_observation_climate_join`, `aedes_global_compendium_occurrence`, `aedes_worldclim_climate`, `harvard_dataverse_aedes_suitability`, `aedes_taxonomy_authorities`, `aedes_literature_facets`
 
 This page covers derived Aedes aegypti ecology records from indexed observations and literature-derived ecology facets.
 
 What it contains:
 
-- 7,238 hosted ecology records
+- 11,009 hosted ecology records
 - country and country-month summaries
 - seasonality, range, and public habitat records
+- WorldClim climate source pages and bounded observation-climate joins
+- Harvard Dataverse suitability/risk raster manifests
+- global Aedes occurrence compendium rows filtered to Aedes aegypti
+- taxonomy-authority page records from ECDC, OECD, and MTI/WRBU-style sources
 - input source counts from GBIF, iNaturalist, and Mosquito Alert
 - date ranges, coordinate counts, bounding boxes, sample input record IDs, source URLs, and provenance to SQLite observation joins
 

@@ -35,6 +35,9 @@ tags:
 
 ## Research Paper Questions
 - "Search Aedes aegypti papers for olfactory receptors."
+- "Show mosquito repellent papers since 2020 and separate already indexed papers from new metadata-only candidates."
+- "Which repellent datasets or preprints are indexed outside PubMed and Crossref?"
+- "What does Ask Insects know about Google Scholar, CABI, PatentsView, and USPTO coverage for mosquito repellents?"
 - "Which legal full-text units mention vector competence?"
 - "What does the literature say, and what source gaps remain?"
 
