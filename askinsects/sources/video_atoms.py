@@ -598,7 +598,25 @@ def _default_figshare_discovery_client() -> DiscoverySweepResult:
             continue
         detail_url = f"https://api.figshare.com/v2/articles/{article_id}"
         request_urls.append(detail_url)
-        detail = _fetch_json(detail_url)
+        try:
+            detail = _fetch_json(detail_url)
+        except Exception as exc:
+            title = str(summary.get("title") or "Figshare Aedes video candidate")
+            source_url = summary.get("url_public_html") if isinstance(summary.get("url_public_html"), str) else detail_url
+            discovered.append(
+                {
+                    "repository": "figshare",
+                    "title": title,
+                    "description": str(summary.get("description") or ""),
+                    "source_url": source_url,
+                    "license": "unclear",
+                    "species_scope": title,
+                    "retrieved_at": utc_now(),
+                    "fetch_error": str(exc),
+                    "locator": f"raw/video_atoms/discovery_sweeps.json#figshare/articles/{article_id}",
+                }
+            )
+            continue
         title = str(detail.get("title") or summary.get("title") or "Figshare Aedes video candidate")
         description = str(detail.get("description") or "")
         license_payload = detail.get("license") if isinstance(detail.get("license"), dict) else {}

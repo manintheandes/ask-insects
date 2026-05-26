@@ -1310,6 +1310,28 @@ class VideoAtomsSourceTests(unittest.TestCase):
         query = parse_qs(urlparse(requested_urls[0]).query)
         self.assertEqual(query["page_size"], ["100"])
 
+    def test_figshare_discovery_preserves_detail_fetch_failures_as_gap_candidates(self):
+        requested_urls: list[str] = []
+
+        def fake_fetch_json(url: str) -> object:
+            requested_urls.append(url)
+            if url.endswith("/32407513"):
+                raise RuntimeError("HTTP Error 404: Not Found")
+            return [{"id": 32407513, "title": "Aedes aegypti video article"}]
+
+        original_fetch_json = video_atoms._fetch_json
+        try:
+            video_atoms._fetch_json = fake_fetch_json
+            discovery_result = video_atoms._default_figshare_discovery_client()
+        finally:
+            video_atoms._fetch_json = original_fetch_json
+
+        self.assertEqual(len(discovery_result.items), 1)
+        self.assertEqual(discovery_result.items[0]["repository"], "figshare")
+        self.assertIn("HTTP Error 404", discovery_result.items[0]["fetch_error"])
+        self.assertEqual(discovery_result.receipt["coverage_method"], "api_search")
+        self.assertEqual(discovery_result.receipt["request_urls"], requested_urls)
+
 
 if __name__ == "__main__":
     unittest.main()
