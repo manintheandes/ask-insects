@@ -11,7 +11,7 @@ import re
 import shutil
 import subprocess
 from typing import Callable, Iterable
-from urllib.parse import quote, urlencode, urljoin, urlparse
+from urllib.parse import quote, unquote, urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 import zipfile
 
@@ -1892,6 +1892,89 @@ def _normalize_motion_row(row: dict[object, object]) -> dict[str, str]:
     return cleaned
 
 
+def _motion_video_id(row: dict[str, str], table_path: Path) -> str:
+    return row.get("video_id") or row.get("video") or row.get("source_video_record_id") or table_path.stem
+
+
+def _motion_lookup_keys(value: object) -> set[str]:
+    text = str(value or "").strip()
+    if not text:
+        return set()
+    keys = {text.lower()}
+    parsed = urlparse(text)
+    if parsed.fragment:
+        fragment = unquote(parsed.fragment).strip()
+        if fragment:
+            keys.add(fragment.lower())
+            keys.add(Path(fragment).name.lower())
+    path = unquote(parsed.path or text).strip()
+    if path:
+        keys.add(path.lower())
+        keys.add(Path(path).name.lower())
+    return {key for key in keys if key}
+
+
+def _build_motion_asset_lookup(records: Iterable[EvidenceRecord]) -> dict[str, EvidenceRecord]:
+    lookup: dict[str, EvidenceRecord] = {}
+    for record in records:
+        if not record.payload or record.payload.get("atom_type") != "video_asset":
+            continue
+        payload = record.payload
+        values: list[object] = [
+            record.record_id,
+            record.media_url,
+            record.url,
+            payload.get("source_video_record_id"),
+            payload.get("member_name"),
+            payload.get("raw_asset_path"),
+            payload.get("download_url"),
+            payload.get("archive_source_video_record_id"),
+        ]
+        source_payload = payload.get("source_video_payload")
+        if isinstance(source_payload, dict):
+            values.extend(
+                source_payload.get(key)
+                for key in (
+                    "filename",
+                    "name",
+                    "materialized_path",
+                    "download_url",
+                    "video_url",
+                    "media_url",
+                )
+            )
+        for value in values:
+            for key in _motion_lookup_keys(value):
+                lookup.setdefault(key, record)
+    return lookup
+
+
+def _motion_asset_for_video_id(video_id: str, asset_lookup: dict[str, EvidenceRecord]) -> EvidenceRecord | None:
+    for key in _motion_lookup_keys(video_id):
+        asset = asset_lookup.get(key)
+        if asset is not None:
+            return asset
+    return None
+
+
+def _motion_asset_payload(asset: EvidenceRecord | None) -> dict[str, object]:
+    if asset is None or not asset.payload:
+        return {}
+    payload = asset.payload
+    return {
+        key: value
+        for key, value in {
+            "source_video_asset_id": asset.record_id,
+            "source_video_asset_status": payload.get("verification_status"),
+            "source_dataset": payload.get("source_dataset"),
+            "repository": payload.get("repository") or payload.get("discovery_repository"),
+            "download_url": payload.get("download_url") or asset.media_url,
+            "source_video_asset_media_url": asset.media_url,
+        }.items()
+        if value not in (None, "", {})
+    }
+
+
 def _motion_record(
     row: dict[str, str],
     *,
@@ -1900,8 +1983,9 @@ def _motion_record(
     row_index: int,
     retrieved_at: str,
     locator_suffix: str | None = None,
+    source_video_asset: EvidenceRecord | None = None,
 ) -> EvidenceRecord:
-    video_id = row.get("video_id") or row.get("video") or row.get("source_video_record_id") or table_path.stem
+    video_id = _motion_video_id(row, table_path)
     behavior = row.get("behavior") or row.get("behavior_type") or "video motion"
     trial = row.get("trial")
     arena = row.get("arena")
@@ -1933,6 +2017,7 @@ def _motion_record(
         "angular_velocity_relative_mean_deg_s": _parse_number(row.get("angular_velocity_relative_mean_deg_s")),
         "distance_moved_total_cm": _parse_number(row.get("distance_moved_total_cm")),
         "source_table_row": row,
+        **_motion_asset_payload(source_video_asset),
     }
     payload = {key: value for key, value in payload.items() if value is not None}
     rel_path = table_path.relative_to(artifact_dir).as_posix()
@@ -1957,13 +2042,13 @@ def _motion_record(
             f"Time seconds: {payload.get('time_seconds')}. Coordinates: {payload.get('x')}, {payload.get('y')}.{metric_text}"
         ),
         species="Aedes aegypti",
-        url=None,
-        media_url=None,
+        url=source_video_asset.url if source_video_asset else None,
+        media_url=source_video_asset.media_url if source_video_asset else None,
         provenance=Provenance(
             source_id=VIDEO_ATOMS_SOURCE_ID,
             locator=locator,
             retrieved_at=retrieved_at,
-            source_url=rel_path,
+            source_url=source_video_asset.media_url if source_video_asset and source_video_asset.media_url else rel_path,
         ),
         payload=payload,
     )
@@ -2003,13 +2088,33 @@ def _parse_motion_tables(
     artifact_dir: Path,
     retrieved_at: str,
     gaps: list[dict[str, object]],
+    asset_lookup: dict[str, EvidenceRecord] | None = None,
 ) -> list[EvidenceRecord]:
     records: list[EvidenceRecord] = []
+    unmatched: set[tuple[str, str]] = set()
     for table_path in motion_table_paths:
         try:
             path = Path(table_path)
             parsed_rows = _parse_xlsx_motion_table(path) if path.suffix.lower() == ".xlsx" else _parse_delimited_motion_table(path)
             for row_index, cleaned, locator_suffix in parsed_rows:
+                video_id = _motion_video_id(cleaned, path)
+                source_video_asset = _motion_asset_for_video_id(video_id, asset_lookup or {})
+                if asset_lookup and source_video_asset is None:
+                    rel_path = path.relative_to(artifact_dir).as_posix()
+                    key = (rel_path, video_id)
+                    if key not in unmatched:
+                        unmatched.add(key)
+                        gaps.append(
+                            {
+                                "source": VIDEO_ATOMS_SOURCE_ID,
+                                "lane": "behavior",
+                                "reason": "video_motion_unmatched_source_video",
+                                "record_id": video_id,
+                                "source_video_record_id": video_id,
+                                "source_table": rel_path,
+                                "locator": f"{rel_path}#{locator_suffix}",
+                            }
+                        )
                 records.append(
                     _motion_record(
                         cleaned,
@@ -2018,6 +2123,7 @@ def _parse_motion_tables(
                         row_index=row_index,
                         retrieved_at=retrieved_at,
                         locator_suffix=locator_suffix,
+                        source_video_asset=source_video_asset,
                     )
                 )
         except Exception as exc:
@@ -2319,7 +2425,13 @@ def build_video_atom_records(
 
     if motion_table_paths is None:
         motion_table_paths = _default_motion_table_paths(artifact_dir)
-    motion_records = _parse_motion_tables(motion_table_paths, artifact_dir=artifact_dir, retrieved_at=retrieved_at, gaps=gaps)
+    motion_records = _parse_motion_tables(
+        motion_table_paths,
+        artifact_dir=artifact_dir,
+        retrieved_at=retrieved_at,
+        gaps=gaps,
+        asset_lookup=_build_motion_asset_lookup(records),
+    )
     records.extend(motion_records)
     gaps.extend(_load_upstream_manifest_gap_contexts(artifact_dir))
     records.extend(_sweep_record(receipt, retrieved_at=retrieved_at) for receipt in discovery_sweep_receipts)

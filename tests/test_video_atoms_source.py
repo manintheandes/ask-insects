@@ -512,6 +512,9 @@ class VideoAtomsSourceTests(unittest.TestCase):
             rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
             self.assertEqual(len(rows), 1)
             self.assertEqual(rows[0].payload["track_id"], "track-7")
+            self.assertIn("source_video_asset_id", rows[0].payload)
+            self.assertEqual(rows[0].payload["repository"], "dryad")
+            self.assertEqual(rows[0].media_url, asset.media_url)
             self.assertIn("raw/video_atoms/archive_tables/dryad:file:video-archive/tracks.csv#row/1", rows[0].provenance.locator)
 
     def test_ignores_audio_files_from_mixed_media_sources(self):
@@ -750,7 +753,44 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(row.payload["y"], 93.1)
         self.assertEqual(row.payload["behavior_type"], "host seeking")
         self.assertEqual(row.payload["confidence"], "source_table")
+        self.assertIn("source_video_asset_id", row.payload)
+        self.assertEqual(row.payload["repository"], "pmc_oa")
+        self.assertEqual(row.payload["source_dataset"], "BiteOscope")
+        self.assertEqual(row.payload["download_url"], "https://example.org/video1.mp4")
+        self.assertEqual(row.media_url, "https://example.org/video1.mp4")
         self.assertIn("raw/mendeley_behavior_media/motion.csv#row/1", row.provenance.locator)
+
+    def test_motion_rows_emit_queryable_gap_when_source_video_is_unmatched(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = artifact_dir / "raw" / "mendeley_behavior_media" / "unknown-motion.csv"
+            table_path.parent.mkdir(parents=True)
+            table_path.write_text(
+                "video_id,track_id,frame,time_seconds,x,y,behavior\n"
+                "unknown-video.mp4,track-1,1,0.1,2,3,flight\n"
+                "unknown-video.mp4,track-1,2,0.2,3,4,flight\n",
+                encoding="utf-8",
+            )
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                motion_table_paths=[table_path],
+            )
+
+        rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+        self.assertEqual(len(rows), 2)
+        self.assertNotIn("source_video_asset_id", rows[0].payload)
+        gap_records = [
+            record
+            for record in result.records
+            if record.payload.get("atom_type") == "video_gap"
+            and record.payload.get("reason") == "video_motion_unmatched_source_video"
+        ]
+        self.assertEqual(len(gap_records), 1)
+        self.assertEqual(gap_records[0].payload["source_video_record_id"], "unknown-video.mp4")
+        self.assertIn("raw/mendeley_behavior_media/unknown-motion.csv#row/1", gap_records[0].provenance.locator)
 
     def test_parses_trackmate_spot_statistics_motion_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
