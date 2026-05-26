@@ -959,9 +959,11 @@ def check_aedes_source_plane_benchmark() -> None:
         raise RuntimeError("Aedes benchmark hosted proof is below the expected hosted record count")
     if int(current_proof.get("hosted_vectorbase_genomics_records", 0)) < 872001:
         raise RuntimeError("Aedes benchmark hosted VectorBase proof is below the expected record count")
-    if int(current_proof.get("hosted_video_atom_records", 0)) < 46156:
+    if int(current_proof.get("hosted_video_atom_records", 0)) < 46181:
         raise RuntimeError("Aedes benchmark hosted video-atom proof is below the expected record count")
-    if int(current_proof.get("hosted_video_gap_records", 0)) < 400:
+    if int(current_proof.get("hosted_video_artifact_records", 0)) < 179:
+        raise RuntimeError("Aedes benchmark hosted video-artifact proof is below the expected record count")
+    if int(current_proof.get("hosted_video_gap_records", 0)) < 330:
         raise RuntimeError("Aedes benchmark hosted video-gap proof is below the expected record count")
     hosted_sources = current_proof.get("hosted_sources")
     if not isinstance(hosted_sources, list):
