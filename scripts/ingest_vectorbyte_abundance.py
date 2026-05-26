@@ -25,6 +25,31 @@ def _read_json(path: Path, default: object) -> object:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_dataset_ids_file(path: Path) -> list[str]:
+    dataset_ids: list[str] = []
+    seen: set[str] = set()
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.split("#", 1)[0]
+        for part in line.split(","):
+            dataset_id = part.strip()
+            if dataset_id and dataset_id not in seen:
+                dataset_ids.append(dataset_id)
+                seen.add(dataset_id)
+    return dataset_ids
+
+
+def merge_dataset_ids(*groups: list[str] | None) -> list[str]:
+    dataset_ids: list[str] = []
+    seen: set[str] = set()
+    for group in groups:
+        for item in group or []:
+            dataset_id = str(item).strip()
+            if dataset_id and dataset_id not in seen:
+                dataset_ids.append(dataset_id)
+                seen.add(dataset_id)
+    return dataset_ids
+
+
 def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     existing = _read_json(gaps_path, [])
     if not isinstance(existing, list):
@@ -140,8 +165,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--search-page-limit", type=int, default=3)
     parser.add_argument("--dataset-page-limit", type=int, default=100)
     parser.add_argument("--dataset-id", dest="dataset_ids", action="append", default=[])
+    parser.add_argument("--dataset-id-file", dest="dataset_id_files", action="append", default=[])
     parser.add_argument("--retrieved-at")
     args = parser.parse_args(argv)
+    file_dataset_ids: list[str] = []
+    for path in args.dataset_id_files:
+        file_dataset_ids.extend(load_dataset_ids_file(Path(path)))
     result = ingest_vectorbyte_abundance(
         artifact_dir=Path(args.artifact_dir),
         query=args.query,
@@ -149,7 +178,7 @@ def main(argv: list[str] | None = None) -> int:
         row_limit=args.row_limit,
         search_page_limit=args.search_page_limit,
         dataset_page_limit=args.dataset_page_limit,
-        dataset_ids=args.dataset_ids,
+        dataset_ids=merge_dataset_ids(args.dataset_ids, file_dataset_ids),
         retrieved_at=args.retrieved_at,
     )
     print(json.dumps(result, sort_keys=True))

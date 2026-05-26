@@ -657,6 +657,35 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_vectorbyte_abundance_ingest_reads_dataset_id_file(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 42}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dataset_file = Path(tmpdir) / "vecdyn-datasets.txt"
+            dataset_file.write_text("27006\n220, 221\n220\n", encoding="utf-8")
+            with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+                load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+                code, output = self.run_cli(
+                    "ingest-vectorbyte-abundance",
+                    "--hosted",
+                    "--dataset-id-file",
+                    str(dataset_file),
+                    "--dataset-id",
+                    "222",
+                    "--dataset-limit",
+                    "4",
+                )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1], "/ingest/vectorbyte-abundance")
+        self.assertEqual(calls[0][2]["dataset_ids"], ["222", "27006", "220", "221"])
+        self.assertEqual(calls[0][2]["dataset_limit"], 4)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_mosquito_alert_ingest_sends_options(self):
         calls = []
 

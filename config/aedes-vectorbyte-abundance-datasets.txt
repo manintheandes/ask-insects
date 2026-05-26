@@ -1,0 +1,31 @@
+# Curated VectorByte VecDyn dataset IDs for exact Aedes aegypti abundance receipts.
+# Keep already installed IDs here when adding new IDs because this source refresh
+# replaces the aedes_vectorbyte_abundance lane.
+27006
+220
+221
+222
+440
+435
+438
+439
+442
+445
+449
+591
+604
+605
+606
+612
+615
+616
+620
+622
+624
+627
+635
+636
+637
+
+# Next frontier from the same live VectorByte search, held for chunked refresh:
+# 718, 724, 725, 726, 733, 734.

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from askinsects.builder import build_fixture_index
 from askinsects.index import SourceIndex
-from scripts.ingest_vectorbyte_abundance import ingest_vectorbyte_abundance
+from scripts.ingest_vectorbyte_abundance import ingest_vectorbyte_abundance, load_dataset_ids_file
 from tests.test_vectorbyte_abundance_source import DATASET_220_PAGE_1, DATASET_27006_PAGE_1, SEARCH_PAYLOAD
 
 
@@ -107,6 +107,20 @@ class IngestVectorByteAbundanceTests(unittest.TestCase):
                 limit=10,
             )
             self.assertEqual({row["lane"]: row["n"] for row in rows}, {"ecology": 2, "observations": 2})
+
+    def test_load_dataset_ids_file_accepts_lines_commas_and_comments(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "vecdyn-datasets.txt"
+            path.write_text(
+                "# installed baseline\n"
+                "27006, 220\n"
+                "\n"
+                "221\n"
+                "220\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(load_dataset_ids_file(path), ["27006", "220", "221"])
 
 
 if __name__ == "__main__":

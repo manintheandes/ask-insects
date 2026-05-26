@@ -179,11 +179,12 @@ This writes VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte
 ```bash
 python3 -m askinsects ingest-vectorbyte-abundance --dataset-limit 5 --row-limit 5000
 python3 -m askinsects ingest-vectorbyte-abundance --dataset-id 27006 --dataset-id 220 --dataset-limit 2 --row-limit 20000 --dataset-page-limit 120
+python3 -m askinsects ingest-vectorbyte-abundance --dataset-id-file config/aedes-vectorbyte-abundance-datasets.txt --dataset-limit 25 --row-limit 100000 --dataset-page-limit 200
 python3 -m askinsects ask "show VectorByte VecDyn Aedes aegypti abundance trap counts" --json
 python3 -m askinsects search observations "VecDyn abundance"
 ```
 
-This writes VecDyn provider metadata JSON and paginated sample JSON under `raw/vectorbyte_abundance/`, indexes one `ecology` record per Aedes-relevant VecDyn dataset plus one `observations` record per Aedes aegypti abundance sample row, and preserves sample value, unit, date, time, stage, sex, sampling method, coordinates, location, DOI, citation, dataset ID, and raw JSON locators. Use repeated `--dataset-id` flags for curated exact-dataset receipts when a broad search frontier is too large or mixed-species. Large VecDyn datasets remain bounded by explicit dataset, search-page, dataset-page, and row limits; skipped frontier rows become structured gaps.
+This writes VecDyn provider metadata JSON and paginated sample JSON under `raw/vectorbyte_abundance/`, indexes one `ecology` record per Aedes-relevant VecDyn dataset plus one `observations` record per Aedes aegypti abundance sample row, and preserves sample value, unit, date, time, stage, sex, sampling method, coordinates, location, DOI, citation, dataset ID, and raw JSON locators. Use repeated `--dataset-id` flags or `--dataset-id-file` for curated exact-dataset receipts when a broad search frontier is too large or mixed-species. Large VecDyn datasets remain bounded by explicit dataset, search-page, dataset-page, and row limits; skipped frontier rows become structured gaps.
 
 ## Aedes Deep Source Expansion Lane
 
@@ -630,7 +631,7 @@ python3 -m askinsects ingest-uniprot-proteins --hosted --protein-limit 250 --pro
 python3 -m askinsects ingest-wolbachia-interventions --hosted
 python3 -m askinsects ingest-vectorbyte-traits --hosted --dataset-limit 20 --row-limit 5000
 python3 -m askinsects ingest-vectorbyte-abundance --hosted --dataset-limit 5 --row-limit 5000
-python3 -m askinsects ingest-vectorbyte-abundance --hosted --dataset-id 27006 --dataset-id 220 --dataset-limit 2 --row-limit 20000 --dataset-page-limit 120
+python3 -m askinsects ingest-vectorbyte-abundance --hosted --dataset-id-file config/aedes-vectorbyte-abundance-datasets.txt --dataset-limit 25 --row-limit 100000 --dataset-page-limit 200
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-extracted-facts --hosted
