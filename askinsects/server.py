@@ -2679,6 +2679,8 @@ def ingest_extracted_facts_staged(
             raise ValueError("source_record_ids must be a list")
         source_record_ids = [str(source_record_id) for source_record_id in source_record_ids_value if str(source_record_id)]
     merge_existing = bool(payload.get("merge_existing", False))
+    if merge_existing and not source_record_ids:
+        raise ValueError("merge_existing requires at least one source_record_id")
 
     staging = artifact_dir.parent / f".{artifact_dir.name}.extracted-facts-staging"
     if staging.exists():
@@ -3356,8 +3358,11 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
         self.send_response(response.status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Connection", "close")
         self.end_headers()
         self.wfile.write(body)
+        self.wfile.flush()
+        self.close_connection = True
 
     def do_GET(self) -> None:
         response = dispatch_request(

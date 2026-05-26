@@ -2552,6 +2552,18 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.status, 400)
             self.assertIn("source_record_ids must be a list", response.payload["error"])
 
+            response = dispatch_request(
+                "POST",
+                "/ingest/extracted-facts",
+                {"merge_existing": True},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 400)
+            self.assertIn("merge_existing requires at least one source_record_id", response.payload["error"])
+
     def test_ingest_video_atoms_adds_records_without_removing_existing_sources(self):
         from tests.test_video_atoms_source import write_video_fixture
 
