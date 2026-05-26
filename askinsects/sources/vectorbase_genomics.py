@@ -20,7 +20,9 @@ VECTORBASE_ORGANISM = "AaegyptiLVP_AGWG"
 VECTORBASE_BASE_URL = f"https://vectorbase.org/common/downloads/{VECTORBASE_RELEASE}/{VECTORBASE_ORGANISM}"
 ORTHOMCL_RELEASE = "release-6.21"
 ORTHOMCL_CORE_PAIRS_URL = f"https://orthomcl.org/common/downloads/{ORTHOMCL_RELEASE}/corePairs_OrthoMCL-CURRENT"
+ORTHOMCL_GROUPS_URL = f"https://orthomcl.org/common/downloads/{ORTHOMCL_RELEASE}/groups_OrthoMCL-6.21.txt.gz"
 ORTHOMCL_AEDES_PREFIX = "aaeg-old|"
+ORTHOMCL_AEDES_GROUP_PREFIXES = ("aaeg|AAEL", "aaeg-old|AAEL")
 DEFAULT_VECTORBASE_FILE_URLS = {
     "gff": f"{VECTORBASE_BASE_URL}/gff/data/VectorBase-68_AaegyptiLVP_AGWG.gff",
     "proteins": f"{VECTORBASE_BASE_URL}/fasta/data/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta",
@@ -33,6 +35,7 @@ DEFAULT_VECTORBASE_FILE_URLS = {
     "orthologs": f"{ORTHOMCL_CORE_PAIRS_URL}/orthologs.txt.gz",
     "coorthologs": f"{ORTHOMCL_CORE_PAIRS_URL}/coorthologs.txt.gz",
     "inparalogs": f"{ORTHOMCL_CORE_PAIRS_URL}/inparalogs.txt.gz",
+    "orthogroups": ORTHOMCL_GROUPS_URL,
 }
 DEFAULT_VECTORBASE_SPECIES = "Aedes aegypti"
 ADVANCED_ORTHOLOGY_GAP = {
@@ -40,10 +43,9 @@ ADVANCED_ORTHOLOGY_GAP = {
     "lane": "genome_features",
     "reason": "orthogroups_not_indexed",
     "scope": (
-        "Current Ask Insects VectorBase/OrthoMCL coverage indexes first-pass "
-        "OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows where "
-        "either side starts with aaeg-old|AAEL. It does not yet include "
-        "orthogroups."
+        "This VectorBase/OrthoMCL refresh could not index OrthoMCL release 6.21 "
+        "orthogroup membership rows. When the groups file is available, Ask Insects "
+        "indexes orthogroups where members start with aaeg|AAEL or aaeg-old|AAEL."
     ),
 }
 
@@ -100,7 +102,11 @@ def _write_source_boundary(raw_dir: Path, retrieved_at: str) -> Path:
     payload = {
         "source": VECTORBASE_GENOMICS_SOURCE_ID,
         "retrieved_at": retrieved_at,
-        "gaps": [{**ADVANCED_ORTHOLOGY_GAP, "retrieved_at": retrieved_at}],
+        "coverage": {
+            "orthomcl_pairs": "corePairs_OrthoMCL-CURRENT ortholog, coortholog, and inparalog files",
+            "orthogroups": "groups_OrthoMCL-6.21.txt.gz Aedes membership rows",
+        },
+        "gaps": [],
     }
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
@@ -114,9 +120,8 @@ def _advanced_orthology_gap_record(boundary_path: Path, retrieved_at: str) -> Ev
         source=VECTORBASE_GENOMICS_SOURCE_ID,
         title="Aedes aegypti VectorBase advanced orthology source gap",
         text=(
-            "VectorBase genomics source gap: Ask Insects currently indexes first-pass "
-            "OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in "
-            "the old AAEL namespace, not orthogroups."
+            "VectorBase genomics source gap: this refresh could not index OrthoMCL "
+            "release 6.21 orthogroup membership rows for Aedes aegypti."
         ),
         species=DEFAULT_VECTORBASE_SPECIES,
         url=ORTHOMCL_CORE_PAIRS_URL,
@@ -865,6 +870,106 @@ def _parse_orthomcl_pairs(
     return records, gaps
 
 
+def _parse_orthomcl_groups(
+    path: Path,
+    *,
+    source_url: str,
+    retrieved_at: str,
+) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
+    records: list[EvidenceRecord] = []
+    gaps: list[dict[str, object]] = []
+    with _open_text_or_gzip(path) as handle:
+        for line_number, raw_line in enumerate(handle, start=1):
+            line = raw_line.strip()
+            if not line:
+                continue
+            if ":" not in line:
+                gaps.append(
+                    {
+                        "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                        "lane": "genome_features",
+                        "reason": "malformed_orthomcl_group_row",
+                        "file": path.as_posix(),
+                        "line_number": line_number,
+                    }
+                )
+                continue
+            group_id, raw_members = line.split(":", 1)
+            group_id = group_id.strip()
+            members = [member.strip() for member in raw_members.split() if member.strip()]
+            if not group_id or not members:
+                gaps.append(
+                    {
+                        "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                        "lane": "genome_features",
+                        "reason": "malformed_orthomcl_group_row",
+                        "file": path.as_posix(),
+                        "line_number": line_number,
+                    }
+                )
+                continue
+            aedes_members = [
+                member for member in members if any(member.startswith(prefix) for prefix in ORTHOMCL_AEDES_GROUP_PREFIXES)
+            ]
+            if not aedes_members:
+                continue
+            sample_members = members[:25]
+            for aedes_member in aedes_members:
+                species_code, aedes_gene_id = _split_orthomcl_id(aedes_member)
+                records.append(
+                    EvidenceRecord(
+                        record_id=(
+                            f"vectorbase:orthogroup:{_record_id_piece(group_id)}:"
+                            f"{_record_id_piece(aedes_member)}"
+                        ),
+                        lane="genome_features",
+                        source=VECTORBASE_GENOMICS_SOURCE_ID,
+                        title=f"Aedes aegypti OrthoMCL orthogroup {group_id} member {aedes_gene_id}",
+                        text=(
+                            f"OrthoMCL orthogroup {group_id} contains Aedes aegypti member {aedes_member}; "
+                            f"the group has {len(members)} total members and {len(aedes_members)} Aedes members."
+                        ),
+                        species=DEFAULT_VECTORBASE_SPECIES,
+                        url=source_url,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id=VECTORBASE_GENOMICS_SOURCE_ID,
+                            locator=f"{path.as_posix()}#line/{line_number}",
+                            retrieved_at=retrieved_at,
+                            license="OrthoMCL public download; source terms apply",
+                            source_url=source_url,
+                        ),
+                        payload={
+                            "release": VECTORBASE_RELEASE,
+                            "organism": VECTORBASE_ORGANISM,
+                            "atom_type": "orthogroup_membership",
+                            "orthomcl_release": ORTHOMCL_RELEASE,
+                            "orthogroup_id": group_id,
+                            "aedes_orthomcl_id": aedes_member,
+                            "aedes_species_code": species_code or None,
+                            "aedes_gene_id": aedes_gene_id,
+                            "aedes_member_count": len(aedes_members),
+                            "aedes_members": aedes_members,
+                            "group_member_count": len(members),
+                            "sample_members": sample_members,
+                            "line_number": line_number,
+                            "source_file": path.name,
+                        },
+                    )
+                )
+    if not records:
+        gaps.append(
+            {
+                "source": VECTORBASE_GENOMICS_SOURCE_ID,
+                "lane": "genome_features",
+                "reason": "orthomcl_no_aedes_orthogroup_rows",
+                "file": path.as_posix(),
+                "url": source_url,
+            }
+        )
+    return records, gaps
+
+
 def fetch_vectorbase_genomics_records(
     *,
     raw_dir: Path,
@@ -882,8 +987,6 @@ def fetch_vectorbase_genomics_records(
     raw_artifacts: list[str] = []
     boundary_path = _write_source_boundary(raw_dir, retrieved)
     raw_artifacts.append(boundary_path.as_posix())
-    gaps.append({**ADVANCED_ORTHOLOGY_GAP, "retrieved_at": retrieved})
-    records.append(_advanced_orthology_gap_record(boundary_path, retrieved))
 
     downloaded: dict[str, Path] = {}
     for kind, url in urls.items():
@@ -969,6 +1072,17 @@ def fetch_vectorbase_genomics_records(
             )
             records.extend(parsed)
             gaps.extend(parse_gaps)
+    if "orthogroups" in downloaded:
+        parsed, parse_gaps = _parse_orthomcl_groups(
+            downloaded["orthogroups"],
+            source_url=urls["orthogroups"],
+            retrieved_at=retrieved,
+        )
+        records.extend(parsed)
+        gaps.extend(parse_gaps)
+    else:
+        gaps.append({**ADVANCED_ORTHOLOGY_GAP, "retrieved_at": retrieved})
+        records.append(_advanced_orthology_gap_record(boundary_path, retrieved))
 
     return VectorBaseGenomicsResult(
         source_id=VECTORBASE_GENOMICS_SOURCE_ID,

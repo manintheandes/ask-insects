@@ -95,6 +95,11 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
     inparalogs = root / "inparalogs.txt.gz"
     with gzip.open(inparalogs, "wt", encoding="utf-8") as handle:
         handle.write("aaeg-old|AAEL000076\taaeg-old|AAEL999999\t0.900\n")
+    orthogroups = root / "groups_OrthoMCL-6.21.txt.gz"
+    with gzip.open(orthogroups, "wt", encoding="utf-8") as handle:
+        handle.write("OG6_100000: aaeg|AAEL023571 aalb|AALFPA_041143 aaeg|AAEL000076\n")
+        handle.write("OG6_100001: aaeo|O1 aaeo|O2\n")
+        handle.write("malformed group row\n")
     return {
         "gff": gff.as_uri(),
         "proteins": proteins.as_uri(),
@@ -107,6 +112,7 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
         "orthologs": orthologs.as_uri(),
         "coorthologs": coorthologs.as_uri(),
         "inparalogs": inparalogs.as_uri(),
+        "orthogroups": orthogroups.as_uri(),
     }
 
 
@@ -183,15 +189,19 @@ class VectorBaseGenomicsSourceTests(unittest.TestCase):
             self.assertIn("OrthoMCL CURRENT inparalog pair", inparalog.text)
             self.assertEqual(inparalog.payload["relationship_type"], "inparalog")
             self.assertEqual(inparalog.payload["partner_id"], "AAEL999999")
-            advanced_gap = next(record for record in result.records if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution")
-            self.assertEqual(advanced_gap.lane, "genome_features")
-            self.assertIn("not orthogroups", advanced_gap.text)
-            self.assertEqual(advanced_gap.payload["atom_type"], "source_gap")
-            self.assertEqual(advanced_gap.payload["reason"], "orthogroups_not_indexed")
+            orthogroup = next(record for record in result.records if record.record_id == "vectorbase:orthogroup:OG6_100000:aaeg_AAEL000076")
+            self.assertEqual(orthogroup.lane, "genome_features")
+            self.assertIn("OrthoMCL orthogroup OG6_100000", orthogroup.text)
+            self.assertEqual(orthogroup.payload["atom_type"], "orthogroup_membership")
+            self.assertEqual(orthogroup.payload["orthogroup_id"], "OG6_100000")
+            self.assertEqual(orthogroup.payload["aedes_gene_id"], "AAEL000076")
+            self.assertEqual(orthogroup.payload["aedes_member_count"], 2)
+            self.assertEqual(orthogroup.payload["group_member_count"], 3)
             self.assertTrue(any(gap["reason"] == "malformed_gff_row" for gap in result.gaps))
             self.assertTrue(any(gap["reason"] == "malformed_orthomcl_score" for gap in result.gaps))
             self.assertTrue(any(gap["reason"] == "malformed_orthomcl_pair_row" for gap in result.gaps))
-            self.assertTrue(any(gap["reason"] == "orthogroups_not_indexed" for gap in result.gaps))
+            self.assertTrue(any(gap["reason"] == "malformed_orthomcl_group_row" for gap in result.gaps))
+            self.assertFalse(any(gap["reason"] == "orthogroups_not_indexed" for gap in result.gaps))
 
     def test_vectorbase_payloads_are_queryable_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:

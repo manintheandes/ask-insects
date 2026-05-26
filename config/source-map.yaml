@@ -483,7 +483,7 @@ sources:
   - id: vectorbase_aedes_genomics
     name: VectorBase/VEuPathDB Aedes aegypti genomics downloads
     source_type: public_bulk_download
-    boundary: Official VectorBase current-release AaegyptiLVP_AGWG GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, NCBI LinkOut files, and OrthoMCL CURRENT corePairs ortholog, coortholog, and inparalog pair rows where either side uses the old Aedes namespace prefix aaeg-old|AAEL, preserving Aedes aegypti genes, transcripts, CDS sequence summaries, protein sequence summaries, GO annotations, codon usage, identifier history, cross-references, and first-pass OrthoMCL current-release pair records in the old AAEL namespace
+    boundary: Official VectorBase current-release AaegyptiLVP_AGWG GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, NCBI LinkOut files, OrthoMCL CURRENT corePairs ortholog, coortholog, and inparalog pair rows where either side uses the old Aedes namespace prefix aaeg-old|AAEL, and OrthoMCL release 6.21 orthogroup rows with Aedes members using aaeg|AAEL or aaeg-old|AAEL, preserving Aedes aegypti genes, transcripts, CDS sequence summaries, protein sequence summaries, GO annotations, codon usage, identifier history, cross-references, first-pass OrthoMCL current-release pair records, and orthogroup membership records
     query_plane: vectorbase_current_release_downloads_to_sqlite
     api_base: https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG
     artifact_dir: artifacts/mosquito-v1/raw/vectorbase_genomics
@@ -500,6 +500,7 @@ sources:
       orthologs: https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT/orthologs.txt.gz
       coorthologs: https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT/coorthologs.txt.gz
       inparalogs: https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT/inparalogs.txt.gz
+      orthogroups: https://orthomcl.org/common/downloads/release-6.21/groups_OrthoMCL-6.21.txt.gz
     lanes:
       - genes
       - transcripts
@@ -522,10 +523,13 @@ sources:
         - event_release
         - event_date
         - raw_id_event_file_line_locator
-      exclusions:
-        - orthogroups_not_claimed
-      structured_gaps:
-        - orthogroups_not_indexed
+      orthogroup_membership_records:
+        - orthogroup_id
+        - aedes_orthomcl_id
+        - aedes_gene_id
+        - aedes_member_count
+        - group_member_count
+        - raw_group_file_line_locator
   - id: aedes_uniprot_proteins
     name: UniProt Aedes aegypti protein and proteome metadata
     source_type: public_api

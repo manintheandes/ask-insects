@@ -2827,7 +2827,7 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(coortholog_answer["evidence"][0]["record_id"].startswith("vectorbase:coortholog:"))
             self.assertTrue(inparalog_answer["evidence"][0]["record_id"].startswith("vectorbase:inparalog:"))
 
-    def test_advanced_orthology_questions_prefer_queryable_source_gap_records(self):
+    def test_orthogroup_questions_prefer_queryable_orthogroup_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -2835,21 +2835,46 @@ class AnswerTests(unittest.TestCase):
             index.upsert_records(
                 [
                     EvidenceRecord(
-                        record_id="vectorbase:gap:advanced_orthology_current_id_resolution",
+                        record_id="vectorbase:orthogroup:OG6_100000:aaeg_AAEL000076",
                         lane="genome_features",
                         source="vectorbase_aedes_genomics",
-                        title="Aedes aegypti VectorBase advanced orthology source gap",
-                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in the old AAEL namespace, not orthogroups.",
+                        title="Aedes aegypti OrthoMCL orthogroup OG6_100000 member AAEL000076",
+                        text="OrthoMCL orthogroup OG6_100000 contains Aedes aegypti member aaeg|AAEL000076; the group has 3 total members and 2 Aedes members.",
                         species="Aedes aegypti",
-                        url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT",
+                        url="https://orthomcl.org/common/downloads/release-6.21/groups_OrthoMCL-6.21.txt.gz",
                         media_url=None,
                         provenance=Provenance(
                             source_id="vectorbase_aedes_genomics",
-                            locator="raw/vectorbase_genomics/source_boundary.json#gap/advanced_orthology_current_id_resolution",
+                            locator="raw/vectorbase_genomics/groups_OrthoMCL-6.21.txt.gz#line/1",
                             retrieved_at="2026-05-25T00:00:00Z",
-                            license="Ask Insects source boundary audit",
+                            license="OrthoMCL public download; source terms apply",
                         ),
-                        payload={"atom_type": "source_gap", "reason": "orthogroups_not_indexed"},
+                        payload={
+                            "atom_type": "orthogroup_membership",
+                            "orthogroup_id": "OG6_100000",
+                            "aedes_gene_id": "AAEL000076",
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:orthogroup:OG6_999999:aaeg_AAEL999999",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti OrthoMCL orthogroup OG6_999999 member AAEL999999",
+                        text="OrthoMCL orthogroup OG6_999999 contains Aedes aegypti member aaeg|AAEL999999.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/common/downloads/release-6.21/groups_OrthoMCL-6.21.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/groups_OrthoMCL-6.21.txt.gz#line/999",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="OrthoMCL public download; source terms apply",
+                        ),
+                        payload={
+                            "atom_type": "orthogroup_membership",
+                            "orthogroup_id": "OG6_999999",
+                            "aedes_gene_id": "AAEL999999",
+                        },
                     ),
                     EvidenceRecord(
                         record_id="video_atom:asset:irrelevant",
@@ -2878,8 +2903,16 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "vectorbase_aedes_genomics")
-            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:gap:advanced_orthology_current_id_resolution")
-            self.assertIn("not orthogroups", answer["answer"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:orthogroup:OG6_100000:aaeg_AAEL000076")
+            self.assertIn("orthogroup OG6_100000", answer["answer"])
+
+            exact_answer = answer_question(
+                "show Aedes aegypti OrthoMCL orthogroup for AAEL999999",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(exact_answer["ok"])
+            self.assertEqual(exact_answer["evidence"][0]["record_id"], "vectorbase:orthogroup:OG6_999999:aaeg_AAEL999999")
 
     def test_vectorbase_auxiliary_genomics_questions_route_to_genome_features(self):
         with tempfile.TemporaryDirectory() as tmpdir:

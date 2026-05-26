@@ -987,9 +987,9 @@ def _search_queries(question: str) -> list[str]:
         if any(term in q for term in ("orthogroup", "orthogroups")):
             queries.extend(
                 [
-                    "advanced orthology source gap",
-                    "orthogroups not indexed",
-                    "first-pass OrthoMCL CURRENT ortholog coortholog inparalog rows old AAEL namespace",
+                    "OrthoMCL orthogroup Aedes aegypti",
+                    "aaeg AAEL orthogroup",
+                    "VectorBase orthogroup membership",
                 ]
             )
         if any(term in q for term in ("current id resolution", "current-id resolution")):
@@ -1615,7 +1615,11 @@ def _wants_orthomcl_relationship(question: str, relationship_type: str) -> bool:
     if relationship_type == "inparalog":
         return any(term in q for term in ("inparalog", "inparalogs"))
     if relationship_type == "ortholog":
-        if _wants_orthomcl_relationship(question, "coortholog") or _wants_orthomcl_relationship(question, "inparalog"):
+        if (
+            _wants_advanced_orthology_boundary(question)
+            or _wants_orthomcl_relationship(question, "coortholog")
+            or _wants_orthomcl_relationship(question, "inparalog")
+        ):
             return False
         return any(term in q for term in ("homolog", "homologs", "ortholog", "orthologs", "orthology", "orthomcl"))
     return False
@@ -1700,23 +1704,20 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
             relationship_prefixes.append("vectorbase:inparalog:")
         if _wants_orthomcl_relationship(question, "ortholog"):
             relationship_prefixes.append("vectorbase:ortholog:")
-        wants_advanced_gap = _wants_advanced_orthology_boundary(question)
+        wants_orthogroup = _wants_advanced_orthology_boundary(question)
         wants_current_id = _wants_current_id_resolution(question)
         return sorted(
             records,
             key=lambda record: (
                 0 if record.source == "vectorbase_aedes_genomics" else 1,
-                0 if wants_current_id and record.record_id.startswith("vectorbase:current_id:") else 1,
+                0 if wants_orthogroup and record.record_id.startswith("vectorbase:orthogroup:") else 1,
+                0 if wants_current_id and not wants_orthogroup and record.record_id.startswith("vectorbase:current_id:") else 1,
                 0
                 if relationship_prefixes and any(record.record_id.startswith(prefix) for prefix in relationship_prefixes)
                 else 1
                 if relationship_prefixes
                 else 0,
-                0
-                if wants_advanced_gap and record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution"
-                else 2
-                if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution"
-                else 1,
+                2 if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution" else 1,
                 0 if record.lane in {"genes", "proteins", "transcripts", "genome_features"} else 1,
             ),
         )
@@ -1866,12 +1867,13 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
     records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
     clauses: list[tuple[str, tuple[object, ...]]] = []
-    if _wants_advanced_orthology_boundary(question):
-        clauses.append(("record_id = ?", ("vectorbase:gap:advanced_orthology_current_id_resolution",)))
+    aael_ids = re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE)
+    if _wants_advanced_orthology_boundary(question) and not aael_ids:
+        lower, upper = _record_id_prefix_range("vectorbase:orthogroup:")
+        clauses.append(("record_id >= ? AND record_id < ?", (lower, upper)))
     if "codon" in q:
         for codon in re.findall(r"\b[AUCGT]{3}\b", question.upper()):
             clauses.append(("record_id = ?", (f"vectorbase:codon_usage:{codon.replace('T', 'U')}",)))
-    aael_ids = re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE)
     for relationship_type in ("coortholog", "inparalog", "ortholog"):
         if not aael_ids and _wants_orthomcl_relationship(question, relationship_type):
             lower, upper = _record_id_prefix_range(f"vectorbase:{relationship_type}:")
@@ -1883,6 +1885,19 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
                 (
                     "record_id = ?",
                     (f"vectorbase:current_id:{aael_id.upper()}",),
+                )
+            )
+        if _wants_advanced_orthology_boundary(question):
+            clauses.append(
+                (
+                    "record_id LIKE ? ESCAPE '\\'",
+                    (f"vectorbase:orthogroup:%:aaeg_{escaped_aael}",),
+                )
+            )
+            clauses.append(
+                (
+                    "record_id LIKE ? ESCAPE '\\'",
+                    (f"vectorbase:orthogroup:%:aaeg-old_{escaped_aael}",),
                 )
             )
         if _wants_orthomcl_relationship(question, "ortholog"):
