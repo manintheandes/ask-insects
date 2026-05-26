@@ -307,6 +307,8 @@ def main(argv: list[str] | None = None) -> int:
     ingest_extracted_facts.add_argument("--max-supplement-files", type=int, default=100)
     ingest_extracted_facts.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
     ingest_extracted_facts.add_argument("--max-pdf-supplement-files", type=int, default=10)
+    ingest_extracted_facts.add_argument("--source-record-id", action="append", default=[])
+    ingest_extracted_facts.add_argument("--merge-existing", action="store_true")
 
     ingest_video_atoms = sub.add_parser("ingest-video-atoms")
     ingest_video_atoms.add_argument("--hosted", action="store_true")
@@ -1079,6 +1081,8 @@ def main(argv: list[str] | None = None) -> int:
                 max_supplement_files=args.max_supplement_files,
                 max_supplement_bytes=args.max_supplement_bytes,
                 max_pdf_supplement_files=args.max_pdf_supplement_files,
+                source_record_ids=args.source_record_id or None,
+                merge_existing=args.merge_existing,
             )
             emit(payload)
             return 0 if payload.get("ok") else 2
@@ -1094,6 +1098,8 @@ def main(argv: list[str] | None = None) -> int:
                 "max_supplement_files": args.max_supplement_files,
                 "max_supplement_bytes": args.max_supplement_bytes,
                 "max_pdf_supplement_files": args.max_pdf_supplement_files,
+                "source_record_ids": args.source_record_id,
+                "merge_existing": args.merge_existing,
             },
             timeout=3600,
         )

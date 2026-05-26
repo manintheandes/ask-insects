@@ -2672,6 +2672,13 @@ def ingest_extracted_facts_staged(
     max_pdf_supplement_files = 10 if max_pdf_supplement_files_value is None else int(max_pdf_supplement_files_value)
     if max_pdf_supplement_files < 0:
         raise ValueError("max_pdf_supplement_files must not be negative")
+    source_record_ids_value = payload.get("source_record_ids")
+    source_record_ids: list[str] | None = None
+    if source_record_ids_value is not None:
+        if not isinstance(source_record_ids_value, list):
+            raise ValueError("source_record_ids must be a list")
+        source_record_ids = [str(source_record_id) for source_record_id in source_record_ids_value if str(source_record_id)]
+    merge_existing = bool(payload.get("merge_existing", False))
 
     staging = artifact_dir.parent / f".{artifact_dir.name}.extracted-facts-staging"
     if staging.exists():
@@ -2692,6 +2699,8 @@ def ingest_extracted_facts_staged(
             max_supplement_files=max_supplement_files,
             max_supplement_bytes=max_supplement_bytes,
             max_pdf_supplement_files=max_pdf_supplement_files,
+            source_record_ids=source_record_ids,
+            merge_existing=merge_existing,
         )
         response = rewrite_artifact_references(staging, artifact_dir, result, source="aedes_extracted_facts")
         activate_source_staging(staging, artifact_dir, Path("raw") / "extracted_facts")

@@ -25,11 +25,16 @@ def _read_json(path: Path, default: object) -> object:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
+def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]], *, replace_source_gaps: bool = True) -> int:
     existing = _read_json(gaps_path, [])
     if not isinstance(existing, list):
         existing = []
-    combined = [gap for gap in existing if not (isinstance(gap, dict) and gap.get("source") == EXTRACTED_FACTS_SOURCE_ID)]
+    if replace_source_gaps:
+        combined = [gap for gap in existing if not (isinstance(gap, dict) and gap.get("source") == EXTRACTED_FACTS_SOURCE_ID)]
+    else:
+        combined = list(existing)
+        seen = {json.dumps(gap, sort_keys=True, default=str) for gap in combined if isinstance(gap, dict)}
+        gaps = [gap for gap in gaps if json.dumps(gap, sort_keys=True, default=str) not in seen]
     combined.extend(gaps)
     write_json(gaps_path, combined)
     return len(combined)
@@ -42,13 +47,23 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _update_metadata(
+    artifact_dir: Path,
+    result,
+    *,
+    merge_existing: bool = False,
+    source_record_ids: list[str] | None = None,
+) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
+    installed_record_count = int(source_counts.get(EXTRACTED_FACTS_SOURCE_ID, len(result.records)))
     source_payload = {
         "source": EXTRACTED_FACTS_SOURCE_ID,
-        "record_count": len(result.records),
+        "record_count": installed_record_count,
+        "last_build_record_count": len(result.records),
+        "merge_existing": merge_existing,
+        "source_record_ids": source_record_ids or None,
         "candidate_count": result.candidate_count,
         "source_record_count": result.source_record_count,
         "fulltext_unit_count": result.fulltext_unit_count,
@@ -71,7 +86,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "gap_count": len(result.gaps),
         "method": "deterministic supplement manifest discovery, supported supplement table parsing, and cross-lane Aedes fact extraction from literature records and bounded legal full-text units",
     }
-    gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
+    gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps, replace_source_gaps=not merge_existing)
     for filename in ("source_status.json", "source_receipt.json"):
         path = artifact_dir / filename
         payload = _read_json(path, {})
@@ -96,7 +111,10 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
     return {
         "ok": True,
         "source": EXTRACTED_FACTS_SOURCE_ID,
-        "record_count": len(result.records),
+        "record_count": installed_record_count,
+        "last_build_record_count": len(result.records),
+        "merge_existing": merge_existing,
+        "source_record_ids": source_record_ids or None,
         "candidate_count": result.candidate_count,
         "source_record_count": result.source_record_count,
         "fulltext_unit_count": result.fulltext_unit_count,
@@ -123,6 +141,35 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
     }
 
 
+def _delete_extracted_fact_records_for_source_records(index: SourceIndex, source_record_ids: list[str]) -> int:
+    if not source_record_ids:
+        return 0
+    deleted = 0
+    with index.connect() as conn:
+        for record_id in source_record_ids:
+            rows = conn.execute(
+                """
+                SELECT r.record_id
+                FROM records r
+                LEFT JOIN record_payloads p ON p.record_id = r.record_id
+                WHERE r.source=?
+                  AND json_extract(p.payload_json, '$.source_record_id')=?
+                """,
+                (EXTRACTED_FACTS_SOURCE_ID, record_id),
+            ).fetchall()
+            record_ids = [str(row["record_id"]) for row in rows]
+            if not record_ids:
+                continue
+            deleted += len(record_ids)
+            for start in range(0, len(record_ids), 500):
+                chunk = record_ids[start : start + 500]
+                placeholders = ",".join("?" for _ in chunk)
+                conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+                conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
+                conn.execute(f"DELETE FROM records WHERE record_id IN ({placeholders})", chunk)
+    return deleted
+
+
 def ingest_extracted_facts(
     *,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
@@ -137,6 +184,8 @@ def ingest_extracted_facts(
     max_supplement_files: int = 100,
     max_supplement_bytes: int = 2_000_000,
     max_pdf_supplement_files: int = 10,
+    source_record_ids: list[str] | None = None,
+    merge_existing: bool = False,
 ) -> dict[str, object]:
     result = build_extracted_fact_records(
         artifact_dir,
@@ -151,11 +200,26 @@ def ingest_extracted_facts(
         max_supplement_files=max_supplement_files,
         max_supplement_bytes=max_supplement_bytes,
         max_pdf_supplement_files=max_pdf_supplement_files,
+        source_record_ids=source_record_ids,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(EXTRACTED_FACTS_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result)
+    deleted_existing_record_count = 0
+    if merge_existing:
+        if not source_record_ids:
+            raise ValueError("merge_existing requires at least one source_record_id")
+        deleted_existing_record_count = _delete_extracted_fact_records_for_source_records(index, source_record_ids)
+        index.upsert_records(result.records)
+    else:
+        index.replace_source_records(EXTRACTED_FACTS_SOURCE_ID, result.records)
+    payload = _update_metadata(
+        artifact_dir,
+        result,
+        merge_existing=merge_existing,
+        source_record_ids=source_record_ids,
+    )
+    payload["deleted_existing_record_count"] = deleted_existing_record_count
+    return payload
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -170,6 +234,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-supplement-files", type=int, default=100)
     parser.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
     parser.add_argument("--max-pdf-supplement-files", type=int, default=10)
+    parser.add_argument("--source-record-id", action="append", default=[])
+    parser.add_argument("--merge-existing", action="store_true")
     args = parser.parse_args(argv)
     result = ingest_extracted_facts(
         artifact_dir=Path(args.artifact_dir),
@@ -182,6 +248,8 @@ def main(argv: list[str] | None = None) -> int:
         max_supplement_files=args.max_supplement_files,
         max_supplement_bytes=args.max_supplement_bytes,
         max_pdf_supplement_files=args.max_pdf_supplement_files,
+        source_record_ids=args.source_record_id or None,
+        merge_existing=args.merge_existing,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result.get("ok") else 2

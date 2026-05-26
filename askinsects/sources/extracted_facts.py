@@ -396,19 +396,22 @@ def _enrich_fields(text: str, fields: dict[str, list[str]]) -> dict[str, object]
     return enriched
 
 
-def _source_rows(conn: sqlite3.Connection) -> list[sqlite3.Row]:
-    return conn.execute(
-        """
+def _source_rows(conn: sqlite3.Connection, *, source_record_ids: list[str] | None = None) -> list[sqlite3.Row]:
+    where = """
         SELECT r.record_id, r.title, r.text, r.species, r.url, r.provenance_json, p.payload_json
         FROM records r
         LEFT JOIN record_payloads p ON p.record_id = r.record_id
         WHERE r.lane='literature'
           AND r.source=?
           AND lower(coalesce(r.species, ''))='aedes aegypti'
-        ORDER BY r.record_id
-        """,
-        (INPUT_LITERATURE_SOURCE_ID,),
-    ).fetchall()
+    """
+    params: list[object] = [INPUT_LITERATURE_SOURCE_ID]
+    if source_record_ids:
+        placeholders = ",".join("?" for _ in source_record_ids)
+        where += f" AND r.record_id IN ({placeholders})"
+        params.extend(source_record_ids)
+    where += " ORDER BY r.record_id"
+    return conn.execute(where, params).fetchall()
 
 
 def _nested_get(payload: dict[str, object], *keys: str) -> object:
@@ -667,13 +670,18 @@ def _bounded_fulltext_rows(
     conn: sqlite3.Connection,
     *,
     max_fulltext_units: int | None,
+    source_record_ids: list[str] | None = None,
 ) -> list[sqlite3.Row]:
     query = """
         SELECT unit_id, record_id, unit_index, text, url, license, provenance_json
         FROM literature_fulltext_units
-        ORDER BY rowid
     """
     params: list[object] = []
+    if source_record_ids:
+        placeholders = ",".join("?" for _ in source_record_ids)
+        query += f" WHERE record_id IN ({placeholders})"
+        params.extend(source_record_ids)
+    query += " ORDER BY rowid"
     if max_fulltext_units is not None:
         query += " LIMIT ?"
         params.append(max_fulltext_units + 1)
@@ -685,6 +693,7 @@ def _text_candidates(
     literature_rows: list[sqlite3.Row],
     *,
     max_fulltext_units: int | None,
+    source_record_ids: list[str] | None = None,
 ) -> tuple[list[TextCandidate], int, int, int, int]:
     if max_fulltext_units is not None and max_fulltext_units < 1:
         raise ValueError("max_fulltext_units must be positive")
@@ -693,6 +702,7 @@ def _text_candidates(
         fulltext_rows = _bounded_fulltext_rows(
             conn,
             max_fulltext_units=max_fulltext_units,
+            source_record_ids=source_record_ids,
         )
         fulltext_total = len(fulltext_rows)
         if max_fulltext_units is not None and len(fulltext_rows) > max_fulltext_units:
@@ -1548,6 +1558,7 @@ def build_extracted_fact_records(
     max_supplement_files: int = 100,
     max_supplement_bytes: int = 2_000_000,
     max_pdf_supplement_files: int = 10,
+    source_record_ids: list[str] | None = None,
 ) -> ExtractedFactsResult:
     retrieved_at = retrieved_at or utc_now()
     index_path = artifact_dir / "source_index.sqlite"
@@ -1587,7 +1598,7 @@ def build_extracted_fact_records(
     conn = sqlite3.connect(index_path)
     conn.row_factory = sqlite3.Row
     try:
-        literature_rows = _source_rows(conn)
+        literature_rows = _source_rows(conn, source_record_ids=source_record_ids)
         (
             text_candidates,
             fulltext_unit_count,
@@ -1598,6 +1609,7 @@ def build_extracted_fact_records(
             conn,
             literature_rows,
             max_fulltext_units=max_fulltext_units,
+            source_record_ids=source_record_ids,
         )
     finally:
         conn.close()

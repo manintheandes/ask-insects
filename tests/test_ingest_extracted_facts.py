@@ -7,6 +7,7 @@ import unittest
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
+from askinsects.sources.literature import FullTextUnit
 from scripts.ingest_extracted_facts import ingest_extracted_facts
 from tests.test_extracted_facts_source import write_extracted_facts_fixture
 
@@ -105,6 +106,97 @@ class IngestExtractedFactsTests(unittest.TestCase):
             self.assertIn("raw/extracted_facts/supplements/", rows[0]["provenance_json"])
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertEqual(status["aedes_extracted_facts"]["parsed_supplement_row_count"], 1)
+
+    def test_incremental_merge_replaces_one_paper_without_removing_other_extracted_facts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.upsert_records_and_fulltext_units(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WFACT2",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti resistance and dengue vector competence second paper",
+                        text="Second Aedes aegypti evidence paper.",
+                        species="Aedes aegypti",
+                        url="https://example.org/aedes-facts-2",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WFACT2",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    )
+                ],
+                [
+                    FullTextUnit(
+                        unit_id="openalex:WFACT2:fulltext:0",
+                        record_id="openalex:WFACT2",
+                        source="aedes_literature_openalex",
+                        unit_index=0,
+                        text=(
+                            "Vector competence dengue virus infection rate 77%, transmission rate 12% in saliva. "
+                            "Resistance permethrin bioassay mortality 44%, VGSC F1534C in Brazil."
+                        ),
+                        url="https://example.org/aedes-facts-2/fulltext",
+                        license="CC-BY",
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/fulltext/WFACT2.txt#chunk/0",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    )
+                ],
+            )
+
+            first = ingest_extracted_facts(
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+            original_record_count = first["record_count"]
+            before = {
+                row["source_record_id"]: int(row["n"])
+                for row in index.sql(
+                    """
+                    select json_extract(payload_json, '$.source_record_id') as source_record_id, count(*) as n
+                    from record_payloads
+                    where source='aedes_extracted_facts'
+                    group by source_record_id
+                    """,
+                    limit=10,
+                )
+            }
+            self.assertGreater(before["openalex:WFACT1"], 0)
+            self.assertGreater(before["openalex:WFACT2"], 0)
+
+            second = ingest_extracted_facts(
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                source_record_ids=["openalex:WFACT1"],
+                merge_existing=True,
+            )
+
+            self.assertTrue(second["ok"])
+            self.assertTrue(second["merge_existing"])
+            self.assertEqual(second["source_record_ids"], ["openalex:WFACT1"])
+            self.assertEqual(second["record_count"], original_record_count)
+            self.assertEqual(second["deleted_existing_record_count"], before["openalex:WFACT1"])
+            after = {
+                row["source_record_id"]: int(row["n"])
+                for row in index.sql(
+                    """
+                    select json_extract(payload_json, '$.source_record_id') as source_record_id, count(*) as n
+                    from record_payloads
+                    where source='aedes_extracted_facts'
+                    group by source_record_id
+                    """,
+                    limit=10,
+                )
+            }
+            self.assertEqual(after["openalex:WFACT1"], before["openalex:WFACT1"])
+            self.assertEqual(after["openalex:WFACT2"], before["openalex:WFACT2"])
 
 
 if __name__ == "__main__":

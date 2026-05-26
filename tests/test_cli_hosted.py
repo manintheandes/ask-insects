@@ -1026,6 +1026,9 @@ class HostedCliTests(unittest.TestCase):
                 "3456",
                 "--max-pdf-supplement-files",
                 "2",
+                "--source-record-id",
+                "openalex:WFACT1",
+                "--merge-existing",
             )
 
         self.assertEqual(code, 0)
@@ -1042,6 +1045,8 @@ class HostedCliTests(unittest.TestCase):
                 "max_supplement_files": 12,
                 "max_supplement_bytes": 3456,
                 "max_pdf_supplement_files": 2,
+                "source_record_ids": ["openalex:WFACT1"],
+                "merge_existing": True,
             },
         )
         self.assertEqual(calls[0][3], 3600)
