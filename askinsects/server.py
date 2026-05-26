@@ -2754,6 +2754,11 @@ def ingest_video_atoms_staged(
         raise ValueError("max_discovery_results must be positive")
     allowed_licenses = _payload_string_list(payload, "allowed_licenses") or None
     motion_table_paths = [Path(path) for path in _payload_string_list(payload, "motion_table_paths")] or None
+    discovery_repositories = _payload_string_list(payload, "discovery_repositories") or None
+    merge_existing = _payload_bool(payload, "merge_existing")
+    parse_motion_rows = True if "parse_motion_rows" not in payload else _payload_bool(payload, "parse_motion_rows")
+    if discovery_repositories and not merge_existing:
+        raise ValueError("discovery_repositories requires merge_existing")
 
     staging = artifact_dir.parent / f".{artifact_dir.name}.video-atoms-staging"
     if staging.exists():
@@ -2776,8 +2781,11 @@ def ingest_video_atoms_staged(
             discover_sources=_payload_bool(payload, "discover_sources"),
             allow_unclear_license=_payload_bool(payload, "allow_unclear_license"),
             allowed_licenses=allowed_licenses,
+            discovery_repositories=discovery_repositories,
             max_discovery_results=max_discovery_results,
             motion_table_paths=motion_table_paths,
+            merge_existing=merge_existing,
+            parse_motion_rows=parse_motion_rows,
         )
         response = rewrite_artifact_references(staging, artifact_dir, result, source="aedes_video_atoms")
         activate_source_staging(staging, artifact_dir, Path("raw") / "video_atoms")

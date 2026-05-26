@@ -2375,12 +2375,14 @@ def _discover_candidates(
     max_discovery_results: int,
     gaps: list[dict[str, object]],
     known_download_urls: set[str] | None = None,
+    repositories: Iterable[str] | None = None,
 ) -> tuple[list[VideoCandidate], int, list[dict[str, object]]]:
     candidates: list[VideoCandidate] = []
     sweep_receipts: list[dict[str, object]] = []
     known_download_urls = known_download_urls or set()
+    repository_order = tuple(repositories) if repositories is not None else DISCOVERY_REPOSITORIES
     count = 0
-    for repository in DISCOVERY_REPOSITORIES:
+    for repository in repository_order:
         receipt: dict[str, object] = {
             "repository": repository,
             "status": "not_started",
@@ -2468,8 +2470,10 @@ def build_video_atom_records(
     probe_video_file_fn: Callable[[Path], dict[str, object]] | None = None,
     artifact_generator_fn: Callable[[Path, Path, dict[str, object]], dict[str, object]] | None = None,
     discovery_clients: dict[str, Callable[[], list[dict[str, object]] | DiscoverySweepResult]] | None = None,
+    discovery_repositories: Iterable[str] | None = None,
     max_discovery_results: int = 1000,
     motion_table_paths: Iterable[Path] | None = None,
+    parse_motion_rows: bool = True,
 ) -> AedesVideoAtomsResult:
     artifact_dir = Path(artifact_dir)
     retrieved_at = retrieved_at or utc_now()
@@ -2479,6 +2483,13 @@ def build_video_atom_records(
     gaps: list[dict[str, object]] = []
     records: list[EvidenceRecord] = []
     candidates = _candidate_rows(index)
+    repository_scope = set(discovery_repositories or ())
+    if repository_scope:
+        candidates = [
+            candidate
+            for candidate in candidates
+            if _repository_for_source(candidate.source) in repository_scope
+        ]
     discovery_candidate_count = 0
     discovery_sweep_receipts: list[dict[str, object]] = []
     if discover_sources:
@@ -2489,6 +2500,7 @@ def build_video_atom_records(
             max_discovery_results=max_discovery_results,
             gaps=gaps,
             known_download_urls=known_download_urls,
+            repositories=discovery_repositories,
         )
         candidates.extend(discovered)
         if discovery_sweep_receipts:
@@ -2585,17 +2597,23 @@ def build_video_atom_records(
                 except Exception as exc:
                     gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_artifact_generation_failed", "record_id": asset.payload.get("source_video_record_id") or candidate.source_record_id, "error": str(exc)})
 
-    if motion_table_paths is None:
-        motion_table_paths = _default_motion_table_paths(artifact_dir)
-    motion_records = _parse_motion_tables(
-        motion_table_paths,
-        artifact_dir=artifact_dir,
-        retrieved_at=retrieved_at,
-        gaps=gaps,
-        asset_lookup=_build_motion_asset_lookup(records),
-    )
+    if parse_motion_rows:
+        if motion_table_paths is None:
+            motion_table_paths = _default_motion_table_paths(artifact_dir)
+        motion_records = _parse_motion_tables(
+            motion_table_paths,
+            artifact_dir=artifact_dir,
+            retrieved_at=retrieved_at,
+            gaps=gaps,
+            asset_lookup=_build_motion_asset_lookup(records),
+        )
+    else:
+        motion_records = []
     records.extend(motion_records)
-    gaps.extend(_load_upstream_manifest_gap_contexts(artifact_dir))
+    upstream_gaps = _load_upstream_manifest_gap_contexts(artifact_dir)
+    if repository_scope:
+        upstream_gaps = [gap for gap in upstream_gaps if gap.get("repository") in repository_scope]
+    gaps.extend(upstream_gaps)
     records.extend(_sweep_record(receipt, retrieved_at=retrieved_at) for receipt in discovery_sweep_receipts)
     records.extend(_gap_record(gap, retrieved_at=retrieved_at, index=index) for index, gap in enumerate(gaps, start=1))
     return AedesVideoAtomsResult(

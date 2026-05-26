@@ -13,7 +13,12 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
 from askinsects.index import SourceIndex
-from askinsects.sources.video_atoms import DiscoverySweepResult, VIDEO_ATOMS_SOURCE_ID, build_video_atom_records
+from askinsects.sources.video_atoms import (
+    DISCOVERY_REPOSITORIES,
+    DiscoverySweepResult,
+    VIDEO_ATOMS_SOURCE_ID,
+    build_video_atom_records,
+)
 
 
 def _read_json(path: Path, default: object) -> object:
@@ -37,6 +42,46 @@ def _dedupe_records(records):
     for record in records:
         deduped[record.record_id] = record
     return list(deduped.values())
+
+
+def _existing_sweep_receipts(artifact_dir: Path) -> list[dict[str, object]]:
+    payload = _read_json(artifact_dir / "source_status.json", {})
+    if not isinstance(payload, dict):
+        return []
+    source_payload = payload.get("aedes_video_atoms")
+    if not isinstance(source_payload, dict):
+        return []
+    receipts = source_payload.get("discovery_sweep_receipts")
+    if isinstance(receipts, list):
+        return [receipt for receipt in receipts if isinstance(receipt, dict)]
+    return []
+
+
+def _merge_sweep_receipts(artifact_dir: Path, new_receipts: list[dict[str, object]]) -> list[dict[str, object]]:
+    by_repository = {
+        str(receipt.get("repository")): receipt
+        for receipt in _existing_sweep_receipts(artifact_dir)
+        if receipt.get("repository")
+    }
+    for receipt in new_receipts:
+        if receipt.get("repository"):
+            by_repository[str(receipt["repository"])] = receipt
+    return [by_repository[repository] for repository in DISCOVERY_REPOSITORIES if repository in by_repository]
+
+
+def _validate_discovery_repositories(values: Iterable[str] | None) -> tuple[str, ...] | None:
+    if values is None:
+        return None
+    requested = tuple(dict.fromkeys(str(value) for value in values))
+    invalid = [value for value in requested if value not in DISCOVERY_REPOSITORIES]
+    if invalid:
+        raise ValueError(
+            "unknown video discovery repository: "
+            + ", ".join(invalid)
+            + "; expected one of "
+            + ", ".join(DISCOVERY_REPOSITORIES)
+        )
+    return requested or None
 
 
 def _source_counts(index: SourceIndex) -> dict[str, int]:
@@ -112,7 +157,7 @@ def _installed_video_gaps(index: SourceIndex) -> list[dict[str, object]]:
     return gaps
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, *, merge_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -123,6 +168,11 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         for atom_type in ("video_thumbnail", "video_keyframe", "video_preview_clip", "video_frame_manifest")
     )
     installed_gaps = _installed_video_gaps(index)
+    discovery_sweep_receipts = (
+        _merge_sweep_receipts(artifact_dir, result.discovery_sweep_receipts)
+        if merge_existing
+        else result.discovery_sweep_receipts
+    )
     source_payload = {
         "source": VIDEO_ATOMS_SOURCE_ID,
         "record_count": source_record_count,
@@ -132,7 +182,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "artifact_count": artifact_count,
         "motion_row_count": atom_counts.get("video_motion_row", 0),
         "discovery_candidate_count": result.discovery_candidate_count,
-        "discovery_sweep_receipts": result.discovery_sweep_receipts,
+        "discovery_sweep_receipts": discovery_sweep_receipts,
         "gap_count": atom_counts.get("video_gap", 0),
         "method": "derived Aedes aegypti video atoms from indexed video manifests, bounded mirrors, ffprobe metadata, inspectable artifacts, motion tables, and repository discovery gaps",
     }
@@ -168,7 +218,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "artifact_count": source_payload["artifact_count"],
         "motion_row_count": source_payload["motion_row_count"],
         "discovery_candidate_count": result.discovery_candidate_count,
-        "discovery_sweep_receipts": result.discovery_sweep_receipts,
+        "discovery_sweep_receipts": discovery_sweep_receipts,
         "gap_count": source_payload["gap_count"],
         "source_counts": source_counts,
         "artifact_dir": artifact_dir.as_posix(),
@@ -190,9 +240,15 @@ def ingest_video_atoms(
     probe_video_file_fn: Callable[[Path], dict[str, object]] | None = None,
     artifact_generator_fn: Callable[[Path, Path, dict[str, object]], dict[str, object]] | None = None,
     discovery_clients: dict[str, Callable[[], list[dict[str, object]] | DiscoverySweepResult]] | None = None,
+    discovery_repositories: Iterable[str] | None = None,
     max_discovery_results: int = 1000,
     motion_table_paths: Iterable[Path] | None = None,
+    merge_existing: bool = False,
+    parse_motion_rows: bool = True,
 ) -> dict[str, object]:
+    discovery_repositories = _validate_discovery_repositories(discovery_repositories)
+    if discovery_repositories and not merge_existing:
+        raise ValueError("discovery_repositories requires merge_existing so scoped video refreshes cannot shrink aedes_video_atoms")
     resolved_motion_table_paths = (
         [path if path.is_absolute() else artifact_dir / path for path in motion_table_paths]
         if motion_table_paths
@@ -211,13 +267,24 @@ def ingest_video_atoms(
         probe_video_file_fn=probe_video_file_fn,
         artifact_generator_fn=artifact_generator_fn,
         discovery_clients=discovery_clients,
+        discovery_repositories=discovery_repositories,
         max_discovery_results=max_discovery_results,
         motion_table_paths=resolved_motion_table_paths,
+        parse_motion_rows=parse_motion_rows,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, _dedupe_records(result.records))
-    return _update_metadata(artifact_dir, result)
+    records = _dedupe_records(result.records)
+    if merge_existing:
+        index.upsert_records(records)
+    else:
+        index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, records)
+    payload = _update_metadata(artifact_dir, result, merge_existing=merge_existing)
+    payload["merge_existing"] = merge_existing
+    if discovery_repositories:
+        payload["discovery_repositories"] = list(discovery_repositories)
+    payload["parse_motion_rows"] = parse_motion_rows
+    return payload
 
 
 def _split_csv(value: str | None) -> tuple[str, ...] | None:
@@ -238,6 +305,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--allowed-licenses", help="Comma-separated license substrings allowed for mirroring.")
     parser.add_argument("--motion-table", action="append", default=[])
     parser.add_argument("--max-discovery-results", type=int, default=1000)
+    parser.add_argument("--discovery-repository", action="append", choices=DISCOVERY_REPOSITORIES, default=[])
+    parser.add_argument("--merge-existing", action="store_true")
+    parser.add_argument("--skip-motion-rows", action="store_true")
     args = parser.parse_args(argv)
     result = ingest_video_atoms(
         artifact_dir=Path(args.artifact_dir),
@@ -249,7 +319,10 @@ def main(argv: list[str] | None = None) -> int:
         allow_unclear_license=args.allow_unclear_license,
         allowed_licenses=_split_csv(args.allowed_licenses),
         motion_table_paths=[Path(path) for path in args.motion_table] or None,
+        discovery_repositories=args.discovery_repository or None,
         max_discovery_results=args.max_discovery_results,
+        merge_existing=args.merge_existing,
+        parse_motion_rows=not args.skip_motion_rows,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result.get("ok") else 2

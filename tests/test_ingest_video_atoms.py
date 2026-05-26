@@ -299,6 +299,111 @@ class IngestVideoAtomsTests(unittest.TestCase):
             ]
             self.assertEqual(len(gaps), 1)
 
+    def test_merge_existing_preserves_video_atoms_and_sweep_receipts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:video_asset:existing",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Existing Aedes video asset",
+                        text="Existing Aedes aegypti video atom.",
+                        species="Aedes aegypti",
+                        url="https://example.org/existing",
+                        media_url="https://example.org/existing.mp4",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="records#existing",
+                            retrieved_at=RETRIEVED_AT,
+                        ),
+                        payload={"atom_type": "video_asset", "repository": "mendeley", "verification_status": "candidate"},
+                    )
+                ]
+            )
+            for filename in ("source_status.json", "source_receipt.json"):
+                (artifact_dir / filename).write_text(
+                    json.dumps(
+                        {
+                            "sources": ["aedes_video_atoms"],
+                            "aedes_video_atoms": {
+                                "discovery_sweep_receipts": [
+                                    {"repository": "mendeley", "status": "accepted_candidates"}
+                                ]
+                            },
+                        }
+                    ),
+                    encoding="utf-8",
+                )
+
+            new_record = EvidenceRecord(
+                record_id="video_atom:video_asset:new-dryad",
+                lane="media",
+                source="aedes_video_atoms",
+                title="New Dryad Aedes video asset",
+                text="New Aedes aegypti Dryad video atom.",
+                species="Aedes aegypti",
+                url="https://example.org/dryad",
+                media_url="https://example.org/dryad.mp4",
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="records#dryad",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={"atom_type": "video_asset", "repository": "dryad", "verification_status": "candidate"},
+            )
+            fake_result = AedesVideoAtomsResult(
+                source_id="aedes_video_atoms",
+                records=[new_record],
+                gaps=[],
+                video_asset_count=1,
+                mirrored_video_count=0,
+                verified_video_count=0,
+                artifact_count=0,
+                motion_row_count=0,
+                discovery_candidate_count=1,
+                discovery_sweep_receipts=[{"repository": "dryad", "status": "accepted_candidates"}],
+            )
+
+            with patch("scripts.ingest_video_atoms.build_video_atom_records", return_value=fake_result) as build:
+                result = ingest_video_atoms(
+                    artifact_dir=artifact_dir,
+                    retrieved_at=RETRIEVED_AT,
+                    discover_sources=True,
+                    discovery_repositories=("dryad",),
+                    merge_existing=True,
+                    parse_motion_rows=False,
+                )
+
+            self.assertTrue(result["ok"])
+            self.assertTrue(result["merge_existing"])
+            self.assertEqual(result["discovery_repositories"], ["dryad"])
+            build.assert_called_once()
+            self.assertEqual(build.call_args.kwargs["discovery_repositories"], ("dryad",))
+            self.assertFalse(build.call_args.kwargs["parse_motion_rows"])
+            rows = index.sql("select record_id from records where source='aedes_video_atoms' order by record_id", limit=10)
+            self.assertEqual(
+                [row["record_id"] for row in rows],
+                ["video_atom:video_asset:existing", "video_atom:video_asset:new-dryad"],
+            )
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            receipts = {receipt["repository"]: receipt for receipt in status["aedes_video_atoms"]["discovery_sweep_receipts"]}
+            self.assertEqual(receipts["mendeley"]["status"], "accepted_candidates")
+            self.assertEqual(receipts["dryad"]["status"], "accepted_candidates")
+
+    def test_repository_scoped_refresh_requires_merge_existing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            with self.assertRaisesRegex(ValueError, "requires merge_existing"):
+                ingest_video_atoms(
+                    artifact_dir=artifact_dir,
+                    discover_sources=True,
+                    discovery_repositories=("dryad",),
+                )
+
 
 if __name__ == "__main__":
     unittest.main()

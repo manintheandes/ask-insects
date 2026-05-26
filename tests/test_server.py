@@ -2597,6 +2597,23 @@ class ServerTests(unittest.TestCase):
             self.assertNotIn(".video-atoms-staging", provenance_json)
             self.assertFalse((artifact_dir.parent / ".mosquito-v1.video-atoms-staging").exists())
 
+    def test_ingest_video_atoms_rejects_scoped_refresh_without_merge(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/video-atoms",
+                {"discover_sources": True, "discovery_repositories": ["dryad"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 400)
+            self.assertIn("discovery_repositories requires merge_existing", response.payload["error"])
+
     def test_ingest_occurrence_ecology_adds_records_without_removing_existing_sources(self):
         from tests.test_occurrence_ecology_source import write_occurrence_ecology_fixture
 

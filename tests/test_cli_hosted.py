@@ -1074,6 +1074,10 @@ class HostedCliTests(unittest.TestCase):
                 "CC-BY,Creative Commons Attribution License",
                 "--motion-table",
                 "raw/video_atoms/motion.csv",
+                "--discovery-repository",
+                "dryad",
+                "--merge-existing",
+                "--skip-motion-rows",
             )
 
         self.assertEqual(code, 0)
@@ -1090,6 +1094,9 @@ class HostedCliTests(unittest.TestCase):
                 "allowed_licenses": ["CC-BY", "Creative Commons Attribution License"],
                 "motion_table_paths": ["raw/video_atoms/motion.csv"],
                 "max_discovery_results": 1000,
+                "discovery_repositories": ["dryad"],
+                "merge_existing": True,
+                "parse_motion_rows": False,
             },
         )
         self.assertEqual(calls[0][3], 7200)

@@ -9,6 +9,7 @@ from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
 from .hosted import CONFIG_PATH as HOSTED_CONFIG_PATH
 from .hosted import HostedConfig, hosted_request, load_config, save_config
+from .sources.video_atoms import DISCOVERY_REPOSITORIES
 from .sources.zenodo_aedes_videos import DEFAULT_ZENODO_SIZE
 from .sources.figshare_aedes_videos import DEFAULT_FIGSHARE_PAGE_SIZE
 from .index import SourceIndex
@@ -320,6 +321,9 @@ def main(argv: list[str] | None = None) -> int:
     ingest_video_atoms.add_argument("--allowed-licenses")
     ingest_video_atoms.add_argument("--motion-table", action="append", default=[])
     ingest_video_atoms.add_argument("--max-discovery-results", type=int, default=1000)
+    ingest_video_atoms.add_argument("--discovery-repository", action="append", choices=DISCOVERY_REPOSITORIES, default=[])
+    ingest_video_atoms.add_argument("--merge-existing", action="store_true")
+    ingest_video_atoms.add_argument("--skip-motion-rows", action="store_true")
 
     ingest_image_atoms = sub.add_parser("ingest-image-atoms")
     ingest_image_atoms.add_argument("--hosted", action="store_true")
@@ -1118,7 +1122,10 @@ def main(argv: list[str] | None = None) -> int:
                 allow_unclear_license=args.allow_unclear_license,
                 allowed_licenses=allowed_licenses or None,
                 motion_table_paths=[Path(path) for path in args.motion_table],
+                discovery_repositories=args.discovery_repository or None,
                 max_discovery_results=args.max_discovery_results,
+                merge_existing=args.merge_existing,
+                parse_motion_rows=not args.skip_motion_rows,
             )
             emit(payload)
             return 0 if payload.get("ok") else 2
@@ -1134,6 +1141,9 @@ def main(argv: list[str] | None = None) -> int:
                 "allowed_licenses": allowed_licenses,
                 "motion_table_paths": args.motion_table,
                 "max_discovery_results": args.max_discovery_results,
+                "discovery_repositories": args.discovery_repository,
+                "merge_existing": args.merge_existing,
+                "parse_motion_rows": not args.skip_motion_rows,
             },
             timeout=7200,
         )

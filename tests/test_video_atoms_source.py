@@ -1302,6 +1302,54 @@ class VideoAtomsSourceTests(unittest.TestCase):
         sweep_records = [record for record in result.records if record.payload.get("atom_type") == "video_sweep"]
         self.assertEqual({record.payload["repository"] for record in sweep_records}, set(DISCOVERY_REPOSITORIES))
 
+    def test_repository_scope_limits_video_discovery_and_source_candidates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            discovery_clients = {
+                "zenodo": lambda: [
+                    {
+                        "title": "Aedes aegypti oviposition movie",
+                        "download_url": "https://zenodo.org/record/1/files/movie.mp4",
+                        "source_url": "https://zenodo.org/record/1",
+                        "license": "CC-BY-4.0",
+                        "repository": "zenodo",
+                        "species_scope": "Aedes aegypti",
+                    }
+                ],
+                "figshare": lambda: [
+                    {
+                        "title": "Aedes aegypti ignored Figshare movie",
+                        "download_url": "https://figshare.com/video.mp4",
+                        "source_url": "https://figshare.com/articles/1",
+                        "license": "CC-BY",
+                        "repository": "figshare",
+                        "species_scope": "Aedes aegypti",
+                    }
+                ],
+            }
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                discover_sources=True,
+                discovery_clients=discovery_clients,
+                discovery_repositories=("zenodo",),
+                parse_motion_rows=False,
+            )
+
+        repositories = {
+            record.payload.get("repository") or record.payload.get("discovery_repository")
+            for record in result.records
+            if record.payload
+        }
+        self.assertIn("zenodo", repositories)
+        self.assertNotIn("figshare", repositories)
+        self.assertNotIn("pmc_oa", repositories)
+        self.assertNotIn("osf", repositories)
+        self.assertEqual([receipt["repository"] for receipt in result.discovery_sweep_receipts], ["zenodo"])
+        self.assertEqual(result.video_asset_count, 1)
+
     def test_discovery_sweep_receipts_preserve_page_coverage_metadata(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
