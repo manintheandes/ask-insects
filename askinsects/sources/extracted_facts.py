@@ -898,21 +898,31 @@ def _supplement_candidates_with_discovery(
     return candidates, discovered_count, discovery_record_count
 
 
-def _supplement_discovery_score(paper: sqlite3.Row) -> tuple[int, int, int, int, str]:
+def _repository_supplement_rank(request: dict[str, object], url: str) -> int:
+    if _figshare_article_id_from_request(request) or _zenodo_record_id_from_request(request):
+        return 1
+    lowered = url.lower()
+    if "figshare" in lowered or "zenodo" in lowered:
+        return 1
+    return 0
+
+
+def _supplement_discovery_score(paper: sqlite3.Row) -> tuple[int, int, int, int, int, str]:
     request = _identifier_request(paper)
     if not any(request.get(key) for key in ("doi", "pmid", "pmcid")):
-        return (0, 0, 0, 0, str(paper["record_id"]))
+        return (0, 0, 0, 0, 0, str(paper["record_id"]))
     title = str(paper["title"] or "").lower()
     text = str(paper["text"] or "").lower()
     payload = str(paper["payload_json"] or "").lower()
     url = str(paper["url"] or "").lower()
     resistance_relevant = 1 if any(term in f"{title}\n{text}\n{payload}" for term in RESISTANCE_DISCOVERY_TERMS) else 0
+    repository = _repository_supplement_rank(request, url)
     figshare = 1 if _figshare_article_id_from_request(request) else 0
     supplementish = 1 if any(term in title for term in ("additional file", "supplementary", "supplement ", " table", "dataset")) else 0
     pmc_or_pubmed = 1 if request.get("pmcid") or request.get("pmid") else 0
     if "figshare" in url:
         figshare = 1
-    return (resistance_relevant, figshare, supplementish, pmc_or_pubmed, str(paper["record_id"]))
+    return (resistance_relevant, repository, figshare, supplementish, pmc_or_pubmed, str(paper["record_id"]))
 
 
 def _prioritized_supplement_discovery_rows(literature_rows: list[sqlite3.Row]) -> list[sqlite3.Row]:
