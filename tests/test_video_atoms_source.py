@@ -619,6 +619,42 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(result.video_asset_count, 0)
         self.assertEqual(result.records, [])
 
+    def test_ignores_data_files_from_video_titled_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:file:data-array",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti visual cue tracking video dataset file m_air.npy",
+                        text="Dataset file from a visual cue tracking assay, but this file is a NumPy array rather than a video.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://datadryad.org/api/v2/files/1726869/download",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/dataset.json#files/1",
+                            retrieved_at=RETRIEVED_AT,
+                            license="CC0",
+                        ),
+                        payload={
+                            "filename": "m_air.npy",
+                            "download_url": "https://datadryad.org/api/v2/files/1726869/download",
+                            "size": 816128,
+                        },
+                    )
+                ]
+            )
+
+            result = build_video_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        self.assertEqual(result.video_asset_count, 0)
+        self.assertEqual(result.records, [])
+
     def test_ignores_behavior_rows_when_finding_video_assets(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
