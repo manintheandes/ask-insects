@@ -978,25 +978,11 @@ def _search_queries(question: str) -> list[str]:
             queries.extend(f"VectorBase {term}" for term in aael_terms)
         if salient:
             queries.append(" ".join(salient))
-        if any(
-            term in q
-            for term in (
-                "homolog",
-                "homologs",
-                "ortholog",
-                "orthologs",
-                "orthology",
-                "orthomcl",
-                "coortholog",
-                "coorthologs",
-                "inparalog",
-                "inparalogs",
-            )
-        ):
+        if _wants_orthomcl_relationship(question, "ortholog"):
             queries.extend(["OrthoMCL ortholog Aedes aegypti", "aaeg-old AAEL ortholog", "VectorBase Aedes orthology"])
-        if any(term in q for term in ("coortholog", "coorthologs")):
+        if _wants_orthomcl_relationship(question, "coortholog"):
             queries.extend(["OrthoMCL coortholog Aedes aegypti", "aaeg-old AAEL coortholog"])
-        if any(term in q for term in ("inparalog", "inparalogs")):
+        if _wants_orthomcl_relationship(question, "inparalog"):
             queries.extend(["OrthoMCL inparalog Aedes aegypti", "aaeg-old AAEL inparalog"])
         if any(term in q for term in ("orthogroup", "orthogroups", "current id resolution", "current-id resolution")):
             queries.extend(
@@ -1617,6 +1603,19 @@ def _wants_advanced_orthology_boundary(question: str) -> bool:
     )
 
 
+def _wants_orthomcl_relationship(question: str, relationship_type: str) -> bool:
+    q = question.lower()
+    if relationship_type == "coortholog":
+        return any(term in q for term in ("coortholog", "coorthologs"))
+    if relationship_type == "inparalog":
+        return any(term in q for term in ("inparalog", "inparalogs"))
+    if relationship_type == "ortholog":
+        if _wants_orthomcl_relationship(question, "coortholog") or _wants_orthomcl_relationship(question, "inparalog"):
+            return False
+        return any(term in q for term in ("homolog", "homologs", "ortholog", "orthologs", "orthology", "orthomcl"))
+    return False
+
+
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
     if _wants_snp_variation(question):
@@ -1689,11 +1688,23 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
             ]
             if exact_records:
                 records = exact_records
+        relationship_prefixes: list[str] = []
+        if _wants_orthomcl_relationship(question, "coortholog"):
+            relationship_prefixes.append("vectorbase:coortholog:")
+        if _wants_orthomcl_relationship(question, "inparalog"):
+            relationship_prefixes.append("vectorbase:inparalog:")
+        if _wants_orthomcl_relationship(question, "ortholog"):
+            relationship_prefixes.append("vectorbase:ortholog:")
         wants_advanced_gap = _wants_advanced_orthology_boundary(question)
         return sorted(
             records,
             key=lambda record: (
                 0 if record.source == "vectorbase_aedes_genomics" else 1,
+                0
+                if relationship_prefixes and any(record.record_id.startswith(prefix) for prefix in relationship_prefixes)
+                else 1
+                if relationship_prefixes
+                else 0,
                 0
                 if wants_advanced_gap and record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution"
                 else 2
@@ -1851,21 +1862,21 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
             clauses.append(("record_id = ?", (f"vectorbase:codon_usage:{codon.replace('T', 'U')}",)))
     for aael_id in re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE):
         escaped_aael = _like_escape(aael_id.upper())
-        if any(term in q for term in ("homolog", "homologs", "ortholog", "orthologs", "orthology", "orthomcl")):
+        if _wants_orthomcl_relationship(question, "ortholog"):
             clauses.append(
                 (
                     "record_id LIKE ? ESCAPE '\\'",
                     (f"vectorbase:ortholog:aaeg-old_{escaped_aael}:%",),
                 )
             )
-        if any(term in q for term in ("homolog", "homologs", "orthology", "orthomcl", "coortholog", "coorthologs")):
+        if _wants_orthomcl_relationship(question, "coortholog"):
             clauses.append(
                 (
                     "record_id LIKE ? ESCAPE '\\'",
                     (f"vectorbase:coortholog:aaeg-old_{escaped_aael}:%",),
                 )
             )
-        if any(term in q for term in ("homolog", "homologs", "orthology", "orthomcl", "inparalog", "inparalogs")):
+        if _wants_orthomcl_relationship(question, "inparalog"):
             clauses.append(
                 (
                     "record_id LIKE ? ESCAPE '\\'",

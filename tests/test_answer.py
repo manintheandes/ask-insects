@@ -2701,6 +2701,22 @@ class AnswerTests(unittest.TestCase):
             index.upsert_records(
                 [
                     EvidenceRecord(
+                        record_id="vectorbase:ortholog:aaeg-old_AAEL000076:aaeo_O67680:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti OrthoMCL ortholog AAEL000076 to aaeo|O67680",
+                        text="OrthoMCL CURRENT ortholog pair for Aedes aegypti gene AAEL000076 (aaeg-old|AAEL000076) with partner aaeo|O67680, score 0.352.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT/orthologs.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/orthologs.txt.gz#line/1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="OrthoMCL public download; source terms apply",
+                        ),
+                    ),
+                    EvidenceRecord(
                         record_id="vectorbase:coortholog:aaeg-old_AAEL000076:aaec_C076:1",
                         lane="genome_features",
                         source="vectorbase_aedes_genomics",
@@ -2757,6 +2773,7 @@ class AnswerTests(unittest.TestCase):
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertTrue(answer["evidence"][0]["record_id"].startswith("vectorbase:coortholog:"))
             self.assertIn("vectorbase:coortholog:aaeg-old_AAEL000076:aaec_C076:1", evidence_ids)
             self.assertIn("vectorbase:inparalog:aaeg-old_AAEL000076:aaeg-old_AAEL999999:1", evidence_ids)
             self.assertNotEqual(answer["evidence"][0]["record_id"], "vectorbase:gap:advanced_orthology_current_id_resolution")
