@@ -654,6 +654,7 @@ python3 -m askinsects ingest-mosquito-alert --hosted --occurrence-limit 1000
 python3 -m askinsects ingest-vectornet-surveillance --hosted
 python3 -m askinsects ingest-who-dengue-surveillance --hosted
 python3 -m askinsects ingest-cdc-dengue-surveillance --hosted
+python3 -m askinsects ingest-ncvbdc-dengue-surveillance --hosted
 python3 -m askinsects ingest-crossref-literature-audit --hosted --max-results 500 --page-size 100
 python3 -m askinsects ingest-mosquito-repellent-literature --hosted --pubmed-max-results 1000 --crossref-max-results 1000 --page-size 100
 python3 -m askinsects ingest-mosquito-repellent-external-discovery --hosted --max-results-per-source 50
