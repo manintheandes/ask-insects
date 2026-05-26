@@ -27,6 +27,9 @@ class VerifyCompleteTests(unittest.TestCase):
         include_sweep_receipts: bool = True,
         include_sweep_records: bool = True,
         include_sweep_coverage: bool = True,
+        include_motion_asset_join: bool = True,
+        include_broken_motion_asset_join: bool = False,
+        include_stale_archive_gap: bool = False,
     ) -> None:
         artifact_dir.mkdir(parents=True)
         db_path = artifact_dir / "source_index.sqlite"
@@ -104,9 +107,20 @@ class VerifyCompleteTests(unittest.TestCase):
             add("video_atom:preview:1", "media", {"atom_type": "video_preview_clip"})
             add("video_atom:frame_manifest:1", "media", {"atom_type": "video_frame_manifest"})
             if include_motion_row:
-                add("video_atom:motion:1", "behavior", {"atom_type": "video_motion_row"})
+                motion_payload = {"atom_type": "video_motion_row"}
+                if include_broken_motion_asset_join:
+                    motion_payload["source_video_asset_id"] = "video_atom:asset:missing"
+                elif include_motion_asset_join:
+                    motion_payload["source_video_asset_id"] = f"video_atom:asset:{repositories[0]}"
+                add("video_atom:motion:1", "behavior", motion_payload)
             if include_queryable_gap:
                 add("video_atom:gap:1", "media", {"atom_type": "video_gap", "repository": "paper_supplements"})
+            if include_stale_archive_gap:
+                add(
+                    "video_atom:gap:archive",
+                    "media",
+                    {"atom_type": "video_gap", "reason": "video_archive_not_expanded", "repository": "dryad"},
+                )
 
         table_dir = artifact_dir / "raw" / "mendeley_behavior_media" / "table_files"
         table_dir.mkdir(parents=True)
@@ -120,7 +134,7 @@ class VerifyCompleteTests(unittest.TestCase):
                 "verified_video_count": len(repositories),
                 "artifact_count": 4,
                 "motion_row_count": 1 if include_motion_row else 0,
-                "gap_count": 1 if include_queryable_gap else 0,
+                "gap_count": (1 if include_queryable_gap else 0) + (1 if include_stale_archive_gap else 0),
             }
         }
         if include_sweep_receipts:
@@ -148,10 +162,11 @@ class VerifyCompleteTests(unittest.TestCase):
                 receipts.append(receipt)
             status["aedes_video_atoms"]["discovery_sweep_receipts"] = receipts
         (artifact_dir / "source_status.json").write_text(json.dumps(status), encoding="utf-8")
-        (artifact_dir / "gaps.json").write_text(
-            json.dumps([{"source": "aedes_video_atoms", "reason": "video_discovery_client_missing", "repository": "paper_supplements"}]),
-            encoding="utf-8",
-        )
+        gaps = []
+        gaps.append({"source": "aedes_video_atoms", "reason": "video_discovery_client_missing", "repository": "paper_supplements"})
+        if include_stale_archive_gap:
+            gaps.append({"source": "aedes_video_atoms", "reason": "video_archive_not_expanded", "repository": "dryad"})
+        (artifact_dir / "gaps.json").write_text(json.dumps(gaps), encoding="utf-8")
 
     def test_verify_complete_checks_aedes_video_atoms_artifact(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -239,6 +254,22 @@ class VerifyCompleteTests(unittest.TestCase):
             self._write_video_atom_artifact(artifact_dir, include_motion_row=False)
 
             with self.assertRaisesRegex(RuntimeError, "motion tables exist"):
+                verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
+
+    def test_verify_complete_rejects_broken_motion_asset_references(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            self._write_video_atom_artifact(artifact_dir, include_broken_motion_asset_join=True)
+
+            with self.assertRaisesRegex(RuntimeError, "broken source video asset references"):
+                verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
+
+    def test_verify_complete_rejects_stale_archive_not_expanded_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            self._write_video_atom_artifact(artifact_dir, include_stale_archive_gap=True)
+
+            with self.assertRaisesRegex(RuntimeError, "stale unexpanded archive gaps"):
                 verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
 
     def test_verify_complete_detects_recursive_video_motion_tables(self):

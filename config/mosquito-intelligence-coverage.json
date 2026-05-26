@@ -238,7 +238,7 @@
         "OSF FlightTrackAI manifests add file-grained public Aedes aegypti processed/unprocessed flight videos, executable bundle, trained model, and installation-instruction records without mirroring multi-gigabyte binaries.",
         "Zenodo Aedes video sweeps add first-class bounded Zenodo search/file-manifest records for materially Aedes aegypti video files, preserving download URL, source URL, license, byte size, source hashes, and exact raw-search locators.",
         "Figshare Aedes video sweeps add first-class bounded Figshare article-detail file-manifest records for materially Aedes aegypti video files, preserving article ID, file ID, DOI, download URL, source URL, license, byte size, source hashes, and exact raw-detail locators.",
-        "Aedes video atoms derive video asset rows, optional bounded mirrors, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, source-table motion rows, and structured gaps for oversized, archive-not-expanded, or license-unclear files.",
+        "Aedes video atoms derive video asset rows, optional bounded mirrors, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, source-table motion rows joined to source video assets when possible, bounded ZIP archive manifests and member assets, and structured gaps for oversized, unsupported-archive, unreadable-archive, or license-unclear files.",
         "Aedes video atoms now emit one queryable video_sweep receipt record per discovery target and store discovery_sweep_receipts in source receipts, so repository coverage must prove raw candidate, accepted candidate, gap, and limit status instead of merely having one asset or gap row.",
         "The May 25, 2026 hosted video-atoms refresh installed 46,020 records: 91 video assets, 21 verified mirrored videos, 84 inspectable artifact records, 45,574 motion rows, and 271 structured video gaps.",
         "Video discovery now requires source-provided material metadata to name Aedes aegypti; repository search terms and synthetic query strings do not count as Aedes evidence.",
@@ -247,7 +247,7 @@
       ],
       "required_next_sources": [
         "broader and deeper live sweeps beyond the bounded receipt frontier for PMC OA supplements, Dryad, Mendeley, OSF, Zenodo, Figshare, institutional repositories, and paper supplements",
-        "larger licensed binary mirrors and archive-member extraction where storage and rights allow",
+        "larger licensed binary mirrors and non-ZIP archive-member extraction where storage and rights allow",
         "computer-vision extraction for videos that lack source trajectory tables",
         "lab assay video metadata where public"
       ],

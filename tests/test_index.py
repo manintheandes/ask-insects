@@ -314,6 +314,45 @@ class IndexTests(unittest.TestCase):
             self.assertEqual(index.sql("select text from records where record_id='obs:1'"), [{"text": "replacement row"}])
             self.assertEqual(index.sql("select record_id from records_fts where records_fts match 'oldunique'"), [{"record_id": "obs:1"}])
 
+    def test_replace_source_records_preserves_fts_while_cleaning_fulltext_units(self):
+        from askinsects.sources.literature import FullTextUnit
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([sample_record(record_id="obs:1", text="oldunique row")])
+            index.upsert_fulltext_units(
+                [
+                    FullTextUnit(
+                        unit_id="obs:1:fulltext:0",
+                        record_id="obs:1",
+                        source="mosquito_v1_fixtures",
+                        unit_index=0,
+                        text="stale fulltext unit",
+                        url="https://example.org/fulltext",
+                        license="CC-BY",
+                        provenance=Provenance(
+                            source_id="mosquito_v1_fixtures",
+                            locator="fulltext#obs:1",
+                            retrieved_at="2026-05-23T00:00:00Z",
+                        ),
+                    )
+                ]
+            )
+
+            index.replace_source_records(
+                "mosquito_v1_fixtures",
+                [sample_record(record_id="obs:1", text="replacement row")],
+                update_fts=False,
+                delete_existing_fts=False,
+            )
+
+            self.assertEqual(index.sql("select unit_id from literature_fulltext_units"), [])
+            self.assertEqual(
+                index.sql("select record_id from records_fts where records_fts match 'oldunique'"),
+                [{"record_id": "obs:1"}],
+            )
+
     def test_replace_source_records_rolls_back_failed_replacement(self):
         bad_record = EvidenceRecord(
             record_id="obs:bad",

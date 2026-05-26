@@ -294,12 +294,18 @@ class SourceIndex:
                 time.sleep(1.5 * (attempt + 1))
 
     def _delete_source_records(self, conn: sqlite3.Connection, source: str, *, delete_fts: bool = True) -> None:
-        rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
-        record_ids = [row["record_id"] for row in rows]
-        for chunk in _chunks(record_ids):
-            placeholders = ",".join("?" for _ in chunk)
-            if delete_fts:
+        record_ids: list[str] = []
+        if delete_fts:
+            rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
+            record_ids = [row["record_id"] for row in rows]
+            for chunk in _chunks(record_ids):
+                placeholders = ",".join("?" for _ in chunk)
                 conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+
+        fulltext_rows = conn.execute("SELECT record_id FROM literature_fulltext_units WHERE source=?", (source,)).fetchall()
+        fulltext_record_ids = [row["record_id"] for row in fulltext_rows]
+        for chunk in _chunks(fulltext_record_ids):
+            placeholders = ",".join("?" for _ in chunk)
             conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
             conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
         conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))

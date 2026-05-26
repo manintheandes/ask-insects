@@ -779,7 +779,8 @@ def check_mosquito_intelligence_coverage() -> None:
         "bounded_mirror_when_license_and_size_allow_else_structured_gap",
         "video_download_not_video",
         "video_license_unclear",
-        "video_archive_not_expanded",
+        "video_archive_unsupported_format",
+        "video_archive_read_failed",
         "thumbnails",
         "keyframes",
         "preview_clips",
@@ -1242,6 +1243,51 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
                 """
             ).fetchone()[0]
         )
+        broken_motion_asset_refs = int(
+            conn.execute(
+                """
+                with motion as (
+                  select json_extract(payload_json, '$.source_video_asset_id') as asset_id
+                  from record_payloads
+                  where source='aedes_video_atoms'
+                    and json_extract(payload_json, '$.atom_type')='video_motion_row'
+                )
+                select count(*)
+                from motion
+                left join record_payloads asset on asset.record_id = motion.asset_id
+                where motion.asset_id is not null
+                  and asset.record_id is null
+                """
+            ).fetchone()[0]
+        )
+        broken_archive_member_asset_refs = int(
+            conn.execute(
+                """
+                with members as (
+                  select json_extract(payload_json, '$.source_video_asset_id') as asset_id
+                  from record_payloads
+                  where source='aedes_video_atoms'
+                    and json_extract(payload_json, '$.atom_type')='video_archive_member'
+                )
+                select count(*)
+                from members
+                left join record_payloads asset on asset.record_id = members.asset_id
+                where members.asset_id is not null
+                  and asset.record_id is null
+                """
+            ).fetchone()[0]
+        )
+        stale_archive_gaps = int(
+            conn.execute(
+                """
+                select count(*)
+                from record_payloads
+                where source='aedes_video_atoms'
+                  and json_extract(payload_json, '$.atom_type')='video_gap'
+                  and json_extract(payload_json, '$.reason')='video_archive_not_expanded'
+                """
+            ).fetchone()[0]
+        )
 
     expected_record_count = int(video_status.get("record_count", 0))
     if source_records == 0:
@@ -1268,6 +1314,12 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
         )
     if _has_motion_table_inputs(artifact_dir) and atom_counts.get("video_motion_row", 0) == 0:
         raise RuntimeError("Aedes video motion tables exist, but aedes_video_atoms has zero queryable video_motion_row records")
+    if broken_motion_asset_refs:
+        raise RuntimeError(f"Aedes video motion rows have broken source video asset references: {broken_motion_asset_refs}")
+    if broken_archive_member_asset_refs:
+        raise RuntimeError(f"Aedes video archive member rows have broken source video asset references: {broken_archive_member_asset_refs}")
+    if stale_archive_gaps:
+        raise RuntimeError(f"Aedes video atoms has stale unexpanded archive gaps: {stale_archive_gaps}")
 
     missing_targets = [target for target in VIDEO_DISCOVERY_TARGETS if repository_counts.get(target, 0) == 0]
     if missing_targets:
