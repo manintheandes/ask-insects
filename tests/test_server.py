@@ -991,6 +991,7 @@ class ServerTests(unittest.TestCase):
 
             self.assertEqual(response.status, 200)
             self.assertTrue(response.payload["ok"])
+            self.assertFalse(response.payload["staged"])
             rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
             counts = {row["source"]: row["n"] for row in rows}
             self.assertEqual(counts["mosquito_v1_fixtures"], 7)

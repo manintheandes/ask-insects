@@ -961,44 +961,32 @@ def ingest_irmapper(
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
 ) -> dict[str, object]:
     species = str(payload.get("species") or DEFAULT_IRMAPPER_SPECIES)
-    staging = artifact_dir.parent / f".{artifact_dir.name}.irmapper-staging"
-    if staging.exists():
-        shutil.rmtree(staging)
-    try:
-        if artifact_dir.exists():
-            prepare_mutable_staging(artifact_dir, staging)
-        else:
-            staging.mkdir(parents=True, exist_ok=True)
-        index = SourceIndex(staging / "source_index.sqlite")
-        index.initialize()
-        index.delete_source(IRMAPPER_SOURCE_ID)
-        retrieved_at = utc_now()
-        result = fetch_irmapper_records_fn(
-            raw_dir=staging / "raw" / "irmapper",
-            species=species,
-            retrieved_at=retrieved_at,
-        )
-        index.upsert_records(result.records)
-        old_gaps = read_json(staging / "gaps.json", [])
-        if not isinstance(old_gaps, list):
-            old_gaps = []
-        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == IRMAPPER_SOURCE_ID)]
-        gaps.extend(result.gaps)
-        irmapper_payload = {
-            "requested_species": result.requested_species,
-            "fetched_row_count": result.fetched_row_count,
-            "raw_artifacts": result.raw_artifacts,
-            "record_count": len(result.records),
-            "gap_count": len(result.gaps),
-            "retrieved_at": retrieved_at,
-        }
-        response = write_irmapper_metadata(staging, irmapper_payload, gaps)
-        response = rewrite_artifact_references(staging, artifact_dir, response, source=IRMAPPER_SOURCE_ID)
-        activate_source_staging(staging, artifact_dir, Path("raw") / "irmapper")
-    except Exception:
-        shutil.rmtree(staging, ignore_errors=True)
-        raise
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    retrieved_at = utc_now()
+    result = fetch_irmapper_records_fn(
+        raw_dir=artifact_dir / "raw" / "irmapper",
+        species=species,
+        retrieved_at=retrieved_at,
+    )
+    index.replace_source_records(IRMAPPER_SOURCE_ID, result.records)
+    old_gaps = read_json(artifact_dir / "gaps.json", [])
+    if not isinstance(old_gaps, list):
+        old_gaps = []
+    gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == IRMAPPER_SOURCE_ID)]
+    gaps.extend(result.gaps)
+    irmapper_payload = {
+        "requested_species": result.requested_species,
+        "fetched_row_count": result.fetched_row_count,
+        "raw_artifacts": result.raw_artifacts,
+        "record_count": len(result.records),
+        "gap_count": len(result.gaps),
+        "retrieved_at": retrieved_at,
+    }
+    response = write_irmapper_metadata(artifact_dir, irmapper_payload, gaps)
     response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = False
     return response
 
 
