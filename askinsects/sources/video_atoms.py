@@ -6,12 +6,14 @@ from datetime import UTC, datetime
 import hashlib
 import json
 from pathlib import Path
+from posixpath import normpath
 import re
 import shutil
 import subprocess
 from typing import Callable, Iterable
 from urllib.parse import quote, urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
+import zipfile
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
@@ -1183,6 +1185,124 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _archive_extension(candidate: VideoCandidate) -> str:
+    for value in (
+        candidate.payload.get("filename"),
+        candidate.payload.get("name"),
+        candidate.payload.get("materialized_path"),
+        candidate.media_url,
+        candidate.url,
+    ):
+        parsed = urlparse(str(value or ""))
+        path = parsed.path.lower()
+        for suffix in (".tar.gz", ".tgz", ".zip", ".tar", ".7z"):
+            if path.endswith(suffix):
+                return suffix
+    return ""
+
+
+def _safe_archive_member_name(name: str) -> str | None:
+    normalized = normpath(name.replace("\\", "/"))
+    if normalized.startswith("../") or normalized == ".." or normalized.startswith("/"):
+        return None
+    return normalized
+
+
+def _archive_manifest_record(
+    candidate: VideoCandidate,
+    *,
+    retrieved_at: str,
+    archive_sha256: str,
+    archive_byte_size: int,
+    raw_archive_path: str,
+    members: list[dict[str, object]],
+) -> EvidenceRecord:
+    digest = _digest(candidate.source_record_id, archive_sha256, "archive_manifest")
+    video_member_count = sum(1 for member in members if member.get("is_video"))
+    return EvidenceRecord(
+        record_id=f"video_atom:archive_manifest:{_safe_id(candidate.source_record_id)}:{digest}",
+        lane="media",
+        source=VIDEO_ATOMS_SOURCE_ID,
+        title=f"Aedes aegypti video archive manifest {candidate.title}",
+        text=(
+            f"Aedes aegypti video archive manifest for {candidate.title}. "
+            f"Archive members: {len(members)}. Video members: {video_member_count}. "
+            f"Archive SHA-256: {archive_sha256}."
+        ),
+        species=candidate.species or "Aedes aegypti",
+        url=candidate.url,
+        media_url=raw_archive_path,
+        provenance=Provenance(
+            source_id=VIDEO_ATOMS_SOURCE_ID,
+            locator=str(candidate.provenance.get("locator") or f"records#{candidate.source_record_id}"),
+            retrieved_at=retrieved_at,
+            license=candidate.provenance.get("license") if isinstance(candidate.provenance.get("license"), str) else None,
+            source_url=candidate.media_url or candidate.url,
+        ),
+        payload={
+            "atom_type": "video_archive_manifest",
+            "source_video_record_id": candidate.source_record_id,
+            "source_dataset": candidate.payload.get("source_dataset") or candidate.title,
+            "download_url": candidate.media_url,
+            "sha256": archive_sha256,
+            "byte_size": archive_byte_size,
+            "raw_archive_path": raw_archive_path,
+            "member_count": len(members),
+            "video_member_count": video_member_count,
+            "members": members[:250],
+            "source_video_provenance": candidate.provenance,
+        },
+    )
+
+
+def _archive_member_record(
+    candidate: VideoCandidate,
+    asset: EvidenceRecord,
+    *,
+    retrieved_at: str,
+    archive_sha256: str,
+    raw_archive_path: str,
+    member_name: str,
+    member_sha256: str,
+    member_byte_size: int,
+    raw_asset_path: str,
+) -> EvidenceRecord:
+    digest = _digest(candidate.source_record_id, member_name, member_sha256, "archive_member")
+    return EvidenceRecord(
+        record_id=f"video_atom:archive_member:{_safe_id(candidate.source_record_id)}:{digest}",
+        lane="media",
+        source=VIDEO_ATOMS_SOURCE_ID,
+        title=f"Aedes aegypti video archive member {member_name}",
+        text=(
+            f"Aedes aegypti video archive member {member_name} extracted from {candidate.title}. "
+            f"Member byte size: {member_byte_size}. Member SHA-256: {member_sha256}."
+        ),
+        species=candidate.species or "Aedes aegypti",
+        url=candidate.url,
+        media_url=raw_asset_path,
+        provenance=Provenance(
+            source_id=VIDEO_ATOMS_SOURCE_ID,
+            locator=f"{raw_archive_path}#{member_name}",
+            retrieved_at=retrieved_at,
+            license=candidate.provenance.get("license") if isinstance(candidate.provenance.get("license"), str) else None,
+            source_url=candidate.media_url or candidate.url,
+        ),
+        payload={
+            "atom_type": "video_archive_member",
+            "source_video_asset_id": asset.record_id,
+            "source_video_record_id": asset.payload["source_video_record_id"],
+            "archive_source_video_record_id": candidate.source_record_id,
+            "archive_url": candidate.media_url,
+            "archive_sha256": archive_sha256,
+            "raw_archive_path": raw_archive_path,
+            "member_name": member_name,
+            "member_sha256": member_sha256,
+            "byte_size": member_byte_size,
+            "raw_asset_path": raw_asset_path,
+        },
+    )
+
+
 def _asset_probe_payload(
     path: Path,
     candidate: VideoCandidate,
@@ -1323,6 +1443,185 @@ def _mirror_candidate(
         **{key: value for key, value in probe_payload.items() if value is not None},
     }
     return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status=verification_status, extra_payload=extra_payload), raw_path
+
+
+def _mirror_archive_candidate(
+    candidate: VideoCandidate,
+    *,
+    artifact_dir: Path,
+    retrieved_at: str,
+    max_video_bytes: int,
+    fetch_video_bytes_fn: Callable[[str, int], bytes],
+    probe_video_file_fn: Callable[[Path], dict[str, object]],
+    allowed_licenses: Iterable[str] | None,
+    allow_unclear_license: bool,
+    gaps: list[dict[str, object]],
+) -> tuple[list[EvidenceRecord], list[tuple[EvidenceRecord, Path | None]]]:
+    if not candidate.media_url:
+        gaps.append(_gap_context(candidate, "video_download_url_missing"))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_url_missing"), None)]
+    if not allow_unclear_license and not _is_allowed_license(candidate.provenance.get("license"), allowed_licenses):
+        gaps.append(_gap_context(candidate, "video_license_unclear"))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_license_unclear"), None)]
+    size = _size_from_candidate(candidate)
+    if size is not None and size > max_video_bytes:
+        gaps.append(_gap_context(candidate, "video_archive_too_large", byte_size=size, max_video_bytes=max_video_bytes))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_too_large"), None)]
+    if _archive_extension(candidate) != ".zip":
+        gaps.append(_gap_context(candidate, "video_archive_unsupported_format", archive_format=_archive_extension(candidate) or "unknown"))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_unsupported_format"), None)]
+    try:
+        data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
+    except VideoDownloadNotVideoError as exc:
+        gaps.append(_gap_context(candidate, "video_download_not_video", error=str(exc)))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None)]
+    except Exception as exc:
+        gaps.append(_gap_context(candidate, "video_download_failed", error=str(exc)))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_failed"), None)]
+    if len(data) > max_video_bytes:
+        gaps.append(_gap_context(candidate, "video_archive_too_large", byte_size=len(data), max_video_bytes=max_video_bytes))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_too_large"), None)]
+
+    archive_sha256 = hashlib.sha256(data).hexdigest()
+    archive_dir = artifact_dir / "raw" / "video_atoms" / "archives"
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    raw_archive_path = archive_dir / f"{_safe_id(candidate.source_record_id)}_{archive_sha256[:12]}.zip"
+    raw_archive_path.write_bytes(data)
+    relative_archive_path = raw_archive_path.relative_to(artifact_dir).as_posix()
+
+    members: list[dict[str, object]] = []
+    extra_records: list[EvidenceRecord] = []
+    asset_entries: list[tuple[EvidenceRecord, Path | None]] = []
+    try:
+        with zipfile.ZipFile(raw_archive_path) as archive:
+            for info in archive.infolist():
+                member_name = _safe_archive_member_name(info.filename)
+                if info.is_dir() or not member_name:
+                    continue
+                suffix = Path(member_name).suffix.lower()
+                is_video = suffix in VIDEO_EXTENSIONS
+                member_context = {
+                    "member_name": member_name,
+                    "byte_size": info.file_size,
+                    "is_video": is_video,
+                }
+                if is_video and info.file_size > max_video_bytes:
+                    gaps.append(
+                        _gap_context(
+                            candidate,
+                            "video_archive_member_too_large",
+                            member_name=member_name,
+                            byte_size=info.file_size,
+                            max_video_bytes=max_video_bytes,
+                        )
+                    )
+                    members.append(member_context)
+                    continue
+                if is_video:
+                    with archive.open(info) as handle:
+                        member_data = handle.read(max_video_bytes + 1)
+                    if len(member_data) > max_video_bytes:
+                        gaps.append(
+                            _gap_context(
+                                candidate,
+                                "video_archive_member_too_large",
+                                member_name=member_name,
+                                byte_size=len(member_data),
+                                max_video_bytes=max_video_bytes,
+                            )
+                        )
+                        members.append(member_context)
+                        continue
+                    member_sha256 = hashlib.sha256(member_data).hexdigest()
+                    member_safe = _safe_id(member_name)
+                    asset_dir = artifact_dir / "raw" / "video_atoms" / "assets"
+                    asset_dir.mkdir(parents=True, exist_ok=True)
+                    raw_asset_path = asset_dir / f"{_safe_id(candidate.source_record_id)}_{member_safe}_{member_sha256[:12]}{suffix}"
+                    raw_asset_path.write_bytes(member_data)
+                    relative_asset_path = raw_asset_path.relative_to(artifact_dir).as_posix()
+                    member_candidate = VideoCandidate(
+                        source_record_id=f"{candidate.source_record_id}:{member_name}",
+                        title=f"{candidate.title} member {Path(member_name).name}",
+                        text=f"{candidate.text} Archive member: {member_name}.",
+                        species=candidate.species,
+                        url=candidate.url,
+                        media_url=f"{candidate.media_url}#{quote(member_name)}",
+                        source=candidate.source,
+                        provenance=candidate.provenance,
+                        payload={
+                            **candidate.payload,
+                            "filename": Path(member_name).name,
+                            "source_dataset": candidate.payload.get("source_dataset") or candidate.title,
+                            "archive_source_video_record_id": candidate.source_record_id,
+                        },
+                        discovery_repository=candidate.discovery_repository,
+                    )
+                    probe_payload, verification_status = _asset_probe_payload(
+                        raw_asset_path,
+                        member_candidate,
+                        probe_video_file_fn=probe_video_file_fn,
+                        gaps=gaps,
+                        gap_reason_prefix="video_archive_member_probe",
+                    )
+                    extra_payload = {
+                        "archive_source_video_record_id": candidate.source_record_id,
+                        "archive_url": candidate.media_url,
+                        "archive_sha256": archive_sha256,
+                        "raw_archive_path": relative_archive_path,
+                        "member_name": member_name,
+                        "member_sha256": member_sha256,
+                        "byte_size": len(member_data),
+                        "raw_asset_path": relative_asset_path,
+                        **{key: value for key, value in probe_payload.items() if value is not None},
+                    }
+                    asset = _record_for_asset(
+                        member_candidate,
+                        retrieved_at=retrieved_at,
+                        verification_status=verification_status,
+                        extra_payload=extra_payload,
+                    )
+                    extra_records.append(
+                        _archive_member_record(
+                            candidate,
+                            asset,
+                            retrieved_at=retrieved_at,
+                            archive_sha256=archive_sha256,
+                            raw_archive_path=relative_archive_path,
+                            member_name=member_name,
+                            member_sha256=member_sha256,
+                            member_byte_size=len(member_data),
+                            raw_asset_path=relative_asset_path,
+                        )
+                    )
+                    asset_entries.append((asset, raw_asset_path))
+                    member_context.update({"sha256": member_sha256, "raw_asset_path": relative_asset_path})
+                elif suffix in {".csv", ".tsv", ".xlsx"} and info.file_size <= max_video_bytes:
+                    table_dir = artifact_dir / "raw" / "video_atoms" / "archive_tables" / _safe_id(candidate.source_record_id)
+                    table_dir.mkdir(parents=True, exist_ok=True)
+                    table_path = table_dir / _safe_id(member_name)
+                    with archive.open(info) as handle:
+                        table_path.write_bytes(handle.read(max_video_bytes + 1))
+                    member_context["raw_table_path"] = table_path.relative_to(artifact_dir).as_posix()
+                members.append(member_context)
+    except zipfile.BadZipFile as exc:
+        gaps.append(_gap_context(candidate, "video_archive_read_failed", error=str(exc)))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_read_failed"), None)]
+
+    extra_records.insert(
+        0,
+        _archive_manifest_record(
+            candidate,
+            retrieved_at=retrieved_at,
+            archive_sha256=archive_sha256,
+            archive_byte_size=len(data),
+            raw_archive_path=relative_archive_path,
+            members=members,
+        ),
+    )
+    if not any(member.get("is_video") for member in members):
+        gaps.append(_gap_context(candidate, "video_archive_no_video_members"))
+        asset_entries.append((_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_no_video_members"), None))
+    return extra_records, asset_entries
 
 
 def _artifact_records(
@@ -1938,7 +2237,7 @@ def build_video_atom_records(
     probe_fn = probe_video_file_fn or probe_video_file
     artifact_fn = artifact_generator_fn or generate_video_artifacts
     for candidate in candidates:
-        asset_path: Path | None = None
+        asset_entries: list[tuple[EvidenceRecord, Path | None]] = []
         existing_asset_path = _existing_mirror_path(candidate, artifact_dir)
         if existing_asset_path is not None:
             asset, asset_path = _record_for_existing_mirror(
@@ -1952,6 +2251,29 @@ def build_video_atom_records(
             mirrored_video_count += 1
             if asset.payload.get("verification_status") == "verified":
                 verified_video_count += 1
+            asset_entries.append((asset, asset_path))
+        elif mirror_videos and _looks_like_archive(
+            candidate.media_url,
+            candidate.url,
+            candidate.title,
+            candidate.payload.get("filename"),
+            candidate.payload.get("name"),
+            candidate.payload.get("materialized_path"),
+        ):
+            archive_records, asset_entries = _mirror_archive_candidate(
+                candidate,
+                artifact_dir=artifact_dir,
+                retrieved_at=retrieved_at,
+                max_video_bytes=max_video_bytes,
+                fetch_video_bytes_fn=fetcher,
+                probe_video_file_fn=probe_fn,
+                allowed_licenses=allowed_licenses,
+                allow_unclear_license=allow_unclear_license,
+                gaps=gaps,
+            )
+            records.extend(archive_records)
+            mirrored_video_count += sum(1 for _, path in asset_entries if path is not None)
+            verified_video_count += sum(1 for asset, _ in asset_entries if asset.payload.get("verification_status") == "verified")
         elif mirror_videos:
             asset, asset_path = _mirror_candidate(
                 candidate,
@@ -1968,29 +2290,32 @@ def build_video_atom_records(
                 mirrored_video_count += 1
                 if asset.payload.get("verification_status") == "verified":
                     verified_video_count += 1
+            asset_entries.append((asset, asset_path))
         else:
             asset = _record_for_asset(candidate, retrieved_at=retrieved_at)
-        records.append(asset)
-        existing_artifacts = _existing_artifact_payload(asset, artifact_dir)
-        if existing_artifacts:
-            artifact_records = _artifact_records(asset, existing_artifacts, retrieved_at=retrieved_at)
-            artifact_count += len(artifact_records)
-            records.extend(artifact_records)
-        elif generate_artifacts and asset_path is not None and asset.payload.get("verification_status") == "verified":
-            try:
-                output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / _safe_id(asset.record_id)
-                artifact_payload = artifact_fn(asset_path, output_dir, asset.payload)
-                normalized = {
-                    key: ([_normalize_artifact_path(str(path), artifact_dir) for path in value] if isinstance(value, list) else _normalize_artifact_path(str(value), artifact_dir))
-                    for key, value in artifact_payload.items()
-                }
-                artifact_records = _artifact_records(asset, normalized, retrieved_at=retrieved_at)
+            asset_entries.append((asset, None))
+        for asset, asset_path in asset_entries:
+            records.append(asset)
+            existing_artifacts = _existing_artifact_payload(asset, artifact_dir)
+            if existing_artifacts:
+                artifact_records = _artifact_records(asset, existing_artifacts, retrieved_at=retrieved_at)
                 artifact_count += len(artifact_records)
                 records.extend(artifact_records)
-            except FileNotFoundError as exc:
-                gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_artifact_tool_missing", "record_id": candidate.source_record_id, "error": str(exc)})
-            except Exception as exc:
-                gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_artifact_generation_failed", "record_id": candidate.source_record_id, "error": str(exc)})
+            elif generate_artifacts and asset_path is not None and asset.payload.get("verification_status") == "verified":
+                try:
+                    output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / _safe_id(asset.record_id)
+                    artifact_payload = artifact_fn(asset_path, output_dir, asset.payload)
+                    normalized = {
+                        key: ([_normalize_artifact_path(str(path), artifact_dir) for path in value] if isinstance(value, list) else _normalize_artifact_path(str(value), artifact_dir))
+                        for key, value in artifact_payload.items()
+                    }
+                    artifact_records = _artifact_records(asset, normalized, retrieved_at=retrieved_at)
+                    artifact_count += len(artifact_records)
+                    records.extend(artifact_records)
+                except FileNotFoundError as exc:
+                    gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_artifact_tool_missing", "record_id": asset.payload.get("source_video_record_id") or candidate.source_record_id, "error": str(exc)})
+                except Exception as exc:
+                    gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_artifact_generation_failed", "record_id": asset.payload.get("source_video_record_id") or candidate.source_record_id, "error": str(exc)})
 
     if motion_table_paths is None:
         motion_table_paths = _default_motion_table_paths(artifact_dir)
@@ -2003,7 +2328,7 @@ def build_video_atom_records(
         source_id=VIDEO_ATOMS_SOURCE_ID,
         records=records,
         gaps=gaps,
-        video_asset_count=len(candidates),
+        video_asset_count=sum(1 for record in records if record.payload and record.payload.get("atom_type") == "video_asset"),
         mirrored_video_count=mirrored_video_count,
         verified_video_count=verified_video_count,
         artifact_count=artifact_count,

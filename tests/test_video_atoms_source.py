@@ -6,6 +6,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from urllib.parse import parse_qs, urlparse
+import zipfile
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
@@ -448,7 +449,7 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertIn("Original source: zenodo_aedes_videos", zenodo.text)
         self.assertIn("Original reason: zenodo_material_record_no_video_files", zenodo.text)
 
-    def test_archive_video_candidates_are_gapped_without_download(self):
+    def test_archive_video_candidates_expand_bounded_zip_members(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -474,21 +475,44 @@ class VideoAtomsSourceTests(unittest.TestCase):
                     )
                 ]
             )
-
-            def fail_fetch(url: str, max_bytes: int) -> bytes:
-                raise AssertionError("archives should be gapped before download")
+            archive_path = Path(tmpdir) / "video-archive.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("clip.mp4", b"fake mp4 bytes")
+                archive.writestr(
+                    "tracks.csv",
+                    "video_id,track_id,frame,time_seconds,x,y,behavior\n"
+                    "clip.mp4,track-7,12,0.4,10,20,host seeking\n",
+                )
 
             result = build_video_atom_records(
                 artifact_dir,
                 retrieved_at=RETRIEVED_AT,
                 mirror_videos=True,
-                fetch_video_bytes_fn=fail_fetch,
+                fetch_video_bytes_fn=lambda url, max_bytes: archive_path.read_bytes(),
+                probe_video_file_fn=lambda path: {
+                    "duration_seconds": 1.2,
+                    "fps": 30.0,
+                    "width": 640,
+                    "height": 480,
+                    "codec": "h264",
+                },
             )
 
-        reasons = {gap["reason"] for gap in result.gaps}
-        self.assertIn("video_archive_not_expanded", reasons)
-        asset = next(record for record in result.records if record.payload.get("atom_type") == "video_asset")
-        self.assertEqual(asset.payload["verification_status"], "gapped_archive_not_expanded")
+            reasons = {gap["reason"] for gap in result.gaps}
+            self.assertNotIn("video_archive_not_expanded", reasons)
+            manifest = next(record for record in result.records if record.payload.get("atom_type") == "video_archive_manifest")
+            self.assertEqual(manifest.payload["video_member_count"], 1)
+            member = next(record for record in result.records if record.payload.get("atom_type") == "video_archive_member")
+            self.assertEqual(member.payload["member_name"], "clip.mp4")
+            asset = next(record for record in result.records if record.payload.get("atom_type") == "video_asset")
+            self.assertEqual(asset.payload["verification_status"], "verified")
+            self.assertEqual(asset.payload["member_name"], "clip.mp4")
+            self.assertEqual(asset.payload["archive_source_video_record_id"], "dryad:file:video-archive")
+            self.assertTrue((artifact_dir / asset.payload["raw_asset_path"]).exists())
+            rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].payload["track_id"], "track-7")
+            self.assertIn("raw/video_atoms/archive_tables/dryad:file:video-archive/tracks.csv#row/1", rows[0].provenance.locator)
 
     def test_ignores_audio_files_from_mixed_media_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
