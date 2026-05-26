@@ -1754,6 +1754,10 @@ def _like_escape(value: str) -> str:
     return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
+def _record_id_prefix_range(prefix: str) -> tuple[str, str]:
+    return prefix, prefix[:-1] + chr(ord(prefix[-1]) + 1)
+
+
 def _uniprot_direct_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
     terms = _uniprot_exact_terms(question)
     if not terms:
@@ -1860,7 +1864,12 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
     if "codon" in q:
         for codon in re.findall(r"\b[AUCGT]{3}\b", question.upper()):
             clauses.append(("record_id = ?", (f"vectorbase:codon_usage:{codon.replace('T', 'U')}",)))
-    for aael_id in re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE):
+    aael_ids = re.findall(r"\bAAEL[0-9A-Za-z-]+\b", question, flags=re.IGNORECASE)
+    for relationship_type in ("coortholog", "inparalog", "ortholog"):
+        if not aael_ids and _wants_orthomcl_relationship(question, relationship_type):
+            lower, upper = _record_id_prefix_range(f"vectorbase:{relationship_type}:")
+            clauses.append(("record_id >= ? AND record_id < ?", (lower, upper)))
+    for aael_id in aael_ids:
         escaped_aael = _like_escape(aael_id.upper())
         if _wants_orthomcl_relationship(question, "ortholog"):
             clauses.append(

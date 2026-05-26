@@ -2778,6 +2778,55 @@ class AnswerTests(unittest.TestCase):
             self.assertIn("vectorbase:inparalog:aaeg-old_AAEL000076:aaeg-old_AAEL999999:1", evidence_ids)
             self.assertNotEqual(answer["evidence"][0]["record_id"], "vectorbase:gap:advanced_orthology_current_id_resolution")
 
+    def test_vectorbase_broad_relationship_questions_use_indexed_prefix_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:ortholog:aaeg-old_AAEL000001:aast-old_H257_01817:385",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti OrthoMCL ortholog AAEL000001 to aast-old|H257_01817",
+                        text="OrthoMCL CURRENT ortholog pair for Aedes aegypti gene AAEL000001.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/orthologs.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(source_id="vectorbase_aedes_genomics", locator="orthologs.txt.gz#line/385", retrieved_at="2026-05-25T00:00:00Z"),
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:coortholog:aaeg-old_AAEL000001:acas-old_ACA1_188870:1853",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti OrthoMCL coortholog AAEL000001 to acas-old|ACA1_188870",
+                        text="OrthoMCL CURRENT coortholog pair for Aedes aegypti gene AAEL000001.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/coorthologs.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(source_id="vectorbase_aedes_genomics", locator="coorthologs.txt.gz#line/1853", retrieved_at="2026-05-25T00:00:00Z"),
+                    ),
+                    EvidenceRecord(
+                        record_id="vectorbase:inparalog:aaeg-old_AAEL000006:aaeg-old_AAEL000025:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti OrthoMCL inparalog AAEL000006 to aaeg-old|AAEL000025",
+                        text="OrthoMCL CURRENT inparalog pair for Aedes aegypti gene AAEL000006.",
+                        species="Aedes aegypti",
+                        url="https://orthomcl.org/inparalogs.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(source_id="vectorbase_aedes_genomics", locator="inparalogs.txt.gz#line/1", retrieved_at="2026-05-25T00:00:00Z"),
+                    ),
+                ]
+            )
+
+            coortholog_answer = answer_question("show Aedes aegypti coortholog records from OrthoMCL", artifact_dir=artifact_dir)
+            inparalog_answer = answer_question("show Aedes aegypti inparalog records from OrthoMCL", artifact_dir=artifact_dir)
+
+            self.assertTrue(coortholog_answer["evidence"][0]["record_id"].startswith("vectorbase:coortholog:"))
+            self.assertTrue(inparalog_answer["evidence"][0]["record_id"].startswith("vectorbase:inparalog:"))
+
     def test_advanced_orthology_questions_prefer_queryable_source_gap_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
