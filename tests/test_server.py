@@ -17,6 +17,7 @@ from askinsects.server import (
     prepare_mutable_staging,
     rewrite_artifact_references,
 )
+import askinsects.server as server_module
 from askinsects.sources.cdc_dengue_surveillance import CdcDengueSurveillanceResult
 from askinsects.sources.dryad_behavior_videos import DryadBehaviorVideoResult
 from askinsects.sources.figshare_aedes_videos import FigshareAedesVideoResult
@@ -1456,15 +1457,23 @@ class ServerTests(unittest.TestCase):
                     organism="AaegyptiLVP_AGWG",
                 )
 
-            response = dispatch_request(
-                "POST",
-                "/ingest/vectorbase-genomics",
-                {"file_urls": {"gff": "https://vectorbase.org/gff"}},
-                headers={"Authorization": "Bearer secret"},
-                artifact_dir=artifact_dir,
-                token="secret",
-                fetch_vectorbase_genomics_records_fn=fake_fetch,
-            )
+            rewrite_calls = []
+            original_rewrite = server_module.rewrite_artifact_references
+
+            def capture_rewrite(*args, **kwargs):
+                rewrite_calls.append(kwargs.copy())
+                return original_rewrite(*args, **kwargs)
+
+            with mock.patch("askinsects.server.rewrite_artifact_references", side_effect=capture_rewrite):
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/vectorbase-genomics",
+                    {"file_urls": {"gff": "https://vectorbase.org/gff"}},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                    fetch_vectorbase_genomics_records_fn=fake_fetch,
+                )
 
             self.assertEqual(response.status, 200)
             self.assertTrue(response.payload["ok"])
@@ -1485,6 +1494,7 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
             self.assertNotIn(".vectorbase-staging", payload_rows[0]["payload_json"])
+            self.assertEqual(rewrite_calls[0]["source"], "vectorbase_aedes_genomics")
 
     def test_ingest_vectorbase_genomics_failure_preserves_existing_source_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:

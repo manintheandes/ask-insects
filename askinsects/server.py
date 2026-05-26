@@ -2490,7 +2490,7 @@ def ingest_vectorbase_genomics_staged(
             file_urls=file_urls,
             fetch_vectorbase_genomics_records_fn=fetch_vectorbase_genomics_records_fn,
         )
-        response = rewrite_artifact_references(staging, artifact_dir, result)
+        response = rewrite_artifact_references(staging, artifact_dir, result, source="vectorbase_aedes_genomics")
         activate_source_staging(staging, artifact_dir, Path("raw") / "vectorbase_genomics")
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
