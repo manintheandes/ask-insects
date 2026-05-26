@@ -102,6 +102,27 @@ def _metadata_is_aedes(metadata: dict[str, object]) -> bool:
     return "aedes aegypti" in material.lower()
 
 
+def _metadata_from_dataset_payload(dataset_id: str, payload: dict[str, object]) -> dict[str, object]:
+    consistent = payload.get("consistent_data") if isinstance(payload.get("consistent_data"), dict) else {}
+    rows = payload.get("results")
+    count = _num(payload.get("count"))
+    title = _clean(consistent.get("title")) or f"VectorByte VecDyn dataset {dataset_id}"
+    species = _clean(consistent.get("species")) or "Aedes aegypti"
+    sampling_method = _clean(consistent.get("sampling_method"))
+    methods = [sampling_method] if sampling_method else []
+    return {
+        "Id": dataset_id,
+        "Title": title,
+        "SpeciesName": [species],
+        "CollectionMethods": methods,
+        "Collections": count if count is not None else (len(rows) if isinstance(rows, list) else None),
+        "row_count": count if count is not None else (len(rows) if isinstance(rows, list) else None),
+        "doi": _clean(consistent.get("doi")),
+        "citation": _clean(consistent.get("citation")),
+        "metadata_source": "vecdyncsv_consistent_data",
+    }
+
+
 def _row_species(row: dict[str, object], consistent: dict[str, object]) -> str:
     return _clean(row.get("species")) or _clean(consistent.get("species"))
 
@@ -282,46 +303,57 @@ def fetch_vectorbyte_abundance_records(
     search_page_limit: int = 3,
     dataset_page_limit: int = 100,
     page_size: int = DEFAULT_PAGE_SIZE,
+    dataset_ids: list[str] | None = None,
 ) -> VectorByteAbundanceResult:
     fetch = fetch_json or _default_fetch_json
     records: list[EvidenceRecord] = []
     gaps: list[dict[str, object]] = []
     raw_artifacts: list[str] = []
     requested_urls: list[str] = []
-    dataset_metadata: list[tuple[dict[str, object], Path, str]] = []
+    dataset_metadata: list[tuple[dict[str, object], Path | None, str | None]] = []
     seen_ids: set[str] = set()
+    explicit_dataset_ids = [_clean(item) for item in dataset_ids or [] if _clean(item)]
 
-    for page in range(1, max(1, search_page_limit) + 1):
-        url = _search_url(query, page=page)
-        requested_urls.append(url)
-        try:
-            payload = fetch(url)
-        except Exception as exc:  # noqa: BLE001
-            gaps.append(
-                {
-                    "source": VECTORBYTE_ABUNDANCE_SOURCE_ID,
-                    "reason": "vectorbyte_abundance_search_failed",
-                    "url": url,
-                    "page": page,
-                    "error": str(exc),
-                    "retrieved_at": retrieved_at,
-                }
-            )
-            break
-        raw_path = _write_raw(raw_dir, f"vecdyn_search_aedes_aegypti_page_{page}.json", payload)
-        raw_artifacts.append(raw_path.as_posix())
-        for item in _metadata_results(payload):
-            dataset_id = _clean(item.get("Id"))
-            if not dataset_id or dataset_id in seen_ids or not _metadata_is_aedes(item):
+    if explicit_dataset_ids:
+        for dataset_id in explicit_dataset_ids:
+            if dataset_id in seen_ids:
                 continue
-            dataset_metadata.append((item, raw_path, url))
+            dataset_metadata.append(({"Id": dataset_id}, None, None))
             seen_ids.add(dataset_id)
             if len(dataset_metadata) >= dataset_limit:
                 break
-        if len(dataset_metadata) >= dataset_limit:
-            break
-        if page * MAX_SEARCH_LIMIT >= _metadata_count(payload):
-            break
+    else:
+        for page in range(1, max(1, search_page_limit) + 1):
+            url = _search_url(query, page=page)
+            requested_urls.append(url)
+            try:
+                payload = fetch(url)
+            except Exception as exc:  # noqa: BLE001
+                gaps.append(
+                    {
+                        "source": VECTORBYTE_ABUNDANCE_SOURCE_ID,
+                        "reason": "vectorbyte_abundance_search_failed",
+                        "url": url,
+                        "page": page,
+                        "error": str(exc),
+                        "retrieved_at": retrieved_at,
+                    }
+                )
+                break
+            raw_path = _write_raw(raw_dir, f"vecdyn_search_aedes_aegypti_page_{page}.json", payload)
+            raw_artifacts.append(raw_path.as_posix())
+            for item in _metadata_results(payload):
+                dataset_id = _clean(item.get("Id"))
+                if not dataset_id or dataset_id in seen_ids or not _metadata_is_aedes(item):
+                    continue
+                dataset_metadata.append((item, raw_path, url))
+                seen_ids.add(dataset_id)
+                if len(dataset_metadata) >= dataset_limit:
+                    break
+            if len(dataset_metadata) >= dataset_limit:
+                break
+            if page * MAX_SEARCH_LIMIT >= _metadata_count(payload):
+                break
 
     if not dataset_metadata:
         gaps.append(
@@ -335,31 +367,62 @@ def fetch_vectorbyte_abundance_records(
 
     for metadata, metadata_path, metadata_url in dataset_metadata:
         dataset_id = _clean(metadata.get("Id"))
-        records.append(_dataset_record(metadata, raw_path=metadata_path, source_url=metadata_url, retrieved_at=retrieved_at))
-        row_count = _num(metadata.get("row_count"))
-        expected_pages = ceil(float(row_count) / page_size) if isinstance(row_count, (int, float)) and row_count > 0 else dataset_page_limit
-        max_pages = max(1, min(dataset_page_limit, expected_pages))
-        matched = 0
-        for page in range(1, max_pages + 1):
-            url = _dataset_page_url(dataset_id, page=page)
-            requested_urls.append(url)
+        first_page_payload: dict[str, object] | None = None
+        first_page_raw_path: Path | None = None
+        first_page_url: str | None = None
+        if metadata_path is None or metadata_url is None:
+            first_page_url = _dataset_page_url(dataset_id, page=1)
+            requested_urls.append(first_page_url)
             try:
-                payload = fetch(url)
+                first_page_payload = fetch(first_page_url)
             except Exception as exc:  # noqa: BLE001
                 gaps.append(
                     {
                         "source": VECTORBYTE_ABUNDANCE_SOURCE_ID,
                         "reason": "vectorbyte_abundance_dataset_page_fetch_failed",
                         "dataset_id": dataset_id,
-                        "url": url,
-                        "page": page,
+                        "url": first_page_url,
+                        "page": 1,
                         "error": str(exc),
                         "retrieved_at": retrieved_at,
                     }
                 )
-                break
-            raw_path = _write_raw(raw_dir, f"vecdyn_dataset_{dataset_id}_page_{page}.json", payload)
-            raw_artifacts.append(raw_path.as_posix())
+                continue
+            first_page_raw_path = _write_raw(raw_dir, f"vecdyn_dataset_{dataset_id}_page_1.json", first_page_payload)
+            raw_artifacts.append(first_page_raw_path.as_posix())
+            metadata = _metadata_from_dataset_payload(dataset_id, first_page_payload)
+            metadata_path = first_page_raw_path
+            metadata_url = first_page_url
+        records.append(_dataset_record(metadata, raw_path=metadata_path, source_url=metadata_url, retrieved_at=retrieved_at))
+        row_count = _num(metadata.get("row_count"))
+        expected_pages = ceil(float(row_count) / page_size) if isinstance(row_count, (int, float)) and row_count > 0 else dataset_page_limit
+        max_pages = max(1, min(dataset_page_limit, expected_pages))
+        matched = 0
+        for page in range(1, max_pages + 1):
+            if page == 1 and first_page_payload is not None and first_page_raw_path is not None and first_page_url is not None:
+                url = first_page_url
+                payload = first_page_payload
+                raw_path = first_page_raw_path
+            else:
+                url = _dataset_page_url(dataset_id, page=page)
+                requested_urls.append(url)
+                try:
+                    payload = fetch(url)
+                except Exception as exc:  # noqa: BLE001
+                    gaps.append(
+                        {
+                            "source": VECTORBYTE_ABUNDANCE_SOURCE_ID,
+                            "reason": "vectorbyte_abundance_dataset_page_fetch_failed",
+                            "dataset_id": dataset_id,
+                            "url": url,
+                            "page": page,
+                            "error": str(exc),
+                            "retrieved_at": retrieved_at,
+                        }
+                    )
+                    break
+                raw_path = _write_raw(raw_dir, f"vecdyn_dataset_{dataset_id}_page_{page}.json", payload)
+                raw_artifacts.append(raw_path.as_posix())
             rows = payload.get("results")
             if not isinstance(rows, list) or not rows:
                 break

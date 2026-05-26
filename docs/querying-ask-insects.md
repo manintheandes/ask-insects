@@ -106,6 +106,7 @@ To add bounded VectorByte/VecDyn `Aedes aegypti` abundance observations:
 
 ```bash
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-vectorbyte-abundance --dataset-limit 5 --row-limit 5000
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-vectorbyte-abundance --dataset-id 27006 --dataset-id 220 --dataset-limit 2 --row-limit 20000 --dataset-page-limit 120
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show VectorByte VecDyn Aedes aegypti abundance trap counts" --json
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search observations "VecDyn abundance"
 ```
@@ -296,7 +297,7 @@ World Mosquito Program Wolbachia intervention records use source id `aedes_wolba
 
 VectorByte trait records use source id `aedes_vectorbyte_traits`. Raw VBD Hub search JSON and VecTraits dataset JSON are saved under `artifacts/mosquito-v1/raw/vectorbyte_traits/`. Each `traits` record stores dataset ID, row ID, trait name, value, unit, temperature, stage, sex, habitat, lab/field context, location, coordinates when supplied, citation, DOI, and a provenance locator into the saved raw JSON row. Refresh it with `python3 -m askinsects ingest-vectorbyte-traits`, then ask questions such as `show VectorByte temperature trait data for Aedes aegypti fecundity`.
 
-VectorByte abundance records use source id `aedes_vectorbyte_abundance`. Raw VecDyn provider metadata and paginated `vecdyncsv` JSON are saved under `artifacts/mosquito-v1/raw/vectorbyte_abundance/`. Each dataset record stores dataset ID, title, species list, years, collection methods, collections, row count, citation, DOI, and raw metadata locator. Each sample record stores sample value, unit, date/time, stage, sex, sampling method, coordinates, location, dataset title, citation, DOI, and a provenance locator into the saved raw page row. Refresh it with `python3 -m askinsects ingest-vectorbyte-abundance`, then ask questions such as `show VectorByte VecDyn Aedes aegypti abundance trap counts`.
+VectorByte abundance records use source id `aedes_vectorbyte_abundance`. Raw VecDyn provider metadata and paginated `vecdyncsv` JSON are saved under `artifacts/mosquito-v1/raw/vectorbyte_abundance/`. Each dataset record stores dataset ID, title, species list, years, collection methods, collections, row count, citation, DOI, and raw metadata locator. Each sample record stores sample value, unit, date/time, stage, sex, sampling method, coordinates, location, dataset title, citation, DOI, and a provenance locator into the saved raw page row. Refresh it with `python3 -m askinsects ingest-vectorbyte-abundance`, or use repeated `--dataset-id` flags to make an exact VecDyn dataset receipt without depending on broad provider search ordering. Then ask questions such as `show VectorByte VecDyn Aedes aegypti abundance trap counts`.
 
 Pathogen taxonomy records use source id `aedes_pathogen_taxonomy`. Raw NCBI E-utilities taxonomy summary JSON is saved under `artifacts/mosquito-v1/raw/pathogen_taxonomy/`. Each `vector_competence` record stores a configured pathogen label, taxid, pathogen group, Aedes relevance note, raw taxonomy summary, and provenance locator into the saved NCBI summary JSON. This lane gives pathogen-specific questions stable identifiers while assay-level table extraction remains a source gap.
 
@@ -391,6 +392,7 @@ python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-vectorbyte-traits --hosted --dataset-limit 20 --row-limit 5000
 python3 -m askinsects ingest-vectorbyte-abundance --hosted --dataset-limit 5 --row-limit 5000
+python3 -m askinsects ingest-vectorbyte-abundance --hosted --dataset-id 27006 --dataset-id 220 --dataset-limit 2 --row-limit 20000 --dataset-page-limit 120
 python3 -m askinsects ingest-crossref-literature-audit --hosted --max-results 500 --page-size 100
 python3 -m askinsects ingest-mosquito-repellent-literature --hosted --pubmed-max-results 1000 --crossref-max-results 1000 --page-size 100
 python3 -m askinsects ingest-mosquito-repellent-external-discovery --hosted --max-results-per-source 50

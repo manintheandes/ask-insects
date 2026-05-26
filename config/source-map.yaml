@@ -1106,6 +1106,9 @@ sources:
     dataset_api_base: https://vectorbyte.crc.nd.edu/portal/api/vecdyncsv
     artifact_dir: artifacts/mosquito-v1/raw/vectorbyte_abundance
     ingest_script: scripts/ingest_vectorbyte_abundance.py
+    fetch_modes:
+      - broad_provider_search
+      - exact_dataset_id_receipt
     lanes:
       - observations
       - ecology

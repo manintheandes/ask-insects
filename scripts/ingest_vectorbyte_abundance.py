@@ -103,6 +103,7 @@ def ingest_vectorbyte_abundance(
     row_limit: int = 5000,
     search_page_limit: int = 3,
     dataset_page_limit: int = 100,
+    dataset_ids: list[str] | None = None,
 ) -> dict[str, object]:
     retrieved = retrieved_at or utc_now()
     result = fetch_vectorbyte_abundance_records(
@@ -114,6 +115,7 @@ def ingest_vectorbyte_abundance(
         row_limit=row_limit,
         search_page_limit=search_page_limit,
         dataset_page_limit=dataset_page_limit,
+        dataset_ids=dataset_ids,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
@@ -137,6 +139,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--row-limit", type=int, default=5000)
     parser.add_argument("--search-page-limit", type=int, default=3)
     parser.add_argument("--dataset-page-limit", type=int, default=100)
+    parser.add_argument("--dataset-id", dest="dataset_ids", action="append", default=[])
     parser.add_argument("--retrieved-at")
     args = parser.parse_args(argv)
     result = ingest_vectorbyte_abundance(
@@ -146,6 +149,7 @@ def main(argv: list[str] | None = None) -> int:
         row_limit=args.row_limit,
         search_page_limit=args.search_page_limit,
         dataset_page_limit=args.dataset_page_limit,
+        dataset_ids=args.dataset_ids,
         retrieved_at=args.retrieved_at,
     )
     print(json.dumps(result, sort_keys=True))

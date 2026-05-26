@@ -5,7 +5,7 @@ from pathlib import Path
 from askinsects.builder import build_fixture_index
 from askinsects.index import SourceIndex
 from scripts.ingest_vectorbyte_abundance import ingest_vectorbyte_abundance
-from tests.test_vectorbyte_abundance_source import DATASET_27006_PAGE_1, SEARCH_PAYLOAD
+from tests.test_vectorbyte_abundance_source import DATASET_220_PAGE_1, DATASET_27006_PAGE_1, SEARCH_PAYLOAD
 
 
 class IngestVectorByteAbundanceTests(unittest.TestCase):
@@ -77,6 +77,36 @@ class IngestVectorByteAbundanceTests(unittest.TestCase):
                 limit=1,
             )
             self.assertEqual(rows[0]["n"], 2)
+
+    def test_ingest_accepts_explicit_dataset_ids(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch_json(url):
+                if "vecdynbyprovider" in url:
+                    raise AssertionError(f"dataset-id mode should not search metadata: {url}")
+                if "vecdyncsv" in url and "piids=27006" in url:
+                    return DATASET_27006_PAGE_1
+                if "vecdyncsv" in url and "piids=220" in url:
+                    return DATASET_220_PAGE_1
+                raise AssertionError(url)
+
+            result = ingest_vectorbyte_abundance(
+                artifact_dir=artifact_dir,
+                fetch_json=fake_fetch_json,
+                retrieved_at="2026-05-26T00:00:00Z",
+                dataset_ids=["27006", "220"],
+                dataset_page_limit=1,
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["record_count"], 4)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select lane, count(*) as n from records where source='aedes_vectorbyte_abundance' group by lane order by lane",
+                limit=10,
+            )
+            self.assertEqual({row["lane"]: row["n"] for row in rows}, {"ecology": 2, "observations": 2})
 
 
 if __name__ == "__main__":

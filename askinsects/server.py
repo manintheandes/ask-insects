@@ -2820,6 +2820,8 @@ def ingest_vectorbyte_abundance_hosted(
     row_limit = int(payload.get("row_limit", 5000))
     search_page_limit = int(payload.get("search_page_limit", 3))
     dataset_page_limit = int(payload.get("dataset_page_limit", 100))
+    raw_dataset_ids = payload.get("dataset_ids")
+    dataset_ids = [str(item) for item in raw_dataset_ids] if isinstance(raw_dataset_ids, list) else None
     response = ingest_vectorbyte_abundance(
         artifact_dir=artifact_dir,
         query=query,
@@ -2827,6 +2829,7 @@ def ingest_vectorbyte_abundance_hosted(
         row_limit=row_limit,
         search_page_limit=search_page_limit,
         dataset_page_limit=dataset_page_limit,
+        dataset_ids=dataset_ids,
     )
     response["activated_artifact_dir"] = str(artifact_dir)
     response["updated_in_place"] = True

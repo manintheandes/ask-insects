@@ -230,6 +230,7 @@ def main(argv: list[str] | None = None) -> int:
     ingest_vectorbyte_abundance.add_argument("--row-limit", type=int, default=5000)
     ingest_vectorbyte_abundance.add_argument("--search-page-limit", type=int, default=3)
     ingest_vectorbyte_abundance.add_argument("--dataset-page-limit", type=int, default=100)
+    ingest_vectorbyte_abundance.add_argument("--dataset-id", dest="dataset_ids", action="append", default=[])
 
     ingest_mosquito_alert = sub.add_parser("ingest-mosquito-alert")
     ingest_mosquito_alert.add_argument("--hosted", action="store_true")
@@ -785,6 +786,8 @@ def main(argv: list[str] | None = None) -> int:
             "search_page_limit": args.search_page_limit,
             "dataset_page_limit": args.dataset_page_limit,
         }
+        if args.dataset_ids:
+            request_payload["dataset_ids"] = args.dataset_ids
         if not args.hosted:
             from scripts.ingest_vectorbyte_abundance import ingest_vectorbyte_abundance
 

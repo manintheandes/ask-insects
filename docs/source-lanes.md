@@ -70,7 +70,7 @@ Sources:
 
 VectorByte trait rows cite saved VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte_traits/`, with locators such as `vectraits_dataset_474.json#results/89092`. Trait questions mentioning VectorByte, VecTraits, fecundity, longevity, development time, body size, thermal response, temperature traits, or transmission potential prefer this lane before adjacent behavior, ecology, vector-competence, or literature records.
 
-VectorByte abundance rows cite saved VecDyn provider metadata and `vecdyncsv` page JSON under `raw/vectorbyte_abundance/`, with locators such as `vecdyn_dataset_27006_page_1.json#results/p1-r0-...`. Abundance, VecDyn, trap-count, mosquito-count, and sample-count questions prefer this lane before adjacent occurrence-ecology summaries.
+VectorByte abundance rows cite saved VecDyn provider metadata and `vecdyncsv` page JSON under `raw/vectorbyte_abundance/`, with locators such as `vecdyn_dataset_27006_page_1.json#results/p1-r0-...`. The ingest supports broad provider searches and repeated exact `--dataset-id` receipts for known VecDyn datasets. Abundance, VecDyn, trap-count, mosquito-count, and sample-count questions prefer this lane before adjacent occurrence-ecology summaries.
 
 ## Hosted Boundary
 

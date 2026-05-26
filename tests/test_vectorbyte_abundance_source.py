@@ -63,6 +63,34 @@ DATASET_27006_PAGE_1 = {
     ],
 }
 
+DATASET_220_PAGE_1 = {
+    "count": 2,
+    "consistent_data": {
+        "title": "2021-2022 Mosquito Surveillance, Hernando Florida",
+        "datasetid": 220,
+        "sample_unit": "count",
+        "sampling_method": "CDC light trap",
+        "citation": "VectorByte VecDyn dataset 220.",
+    },
+    "results": [
+        {
+            "species": "Aedes aegypti",
+            "sample_start_date": "2021-08-01",
+            "sample_value": "3",
+            "sample_stage": "adult",
+            "sample_sex": "female",
+            "sample_lat_dd": "28.5",
+            "sample_long_dd": "-82.5",
+            "location_description": "Hernando County",
+        },
+        {
+            "species": "Aedes albopictus",
+            "sample_start_date": "2021-08-01",
+            "sample_value": "7",
+        },
+    ],
+}
+
 
 class VectorByteAbundanceSourceTests(unittest.TestCase):
     def test_fetch_vectorbyte_abundance_records_indexes_dataset_and_aedes_rows(self):
@@ -130,6 +158,37 @@ class VectorByteAbundanceSourceTests(unittest.TestCase):
             )
 
         self.assertIn("vectorbyte_abundance_dataset_page_fetch_failed", {gap["reason"] for gap in failed.gaps})
+
+    def test_fetch_vectorbyte_abundance_records_accepts_explicit_dataset_ids(self):
+        calls = []
+
+        def fake_fetch_json(url):
+            calls.append(url)
+            if "vecdynbyprovider" in url:
+                raise AssertionError(f"dataset-id mode should not search metadata: {url}")
+            if "vecdyncsv" in url and "piids=27006" in url:
+                return DATASET_27006_PAGE_1
+            if "vecdyncsv" in url and "piids=220" in url:
+                return DATASET_220_PAGE_1
+            raise AssertionError(url)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_vectorbyte_abundance_records(
+                raw_dir=Path(tmpdir) / "raw" / "vectorbyte_abundance",
+                fetch_json=fake_fetch_json,
+                retrieved_at="2026-05-26T00:00:00Z",
+                dataset_ids=["27006", "220"],
+                row_limit=100,
+                dataset_page_limit=1,
+            )
+
+        self.assertEqual(result.gaps, [])
+        self.assertEqual(len(calls), 2)
+        dataset_ids = {record.payload.get("dataset_id") for record in result.records if record.payload.get("atom_type") == "vecdyn_dataset"}
+        self.assertEqual(dataset_ids, {"27006", "220"})
+        samples = [record for record in result.records if record.payload.get("atom_type") == "vecdyn_abundance_sample"]
+        self.assertEqual(len(samples), 2)
+        self.assertIn("2021-2022 Mosquito Surveillance, Hernando Florida", next(record.text for record in result.records if record.record_id == "vectorbyte:abundance-dataset:220"))
 
 
 if __name__ == "__main__":
