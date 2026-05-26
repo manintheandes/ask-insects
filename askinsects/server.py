@@ -961,12 +961,12 @@ def ingest_irmapper(
     fetch_irmapper_records_fn: Callable[..., object] = fetch_irmapper_records,
 ) -> dict[str, object]:
     species = str(payload.get("species") or DEFAULT_IRMAPPER_SPECIES)
-    staging = artifact_dir.parent / f".{artifact_dir.name}.staging"
+    staging = artifact_dir.parent / f".{artifact_dir.name}.irmapper-staging"
     if staging.exists():
         shutil.rmtree(staging)
     try:
         if artifact_dir.exists():
-            copy_artifact_to_staging(artifact_dir, staging)
+            prepare_mutable_staging(artifact_dir, staging)
         else:
             staging.mkdir(parents=True, exist_ok=True)
         index = SourceIndex(staging / "source_index.sqlite")
@@ -993,8 +993,8 @@ def ingest_irmapper(
             "retrieved_at": retrieved_at,
         }
         response = write_irmapper_metadata(staging, irmapper_payload, gaps)
-        response = rewrite_artifact_references(staging, artifact_dir, response)
-        activate_staging_artifact(staging, artifact_dir)
+        response = rewrite_artifact_references(staging, artifact_dir, response, source=IRMAPPER_SOURCE_ID)
+        activate_source_staging(staging, artifact_dir, Path("raw") / "irmapper")
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
         raise

@@ -977,15 +977,17 @@ class ServerTests(unittest.TestCase):
                     fetched_row_count=1,
                 )
 
-            response = dispatch_request(
-                "POST",
-                "/ingest/irmapper",
-                {"species": "Aedes aegypti"},
-                headers={"Authorization": "Bearer secret"},
-                artifact_dir=artifact_dir,
-                token="secret",
-                fetch_irmapper_records_fn=fake_fetch,
-            )
+            with mock.patch("askinsects.server.copy_artifact_to_staging") as copy_artifact_to_staging:
+                copy_artifact_to_staging.side_effect = AssertionError("IR Mapper ingest should use source-scoped staging")
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/irmapper",
+                    {"species": "Aedes aegypti"},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                    fetch_irmapper_records_fn=fake_fetch,
+                )
 
             self.assertEqual(response.status, 200)
             self.assertTrue(response.payload["ok"])
