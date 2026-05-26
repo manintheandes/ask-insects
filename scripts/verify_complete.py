@@ -1323,6 +1323,37 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
                 """
             ).fetchone()[0]
         )
+        thumbnail_keyframes = int(
+            conn.execute(
+                """
+                select count(*)
+                from record_payloads p
+                join records r on r.record_id = p.record_id
+                where p.source='aedes_video_atoms'
+                  and json_extract(p.payload_json, '$.atom_type')='video_keyframe'
+                  and (
+                    lower(coalesce(r.media_url, '')) like '%thumbnail%'
+                    or lower(coalesce(json_extract(p.payload_json, '$.artifact_path'), '')) like '%thumbnail%'
+                  )
+                """
+            ).fetchone()[0]
+        )
+        frame_manifest_paths = [
+            str(row["path"])
+            for row in conn.execute(
+                """
+                select coalesce(
+                  r.media_url,
+                  json_extract(p.payload_json, '$.artifact_path')
+                ) as path
+                from record_payloads p
+                join records r on r.record_id = p.record_id
+                where p.source='aedes_video_atoms'
+                  and json_extract(p.payload_json, '$.atom_type')='video_frame_manifest'
+                """
+            ).fetchall()
+            if row["path"]
+        ]
 
     expected_record_count = int(video_status.get("record_count", 0))
     if source_records == 0:
@@ -1355,6 +1386,23 @@ def check_aedes_video_atoms_artifact(artifact_dir: Path | None = None) -> None:
         raise RuntimeError(f"Aedes video archive member rows have broken source video asset references: {broken_archive_member_asset_refs}")
     if stale_archive_gaps:
         raise RuntimeError(f"Aedes video atoms has stale unexpanded archive gaps: {stale_archive_gaps}")
+    if thumbnail_keyframes:
+        raise RuntimeError(f"Aedes video atoms has thumbnail-derived keyframe records: {thumbnail_keyframes}")
+    frame_manifests_without_keyframes = 0
+    for manifest_path in frame_manifest_paths:
+        path = Path(manifest_path)
+        if not path.is_absolute():
+            path = artifact_dir / path
+        try:
+            payload = _json_file(path, {})
+        except RuntimeError:
+            frame_manifests_without_keyframes += 1
+            continue
+        keyframes = payload.get("keyframes") if isinstance(payload, dict) else None
+        if not isinstance(keyframes, list) or not keyframes:
+            frame_manifests_without_keyframes += 1
+    if frame_manifests_without_keyframes:
+        raise RuntimeError(f"Aedes video atoms has frame manifests without keyframes: {frame_manifests_without_keyframes}")
 
     missing_targets = [target for target in VIDEO_DISCOVERY_TARGETS if repository_counts.get(target, 0) == 0]
     if missing_targets:

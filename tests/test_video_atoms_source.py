@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 from urllib.parse import parse_qs, urlparse
 import zipfile
 
@@ -722,6 +723,82 @@ class VideoAtomsSourceTests(unittest.TestCase):
         )
         self.assertEqual(result.artifact_count, 4)
         self.assertTrue(all(record.media_url and record.media_url.startswith("raw/video_atoms/artifacts/") for record in artifact_records))
+
+    def test_default_artifact_generator_samples_multiple_keyframes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            asset_path = artifact_dir / "raw" / "video_atoms" / "assets" / "clip.mp4"
+            output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / "clip"
+            asset_path.parent.mkdir(parents=True, exist_ok=True)
+            asset_path.write_bytes(b"video")
+
+            def fake_check_call(command: list[str]) -> None:
+                output = Path(command[-1])
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_bytes(b"artifact")
+
+            with mock.patch.object(video_atoms.shutil, "which", return_value="/usr/bin/ffmpeg"), mock.patch.object(
+                video_atoms.subprocess, "check_call", side_effect=fake_check_call
+            ):
+                payload = video_atoms.generate_video_artifacts(
+                    asset_path,
+                    output_dir,
+                    {"duration_seconds": 12.0, "fps": 30.0, "width": 640, "height": 480, "codec": "h264"},
+                )
+
+            self.assertEqual(len(payload["keyframe_paths"]), 6)
+            self.assertTrue(all(Path(path).name.startswith("keyframe_") for path in payload["keyframe_paths"]))
+            manifest = json.loads(Path(payload["frame_manifest_path"]).read_text(encoding="utf-8"))
+            self.assertEqual(len(manifest["keyframes"]), 6)
+            self.assertEqual(manifest["keyframes"][0]["frame_index"], 1)
+            self.assertIn("time_seconds", manifest["keyframes"][0])
+
+    def test_generate_artifacts_upgrades_thumbnail_only_existing_artifacts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            safe_id = video_atoms._safe_id("pmc:video:PMC123:video1.mp4")
+            asset_path = artifact_dir / "raw" / "video_atoms" / "assets" / f"{safe_id}_existing.mp4"
+            asset_path.parent.mkdir(parents=True, exist_ok=True)
+            asset_path.write_bytes(b"existing-video-bytes")
+            probe = {"duration_seconds": 4.0, "fps": 24.0, "width": 640, "height": 480, "codec": "h264"}
+            first = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                probe_video_file_fn=lambda path: probe,
+            )
+            asset = next(record for record in first.records if record.payload["source_video_record_id"] == "pmc:video:PMC123:video1.mp4")
+            output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / video_atoms._safe_id(asset.record_id)
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "thumbnail.jpg").write_bytes(b"jpg")
+            (output_dir / "preview.mp4").write_bytes(b"mp4")
+            (output_dir / "frames.json").write_text(json.dumps({"probe": probe}), encoding="utf-8")
+
+            def regenerate(asset_path: Path, output_dir: Path, probe: dict[str, object]) -> dict[str, object]:
+                (output_dir / "keyframe_000001.jpg").write_bytes(b"jpg")
+                (output_dir / "keyframe_000002.jpg").write_bytes(b"jpg")
+                return {
+                    "thumbnail_path": (output_dir / "thumbnail.jpg").as_posix(),
+                    "keyframe_paths": [
+                        (output_dir / "keyframe_000001.jpg").as_posix(),
+                        (output_dir / "keyframe_000002.jpg").as_posix(),
+                    ],
+                    "preview_clip_path": (output_dir / "preview.mp4").as_posix(),
+                    "frame_manifest_path": (output_dir / "frames.json").as_posix(),
+                }
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=False,
+                generate_artifacts=True,
+                probe_video_file_fn=lambda path: probe,
+                artifact_generator_fn=regenerate,
+            )
+
+        keyframes = [record for record in result.records if record.payload.get("atom_type") == "video_keyframe"]
+        self.assertEqual(len(keyframes), 2)
+        self.assertEqual(result.artifact_count, 5)
 
     def test_parses_motion_rows_from_existing_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:

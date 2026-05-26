@@ -1690,7 +1690,7 @@ def _artifact_records(
     return records
 
 
-def _existing_artifact_payload(source_asset: EvidenceRecord, artifact_dir: Path) -> dict[str, object] | None:
+def _existing_artifact_payload(source_asset: EvidenceRecord, artifact_dir: Path, *, allow_thumbnail_keyframe: bool = True) -> dict[str, object] | None:
     output_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / _safe_id(source_asset.record_id)
     if not output_dir.exists():
         return None
@@ -1698,7 +1698,7 @@ def _existing_artifact_payload(source_asset: EvidenceRecord, artifact_dir: Path)
     preview = output_dir / "preview.mp4"
     frames = output_dir / "frames.json"
     keyframes = sorted(output_dir.glob("keyframe*.jpg"))
-    if not keyframes and thumbnail.exists():
+    if not keyframes and allow_thumbnail_keyframe and thumbnail.exists():
         keyframes = [thumbnail]
     payload: dict[str, object] = {}
     if thumbnail.exists():
@@ -1850,19 +1850,75 @@ def _load_upstream_manifest_gap_contexts(artifact_dir: Path) -> list[dict[str, o
     return contexts
 
 
-def generate_video_artifacts(asset_path: Path, output_dir: Path, probe: dict[str, object]) -> dict[str, object]:
+def _keyframe_timestamps(probe: dict[str, object], *, max_keyframes: int = 6) -> list[float]:
+    raw_duration = probe.get("duration_seconds")
+    try:
+        duration = float(raw_duration) if raw_duration is not None else 0.0
+    except (TypeError, ValueError):
+        duration = 0.0
+    if duration <= 0:
+        return [1.0]
+    if duration <= 1:
+        return [round(max(duration / 2, 0.0), 3)]
+    count = min(max_keyframes, max(2, int(duration // 2) + 1))
+    if count == 1:
+        return [round(min(1.0, duration / 2), 3)]
+    step = duration / (count + 1)
+    return [round(step * index, 3) for index in range(1, count + 1)]
+
+
+def generate_video_artifacts(
+    asset_path: Path,
+    output_dir: Path,
+    probe: dict[str, object],
+    *,
+    max_keyframes: int = 6,
+    preview_seconds: int = 8,
+) -> dict[str, object]:
     if shutil.which("ffmpeg") is None:
         raise FileNotFoundError("ffmpeg not found")
     output_dir.mkdir(parents=True, exist_ok=True)
     thumbnail = output_dir / "thumbnail.jpg"
     preview = output_dir / "preview.mp4"
     frames = output_dir / "frames.json"
-    subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-ss", "1", "-i", str(asset_path), "-frames:v", "1", "-update", "1", str(thumbnail)])
-    subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-i", str(asset_path), "-t", "8", "-c", "copy", str(preview)])
-    frames.write_text(json.dumps({"source": asset_path.as_posix(), "probe": probe}, indent=2), encoding="utf-8")
+    timestamps = _keyframe_timestamps(probe, max_keyframes=max_keyframes)
+    thumbnail_time = timestamps[0] if timestamps else 1.0
+    subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-ss", str(thumbnail_time), "-i", str(asset_path), "-frames:v", "1", "-update", "1", str(thumbnail)])
+    keyframe_paths: list[Path] = []
+    for index, timestamp in enumerate(timestamps, start=1):
+        keyframe_path = output_dir / f"keyframe_{index:06d}.jpg"
+        subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-ss", str(timestamp), "-i", str(asset_path), "-frames:v", "1", "-update", "1", str(keyframe_path)])
+        keyframe_paths.append(keyframe_path)
+    raw_duration = probe.get("duration_seconds")
+    try:
+        duration = float(raw_duration) if raw_duration is not None else float(preview_seconds)
+    except (TypeError, ValueError):
+        duration = float(preview_seconds)
+    preview_length = max(1.0, min(float(preview_seconds), duration if duration > 0 else float(preview_seconds)))
+    subprocess.check_call(["ffmpeg", "-v", "error", "-y", "-i", str(asset_path), "-t", str(preview_length), "-c", "copy", str(preview)])
+    frames.write_text(
+        json.dumps(
+            {
+                "source": asset_path.as_posix(),
+                "probe": probe,
+                "thumbnail_path": thumbnail.as_posix(),
+                "preview_clip_path": preview.as_posix(),
+                "keyframes": [
+                    {
+                        "frame_index": index,
+                        "time_seconds": timestamp,
+                        "artifact_path": keyframe_path.as_posix(),
+                    }
+                    for index, (timestamp, keyframe_path) in enumerate(zip(timestamps, keyframe_paths), start=1)
+                ],
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
     return {
         "thumbnail_path": thumbnail.as_posix(),
-        "keyframe_paths": [thumbnail.as_posix()],
+        "keyframe_paths": [path.as_posix() for path in keyframe_paths],
         "preview_clip_path": preview.as_posix(),
         "frame_manifest_path": frames.as_posix(),
     }
@@ -2415,8 +2471,8 @@ def build_video_atom_records(
             asset_entries.append((asset, None))
         for asset, asset_path in asset_entries:
             records.append(asset)
-            existing_artifacts = _existing_artifact_payload(asset, artifact_dir)
-            if existing_artifacts:
+            existing_artifacts = _existing_artifact_payload(asset, artifact_dir, allow_thumbnail_keyframe=not generate_artifacts)
+            if existing_artifacts and (not generate_artifacts or existing_artifacts.get("keyframe_paths")):
                 artifact_records = _artifact_records(asset, existing_artifacts, retrieved_at=retrieved_at)
                 artifact_count += len(artifact_records)
                 records.extend(artifact_records)

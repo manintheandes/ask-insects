@@ -30,6 +30,8 @@ class VerifyCompleteTests(unittest.TestCase):
         include_motion_asset_join: bool = True,
         include_broken_motion_asset_join: bool = False,
         include_stale_archive_gap: bool = False,
+        include_thumbnail_keyframe: bool = False,
+        include_frame_manifest_keyframes: bool = True,
     ) -> None:
         artifact_dir.mkdir(parents=True)
         db_path = artifact_dir / "source_index.sqlite"
@@ -57,12 +59,13 @@ class VerifyCompleteTests(unittest.TestCase):
                 """
             )
 
-            def add(record_id: str, lane: str, payload: dict[str, object]) -> None:
+            def add(record_id: str, lane: str, payload: dict[str, object], media_url: str | None = None) -> None:
                 provenance = {"source_id": "aedes_video_atoms", "locator": f"records#{record_id}"}
                 conn.execute(
                     "insert into records values (?, ?, 'aedes_video_atoms', ?, ?, 'Aedes aegypti', null, null, ?)",
                     (record_id, lane, record_id, record_id, json.dumps(provenance)),
                 )
+                conn.execute("update records set media_url=? where record_id=?", (media_url, record_id))
                 conn.execute(
                     "insert into record_payloads values (?, 'aedes_video_atoms', ?, ?, ?)",
                     (record_id, lane, json.dumps(payload), json.dumps(provenance)),
@@ -102,10 +105,14 @@ class VerifyCompleteTests(unittest.TestCase):
                             }
                         )
                     add(f"video_atom:sweep:{repository}", "media", sweep_payload)
-            add("video_atom:thumbnail:1", "media", {"atom_type": "video_thumbnail"})
-            add("video_atom:keyframe:1", "media", {"atom_type": "video_keyframe"})
-            add("video_atom:preview:1", "media", {"atom_type": "video_preview_clip"})
-            add("video_atom:frame_manifest:1", "media", {"atom_type": "video_frame_manifest"})
+            artifact_dir_path = "raw/video_atoms/artifacts/asset-1"
+            thumbnail_path = f"{artifact_dir_path}/thumbnail.jpg"
+            keyframe_path = thumbnail_path if include_thumbnail_keyframe else f"{artifact_dir_path}/keyframe_000001.jpg"
+            frame_manifest_path = f"{artifact_dir_path}/frames.json"
+            add("video_atom:thumbnail:1", "media", {"atom_type": "video_thumbnail", "artifact_path": thumbnail_path}, thumbnail_path)
+            add("video_atom:keyframe:1", "media", {"atom_type": "video_keyframe", "artifact_path": keyframe_path}, keyframe_path)
+            add("video_atom:preview:1", "media", {"atom_type": "video_preview_clip", "artifact_path": f"{artifact_dir_path}/preview.mp4"}, f"{artifact_dir_path}/preview.mp4")
+            add("video_atom:frame_manifest:1", "media", {"atom_type": "video_frame_manifest", "artifact_path": frame_manifest_path}, frame_manifest_path)
             if include_motion_row:
                 motion_payload = {"atom_type": "video_motion_row"}
                 if include_broken_motion_asset_join:
@@ -125,6 +132,17 @@ class VerifyCompleteTests(unittest.TestCase):
         table_dir = artifact_dir / "raw" / "mendeley_behavior_media" / "table_files"
         table_dir.mkdir(parents=True)
         (table_dir / "motion.csv").write_text("TRACK_ID,POSITION_X,POSITION_Y,FRAME\n1,2,3,4\n", encoding="utf-8")
+        video_artifact_dir = artifact_dir / "raw" / "video_atoms" / "artifacts" / "asset-1"
+        video_artifact_dir.mkdir(parents=True)
+        (video_artifact_dir / "thumbnail.jpg").write_bytes(b"jpg")
+        (video_artifact_dir / "keyframe_000001.jpg").write_bytes(b"jpg")
+        (video_artifact_dir / "preview.mp4").write_bytes(b"mp4")
+        frame_payload = (
+            {"source": "raw/video_atoms/assets/asset-1.mp4", "keyframes": [{"frame_index": 1, "time_seconds": 0.5, "artifact_path": "raw/video_atoms/artifacts/asset-1/keyframe_000001.jpg"}]}
+            if include_frame_manifest_keyframes
+            else {"source": "raw/video_atoms/assets/asset-1.mp4", "probe": {}}
+        )
+        (video_artifact_dir / "frames.json").write_text(json.dumps(frame_payload), encoding="utf-8")
         total_records = len(list(sqlite3.connect(db_path).execute("select 1 from records")))
         status = {
             "aedes_video_atoms": {
@@ -270,6 +288,22 @@ class VerifyCompleteTests(unittest.TestCase):
             self._write_video_atom_artifact(artifact_dir, include_stale_archive_gap=True)
 
             with self.assertRaisesRegex(RuntimeError, "stale unexpanded archive gaps"):
+                verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
+
+    def test_verify_complete_rejects_thumbnail_derived_video_keyframes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            self._write_video_atom_artifact(artifact_dir, include_thumbnail_keyframe=True)
+
+            with self.assertRaisesRegex(RuntimeError, "thumbnail-derived keyframe"):
+                verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
+
+    def test_verify_complete_rejects_frame_manifests_without_keyframes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            self._write_video_atom_artifact(artifact_dir, include_frame_manifest_keyframes=False)
+
+            with self.assertRaisesRegex(RuntimeError, "frame manifests without keyframes"):
                 verify_complete.check_aedes_video_atoms_artifact(artifact_dir)
 
     def test_verify_complete_detects_recursive_video_motion_tables(self):
