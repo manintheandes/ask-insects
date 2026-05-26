@@ -4,6 +4,7 @@ import io
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 import zipfile
 
 from askinsects.index import SourceIndex
@@ -11,6 +12,7 @@ from askinsects.records import EvidenceRecord, Provenance
 from askinsects.sources.extracted_facts import (
     EXTRACTED_FACTS_SOURCE_ID,
     build_extracted_fact_records,
+    fetch_public_supplement_metadata,
 )
 from askinsects.sources.literature import FullTextUnit
 
@@ -232,6 +234,43 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(result.discovered_supplement_count, 1)
             self.assertTrue(any(record.payload["supplement"]["source"] == "europe_pmc" for record in manifests))
             self.assertTrue(any(record.payload["supplement"]["url"] == "https://example.org/europepmc/table-a.tsv" for record in manifests))
+
+    def test_fetch_public_supplement_metadata_discovers_zenodo_supported_files(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            self.assertEqual(url, "https://zenodo.org/api/records/19918130")
+            return {
+                "metadata": {"license": {"id": "cc-by-4.0"}},
+                "files": [
+                    {
+                        "key": "resistance-table.csv",
+                        "size": 1200,
+                        "checksum": "md5:abc123",
+                        "links": {"self": "https://zenodo.org/api/records/19918130/files/resistance-table.csv/content"},
+                    },
+                    {
+                        "key": "paper.pdf",
+                        "size": 100000,
+                        "links": {"self": "https://zenodo.org/api/records/19918130/files/paper.pdf/content"},
+                    },
+                ],
+            }
+
+        with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WZENODO",
+                    "doi": "10.5281/zenodo.19918130",
+                    "url": "https://doi.org/10.5281/zenodo.19918130",
+                }
+            )
+
+        self.assertEqual(len(supplements), 1)
+        self.assertEqual(supplements[0]["source"], "zenodo")
+        self.assertEqual(supplements[0]["file_type"], "csv")
+        self.assertEqual(supplements[0]["license"], "cc-by-4.0")
+        self.assertEqual(supplements[0]["checksum"], "md5:abc123")
 
     def test_build_extracted_fact_records_bounds_supplement_discovery_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

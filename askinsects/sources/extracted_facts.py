@@ -236,6 +236,7 @@ SUPPORTED_SUPPLEMENT_EXTENSIONS = {".csv", ".tsv", ".xlsx", ".docx", ".xml", ".h
 EUROPE_PMC_SEARCH_BASE = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 PMC_OA_SERVICE_BASE = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
 FIGSHARE_ARTICLE_API_BASE = "https://api.figshare.com/v2/articles"
+ZENODO_RECORD_API_BASE = "https://zenodo.org/api/records"
 RESISTANCE_DISCOVERY_TERMS = (
     "insecticide resistance",
     "insecticide",
@@ -464,6 +465,7 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
         except Exception:
             pass
     supplements.extend(_figshare_supplements(request))
+    supplements.extend(_zenodo_supplements(request))
     return supplements
 
 
@@ -547,6 +549,56 @@ def _figshare_supplements(request: dict[str, object]) -> list[dict[str, object]]
                 "source": "figshare",
                 "metadata_url": api_url,
                 "checksum_md5": file_payload.get("computed_md5") or file_payload.get("supplied_md5"),
+            }
+        )
+    return supplements
+
+
+def _zenodo_record_id_from_request(request: dict[str, object]) -> str | None:
+    haystack = " ".join(str(request.get(key) or "") for key in ("doi", "url"))
+    match = re.search(r"zenodo\.(\d+)", haystack, re.I)
+    if match:
+        return match.group(1)
+    match = re.search(r"zenodo\.org/(?:records?|record)/(\d+)", haystack, re.I)
+    return match.group(1) if match else None
+
+
+def _zenodo_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    record_id = _zenodo_record_id_from_request(request)
+    if not record_id:
+        return []
+    api_url = f"{ZENODO_RECORD_API_BASE}/{record_id}"
+    try:
+        payload = _fetch_json_url(api_url)
+    except Exception:
+        return []
+    files = payload.get("files") if isinstance(payload.get("files"), list) else []
+    metadata = payload.get("metadata") if isinstance(payload.get("metadata"), dict) else {}
+    license_payload = metadata.get("license") if isinstance(metadata.get("license"), dict) else {}
+    license_value = license_payload.get("id") or license_payload.get("title") or metadata.get("license")
+    supplements: list[dict[str, object]] = []
+    for file_payload in files:
+        if not isinstance(file_payload, dict):
+            continue
+        links = file_payload.get("links") if isinstance(file_payload.get("links"), dict) else {}
+        url = links.get("self") or links.get("download")
+        if not isinstance(url, str) or not url:
+            continue
+        name = str(file_payload.get("key") or Path(urlparse(url).path).name or "Zenodo supplementary file")
+        extension = Path(name).suffix.lower() or Path(urlparse(url).path).suffix.lower()
+        mimetype = str(file_payload.get("type") or file_payload.get("mimetype") or "")
+        if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS and "wordprocessingml.document" not in mimetype:
+            continue
+        supplements.append(
+            {
+                "title": name,
+                "url": url,
+                "file_type": extension.lstrip(".") or mimetype,
+                "license": license_value if isinstance(license_value, str) else None,
+                "size": file_payload.get("size"),
+                "source": "zenodo",
+                "metadata_url": api_url,
+                "checksum": file_payload.get("checksum"),
             }
         )
     return supplements
