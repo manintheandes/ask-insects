@@ -939,8 +939,30 @@ def check_aedes_source_plane_benchmark() -> None:
     claim_rules = payload.get("claim_rules")
     if not isinstance(claim_rules, dict) or claim_rules.get("world_largest_claim_allowed") is not False:
         raise RuntimeError("Aedes benchmark must disallow the world-largest claim")
-    if int(payload.get("ask_insects_current", {}).get("hosted_record_count", 0)) < 817293:
+    current_proof = payload.get("ask_insects_current", {})
+    if not isinstance(current_proof, dict):
+        raise RuntimeError("Aedes benchmark missing ask_insects_current proof")
+    if int(current_proof.get("hosted_record_count", 0)) < 1415737:
         raise RuntimeError("Aedes benchmark hosted proof is below the expected hosted record count")
+    if int(current_proof.get("hosted_vectorbase_genomics_records", 0)) < 872001:
+        raise RuntimeError("Aedes benchmark hosted VectorBase proof is below the expected record count")
+    if int(current_proof.get("hosted_video_atom_records", 0)) < 46156:
+        raise RuntimeError("Aedes benchmark hosted video-atom proof is below the expected record count")
+    if int(current_proof.get("hosted_video_gap_records", 0)) < 400:
+        raise RuntimeError("Aedes benchmark hosted video-gap proof is below the expected record count")
+    hosted_sources = current_proof.get("hosted_sources")
+    if not isinstance(hosted_sources, list):
+        raise RuntimeError("Aedes benchmark must list hosted sources")
+    for source_id in (
+        "vectorbase_aedes_genomics",
+        "aedes_video_atoms",
+        "aedes_crossref_literature_audit",
+        "mosquito_repellent_external_discovery",
+        "aedes_resistance_table_rows",
+        "who_malaria_threats_resistance_audit",
+    ):
+        if source_id not in hosted_sources:
+            raise RuntimeError(f"Aedes benchmark hosted source list missing {source_id}")
     required_comparators = {
         "vectorbase_veupathdb",
         "ncbi_entrez_datasets",

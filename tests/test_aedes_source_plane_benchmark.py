@@ -53,13 +53,20 @@ class AedesSourcePlaneBenchmarkTests(unittest.TestCase):
         payload = self.load_benchmark()
         proof = payload["ask_insects_current"]
 
-        self.assertGreaterEqual(proof["hosted_record_count"], 817293)
+        self.assertGreaterEqual(proof["hosted_record_count"], 1415737)
         self.assertGreaterEqual(proof["hosted_trait_records"], 4972)
+        self.assertGreaterEqual(proof["hosted_vectorbase_genomics_records"], 872001)
+        self.assertGreaterEqual(proof["hosted_video_atom_records"], 46156)
+        self.assertGreaterEqual(proof["hosted_video_gap_records"], 400)
         self.assertIn("aedes_vectorbyte_traits", proof["hosted_sources"])
         self.assertIn("vectorbase_aedes_genomics", proof["hosted_sources"])
         self.assertIn("aedes_video_atoms", proof["hosted_sources"])
         self.assertIn("zenodo_aedes_videos", proof["hosted_sources"])
         self.assertIn("figshare_aedes_videos", proof["hosted_sources"])
+        self.assertIn("aedes_crossref_literature_audit", proof["hosted_sources"])
+        self.assertIn("mosquito_repellent_external_discovery", proof["hosted_sources"])
+        self.assertIn("aedes_resistance_table_rows", proof["hosted_sources"])
+        self.assertIn("who_malaria_threats_resistance_audit", proof["hosted_sources"])
 
     def test_benchmark_doc_has_claim_ladder_and_table(self):
         text = BENCHMARK_DOC_PATH.read_text(encoding="utf-8")

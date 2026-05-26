@@ -68,7 +68,7 @@ To add `Aedes aegypti` genomics from an unpacked NCBI Datasets package:
 python3 scripts/build_source_index.py --fixtures --ncbi-genome --genome-package-dir /path/to/ncbi-package
 ```
 
-To add official VectorBase/VEuPathDB `Aedes aegypti` gene, transcript, protein, CDS sequence, transcript sequence, GO annotation, codon usage, identifier-history, NCBI LinkOut, and OrthoMCL current-release pair downloads:
+To add official VectorBase/VEuPathDB `Aedes aegypti` gene, transcript, protein, CDS sequence, transcript sequence, GO annotation, codon usage, identifier-history, current-ID resolution, NCBI LinkOut, OrthoMCL current-release pair downloads, and OrthoMCL 6.21 orthogroup membership rows:
 
 ```bash
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-vectorbase-genomics
@@ -329,7 +329,7 @@ External repellent discovery records use source id `mosquito_repellent_external_
 
 NCBI genomics records use source id `ncbi_datasets_genome`. The parser reads assembly metadata, GFF annotations, and protein FASTA headers from an NCBI Datasets package and writes lanes `genome_assemblies`, `genes`, `transcripts`, `genome_features`, and `proteins`.
 
-VectorBase genomics records use source id `vectorbase_aedes_genomics`. The parser reads official VectorBase/VEuPathDB `AaegyptiLVP_AGWG` GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, NCBI LinkOut, and OrthoMCL CURRENT corePairs ortholog, coortholog, and inparalog downloads. OrthoMCL rows are parsed only when either side starts with `aaeg-old|AAEL`, and stored as first-pass pair `genome_features` records with `relationship_type`, `left_id`, `right_id`, `score`, and raw-file line provenance. Orthogroup and current-ID-resolution questions route to a queryable VectorBase source-gap record instead of unrelated evidence.
+VectorBase genomics records use source id `vectorbase_aedes_genomics`. The parser reads official VectorBase/VEuPathDB `AaegyptiLVP_AGWG` GFF, annotated protein FASTA, annotated CDS FASTA, annotated transcript FASTA, GO GAF, codon usage, identifier event history, current-ID resolution rows, NCBI LinkOut, OrthoMCL CURRENT corePairs ortholog, coortholog, and inparalog downloads, and OrthoMCL 6.21 orthogroup membership rows. OrthoMCL pair rows are parsed only when either side starts with `aaeg-old|AAEL`, and stored as first-pass pair `genome_features` records with `relationship_type`, `left_id`, `right_id`, `score`, and raw-file line provenance. Orthogroup rows are parsed when a member starts with `aaeg|AAEL` or `aaeg-old|AAEL`, and preserve orthogroup ID, Aedes member ID, Aedes gene ID, group size, Aedes-member count, sample members, and raw-file line provenance.
 
 Expression-omics records use source id `aedes_expression_omics`. GEO dataset records and SRA run records are queryable metadata atoms. Count-matrix, normalized-expression-matrix, raw SRA reanalysis, and differential-expression-output questions route to queryable expression source-gap records until those computed artifacts are actually onboarded.
 
