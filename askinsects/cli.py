@@ -232,6 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     ingest_vectorbyte_abundance.add_argument("--dataset-page-limit", type=int, default=100)
     ingest_vectorbyte_abundance.add_argument("--dataset-id", dest="dataset_ids", action="append", default=[])
     ingest_vectorbyte_abundance.add_argument("--dataset-id-file", dest="dataset_id_files", action="append", default=[])
+    ingest_vectorbyte_abundance.add_argument("--merge-existing", action="store_true")
 
     ingest_mosquito_alert = sub.add_parser("ingest-mosquito-alert")
     ingest_mosquito_alert.add_argument("--hosted", action="store_true")
@@ -786,6 +787,7 @@ def main(argv: list[str] | None = None) -> int:
             "row_limit": args.row_limit,
             "search_page_limit": args.search_page_limit,
             "dataset_page_limit": args.dataset_page_limit,
+            "merge_existing": args.merge_existing,
         }
         from scripts.ingest_vectorbyte_abundance import load_dataset_ids_file, merge_dataset_ids
 

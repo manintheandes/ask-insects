@@ -108,6 +108,47 @@ class IngestVectorByteAbundanceTests(unittest.TestCase):
             )
             self.assertEqual({row["lane"]: row["n"] for row in rows}, {"ecology": 2, "observations": 2})
 
+    def test_ingest_can_merge_explicit_dataset_ids_without_replacing_existing_source(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch_json(url):
+                if "vecdynbyprovider" in url:
+                    return SEARCH_PAYLOAD
+                if "vecdyncsv" in url and "piids=27006" in url:
+                    return DATASET_27006_PAGE_1
+                if "vecdyncsv" in url and "piids=220" in url:
+                    return DATASET_220_PAGE_1
+                raise AssertionError(url)
+
+            ingest_vectorbyte_abundance(
+                artifact_dir=artifact_dir,
+                fetch_json=fake_fetch_json,
+                retrieved_at="2026-05-26T00:00:00Z",
+                dataset_ids=["27006"],
+                dataset_page_limit=1,
+            )
+            result = ingest_vectorbyte_abundance(
+                artifact_dir=artifact_dir,
+                fetch_json=fake_fetch_json,
+                retrieved_at="2026-05-26T01:00:00Z",
+                dataset_ids=["220"],
+                dataset_page_limit=1,
+                merge_existing=True,
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertTrue(result["merged_existing"])
+            self.assertEqual(result["record_count"], 4)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select json_extract(payload_json,'$.dataset_id') as dataset_id, count(*) as n "
+                "from record_payloads where source='aedes_vectorbyte_abundance' "
+                "group by dataset_id order by dataset_id",
+                limit=10,
+            )
+            self.assertEqual({row["dataset_id"]: row["n"] for row in rows}, {"220": 2, "27006": 2})
+
     def test_load_dataset_ids_file_accepts_lines_commas_and_comments(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "vecdyn-datasets.txt"

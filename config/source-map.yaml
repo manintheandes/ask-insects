@@ -1110,6 +1110,7 @@ sources:
       - broad_provider_search
       - exact_dataset_id_receipt
       - exact_dataset_id_manifest_receipt
+      - exact_dataset_id_merge_receipt
     lanes:
       - observations
       - ecology

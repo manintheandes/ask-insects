@@ -638,6 +638,7 @@ class HostedCliTests(unittest.TestCase):
                 "27006",
                 "--dataset-id",
                 "220",
+                "--merge-existing",
             )
 
         self.assertEqual(code, 0)
@@ -652,6 +653,7 @@ class HostedCliTests(unittest.TestCase):
                 "search_page_limit": 1,
                 "dataset_page_limit": 10,
                 "dataset_ids": ["27006", "220"],
+                "merge_existing": True,
             },
         )
         self.assertEqual(calls[0][3], 3600)

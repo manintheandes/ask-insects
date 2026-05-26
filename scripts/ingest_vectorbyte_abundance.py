@@ -50,6 +50,42 @@ def merge_dataset_ids(*groups: list[str] | None) -> list[str]:
     return dataset_ids
 
 
+def _chunks(values: list[str], size: int = 500) -> list[list[str]]:
+    return [values[index : index + size] for index in range(0, len(values), size)]
+
+
+def _record_dataset_ids(records) -> list[str]:
+    dataset_ids: list[str] = []
+    seen: set[str] = set()
+    for record in records:
+        payload = record.payload if isinstance(record.payload, dict) else {}
+        dataset_id = str(payload.get("dataset_id") or "").strip()
+        if dataset_id and dataset_id not in seen:
+            dataset_ids.append(dataset_id)
+            seen.add(dataset_id)
+    return dataset_ids
+
+
+def _delete_vectorbyte_dataset_records(index: SourceIndex, dataset_ids: list[str]) -> None:
+    if not dataset_ids:
+        return
+    with index.connect() as conn:
+        record_ids: list[str] = []
+        for dataset_id in dataset_ids:
+            exact = f"vectorbyte:abundance-dataset:{dataset_id}"
+            prefix = f"vectorbyte:abundance:{dataset_id}:%"
+            rows = conn.execute(
+                "select record_id from records where source=? and (record_id=? or record_id like ?)",
+                (VECTORBYTE_ABUNDANCE_SOURCE_ID, exact, prefix),
+            ).fetchall()
+            record_ids.extend(str(row["record_id"]) for row in rows)
+        for chunk in _chunks(sorted(set(record_ids))):
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"delete from records_fts where record_id in ({placeholders})", chunk)
+            conn.execute(f"delete from record_payloads where record_id in ({placeholders})", chunk)
+            conn.execute(f"delete from records where record_id in ({placeholders})", chunk)
+
+
 def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     existing = _read_json(gaps_path, [])
     if not isinstance(existing, list):
@@ -65,7 +101,15 @@ def _source_record_count(index: SourceIndex) -> int:
         return int(conn.execute("select count(*) as n from records where source=?", (VECTORBYTE_ABUNDANCE_SOURCE_ID,)).fetchone()["n"])
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
+def _update_metadata(
+    artifact_dir: Path,
+    result,
+    retrieved_at: str,
+    *,
+    ok: bool = True,
+    preserved_existing: bool = False,
+    merged_existing: bool = False,
+) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     installed_record_count = _source_record_count(index)
@@ -83,6 +127,7 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool 
         "retrieved_at": retrieved_at,
         "refresh_failed": not ok,
         "preserved_existing": preserved_existing,
+        "merged_existing": merged_existing,
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -113,6 +158,7 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool 
         "refresh_record_count": len(result.records),
         "gap_count": len(result.gaps),
         "preserved_existing": preserved_existing,
+        "merged_existing": merged_existing,
         "artifact_dir": artifact_dir.as_posix(),
         "lanes": summary["lanes"],
     }
@@ -129,6 +175,7 @@ def ingest_vectorbyte_abundance(
     search_page_limit: int = 3,
     dataset_page_limit: int = 100,
     dataset_ids: list[str] | None = None,
+    merge_existing: bool = False,
 ) -> dict[str, object]:
     retrieved = retrieved_at or utc_now()
     result = fetch_vectorbyte_abundance_records(
@@ -146,13 +193,18 @@ def ingest_vectorbyte_abundance(
     index.initialize()
     refresh_failed = not result.records and bool(result.gaps)
     if not refresh_failed:
-        index.replace_source_records(VECTORBYTE_ABUNDANCE_SOURCE_ID, result.records)
+        if merge_existing:
+            _delete_vectorbyte_dataset_records(index, _record_dataset_ids(result.records))
+            index.upsert_records(result.records)
+        else:
+            index.replace_source_records(VECTORBYTE_ABUNDANCE_SOURCE_ID, result.records)
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
         preserved_existing=refresh_failed,
+        merged_existing=merge_existing and not refresh_failed,
     )
 
 
@@ -166,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dataset-page-limit", type=int, default=100)
     parser.add_argument("--dataset-id", dest="dataset_ids", action="append", default=[])
     parser.add_argument("--dataset-id-file", dest="dataset_id_files", action="append", default=[])
+    parser.add_argument("--merge-existing", action="store_true")
     parser.add_argument("--retrieved-at")
     args = parser.parse_args(argv)
     file_dataset_ids: list[str] = []
@@ -179,6 +232,7 @@ def main(argv: list[str] | None = None) -> int:
         search_page_limit=args.search_page_limit,
         dataset_page_limit=args.dataset_page_limit,
         dataset_ids=merge_dataset_ids(args.dataset_ids, file_dataset_ids),
+        merge_existing=args.merge_existing,
         retrieved_at=args.retrieved_at,
     )
     print(json.dumps(result, sort_keys=True))

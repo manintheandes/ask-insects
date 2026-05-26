@@ -460,6 +460,7 @@ class ServerTests(unittest.TestCase):
                         "search_page_limit": 2,
                         "dataset_page_limit": 12,
                         "dataset_ids": ["27006", "220"],
+                        "merge_existing": True,
                     },
                     headers={"Authorization": "Bearer secret"},
                     artifact_dir=artifact_dir,
@@ -477,6 +478,7 @@ class ServerTests(unittest.TestCase):
                 search_page_limit=2,
                 dataset_page_limit=12,
                 dataset_ids=["27006", "220"],
+                merge_existing=True,
             )
 
     def test_ingest_aedes_deep_sources_route_passes_options(self):
