@@ -463,7 +463,7 @@ The lane uses source id `aedes_ncvbdc_dengue_surveillance`. It writes the raw Go
 
 ## Brazil OpenDataSUS Dengue Surveillance Source Lane
 
-Brazil OpenDataSUS dengue surveillance is indexed as official `Aedes aegypti` public-health intelligence at aggregate year, state, and epidemiological-week grain:
+Brazil OpenDataSUS dengue surveillance is indexed as official `Aedes aegypti` public-health intelligence at aggregate year, state, and epidemiological-week grain. The default ingest covers the public annual backfiles from 2007 through 2026:
 
 ```bash
 python3 -m askinsects ingest-opendatasus-dengue-surveillance

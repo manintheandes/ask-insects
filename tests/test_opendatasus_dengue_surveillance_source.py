@@ -9,6 +9,7 @@ from zipfile import ZipFile
 from askinsects.sources.opendatasus_dengue_surveillance import (
     OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,
     OpenDataSusDengueFileSpec,
+    default_opendatasus_dengue_file_specs,
     fetch_opendatasus_dengue_surveillance_records,
 )
 
@@ -28,6 +29,15 @@ def zip_bytes(text: str = CSV_TEXT, name: str = "DENGBR25.csv") -> bytes:
 
 
 class OpenDataSusDengueSurveillanceSourceTests(unittest.TestCase):
+    def test_default_specs_cover_public_historical_backfiles(self):
+        specs = default_opendatasus_dengue_file_specs()
+
+        self.assertEqual(specs[0].year, 2007)
+        self.assertEqual(specs[-1].year, 2026)
+        self.assertEqual(len(specs), 20)
+        self.assertEqual(specs[0].url, "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SINAN/Dengue/csv/DENGBR07.csv.zip")
+        self.assertEqual(specs[-1].url, "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SINAN/Dengue/csv/DENGBR26.csv.zip")
+
     def test_fetch_opendatasus_records_parses_current_zip_aggregates(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             result = fetch_opendatasus_dengue_surveillance_records(

@@ -2268,7 +2268,7 @@ def _opendatasus_surveillance_records(index: SourceIndex, question: str, *, limi
     else:
         clauses.append("record_id LIKE ?")
         params.append("%:country:brazil:%")
-    years = re.findall(r"\b20(?:2[0-9])\b", q)
+    years = re.findall(r"\b20\d{2}\b", q)
     if years:
         year_clauses = []
         for year in years[:4]:

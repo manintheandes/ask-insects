@@ -6,7 +6,7 @@ Add Brazil Ministry of Health OpenDataSUS SINAN dengue evidence as an Ask Insect
 
 ## Boundary
 
-The lane covers official annual OpenDataSUS dengue CSV ZIP files from the public arboviruses dengue dataset. The default run mirrors the current configured years, currently 2025 and 2026. Older annual backfiles can be passed explicitly by year, but are not claimed by the default receipt.
+The lane covers official annual OpenDataSUS dengue CSV ZIP files from the public arboviruses dengue dataset. The default run mirrors the public historical annual backfiles for 2007 through 2026 as aggregate records only.
 
 The lane indexes aggregate surveillance atoms only:
 

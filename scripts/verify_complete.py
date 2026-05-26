@@ -762,6 +762,9 @@ def check_mosquito_intelligence_coverage() -> None:
         "epidemiological-week",
         "aggregate_records_only_no_person_level_line_records",
         "EVOLUCAO=2",
+        "DENGBR07.csv.zip",
+        "DENGBR26.csv.zip",
+        "2007 through 2026",
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing OpenDataSUS dengue surveillance term: {term}")

@@ -3795,6 +3795,11 @@ class AnswerTests(unittest.TestCase):
                         "aedes_opendatasus_dengue_surveillance",
                         "Official Brazil OpenDataSUS SINAN dengue aggregate for 2025. Notifications: 3. Deaths coded as death by disease in EVOLUCAO=2: 1.",
                     ),
+                    public_health_record(
+                        "public_health:surveillance:opendatasus_dengue:country:brazil:2015",
+                        "aedes_opendatasus_dengue_surveillance",
+                        "Official Brazil OpenDataSUS SINAN dengue aggregate for 2015. Notifications: 9. Deaths coded as death by disease in EVOLUCAO=2: 4.",
+                    ),
                 ]
             )
 
@@ -3804,6 +3809,12 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "public_health")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_opendatasus_dengue_surveillance")
             self.assertIn("Deaths coded as death by disease in EVOLUCAO=2: 1", answer["answer"])
+
+            historical = answer_question("show Brazil OpenDataSUS dengue deaths and notifications for 2015", artifact_dir=artifact_dir)
+
+            self.assertTrue(historical["ok"])
+            self.assertEqual(historical["evidence"][0]["record_id"], "public_health:surveillance:opendatasus_dengue:country:brazil:2015")
+            self.assertIn("Notifications: 9", historical["answer"])
 
     def test_paho_dashboard_questions_prefer_dashboard_locator_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

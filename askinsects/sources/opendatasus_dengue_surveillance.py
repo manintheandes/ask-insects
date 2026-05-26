@@ -15,7 +15,7 @@ from ..records import EvidenceRecord, Provenance
 
 OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID = "aedes_opendatasus_dengue_surveillance"
 USER_AGENT = "AskInsects/0.1 source-plane"
-DEFAULT_OPENDATASUS_DENGUE_YEARS: tuple[int, ...] = (2025, 2026)
+DEFAULT_OPENDATASUS_DENGUE_YEARS: tuple[int, ...] = tuple(range(2007, 2027))
 OPENDATASUS_DENGUE_PORTAL_URL = "https://dadosabertos.saude.gov.br/dataset/arboviroses-dengue"
 OPENDATASUS_DENGUE_DICTIONARY_URL = "https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SINAN/Dengue/DIC_DADOS_NET---Dengue.pdf"
 OPENDATASUS_LICENSE = "Brazil Ministry of Health OpenDataSUS public open-data files; source portal terms apply"
@@ -495,16 +495,6 @@ def fetch_opendatasus_dengue_surveillance_records(
         if rows:
             total_rows += rows
             successful_years.append(spec.year)
-
-    if specs and set(successful_years) == set(DEFAULT_OPENDATASUS_DENGUE_YEARS):
-        gaps.append(
-            _gap(
-                reason="opendatasus_dengue_historic_years_not_default_ingested",
-                spec=None,
-                retrieved_at=retrieved_at,
-                detail="Default ingest mirrors current OpenDataSUS dengue files for 2025 and 2026. Earlier annual ZIP backfiles remain available by passing explicit years and are not represented as fully mirrored by this run.",
-            )
-        )
 
     deduped: dict[str, EvidenceRecord] = {}
     duplicate_count = 0
