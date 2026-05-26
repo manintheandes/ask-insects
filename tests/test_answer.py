@@ -2753,7 +2753,7 @@ class AnswerTests(unittest.TestCase):
                         lane="genome_features",
                         source="vectorbase_aedes_genomics",
                         title="Aedes aegypti VectorBase advanced orthology source gap",
-                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in the old AAEL namespace, not orthogroups or current-ID resolution.",
+                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in the old AAEL namespace, not orthogroups.",
                         species="Aedes aegypti",
                         url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT",
                         media_url=None,
@@ -2763,7 +2763,7 @@ class AnswerTests(unittest.TestCase):
                             retrieved_at="2026-05-25T00:00:00Z",
                             license="Ask Insects source boundary audit",
                         ),
-                        payload={"atom_type": "source_gap", "reason": "advanced_orthology_current_id_resolution"},
+                        payload={"atom_type": "source_gap", "reason": "orthogroups_not_indexed"},
                     ),
                 ]
             )
@@ -2839,7 +2839,7 @@ class AnswerTests(unittest.TestCase):
                         lane="genome_features",
                         source="vectorbase_aedes_genomics",
                         title="Aedes aegypti VectorBase advanced orthology source gap",
-                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in the old AAEL namespace, not orthogroups or current-ID resolution.",
+                        text="VectorBase genomics source gap: Ask Insects currently indexes first-pass OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in the old AAEL namespace, not orthogroups.",
                         species="Aedes aegypti",
                         url="https://orthomcl.org/common/downloads/release-6.21/corePairs_OrthoMCL-CURRENT",
                         media_url=None,
@@ -2849,7 +2849,7 @@ class AnswerTests(unittest.TestCase):
                             retrieved_at="2026-05-25T00:00:00Z",
                             license="Ask Insects source boundary audit",
                         ),
-                        payload={"atom_type": "source_gap", "reason": "advanced_orthology_current_id_resolution"},
+                        payload={"atom_type": "source_gap", "reason": "orthogroups_not_indexed"},
                     ),
                     EvidenceRecord(
                         record_id="video_atom:asset:irrelevant",
@@ -2936,6 +2936,28 @@ class AnswerTests(unittest.TestCase):
                             license="VectorBase/VEuPathDB public download; source terms apply",
                         ),
                     ),
+                    EvidenceRecord(
+                        record_id="vectorbase:current_id:AAEL000905",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti VectorBase current ID resolution AAEL000905 to AAEL123456",
+                        text="VectorBase current identifier resolution for Aedes aegypti AAEL000905: current ID AAEL123456, event merge, release VB-2026-05, date 2026-05.",
+                        species="Aedes aegypti",
+                        url="https://vectorbase.org/id_events.tab",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="vectorbase_aedes_genomics",
+                            locator="raw/vectorbase_genomics/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab#line/2",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                        ),
+                        payload={
+                            "atom_type": "current_id_resolution",
+                            "old_id": "AAEL000905",
+                            "current_id": "AAEL123456",
+                            "resolution_status": "successor",
+                        },
+                    ),
                 ]
             )
 
@@ -2953,6 +2975,15 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:id_event:AAEL000355:none:1")
+
+            answer = answer_question(
+                "show VectorBase current ID resolution for AAEL000905",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "vectorbase:current_id:AAEL000905")
 
             answer = answer_question("show VectorBase NCBI LinkOut for AaegL5_1", artifact_dir=artifact_dir)
 

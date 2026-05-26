@@ -984,14 +984,16 @@ def _search_queries(question: str) -> list[str]:
             queries.extend(["OrthoMCL coortholog Aedes aegypti", "aaeg-old AAEL coortholog"])
         if _wants_orthomcl_relationship(question, "inparalog"):
             queries.extend(["OrthoMCL inparalog Aedes aegypti", "aaeg-old AAEL inparalog"])
-        if any(term in q for term in ("orthogroup", "orthogroups", "current id resolution", "current-id resolution")):
+        if any(term in q for term in ("orthogroup", "orthogroups")):
             queries.extend(
                 [
-                    "advanced orthology current-ID resolution source gap",
-                    "orthogroups current-ID resolution",
+                    "advanced orthology source gap",
+                    "orthogroups not indexed",
                     "first-pass OrthoMCL CURRENT ortholog coortholog inparalog rows old AAEL namespace",
                 ]
             )
+        if any(term in q for term in ("current id resolution", "current-id resolution")):
+            queries.extend(["current VectorBase identifier resolution", "current ID resolution AAEL"])
         queries.extend(["VectorBase Aedes aegypti", "Aedes aegypti VectorBase", question])
         return list(dict.fromkeys(queries))
     if "mosquito alert" in q:
@@ -1597,10 +1599,13 @@ def _wants_advanced_orthology_boundary(question: str) -> bool:
         for term in (
             "orthogroup",
             "orthogroups",
-            "current id resolution",
-            "current-id resolution",
         )
     )
+
+
+def _wants_current_id_resolution(question: str) -> bool:
+    q = question.lower()
+    return any(term in q for term in ("current id resolution", "current-id resolution", "current identifier resolution"))
 
 
 def _wants_orthomcl_relationship(question: str, relationship_type: str) -> bool:
@@ -1696,10 +1701,12 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
         if _wants_orthomcl_relationship(question, "ortholog"):
             relationship_prefixes.append("vectorbase:ortholog:")
         wants_advanced_gap = _wants_advanced_orthology_boundary(question)
+        wants_current_id = _wants_current_id_resolution(question)
         return sorted(
             records,
             key=lambda record: (
                 0 if record.source == "vectorbase_aedes_genomics" else 1,
+                0 if wants_current_id and record.record_id.startswith("vectorbase:current_id:") else 1,
                 0
                 if relationship_prefixes and any(record.record_id.startswith(prefix) for prefix in relationship_prefixes)
                 else 1
@@ -1871,6 +1878,13 @@ def _vectorbase_auxiliary_records(index: SourceIndex, question: str, *, limit: i
             clauses.append(("record_id >= ? AND record_id < ?", (lower, upper)))
     for aael_id in aael_ids:
         escaped_aael = _like_escape(aael_id.upper())
+        if _wants_current_id_resolution(question):
+            clauses.append(
+                (
+                    "record_id = ?",
+                    (f"vectorbase:current_id:{aael_id.upper()}",),
+                )
+            )
         if _wants_orthomcl_relationship(question, "ortholog"):
             clauses.append(
                 (

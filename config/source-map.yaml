@@ -515,11 +515,17 @@ sources:
         - score
         - aedes_side_with_aaeg_old_prefix
         - raw_pair_file_line_locator
+      current_id_resolution_records:
+        - old_id
+        - current_id
+        - event
+        - event_release
+        - event_date
+        - raw_id_event_file_line_locator
       exclusions:
         - orthogroups_not_claimed
-        - current_id_resolution_not_claimed
       structured_gaps:
-        - advanced_orthology_current_id_resolution
+        - orthogroups_not_indexed
   - id: aedes_uniprot_proteins
     name: UniProt Aedes aegypti protein and proteome metadata
     source_type: public_api

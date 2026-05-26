@@ -38,12 +38,12 @@ DEFAULT_VECTORBASE_SPECIES = "Aedes aegypti"
 ADVANCED_ORTHOLOGY_GAP = {
     "source": VECTORBASE_GENOMICS_SOURCE_ID,
     "lane": "genome_features",
-    "reason": "advanced_orthology_current_id_resolution",
+    "reason": "orthogroups_not_indexed",
     "scope": (
         "Current Ask Insects VectorBase/OrthoMCL coverage indexes first-pass "
         "OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows where "
         "either side starts with aaeg-old|AAEL. It does not yet include "
-        "orthogroups or current-ID resolution."
+        "orthogroups."
     ),
 }
 
@@ -116,7 +116,7 @@ def _advanced_orthology_gap_record(boundary_path: Path, retrieved_at: str) -> Ev
         text=(
             "VectorBase genomics source gap: Ask Insects currently indexes first-pass "
             "OrthoMCL CURRENT ortholog, coortholog, and inparalog pair rows in "
-            "the old AAEL namespace, not orthogroups or current-ID resolution."
+            "the old AAEL namespace, not orthogroups."
         ),
         species=DEFAULT_VECTORBASE_SPECIES,
         url=ORTHOMCL_CORE_PAIRS_URL,
@@ -130,7 +130,7 @@ def _advanced_orthology_gap_record(boundary_path: Path, retrieved_at: str) -> Ev
         ),
         payload={
             "atom_type": "source_gap",
-            "reason": "advanced_orthology_current_id_resolution",
+            "reason": "orthogroups_not_indexed",
             "gap": gap,
             "raw_json_path": boundary_path.as_posix(),
         },
@@ -638,6 +638,40 @@ def _parse_id_events(path: Path, *, source_url: str, retrieved_at: str) -> tuple
                     },
                 )
             )
+            if new_id:
+                records.append(
+                    EvidenceRecord(
+                        record_id=f"vectorbase:current_id:{_record_id_piece(old_id)}",
+                        lane="genome_features",
+                        source=VECTORBASE_GENOMICS_SOURCE_ID,
+                        title=f"Aedes aegypti VectorBase current ID resolution {old_id} to {new_id}",
+                        text=(
+                            f"Aedes aegypti current VectorBase identifier resolution for {old_id}: "
+                            f"current ID {new_id}, event {event}, release {release}, date {event_date}."
+                        ),
+                        species=DEFAULT_VECTORBASE_SPECIES,
+                        url=source_url,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id=VECTORBASE_GENOMICS_SOURCE_ID,
+                            locator=f"{path.as_posix()}#line/{line_number}",
+                            retrieved_at=retrieved_at,
+                            license="VectorBase/VEuPathDB public download; source terms apply",
+                            source_url=source_url,
+                        ),
+                        payload={
+                            "release": VECTORBASE_RELEASE,
+                            "organism": VECTORBASE_ORGANISM,
+                            "atom_type": "current_id_resolution",
+                            "old_id": old_id,
+                            "current_id": new_id,
+                            "event": event,
+                            "event_release": release,
+                            "event_date": event_date,
+                            "resolution_status": "successor",
+                        },
+                    )
+                )
     return records, gaps
 
 

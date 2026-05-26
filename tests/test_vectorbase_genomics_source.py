@@ -56,7 +56,8 @@ def write_fake_vectorbase_files(root: Path) -> dict[str, str]:
     )
     id_events = root / "VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab"
     id_events.write_text(
-        "AAEL000355\t\tdeletion\tpre-BRC4 52\t2009-06\n",
+        "AAEL000355\t\tdeletion\tpre-BRC4 52\t2009-06\n"
+        "AAEL000905\tAAEL123456\tmerge\tVB-2026-05\t2026-05\n",
         encoding="utf-8",
     )
     ncbi_linkout = root / "VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml"
@@ -154,6 +155,11 @@ class VectorBaseGenomicsSourceTests(unittest.TestCase):
             id_event = next(record for record in result.records if record.record_id.startswith("vectorbase:id_event:AAEL000355"))
             self.assertIn("deletion to no successor", id_event.text)
             self.assertEqual(id_event.payload["event"], "deletion")
+            current_id = next(record for record in result.records if record.record_id == "vectorbase:current_id:AAEL000905")
+            self.assertIn("current VectorBase identifier resolution", current_id.text)
+            self.assertEqual(current_id.payload["old_id"], "AAEL000905")
+            self.assertEqual(current_id.payload["current_id"], "AAEL123456")
+            self.assertEqual(current_id.payload["resolution_status"], "successor")
             linkout = next(record for record in result.records if record.record_id.startswith("vectorbase:ncbi_linkout:Nucleotide:AaegL5_1"))
             self.assertIn("NCBI LinkOut", linkout.text)
             self.assertEqual(linkout.payload["query"], "AaegL5_1")
@@ -179,13 +185,13 @@ class VectorBaseGenomicsSourceTests(unittest.TestCase):
             self.assertEqual(inparalog.payload["partner_id"], "AAEL999999")
             advanced_gap = next(record for record in result.records if record.record_id == "vectorbase:gap:advanced_orthology_current_id_resolution")
             self.assertEqual(advanced_gap.lane, "genome_features")
-            self.assertIn("not orthogroups or current-ID resolution", advanced_gap.text)
+            self.assertIn("not orthogroups", advanced_gap.text)
             self.assertEqual(advanced_gap.payload["atom_type"], "source_gap")
-            self.assertEqual(advanced_gap.payload["reason"], "advanced_orthology_current_id_resolution")
+            self.assertEqual(advanced_gap.payload["reason"], "orthogroups_not_indexed")
             self.assertTrue(any(gap["reason"] == "malformed_gff_row" for gap in result.gaps))
             self.assertTrue(any(gap["reason"] == "malformed_orthomcl_score" for gap in result.gaps))
             self.assertTrue(any(gap["reason"] == "malformed_orthomcl_pair_row" for gap in result.gaps))
-            self.assertTrue(any(gap["reason"] == "advanced_orthology_current_id_resolution" for gap in result.gaps))
+            self.assertTrue(any(gap["reason"] == "orthogroups_not_indexed" for gap in result.gaps))
 
     def test_vectorbase_payloads_are_queryable_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:
