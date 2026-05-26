@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, replace
+import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -632,6 +633,73 @@ def source_counts(index: SourceIndex) -> dict[str, int]:
     return {str(row["source"]): int(row["n"]) for row in rows}
 
 
+def _record_content_parts(record: object) -> tuple[object, ...]:
+    return (
+        getattr(record, "record_id"),
+        getattr(record, "lane"),
+        getattr(record, "source"),
+        getattr(record, "title"),
+        getattr(record, "text"),
+        getattr(record, "species"),
+        getattr(record, "url"),
+        getattr(record, "media_url"),
+        getattr(record, "payload"),
+    )
+
+
+def records_content_digest(records: list[object]) -> str:
+    digest = hashlib.sha256()
+    for record in sorted(records, key=lambda item: str(getattr(item, "record_id"))):
+        digest.update(json.dumps(_record_content_parts(record), sort_keys=True, default=str).encode("utf-8"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def source_content_digest(index: SourceIndex, source: str) -> str:
+    digest = hashlib.sha256()
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT
+              r.record_id,
+              r.lane,
+              r.source,
+              r.title,
+              r.text,
+              r.species,
+              r.url,
+              r.media_url,
+              p.payload_json
+            FROM records r
+            LEFT JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ?
+            ORDER BY r.record_id
+            """,
+            (source,),
+        ).fetchall()
+    for row in rows:
+        payload = json.loads(row["payload_json"]) if row["payload_json"] else None
+        digest.update(
+            json.dumps(
+                (
+                    row["record_id"],
+                    row["lane"],
+                    row["source"],
+                    row["title"],
+                    row["text"],
+                    row["species"],
+                    row["url"],
+                    row["media_url"],
+                    payload,
+                ),
+                sort_keys=True,
+                default=str,
+            ).encode("utf-8")
+        )
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
 def write_gbif_metadata(staging: Path, gbif_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
     index = SourceIndex(staging / "source_index.sqlite")
     summary = index.summary()
@@ -970,7 +1038,11 @@ def ingest_irmapper(
         species=species,
         retrieved_at=retrieved_at,
     )
-    index.replace_source_records(IRMAPPER_SOURCE_ID, result.records)
+    existing_digest = source_content_digest(index, IRMAPPER_SOURCE_ID)
+    fetched_digest = records_content_digest(result.records)
+    records_unchanged = existing_digest == fetched_digest
+    if not records_unchanged:
+        index.replace_source_records(IRMAPPER_SOURCE_ID, result.records)
     old_gaps = read_json(artifact_dir / "gaps.json", [])
     if not isinstance(old_gaps, list):
         old_gaps = []
@@ -983,10 +1055,12 @@ def ingest_irmapper(
         "record_count": len(result.records),
         "gap_count": len(result.gaps),
         "retrieved_at": retrieved_at,
+        "records_unchanged": records_unchanged,
     }
     response = write_irmapper_metadata(artifact_dir, irmapper_payload, gaps)
     response["activated_artifact_dir"] = str(artifact_dir)
     response["staged"] = False
+    response["records_unchanged"] = records_unchanged
     return response
 
 

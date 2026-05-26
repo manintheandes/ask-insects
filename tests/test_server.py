@@ -1002,6 +1002,57 @@ class ServerTests(unittest.TestCase):
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
 
+    def test_ingest_irmapper_skips_replace_when_records_are_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            raw_path = artifact_dir / "raw" / "irmapper" / "Aedes_aegypti.json"
+            record = EvidenceRecord(
+                record_id="irmapper:aedes:301",
+                lane="resistance",
+                source="irmapper_aedes",
+                title="Aedes aegypti IR Mapper resistance deltamethrin Brazil",
+                text="IR Mapper resistance record for Aedes aegypti in Brazil with deltamethrin.",
+                species="Aedes aegypti",
+                url="https://example.org/paper",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="irmapper_aedes",
+                    locator=f"{raw_path}#row/1",
+                    retrieved_at="2026-05-25T00:00:00Z",
+                    license="IR Mapper public API",
+                    source_url="https://api.irmapper.com/api/aedes",
+                ),
+                payload={"raw_row": {"id": 301}},
+            )
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_records([record])
+
+            def fake_fetch(*, raw_dir, species, retrieved_at):
+                return IRMapperBuildResult(
+                    source_id="irmapper_aedes",
+                    records=[record],
+                    gaps=[],
+                    raw_artifacts=[(raw_dir / "Aedes_aegypti.json").as_posix()],
+                    requested_species=species,
+                    fetched_row_count=1,
+                )
+
+            with mock.patch("askinsects.server.SourceIndex.replace_source_records") as replace_source_records:
+                replace_source_records.side_effect = AssertionError("unchanged IR Mapper records should not rewrite SQLite")
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/irmapper",
+                    {"species": "Aedes aegypti"},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                    fetch_irmapper_records_fn=fake_fetch,
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertTrue(response.payload["records_unchanged"])
+
     def test_ingest_who_malaria_threats_resistance_adds_gap_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
