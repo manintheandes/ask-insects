@@ -32,6 +32,13 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     return len(combined)
 
 
+def _dedupe_records(records):
+    deduped = {}
+    for record in records:
+        deduped[record.record_id] = record
+    return list(deduped.values())
+
+
 def _source_counts(index: SourceIndex) -> dict[str, int]:
     return {
         row["source"]: int(row["n"])
@@ -39,24 +46,97 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
+def _video_atom_counts(index: SourceIndex) -> dict[str, int]:
+    rows = index.sql(
+        """
+        select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n
+        from record_payloads
+        where source='aedes_video_atoms'
+        group by atom_type
+        """,
+        limit=100,
+    )
+    return {str(row["atom_type"]): int(row["n"]) for row in rows if row["atom_type"]}
+
+
+def _count_verified_video_assets(index: SourceIndex) -> int:
+    rows = index.sql(
+        """
+        select count(*) as n
+        from record_payloads
+        where source='aedes_video_atoms'
+          and json_extract(payload_json, '$.atom_type')='video_asset'
+          and json_extract(payload_json, '$.verification_status')='verified'
+        """,
+        limit=1,
+    )
+    return int(rows[0]["n"]) if rows else 0
+
+
+def _count_mirrored_video_assets(index: SourceIndex) -> int:
+    rows = index.sql(
+        """
+        select count(*) as n
+        from record_payloads
+        where source='aedes_video_atoms'
+          and json_extract(payload_json, '$.atom_type')='video_asset'
+          and coalesce(
+            json_extract(payload_json, '$.mirror_path'),
+            json_extract(payload_json, '$.raw_asset_path'),
+            json_extract(payload_json, '$.mirrored_path'),
+            json_extract(payload_json, '$.local_mirror_path')
+          ) is not null
+        """,
+        limit=1,
+    )
+    return int(rows[0]["n"]) if rows else 0
+
+
+def _installed_video_gaps(index: SourceIndex) -> list[dict[str, object]]:
+    rows = index.sql(
+        """
+        select payload_json
+        from record_payloads
+        where source='aedes_video_atoms'
+          and json_extract(payload_json, '$.atom_type')='video_gap'
+        order by record_id
+        """,
+        limit=100000,
+    )
+    gaps: list[dict[str, object]] = []
+    for row in rows:
+        payload = json.loads(row["payload_json"])
+        if isinstance(payload, dict):
+            payload.pop("atom_type", None)
+            gaps.append(payload)
+    return gaps
+
+
 def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
+    atom_counts = _video_atom_counts(index)
+    source_record_count = source_counts.get(VIDEO_ATOMS_SOURCE_ID, 0)
+    artifact_count = sum(
+        atom_counts.get(atom_type, 0)
+        for atom_type in ("video_thumbnail", "video_keyframe", "video_preview_clip", "video_frame_manifest")
+    )
+    installed_gaps = _installed_video_gaps(index)
     source_payload = {
         "source": VIDEO_ATOMS_SOURCE_ID,
-        "record_count": len(result.records),
-        "video_asset_count": result.video_asset_count,
-        "mirrored_video_count": result.mirrored_video_count,
-        "verified_video_count": result.verified_video_count,
-        "artifact_count": result.artifact_count,
-        "motion_row_count": result.motion_row_count,
+        "record_count": source_record_count,
+        "video_asset_count": atom_counts.get("video_asset", 0),
+        "mirrored_video_count": _count_mirrored_video_assets(index),
+        "verified_video_count": _count_verified_video_assets(index),
+        "artifact_count": artifact_count,
+        "motion_row_count": atom_counts.get("video_motion_row", 0),
         "discovery_candidate_count": result.discovery_candidate_count,
         "discovery_sweep_receipts": result.discovery_sweep_receipts,
-        "gap_count": len(result.gaps),
+        "gap_count": atom_counts.get("video_gap", 0),
         "method": "derived Aedes aegypti video atoms from indexed video manifests, bounded mirrors, ffprobe metadata, inspectable artifacts, motion tables, and repository discovery gaps",
     }
-    gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
+    gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", installed_gaps)
     for filename in ("source_status.json", "source_receipt.json"):
         path = artifact_dir / filename
         payload = _read_json(path, {})
@@ -81,15 +161,15 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
     return {
         "ok": True,
         "source": VIDEO_ATOMS_SOURCE_ID,
-        "record_count": len(result.records),
-        "video_asset_count": result.video_asset_count,
-        "mirrored_video_count": result.mirrored_video_count,
-        "verified_video_count": result.verified_video_count,
-        "artifact_count": result.artifact_count,
-        "motion_row_count": result.motion_row_count,
+        "record_count": source_payload["record_count"],
+        "video_asset_count": source_payload["video_asset_count"],
+        "mirrored_video_count": source_payload["mirrored_video_count"],
+        "verified_video_count": source_payload["verified_video_count"],
+        "artifact_count": source_payload["artifact_count"],
+        "motion_row_count": source_payload["motion_row_count"],
         "discovery_candidate_count": result.discovery_candidate_count,
         "discovery_sweep_receipts": result.discovery_sweep_receipts,
-        "gap_count": len(result.gaps),
+        "gap_count": source_payload["gap_count"],
         "source_counts": source_counts,
         "artifact_dir": artifact_dir.as_posix(),
         "lanes": summary["lanes"],
@@ -136,7 +216,7 @@ def ingest_video_atoms(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, result.records)
+    index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, _dedupe_records(result.records))
     return _update_metadata(artifact_dir, result)
 
 

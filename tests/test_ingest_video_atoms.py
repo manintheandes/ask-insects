@@ -4,10 +4,12 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.sources import video_atoms
+from askinsects.sources.video_atoms import AedesVideoAtomsResult
 from scripts.ingest_video_atoms import ingest_video_atoms
 from tests.test_mendeley_behavior_media_source import tiny_xlsx
 from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
@@ -229,6 +231,73 @@ class IngestVideoAtomsTests(unittest.TestCase):
             self.assertEqual(counts[("video_keyframe", None)], 1)
             self.assertEqual(counts[("video_preview_clip", None)], 1)
             self.assertEqual(counts[("video_frame_manifest", None)], 1)
+
+    def test_ingest_receipts_count_installed_queryable_video_atoms(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            duplicate_gap_a = EvidenceRecord(
+                record_id="video_atom:gap:duplicate",
+                lane="media",
+                source="aedes_video_atoms",
+                title="Aedes duplicate gap A",
+                text="Aedes aegypti duplicate gap A.",
+                species="Aedes aegypti",
+                url=None,
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="gaps.json#1",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={"atom_type": "video_gap", "source": "aedes_video_atoms", "reason": "gap_a"},
+            )
+            duplicate_gap_b = EvidenceRecord(
+                record_id="video_atom:gap:duplicate",
+                lane="media",
+                source="aedes_video_atoms",
+                title="Aedes duplicate gap B",
+                text="Aedes aegypti duplicate gap B.",
+                species="Aedes aegypti",
+                url=None,
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="gaps.json#2",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={"atom_type": "video_gap", "source": "aedes_video_atoms", "reason": "gap_b"},
+            )
+            fake_result = AedesVideoAtomsResult(
+                source_id="aedes_video_atoms",
+                records=[duplicate_gap_a, duplicate_gap_b],
+                gaps=[
+                    {"source": "aedes_video_atoms", "reason": "gap_a"},
+                    {"source": "aedes_video_atoms", "reason": "gap_b"},
+                ],
+                video_asset_count=0,
+                mirrored_video_count=0,
+                verified_video_count=0,
+                artifact_count=0,
+                motion_row_count=0,
+                discovery_candidate_count=0,
+                discovery_sweep_receipts=[],
+            )
+
+            with patch("scripts.ingest_video_atoms.build_video_atom_records", return_value=fake_result):
+                result = ingest_video_atoms(artifact_dir=artifact_dir, retrieved_at=RETRIEVED_AT)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["record_count"], 1)
+            self.assertEqual(result["gap_count"], 1)
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            self.assertEqual(status["aedes_video_atoms"]["record_count"], 1)
+            self.assertEqual(status["aedes_video_atoms"]["gap_count"], 1)
+            gaps = [
+                gap
+                for gap in json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))
+                if gap.get("source") == "aedes_video_atoms"
+            ]
+            self.assertEqual(len(gaps), 1)
 
 
 if __name__ == "__main__":
