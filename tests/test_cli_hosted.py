@@ -1022,6 +1022,8 @@ class HostedCliTests(unittest.TestCase):
                 "12",
                 "--max-supplement-bytes",
                 "3456",
+                "--max-pdf-supplement-files",
+                "2",
             )
 
         self.assertEqual(code, 0)
@@ -1036,6 +1038,7 @@ class HostedCliTests(unittest.TestCase):
                 "max_supplement_discovery_records": 34,
                 "max_supplement_files": 12,
                 "max_supplement_bytes": 3456,
+                "max_pdf_supplement_files": 2,
             },
         )
         self.assertEqual(calls[0][3], 3600)

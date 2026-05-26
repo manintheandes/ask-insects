@@ -85,12 +85,16 @@ class IngestExtractedFactsTests(unittest.TestCase):
                 fetch_supplement_file_fn=fake_file_fetch,
                 max_supplement_files=3,
                 max_supplement_bytes=100000,
+                max_pdf_supplement_files=10,
             )
 
             self.assertTrue(result["ok"])
             self.assertEqual(result["downloaded_supplement_file_count"], 1)
             self.assertEqual(result["parsed_supplement_file_count"], 1)
             self.assertEqual(result["parsed_supplement_row_count"], 1)
+            self.assertEqual(result["max_pdf_supplement_files"], 10)
+            self.assertEqual(result["parsed_pdf_supplement_file_count"], 0)
+            self.assertEqual(result["skipped_pdf_supplement_file_count"], 0)
             self.assertEqual(result["supplement_discovery_record_count"], 0)
             rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select payload_json, provenance_json from record_payloads where source='aedes_extracted_facts' and json_extract(payload_json, '$.confidence')='parsed'",

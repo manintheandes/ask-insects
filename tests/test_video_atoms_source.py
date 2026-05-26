@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 from pathlib import Path
+import tarfile
 import tempfile
 import unittest
 from unittest import mock
@@ -517,6 +519,73 @@ class VideoAtomsSourceTests(unittest.TestCase):
             self.assertEqual(rows[0].payload["repository"], "dryad")
             self.assertEqual(rows[0].media_url, asset.media_url)
             self.assertIn("raw/video_atoms/archive_tables/dryad:file:video-archive/tracks.csv#row/1", rows[0].provenance.locator)
+
+    def test_archive_video_candidates_expand_bounded_tar_gz_members(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:file:video-tarball",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti behavior video archive.tar.gz",
+                        text="Tar archive containing Aedes aegypti assay videos.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://datadryad.org/stash/downloads/file_stream/example.tar.gz",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad/file.json#files/2",
+                            retrieved_at=RETRIEVED_AT,
+                            license="https://spdx.org/licenses/CC0-1.0.html",
+                        ),
+                        payload={"filename": "video-archive.tar.gz", "size": 123_456},
+                    )
+                ]
+            )
+            archive_path = Path(tmpdir) / "video-archive.tar.gz"
+            with tarfile.open(archive_path, "w:gz") as archive:
+                for name, payload in (
+                    ("clip.mp4", b"fake mp4 bytes"),
+                    (
+                        "tracks.csv",
+                        b"video_id,track_id,frame,time_seconds,x,y,behavior\n"
+                        b"clip.mp4,track-8,16,0.5,11,21,flight\n",
+                    ),
+                ):
+                    info = tarfile.TarInfo(name)
+                    info.size = len(payload)
+                    archive.addfile(info, io.BytesIO(payload))
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                fetch_video_bytes_fn=lambda url, max_bytes: archive_path.read_bytes(),
+                probe_video_file_fn=lambda path: {
+                    "duration_seconds": 1.5,
+                    "fps": 60.0,
+                    "width": 800,
+                    "height": 600,
+                    "codec": "h264",
+                },
+            )
+
+            reasons = {gap["reason"] for gap in result.gaps}
+            self.assertNotIn("video_archive_unsupported_format", reasons)
+            manifest = next(record for record in result.records if record.payload.get("atom_type") == "video_archive_manifest")
+            self.assertTrue(manifest.payload["raw_archive_path"].endswith(".tar.gz"))
+            self.assertEqual(manifest.payload["video_member_count"], 1)
+            asset = next(record for record in result.records if record.payload.get("atom_type") == "video_asset")
+            self.assertEqual(asset.payload["verification_status"], "verified")
+            self.assertEqual(asset.payload["member_name"], "clip.mp4")
+            rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+            self.assertEqual(len(rows), 1)
+            self.assertEqual(rows[0].payload["track_id"], "track-8")
+            self.assertIn("raw/video_atoms/archive_tables/dryad:file:video-tarball/tracks.csv#row/1", rows[0].provenance.locator)
 
     def test_ignores_audio_files_from_mixed_media_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

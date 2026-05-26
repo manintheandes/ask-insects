@@ -63,6 +63,9 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "downloaded_supplement_file_count": result.downloaded_supplement_file_count,
         "parsed_supplement_file_count": result.parsed_supplement_file_count,
         "parsed_supplement_row_count": result.parsed_supplement_row_count,
+        "max_pdf_supplement_files": result.max_pdf_supplement_files,
+        "parsed_pdf_supplement_file_count": result.parsed_pdf_supplement_file_count,
+        "skipped_pdf_supplement_file_count": result.skipped_pdf_supplement_file_count,
         "fact_counts": result.fact_counts,
         "gap_count": len(result.gaps),
         "method": "deterministic supplement manifest discovery, supported supplement table parsing, and cross-lane Aedes fact extraction from literature records and bounded legal full-text units",
@@ -107,6 +110,9 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "downloaded_supplement_file_count": result.downloaded_supplement_file_count,
         "parsed_supplement_file_count": result.parsed_supplement_file_count,
         "parsed_supplement_row_count": result.parsed_supplement_row_count,
+        "max_pdf_supplement_files": result.max_pdf_supplement_files,
+        "parsed_pdf_supplement_file_count": result.parsed_pdf_supplement_file_count,
+        "skipped_pdf_supplement_file_count": result.skipped_pdf_supplement_file_count,
         "fact_counts": result.fact_counts,
         "gap_count": len(result.gaps),
         "source_counts": source_counts,
@@ -127,6 +133,7 @@ def ingest_extracted_facts(
     max_supplement_discovery_records: int | None = 500,
     max_supplement_files: int = 100,
     max_supplement_bytes: int = 2_000_000,
+    max_pdf_supplement_files: int = 10,
 ) -> dict[str, object]:
     result = build_extracted_fact_records(
         artifact_dir,
@@ -139,6 +146,7 @@ def ingest_extracted_facts(
         max_supplement_discovery_records=max_supplement_discovery_records,
         max_supplement_files=max_supplement_files,
         max_supplement_bytes=max_supplement_bytes,
+        max_pdf_supplement_files=max_pdf_supplement_files,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
@@ -156,6 +164,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-supplement-discovery-records", type=int, default=500)
     parser.add_argument("--max-supplement-files", type=int, default=100)
     parser.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
+    parser.add_argument("--max-pdf-supplement-files", type=int, default=10)
     args = parser.parse_args(argv)
     result = ingest_extracted_facts(
         artifact_dir=Path(args.artifact_dir),
@@ -166,6 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         max_supplement_discovery_records=args.max_supplement_discovery_records,
         max_supplement_files=args.max_supplement_files,
         max_supplement_bytes=args.max_supplement_bytes,
+        max_pdf_supplement_files=args.max_pdf_supplement_files,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result.get("ok") else 2

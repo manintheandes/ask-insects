@@ -305,6 +305,7 @@ def main(argv: list[str] | None = None) -> int:
     ingest_extracted_facts.add_argument("--max-supplement-discovery-records", type=int, default=500)
     ingest_extracted_facts.add_argument("--max-supplement-files", type=int, default=100)
     ingest_extracted_facts.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
+    ingest_extracted_facts.add_argument("--max-pdf-supplement-files", type=int, default=10)
 
     ingest_video_atoms = sub.add_parser("ingest-video-atoms")
     ingest_video_atoms.add_argument("--hosted", action="store_true")
@@ -1075,6 +1076,7 @@ def main(argv: list[str] | None = None) -> int:
                 max_supplement_discovery_records=args.max_supplement_discovery_records,
                 max_supplement_files=args.max_supplement_files,
                 max_supplement_bytes=args.max_supplement_bytes,
+                max_pdf_supplement_files=args.max_pdf_supplement_files,
             )
             emit(payload)
             return 0 if payload.get("ok") else 2
@@ -1088,6 +1090,7 @@ def main(argv: list[str] | None = None) -> int:
                 "max_supplement_discovery_records": args.max_supplement_discovery_records,
                 "max_supplement_files": args.max_supplement_files,
                 "max_supplement_bytes": args.max_supplement_bytes,
+                "max_pdf_supplement_files": args.max_pdf_supplement_files,
             },
             timeout=3600,
         )

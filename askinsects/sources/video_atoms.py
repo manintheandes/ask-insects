@@ -10,6 +10,7 @@ from posixpath import normpath
 import re
 import shutil
 import subprocess
+import tarfile
 from typing import Callable, Iterable
 from urllib.parse import quote, unquote, urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
@@ -1498,8 +1499,10 @@ def _mirror_archive_candidate(
     if size is not None and size > max_video_bytes:
         gaps.append(_gap_context(candidate, "video_archive_too_large", byte_size=size, max_video_bytes=max_video_bytes))
         return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_too_large"), None)]
-    if _archive_extension(candidate) != ".zip":
-        gaps.append(_gap_context(candidate, "video_archive_unsupported_format", archive_format=_archive_extension(candidate) or "unknown"))
+    archive_extension = _archive_extension(candidate)
+    supported_archive_extensions = {".zip", ".tar", ".tar.gz", ".tgz"}
+    if archive_extension not in supported_archive_extensions:
+        gaps.append(_gap_context(candidate, "video_archive_unsupported_format", archive_format=archive_extension or "unknown"))
         return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_unsupported_format"), None)]
     try:
         data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
@@ -1516,125 +1519,153 @@ def _mirror_archive_candidate(
     archive_sha256 = hashlib.sha256(data).hexdigest()
     archive_dir = artifact_dir / "raw" / "video_atoms" / "archives"
     archive_dir.mkdir(parents=True, exist_ok=True)
-    raw_archive_path = archive_dir / f"{_safe_id(candidate.source_record_id)}_{archive_sha256[:12]}.zip"
+    raw_archive_path = archive_dir / f"{_safe_id(candidate.source_record_id)}_{archive_sha256[:12]}{archive_extension}"
     raw_archive_path.write_bytes(data)
     relative_archive_path = raw_archive_path.relative_to(artifact_dir).as_posix()
 
     members: list[dict[str, object]] = []
     extra_records: list[EvidenceRecord] = []
     asset_entries: list[tuple[EvidenceRecord, Path | None]] = []
-    try:
-        with zipfile.ZipFile(raw_archive_path) as archive:
-            for info in archive.infolist():
-                member_name = _safe_archive_member_name(info.filename)
-                if info.is_dir() or not member_name:
-                    continue
-                suffix = Path(member_name).suffix.lower()
-                is_video = suffix in VIDEO_EXTENSIONS
-                member_context = {
-                    "member_name": member_name,
-                    "byte_size": info.file_size,
-                    "is_video": is_video,
-                }
-                if is_video and info.file_size > max_video_bytes:
-                    gaps.append(
-                        _gap_context(
-                            candidate,
-                            "video_archive_member_too_large",
-                            member_name=member_name,
-                            byte_size=info.file_size,
-                            max_video_bytes=max_video_bytes,
-                        )
+
+    def process_member(member_name_raw: str, member_size: int, read_member_fn: Callable[[], bytes]) -> None:
+        member_name = _safe_archive_member_name(member_name_raw)
+        if not member_name:
+            return
+        suffix = Path(member_name).suffix.lower()
+        is_video = suffix in VIDEO_EXTENSIONS
+        member_context = {
+            "member_name": member_name,
+            "byte_size": member_size,
+            "is_video": is_video,
+        }
+        if is_video and member_size > max_video_bytes:
+            gaps.append(
+                _gap_context(
+                    candidate,
+                    "video_archive_member_too_large",
+                    member_name=member_name,
+                    byte_size=member_size,
+                    max_video_bytes=max_video_bytes,
+                )
+            )
+            members.append(member_context)
+            return
+        if is_video:
+            member_data = read_member_fn()
+            if len(member_data) > max_video_bytes:
+                gaps.append(
+                    _gap_context(
+                        candidate,
+                        "video_archive_member_too_large",
+                        member_name=member_name,
+                        byte_size=len(member_data),
+                        max_video_bytes=max_video_bytes,
                     )
-                    members.append(member_context)
-                    continue
-                if is_video:
-                    with archive.open(info) as handle:
-                        member_data = handle.read(max_video_bytes + 1)
-                    if len(member_data) > max_video_bytes:
-                        gaps.append(
-                            _gap_context(
-                                candidate,
-                                "video_archive_member_too_large",
-                                member_name=member_name,
-                                byte_size=len(member_data),
-                                max_video_bytes=max_video_bytes,
-                            )
-                        )
-                        members.append(member_context)
-                        continue
-                    member_sha256 = hashlib.sha256(member_data).hexdigest()
-                    member_safe = _safe_id(member_name)
-                    asset_dir = artifact_dir / "raw" / "video_atoms" / "assets"
-                    asset_dir.mkdir(parents=True, exist_ok=True)
-                    raw_asset_path = asset_dir / f"{_safe_id(candidate.source_record_id)}_{member_safe}_{member_sha256[:12]}{suffix}"
-                    raw_asset_path.write_bytes(member_data)
-                    relative_asset_path = raw_asset_path.relative_to(artifact_dir).as_posix()
-                    member_candidate = VideoCandidate(
-                        source_record_id=f"{candidate.source_record_id}:{member_name}",
-                        title=f"{candidate.title} member {Path(member_name).name}",
-                        text=f"{candidate.text} Archive member: {member_name}.",
-                        species=candidate.species,
-                        url=candidate.url,
-                        media_url=f"{candidate.media_url}#{quote(member_name)}",
-                        source=candidate.source,
-                        provenance=candidate.provenance,
-                        payload={
-                            **candidate.payload,
-                            "filename": Path(member_name).name,
-                            "source_dataset": candidate.payload.get("source_dataset") or candidate.title,
-                            "archive_source_video_record_id": candidate.source_record_id,
-                        },
-                        discovery_repository=candidate.discovery_repository,
-                    )
-                    probe_payload, verification_status = _asset_probe_payload(
-                        raw_asset_path,
-                        member_candidate,
-                        probe_video_file_fn=probe_video_file_fn,
-                        gaps=gaps,
-                        gap_reason_prefix="video_archive_member_probe",
-                    )
-                    extra_payload = {
-                        "archive_source_video_record_id": candidate.source_record_id,
-                        "archive_url": candidate.media_url,
-                        "archive_sha256": archive_sha256,
-                        "raw_archive_path": relative_archive_path,
-                        "member_name": member_name,
-                        "member_sha256": member_sha256,
-                        "byte_size": len(member_data),
-                        "raw_asset_path": relative_asset_path,
-                        **{key: value for key, value in probe_payload.items() if value is not None},
-                    }
-                    asset = _record_for_asset(
-                        member_candidate,
-                        retrieved_at=retrieved_at,
-                        verification_status=verification_status,
-                        extra_payload=extra_payload,
-                    )
-                    extra_records.append(
-                        _archive_member_record(
-                            candidate,
-                            asset,
-                            retrieved_at=retrieved_at,
-                            archive_sha256=archive_sha256,
-                            raw_archive_path=relative_archive_path,
-                            member_name=member_name,
-                            member_sha256=member_sha256,
-                            member_byte_size=len(member_data),
-                            raw_asset_path=relative_asset_path,
-                        )
-                    )
-                    asset_entries.append((asset, raw_asset_path))
-                    member_context.update({"sha256": member_sha256, "raw_asset_path": relative_asset_path})
-                elif suffix in {".csv", ".tsv", ".xlsx"} and info.file_size <= max_video_bytes:
-                    table_dir = artifact_dir / "raw" / "video_atoms" / "archive_tables" / _safe_id(candidate.source_record_id)
-                    table_dir.mkdir(parents=True, exist_ok=True)
-                    table_path = table_dir / _safe_id(member_name)
-                    with archive.open(info) as handle:
-                        table_path.write_bytes(handle.read(max_video_bytes + 1))
-                    member_context["raw_table_path"] = table_path.relative_to(artifact_dir).as_posix()
+                )
                 members.append(member_context)
-    except zipfile.BadZipFile as exc:
+                return
+            member_sha256 = hashlib.sha256(member_data).hexdigest()
+            member_safe = _safe_id(member_name)
+            asset_dir = artifact_dir / "raw" / "video_atoms" / "assets"
+            asset_dir.mkdir(parents=True, exist_ok=True)
+            raw_asset_path = asset_dir / f"{_safe_id(candidate.source_record_id)}_{member_safe}_{member_sha256[:12]}{suffix}"
+            raw_asset_path.write_bytes(member_data)
+            relative_asset_path = raw_asset_path.relative_to(artifact_dir).as_posix()
+            member_candidate = VideoCandidate(
+                source_record_id=f"{candidate.source_record_id}:{member_name}",
+                title=f"{candidate.title} member {Path(member_name).name}",
+                text=f"{candidate.text} Archive member: {member_name}.",
+                species=candidate.species,
+                url=candidate.url,
+                media_url=f"{candidate.media_url}#{quote(member_name)}",
+                source=candidate.source,
+                provenance=candidate.provenance,
+                payload={
+                    **candidate.payload,
+                    "filename": Path(member_name).name,
+                    "source_dataset": candidate.payload.get("source_dataset") or candidate.title,
+                    "archive_source_video_record_id": candidate.source_record_id,
+                },
+                discovery_repository=candidate.discovery_repository,
+            )
+            probe_payload, verification_status = _asset_probe_payload(
+                raw_asset_path,
+                member_candidate,
+                probe_video_file_fn=probe_video_file_fn,
+                gaps=gaps,
+                gap_reason_prefix="video_archive_member_probe",
+            )
+            extra_payload = {
+                "archive_source_video_record_id": candidate.source_record_id,
+                "archive_url": candidate.media_url,
+                "archive_sha256": archive_sha256,
+                "raw_archive_path": relative_archive_path,
+                "member_name": member_name,
+                "member_sha256": member_sha256,
+                "byte_size": len(member_data),
+                "raw_asset_path": relative_asset_path,
+                **{key: value for key, value in probe_payload.items() if value is not None},
+            }
+            asset = _record_for_asset(
+                member_candidate,
+                retrieved_at=retrieved_at,
+                verification_status=verification_status,
+                extra_payload=extra_payload,
+            )
+            extra_records.append(
+                _archive_member_record(
+                    candidate,
+                    asset,
+                    retrieved_at=retrieved_at,
+                    archive_sha256=archive_sha256,
+                    raw_archive_path=relative_archive_path,
+                    member_name=member_name,
+                    member_sha256=member_sha256,
+                    member_byte_size=len(member_data),
+                    raw_asset_path=relative_asset_path,
+                )
+            )
+            asset_entries.append((asset, raw_asset_path))
+            member_context.update({"sha256": member_sha256, "raw_asset_path": relative_asset_path})
+        elif suffix in {".csv", ".tsv", ".xlsx"} and member_size <= max_video_bytes:
+            table_dir = artifact_dir / "raw" / "video_atoms" / "archive_tables" / _safe_id(candidate.source_record_id)
+            table_dir.mkdir(parents=True, exist_ok=True)
+            table_path = table_dir / _safe_id(member_name)
+            table_path.write_bytes(read_member_fn())
+            member_context["raw_table_path"] = table_path.relative_to(artifact_dir).as_posix()
+        members.append(member_context)
+
+    try:
+        if archive_extension == ".zip":
+            with zipfile.ZipFile(raw_archive_path) as archive:
+                for info in archive.infolist():
+                    if info.is_dir():
+                        continue
+
+                    def read_zip_member(info: zipfile.ZipInfo = info) -> bytes:
+                        with archive.open(info) as handle:
+                            return handle.read(max_video_bytes + 1)
+
+                    process_member(
+                        info.filename,
+                        info.file_size,
+                        read_zip_member,
+                    )
+        else:
+            with tarfile.open(raw_archive_path, "r:*") as archive:
+                for info in archive.getmembers():
+                    if info.isdir() or not info.isfile():
+                        continue
+
+                    def read_tar_member(info: tarfile.TarInfo = info) -> bytes:
+                        handle = archive.extractfile(info)
+                        if handle is None:
+                            return b""
+                        with handle:
+                            return handle.read(max_video_bytes + 1)
+
+                    process_member(info.name, int(info.size), read_tar_member)
+    except (zipfile.BadZipFile, tarfile.TarError, EOFError) as exc:
         gaps.append(_gap_context(candidate, "video_archive_read_failed", error=str(exc)))
         return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_read_failed"), None)]
 

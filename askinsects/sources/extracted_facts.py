@@ -85,6 +85,9 @@ class ExtractedFactsResult:
     downloaded_supplement_file_count: int
     parsed_supplement_file_count: int
     parsed_supplement_row_count: int
+    max_pdf_supplement_files: int
+    parsed_pdf_supplement_file_count: int
+    skipped_pdf_supplement_file_count: int
     fact_counts: dict[str, int]
 
 
@@ -1262,18 +1265,23 @@ def _download_and_parse_supplement_rows(
     fetch_supplement_file_fn: Callable[[str, int], bytes],
     max_supplement_files: int,
     max_supplement_bytes: int,
+    max_pdf_supplement_files: int,
     gaps: list[dict[str, object]],
-) -> tuple[list[TextCandidate], int, int, int]:
+) -> tuple[list[TextCandidate], int, int, int, int, int]:
     if max_supplement_files < 1:
         raise ValueError("max_supplement_files must be positive")
     if max_supplement_bytes < 1:
         raise ValueError("max_supplement_bytes must be positive")
+    if max_pdf_supplement_files < 0:
+        raise ValueError("max_pdf_supplement_files must not be negative")
     raw_dir = artifact_dir / "raw" / "extracted_facts" / "supplements"
     raw_dir.mkdir(parents=True, exist_ok=True)
     candidates: list[TextCandidate] = []
     downloaded_count = 0
     parsed_file_count = 0
     parsed_row_count = 0
+    parsed_pdf_count = 0
+    skipped_pdf_count = 0
     for index, candidate in enumerate(supplement_candidates):
         if downloaded_count >= max_supplement_files:
             gaps.append(
@@ -1296,6 +1304,19 @@ def _download_and_parse_supplement_rows(
                     "record_id": candidate.source_record_id,
                     "url": url,
                     "file_type": candidate.supplement.get("file_type"),
+                }
+            )
+            continue
+        if extension == ".pdf" and parsed_pdf_count >= max_pdf_supplement_files:
+            skipped_pdf_count += 1
+            gaps.append(
+                {
+                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "reason": "pdf_supplement_file_limit_applied",
+                    "record_id": candidate.source_record_id,
+                    "url": url,
+                    "title": candidate.supplement.get("title"),
+                    "max_pdf_supplement_files": max_pdf_supplement_files,
                 }
             )
             continue
@@ -1323,6 +1344,8 @@ def _download_and_parse_supplement_rows(
             continue
         if text:
             parsed_file_count += 1
+            if extension == ".pdf":
+                parsed_pdf_count += 1
             candidates.append(
                 TextCandidate(
                     source_record_id=candidate.source_record_id,
@@ -1387,7 +1410,7 @@ def _download_and_parse_supplement_rows(
                     raw_file_path=raw_path.relative_to(artifact_dir).as_posix(),
                 )
             )
-    return candidates, downloaded_count, parsed_file_count, parsed_row_count
+    return candidates, downloaded_count, parsed_file_count, parsed_row_count, parsed_pdf_count, skipped_pdf_count
 
 
 def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrieved_at: str) -> EvidenceRecord:
@@ -1514,6 +1537,7 @@ def build_extracted_fact_records(
     max_supplement_discovery_records: int | None = 500,
     max_supplement_files: int = 100,
     max_supplement_bytes: int = 2_000_000,
+    max_pdf_supplement_files: int = 10,
 ) -> ExtractedFactsResult:
     retrieved_at = retrieved_at or utc_now()
     index_path = artifact_dir / "source_index.sqlite"
@@ -1544,6 +1568,9 @@ def build_extracted_fact_records(
             downloaded_supplement_file_count=0,
             parsed_supplement_file_count=0,
             parsed_supplement_row_count=0,
+            max_pdf_supplement_files=max_pdf_supplement_files,
+            parsed_pdf_supplement_file_count=0,
+            skipped_pdf_supplement_file_count=0,
         )
 
     conn = sqlite3.connect(index_path)
@@ -1582,6 +1609,8 @@ def build_extracted_fact_records(
     downloaded_supplement_file_count = 0
     parsed_supplement_file_count = 0
     parsed_supplement_row_count = 0
+    parsed_pdf_supplement_file_count = 0
+    skipped_pdf_supplement_file_count = 0
     if download_supplements:
         supplement_file_fetcher = fetch_supplement_file_fn or _fetch_bytes_url
         (
@@ -1589,6 +1618,8 @@ def build_extracted_fact_records(
             downloaded_supplement_file_count,
             parsed_supplement_file_count,
             parsed_supplement_row_count,
+            parsed_pdf_supplement_file_count,
+            skipped_pdf_supplement_file_count,
         ) = _download_and_parse_supplement_rows(
             supplement_candidates,
             artifact_dir=artifact_dir,
@@ -1596,6 +1627,7 @@ def build_extracted_fact_records(
             fetch_supplement_file_fn=supplement_file_fetcher,
             max_supplement_files=max_supplement_files,
             max_supplement_bytes=max_supplement_bytes,
+            max_pdf_supplement_files=max_pdf_supplement_files,
             gaps=gaps,
         )
         text_candidates.extend(supplement_text_candidates)
@@ -1691,5 +1723,8 @@ def build_extracted_fact_records(
         downloaded_supplement_file_count=downloaded_supplement_file_count,
         parsed_supplement_file_count=parsed_supplement_file_count,
         parsed_supplement_row_count=parsed_supplement_row_count,
+        max_pdf_supplement_files=max_pdf_supplement_files,
+        parsed_pdf_supplement_file_count=parsed_pdf_supplement_file_count,
+        skipped_pdf_supplement_file_count=skipped_pdf_supplement_file_count,
         fact_counts=fact_counts,
     )
