@@ -128,6 +128,7 @@ PUBLIC_HEALTH_QUERY_STOPWORDS = {
     "indicators",
     "open",
     "paho",
+    "ncvbdc",
     "show",
     "the",
 }
@@ -1187,6 +1188,21 @@ def _search_queries(question: str) -> list[str]:
                 "CDC dengue cases by jurisdiction county week",
                 question,
             ]
+        if any(term in q for term in ("india", "ncvbdc", "national centre for vector borne", "national center for vector borne")) and any(
+            term in q for term in ("dengue", "cases", "deaths", "surveillance")
+        ):
+            if any(term in q for term in ("last two", "two years", "recent", "latest")):
+                return [
+                    "NCVBDC India dengue last two complete years deaths",
+                    "NCVBDC India dengue deaths 2024 2025",
+                    question,
+                    "India dengue cases deaths NCVBDC",
+                ]
+            return [
+                "NCVBDC India dengue cases deaths",
+                "India national dengue cases deaths by year",
+                question,
+            ]
         if "who" in q and any(term in q for term in ("wer", "surveillance", "situation update", "dashboard", "health data", "global update", "cases", "deaths")):
             if any(term in q for term in ("dashboard", "health data", "data platform", "shiny")):
                 return [
@@ -2165,6 +2181,54 @@ def _cdc_surveillance_records(index: SourceIndex, question: str, *, limit: int) 
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _ncvbdc_surveillance_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not any(term in q for term in ("india", "ncvbdc", "national centre for vector borne", "national center for vector borne")):
+        return []
+    if not any(term in q for term in ("dengue", "surveillance", "cases", "deaths")):
+        return []
+
+    clauses = ["source = ?"]
+    params: list[object] = ["aedes_ncvbdc_dengue_surveillance"]
+    if any(term in q for term in ("last two", "two years", "recent", "latest")):
+        clauses.append("record_id LIKE ?")
+        params.append("%last_two_complete_years%")
+    elif re.search(r"\b20(?:2[1-6])\b", q):
+        years = re.findall(r"\b20(?:2[1-6])\b", q)
+        year_clauses = []
+        for year in years[:4]:
+            year_clauses.append("record_id LIKE ?")
+            params.append(f"%:{year}")
+        clauses.append("(" + " OR ".join(year_clauses) + ")")
+    else:
+        clauses.append("(record_id LIKE ? OR record_id LIKE ?)")
+        params.extend(["%:country:india:%", "%last_two_complete_years%"])
+    focus_terms = _public_health_focus_terms(question)
+    focus_terms = [term for term in focus_terms if term.lower() not in {"india"}]
+    if focus_terms:
+        term_clauses = []
+        for term in focus_terms[:4]:
+            pattern = f"%{term.lower()}%"
+            term_clauses.append("(lower(title) LIKE ? OR lower(text) LIKE ? OR lower(record_id) LIKE ?)")
+            params.extend([pattern, pattern, pattern])
+        clauses.append("(" + " OR ".join(term_clauses) + ")")
+
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT *
+            FROM records
+            WHERE {" AND ".join(clauses)}
+            ORDER BY
+              CASE WHEN record_id LIKE '%last_two_complete_years%' THEN 0 ELSE 1 END,
+              record_id DESC
+            LIMIT ?
+            """,
+            (*params, max(limit * 10, 20)),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def _resistance_marker_terms(question: str) -> list[str]:
     lower = question.lower()
     matched = []
@@ -2267,6 +2331,17 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
                 0 if "Cases_by_Jurisdiction" in record.record_id else 1,
                 0 if "Cases_by_County" in record.record_id else 1,
                 0 if "Epi_Curve" in record.record_id else 1,
+            ),
+        )
+    if any(term in q for term in ("india", "ncvbdc", "national centre for vector borne", "national center for vector borne")) and any(
+        term in q for term in ("dengue", "surveillance", "cases", "deaths")
+    ):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "aedes_ncvbdc_dengue_surveillance" else 1,
+                0 if "last_two_complete_years" in record.record_id else 1,
+                0 if record.lane == "public_health" else 1,
             ),
         )
     if _wants_extracted_facts(question):
@@ -3271,6 +3346,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "public_health":
+        for record in _ncvbdc_surveillance_records(index, plan.question, limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
         for record in _who_surveillance_records(index, plan.question, limit=limit):
             all_records.append(record)
             seen_record_ids.add(record.record_id)

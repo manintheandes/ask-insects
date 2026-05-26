@@ -1077,6 +1077,40 @@ sources:
       limitation_records:
         - limitation_text
         - raw_html_locator
+  - id: aedes_ncvbdc_dengue_surveillance
+    name: India NCVBDC dengue surveillance for Aedes aegypti public-health intelligence
+    source_type: public_health_surveillance_table
+    boundary: Official Government of India NCVBDC dengue situation HTML table, indexed at source-page, state/UT-year, national country-year, and latest-two-complete-year summary grain
+    query_plane: ncvbdc_dengue_html_table_to_sqlite_public_health_records
+    artifact_dir: artifacts/mosquito-v1/raw/ncvbdc_dengue_surveillance
+    ingest_script: scripts/ingest_ncvbdc_dengue_surveillance.py
+    default_pages:
+      - https://ncvbdc.mohfw.gov.in/index4.php?lang=1&level=0&lid=3715&linkid=431&theme=Green
+    lanes:
+      - public_health
+    provenance_required: true
+    live_fetch: opt_in
+    source_contract:
+      state_year_records:
+        - country
+        - state_or_ut
+        - year
+        - cases
+        - deaths
+        - raw_html_locator
+      country_year_records:
+        - country
+        - year
+        - cases
+        - deaths
+        - provisional_status
+        - raw_html_locator
+      recent_summary_record:
+        - latest_two_complete_years
+        - deaths_by_year
+        - total_deaths
+        - raw_html_locator
+    source_gap: This lane covers the NCVBDC national dengue cases/deaths table, not district-level India dengue rows or line-listed case/death records.
   - id: aedes_vectorbyte_traits
     name: VectorByte VecTraits Aedes aegypti trait observations
     source_type: public_trait_database_api

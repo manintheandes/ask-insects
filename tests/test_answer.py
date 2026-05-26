@@ -3745,6 +3745,39 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "public_health")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_paho_dengue_surveillance")
 
+    def test_india_dengue_death_questions_prefer_ncvbdc_recent_summary(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:surveillance:paho_dengue:regional_week_summary:2024:week50",
+                        "aedes_paho_dengue_surveillance",
+                        "Official PAHO dengue surveillance regional week summary for Aedes aegypti public-health intelligence.",
+                    ),
+                    public_health_record(
+                        "public_health:surveillance:ncvbdc_dengue:country:india:2024",
+                        "aedes_ncvbdc_dengue_surveillance",
+                        "Official NCVBDC dengue surveillance row for India, 2024. Dengue cases: 233519. Dengue deaths: 297.",
+                    ),
+                    public_health_record(
+                        "public_health:surveillance:ncvbdc_dengue:country:last_two_complete_years:2024-2025",
+                        "aedes_ncvbdc_dengue_surveillance",
+                        "Official NCVBDC India dengue surveillance summary for the two latest complete calendar years in the table, 2024-2025. Year details: 2024: 233519 cases, 297 deaths; 2025: 121824 cases, 131 deaths. Total dengue deaths: 428.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("what were dengue deaths in India over the last two years as a result of Aedes?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_ncvbdc_dengue_surveillance")
+            self.assertIn("last_two_complete_years", answer["evidence"][0]["record_id"])
+            self.assertIn("428", answer["answer"])
+
     def test_paho_dashboard_questions_prefer_dashboard_locator_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

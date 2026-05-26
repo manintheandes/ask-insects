@@ -424,6 +424,29 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_ncvbdc_dengue_surveillance_ingest_sends_source_urls(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 221}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-ncvbdc-dengue-surveillance",
+                "--hosted",
+                "--source-url",
+                "https://ncvbdc.mohfw.gov.in/index4.php?lang=1&level=0&lid=3715&linkid=431&theme=Green",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/ncvbdc-dengue-surveillance")
+        self.assertEqual(calls[0][2]["source_urls"], ["https://ncvbdc.mohfw.gov.in/index4.php?lang=1&level=0&lid=3715&linkid=431&theme=Green"])
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_who_dengue_surveillance_ingest_sends_source_urls(self):
         calls = []
 

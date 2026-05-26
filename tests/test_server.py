@@ -29,6 +29,7 @@ from askinsects.sources.literature import FullTextUnit
 from askinsects.sources.mendeley_behavior_media import MendeleyBehaviorMediaResult
 from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
 from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
+from askinsects.sources.ncvbdc_dengue_surveillance import NcvbdcDengueSurveillanceResult
 from askinsects.sources.ncbi_snp_variation import NCBISnpVariationResult
 from askinsects.sources.osf_flighttrackai_videos import OSFFlightTrackAIResult
 from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
@@ -1509,6 +1510,77 @@ class ServerTests(unittest.TestCase):
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
             receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
             self.assertEqual(receipt["source_counts"]["aedes_who_dengue_surveillance"], 1)
+
+    def test_ingest_ncvbdc_dengue_surveillance_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(sources, *, raw_dir, retrieved_at):
+                raw_path = raw_dir / "ncvbdc.html"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_text("<html>NCVBDC dengue surveillance.</html>", encoding="utf-8")
+                return NcvbdcDengueSurveillanceResult(
+                    source_id="aedes_ncvbdc_dengue_surveillance",
+                    records=[
+                        EvidenceRecord(
+                            record_id="public_health:surveillance:ncvbdc_dengue:country:last_two_complete_years:2024-2025",
+                            lane="public_health",
+                            source="aedes_ncvbdc_dengue_surveillance",
+                            title="NCVBDC India dengue deaths in the two latest complete years (2024-2025)",
+                            text="Official NCVBDC India dengue surveillance summary. 2024: 297 deaths; 2025: 131 deaths. Total dengue deaths: 428.",
+                            species="Aedes aegypti",
+                            url="https://ncvbdc.mohfw.gov.in/index4.php?lang=1&level=0&lid=3715&linkid=431&theme=Green",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="aedes_ncvbdc_dengue_surveillance",
+                                locator=f"{raw_path}#table-total-2024-2025",
+                                retrieved_at=retrieved_at,
+                                license="NCVBDC Government of India public web page; source page terms apply",
+                                source_url="https://ncvbdc.mohfw.gov.in/index4.php?lang=1&level=0&lid=3715&linkid=431&theme=Green",
+                            ),
+                            payload={"aggregation_type": "ncvbdc_dengue_country_recent_complete_years", "total_deaths": 428, "raw_html_path": raw_path.as_posix()},
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_urls=["https://ncvbdc.mohfw.gov.in/index4.php?lang=1&level=0&lid=3715&linkid=431&theme=Green"],
+                    page_count=1,
+                    table_row_count=39,
+                    state_year_record_count=213,
+                    national_year_record_count=6,
+                    recent_summary_count=1,
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/ncvbdc-dengue-surveillance",
+                {"source_urls": ["https://ncvbdc.mohfw.gov.in/index4.php?lang=1&level=0&lid=3715&linkid=431&theme=Green"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_ncvbdc_dengue_surveillance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_ncvbdc_dengue_surveillance"], 1)
+            self.assertEqual(response.payload["aedes_ncvbdc_dengue_surveillance"]["recent_summary_count"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_ncvbdc_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select payload_json from record_payloads where source='aedes_ncvbdc_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
+            self.assertNotIn(".staging", payload_rows[0]["payload_json"])
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["source_counts"]["aedes_ncvbdc_dengue_surveillance"], 1)
 
     def test_ingest_vectorbase_genomics_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

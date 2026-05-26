@@ -189,6 +189,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_cdc_dengue_surveillance.add_argument("--hosted", action="store_true")
     ingest_cdc_dengue_surveillance.add_argument("--source-url", action="append", default=[])
 
+    ingest_ncvbdc_dengue_surveillance = sub.add_parser("ingest-ncvbdc-dengue-surveillance")
+    ingest_ncvbdc_dengue_surveillance.add_argument("--hosted", action="store_true")
+    ingest_ncvbdc_dengue_surveillance.add_argument("--source-url", action="append", default=[])
+
     ingest_vectorbase_genomics = sub.add_parser("ingest-vectorbase-genomics")
     ingest_vectorbase_genomics.add_argument("--hosted", action="store_true")
     ingest_vectorbase_genomics.add_argument("--gff-url")
@@ -680,6 +684,23 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/cdc-dengue-surveillance",
+            {"source_urls": args.source_url},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-ncvbdc-dengue-surveillance":
+        if not args.hosted:
+            from scripts.ingest_ncvbdc_dengue_surveillance import ingest_ncvbdc_dengue_surveillance
+
+            payload = ingest_ncvbdc_dengue_surveillance(
+                artifact_dir=artifact_dir,
+                source_urls=args.source_url,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/ncvbdc-dengue-surveillance",
             {"source_urls": args.source_url},
             timeout=3600,
         )

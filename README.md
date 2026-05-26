@@ -449,6 +449,18 @@ python3 -m askinsects search public_health "CDC ArboNET county dengue cases"
 
 The lane uses source id `aedes_cdc_dengue_surveillance`. It writes raw CDC current-year and historic dengue page HTML, CDC WCMS visualization JSON configs, and linked CDC CSV datasets under `raw/cdc_dengue_surveillance/`. It parses one `public_health` record per page, one record per visualization config, one record per CSV row with dimensions and measures, and one record per ArboNET limitation paragraph. This is human dengue surveillance evidence relevant to Aedes aegypti vector intelligence, not mosquito occurrence evidence.
 
+## India NCVBDC Dengue Surveillance Source Lane
+
+India NCVBDC dengue surveillance is indexed as official `Aedes aegypti` public-health intelligence at state/UT-year and national-year grain:
+
+```bash
+python3 -m askinsects ingest-ncvbdc-dengue-surveillance
+python3 -m askinsects ask "what were dengue deaths in India over the last two years as a result of Aedes?" --json
+python3 -m askinsects search public_health "NCVBDC India dengue deaths 2024 2025"
+```
+
+The lane uses source id `aedes_ncvbdc_dengue_surveillance`. It writes the raw Government of India NCVBDC dengue situation HTML under `raw/ncvbdc_dengue_surveillance/`. It parses one `public_health` record per state/UT-year row, one per national country-year total, one source-page record, and one latest-two-complete-year summary record. Payloads preserve country, state or union territory, year, cases, deaths, provisional status, and raw HTML locators. This is human dengue surveillance evidence relevant to Aedes aegypti vector intelligence, not mosquito occurrence evidence.
+
 ## Pathogen Taxonomy Source Lane
 
 NCBI Taxonomy anchors core `Aedes aegypti` arbovirus names to stable pathogen identities for vector-competence and public-health questions:
