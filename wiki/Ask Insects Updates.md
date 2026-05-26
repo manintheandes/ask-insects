@@ -18,8 +18,8 @@ Latest Ask Insects source-plane update: 2026-05-26.
 ## 2026-05-26
 
 ### Hosted Source Plane
-- Hosted Ask Insects health reports 1,423,200 source records.
-- Current hosted lanes include 767,732 genome-feature records, 106,917 behavior records, 102,915 transcript records, 100,736 observation records, 100,018 neurobiology records, 56,960 protein records, 39,045 gene records, 29,566 public-health records, 28,365 resistance records, 26,167 media records, 12,802 literature records, 11,344 vector-competence records, 10,898 ecology records, 4,972 trait records, 3,561 DNA-barcode records, 422 expression records, 110 dataset records, and 2 patent-source-status records.
+- Hosted Ask Insects health reports 1,423,241 source records.
+- Current hosted lanes include 767,732 genome-feature records, 106,917 behavior records, 102,915 transcript records, 100,736 observation records, 100,018 neurobiology records, 56,960 protein records, 39,045 gene records, 29,566 public-health records, 28,365 resistance records, 26,208 media records, 12,802 literature records, 11,344 vector-competence records, 10,898 ecology records, 4,972 trait records, 3,561 DNA-barcode records, 422 expression records, 110 dataset records, and 2 patent-source-status records.
 
 ### New And Expanded Sources
 - Expanded VectorBase/VEuPathDB to include codon usage, identifier events, current-ID resolution, NCBI LinkOut, OrthoMCL pair records, and orthogroup membership.
@@ -29,7 +29,8 @@ Latest Ask Insects source-plane update: 2026-05-26.
 - Added or expanded expression metadata, UniProt proteins, VectorByte traits and abundance, image atoms, video atoms, VectorNet surveillance, CDC dengue surveillance, WHO dengue surveillance, resistance-table rows, and extracted-fact records.
 - Shipped the safe incremental extracted-facts refresh path so a one-paper refresh no longer shrinks the full Aedes extracted-facts lane.
 - Shipped the video-atom cleanup pass that filters non-video data files, keeps queryable video gaps, and preserves verified mirrored video artifacts.
-- Hosted video atoms now include 46,252 queryable records, including 84 video assets, 21 verified video assets, 116 keyframes, 21 thumbnails, 21 preview clips, 21 frame manifests, and 45,574 motion rows.
+- Hosted video atoms now include 46,293 queryable records, including 125 video assets, 21 verified video assets, 116 keyframes, 21 thumbnails, 21 preview clips, 21 frame manifests, and 45,574 motion rows.
+- Shipped safe repository-scoped video refreshes, proven with a Dryad-only hosted pass that accepted 29 candidates from 71 raw Dryad discovery candidates without shrinking the full video lane.
 - Hosted extracted facts now include 7,653 queryable records, with promoted vector-competence and resistance table rows still available through their dedicated answer lanes.
 
 ### Documentation

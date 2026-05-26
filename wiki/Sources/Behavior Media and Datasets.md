@@ -7,8 +7,8 @@ This page covers Aedes aegypti behavior records, public video manifests, media l
 What it contains:
 
 - 106,917 hosted behavior records
-- 46,252 derived video atom records
-- 84 video asset records
+- 46,293 derived video atom records
+- 125 video asset records
 - 21 verified mirrored video assets with inspectable artifacts
 - 116 keyframe records, 21 thumbnail records, 21 preview-clip records, and 21 frame-manifest records
 - 45,574 motion rows from source tables
