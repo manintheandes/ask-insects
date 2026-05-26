@@ -209,6 +209,24 @@ def _safe_json(raw: object) -> dict[str, object]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _raw_file_values(payload: dict[str, object]) -> tuple[object, ...]:
+    raw_file = payload.get("raw_file")
+    if not isinstance(raw_file, dict):
+        return ()
+    values: list[object] = []
+    for key in ("path", "filename", "name", "download_url", "url"):
+        value = raw_file.get(key)
+        if value:
+            values.append(value)
+    attrs = raw_file.get("attributes")
+    if isinstance(attrs, dict):
+        for key in ("path", "filename", "name", "download_url", "url"):
+            value = attrs.get(key)
+            if value:
+                values.append(value)
+    return tuple(values)
+
+
 def _license_is_unclear(license_value: object) -> bool:
     text = str(license_value or "").strip().lower()
     return not text or any(marker in text for marker in UNCLEAR_LICENSE_MARKERS)
@@ -438,6 +456,7 @@ def _candidate_rows(index: SourceIndex) -> list[VideoCandidate]:
             payload.get("filename"),
             payload.get("name"),
             payload.get("materialized_path"),
+            *_raw_file_values(payload),
         ):
             continue
         provenance = _safe_json(row.get("provenance_json"))
@@ -1247,6 +1266,7 @@ def _archive_extension(candidate: VideoCandidate) -> str:
         candidate.payload.get("materialized_path"),
         candidate.media_url,
         candidate.url,
+        *_raw_file_values(candidate.payload),
     ):
         parsed = urlparse(str(value or ""))
         path = parsed.path.lower()
@@ -2506,6 +2526,7 @@ def build_video_atom_records(
             candidate.payload.get("filename"),
             candidate.payload.get("name"),
             candidate.payload.get("materialized_path"),
+            *_raw_file_values(candidate.payload),
         ):
             archive_records, asset_entries = _mirror_archive_candidate(
                 candidate,

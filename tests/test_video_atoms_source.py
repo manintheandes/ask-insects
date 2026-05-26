@@ -520,6 +520,61 @@ class VideoAtomsSourceTests(unittest.TestCase):
             self.assertEqual(rows[0].media_url, asset.media_url)
             self.assertIn("raw/video_atoms/archive_tables/dryad:file:video-archive/tracks.csv#row/1", rows[0].provenance.locator)
 
+    def test_archive_extension_uses_nested_dryad_file_path(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:file:nested-video-archive",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti behavior video archive",
+                        text="ZIP archive containing Aedes aegypti assay videos.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://datadryad.org/api/v2/files/10/download",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad/file.json#files/1",
+                            retrieved_at=RETRIEVED_AT,
+                            license="CC0",
+                        ),
+                        payload={
+                            "raw_file": {"path": "host_seeking_videos.zip"},
+                            "download_url": "https://datadryad.org/api/v2/files/10/download",
+                        },
+                    )
+                ]
+            )
+            archive_path = Path(tmpdir) / "host_seeking_videos.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("clip.mp4", b"fake mp4 bytes")
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                fetch_video_bytes_fn=lambda url, max_bytes: archive_path.read_bytes(),
+                probe_video_file_fn=lambda path: {
+                    "duration_seconds": 1.2,
+                    "fps": 30.0,
+                    "width": 640,
+                    "height": 480,
+                    "codec": "h264",
+                },
+            )
+
+        reasons = {gap["reason"] for gap in result.gaps}
+        self.assertNotIn("video_archive_unsupported_format", reasons)
+        manifest = next(record for record in result.records if record.payload.get("atom_type") == "video_archive_manifest")
+        self.assertTrue(manifest.payload["raw_archive_path"].endswith(".zip"))
+        asset = next(record for record in result.records if record.payload.get("atom_type") == "video_asset")
+        self.assertEqual(asset.payload["verification_status"], "verified")
+        self.assertEqual(asset.payload["member_name"], "clip.mp4")
+
     def test_archive_video_candidates_expand_bounded_tar_gz_members(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -645,6 +700,41 @@ class VideoAtomsSourceTests(unittest.TestCase):
                             "filename": "m_air.npy",
                             "download_url": "https://datadryad.org/api/v2/files/1726869/download",
                             "size": 816128,
+                        },
+                    )
+                ]
+            )
+
+            result = build_video_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        self.assertEqual(result.video_asset_count, 0)
+        self.assertEqual(result.records, [])
+
+    def test_ignores_nested_data_files_from_video_titled_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:file:nested-data-array",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti visual cue tracking dataset",
+                        text="Visual cue tracking assay file from a mosquito experiment.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://datadryad.org/api/v2/files/1726869/download",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/dataset.json#files/1",
+                            retrieved_at=RETRIEVED_AT,
+                            license="CC0",
+                        ),
+                        payload={
+                            "raw_file": {"path": "m_air.npy"},
+                            "download_url": "https://datadryad.org/api/v2/files/1726869/download",
                         },
                     )
                 ]
