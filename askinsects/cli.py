@@ -303,6 +303,7 @@ def main(argv: list[str] | None = None) -> int:
     ingest_extracted_facts.add_argument("--discover-supplements", action="store_true")
     ingest_extracted_facts.add_argument("--download-supplements", action="store_true")
     ingest_extracted_facts.add_argument("--max-supplement-discovery-records", type=int, default=500)
+    ingest_extracted_facts.add_argument("--max-repository-supplement-discovery-records", type=int, default=100)
     ingest_extracted_facts.add_argument("--max-supplement-files", type=int, default=100)
     ingest_extracted_facts.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
     ingest_extracted_facts.add_argument("--max-pdf-supplement-files", type=int, default=10)
@@ -1074,6 +1075,7 @@ def main(argv: list[str] | None = None) -> int:
                 discover_supplements=args.discover_supplements,
                 download_supplements=args.download_supplements,
                 max_supplement_discovery_records=args.max_supplement_discovery_records,
+                max_repository_supplement_discovery_records=args.max_repository_supplement_discovery_records,
                 max_supplement_files=args.max_supplement_files,
                 max_supplement_bytes=args.max_supplement_bytes,
                 max_pdf_supplement_files=args.max_pdf_supplement_files,
@@ -1088,6 +1090,7 @@ def main(argv: list[str] | None = None) -> int:
                 "discover_supplements": args.discover_supplements,
                 "download_supplements": args.download_supplements,
                 "max_supplement_discovery_records": args.max_supplement_discovery_records,
+                "max_repository_supplement_discovery_records": args.max_repository_supplement_discovery_records,
                 "max_supplement_files": args.max_supplement_files,
                 "max_supplement_bytes": args.max_supplement_bytes,
                 "max_pdf_supplement_files": args.max_pdf_supplement_files,

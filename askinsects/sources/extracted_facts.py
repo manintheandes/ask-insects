@@ -81,6 +81,7 @@ class ExtractedFactsResult:
     selected_record_text_count: int
     supplement_manifest_count: int
     supplement_discovery_record_count: int
+    max_repository_supplement_discovery_records: int | None
     discovered_supplement_count: int
     downloaded_supplement_file_count: int
     parsed_supplement_file_count: int
@@ -839,10 +840,13 @@ def _supplement_candidates_with_discovery(
     discover_supplements: bool,
     fetch_supplement_metadata_fn: Callable[[dict[str, object]], list[dict[str, object]]] | None,
     max_supplement_discovery_records: int | None,
+    max_repository_supplement_discovery_records: int | None,
     gaps: list[dict[str, object]],
 ) -> tuple[list[SupplementCandidate], int, int]:
     if max_supplement_discovery_records is not None and max_supplement_discovery_records < 1:
         raise ValueError("max_supplement_discovery_records must be positive")
+    if max_repository_supplement_discovery_records is not None and max_repository_supplement_discovery_records < 0:
+        raise ValueError("max_repository_supplement_discovery_records must not be negative")
     candidates: list[SupplementCandidate] = []
     seen: set[tuple[str, str, str]] = set()
     discovered_count = 0
@@ -882,14 +886,19 @@ def _supplement_candidates_with_discovery(
                 for row in discovery_rows[max_supplement_discovery_records:]
                 if _is_repository_supplement_row(row) and str(row["record_id"]) not in bounded_record_ids
             ]
+            repository_rows_before_cap = len(repository_rows)
+            if max_repository_supplement_discovery_records is not None:
+                repository_rows = repository_rows[:max_repository_supplement_discovery_records]
             gaps.append(
                 {
                     "source": EXTRACTED_FACTS_SOURCE_ID,
                     "reason": "supplement_discovery_record_limit_applied",
                     "max_supplement_discovery_records": max_supplement_discovery_records,
+                    "max_repository_supplement_discovery_records": max_repository_supplement_discovery_records,
                     "source_record_count": len(literature_rows),
                     "discoverable_source_record_count": len(discovery_rows),
                     "repository_backed_records_added_after_limit": len(repository_rows),
+                    "repository_backed_records_available_after_limit": repository_rows_before_cap,
                 }
             )
             discovery_rows = bounded_rows + repository_rows
@@ -1535,6 +1544,7 @@ def build_extracted_fact_records(
     fetch_supplement_metadata_fn: Callable[[dict[str, object]], list[dict[str, object]]] | None = None,
     fetch_supplement_file_fn: Callable[[str, int], bytes] | None = None,
     max_supplement_discovery_records: int | None = 500,
+    max_repository_supplement_discovery_records: int | None = 100,
     max_supplement_files: int = 100,
     max_supplement_bytes: int = 2_000_000,
     max_pdf_supplement_files: int = 10,
@@ -1564,6 +1574,7 @@ def build_extracted_fact_records(
             truncated_fulltext_unit_count=0,
             selected_record_text_count=0,
             supplement_discovery_record_count=0,
+            max_repository_supplement_discovery_records=max_repository_supplement_discovery_records,
             discovered_supplement_count=0,
             downloaded_supplement_file_count=0,
             parsed_supplement_file_count=0,
@@ -1602,6 +1613,7 @@ def build_extracted_fact_records(
         discover_supplements=discover_supplements,
         fetch_supplement_metadata_fn=fetch_supplement_metadata_fn,
         max_supplement_discovery_records=max_supplement_discovery_records,
+        max_repository_supplement_discovery_records=max_repository_supplement_discovery_records,
         gaps=gaps,
     )
     for index, candidate in enumerate(supplement_candidates):
@@ -1719,6 +1731,7 @@ def build_extracted_fact_records(
         selected_record_text_count=selected_record_text_count,
         supplement_manifest_count=len(supplement_candidates),
         supplement_discovery_record_count=supplement_discovery_record_count,
+        max_repository_supplement_discovery_records=max_repository_supplement_discovery_records,
         discovered_supplement_count=discovered_supplement_count,
         downloaded_supplement_file_count=downloaded_supplement_file_count,
         parsed_supplement_file_count=parsed_supplement_file_count,

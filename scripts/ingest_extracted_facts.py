@@ -59,6 +59,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "selected_record_text_count": result.selected_record_text_count,
         "supplement_manifest_count": result.supplement_manifest_count,
         "supplement_discovery_record_count": result.supplement_discovery_record_count,
+        "max_repository_supplement_discovery_records": result.max_repository_supplement_discovery_records,
         "discovered_supplement_count": result.discovered_supplement_count,
         "downloaded_supplement_file_count": result.downloaded_supplement_file_count,
         "parsed_supplement_file_count": result.parsed_supplement_file_count,
@@ -106,6 +107,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "selected_record_text_count": result.selected_record_text_count,
         "supplement_manifest_count": result.supplement_manifest_count,
         "supplement_discovery_record_count": result.supplement_discovery_record_count,
+        "max_repository_supplement_discovery_records": result.max_repository_supplement_discovery_records,
         "discovered_supplement_count": result.discovered_supplement_count,
         "downloaded_supplement_file_count": result.downloaded_supplement_file_count,
         "parsed_supplement_file_count": result.parsed_supplement_file_count,
@@ -131,6 +133,7 @@ def ingest_extracted_facts(
     fetch_supplement_metadata_fn=None,
     fetch_supplement_file_fn=None,
     max_supplement_discovery_records: int | None = 500,
+    max_repository_supplement_discovery_records: int | None = 100,
     max_supplement_files: int = 100,
     max_supplement_bytes: int = 2_000_000,
     max_pdf_supplement_files: int = 10,
@@ -144,6 +147,7 @@ def ingest_extracted_facts(
         fetch_supplement_metadata_fn=fetch_supplement_metadata_fn,
         fetch_supplement_file_fn=fetch_supplement_file_fn,
         max_supplement_discovery_records=max_supplement_discovery_records,
+        max_repository_supplement_discovery_records=max_repository_supplement_discovery_records,
         max_supplement_files=max_supplement_files,
         max_supplement_bytes=max_supplement_bytes,
         max_pdf_supplement_files=max_pdf_supplement_files,
@@ -162,6 +166,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--discover-supplements", action="store_true")
     parser.add_argument("--download-supplements", action="store_true")
     parser.add_argument("--max-supplement-discovery-records", type=int, default=500)
+    parser.add_argument("--max-repository-supplement-discovery-records", type=int, default=100)
     parser.add_argument("--max-supplement-files", type=int, default=100)
     parser.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
     parser.add_argument("--max-pdf-supplement-files", type=int, default=10)
@@ -173,6 +178,7 @@ def main(argv: list[str] | None = None) -> int:
         discover_supplements=args.discover_supplements,
         download_supplements=args.download_supplements,
         max_supplement_discovery_records=args.max_supplement_discovery_records,
+        max_repository_supplement_discovery_records=args.max_repository_supplement_discovery_records,
         max_supplement_files=args.max_supplement_files,
         max_supplement_bytes=args.max_supplement_bytes,
         max_pdf_supplement_files=args.max_pdf_supplement_files,

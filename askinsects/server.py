@@ -2652,6 +2652,14 @@ def ingest_extracted_facts_staged(
     )
     if max_supplement_discovery_records < 1:
         raise ValueError("max_supplement_discovery_records must be positive")
+    max_repository_supplement_discovery_records_value = payload.get("max_repository_supplement_discovery_records")
+    max_repository_supplement_discovery_records = (
+        100
+        if max_repository_supplement_discovery_records_value is None
+        else int(max_repository_supplement_discovery_records_value)
+    )
+    if max_repository_supplement_discovery_records < 0:
+        raise ValueError("max_repository_supplement_discovery_records must not be negative")
     max_supplement_files_value = payload.get("max_supplement_files")
     max_supplement_files = 100 if max_supplement_files_value is None else int(max_supplement_files_value)
     if max_supplement_files < 1:
@@ -2680,6 +2688,7 @@ def ingest_extracted_facts_staged(
             discover_supplements=discover_supplements,
             download_supplements=download_supplements,
             max_supplement_discovery_records=max_supplement_discovery_records,
+            max_repository_supplement_discovery_records=max_repository_supplement_discovery_records,
             max_supplement_files=max_supplement_files,
             max_supplement_bytes=max_supplement_bytes,
             max_pdf_supplement_files=max_pdf_supplement_files,

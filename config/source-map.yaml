@@ -913,6 +913,7 @@ sources:
       - r
       - pdf
     bounds:
+      max_repository_supplement_discovery_records: configurable, default 100
       max_pdf_supplement_files: configurable, default 10
     lanes:
       - literature
