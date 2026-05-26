@@ -537,8 +537,6 @@ def _figshare_supplements(request: dict[str, object]) -> list[dict[str, object]]
         name = str(file_payload.get("name") or "Figshare supplementary file")
         extension = Path(urlparse(name).path).suffix.lower()
         mimetype = str(file_payload.get("mimetype") or "")
-        if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS and "wordprocessingml.document" not in mimetype:
-            continue
         supplements.append(
             {
                 "title": name,
@@ -587,8 +585,6 @@ def _zenodo_supplements(request: dict[str, object]) -> list[dict[str, object]]:
         name = str(file_payload.get("key") or Path(urlparse(url).path).name or "Zenodo supplementary file")
         extension = Path(name).suffix.lower() or Path(urlparse(url).path).suffix.lower()
         mimetype = str(file_payload.get("type") or file_payload.get("mimetype") or "")
-        if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS and "wordprocessingml.document" not in mimetype:
-            continue
         supplements.append(
             {
                 "title": name,

@@ -266,11 +266,12 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                 }
             )
 
-        self.assertEqual(len(supplements), 1)
+        self.assertEqual(len(supplements), 2)
         self.assertEqual(supplements[0]["source"], "zenodo")
         self.assertEqual(supplements[0]["file_type"], "csv")
         self.assertEqual(supplements[0]["license"], "cc-by-4.0")
         self.assertEqual(supplements[0]["checksum"], "md5:abc123")
+        self.assertEqual(supplements[1]["file_type"], "pdf")
 
     def test_build_extracted_fact_records_bounds_supplement_discovery_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
