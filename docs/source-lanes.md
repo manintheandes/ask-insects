@@ -66,8 +66,11 @@ Trait records preserve individual measured phenotype or life-history rows, espec
 Sources:
 
 - `aedes_vectorbyte_traits`: VectorByte/VecTraits public search and dataset JSON rows where source fields identify `Aedes aegypti`, parsed into `traits` records with trait value, unit, temperature, stage, sex, habitat, location, citation, DOI, and raw JSON provenance.
+- `aedes_vectorbyte_abundance`: VectorByte/VecDyn public provider metadata and paginated sample JSON rows where source metadata or row fields identify `Aedes aegypti`, parsed into dataset-level `ecology` records and row-level `observations` records with sample value, unit, date/time, sampling method, stage, sex, coordinates, location, citation, DOI, and raw JSON provenance.
 
 VectorByte trait rows cite saved VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte_traits/`, with locators such as `vectraits_dataset_474.json#results/89092`. Trait questions mentioning VectorByte, VecTraits, fecundity, longevity, development time, body size, thermal response, temperature traits, or transmission potential prefer this lane before adjacent behavior, ecology, vector-competence, or literature records.
+
+VectorByte abundance rows cite saved VecDyn provider metadata and `vecdyncsv` page JSON under `raw/vectorbyte_abundance/`, with locators such as `vecdyn_dataset_27006_page_1.json#results/p1-r0-...`. Abundance, VecDyn, trap-count, mosquito-count, and sample-count questions prefer this lane before adjacent occurrence-ecology summaries.
 
 ## Hosted Boundary
 

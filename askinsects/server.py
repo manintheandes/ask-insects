@@ -2808,6 +2808,31 @@ def ingest_vectorbyte_traits_hosted(
     return response
 
 
+def ingest_vectorbyte_abundance_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_vectorbyte_abundance import ingest_vectorbyte_abundance
+
+    query = str(payload.get("query") or "Aedes aegypti")
+    dataset_limit = int(payload.get("dataset_limit", 5))
+    row_limit = int(payload.get("row_limit", 5000))
+    search_page_limit = int(payload.get("search_page_limit", 3))
+    dataset_page_limit = int(payload.get("dataset_page_limit", 100))
+    response = ingest_vectorbyte_abundance(
+        artifact_dir=artifact_dir,
+        query=query,
+        dataset_limit=dataset_limit,
+        row_limit=row_limit,
+        search_page_limit=search_page_limit,
+        dataset_page_limit=dataset_page_limit,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_aedes_deep_sources_hosted(
     payload: dict[str, object],
     *,
@@ -3066,6 +3091,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/vectorbyte-traits":
             result = ingest_vectorbyte_traits_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/vectorbyte-abundance":
+            result = ingest_vectorbyte_abundance_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/aedes-deep-sources":

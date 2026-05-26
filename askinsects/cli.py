@@ -223,6 +223,14 @@ def main(argv: list[str] | None = None) -> int:
     ingest_vectorbyte_traits.add_argument("--row-limit", type=int, default=5000)
     ingest_vectorbyte_traits.add_argument("--search-limit", type=int, default=50)
 
+    ingest_vectorbyte_abundance = sub.add_parser("ingest-vectorbyte-abundance")
+    ingest_vectorbyte_abundance.add_argument("--hosted", action="store_true")
+    ingest_vectorbyte_abundance.add_argument("--query", default="Aedes aegypti")
+    ingest_vectorbyte_abundance.add_argument("--dataset-limit", type=int, default=5)
+    ingest_vectorbyte_abundance.add_argument("--row-limit", type=int, default=5000)
+    ingest_vectorbyte_abundance.add_argument("--search-page-limit", type=int, default=3)
+    ingest_vectorbyte_abundance.add_argument("--dataset-page-limit", type=int, default=100)
+
     ingest_mosquito_alert = sub.add_parser("ingest-mosquito-alert")
     ingest_mosquito_alert.add_argument("--hosted", action="store_true")
     ingest_mosquito_alert.add_argument("--occurrence-limit", type=int, default=1000)
@@ -765,6 +773,27 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/vectorbyte-traits",
+            request_payload,
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-vectorbyte-abundance":
+        request_payload = {
+            "query": args.query,
+            "dataset_limit": args.dataset_limit,
+            "row_limit": args.row_limit,
+            "search_page_limit": args.search_page_limit,
+            "dataset_page_limit": args.dataset_page_limit,
+        }
+        if not args.hosted:
+            from scripts.ingest_vectorbyte_abundance import ingest_vectorbyte_abundance
+
+            payload = ingest_vectorbyte_abundance(artifact_dir=artifact_dir, **request_payload)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/vectorbyte-abundance",
             request_payload,
             timeout=3600,
         )

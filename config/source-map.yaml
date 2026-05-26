@@ -1097,6 +1097,54 @@ sources:
         - citation
         - doi
         - raw_json_locator
+  - id: aedes_vectorbyte_abundance
+    name: VectorByte VecDyn Aedes aegypti abundance observations
+    source_type: public_abundance_database_api
+    boundary: VectorByte/VecDyn public abundance metadata and paginated sample rows for datasets whose source metadata or row fields identify Aedes aegypti, indexed at dataset-summary grain and row-level abundance sample grain with sample value, unit, date, location, coordinates, sampling method, stage, sex, DOI, citation, and raw JSON provenance
+    query_plane: vectorbyte_vecdyn_provider_and_csv_json_to_sqlite_abundance_records
+    api_base: https://vectorbyte.crc.nd.edu/portal/api/vecdynbyprovider
+    dataset_api_base: https://vectorbyte.crc.nd.edu/portal/api/vecdyncsv
+    artifact_dir: artifacts/mosquito-v1/raw/vectorbyte_abundance
+    ingest_script: scripts/ingest_vectorbyte_abundance.py
+    lanes:
+      - observations
+      - ecology
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      dataset_records:
+        - dataset_id
+        - title
+        - species_names
+        - years
+        - collection_methods
+        - collections
+        - row_count
+        - citation
+        - doi
+        - raw_json_locator
+      abundance_sample_records:
+        - dataset_id
+        - row_id
+        - sample_value
+        - sample_unit
+        - sample_start_date
+        - sample_stage
+        - sample_sex
+        - sampling_method
+        - latitude
+        - longitude
+        - location_description
+        - citation
+        - doi
+        - raw_json_locator
+      structured_gaps:
+        - vectorbyte_abundance_search_failed
+        - vectorbyte_abundance_no_aedes_datasets
+        - vectorbyte_abundance_dataset_page_fetch_failed
+        - vectorbyte_abundance_no_aedes_rows
+        - vectorbyte_abundance_row_limit_applied
+        - vectorbyte_abundance_dataset_page_limit_applied
   - id: aedes_taxonomy_authorities
     name: Aedes aegypti taxonomy authority pages
     source_type: public_web_and_pdf_authority_pages

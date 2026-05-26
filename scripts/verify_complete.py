@@ -139,6 +139,7 @@ REQUIRED_FILES = (
     "askinsects/sources/uniprot_proteins.py",
     "askinsects/sources/wolbachia_interventions.py",
     "askinsects/sources/vectorbyte_traits.py",
+    "askinsects/sources/vectorbyte_abundance.py",
     "askinsects/sources/video_atoms.py",
     "askinsects/sources/image_atoms.py",
     "askinsects/sources/aedes_deep_sources.py",
@@ -186,6 +187,7 @@ REQUIRED_FILES = (
     "scripts/ingest_uniprot_proteins.py",
     "scripts/ingest_wolbachia_interventions.py",
     "scripts/ingest_vectorbyte_traits.py",
+    "scripts/ingest_vectorbyte_abundance.py",
     "scripts/ingest_video_atoms.py",
     "scripts/ingest_image_atoms.py",
     "scripts/ingest_aedes_deep_sources.py",
@@ -276,6 +278,8 @@ REQUIRED_FILES = (
     "tests/test_wolbachia_interventions_source.py",
     "tests/test_vectorbyte_traits_source.py",
     "tests/test_ingest_vectorbyte_traits.py",
+    "tests/test_vectorbyte_abundance_source.py",
+    "tests/test_ingest_vectorbyte_abundance.py",
     "tests/test_ingest_wave1_sources.py",
     "tests/test_video_atoms_source.py",
     "tests/test_ingest_video_atoms.py",
@@ -905,6 +909,15 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing VectorByte traits term: {term}")
+    for term in (
+        "aedes_vectorbyte_abundance",
+        "scripts/ingest_vectorbyte_abundance.py",
+        "vectorbyte_vecdyn_provider_and_csv_json_to_sqlite_abundance_records",
+        "abundance_sample_records",
+        "vectorbyte_abundance_dataset_page_limit_applied",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing VectorByte abundance term: {term}")
     for term in (
         "aedes_taxonomy_authorities",
         "aedes_worldclim_climate",

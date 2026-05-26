@@ -347,6 +347,30 @@ def trait_record(record_id):
     )
 
 
+def vectorbyte_abundance_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="observations",
+        source="aedes_vectorbyte_abundance",
+        title="VectorByte VecDyn abundance sample 27006 p1-r0",
+        text=(
+            "VectorByte VecDyn Aedes aegypti abundance sample from dataset 27006. "
+            "Sample value: 1.0 count. Sample date: 2023-06-20. Sampling method: prokopak aspirator. "
+            "Life stage: adult. Sex: female. Coordinates: -4.013491376, -73.43223028. "
+            "Dataset title: Changing dynamics of Aedes aegypti invasion and vector-borne disease risk for rural communities in the Peruvian Amazon."
+        ),
+        species="Aedes aegypti",
+        url="https://doi.org/10.1101/2024.09.04.611168",
+        media_url=None,
+        provenance=Provenance(
+            source_id="aedes_vectorbyte_abundance",
+            locator="raw/vectorbyte_abundance/vecdyn_dataset_27006_page_1.json#results/p1-r0",
+            retrieved_at="2026-05-26T00:00:00Z",
+            license="VectorByte/VecDyn public data; source terms apply",
+        ),
+    )
+
+
 def gbif_observation_record(record_id, country):
     return EvidenceRecord(
         record_id=record_id,
@@ -633,6 +657,26 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "traits")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_vectorbyte_traits")
             self.assertEqual(answer["evidence"][0]["lane"], "traits")
+
+    def test_vectorbyte_abundance_questions_prefer_vecdyn_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    vectorbyte_abundance_record("vectorbyte:abundance:27006:p1-r0"),
+                    ecology_record("occurrence_ecology:country:Brazil", "aedes_occurrence_ecology"),
+                    trait_record("vectorbyte:trait:474:89092"),
+                ]
+            )
+
+            answer = answer_question("show VectorByte VecDyn Aedes aegypti abundance trap counts in the Peruvian Amazon", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "ecology")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_vectorbyte_abundance")
+            self.assertEqual(answer["evidence"][0]["lane"], "observations")
 
     def test_crossref_literature_audit_questions_prefer_crossref_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

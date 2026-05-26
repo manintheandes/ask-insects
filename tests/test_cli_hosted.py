@@ -612,6 +612,46 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_vectorbyte_abundance_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 42}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-vectorbyte-abundance",
+                "--hosted",
+                "--query",
+                "Aedes aegypti",
+                "--dataset-limit",
+                "2",
+                "--row-limit",
+                "250",
+                "--search-page-limit",
+                "1",
+                "--dataset-page-limit",
+                "10",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/vectorbyte-abundance")
+        self.assertEqual(
+            calls[0][2],
+            {
+                "query": "Aedes aegypti",
+                "dataset_limit": 2,
+                "row_limit": 250,
+                "search_page_limit": 1,
+                "dataset_page_limit": 10,
+            },
+        )
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_mosquito_alert_ingest_sends_options(self):
         calls = []
 

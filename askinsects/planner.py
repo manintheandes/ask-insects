@@ -126,6 +126,8 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "expression", ("expression", "transcripts", "genes", "proteins", "literature"), question)
+    if any(term in q for term in ("vecdyn", "abundance", "trap count", "trap counts", "sample count", "sample counts", "mosquito count", "mosquito counts")):
+        return QueryPlan(question, "ecology", ("observations", "ecology", "literature", "taxonomy"), question)
     if any(
         term in q
         for term in (
@@ -380,6 +382,14 @@ def plan_question(question: str) -> QueryPlan:
     if any(
         term in q
         for term in (
+            "vecdyn",
+            "abundance",
+            "trap count",
+            "trap counts",
+            "sample count",
+            "sample counts",
+            "mosquito count",
+            "mosquito counts",
             "larval habitat",
             "breeding site",
             "ecology",

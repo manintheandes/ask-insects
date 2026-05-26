@@ -172,6 +172,18 @@ python3 -m askinsects search traits "fecundity temperature"
 
 This writes VBD Hub search JSON and VecTraits dataset JSON under `raw/vectorbyte_traits/`, indexes one `traits` record per Aedes aegypti source row, and preserves dataset ID, row ID, trait name, value, unit, temperature, stage, sex, habitat, lab/field context, location, citation, DOI, and raw JSON locators.
 
+## VectorByte Abundance Source Lane
+
+`aedes_vectorbyte_abundance` is the VectorByte/VecDyn abundance-observation lane for `Aedes aegypti`:
+
+```bash
+python3 -m askinsects ingest-vectorbyte-abundance --dataset-limit 5 --row-limit 5000
+python3 -m askinsects ask "show VectorByte VecDyn Aedes aegypti abundance trap counts" --json
+python3 -m askinsects search observations "VecDyn abundance"
+```
+
+This writes VecDyn provider metadata JSON and paginated sample JSON under `raw/vectorbyte_abundance/`, indexes one `ecology` record per Aedes-relevant VecDyn dataset plus one `observations` record per Aedes aegypti abundance sample row, and preserves sample value, unit, date, time, stage, sex, sampling method, coordinates, location, DOI, citation, dataset ID, and raw JSON locators. Large VecDyn datasets remain bounded by explicit dataset, search-page, dataset-page, and row limits; skipped frontier rows become structured gaps.
+
 ## Aedes Deep Source Expansion Lane
 
 `ingest-aedes-deep-sources` installs five bounded Aedes-specific source expansions at once:
@@ -616,6 +628,7 @@ python3 -m askinsects ingest-expression-omics --hosted --geo-limit 120 --sra-lim
 python3 -m askinsects ingest-uniprot-proteins --hosted --protein-limit 250 --proteome-limit 10
 python3 -m askinsects ingest-wolbachia-interventions --hosted
 python3 -m askinsects ingest-vectorbyte-traits --hosted --dataset-limit 20 --row-limit 5000
+python3 -m askinsects ingest-vectorbyte-abundance --hosted --dataset-limit 5 --row-limit 5000
 python3 -m askinsects ingest-pathogen-taxonomy --hosted
 python3 -m askinsects ingest-vector-competence-assays --hosted
 python3 -m askinsects ingest-extracted-facts --hosted

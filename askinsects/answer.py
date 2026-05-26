@@ -27,6 +27,7 @@ from .sources.observation_climate import OBSERVATION_CLIMATE_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
 from .sources.resistance_table_rows import RESISTANCE_TABLE_ROW_SOURCE_ID
+from .sources.vectorbyte_abundance import VECTORBYTE_ABUNDANCE_SOURCE_ID
 from .sources.who_malaria_threats_resistance import WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID
 
 
@@ -512,6 +513,8 @@ def _wants_image_asset_metadata(question: str) -> bool:
 
 def _wants_vectorbyte_traits(question: str) -> bool:
     q = question.lower()
+    if any(term in q for term in ("vecdyn", "abundance", "trap count", "trap counts", "sample count", "sample counts", "mosquito count", "mosquito counts")):
+        return False
     return any(
         term in q
         for term in (
@@ -528,6 +531,25 @@ def _wants_vectorbyte_traits(question: str) -> bool:
             "body size",
             "egg rate",
             "transmission potential",
+        )
+    )
+
+
+def _wants_vectorbyte_abundance(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "vecdyn",
+            "abundance",
+            "trap count",
+            "trap counts",
+            "sample count",
+            "sample counts",
+            "mosquito count",
+            "mosquito counts",
+            "vectorbyte abundance",
+            "peruvian amazon",
         )
     )
 
@@ -723,6 +745,41 @@ def _search_queries(question: str) -> list[str]:
                 "VectorByte Aedes aegypti trait",
                 "VecTraits Aedes aegypti temperature",
                 "Aedes aegypti fecundity temperature",
+                question,
+            ]
+        )
+        return list(dict.fromkeys(queries))
+    if _wants_vectorbyte_abundance(question):
+        generic_terms = {
+            "aedes",
+            "aegypti",
+            "abundance",
+            "count",
+            "counts",
+            "data",
+            "for",
+            "mosquito",
+            "mosquitoes",
+            "sample",
+            "show",
+            "trap",
+            "vectorbyte",
+            "vecdyn",
+        }
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9.-]+", question)
+            if token.lower().strip(".-") not in generic_terms
+        ]
+        queries = []
+        if salient:
+            queries.append(f"Aedes aegypti VecDyn {' '.join(salient)} abundance")
+            queries.append(" ".join(salient))
+        queries.extend(
+            [
+                "VectorByte VecDyn Aedes aegypti abundance",
+                "Aedes aegypti abundance sample count",
+                "Aedes aegypti trap count",
                 question,
             ]
         )
@@ -2393,6 +2450,7 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
     wants_worldclim = any(term in q for term in ("worldclim", "climate", "precipitation", "temperature", "suitability"))
     wants_dataverse_suitability = any(term in q for term in ("dataverse", "suitability", "transmission risk", "dengue transmission"))
     wants_compendium = any(term in q for term in ("global compendium", "compendium", "occurrence compendium"))
+    wants_vectorbyte_abundance = _wants_vectorbyte_abundance(question)
     focus_tokens = {
         token.lower()
         for token in re.findall(r"[A-Za-z0-9]+", question)
@@ -2429,7 +2487,9 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
         focus_rank = 0 if not focus_tokens or any(token in haystack for token in focus_tokens) else 1
         extracted_rank = 0 if _wants_extracted_facts(question) and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         vectornet_rank = 0 if "vectornet" in q and record.source == "vectornet_aedes_surveillance" else 1
+        vectorbyte_abundance_rank = 0 if wants_vectorbyte_abundance and record.source == VECTORBYTE_ABUNDANCE_SOURCE_ID else 1
         return (
+            vectorbyte_abundance_rank,
             observation_climate_rank,
             dataverse_rank,
             worldclim_rank,
@@ -3294,9 +3354,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 OBSERVATION_CLIMATE_SOURCE_ID,
                 AEDES_WORLDCLIM_SOURCE_ID,
                 HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID,
+                VECTORBYTE_ABUNDANCE_SOURCE_ID,
                 "vectornet_aedes_surveillance",
             ):
                 for record in _source_records(index, source_id, ["ecology"], limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+        if _wants_vectorbyte_abundance(plan.question):
+            for lane in ("observations", "ecology"):
+                for record in _source_records(index, VECTORBYTE_ABUNDANCE_SOURCE_ID, [lane], limit=max(limit * 10, 25)):
                     if record.record_id in seen_record_ids:
                         continue
                     all_records.append(record)
