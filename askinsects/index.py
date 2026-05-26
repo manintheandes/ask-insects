@@ -272,12 +272,19 @@ class SourceIndex:
         with self.connect() as conn:
             self._delete_source_records(conn, source)
 
-    def replace_source_records(self, source: str, records: list[EvidenceRecord], *, update_fts: bool = True) -> None:
+    def replace_source_records(
+        self,
+        source: str,
+        records: list[EvidenceRecord],
+        *,
+        update_fts: bool = True,
+        delete_existing_fts: bool = True,
+    ) -> None:
         attempts = 4
         for attempt in range(attempts):
             try:
                 with self.connect() as conn:
-                    self._delete_source_records(conn, source)
+                    self._delete_source_records(conn, source, delete_fts=delete_existing_fts)
                     for chunk in _record_chunks(records):
                         self._upsert_records(conn, chunk, update_fts=update_fts)
                 return
@@ -286,12 +293,13 @@ class SourceIndex:
                     raise
                 time.sleep(1.5 * (attempt + 1))
 
-    def _delete_source_records(self, conn: sqlite3.Connection, source: str) -> None:
+    def _delete_source_records(self, conn: sqlite3.Connection, source: str, *, delete_fts: bool = True) -> None:
         rows = conn.execute("SELECT record_id FROM records WHERE source=?", (source,)).fetchall()
         record_ids = [row["record_id"] for row in rows]
         for chunk in _chunks(record_ids):
             placeholders = ",".join("?" for _ in chunk)
-            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+            if delete_fts:
+                conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
             conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
             conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
         conn.execute("DELETE FROM record_payloads WHERE source=?", (source,))

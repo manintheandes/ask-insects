@@ -298,6 +298,22 @@ class IndexTests(unittest.TestCase):
                 [],
             )
 
+    def test_replace_source_records_can_preserve_existing_fts_for_large_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([sample_record(record_id="obs:1", text="oldunique row")])
+
+            index.replace_source_records(
+                "mosquito_v1_fixtures",
+                [sample_record(record_id="obs:1", text="replacement row")],
+                update_fts=False,
+                delete_existing_fts=False,
+            )
+
+            self.assertEqual(index.sql("select text from records where record_id='obs:1'"), [{"text": "replacement row"}])
+            self.assertEqual(index.sql("select record_id from records_fts where records_fts match 'oldunique'"), [{"record_id": "obs:1"}])
+
     def test_replace_source_records_rolls_back_failed_replacement(self):
         bad_record = EvidenceRecord(
             record_id="obs:bad",
@@ -340,12 +356,12 @@ class IndexTests(unittest.TestCase):
             original_delete = index._delete_source_records
             calls = 0
 
-            def flaky_delete(conn, source):
+            def flaky_delete(conn, source, *, delete_fts=True):
                 nonlocal calls
                 calls += 1
                 if calls == 1:
                     raise sqlite3.OperationalError("database is locked")
-                return original_delete(conn, source)
+                return original_delete(conn, source, delete_fts=delete_fts)
 
             with mock.patch.object(index, "_delete_source_records", side_effect=flaky_delete), mock.patch("askinsects.index.time.sleep"):
                 index.replace_source_records(
