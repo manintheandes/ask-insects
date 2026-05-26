@@ -868,6 +868,13 @@ def _supplement_candidates_with_discovery(
     if discover_supplements and fetch_supplement_metadata_fn is not None:
         discovery_rows = _prioritized_supplement_discovery_rows(literature_rows)
         if max_supplement_discovery_records is not None and len(discovery_rows) > max_supplement_discovery_records:
+            bounded_rows = discovery_rows[:max_supplement_discovery_records]
+            bounded_record_ids = {str(row["record_id"]) for row in bounded_rows}
+            repository_rows = [
+                row
+                for row in discovery_rows[max_supplement_discovery_records:]
+                if _is_repository_supplement_row(row) and str(row["record_id"]) not in bounded_record_ids
+            ]
             gaps.append(
                 {
                     "source": EXTRACTED_FACTS_SOURCE_ID,
@@ -875,9 +882,10 @@ def _supplement_candidates_with_discovery(
                     "max_supplement_discovery_records": max_supplement_discovery_records,
                     "source_record_count": len(literature_rows),
                     "discoverable_source_record_count": len(discovery_rows),
+                    "repository_backed_records_added_after_limit": len(repository_rows),
                 }
             )
-            discovery_rows = discovery_rows[:max_supplement_discovery_records]
+            discovery_rows = bounded_rows + repository_rows
         for paper in discovery_rows:
             request = _identifier_request(paper)
             discovery_record_count += 1
@@ -905,6 +913,11 @@ def _repository_supplement_rank(request: dict[str, object], url: str) -> int:
     if "figshare" in lowered or "zenodo" in lowered:
         return 1
     return 0
+
+
+def _is_repository_supplement_row(paper: sqlite3.Row) -> bool:
+    request = _identifier_request(paper)
+    return bool(_repository_supplement_rank(request, str(paper["url"] or "")))
 
 
 def _supplement_discovery_score(paper: sqlite3.Row) -> tuple[int, int, int, int, int, str]:

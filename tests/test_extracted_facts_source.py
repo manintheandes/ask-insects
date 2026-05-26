@@ -552,6 +552,71 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(requests, ["openalex:A_ZENODO_RESISTANCE"])
             self.assertEqual(result.supplement_discovery_record_count, 1)
 
+    def test_build_extracted_fact_records_always_discovers_repository_rows_after_limit(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:Z_GENERIC_RESISTANCE",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti insecticide resistance supplementary table",
+                        text="Deltamethrin mortality, V1016G, F1534C, and LC50 evidence.",
+                        species="Aedes aegypti",
+                        url="https://example.org/resistance",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#Z_GENERIC_RESISTANCE",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1234/resistance", "pmid": "22345678"}},
+                    ),
+                    EvidenceRecord(
+                        record_id="openalex:A_ZENODO_DATASET",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti repository dataset",
+                        text="Aedes aegypti observation dataset.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.5281/zenodo.19918130",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#A_ZENODO_DATASET",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.5281/zenodo.19918130"}},
+                    ),
+                ]
+            )
+            requests: list[str] = []
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                requests.append(str(request["record_id"]))
+                return []
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                max_supplement_discovery_records=1,
+            )
+
+            self.assertEqual(requests, ["openalex:Z_GENERIC_RESISTANCE", "openalex:A_ZENODO_DATASET"])
+            self.assertEqual(result.supplement_discovery_record_count, 2)
+            self.assertTrue(
+                any(
+                    gap.get("repository_backed_records_added_after_limit") == 1
+                    for gap in result.gaps
+                    if gap.get("reason") == "supplement_discovery_record_limit_applied"
+                )
+            )
+
     def test_build_extracted_fact_records_skips_generic_bioassay_resistance_table_noise(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
