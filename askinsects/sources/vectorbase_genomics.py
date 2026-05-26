@@ -914,6 +914,7 @@ def _parse_orthomcl_groups(
             if not aedes_members:
                 continue
             sample_members = members[:25]
+            sample_aedes_members = aedes_members[:25]
             for aedes_member in aedes_members:
                 species_code, aedes_gene_id = _split_orthomcl_id(aedes_member)
                 records.append(
@@ -949,7 +950,7 @@ def _parse_orthomcl_groups(
                             "aedes_species_code": species_code or None,
                             "aedes_gene_id": aedes_gene_id,
                             "aedes_member_count": len(aedes_members),
-                            "aedes_members": aedes_members,
+                            "sample_aedes_members": sample_aedes_members,
                             "group_member_count": len(members),
                             "sample_members": sample_members,
                             "line_number": line_number,
