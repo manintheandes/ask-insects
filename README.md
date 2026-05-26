@@ -461,6 +461,18 @@ python3 -m askinsects search public_health "NCVBDC India dengue deaths 2024 2025
 
 The lane uses source id `aedes_ncvbdc_dengue_surveillance`. It writes the raw Government of India NCVBDC dengue situation HTML under `raw/ncvbdc_dengue_surveillance/`. It parses one `public_health` record per state/UT-year row, one per national country-year total, one source-page record, and one latest-two-complete-year summary record. Payloads preserve country, state or union territory, year, cases, deaths, provisional status, and raw HTML locators. This is human dengue surveillance evidence relevant to Aedes aegypti vector intelligence, not mosquito occurrence evidence.
 
+## Brazil OpenDataSUS Dengue Surveillance Source Lane
+
+Brazil OpenDataSUS dengue surveillance is indexed as official `Aedes aegypti` public-health intelligence at aggregate year, state, and epidemiological-week grain:
+
+```bash
+python3 -m askinsects ingest-opendatasus-dengue-surveillance
+python3 -m askinsects ask "show Brazil OpenDataSUS dengue deaths and notifications for 2025" --json
+python3 -m askinsects search public_health "OpenDataSUS Brazil dengue epidemiological week"
+```
+
+The lane uses source id `aedes_opendatasus_dengue_surveillance`. It writes raw Brazil Ministry of Health OpenDataSUS SINAN dengue CSV ZIP files under `raw/opendatasus_dengue_surveillance/`. It parses aggregate `public_health` records for each source file, each country-year, each residence-state-year, each notification-state-year, each country epidemiological week, and each residence-state epidemiological week. Payloads preserve source file URL, raw ZIP locator, SHA-256 checksum, byte size, row count, year, UF code, state name, notifications, EVOLUCAO=2 deaths by disease, severe dengue classifications, hospitalized notifications, and classification/sex/criterion counts. This is human dengue surveillance evidence relevant to Aedes aegypti vector intelligence, not mosquito occurrence evidence, and it intentionally avoids person-level line records.
+
 ## Pathogen Taxonomy Source Lane
 
 NCBI Taxonomy anchors core `Aedes aegypti` arbovirus names to stable pathogen identities for vector-competence and public-health questions:
@@ -655,6 +667,7 @@ python3 -m askinsects ingest-vectornet-surveillance --hosted
 python3 -m askinsects ingest-who-dengue-surveillance --hosted
 python3 -m askinsects ingest-cdc-dengue-surveillance --hosted
 python3 -m askinsects ingest-ncvbdc-dengue-surveillance --hosted
+python3 -m askinsects ingest-opendatasus-dengue-surveillance --hosted
 python3 -m askinsects ingest-crossref-literature-audit --hosted --max-results 500 --page-size 100
 python3 -m askinsects ingest-mosquito-repellent-literature --hosted --pubmed-max-results 1000 --crossref-max-results 1000 --page-size 100
 python3 -m askinsects ingest-mosquito-repellent-external-discovery --hosted --max-results-per-source 50

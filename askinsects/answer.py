@@ -129,6 +129,7 @@ PUBLIC_HEALTH_QUERY_STOPWORDS = {
     "open",
     "paho",
     "ncvbdc",
+    "opendatasus",
     "show",
     "the",
 }
@@ -1203,6 +1204,26 @@ def _search_queries(question: str) -> list[str]:
                 "India national dengue cases deaths by year",
                 question,
             ]
+        if any(term in q for term in ("brazil", "opendatasus", "datasus", "sinan")) and any(
+            term in q for term in ("dengue", "cases", "deaths", "surveillance", "notifications", "hospitalized")
+        ):
+            if any(term in q for term in ("week", "weekly", "epidemiological")):
+                return [
+                    "OpenDataSUS Brazil dengue epidemiological week",
+                    "SINAN Brazil dengue weekly notifications",
+                    question,
+                ]
+            if any(term in q for term in ("state", "uf", "sao paulo", "rio de janeiro")):
+                return [
+                    "OpenDataSUS Brazil dengue state surveillance",
+                    "SINAN Brazil dengue state deaths notifications",
+                    question,
+                ]
+            return [
+                "OpenDataSUS Brazil dengue surveillance summary",
+                "SINAN Brazil dengue notifications deaths",
+                question,
+            ]
         if "who" in q and any(term in q for term in ("wer", "surveillance", "situation update", "dashboard", "health data", "global update", "cases", "deaths")):
             if any(term in q for term in ("dashboard", "health data", "data platform", "shiny")):
                 return [
@@ -2229,6 +2250,62 @@ def _ncvbdc_surveillance_records(index: SourceIndex, question: str, *, limit: in
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _opendatasus_surveillance_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if not any(term in q for term in ("brazil", "opendatasus", "datasus", "sinan")):
+        return []
+    if not any(term in q for term in ("dengue", "surveillance", "cases", "deaths", "notifications", "hospitalized", "week")):
+        return []
+
+    clauses = ["source = ?"]
+    params: list[object] = ["aedes_opendatasus_dengue_surveillance"]
+    if any(term in q for term in ("week", "weekly", "epidemiological")):
+        clauses.append("(record_id LIKE ? OR record_id LIKE ?)")
+        params.extend(["%:country_week:%", "%:residence_state_week:%"])
+    elif any(term in q for term in ("state", "uf", "sao paulo", "rio de janeiro")):
+        clauses.append("(record_id LIKE ? OR record_id LIKE ?)")
+        params.extend(["%:residence_state:%", "%:notification_state:%"])
+    else:
+        clauses.append("record_id LIKE ?")
+        params.append("%:country:brazil:%")
+    years = re.findall(r"\b20(?:2[0-9])\b", q)
+    if years:
+        year_clauses = []
+        for year in years[:4]:
+            year_clauses.append("(record_id LIKE ? OR lower(text) LIKE ?)")
+            params.extend([f"%:{year}", f"%{year}%"])
+        clauses.append("(" + " OR ".join(year_clauses) + ")")
+    focus_terms = [term for term in _public_health_focus_terms(question) if term.lower() not in {"brazil", "sinan", "datasus"}]
+    if focus_terms:
+        term_clauses = []
+        for term in focus_terms[:4]:
+            pattern = f"%{term.lower()}%"
+            term_clauses.append("(lower(title) LIKE ? OR lower(text) LIKE ? OR lower(record_id) LIKE ?)")
+            params.extend([pattern, pattern, pattern])
+        clauses.append("(" + " OR ".join(term_clauses) + ")")
+
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT *
+            FROM records
+            WHERE {" AND ".join(clauses)}
+            ORDER BY
+              CASE
+                WHEN record_id LIKE '%:country:brazil:%' THEN 0
+                WHEN record_id LIKE '%:residence_state:%' THEN 1
+                WHEN record_id LIKE '%:country_week:%' THEN 2
+                WHEN record_id LIKE '%:residence_state_week:%' THEN 3
+                ELSE 4
+              END,
+              record_id DESC
+            LIMIT ?
+            """,
+            (*params, max(limit * 20, 50)),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def _resistance_marker_terms(question: str) -> list[str]:
     lower = question.lower()
     matched = []
@@ -2342,6 +2419,20 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
                 0 if record.source == "aedes_ncvbdc_dengue_surveillance" else 1,
                 0 if "last_two_complete_years" in record.record_id else 1,
                 0 if record.lane == "public_health" else 1,
+            ),
+        )
+    if any(term in q for term in ("brazil", "opendatasus", "datasus", "sinan")) and any(
+        term in q for term in ("dengue", "surveillance", "cases", "deaths", "notifications", "hospitalized", "week")
+    ):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "aedes_opendatasus_dengue_surveillance" else 1,
+                0 if record.lane == "public_health" else 1,
+                0 if "country:brazil" in record.record_id else 1,
+                0 if "residence_state" in record.record_id else 1,
+                0 if "country_week" in record.record_id else 1,
+                record.record_id,
             ),
         )
     if _wants_extracted_facts(question):
@@ -3346,7 +3437,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "public_health":
+        for record in _opendatasus_surveillance_records(index, plan.question, limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
         for record in _ncvbdc_surveillance_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
             all_records.append(record)
             seen_record_ids.add(record.record_id)
         for record in _who_surveillance_records(index, plan.question, limit=limit):

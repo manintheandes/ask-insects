@@ -64,6 +64,11 @@ metadata, parser grain, and known gaps.
   report locators, agency source identity, machine-readable CSV row locators
   where exposed by the agency, and explicit gaps for row-level surveillance
   data that is not stably machine-readable or authorized.
+- Brazil OpenDataSUS records from `aedes_opendatasus_dengue_surveillance`
+  preserve Ministry of Health portal URLs, SINAN dengue CSV ZIP locators,
+  file checksums, byte sizes, aggregate parser grain, and source terms. Ask
+  Insects indexes aggregates from those files rather than person-level line
+  records.
 - BOLD and IR Mapper records from `bold_api` and `irmapper_aedes` preserve
   upstream terms, specimen or resistance locators, and raw row provenance.
 

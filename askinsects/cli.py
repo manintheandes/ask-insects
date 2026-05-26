@@ -193,6 +193,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_ncvbdc_dengue_surveillance.add_argument("--hosted", action="store_true")
     ingest_ncvbdc_dengue_surveillance.add_argument("--source-url", action="append", default=[])
 
+    ingest_opendatasus_dengue_surveillance = sub.add_parser("ingest-opendatasus-dengue-surveillance")
+    ingest_opendatasus_dengue_surveillance.add_argument("--hosted", action="store_true")
+    ingest_opendatasus_dengue_surveillance.add_argument("--year", type=int, action="append", default=[])
+    ingest_opendatasus_dengue_surveillance.add_argument("--file-url", action="append", default=[])
+
     ingest_vectorbase_genomics = sub.add_parser("ingest-vectorbase-genomics")
     ingest_vectorbase_genomics.add_argument("--hosted", action="store_true")
     ingest_vectorbase_genomics.add_argument("--gff-url")
@@ -702,6 +707,24 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/ncvbdc-dengue-surveillance",
             {"source_urls": args.source_url},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-opendatasus-dengue-surveillance":
+        if not args.hosted:
+            from scripts.ingest_opendatasus_dengue_surveillance import ingest_opendatasus_dengue_surveillance
+
+            payload = ingest_opendatasus_dengue_surveillance(
+                artifact_dir=artifact_dir,
+                years=args.year,
+                file_urls=args.file_url,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/opendatasus-dengue-surveillance",
+            {"years": args.year, "file_urls": args.file_url},
             timeout=3600,
         )
         return 0 if payload.get("ok") else 2

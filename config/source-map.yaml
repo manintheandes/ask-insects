@@ -1111,6 +1111,55 @@ sources:
         - total_deaths
         - raw_html_locator
     source_gap: This lane covers the NCVBDC national dengue cases/deaths table, not district-level India dengue rows or line-listed case/death records.
+  - id: aedes_opendatasus_dengue_surveillance
+    name: Brazil OpenDataSUS SINAN dengue surveillance for Aedes aegypti public-health intelligence
+    source_type: public_health_surveillance_csv_zip
+    boundary: Official Brazil Ministry of Health OpenDataSUS SINAN dengue annual CSV ZIP files, indexed as aggregate public-health records at source-file, country-year, residence-state-year, notification-state-year, country epidemiological-week, and residence-state epidemiological-week grain
+    query_plane: opendatasus_sinan_dengue_csv_zip_to_sqlite_public_health_aggregate_records
+    artifact_dir: artifacts/mosquito-v1/raw/opendatasus_dengue_surveillance
+    ingest_script: scripts/ingest_opendatasus_dengue_surveillance.py
+    source_portal: https://dadosabertos.saude.gov.br/dataset/arboviroses-dengue
+    default_files:
+      - https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SINAN/Dengue/csv/DENGBR25.csv.zip
+      - https://s3.sa-east-1.amazonaws.com/ckan.saude.gov.br/SINAN/Dengue/csv/DENGBR26.csv.zip
+    lanes:
+      - public_health
+    provenance_required: true
+    live_fetch: opt_in_current_years_by_default
+    privacy_policy: aggregate_records_only_no_person_level_line_records
+    source_contract:
+      source_file_records:
+        - source_file_url
+        - raw_zip_locator
+        - sha256
+        - byte_size
+        - csv_row_count
+      country_year_records:
+        - country
+        - year
+        - notifications
+        - deaths_by_disease coded as EVOLUCAO=2
+        - severe_dengue
+        - hospitalized
+        - classification_counts
+        - raw_zip_locator
+      state_year_records:
+        - residence_state or notification_state
+        - state_code
+        - year
+        - notifications
+        - deaths_by_disease coded as EVOLUCAO=2
+        - severe_dengue
+        - hospitalized
+        - raw_zip_locator
+      epidemiological_week_records:
+        - epidemiological_week
+        - country or residence_state
+        - notifications
+        - deaths_by_disease coded as EVOLUCAO=2
+        - severe_dengue
+        - raw_zip_locator
+    source_gap: Default ingest mirrors the current OpenDataSUS dengue ZIPs for 2025 and 2026; earlier annual backfiles and person-level line records are not claimed unless explicit years are passed and the run receipt proves them.
   - id: aedes_vectorbyte_traits
     name: VectorByte VecTraits Aedes aegypti trait observations
     source_type: public_trait_database_api

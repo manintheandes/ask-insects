@@ -3778,6 +3778,33 @@ class AnswerTests(unittest.TestCase):
             self.assertIn("last_two_complete_years", answer["evidence"][0]["record_id"])
             self.assertIn("428", answer["answer"])
 
+    def test_brazil_dengue_questions_prefer_opendatasus_surveillance(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:surveillance:paho_dengue:core_indicator:dengue_cases:BRA:2025",
+                        "aedes_paho_dengue_surveillance",
+                        "PAHO/EIH Core Indicators annual dengue cases for Brazil in 2025 from a stable machine-readable Open Data CSV row.",
+                    ),
+                    public_health_record(
+                        "public_health:surveillance:opendatasus_dengue:country:brazil:2025",
+                        "aedes_opendatasus_dengue_surveillance",
+                        "Official Brazil OpenDataSUS SINAN dengue aggregate for 2025. Notifications: 3. Deaths coded as death by disease in EVOLUCAO=2: 1.",
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Brazil OpenDataSUS dengue deaths and notifications for 2025", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_opendatasus_dengue_surveillance")
+            self.assertIn("Deaths coded as death by disease in EVOLUCAO=2: 1", answer["answer"])
+
     def test_paho_dashboard_questions_prefer_dashboard_locator_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -30,6 +30,7 @@ from askinsects.sources.mendeley_behavior_media import MendeleyBehaviorMediaResu
 from askinsects.sources.mosquito_alert import MosquitoAlertBuildResult
 from askinsects.sources.ncbi_biosample import NCBIBioSampleResult
 from askinsects.sources.ncvbdc_dengue_surveillance import NcvbdcDengueSurveillanceResult
+from askinsects.sources.opendatasus_dengue_surveillance import OpenDataSusDengueSurveillanceResult
 from askinsects.sources.ncbi_snp_variation import NCBISnpVariationResult
 from askinsects.sources.osf_flighttrackai_videos import OSFFlightTrackAIResult
 from askinsects.sources.paho_surveillance import PahoDengueSurveillanceResult
@@ -1581,6 +1582,87 @@ class ServerTests(unittest.TestCase):
             self.assertNotIn(".staging", payload_rows[0]["payload_json"])
             receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
             self.assertEqual(receipt["source_counts"]["aedes_ncvbdc_dengue_surveillance"], 1)
+
+    def test_ingest_opendatasus_dengue_surveillance_adds_records_without_removing_existing_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            def fake_fetch(specs, *, raw_dir, retrieved_at):
+                raw_path = raw_dir / "DENGBR25.csv.zip"
+                raw_path.parent.mkdir(parents=True, exist_ok=True)
+                raw_path.write_bytes(b"fake zip")
+                return OpenDataSusDengueSurveillanceResult(
+                    source_id="aedes_opendatasus_dengue_surveillance",
+                    records=[
+                        EvidenceRecord(
+                            record_id="public_health:surveillance:opendatasus_dengue:country:brazil:2025",
+                            lane="public_health",
+                            source="aedes_opendatasus_dengue_surveillance",
+                            title="OpenDataSUS Brazil dengue surveillance summary, 2025",
+                            text="Official Brazil OpenDataSUS SINAN dengue aggregate for 2025. Notifications: 3. Deaths coded as death by disease in EVOLUCAO=2: 1.",
+                            species="Aedes aegypti",
+                            url="https://opendatasus.example/DENGBR25.csv.zip",
+                            media_url=None,
+                            provenance=Provenance(
+                                source_id="aedes_opendatasus_dengue_surveillance",
+                                locator=f"{raw_path}#aggregate/country/Brazil/year/2025",
+                                retrieved_at=retrieved_at,
+                                license="Brazil Ministry of Health OpenDataSUS public open-data files; source portal terms apply",
+                                source_url="https://opendatasus.example/DENGBR25.csv.zip",
+                            ),
+                            payload={
+                                "aggregation_type": "opendatasus_dengue_country_year",
+                                "country": "Brazil",
+                                "year": 2025,
+                                "raw_zip_path": raw_path.as_posix(),
+                                "notifications": 3,
+                                "deaths_by_disease": 1,
+                            },
+                        )
+                    ],
+                    gaps=[],
+                    raw_artifacts=[raw_path.as_posix()],
+                    requested_urls=["https://opendatasus.example/DENGBR25.csv.zip"],
+                    file_count=1,
+                    source_file_record_count=0,
+                    country_year_record_count=1,
+                    state_year_record_count=0,
+                    country_week_record_count=0,
+                    state_week_record_count=0,
+                    row_count=3,
+                    years=[2025],
+                )
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/opendatasus-dengue-surveillance",
+                {"years": [2025], "file_urls": ["https://opendatasus.example/DENGBR25.csv.zip"]},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+                fetch_opendatasus_dengue_surveillance_records_fn=fake_fetch,
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["aedes_opendatasus_dengue_surveillance"], 1)
+            self.assertEqual(response.payload["aedes_opendatasus_dengue_surveillance"]["country_year_record_count"], 1)
+            provenance_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select provenance_json from records where source='aedes_opendatasus_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
+            self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select payload_json from record_payloads where source='aedes_opendatasus_dengue_surveillance'",
+            )
+            self.assertIn(str(artifact_dir), payload_rows[0]["payload_json"])
+            self.assertNotIn(".staging", payload_rows[0]["payload_json"])
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["source_counts"]["aedes_opendatasus_dengue_surveillance"], 1)
 
     def test_ingest_vectorbase_genomics_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

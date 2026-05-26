@@ -28,6 +28,11 @@ from .sources.ncvbdc_dengue_surveillance import (
     NCVBDC_DENGUE_SURVEILLANCE_SOURCE_ID,
     fetch_ncvbdc_dengue_surveillance_records,
 )
+from .sources.opendatasus_dengue_surveillance import (
+    OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,
+    default_opendatasus_dengue_file_specs,
+    fetch_opendatasus_dengue_surveillance_records,
+)
 from .sources.gbif import (
     GBIF_SOURCE_ID,
     GBIFClient,
@@ -1383,6 +1388,62 @@ def write_ncvbdc_dengue_surveillance_metadata(staging: Path, source_payload: dic
     return {"ok": True, "artifact_dir": staging.as_posix(), **status, NCVBDC_DENGUE_SURVEILLANCE_SOURCE_ID: source_payload}
 
 
+def write_opendatasus_dengue_surveillance_metadata(staging: Path, source_payload: dict[str, object], gaps: list[dict[str, object]]) -> dict[str, object]:
+    index = SourceIndex(staging / "source_index.sqlite")
+    summary = index.summary()
+    counts = source_counts(index)
+    generated_at = str(source_payload["retrieved_at"])
+    sources = [source for source in counts if source != OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID]
+    if counts.get(OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID):
+        sources.append(OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID)
+
+    status = read_json(staging / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    status.update(
+        {
+            "ok": True,
+            "source_id": sources[0] if sources else OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,
+            "sources": sources,
+            "source_counts": counts,
+            "boundary": "Aedes aegypti first",
+            "generated_at": generated_at,
+            "fully_parsed": not gaps,
+            "parsed_scope": "Brazil OpenDataSUS dengue CSV ZIPs aggregated by source file, country-year, state-year, country-week, and residence-state-week",
+            "record_count": summary["record_count"],
+            "species_count": summary["species_count"],
+            "lanes": summary["lanes"],
+            "gap_count": len(gaps),
+        }
+    )
+
+    receipt = read_json(staging / "source_receipt.json", {})
+    if not isinstance(receipt, dict):
+        receipt = {}
+    receipt_sources = receipt.get("sources")
+    if not isinstance(receipt_sources, dict):
+        receipt_sources = {}
+    receipt_sources[OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID] = source_payload
+    receipt.update(
+        {
+            "source_id": sources[0] if sources else OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,
+            "sources": receipt_sources,
+            "source_counts": counts,
+            "artifact_dir": staging.as_posix(),
+            "sqlite_index": (staging / "source_index.sqlite").as_posix(),
+            "generated_at": generated_at,
+            "record_count": summary["record_count"],
+            "lanes": summary["lanes"],
+            OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID: source_payload,
+        }
+    )
+
+    write_json(staging / "gaps.json", gaps)
+    write_json(staging / "source_status.json", status)
+    write_json(staging / "source_receipt.json", receipt)
+    return {"ok": True, "artifact_dir": staging.as_posix(), **status, OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID: source_payload}
+
+
 def ingest_public_health(
     payload: dict[str, object],
     *,
@@ -1785,6 +1846,96 @@ def ingest_ncvbdc_dengue_surveillance(
             "method": "official India NCVBDC dengue situation HTML table parsed into state/UT-year, country-year, and two-latest-complete-year summary public-health records for Aedes aegypti intelligence",
         }
         response = write_ncvbdc_dengue_surveillance_metadata(artifact_dir, source_payload, gaps)
+    except Exception:
+        shutil.rmtree(raw_staging, ignore_errors=True)
+        if raw_activated and raw_backup.exists():
+            if raw_final.exists():
+                shutil.rmtree(raw_final)
+            raw_backup.replace(raw_final)
+        raise
+    if raw_backup.exists():
+        shutil.rmtree(raw_backup)
+    response["activated_artifact_dir"] = str(artifact_dir)
+    return response
+
+
+def ingest_opendatasus_dengue_surveillance(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+    fetch_opendatasus_dengue_surveillance_records_fn: Callable[..., object] = fetch_opendatasus_dengue_surveillance_records,
+) -> dict[str, object]:
+    years_payload = payload.get("years")
+    if years_payload is None or years_payload == []:
+        years: list[int] = []
+    elif isinstance(years_payload, list) and all(isinstance(item, int) for item in years_payload):
+        years = years_payload
+    else:
+        raise ValueError("years must be a list of integers")
+    file_urls = payload.get("file_urls")
+    if file_urls is None or file_urls == []:
+        specs = default_opendatasus_dengue_file_specs(years or None)
+    elif isinstance(file_urls, list) and all(isinstance(item, str) for item in file_urls):
+        selected_years = years or list(range(1, len(file_urls) + 1))
+        if len(selected_years) != len(file_urls):
+            raise ValueError("years count must match file_urls count")
+        from .sources.opendatasus_dengue_surveillance import OpenDataSusDengueFileSpec
+
+        specs = [OpenDataSusDengueFileSpec(year=year, url=url) for year, url in zip(selected_years, file_urls, strict=True)]
+    else:
+        raise ValueError("file_urls must be a list of strings")
+
+    raw_staging = artifact_dir.parent / f".{artifact_dir.name}.opendatasus-dengue-surveillance-raw-staging"
+    raw_final = artifact_dir / "raw" / "opendatasus_dengue_surveillance"
+    raw_backup = raw_final.parent / f".{raw_final.name}.previous"
+    raw_activated = False
+    if raw_staging.exists():
+        shutil.rmtree(raw_staging)
+    try:
+        artifact_dir.mkdir(parents=True, exist_ok=True)
+        db_path = artifact_dir / "source_index.sqlite"
+        index = SourceIndex(db_path)
+        if not db_path.exists():
+            index.initialize()
+        retrieved_at = utc_now()
+        result = fetch_opendatasus_dengue_surveillance_records_fn(
+            specs,
+            raw_dir=raw_staging,
+            retrieved_at=retrieved_at,
+        )
+        raw_staging.mkdir(parents=True, exist_ok=True)
+        records = replace_record_path_strings(result.records, str(raw_staging), str(raw_final))
+        raw_artifacts = [artifact.replace(str(raw_staging), str(raw_final)) for artifact in result.raw_artifacts]
+        if raw_backup.exists():
+            shutil.rmtree(raw_backup)
+        if raw_final.exists():
+            raw_final.replace(raw_backup)
+        raw_final.parent.mkdir(parents=True, exist_ok=True)
+        raw_staging.replace(raw_final)
+        raw_activated = True
+        replace_source_records(index, OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID, records)
+        old_gaps = read_json(artifact_dir / "gaps.json", [])
+        if not isinstance(old_gaps, list):
+            old_gaps = []
+        gaps = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID)]
+        gaps.extend(result.gaps)
+        source_payload = {
+            "requested_urls": result.requested_urls,
+            "raw_artifacts": raw_artifacts,
+            "record_count": len(records),
+            "gap_count": len(result.gaps),
+            "file_count": result.file_count,
+            "source_file_record_count": result.source_file_record_count,
+            "country_year_record_count": result.country_year_record_count,
+            "state_year_record_count": result.state_year_record_count,
+            "country_week_record_count": result.country_week_record_count,
+            "state_week_record_count": result.state_week_record_count,
+            "input_csv_row_count": result.row_count,
+            "years": result.years,
+            "retrieved_at": retrieved_at,
+            "method": "official Brazil OpenDataSUS SINAN dengue CSV ZIP files parsed into source-file, country-year, state-year, country-week, and residence-state-week aggregate public-health records for Aedes aegypti intelligence",
+        }
+        response = write_opendatasus_dengue_surveillance_metadata(artifact_dir, source_payload, gaps)
     except Exception:
         shutil.rmtree(raw_staging, ignore_errors=True)
         if raw_activated and raw_backup.exists():
@@ -3208,6 +3359,7 @@ def dispatch_request(
     fetch_who_dengue_surveillance_records_fn: Callable[..., object] = fetch_who_dengue_surveillance_records,
     fetch_cdc_dengue_surveillance_records_fn: Callable[..., object] = fetch_cdc_dengue_surveillance_records,
     fetch_ncvbdc_dengue_surveillance_records_fn: Callable[..., object] = fetch_ncvbdc_dengue_surveillance_records,
+    fetch_opendatasus_dengue_surveillance_records_fn: Callable[..., object] = fetch_opendatasus_dengue_surveillance_records,
     fetch_vectorbase_genomics_records_fn: Callable[..., object] = fetch_vectorbase_genomics_records,
     fetch_vectornet_surveillance_records_fn: Callable[..., object] = fetch_vectornet_surveillance_records,
     fetch_zenodo_aedes_video_records_fn: Callable[..., object] = fetch_zenodo_aedes_video_records,
@@ -3319,6 +3471,14 @@ def dispatch_request(
                 payload or {},
                 artifact_dir=artifact_dir,
                 fetch_ncvbdc_dengue_surveillance_records_fn=fetch_ncvbdc_dengue_surveillance_records_fn,
+            )
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/opendatasus-dengue-surveillance":
+            result = ingest_opendatasus_dengue_surveillance(
+                payload or {},
+                artifact_dir=artifact_dir,
+                fetch_opendatasus_dengue_surveillance_records_fn=fetch_opendatasus_dengue_surveillance_records_fn,
             )
             status = 200 if result.get("ok") else 500
             return json_response(status, result)

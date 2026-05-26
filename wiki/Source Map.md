@@ -58,5 +58,7 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `aedes_paho_dengue_surveillance` | PAHO dengue situation report evidence and mapped dashboard source gaps. |
 | `aedes_who_dengue_surveillance` | WHO dengue surveillance pages, WER global update pages, WPRO situation updates, archive links, and dashboard locators. |
 | `aedes_cdc_dengue_surveillance` | CDC dengue current-year and historic ArboNET pages, CDC visualization JSON configs, linked CSV rows, and ArboNET limitation evidence. |
+| `aedes_ncvbdc_dengue_surveillance` | India NCVBDC dengue cases/deaths table at state/UT-year, national-year, and latest-two-complete-year summary grain. |
+| `aedes_opendatasus_dengue_surveillance` | Brazil OpenDataSUS SINAN dengue CSV ZIP aggregates by source file, country-year, state-year, and epidemiological week. |
 | `vectornet_aedes_surveillance` | VectorNet Aedes surveillance records. |
 | `who_malaria_threats_resistance_audit` | WHO Malaria Threats Map Aedes resistance audit records and explicit no-row gap when the Aedes filter returns no rows. |

@@ -423,7 +423,8 @@
         "aedes_paho_dengue_surveillance",
         "aedes_who_dengue_surveillance",
         "aedes_cdc_dengue_surveillance",
-        "aedes_ncvbdc_dengue_surveillance"
+        "aedes_ncvbdc_dengue_surveillance",
+        "aedes_opendatasus_dengue_surveillance"
       ],
       "current_gates": {
         "mapped": "yes",
@@ -442,6 +443,7 @@
         "aedes_who_dengue_surveillance parses official WHO dengue surveillance pages, WER global update pages, WPRO situation-update links, archive links, publication download locators, and WHO Western Pacific Health Data Platform dengue dashboard locators into public_health records with raw HTML provenance.",
         "aedes_cdc_dengue_surveillance parses official CDC dengue current-year and historic pages, CDC WCMS visualization JSON configs, linked CDC CSV datasets, and ArboNET limitations into public_health records with page/config/CSV-row/limitation provenance.",
         "aedes_ncvbdc_dengue_surveillance parses the official Government of India NCVBDC dengue situation HTML table into state/UT-year, national country-year, and latest-two-complete-year summary public_health records with raw HTML provenance.",
+        "aedes_opendatasus_dengue_surveillance parses official Brazil Ministry of Health OpenDataSUS SINAN dengue CSV ZIP files into aggregate public_health records at source-file, country-year, residence-state-year, notification-state-year, country epidemiological-week, and residence-state epidemiological-week grain with raw ZIP provenance, checksum, byte size, row count, UF/state metadata, notifications, deaths coded as EVOLUCAO=2, severe dengue classifications, hospitalized notifications, and classification/sex/criterion counts. Person-level line records are intentionally not indexed.",
         "PAHO/EIH Core Indicators annual country/territory dengue rows are proven machine-readable via ZIP/CSV, but underlying PAHO/PLISA country-week Tableau/PHIP rows remain a structured source gap until a stable weekly machine-readable CSV, JSON, or API endpoint is available or authorized access is obtained.",
         "WHO dashboard locator records are queryable, but dashboard row-level data remains a structured source gap until WHO exposes a stable machine-readable export/API or explicit authorized access is obtained.",
         "Public-health questions route through the public_health lane and return provenance back to source literature records and full-text units where available.",
@@ -449,7 +451,7 @@
       ],
       "required_next_sources": [
         "WHO dashboard row/export parsing if a stable machine-readable export/API becomes legally accessible",
-        "PAHO and national dengue or arbovirus reports where public",
+        "PAHO and additional national dengue or arbovirus reports where public",
         "additional CDC ArboNET public export surfaces where accessible beyond current/historic dengue CSV dashboards",
         "structured intervention outcome and vector-control program datasets"
       ],
