@@ -6,7 +6,7 @@ This page covers Aedes aegypti insecticide resistance records, resistance marker
 
 What it contains:
 
-- 28,466 hosted resistance records
+- 28,365 hosted resistance records
 - 16,708 public IR Mapper Aedes aegypti resistance records
 - 6,449 literature-derived resistance-marker records
 - 186 parsed supported-format resistance supplement rows

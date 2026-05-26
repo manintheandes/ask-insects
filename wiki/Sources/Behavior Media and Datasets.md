@@ -6,13 +6,18 @@ This page covers Aedes aegypti behavior records, public video manifests, media l
 
 What it contains:
 
-- 106,933 hosted behavior records
-- 46,181 derived video atom records
+- 106,917 hosted behavior records
+- 46,252 derived video atom records
+- 84 video asset records
+- 21 verified mirrored video assets with inspectable artifacts
+- 116 keyframe records, 21 thumbnail records, 21 preview-clip records, and 21 frame-manifest records
+- 45,574 motion rows from source tables
 - Dryad Aedes behavior and video dataset manifests
 - Mendeley Data behavior, media, high-speed video, wingbeat, hearing, and parsed table rows
 - OSF FlightTrackAI processed and unprocessed Aedes flight-video manifests
 - PMC open-access supplementary video locators
 - behavior labels, file names, DOI or project locators, licenses, checksums, sizes, download URLs, previews, keyframes, frame metadata, and structured video gaps when provided
+- non-video downloads and oversized, unclear-license, failed, or unsupported assets are preserved as queryable gaps instead of being counted as verified video
 
 Connects to:
 

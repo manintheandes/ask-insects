@@ -6,7 +6,7 @@ This page covers pathogen identity anchors and Aedes aegypti vector-competence a
 
 What it contains:
 
-- 11,491 hosted vector-competence records
+- 11,344 hosted vector-competence records
 - NCBI Taxonomy anchors for dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus
 - literature-derived assay candidates for infection, dissemination, transmission, dose, temperature, tissue, strain, population, and timepoint mentions
 - source URLs and provenance back to source papers or taxonomy records

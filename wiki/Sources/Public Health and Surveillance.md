@@ -6,7 +6,7 @@ This page covers official Aedes aegypti public-health guidance, dengue surveilla
 
 What it contains:
 
-- 31,775 hosted public-health records
+- 29,566 hosted public-health records
 - WHO, PAHO, CDC, and ECDC guidance pages
 - 18,587 CDC dengue surveillance records
 - 538 PAHO dengue surveillance records

@@ -6,11 +6,12 @@ This page covers Aedes aegypti literature metadata, abstracts, enrichment payloa
 
 What it contains:
 
-- 13,102 hosted literature records
+- 12,802 hosted literature records
 - 10,683 canonical OpenAlex Aedes aegypti literature rows
 - 183 PubMed olfaction audit candidates since 2020
 - 199 Crossref literature-audit rows
-- 10,537 extracted-fact records across candidate facts, supplement manifests, and parsed supported supplement rows
+- 7,653 extracted-fact records across candidate facts, supplement manifests, and parsed supported supplement rows
+- safe incremental extracted-facts refresh, so targeted paper refreshes replace only the relevant paper facts instead of shrinking the whole source lane
 - legal full-text units when available
 - literature-derived behavior, vector competence, resistance, ecology, and public-health facet records
 - paper metadata, titles, abstracts, DOI/PMID-style identifiers when available, source URLs, and provenance

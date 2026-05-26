@@ -7,7 +7,7 @@ This page covers public Aedes aegypti taxonomy, occurrence, citizen-science, obs
 What it contains:
 
 - 100,736 hosted observation records
-- 26,096 hosted media records
+- 26,167 hosted media records
 - 19,439 derived still-image atom records
 - GBIF Aedes aegypti taxonomy and occurrence records
 - iNaturalist public observations and licensed still photos
