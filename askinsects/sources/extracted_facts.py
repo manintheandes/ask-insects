@@ -236,6 +236,36 @@ SUPPORTED_SUPPLEMENT_EXTENSIONS = {".csv", ".tsv", ".xlsx", ".docx", ".xml", ".h
 EUROPE_PMC_SEARCH_BASE = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 PMC_OA_SERVICE_BASE = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
 FIGSHARE_ARTICLE_API_BASE = "https://api.figshare.com/v2/articles"
+RESISTANCE_DISCOVERY_TERMS = (
+    "insecticide resistance",
+    "insecticide",
+    "pyrethroid",
+    "organophosphate",
+    "carbamate",
+    "temephos",
+    "permethrin",
+    "deltamethrin",
+    "malathion",
+    "bendiocarb",
+    "kdr",
+    "knockdown resistance",
+    "vgsc",
+    "v1016g",
+    "f1534c",
+    "v410l",
+    "s989p",
+    "lc50",
+    "lc90",
+    "mortality",
+)
+RESISTANCE_TABLE_STRONG_FIELDS = {
+    "genotype_frequency",
+    "insecticide",
+    "knockdown",
+    "lc_value",
+    "mortality",
+    "mutation",
+}
 
 
 def utc_now() -> str:
@@ -820,18 +850,21 @@ def _supplement_candidates_with_discovery(
     return candidates, discovered_count, discovery_record_count
 
 
-def _supplement_discovery_score(paper: sqlite3.Row) -> tuple[int, int, int, str]:
+def _supplement_discovery_score(paper: sqlite3.Row) -> tuple[int, int, int, int, str]:
     request = _identifier_request(paper)
     if not any(request.get(key) for key in ("doi", "pmid", "pmcid")):
-        return (0, 0, 0, str(paper["record_id"]))
+        return (0, 0, 0, 0, str(paper["record_id"]))
     title = str(paper["title"] or "").lower()
+    text = str(paper["text"] or "").lower()
+    payload = str(paper["payload_json"] or "").lower()
     url = str(paper["url"] or "").lower()
+    resistance_relevant = 1 if any(term in f"{title}\n{text}\n{payload}" for term in RESISTANCE_DISCOVERY_TERMS) else 0
     figshare = 1 if _figshare_article_id_from_request(request) else 0
     supplementish = 1 if any(term in title for term in ("additional file", "supplementary", "supplement ", " table", "dataset")) else 0
     pmc_or_pubmed = 1 if request.get("pmcid") or request.get("pmid") else 0
     if "figshare" in url:
         figshare = 1
-    return (figshare, supplementish, pmc_or_pubmed, str(paper["record_id"]))
+    return (resistance_relevant, figshare, supplementish, pmc_or_pubmed, str(paper["record_id"]))
 
 
 def _prioritized_supplement_discovery_rows(literature_rows: list[sqlite3.Row]) -> list[sqlite3.Row]:
@@ -1100,6 +1133,18 @@ def _row_declared_fact_type(row: dict[str, str] | None) -> str | None:
             if row_key.lower().strip() == key and value:
                 return value.lower().strip().replace(" ", "_")
     return None
+
+
+def _is_supported_parsed_resistance_row(
+    row: dict[str, str] | None,
+    fields: dict[str, list[str]],
+    declared_fact_type: str | None,
+) -> bool:
+    if not row:
+        return True
+    if declared_fact_type == "resistance":
+        return True
+    return any(field in fields for field in RESISTANCE_TABLE_STRONG_FIELDS)
 
 
 def _download_and_parse_supplement_rows(
@@ -1420,6 +1465,12 @@ def build_extracted_fact_records(
             fields = _field_matches(combined_text, family)
             context_hits = _matched_terms(combined_text, family.context_terms)
             if not fields or not context_hits:
+                continue
+            if family.fact_type == "resistance" and not _is_supported_parsed_resistance_row(
+                candidate.table_row,
+                fields,
+                declared_fact_type,
+            ):
                 continue
             enriched_fields = _enrich_fields(combined_text, fields)
             records.append(_record_for_fact(candidate, family, enriched_fields, retrieved_at=retrieved_at))

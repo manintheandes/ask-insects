@@ -396,6 +396,159 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(requests, ["openalex:Z_ID"])
             self.assertEqual(result.supplement_discovery_record_count, 1)
 
+    def test_build_extracted_fact_records_prioritizes_resistance_rows_for_bounded_supplement_discovery(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:Z_GENERIC",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Additional file 1 of Aedes aegypti vector competence table",
+                        text="Aedes aegypti supplementary vector competence table.",
+                        species="Aedes aegypti",
+                        url="https://example.org/generic",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#Z_GENERIC",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1234/generic", "pmid": "12345678"}},
+                    ),
+                    EvidenceRecord(
+                        record_id="openalex:A_RESISTANCE",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti insecticide resistance and kdr supplementary table",
+                        text="Field populations with deltamethrin mortality, V1016G, F1534C, and LC50 evidence.",
+                        species="Aedes aegypti",
+                        url="https://example.org/resistance",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#A_RESISTANCE",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1234/resistance", "pmid": "22345678"}},
+                    ),
+                ]
+            )
+            requests: list[str] = []
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                requests.append(str(request["record_id"]))
+                return []
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                max_supplement_discovery_records=1,
+            )
+
+            self.assertEqual(requests, ["openalex:A_RESISTANCE"])
+            self.assertEqual(result.supplement_discovery_record_count, 1)
+
+    def test_build_extracted_fact_records_skips_generic_bioassay_resistance_table_noise(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            payloads: dict[str, bytes] = {
+                "https://example.org/aedes-facts/supp-table-1.csv": (
+                    "Attractant,Assay,Area (%)\n"
+                    "Isoamyl acetate,Cage bioassay,9.06\n"
+                ).encode("utf-8"),
+                "https://example.org/europepmc/attractant.csv": (
+                    "Attractant,Assay,Area (%)\n"
+                    "Isoamyl acetate,Cage bioassay,9.06\n"
+                ).encode("utf-8"),
+            }
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                return [
+                    {
+                        "title": "Attractant bioassay table",
+                        "url": "https://example.org/europepmc/attractant.csv",
+                        "file_type": "csv",
+                        "source": "europe_pmc",
+                    }
+                ]
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                return payloads[url]
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                fetch_supplement_file_fn=fake_file_fetch,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed_resistance = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "resistance" and record.payload["confidence"] == "parsed"
+            ]
+            self.assertEqual(parsed_resistance, [])
+            self.assertEqual(result.parsed_supplement_row_count, 2)
+
+    def test_build_extracted_fact_records_promotes_true_resistance_table_without_declared_domain(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            payloads: dict[str, bytes] = {
+                "https://example.org/aedes-facts/supp-table-1.csv": (
+                    "Population,Insecticide,Assay,Mortality %,V1016G allele frequency,Country\n"
+                    "Brazil field population,deltamethrin,WHO tube bioassay,43,0.72,Brazil\n"
+                ).encode("utf-8"),
+                "https://example.org/europepmc/resistance.csv": (
+                    "Population,Insecticide,Assay,Mortality %,V1016G allele frequency,Country\n"
+                    "Brazil field population,deltamethrin,WHO tube bioassay,43,0.72,Brazil\n"
+                ).encode("utf-8"),
+            }
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                return [
+                    {
+                        "title": "Resistance table",
+                        "url": "https://example.org/europepmc/resistance.csv",
+                        "file_type": "csv",
+                        "source": "europe_pmc",
+                    }
+                ]
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                return payloads[url]
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=fake_metadata,
+                fetch_supplement_file_fn=fake_file_fetch,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed_resistance = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "resistance" and record.payload["confidence"] == "parsed"
+            ]
+            self.assertEqual(len(parsed_resistance), 2)
+            self.assertTrue(all("deltamethrin" in record.text for record in parsed_resistance))
+            self.assertTrue(all(record.payload["fields"]["table_row"]["Mortality %"] == "43" for record in parsed_resistance))
+
     def test_build_extracted_fact_records_parses_supported_supplement_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
