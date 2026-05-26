@@ -28,7 +28,7 @@
   ],
   "ask_insects_current": {
     "hosted_health_checked_at": "2026-05-26",
-    "hosted_record_count": 1415737,
+    "hosted_record_count": 1416737,
     "hosted_trait_records": 4972,
     "hosted_image_atom_records": 19439,
     "hosted_verified_image_mirrors": 5828,
@@ -38,6 +38,7 @@
     "hosted_video_motion_rows": 45574,
     "hosted_video_gap_records": 400,
     "hosted_vectorbase_genomics_records": 872001,
+    "hosted_vectorbyte_abundance_records": 1000,
     "hosted_sources": [
       "aedes_cdc_dengue_surveillance",
       "aedes_expression_omics",
@@ -56,6 +57,7 @@
       "aedes_resistance_table_rows",
       "aedes_uniprot_proteins",
       "aedes_vector_competence_assays",
+      "aedes_vectorbyte_abundance",
       "aedes_vectorbyte_traits",
       "aedes_video_atoms",
       "aedes_wolbachia_interventions",
@@ -94,7 +96,7 @@
       "biosamples": 20656,
       "datasets": 110,
       "dna_barcodes": 3561,
-      "ecology": 10878,
+      "ecology": 10879,
       "expression": 422,
       "genes": 39045,
       "genome_assemblies": 1,
@@ -102,7 +104,7 @@
       "literature": 12796,
       "media": 26071,
       "neurobiology": 100018,
-      "observations": 93607,
+      "observations": 94606,
       "patents": 2,
       "proteins": 56960,
       "public_health": 29563,
@@ -197,8 +199,8 @@
       "url": "https://www.vectorbyte.org/",
       "what_it_leads_in": "global open-access vector trait and abundance data platform, including VecTraits and VecDyn",
       "benchmark_note": "Treat VectorByte as the source-specific leader for vector trait and abundance database curation.",
-      "ask_insects_advantage": "Ask Insects normalizes Aedes aegypti VecTraits rows into trait atoms with temperature, stage, sex, habitat, location, citation, DOI, and raw JSON locators.",
-      "ask_insects_gap": "Current Ask Insects coverage is a bounded Aedes trait slice, not all VectorByte species, all VecDyn abundance data, or all VectorByte analysis tools."
+      "ask_insects_advantage": "Ask Insects normalizes Aedes aegypti VecTraits rows into trait atoms with temperature, stage, sex, habitat, location, citation, DOI, and raw JSON locators, and also indexes a bounded VecDyn abundance dataset into row-level sample/count atoms.",
+      "ask_insects_gap": "Current Ask Insects coverage is a bounded Aedes trait slice plus a bounded VecDyn abundance receipt, not all VectorByte species, all VecDyn abundance data, or all VectorByte analysis tools."
     },
     {
       "id": "openalex_pubmed_pmc",
