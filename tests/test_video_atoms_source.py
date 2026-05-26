@@ -1176,6 +1176,43 @@ class VideoAtomsSourceTests(unittest.TestCase):
 
         self.assertEqual(set(DISCOVERY_REPOSITORIES), set(clients))
 
+    def test_institutional_sqlite_scan_skips_irrelevant_large_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="vectorbase_aedes_genomics",
+                locator="raw/vectorbase#row/1",
+                retrieved_at=RETRIEVED_AT,
+            )
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="vectorbase:noise:1",
+                        lane="genome_features",
+                        source="vectorbase_aedes_genomics",
+                        title="Aedes aegypti irrelevant mp4 text",
+                        text="Aedes aegypti genome note mentioning https://example.org/not-video.mp4",
+                        species="Aedes aegypti",
+                        url="https://example.org/not-video.mp4",
+                        media_url=None,
+                        provenance=provenance,
+                        payload={"note": "Aedes aegypti https://example.org/not-video.mp4"},
+                    )
+                ]
+            )
+
+            original_fetch_json = video_atoms._fetch_json
+            try:
+                video_atoms._fetch_json = lambda url: {"data": {"items": []}}
+                discovery_result = video_atoms._default_institutional_discovery_client(artifact_dir)
+            finally:
+                video_atoms._fetch_json = original_fetch_json
+
+        self.assertEqual(discovery_result.items, [])
+        self.assertIn("source_index.sqlite", discovery_result.receipt["raw_artifacts"])
+
     def test_figshare_discovery_uses_broader_page_size(self):
         requested_urls: list[str] = []
 

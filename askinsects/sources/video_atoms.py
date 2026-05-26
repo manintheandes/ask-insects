@@ -21,6 +21,17 @@ from askinsects.sources.mendeley_behavior_media import _parse_table, _row_values
 
 
 VIDEO_ATOMS_SOURCE_ID = "aedes_video_atoms"
+
+VIDEO_LOCATOR_SCAN_SOURCES = (
+    "aedes_literature_openalex",
+    "aedes_extracted_facts",
+    "pmc_open_access_videos",
+    "dryad_aedes_behavior_videos",
+    "mendeley_aedes_behavior_media",
+    "osf_flighttrackai_aedes_videos",
+    "zenodo_aedes_videos",
+    "figshare_aedes_videos",
+)
 VIDEO_SOURCE_IDS = {
     "pmc_open_access_videos",
     "dryad_aedes_behavior_videos",
@@ -1000,12 +1011,14 @@ def _default_institutional_discovery_client(artifact_dir: Path) -> DiscoverySwee
     dataverse_result = _dataverse_institutional_discovery_candidates()
     discovered = list(dataverse_result.items)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
+    source_placeholders = ", ".join(repr(source) for source in VIDEO_LOCATOR_SCAN_SOURCES)
     rows = index.sql(
-        """
+        f"""
         SELECT r.record_id, r.title, r.text, r.url, r.provenance_json, p.payload_json
         FROM records r
         LEFT JOIN record_payloads p ON p.record_id = r.record_id
-        WHERE lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%aedes aegypti%'
+        WHERE r.source IN ({source_placeholders})
+          AND lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%aedes aegypti%'
           AND (lower(coalesce(r.url, '')) LIKE '%.mp4%'
                OR lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%.mp4%'
                OR lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%.mov%')
