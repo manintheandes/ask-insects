@@ -891,6 +891,74 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertIn(".txt", vector.provenance.locator)
             self.assertFalse(any(gap.get("reason") == "unsupported_supplement_type" for gap in result.gaps))
 
+    def test_build_extracted_fact_records_extracts_pdf_supplement_candidates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WPDFSUPP",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti resistance PDF supplement",
+                        text="Aedes aegypti supplemental resistance report.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.5281/zenodo.67890",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WPDFSUPP",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.5281/zenodo.67890"}},
+                    )
+                ]
+            )
+
+            def fake_metadata(request: dict[str, object]) -> list[dict[str, object]]:
+                return [
+                    {
+                        "title": "Resistance PDF supplement",
+                        "url": "https://zenodo.org/api/records/67890/files/resistance.pdf/content",
+                        "file_type": "application/pdf",
+                        "source": "zenodo",
+                    }
+                ]
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                self.assertEqual(url, "https://zenodo.org/api/records/67890/files/resistance.pdf/content")
+                return b"%PDF fixture bytes"
+
+            with patch(
+                "askinsects.sources.extracted_facts._parse_pdf_text",
+                return_value=(
+                    "Aedes aegypti insecticide resistance bioassay. "
+                    "Deltamethrin mortality was 43% and kdr mutation V1016G was detected."
+                ),
+            ):
+                result = build_extracted_fact_records(
+                    artifact_dir,
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    discover_supplements=True,
+                    download_supplements=True,
+                    fetch_supplement_metadata_fn=fake_metadata,
+                    fetch_supplement_file_fn=fake_file_fetch,
+                    max_supplement_files=10,
+                    max_supplement_bytes=100_000,
+                )
+
+            resistance = next(record for record in result.records if record.payload["fact_type"] == "resistance")
+            self.assertEqual(result.downloaded_supplement_file_count, 1)
+            self.assertEqual(result.parsed_supplement_file_count, 1)
+            self.assertEqual(result.parsed_supplement_row_count, 0)
+            self.assertEqual(resistance.payload["confidence"], "candidate")
+            self.assertEqual(resistance.payload["extraction_method"], "deterministic_supplement_text_extract")
+            self.assertIn("raw/extracted_facts/supplements/", resistance.provenance.locator)
+            self.assertIn(".pdf", resistance.provenance.locator)
+            self.assertFalse(any(gap.get("reason") == "unsupported_supplement_type" for gap in result.gaps))
+
     def test_build_extracted_fact_records_uses_bounded_fulltext_probe(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -11,6 +11,8 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+import subprocess
+import tempfile
 from typing import Callable, Iterable
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
@@ -233,7 +235,7 @@ DOSE_RE = re.compile(r"\b(?:10\^?\d+|\d+(?:\.\d+)?)\s?(?:pfu|ffu|tcid50|focus-fo
 MUTATION_RE = re.compile(r"\b[A-Z][0-9]{2,4}[A-Z]\b")
 CASE_RE = re.compile(r"\b(?:cases|deaths|fatalities)\s+\d[\d,]*|\b\d[\d,]*\s+(?:cases|deaths|fatalities)\b", re.I)
 SUPPORTED_TABLE_SUPPLEMENT_EXTENSIONS = {".csv", ".tsv", ".xlsx", ".docx", ".xml", ".html", ".htm"}
-SUPPORTED_TEXT_SUPPLEMENT_EXTENSIONS = {".txt", ".md", ".log", ".r"}
+SUPPORTED_TEXT_SUPPLEMENT_EXTENSIONS = {".txt", ".md", ".log", ".r", ".pdf"}
 SUPPORTED_SUPPLEMENT_EXTENSIONS = SUPPORTED_TABLE_SUPPLEMENT_EXTENSIONS | SUPPORTED_TEXT_SUPPLEMENT_EXTENSIONS
 EUROPE_PMC_SEARCH_BASE = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 PMC_OA_SERVICE_BASE = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
@@ -967,6 +969,8 @@ def _supplement_extension(supplement: dict[str, object]) -> str:
         return ".html"
     if "xml" in file_type:
         return ".xml"
+    if file_type in {"pdf", "application/pdf"} or "pdf" in file_type:
+        return ".pdf"
     if file_type in {"txt", "text", "text/plain", "plain"}:
         return ".txt"
     if file_type in {"md", "markdown", "text/markdown"}:
@@ -1180,8 +1184,23 @@ def _parse_supported_table_rows(data: bytes, extension: str) -> list[dict[str, s
 def _parse_supported_text(data: bytes, extension: str) -> str:
     if extension not in SUPPORTED_TEXT_SUPPLEMENT_EXTENSIONS:
         return ""
+    if extension == ".pdf":
+        return _parse_pdf_text(data)
     text = data.decode("utf-8", errors="replace")
     return re.sub(r"\s+", " ", text).strip()
+
+
+def _parse_pdf_text(data: bytes) -> str:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_path = Path(tmpdir) / "supplement.pdf"
+        pdf_path.write_bytes(data)
+        result = subprocess.run(
+            ["pdftotext", "-layout", pdf_path.as_posix(), "-"],
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+    return re.sub(r"\s+", " ", result.stdout.decode("utf-8", errors="replace")).strip()
 
 
 def _pmc_oa_supplements(data: bytes, *, source_url: str) -> list[dict[str, object]]:
