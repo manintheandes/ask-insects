@@ -3836,6 +3836,59 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_resistance_table_rows")
             self.assertIn("0.72", answer["evidence"][0]["text"])
 
+    def test_resistance_table_questions_prefer_named_openalex_source_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="resistance_table:extracted_fact:resistance:openalex:W3208836499:row49",
+                        lane="resistance",
+                        source="aedes_resistance_table_rows",
+                        title="Aedes aegypti parsed resistance table row: temephos",
+                        text="Schema-validated parsed supplement table row. Source record: openalex:W3208836499. Insecticide terms: temephos. Metric fields: mortality.",
+                        species="Aedes aegypti",
+                        url="https://example.org/w320",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_resistance_table_rows",
+                            locator="records#openalex:W3208836499;row#49",
+                            retrieved_at="2026-05-27T00:00:00Z",
+                            license="CC-BY",
+                        ),
+                        payload={"confidence": "parsed_table_schema_validated"},
+                    ),
+                    EvidenceRecord(
+                        record_id="resistance_table:extracted_fact:resistance:openalex:W7128925281:row3",
+                        lane="resistance",
+                        source="aedes_resistance_table_rows",
+                        title="Aedes aegypti parsed resistance table row: deltamethrin",
+                        text="Schema-validated parsed supplement table row. Source record: openalex:W7128925281. Insecticide terms: deltamethrin. Metric fields: discriminating_concentration. Table row: Discriminating concentration s: Deltamethrin.",
+                        species="Aedes aegypti",
+                        url="https://ndownloader.figshare.com/files/61896451",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_resistance_table_rows",
+                            locator="records#openalex:W7128925281;row#3",
+                            retrieved_at="2026-05-27T00:00:00Z",
+                            license="CC BY + CC0",
+                        ),
+                        payload={"confidence": "parsed_table_schema_validated"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Aedes aegypti resistance evidence from openalex W7128925281 discriminating concentrations",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "resistance_table:extracted_fact:resistance:openalex:W7128925281:row3")
+            self.assertIn("Deltamethrin", answer["evidence"][0]["text"])
+
     def test_resistance_table_questions_return_table_gap_record(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

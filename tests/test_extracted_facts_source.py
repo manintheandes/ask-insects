@@ -1142,6 +1142,63 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertTrue(all("deltamethrin" in record.text for record in parsed_resistance))
             self.assertTrue(all(record.payload["fields"]["table_row"]["Mortality %"] == "43" for record in parsed_resistance))
 
+    def test_build_extracted_fact_records_promotes_discriminating_concentration_docx_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://ndownloader.figshare.com/files/61896451"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:W7128925281",
+                title=(
+                    "Toxicity of ivermectin on multiple insecticide-resistant populations of "
+                    "Anopheles gambiae sensu lato, Aedes aegypti, and Culex mosquitoes"
+                ),
+                text="Additional file with discriminating concentration insecticide class rows.",
+                supplement_url=supplement_url,
+            )
+            payload = make_docx_bytes(
+                [
+                    ["Discriminating concentration s"],
+                    ["Insecticide class"],
+                    ["Pyrethroids"],
+                    ["Deltamethrin"],
+                    ["Carbamate"],
+                    ["Organochlorine"],
+                    ["Organophosphate"],
+                ]
+            )
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                self.assertEqual(url, supplement_url)
+                self.assertLessEqual(len(payload), max_bytes)
+                return payload
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=fake_file_fetch,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed_resistance = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "resistance" and record.payload["confidence"] == "parsed"
+            ]
+            values = {
+                record.payload["fields"]["table_row"]["Discriminating concentration s"]
+                for record in parsed_resistance
+            }
+            self.assertEqual(result.parsed_supplement_row_count, 6)
+            self.assertEqual(len(parsed_resistance), 6)
+            self.assertIn("Deltamethrin", values)
+            self.assertIn("Pyrethroids", values)
+            self.assertIn("Organophosphate", values)
+            self.assertTrue(all(record.lane == "resistance" for record in parsed_resistance))
+            self.assertTrue(all("raw/extracted_facts/supplements/" in record.provenance.locator for record in parsed_resistance))
+
     def test_build_extracted_fact_records_parses_supported_supplement_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

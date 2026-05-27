@@ -2384,9 +2384,34 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
     wants_marker = bool(_resistance_marker_terms(question))
     wants_extracted = _wants_extracted_facts(question)
     q = question.lower()
-    wants_table = wants_extracted or any(term in q for term in ("frequency", "frequencies", "haplotype", "genotype", "mortality", "lc50", "lc90", "table row"))
+    locator_terms = [match.lower() for match in re.findall(r"\bW\d{6,}\b", question, flags=re.IGNORECASE)]
+    wants_table = wants_extracted or _wants_source_locator_evidence(question) or any(
+        term in q
+        for term in (
+            "frequency",
+            "frequencies",
+            "haplotype",
+            "genotype",
+            "mortality",
+            "lc50",
+            "lc90",
+            "table row",
+            "table rows",
+            "discriminating concentration",
+            "discriminating concentrations",
+        )
+    )
     wants_who_database = any(term in q for term in ("malaria threats", "who database", "global database", "who resistance database", "who insecticide resistance database"))
     wants_who_guidance = any(term in q for term in ("who", "world health organization", "guidance", "method", "methods", "bioassay", "bioassays", "discriminating concentration", "discriminating concentrations"))
+
+    def locator_rank(record: EvidenceRecord) -> int:
+        if not locator_terms:
+            return 0
+        haystack = (
+            f"{record.record_id}\n{record.title}\n{record.text}\n{record.url or ''}\n"
+            f"{record.provenance.locator}\n{record.provenance.source_url or ''}"
+        ).lower()
+        return 0 if any(term in haystack for term in locator_terms) else 1
 
     def score(record: EvidenceRecord) -> tuple[object, ...]:
         who_database_rank = 0 if wants_who_database and record.source == WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID else 1
@@ -2396,6 +2421,7 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
         marker_rank = 0 if wants_marker and not wants_table and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
         irmapper_rank = 0 if not wants_marker and record.source == "irmapper_aedes" else 1
         return (
+            locator_rank(record),
             who_database_rank,
             who_guidance_rank,
             table_rank,
@@ -2413,7 +2439,23 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
     q = question.lower()
     if not (
         _wants_extracted_facts(question)
-        or any(term in q for term in ("frequency", "frequencies", "haplotype", "genotype", "mortality", "lc50", "lc90", "table row"))
+        or _wants_source_locator_evidence(question)
+        or any(
+            term in q
+            for term in (
+                "frequency",
+                "frequencies",
+                "haplotype",
+                "genotype",
+                "mortality",
+                "lc50",
+                "lc90",
+                "table row",
+                "table rows",
+                "discriminating concentration",
+                "discriminating concentrations",
+            )
+        )
     ):
         return []
     with index.connect() as conn:
@@ -2954,13 +2996,25 @@ def _vector_competence_assay_grain_rank(question: str, record: EvidenceRecord) -
 
 def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    locator_terms = [match.lower() for match in re.findall(r"\bW\d{6,}\b", question, flags=re.IGNORECASE)]
+
+    def locator_rank(record: EvidenceRecord) -> int:
+        if not locator_terms:
+            return 0
+        haystack = (
+            f"{record.record_id}\n{record.title}\n{record.text}\n{record.url or ''}\n"
+            f"{record.provenance.locator}\n{record.provenance.source_url or ''}"
+        ).lower()
+        return 0 if any(term in haystack for term in locator_terms) else 1
+
     if _wants_video_atoms(question):
         wants_gap = _wants_video_gaps(question) or any(term in q for term in ("missing", "not decoded", "undecoded", "not expanded"))
 
-        def score_video(record: EvidenceRecord) -> tuple[int, int, int]:
+        def score_video(record: EvidenceRecord) -> tuple[int, int, int, int]:
             haystack = f"{record.record_id} {record.title} {record.text}".lower()
             is_gap = "video gap" in haystack or ":gap:" in record.record_id
             return (
+                locator_rank(record),
                 0 if record.source == "aedes_video_atoms" else 1,
                 0 if wants_gap and is_gap else 1 if wants_gap else 0,
                 0 if record.lane in {"media", "behavior"} else 1,
@@ -3144,10 +3198,13 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             ),
         )
     if "mosquito alert" not in q:
+        if locator_terms:
+            return sorted(records, key=lambda record: (locator_rank(record), record.record_id))
         return records
 
-    def score(record: EvidenceRecord) -> tuple[int, int]:
+    def score(record: EvidenceRecord) -> tuple[int, int, int]:
         return (
+            locator_rank(record),
             0 if record.source == "mosquito_alert_gbif" else 1,
             0 if record.lane in {"observations", "media"} else 1,
         )

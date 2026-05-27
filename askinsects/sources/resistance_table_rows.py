@@ -15,7 +15,7 @@ from askinsects.sources.resistance_markers import INSECTICIDE_TERMS, MARKER_SPEC
 
 RESISTANCE_TABLE_ROW_SOURCE_ID = "aedes_resistance_table_rows"
 
-METRIC_FIELDS = ("mortality", "knockdown", "lc_value", "genotype_frequency")
+METRIC_FIELDS = ("mortality", "knockdown", "lc_value", "genotype_frequency", "discriminating_concentration")
 ASSAY_TERMS = (
     "bioassay",
     "WHO tube",
@@ -106,6 +106,8 @@ def _metric_fields(fields: dict[str, object], combined_text: str) -> list[str]:
         metrics.append("lc_value")
     if "allele frequency" in lower or "genotype frequency" in lower or "haplotype" in lower:
         metrics.append("genotype_frequency")
+    if "discriminating concentration" in lower:
+        metrics.append("discriminating_concentration")
     ordered = [field for field in METRIC_FIELDS if field in set(metrics)]
     return sorted(ordered)
 
@@ -173,9 +175,12 @@ def _records_from_parsed_rows(conn: sqlite3.Connection, *, retrieved_at: str) ->
         digest = hashlib.sha1(f"{row['record_id']}|{json.dumps(table_row, sort_keys=True)}".encode("utf-8")).hexdigest()[:12]
         title_terms = " ".join(insecticide_terms[:2] + marker_terms[:2]).strip() or "resistance assay"
         title = f"Aedes aegypti parsed resistance table row: {title_terms}"
+        source_title = payload.get("source_title") or row["title"]
         text = (
             "Schema-validated parsed supplement table row for Aedes aegypti insecticide resistance. "
             "Validation status: schema_validated, not human_validated. "
+            f"Source record: {source_record_id or 'unknown'}. "
+            f"Source title: {source_title}. "
             f"Insecticide terms: {', '.join(insecticide_terms) if insecticide_terms else 'not detected'}. "
             f"Marker terms: {', '.join(marker_terms) if marker_terms else 'not detected'}. "
             f"Assay terms: {', '.join(assay_terms) if assay_terms else 'not detected'}. "
@@ -202,7 +207,7 @@ def _records_from_parsed_rows(conn: sqlite3.Connection, *, retrieved_at: str) ->
                 payload={
                     "source_extracted_fact_record_id": row["record_id"],
                     "source_record_id": source_record_id or None,
-                    "source_title": payload.get("source_title") or row["title"],
+                    "source_title": source_title,
                     "source_confidence": payload.get("confidence"),
                     "source_extraction_method": payload.get("extraction_method"),
                     "extraction_source": "aedes_extracted_facts_parsed_supplement_table",
@@ -241,7 +246,7 @@ def _gap_record(
         f"Parsed resistance table rows seen: {parsed_rows_seen}. "
         f"Rows skipped by schema validation: {skipped_rows}. "
         "No schema-validated insecticide-resistance table rows are currently queryable from this lane. "
-        "Relevant future row types include V1016G frequency, F1534C frequency, genotype frequency, haplotype, mortality, knockdown, LC50, and LC90."
+        "Relevant future row types include V1016G frequency, F1534C frequency, genotype frequency, haplotype, mortality, knockdown, LC50, LC90, and discriminating concentration."
     )
     return EvidenceRecord(
         record_id=f"resistance_table:gap:{reason}",
