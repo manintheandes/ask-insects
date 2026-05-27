@@ -1510,6 +1510,54 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(len(parsed), 1)
             self.assertEqual(parsed[0].lane, "ecology")
 
+    def test_build_extracted_fact_records_promotes_larvicide_mixture_control_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://ndownloader.figshare.com/files/61983853"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:W7130372072",
+                title=(
+                    "Ecotoxicological evidence of safe and effective low-dose mixture of "
+                    "spinosad-pyriproxyfen application under semi-field conditions"
+                ),
+                text="Aedes aegypti larvae exposed to a larvicide mixture in semi-field conditions.",
+                supplement_url=supplement_url,
+            )
+            payload = make_docx_bytes(
+                [
+                    [
+                        "Day",
+                        "Mixture Mean (%)",
+                        "Mixture 95% CI (Lower-Upper)",
+                        "Control Mean (%)",
+                        "Control 95% CI (Lower-Upper)",
+                        "Enzyme",
+                        "p -value",
+                    ],
+                    ["1", "100.0", "100.0-100.0", "63.8", "43.6-83.9", "α-esterase", "0.0006"],
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(len(parsed), 1)
+            self.assertTrue(all(record.lane == "public_health" for record in parsed))
+            self.assertIn("mixture mean", parsed[0].payload["fields"]["intervention"])
+            self.assertIn("mean (%)", parsed[0].payload["fields"]["effect_metric"])
+            self.assertEqual(parsed[0].payload["fields"]["table_row"]["Mixture Mean (%)"], "100.0")
+            self.assertIn("α-esterase", parsed[0].payload["fields"]["biochemical_response"])
+            self.assertEqual(parsed[0].payload["fields"]["table_row"]["p -value"], "0.0006")
+
     def test_build_extracted_fact_records_keeps_prisma_checklists_as_audit_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
