@@ -2240,9 +2240,13 @@ def _motion_record(
     trial = row.get("trial")
     arena = row.get("arena")
     temperature = row.get("temperature")
+    rel_path = table_path.relative_to(artifact_dir).as_posix()
+    locator = f"{rel_path}#{locator_suffix or f'row/{row_index}'}"
     payload = {
         "atom_type": "video_motion_row",
         "source_video_record_id": video_id,
+        "source_table": rel_path,
+        "source_table_locator": locator,
         "track_id": row.get("track_id") or row.get("track"),
         "frame": _parse_number(row.get("frame")),
         "time_seconds": _parse_number(row.get("time_seconds") or row.get("time")),
@@ -2270,7 +2274,6 @@ def _motion_record(
         **source_payload,
     }
     payload = {key: value for key, value in payload.items() if value is not None}
-    rel_path = table_path.relative_to(artifact_dir).as_posix()
     digest = _digest(video_id, rel_path, row_index)
     metrics = []
     if payload.get("velocity_mean_cm_s") is not None:
@@ -2282,7 +2285,6 @@ def _motion_record(
     metric_text = f" Metrics: {', '.join(metrics)}." if metrics else ""
     label_text = _motion_behavior_from_labels(payload.get("source_behavior_labels"))
     source_label_text = f" Source behavior labels: {label_text}." if label_text else ""
-    locator = f"{rel_path}#{locator_suffix or f'row/{row_index}'}"
     return EvidenceRecord(
         record_id=f"video_atom:motion:{_safe_id(video_id)}:{digest}",
         lane="behavior",

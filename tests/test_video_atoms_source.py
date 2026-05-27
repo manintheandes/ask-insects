@@ -1025,6 +1025,8 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(row.payload["y"], 93.1)
         self.assertEqual(row.payload["behavior_type"], "host seeking")
         self.assertEqual(row.payload["confidence"], "source_table")
+        self.assertEqual(row.payload["source_table"], "raw/mendeley_behavior_media/motion.csv")
+        self.assertEqual(row.payload["source_table_locator"], "raw/mendeley_behavior_media/motion.csv#row/1")
         self.assertIn("source_video_asset_id", row.payload)
         self.assertEqual(row.payload["repository"], "pmc_oa")
         self.assertEqual(row.payload["source_dataset"], "BiteOscope")
