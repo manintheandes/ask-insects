@@ -174,6 +174,13 @@ class SourceCoverageTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], SOURCE_COVERAGE_SOURCE_ID)
             self.assertIn("Missing Aedes aegypti", answer["evidence"][0]["text"])
 
+            source_answer = answer_question("what sources are missing for Aedes?", artifact_dir=artifact_dir, limit=3)
+
+            self.assertTrue(source_answer["ok"])
+            self.assertEqual(source_answer["answer_shape"], "evidence")
+            self.assertEqual(source_answer["evidence"][0]["source"], SOURCE_COVERAGE_SOURCE_ID)
+            self.assertIn("Missing Aedes aegypti", source_answer["evidence"][0]["text"])
+
     def test_domain_specific_missing_coverage_question_uses_source_coverage_lane(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
