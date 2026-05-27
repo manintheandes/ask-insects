@@ -3180,7 +3180,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     q = question.lower()
     atom_types: list[str]
     if _wants_video_gaps(question):
-        atom_types = ["video_sweep", "video_gap"] if (_video_discovery_repository(question) or "repository" in q or "sweep" in q) else ["video_gap"]
+        atom_types = ["video_sweep", "video_gap"] if "sweep" in q else ["video_gap"]
     elif _wants_video_discovery(question):
         atom_types = ["video_sweep", "video_asset", "video_gap"]
     elif any(term in q for term in ("motion", "velocity", "distance moved", "movement", "locomotory", "trajectory", "trajectories", "tracking", "track id", "coordinates")):

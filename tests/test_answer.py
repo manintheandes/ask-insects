@@ -1761,6 +1761,53 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
             self.assertIn("video_discovery_not_video_media", answer["evidence"][0]["text"])
 
+    def test_repository_video_gap_questions_prefer_gap_rows_over_sweeps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:sweep:dryad",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video discovery sweep: dryad",
+                        text="Aedes aegypti video discovery sweep for dryad: status accepted_candidates.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/discovery_sweeps.json#dryad",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_sweep", "repository": "dryad"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:gap:dryad",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_download_failed",
+                        text="Aedes aegypti video source gap: video_download_failed. Repository: dryad.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="gaps.json#aedes_video_atoms/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "repository": "dryad", "reason": "video_download_failed"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Dryad Aedes video gaps", artifact_dir=artifact_dir, limit=1)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "video_atom:gap:dryad")
+
     def test_video_atom_motion_questions_prefer_queryable_motion_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
