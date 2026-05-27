@@ -40,8 +40,8 @@ Latest Ask Insects source-plane update: 2026-05-27.
 - Added or expanded expression metadata, UniProt proteins, VectorByte traits and abundance, image atoms, video atoms, VectorNet surveillance, CDC dengue surveillance, WHO dengue surveillance, resistance-table rows, and extracted-fact records.
 - Shipped the safe incremental extracted-facts refresh path so a one-paper refresh no longer shrinks the full Aedes extracted-facts lane.
 - Shipped the video-atom cleanup pass that filters non-video data files, keeps queryable video gaps, and preserves verified mirrored video artifacts.
-- Hosted video atoms now include 46,293 queryable records, including 125 video assets, 21 verified video assets, 116 keyframes, 21 thumbnails, 21 preview clips, 21 frame manifests, and 45,574 motion rows.
-- Shipped safe repository-scoped video refreshes, proven with a Dryad-only hosted pass that accepted 29 candidates from 71 raw Dryad discovery candidates without shrinking the full video lane.
+- Hosted video atoms now include 46,252 queryable records, including 84 video assets, 21 verified video assets, 407 structured video gaps, 116 keyframes, 21 thumbnails, 21 preview clips, 21 frame manifests, and 45,574 motion rows.
+- Shipped safe repository-scoped video refreshes, proven with a Dryad-only hosted pass that accepted 29 candidates from 71 raw Dryad discovery candidates and cleared stale Dryad candidate rows without shrinking the other video repositories.
 - Shipped official India NCVBDC dengue surveillance with 221 hosted public-health records and a queryable latest-two-complete-year summary for India dengue deaths.
 - Shipped official Brazil OpenDataSUS SINAN dengue surveillance with 2,177 hosted aggregate public-health records from 1,956,578 source CSV rows, including country-year, state-year, country-week, and residence-state-week records.
 - Hosted extracted facts now include 7,653 queryable records, with promoted vector-competence and resistance table rows still available through their dedicated answer lanes.
