@@ -1436,6 +1436,21 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual([receipt["repository"] for receipt in result.discovery_sweep_receipts], ["zenodo"])
         self.assertEqual(result.video_asset_count, 1)
 
+    def test_institutional_scoped_refresh_skips_source_candidate_scan(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            SourceIndex(artifact_dir / "source_index.sqlite").initialize()
+
+            with mock.patch.object(video_atoms, "_candidate_rows", side_effect=AssertionError("candidate scan should be skipped")):
+                result = build_video_atom_records(
+                    artifact_dir,
+                    discovery_repositories=("institutional",),
+                    parse_motion_rows=False,
+                )
+
+        self.assertEqual(result.records, [])
+        self.assertEqual(result.gaps, [])
+
     def test_discovery_sweep_receipts_preserve_page_coverage_metadata(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

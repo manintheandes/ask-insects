@@ -46,6 +46,14 @@ VIDEO_SOURCE_IDS = {
     "zenodo_aedes_videos",
     "figshare_aedes_videos",
 }
+REPOSITORY_SOURCE_IDS = {
+    "pmc_oa": "pmc_open_access_videos",
+    "dryad": "dryad_aedes_behavior_videos",
+    "mendeley": "mendeley_aedes_behavior_media",
+    "osf": "osf_flighttrackai_aedes_videos",
+    "zenodo": "zenodo_aedes_videos",
+    "figshare": "figshare_aedes_videos",
+}
 UPSTREAM_VIDEO_MANIFEST_GAP_SOURCES = {
     "zenodo_aedes_videos",
     "figshare_aedes_videos",
@@ -311,14 +319,11 @@ def _source_dataset(row: dict[str, object], payload: dict[str, object]) -> str:
 
 
 def _repository_for_source(source: str) -> str | None:
-    return {
-        "pmc_open_access_videos": "pmc_oa",
-        "dryad_aedes_behavior_videos": "dryad",
-        "mendeley_aedes_behavior_media": "mendeley",
-        "osf_flighttrackai_aedes_videos": "osf",
-        "zenodo_aedes_videos": "zenodo",
-        "figshare_aedes_videos": "figshare",
-    }.get(source)
+    return {source_id: repository for repository, source_id in REPOSITORY_SOURCE_IDS.items()}.get(source)
+
+
+def _source_ids_for_repositories(repositories: Iterable[str]) -> tuple[str, ...]:
+    return tuple(REPOSITORY_SOURCE_IDS[repository] for repository in repositories if repository in REPOSITORY_SOURCE_IDS)
 
 
 def _size_from_candidate(candidate: VideoCandidate) -> int | None:
@@ -433,13 +438,17 @@ def _discovery_gap(raw: dict[str, object], reason: str, repository: str, title: 
     return {key: value for key, value in context.items() if value not in (None, "", {})}
 
 
-def _candidate_rows(index: SourceIndex) -> list[VideoCandidate]:
+def _candidate_rows(index: SourceIndex, source_ids: Iterable[str] | None = None) -> list[VideoCandidate]:
+    source_ids = tuple(source_ids) if source_ids is not None else tuple(VIDEO_SOURCE_IDS)
+    if not source_ids:
+        return []
+    source_placeholders = ", ".join(repr(source) for source in source_ids)
     rows = index.sql(
-        """
+        f"""
         SELECT r.*, p.payload_json
         FROM records r
         LEFT JOIN record_payloads p ON p.record_id = r.record_id
-        WHERE r.source IN ('pmc_open_access_videos', 'dryad_aedes_behavior_videos', 'mendeley_aedes_behavior_media', 'osf_flighttrackai_aedes_videos', 'zenodo_aedes_videos', 'figshare_aedes_videos')
+        WHERE r.source IN ({source_placeholders})
           AND lower(coalesce(r.species, '')) = 'aedes aegypti'
           AND r.lane = 'media'
         ORDER BY r.record_id
@@ -2607,9 +2616,13 @@ def build_video_atom_records(
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     gaps: list[dict[str, object]] = []
     records: list[EvidenceRecord] = []
-    candidates = _candidate_rows(index)
     repository_scope = set(discovery_repositories or ())
+    source_scope = _source_ids_for_repositories(repository_scope) if repository_scope else None
     if repository_scope:
+        candidates = _candidate_rows(index, source_scope) if source_scope else []
+    else:
+        candidates = _candidate_rows(index)
+    if repository_scope and source_scope:
         candidates = [
             candidate
             for candidate in candidates
