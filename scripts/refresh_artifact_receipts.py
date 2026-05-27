@@ -26,6 +26,42 @@ def write_json(path: Path, payload: dict[str, object]) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def read_json_list(path: Path) -> list[object]:
+    if not path.exists():
+        return []
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    return payload if isinstance(payload, list) else []
+
+
+def gap_key(gap: dict[str, object]) -> tuple[str, str, str, str, str]:
+    return (
+        str(gap.get("source")),
+        str(gap.get("lane")),
+        str(gap.get("reason")),
+        str(gap.get("record_id")),
+        str(gap.get("locator")),
+    )
+
+
+def dedupe_gaps(artifact_dir: Path) -> dict[str, int]:
+    gaps_path = artifact_dir / "gaps.json"
+    gaps = read_json_list(gaps_path)
+    deduped: list[object] = []
+    seen: set[tuple[str, str, str, str, str]] = set()
+    for gap in gaps:
+        if not isinstance(gap, dict):
+            deduped.append(gap)
+            continue
+        key = gap_key(gap)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(gap)
+    if deduped != gaps:
+        gaps_path.write_text(json.dumps(deduped, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return {"gap_count_before": len(gaps), "gap_count_after": len(deduped), "deduped_gap_count": len(gaps) - len(deduped)}
+
+
 def sqlite_summary(artifact_dir: Path) -> dict[str, object]:
     db_path = artifact_dir / "source_index.sqlite"
     with sqlite3.connect(db_path) as conn:
@@ -129,6 +165,7 @@ def update_receipt_payload(
 
 
 def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh: bool = False) -> dict[str, object]:
+    gap_summary = dedupe_gaps(artifact_dir)
     summary = sqlite_summary(artifact_dir)
     retrieved_at = utc_now()
     vectorbase_refresh = (
@@ -141,8 +178,15 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
             summary=summary,
             vectorbase_refresh=vectorbase_refresh,
         )
+        payload["gap_count"] = gap_summary["gap_count_after"]
         write_json(path, payload)
-    return {"ok": True, "artifact_dir": artifact_dir.as_posix(), **summary, "vectorbase_sequence_atom_refresh": vectorbase_refresh}
+    return {
+        "ok": True,
+        "artifact_dir": artifact_dir.as_posix(),
+        **summary,
+        **gap_summary,
+        "vectorbase_sequence_atom_refresh": vectorbase_refresh,
+    }
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -42,14 +42,27 @@ class RefreshArtifactReceiptsTests(unittest.TestCase):
             }
             (artifact_dir / "source_status.json").write_text(json.dumps(stale), encoding="utf-8")
             (artifact_dir / "source_receipt.json").write_text(json.dumps(stale), encoding="utf-8")
+            (artifact_dir / "gaps.json").write_text(
+                json.dumps(
+                    [
+                        {"source": "a", "lane": "x", "reason": "missing", "record_id": "1", "locator": "row/1"},
+                        {"source": "a", "lane": "x", "reason": "missing", "record_id": "1", "locator": "row/1"},
+                        {"source": "a", "lane": "x", "reason": "missing", "record_id": "2", "locator": "row/2"},
+                    ]
+                ),
+                encoding="utf-8",
+            )
 
             result = refresh_receipts(artifact_dir, include_vectorbase_sequence_refresh=True)
 
             self.assertTrue(result["ok"])
             self.assertEqual(result["record_count"], 3)
+            self.assertEqual(result["deduped_gap_count"], 1)
+            self.assertEqual(len(json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))), 2)
             for filename in ("source_status.json", "source_receipt.json"):
                 payload = json.loads((artifact_dir / filename).read_text(encoding="utf-8"))
                 self.assertEqual(payload["record_count"], 3)
+                self.assertEqual(payload["gap_count"], 2)
                 self.assertEqual(payload["source_counts"]["vectorbase_aedes_genomics"], 2)
                 self.assertEqual(payload["mosquito_v1_fixtures"]["record_count"], 1)
                 self.assertEqual(payload["sources"]["mosquito_v1_fixtures"]["record_count"], 1)
