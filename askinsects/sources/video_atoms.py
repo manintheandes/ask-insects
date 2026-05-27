@@ -2053,8 +2053,12 @@ def _normalize_motion_row(row: dict[object, object]) -> dict[str, str]:
     return cleaned
 
 
+def _motion_explicit_video_id(row: dict[str, str]) -> str | None:
+    return row.get("video_id") or row.get("video") or row.get("source_video_record_id")
+
+
 def _motion_video_id(row: dict[str, str], table_path: Path) -> str:
-    return row.get("video_id") or row.get("video") or row.get("source_video_record_id") or table_path.stem
+    return _motion_explicit_video_id(row) or table_path.stem
 
 
 def _motion_lookup_keys(value: object) -> set[str]:
@@ -2348,7 +2352,7 @@ def _parse_motion_tables(
                 video_id = _motion_video_id(cleaned, path)
                 source_video_asset = _motion_asset_for_video_id(video_id, asset_lookup or {})
                 source_motion_context = _motion_dataset_payload(video_id, path, asset_lookup)
-                if asset_lookup and source_video_asset is None:
+                if asset_lookup and source_video_asset is None and _motion_explicit_video_id(cleaned):
                     rel_path = path.relative_to(artifact_dir).as_posix()
                     key = (rel_path, video_id)
                     if key not in unmatched:
