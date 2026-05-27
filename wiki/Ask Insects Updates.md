@@ -13,7 +13,18 @@ tags:
 
 This page tracks meaningful Ask Insects changes. Most updates do not require user action.
 
-Latest Ask Insects source-plane update: 2026-05-26.
+Latest Ask Insects source-plane update: 2026-05-27.
+
+## 2026-05-27
+
+### Hosted Source Plane
+- Hosted Ask Insects health reports 1,463,970 source records.
+- Current hosted lanes include 767,732 genome-feature records, 106,930 behavior records, 102,915 transcript records, 100,736 observation records, 100,018 neurobiology records, 59,422 public-health records, 56,960 protein records, 39,045 gene records, 28,279 resistance records, 26,208 media records, 23,494 literature records, 11,491 vector-competence records, 11,005 ecology records, 4,972 trait records, 3,561 DNA-barcode records, 422 expression records, 110 dataset records, and 2 patent-source-status records.
+
+### New And Expanded Sources
+- Expanded official Brazil OpenDataSUS SINAN dengue surveillance to the full default public annual backfile span from 2007 through 2026.
+- Hosted OpenDataSUS now has 29,402 aggregate public-health records from 30,767,966 source CSV rows across 20 public annual ZIP files.
+- Ask Insects now answers hosted Brazil OpenDataSUS dengue questions for historical years such as 2007 and 2015 from OpenDataSUS records, with year-specific source file locators.
 
 ## 2026-05-26
 

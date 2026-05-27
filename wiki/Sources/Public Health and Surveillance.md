@@ -6,11 +6,11 @@ This page covers official Aedes aegypti public-health guidance, dengue surveilla
 
 What it contains:
 
-- 31,964 hosted public-health records
+- 59,422 hosted public-health records
 - WHO, PAHO, CDC, India NCVBDC, Brazil OpenDataSUS, and ECDC guidance or surveillance pages
 - 18,587 CDC dengue surveillance records
 - 221 India NCVBDC dengue surveillance records
-- 2,177 Brazil OpenDataSUS SINAN dengue aggregate records from 1,956,578 source CSV rows
+- 29,402 Brazil OpenDataSUS SINAN dengue aggregate records from 30,767,966 source CSV rows
 - 538 PAHO dengue surveillance records
 - 25 WHO dengue surveillance records
 - 563 VectorNet Aedes surveillance records
