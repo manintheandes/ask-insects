@@ -208,6 +208,20 @@ class SourceCoverageTests(unittest.TestCase):
             self.assertEqual(supplement_answer["evidence"][0]["record_id"], "aedes_source_coverage:gap:literature:1")
             self.assertIn("supplement table parsing", supplement_answer["evidence"][0]["text"])
 
+    def test_supplement_audit_status_without_audit_atoms_falls_back_to_coverage_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            coverage_path = Path(tmpdir) / "coverage.json"
+            write_coverage_fixture(coverage_path)
+            ingest_source_coverage(artifact_dir=artifact_dir, coverage_path=coverage_path, retrieved_at=RETRIEVED_AT)
+
+            answer = answer_question("what is Aedes supplement audit status?", artifact_dir=artifact_dir, limit=3)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["supplement_audit"]["audited_papers"], 0)
+            self.assertEqual(answer["evidence"][0]["record_id"], "aedes_source_coverage:gap:literature:1")
+            self.assertIn("no indexed audit atoms", answer["answer"])
+
 
 if __name__ == "__main__":
     unittest.main()

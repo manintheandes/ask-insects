@@ -2468,6 +2468,30 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
 
     audited_papers = int(summary["audited_papers"] or 0) if summary else 0
     if audited_papers == 0:
+        coverage_records = _source_coverage_records(
+            index,
+            "what is missing from Aedes supplement coverage?",
+            ["source_coverage"],
+            limit=max(limit, 1),
+        )
+        if coverage_records:
+            return {
+                "ok": True,
+                "answer_shape": "literature",
+                "answer": (
+                    "The Ask Insects supplement audit lane has no indexed audit atoms in this source index yet. "
+                    "The coverage ledger treats supplement parsing and promotion as an open literature-source gap."
+                ),
+                "evidence": [record_to_evidence(record) for record in coverage_records],
+                "source_gap": None,
+                "status_counts": {},
+                "supplement_audit": {
+                    "audited_papers": 0,
+                    "supplement_manifest_count": 0,
+                    "parsed_supplement_row_count": 0,
+                    "promoted_supplement_row_count": 0,
+                },
+            }
         return source_gap(plan, "The Ask Insects supplement audit lane has no indexed audit atoms yet.")
 
     supplement_manifests = int(summary["supplement_manifests"] or 0)
