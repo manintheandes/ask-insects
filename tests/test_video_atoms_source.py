@@ -1064,6 +1064,61 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(gap_records[0].payload["source_video_record_id"], "unknown-video.mp4")
         self.assertIn("raw/mendeley_behavior_media/unknown-motion.csv#row/1", gap_records[0].provenance.locator)
 
+    def test_motion_rows_inherit_dataset_behavior_labels_without_exact_video_match(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="mendeley:file:6gvs94p6r2:v1:video-s3",
+                        lane="media",
+                        source="mendeley_aedes_behavior_media",
+                        title="Aedes aegypti Mendeley video/audio/archive file Video S3.mpg",
+                        text="Aedes aegypti high-speed video file for mating behavior.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/6gvs94p6r2/1",
+                        media_url="https://data.mendeley.com/public-files/video-s3",
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/files.json#file/video-s3",
+                            retrieved_at=RETRIEVED_AT,
+                            license="CC BY 4.0",
+                        ),
+                        payload={
+                            "dataset_id": "6gvs94p6r2",
+                            "dataset_title": "Long- and short-range bimodal signals mediate mate location and recognition",
+                            "filename": "Video S3.mpg",
+                            "download_url": "https://data.mendeley.com/public-files/video-s3",
+                            "behavior_labels": ["mating", "mate recognition", "wing flash", "wingbeat"],
+                        },
+                    )
+                ]
+            )
+            table_path = artifact_dir / "raw" / "mendeley_behavior_media" / "table_files" / "6gvs94p6r2_v1_tracks.csv"
+            table_path.parent.mkdir(parents=True)
+            table_path.write_text(
+                "track_id,frame,time_seconds,x,y\n"
+                "track-1,1,0.1,2,3\n",
+                encoding="utf-8",
+            )
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                motion_table_paths=[table_path],
+            )
+
+        rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row.payload["behavior_type"], "mating, mate recognition, wing flash")
+        self.assertEqual(row.payload["source_behavior_labels"], ["mating", "mate recognition", "wing flash", "wingbeat"])
+        self.assertEqual(row.payload["repository"], "mendeley")
+        self.assertNotIn("source_video_asset_id", row.payload)
+        self.assertIn("Source behavior labels: mating, mate recognition, wing flash.", row.text)
+
     def test_parses_trackmate_spot_statistics_motion_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

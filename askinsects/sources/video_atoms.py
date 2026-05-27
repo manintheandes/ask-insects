@@ -2118,10 +2118,40 @@ def _motion_asset_for_video_id(video_id: str, asset_lookup: dict[str, EvidenceRe
     return None
 
 
+def _list_text_values(value: object) -> list[str]:
+    if isinstance(value, list):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, tuple):
+        return [str(item).strip() for item in value if str(item).strip()]
+    if isinstance(value, str) and value.strip():
+        return [value.strip()]
+    return []
+
+
+def _motion_asset_behavior_labels(asset: EvidenceRecord | None) -> list[str]:
+    if asset is None or not asset.payload:
+        return []
+    labels: list[str] = []
+    payload = asset.payload
+    labels.extend(_list_text_values(payload.get("behavior_labels")))
+    source_payload = payload.get("source_video_payload")
+    if isinstance(source_payload, dict):
+        labels.extend(_list_text_values(source_payload.get("behavior_labels")))
+    seen: set[str] = set()
+    unique: list[str] = []
+    for label in labels:
+        key = label.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(label)
+    return unique
+
+
 def _motion_asset_payload(asset: EvidenceRecord | None) -> dict[str, object]:
     if asset is None or not asset.payload:
         return {}
     payload = asset.payload
+    behavior_labels = _motion_asset_behavior_labels(asset)
     return {
         key: value
         for key, value in {
@@ -2131,9 +2161,59 @@ def _motion_asset_payload(asset: EvidenceRecord | None) -> dict[str, object]:
             "repository": payload.get("repository") or payload.get("discovery_repository"),
             "download_url": payload.get("download_url") or asset.media_url,
             "source_video_asset_media_url": asset.media_url,
+            "source_behavior_labels": behavior_labels,
         }.items()
-        if value not in (None, "", {})
+        if value not in (None, "", {}, [])
     }
+
+
+def _motion_dataset_payload(
+    video_id: str,
+    table_path: Path,
+    asset_lookup: dict[str, EvidenceRecord] | None,
+) -> dict[str, object]:
+    if not asset_lookup:
+        return {}
+    haystack = " ".join(
+        value.lower()
+        for value in (
+            video_id,
+            table_path.name,
+            table_path.stem,
+            table_path.as_posix(),
+        )
+        if value
+    )
+    seen_assets: set[str] = set()
+    for asset in asset_lookup.values():
+        if asset.record_id in seen_assets or not asset.payload:
+            continue
+        seen_assets.add(asset.record_id)
+        source_payload = asset.payload.get("source_video_payload")
+        source_payload = source_payload if isinstance(source_payload, dict) else {}
+        match_values = (
+            source_payload.get("dataset_id"),
+            source_payload.get("doi"),
+            source_payload.get("dataset_title"),
+            asset.payload.get("source_dataset"),
+        )
+        if not any(str(value or "").lower() in haystack for value in match_values if str(value or "").strip()):
+            continue
+        behavior_labels = _motion_asset_behavior_labels(asset)
+        context = {
+            "source_dataset": asset.payload.get("source_dataset"),
+            "repository": asset.payload.get("repository") or asset.payload.get("discovery_repository"),
+            "source_behavior_labels": behavior_labels,
+        }
+        return {key: value for key, value in context.items() if value not in (None, "", {}, [])}
+    return {}
+
+
+def _motion_behavior_from_labels(labels: object) -> str | None:
+    values = _list_text_values(labels)
+    if not values:
+        return None
+    return ", ".join(values[:3])
 
 
 def _motion_record(
@@ -2145,9 +2225,14 @@ def _motion_record(
     retrieved_at: str,
     locator_suffix: str | None = None,
     source_video_asset: EvidenceRecord | None = None,
+    source_motion_context: dict[str, object] | None = None,
 ) -> EvidenceRecord:
     video_id = _motion_video_id(row, table_path)
-    behavior = row.get("behavior") or row.get("behavior_type") or "video motion"
+    source_payload = {
+        **(source_motion_context or {}),
+        **_motion_asset_payload(source_video_asset),
+    }
+    behavior = row.get("behavior") or row.get("behavior_type") or _motion_behavior_from_labels(source_payload.get("source_behavior_labels")) or "video motion"
     trial = row.get("trial")
     arena = row.get("arena")
     temperature = row.get("temperature")
@@ -2178,7 +2263,7 @@ def _motion_record(
         "angular_velocity_relative_mean_deg_s": _parse_number(row.get("angular_velocity_relative_mean_deg_s")),
         "distance_moved_total_cm": _parse_number(row.get("distance_moved_total_cm")),
         "source_table_row": row,
-        **_motion_asset_payload(source_video_asset),
+        **source_payload,
     }
     payload = {key: value for key, value in payload.items() if value is not None}
     rel_path = table_path.relative_to(artifact_dir).as_posix()
@@ -2191,6 +2276,8 @@ def _motion_record(
     if temperature:
         metrics.append(f"temperature {temperature}")
     metric_text = f" Metrics: {', '.join(metrics)}." if metrics else ""
+    label_text = _motion_behavior_from_labels(payload.get("source_behavior_labels"))
+    source_label_text = f" Source behavior labels: {label_text}." if label_text else ""
     locator = f"{rel_path}#{locator_suffix or f'row/{row_index}'}"
     return EvidenceRecord(
         record_id=f"video_atom:motion:{_safe_id(video_id)}:{digest}",
@@ -2200,7 +2287,7 @@ def _motion_record(
         text=(
             f"Aedes aegypti video motion row for {behavior}. "
             f"Video: {video_id}. Track: {payload.get('track_id')}. Frame: {payload.get('frame')}. "
-            f"Time seconds: {payload.get('time_seconds')}. Coordinates: {payload.get('x')}, {payload.get('y')}.{metric_text}"
+            f"Time seconds: {payload.get('time_seconds')}. Coordinates: {payload.get('x')}, {payload.get('y')}.{metric_text}{source_label_text}"
         ),
         species="Aedes aegypti",
         url=source_video_asset.url if source_video_asset else None,
@@ -2260,6 +2347,7 @@ def _parse_motion_tables(
             for row_index, cleaned, locator_suffix in parsed_rows:
                 video_id = _motion_video_id(cleaned, path)
                 source_video_asset = _motion_asset_for_video_id(video_id, asset_lookup or {})
+                source_motion_context = _motion_dataset_payload(video_id, path, asset_lookup)
                 if asset_lookup and source_video_asset is None:
                     rel_path = path.relative_to(artifact_dir).as_posix()
                     key = (rel_path, video_id)
@@ -2285,6 +2373,7 @@ def _parse_motion_tables(
                         retrieved_at=retrieved_at,
                         locator_suffix=locator_suffix,
                         source_video_asset=source_video_asset,
+                        source_motion_context=source_motion_context,
                     )
                 )
         except Exception as exc:
