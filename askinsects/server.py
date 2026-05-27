@@ -3128,6 +3128,22 @@ def ingest_image_atoms_staged(
     return response
 
 
+def ingest_source_coverage_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_source_coverage import ingest_source_coverage
+
+    coverage_path = payload.get("coverage_path") or "config/mosquito-intelligence-coverage.json"
+    if not isinstance(coverage_path, str):
+        raise ValueError("coverage_path must be a string")
+    response = ingest_source_coverage(artifact_dir=artifact_dir, coverage_path=Path(coverage_path))
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_expression_omics_hosted(
     payload: dict[str, object],
     *,
@@ -3645,6 +3661,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/image-atoms":
             result = ingest_image_atoms_staged(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/source-coverage":
+            result = ingest_source_coverage_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/occurrence-ecology":

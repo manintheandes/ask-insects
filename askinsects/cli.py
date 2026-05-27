@@ -343,6 +343,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_image_atoms.add_argument("--allow-unclear-license", action="store_true")
     ingest_image_atoms.add_argument("--allowed-licenses")
 
+    ingest_source_coverage = sub.add_parser("ingest-source-coverage")
+    ingest_source_coverage.add_argument("--hosted", action="store_true")
+    ingest_source_coverage.add_argument("--coverage-path", default="config/mosquito-intelligence-coverage.json")
+
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
 
@@ -1219,6 +1223,20 @@ def main(argv: list[str] | None = None) -> int:
                 "allowed_licenses": list(allowed_licenses) if allowed_licenses else None,
             },
             timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-source-coverage":
+        if not args.hosted:
+            from scripts.ingest_source_coverage import ingest_source_coverage
+
+            payload = ingest_source_coverage(artifact_dir=artifact_dir, coverage_path=Path(args.coverage_path))
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/source-coverage",
+            {"coverage_path": args.coverage_path},
+            timeout=120,
         )
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-occurrence-ecology":

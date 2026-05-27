@@ -4,6 +4,8 @@ V1 is Aedes-first. Other mosquitoes can be indexed as comparison records, but `A
 
 The comprehensive-source push is Aedes-first: Ask Insects is building toward the most comprehensive `Aedes aegypti` intelligence system in the world. Other mosquitoes can remain comparison records, but Aedes is the completion boundary for this push. The coverage ledger lives at `config/mosquito-intelligence-coverage.json` and tracks required domains, gate status, next source candidates, and completion evidence. The benchmark ledger lives at `config/aedes-source-plane-benchmark.json` and currently marks the world-largest/world-deepest claim as not proven.
 
+`aedes_source_coverage` derives queryable `source_coverage` records from that coverage ledger. It writes one overview record, one domain-status record per required domain, and one missing-coverage record per required next source. This makes questions like "what is missing from Aedes coverage?" answer from the source contract itself, with locators back to `config/mosquito-intelligence-coverage.json`.
+
 ## Taxonomy
 
 Scientific names, common labels, synonyms, rank, family, genus, and species.

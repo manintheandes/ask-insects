@@ -3383,6 +3383,68 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
+    if "source_coverage" not in lanes:
+        return []
+    q = question.lower()
+    wants_missing = any(term in q for term in ("missing", "gap", "gaps", "next required", "what are we missing", "what is missing"))
+    atom_types = ["source_coverage_gap"] if wants_missing else ["source_coverage_overview", "source_coverage_domain", "source_coverage_gap"]
+    atom_placeholders = ",".join("?" for _ in atom_types)
+    atom_rank = {
+        "source_coverage_gap": 0 if wants_missing else 2,
+        "source_coverage_domain": 1,
+        "source_coverage_overview": 2 if wants_missing else 0,
+    }
+    filters: list[str] = []
+    params: list[object] = [*atom_types]
+    for domain in (
+        "literature",
+        "genomics",
+        "behavior",
+        "observations",
+        "images",
+        "video",
+        "neurobiology",
+        "vector_competence",
+        "vector competence",
+        "resistance",
+        "ecology",
+        "public_health",
+        "public health",
+    ):
+        if domain in q:
+            normalized = domain.replace(" ", "_")
+            filters.append("(lower(r.title) LIKE ? OR lower(r.text) LIKE ? OR json_extract(p.payload_json, '$.domain') = ?)")
+            like = f"%{domain}%"
+            params.extend([like, like, normalized])
+    domain_filter = "AND (" + " OR ".join(filters) + ")" if filters else ""
+    params.append(limit)
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = 'aedes_source_coverage'
+              AND r.lane = 'source_coverage'
+              AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
+              {domain_filter}
+            ORDER BY
+              CASE json_extract(p.payload_json, '$.atom_type')
+                WHEN 'source_coverage_gap' THEN {atom_rank['source_coverage_gap']}
+                WHEN 'source_coverage_domain' THEN {atom_rank['source_coverage_domain']}
+                WHEN 'source_coverage_overview' THEN {atom_rank['source_coverage_overview']}
+                ELSE 3
+              END,
+              CAST(coalesce(json_extract(p.payload_json, '$.priority'), 999) AS INTEGER),
+              r.record_id
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, limit: int = 5) -> dict[str, object]:
     plan = plan_question(question)
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
@@ -3402,6 +3464,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             return source_gap(plan, "The Ask Insects video discovery lane has no matching records for that repository.")
     if _wants_image_atoms(plan.question):
         for record in _image_atom_records(index, plan.question, list(plan.lanes), limit=limit):
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+    if "source_coverage" in plan.lanes:
+        for record in _source_coverage_records(index, plan.question, list(plan.lanes), limit=limit):
             all_records.append(record)
             seen_record_ids.add(record.record_id)
 

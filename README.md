@@ -26,6 +26,15 @@ The current comprehensive-source strategy is Aedes-first: build Ask Insects towa
 
 The machine-readable coverage ledger is `config/mosquito-intelligence-coverage.json`. It is the durable backlog for domains that are not source grade yet. Do not treat a domain as covered unless the ledger, source map, receipts, SQLite records, and Ask Insects CLI all agree.
 
+Ask Insects can also ingest that ledger into queryable source-coverage records:
+
+```bash
+python3 -m askinsects ingest-source-coverage
+python3 -m askinsects ask "what is missing from Aedes coverage?" --json
+```
+
+The derived source `aedes_source_coverage` creates one overview record, one record per coverage domain, and one missing-coverage record per required next source. These records let status and gap questions answer from the same ledger that governs the source contract, rather than falling through to unrelated literature records.
+
 The machine-readable benchmark is `config/aedes-source-plane-benchmark.json`, with the plain-English readout in `docs/aedes-source-plane-benchmark.md`. It currently marks the world-largest/world-deepest claim as not proven. The safe current wording is: Ask Insects is a broad, integrated, provenance-backed `Aedes aegypti` query plane.
 
 ## Quick Start

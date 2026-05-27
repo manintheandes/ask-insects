@@ -6,6 +6,13 @@ Build the local source index first:
 python3 scripts/build_source_index.py --fixtures
 ```
 
+To make the Aedes coverage ledger itself queryable:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-source-coverage
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is missing from Aedes coverage?" --json
+```
+
 To add a bounded live GBIF pull:
 
 ```bash

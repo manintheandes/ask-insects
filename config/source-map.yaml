@@ -18,6 +18,18 @@ sources:
       - literature
       - action_notes
     provenance_required: true
+  - id: aedes_source_coverage
+    name: Aedes aegypti source coverage ledger records
+    source_type: derived_repo_ledger
+    boundary: Queryable Ask Insects coverage, missing-source, source-contract gate, and completion-evidence records derived from config/mosquito-intelligence-coverage.json
+    query_plane: coverage_ledger_to_sqlite_source_coverage_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_source_coverage.py
+    input_ledger: config/mosquito-intelligence-coverage.json
+    lanes:
+      - source_coverage
+    provenance_required: true
+    live_fetch: derived_from_repo_ledger
   - id: gbif_api
     name: Global Biodiversity Information Facility API
     source_type: public_api

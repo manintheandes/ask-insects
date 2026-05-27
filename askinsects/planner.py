@@ -14,6 +14,34 @@ class QueryPlan:
 
 def plan_question(question: str) -> QueryPlan:
     q = question.lower()
+    source_coverage_terms = (
+        "what are we missing",
+        "what is missing",
+        "missing coverage",
+        "coverage gap",
+        "coverage gaps",
+        "source coverage",
+        "source-grade status",
+        "source grade status",
+        "source plane status",
+        "coverage status",
+        "overall status",
+        "how comprehensive",
+    )
+    media_or_specific_coverage_terms = (
+        "image",
+        "images",
+        "photo",
+        "photos",
+        "video",
+        "videos",
+        "movie",
+        "movies",
+        "supplement",
+        "supplementary",
+    )
+    if any(term in q for term in source_coverage_terms) and not any(term in q for term in media_or_specific_coverage_terms):
+        return QueryPlan(question, "evidence", ("source_coverage",), question)
     vectorbase_orthology_terms = (
         "orthogroup",
         "orthogroups",
