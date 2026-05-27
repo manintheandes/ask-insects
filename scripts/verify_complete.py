@@ -930,6 +930,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "one_supplement_audit_atom_per_indexed_aedes_literature_paper",
         "every_schema_promotable_row_is_promoted_to_a_structured_lane",
         "candidate_manifest_or_parsed_not_human_validated",
+        "supplement file-gap atoms",
         "bounded_opt_in_supplement_discovery_and_download",
         "csv",
         "xlsx",

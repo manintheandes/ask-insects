@@ -1658,7 +1658,7 @@ def _download_and_parse_supplement_rows(
     max_supplement_bytes: int,
     max_pdf_supplement_files: int,
     gaps: list[dict[str, object]],
-) -> tuple[list[TextCandidate], int, int, int, int, int]:
+) -> tuple[list[TextCandidate], list[EvidenceRecord], int, int, int, int, int]:
     if max_supplement_files < 1:
         raise ValueError("max_supplement_files must be positive")
     if max_supplement_bytes < 1:
@@ -1668,6 +1668,7 @@ def _download_and_parse_supplement_rows(
     raw_dir = artifact_dir / "raw" / "extracted_facts" / "supplements"
     raw_dir.mkdir(parents=True, exist_ok=True)
     candidates: list[TextCandidate] = []
+    gap_records: list[EvidenceRecord] = []
     downloaded_count = 0
     parsed_file_count = 0
     parsed_row_count = 0
@@ -1693,9 +1694,25 @@ def _download_and_parse_supplement_rows(
             )
         url = candidate.supplement.get("url")
         if not isinstance(url, str) or not url:
+            gap_records.append(
+                _record_for_supplement_file_gap(
+                    candidate,
+                    index=index,
+                    reason="supplement_file_missing_url",
+                    retrieved_at=retrieved_at,
+                )
+            )
             continue
         extension = _supplement_extension(candidate.supplement)
         if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS:
+            gap_records.append(
+                _record_for_supplement_file_gap(
+                    candidate,
+                    index=index,
+                    reason="unsupported_supplement_type",
+                    retrieved_at=retrieved_at,
+                )
+            )
             gaps.append(
                 {
                     "source": EXTRACTED_FACTS_SOURCE_ID,
@@ -1708,6 +1725,15 @@ def _download_and_parse_supplement_rows(
             continue
         if extension == ".pdf" and parsed_pdf_count >= max_pdf_supplement_files:
             skipped_pdf_count += 1
+            gap_records.append(
+                _record_for_supplement_file_gap(
+                    candidate,
+                    index=index,
+                    reason="pdf_supplement_file_limit_applied",
+                    retrieved_at=retrieved_at,
+                    extra_fields={"max_pdf_supplement_files": max_pdf_supplement_files},
+                )
+            )
             gaps.append(
                 {
                     "source": EXTRACTED_FACTS_SOURCE_ID,
@@ -1731,6 +1757,15 @@ def _download_and_parse_supplement_rows(
                 text = ""
                 rows = _parse_supported_table_rows(data, extension)
         except Exception as exc:
+            gap_records.append(
+                _record_for_supplement_file_gap(
+                    candidate,
+                    index=index,
+                    reason="supplement_table_parse_failed",
+                    retrieved_at=retrieved_at,
+                    extra_fields={"error": str(exc)},
+                )
+            )
             gaps.append(
                 {
                     "source": EXTRACTED_FACTS_SOURCE_ID,
@@ -1771,6 +1806,15 @@ def _download_and_parse_supplement_rows(
             )
             continue
         if not rows:
+            gap_records.append(
+                _record_for_supplement_file_gap(
+                    candidate,
+                    index=index,
+                    reason="supplement_table_no_rows",
+                    retrieved_at=retrieved_at,
+                    raw_file_path=raw_path.relative_to(artifact_dir).as_posix(),
+                )
+            )
             gaps.append(
                 {
                     "source": EXTRACTED_FACTS_SOURCE_ID,
@@ -1809,7 +1853,7 @@ def _download_and_parse_supplement_rows(
                     raw_file_path=raw_path.relative_to(artifact_dir).as_posix(),
                 )
             )
-    return candidates, downloaded_count, parsed_file_count, parsed_row_count, parsed_pdf_count, skipped_pdf_count
+    return candidates, gap_records, downloaded_count, parsed_file_count, parsed_row_count, parsed_pdf_count, skipped_pdf_count
 
 
 def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrieved_at: str) -> EvidenceRecord:
@@ -1844,13 +1888,89 @@ def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrie
         payload={
             "fact_type": "supplement_manifest",
             "schema_version": SCHEMA_VERSION,
-            "fields": {},
+            "fields": {
+                "source_record_id": candidate.source_record_id,
+                "title": title_text,
+                "url": url,
+                "file_type": supplement.get("file_type"),
+                "source": supplement.get("source", "record_payload"),
+                "license": supplement.get("license"),
+                "size": supplement.get("size"),
+            },
             "source_record_id": candidate.source_record_id,
             "fulltext_unit_id": None,
             "supplement": supplement,
             "evidence_text": text,
             "confidence": "manifest",
             "extraction_method": "payload_supplement_manifest",
+            "source_provenance": candidate.source_provenance,
+        },
+    )
+
+
+def _record_for_supplement_file_gap(
+    candidate: SupplementCandidate,
+    *,
+    index: int,
+    reason: str,
+    retrieved_at: str,
+    raw_file_path: str | None = None,
+    extra_fields: dict[str, object] | None = None,
+) -> EvidenceRecord:
+    supplement = candidate.supplement
+    title_text = str(supplement.get("title") or "Supplementary material")
+    url = supplement.get("url")
+    locator_parts = [f"records#{candidate.source_record_id}", f"supplement#{index}"]
+    if raw_file_path:
+        locator_parts.append(raw_file_path)
+    digest = _digest(candidate.source_record_id, index, reason, title_text, url)
+    fields: dict[str, object] = {
+        "reason": reason,
+        "source_record_id": candidate.source_record_id,
+        "title": title_text,
+        "url": url,
+        "file_type": supplement.get("file_type"),
+        "source": supplement.get("source", "record_payload"),
+        "license": supplement.get("license"),
+        "size": supplement.get("size"),
+        "raw_file_path": raw_file_path,
+    }
+    if extra_fields:
+        fields.update(extra_fields)
+    text = (
+        f"Aedes aegypti supplement file gap for paper {candidate.source_title}. "
+        f"Reason: {reason}. "
+        f"Title: {title_text}. "
+        f"File type: {supplement.get('file_type', 'unknown')}. "
+        f"Source: {supplement.get('source', 'record_payload')}."
+    )
+    provenance = Provenance(
+        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        locator=";".join(locator_parts),
+        retrieved_at=retrieved_at,
+        license=supplement.get("license") if isinstance(supplement.get("license"), str) else None,
+        source_url=url if isinstance(url, str) else candidate.paper_url,
+    )
+    return EvidenceRecord(
+        record_id=f"extracted_fact:supplement_file_gap:{_normalize_id(candidate.source_record_id)}:{digest}",
+        lane="literature",
+        source=EXTRACTED_FACTS_SOURCE_ID,
+        title=f"Aedes aegypti supplement file gap: {reason}",
+        text=text,
+        species=candidate.species or "Aedes aegypti",
+        url=url if isinstance(url, str) else candidate.paper_url,
+        media_url=None,
+        provenance=provenance,
+        payload={
+            "fact_type": "supplement_file_gap",
+            "schema_version": SCHEMA_VERSION,
+            "fields": fields,
+            "source_record_id": candidate.source_record_id,
+            "fulltext_unit_id": None,
+            "supplement": supplement,
+            "evidence_text": text,
+            "confidence": "gap",
+            "extraction_method": "deterministic_supplement_file_gap",
             "source_provenance": candidate.source_provenance,
         },
     )
@@ -2158,6 +2278,7 @@ def build_extracted_fact_records(
     parsed_pdf_supplement_file_count = 0
     skipped_pdf_supplement_file_count = 0
     supplement_text_candidates: list[TextCandidate] = []
+    supplement_file_gap_records: list[EvidenceRecord] = []
     if download_supplements:
         supplement_file_fetcher = fetch_supplement_file_fn or _fetch_bytes_url
         print(
@@ -2168,6 +2289,7 @@ def build_extracted_fact_records(
         )
         (
             supplement_text_candidates,
+            supplement_file_gap_records,
             downloaded_supplement_file_count,
             parsed_supplement_file_count,
             parsed_supplement_row_count,
@@ -2183,6 +2305,7 @@ def build_extracted_fact_records(
             max_pdf_supplement_files=max_pdf_supplement_files,
             gaps=gaps,
         )
+        records.extend(supplement_file_gap_records)
         text_candidates.extend(supplement_text_candidates)
         print(
             "[aedes_extracted_facts] supplement download completed "

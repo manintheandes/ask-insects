@@ -614,6 +614,17 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             by_source = {record.payload["source_record_id"]: record for record in audits}
             self.assertEqual(by_source["openalex:WFACT1"].payload["fields"]["coverage_status"], "supplement_manifest_found_no_supported_table_rows_promoted")
             self.assertEqual(by_source["openalex:WNO_SUPP"].payload["fields"]["coverage_status"], "no_supplement_metadata_found")
+            file_gaps = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+            ]
+            self.assertEqual(len(file_gaps), 1)
+            self.assertEqual(file_gaps[0].payload["fields"]["reason"], "supplement_table_no_rows")
+            self.assertEqual(file_gaps[0].payload["fields"]["source_record_id"], "openalex:WFACT1")
+            self.assertEqual(file_gaps[0].payload["fields"]["file_type"], "csv")
+            self.assertIn("records#openalex:WFACT1", file_gaps[0].provenance.locator)
+            self.assertIn("supplement#0", file_gaps[0].provenance.locator)
             self.assertEqual(result.papers_with_supplement_manifest_count, 1)
             self.assertEqual(result.papers_with_promoted_supplement_rows_count, 0)
 
