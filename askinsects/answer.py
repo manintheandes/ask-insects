@@ -3443,7 +3443,7 @@ def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str]
         "source_coverage_domain": 1,
         "source_coverage_overview": 2 if wants_missing else 0,
     }
-    filters: list[str] = []
+    requested_domains: list[str] = []
     params: list[object] = [*atom_types]
     for domain in (
         "literature",
@@ -3462,10 +3462,12 @@ def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str]
     ):
         if domain in q:
             normalized = domain.replace(" ", "_")
-            filters.append("(lower(r.title) LIKE ? OR lower(r.text) LIKE ? OR json_extract(p.payload_json, '$.domain') = ?)")
-            like = f"%{domain}%"
-            params.extend([like, like, normalized])
-    domain_filter = "AND (" + " OR ".join(filters) + ")" if filters else ""
+            requested_domains.append(normalized)
+    domain_filter = ""
+    if requested_domains:
+        placeholders = ",".join("?" for _ in requested_domains)
+        domain_filter = f"AND json_extract(p.payload_json, '$.domain') IN ({placeholders})"
+        params.extend(requested_domains)
     params.append(limit)
     with index.connect() as conn:
         rows = conn.execute(
