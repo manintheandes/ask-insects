@@ -683,6 +683,9 @@ def _datacite_relation_supplements(request: dict[str, object]) -> list[dict[str,
         if not isinstance(entry, dict):
             continue
         relation_type = str(entry.get("relationType") or entry.get("relation_type") or "")
+        relation_key = re.sub(r"[^a-z]", "", relation_type.lower())
+        if relation_key == "issupplementto":
+            continue
         raw_identifier = entry.get("relatedIdentifier") or entry.get("related_identifier")
         identifier_type = entry.get("relatedIdentifierType") or entry.get("related_identifier_type")
         url = _doi_or_url_identifier(raw_identifier, identifier_type)

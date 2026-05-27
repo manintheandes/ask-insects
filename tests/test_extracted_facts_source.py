@@ -436,8 +436,13 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                                 {
                                     "relatedIdentifier": "https://example.org/datacite/supplement.csv",
                                     "relatedIdentifierType": "URL",
+                                    "relationType": "IsSupplementedBy",
+                                },
+                                {
+                                    "relatedIdentifier": "10.1186/s13071-025-07140-z",
+                                    "relatedIdentifierType": "DOI",
                                     "relationType": "IsSupplementTo",
-                                }
+                                },
                             ]
                         }
                     }
@@ -455,6 +460,7 @@ class ExtractedFactsSourceTests(unittest.TestCase):
 
         self.assertTrue(any(item["source"] == "datacite_relation" for item in supplements))
         self.assertTrue(any(item["url"] == "https://example.org/datacite/supplement.csv" for item in supplements))
+        self.assertFalse(any(item["url"] == "https://doi.org/10.1186/s13071-025-07140-z" for item in supplements))
 
     def test_fetch_public_supplement_metadata_discovers_unpaywall_oa_locations(self):
         def fake_json(url: str) -> dict[str, object]:
