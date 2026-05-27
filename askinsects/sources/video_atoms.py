@@ -33,6 +33,11 @@ VIDEO_LOCATOR_SCAN_SOURCES = (
     "zenodo_aedes_videos",
     "figshare_aedes_videos",
 )
+INSTITUTIONAL_VIDEO_LOCATOR_SCAN_SOURCES = tuple(
+    source
+    for source in VIDEO_LOCATOR_SCAN_SOURCES
+    if source not in {"aedes_literature_openalex", "aedes_extracted_facts"}
+)
 VIDEO_SOURCE_IDS = {
     "pmc_open_access_videos",
     "dryad_aedes_behavior_videos",
@@ -1072,7 +1077,7 @@ def _default_institutional_discovery_client(artifact_dir: Path) -> DiscoverySwee
     dataverse_result = _dataverse_institutional_discovery_candidates()
     discovered = list(dataverse_result.items)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
-    source_placeholders = ", ".join(repr(source) for source in VIDEO_LOCATOR_SCAN_SOURCES)
+    source_placeholders = ", ".join(repr(source) for source in INSTITUTIONAL_VIDEO_LOCATOR_SCAN_SOURCES)
     rows = index.sql(
         f"""
         SELECT r.record_id, r.title, r.text, r.url, r.provenance_json, p.payload_json
@@ -1115,7 +1120,10 @@ def _default_institutional_discovery_client(artifact_dir: Path) -> DiscoverySwee
         **dataverse_result.receipt,
         "coverage_method": "api_plus_sqlite_scan",
         "queries": [*dataverse_result.receipt.get("queries", []), "institutional_indexed_video_url_scan"],
-        "input_sources": [*dataverse_result.receipt.get("input_sources", []), "source_index.sqlite"],
+        "input_sources": [
+            *dataverse_result.receipt.get("input_sources", []),
+            *INSTITUTIONAL_VIDEO_LOCATOR_SCAN_SOURCES,
+        ],
         "raw_artifacts": ["source_index.sqlite"],
     }
     return DiscoverySweepResult(items=discovered, receipt=receipt)

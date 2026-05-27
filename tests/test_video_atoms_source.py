@@ -1638,6 +1638,46 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(discovery_result.items, [])
         self.assertIn("source_index.sqlite", discovery_result.receipt["raw_artifacts"])
 
+    def test_institutional_sqlite_scan_skips_paper_supplement_sources(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="aedes_extracted_facts",
+                locator="raw/literature/PMC123.html#supplement/1",
+                retrieved_at=RETRIEVED_AT,
+                source_url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
+            )
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="aedes:paper:PMC123:supplement-video",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti paper supplement video",
+                        text="Aedes aegypti supplement lists https://example.edu/aedes-paper.mp4",
+                        species="Aedes aegypti",
+                        url="https://pmc.ncbi.nlm.nih.gov/articles/PMC123/",
+                        media_url=None,
+                        provenance=provenance,
+                        payload={"supplement_url": "https://example.edu/aedes-paper.mp4"},
+                    )
+                ]
+            )
+
+            original_fetch_json = video_atoms._fetch_json
+            try:
+                video_atoms._fetch_json = lambda url: {"data": {"items": []}}
+                institutional_result = video_atoms._default_institutional_discovery_client(artifact_dir)
+                paper_result = video_atoms._default_paper_supplements_discovery_client(artifact_dir)
+            finally:
+                video_atoms._fetch_json = original_fetch_json
+
+        self.assertEqual(institutional_result.items, [])
+        self.assertEqual(len(paper_result.items), 1)
+        self.assertEqual(paper_result.items[0]["repository"], "paper_supplements")
+
     def test_figshare_discovery_uses_broader_page_size(self):
         requested_urls: list[str] = []
 
