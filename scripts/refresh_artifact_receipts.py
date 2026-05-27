@@ -215,6 +215,28 @@ def sqlite_summary(artifact_dir: Path) -> dict[str, object]:
         }
 
 
+def video_atom_counts(artifact_dir: Path) -> dict[str, int]:
+    db_path = artifact_dir / "source_index.sqlite"
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        tables = sqlite_tables(conn)
+        if "record_payloads" not in tables:
+            return {}
+        return {
+            str(row["atom_type"]): int(row["n"])
+            for row in conn.execute(
+                """
+                select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n
+                from record_payloads
+                where source = ?
+                group by atom_type
+                """,
+                (VIDEO_ATOMS_SOURCE_ID,),
+            )
+            if row["atom_type"]
+        }
+
+
 def vectorbase_sequence_refresh(artifact_dir: Path, retrieved_at: str) -> dict[str, object]:
     db_path = artifact_dir / "source_index.sqlite"
     with sqlite3.connect(db_path) as conn:
@@ -251,6 +273,7 @@ def update_receipt_payload(
     payload: dict[str, object],
     *,
     summary: dict[str, object],
+    video_counts: dict[str, int],
     vectorbase_refresh: dict[str, object] | None,
 ) -> dict[str, object]:
     payload["record_count"] = summary["record_count"]
@@ -294,6 +317,24 @@ def update_receipt_payload(
             if VECTORBASE_SOURCE_ID not in sources:
                 sources.append(VECTORBASE_SOURCE_ID)
             payload["sources"] = sources
+    video_payload = payload.get(VIDEO_ATOMS_SOURCE_ID)
+    if not isinstance(video_payload, dict):
+        video_payload = {}
+    if video_counts and VIDEO_ATOMS_SOURCE_ID in summary["source_counts"]:
+        video_payload["record_count"] = summary["source_counts"].get(VIDEO_ATOMS_SOURCE_ID, video_payload.get("record_count"))
+        video_payload["video_asset_count"] = video_counts.get("video_asset", video_payload.get("video_asset_count", 0))
+        video_payload["motion_row_count"] = video_counts.get("video_motion_row", video_payload.get("motion_row_count", 0))
+        video_payload["gap_count"] = video_counts.get("video_gap", 0)
+        artifact_count = sum(
+            video_counts.get(atom_type, 0)
+            for atom_type in ("video_thumbnail", "video_keyframe", "video_preview_clip", "video_frame_manifest")
+        )
+        video_payload["artifact_count"] = artifact_count
+        payload[VIDEO_ATOMS_SOURCE_ID] = video_payload
+        sources = payload.get("sources")
+        if isinstance(sources, dict):
+            sources[VIDEO_ATOMS_SOURCE_ID] = video_payload
+            payload["sources"] = sources
     return payload
 
 
@@ -303,6 +344,7 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
     gap_summary = dedupe_gaps(artifact_dir)
     video_gap_record_summary = dedupe_video_gap_records(artifact_dir)
     summary = sqlite_summary(artifact_dir)
+    video_counts = video_atom_counts(artifact_dir)
     vectorbase_refresh = (
         vectorbase_sequence_refresh(artifact_dir, retrieved_at) if include_vectorbase_sequence_refresh else None
     )
@@ -311,6 +353,7 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
         payload = update_receipt_payload(
             read_json(path),
             summary=summary,
+            video_counts=video_counts,
             vectorbase_refresh=vectorbase_refresh,
         )
         payload["gap_count"] = gap_summary["gap_count_after"]

@@ -118,8 +118,12 @@ class RefreshArtifactReceiptsTests(unittest.TestCase):
                     "insert into record_payloads values ('openalex:W1', 'aedes_literature_openalex', 'literature', ?, '{}')",
                     (json.dumps(payload),),
                 )
-            (artifact_dir / "source_status.json").write_text(json.dumps({}), encoding="utf-8")
-            (artifact_dir / "source_receipt.json").write_text(json.dumps({}), encoding="utf-8")
+            stale_receipt = {
+                "aedes_video_atoms": {"record_count": 2, "gap_count": 2},
+                "sources": {"aedes_video_atoms": {"record_count": 2, "gap_count": 2}},
+            }
+            (artifact_dir / "source_status.json").write_text(json.dumps(stale_receipt), encoding="utf-8")
+            (artifact_dir / "source_receipt.json").write_text(json.dumps(stale_receipt), encoding="utf-8")
             (artifact_dir / "gaps.json").write_text("[]", encoding="utf-8")
 
             result = refresh_receipts(artifact_dir)
@@ -190,6 +194,10 @@ class RefreshArtifactReceiptsTests(unittest.TestCase):
                 self.assertEqual(conn.execute("select count(*) from records").fetchone()[0], 1)
                 self.assertEqual(conn.execute("select count(*) from record_payloads").fetchone()[0], 1)
                 self.assertEqual(conn.execute("select count(*) from records_fts").fetchone()[0], 1)
+            for filename in ("source_status.json", "source_receipt.json"):
+                payload = json.loads((artifact_dir / filename).read_text(encoding="utf-8"))
+                self.assertEqual(payload["aedes_video_atoms"]["record_count"], 1)
+                self.assertEqual(payload["aedes_video_atoms"]["gap_count"], 1)
 
 
 if __name__ == "__main__":
