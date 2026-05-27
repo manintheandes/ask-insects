@@ -1140,10 +1140,53 @@ def _supplement_candidates(literature_rows: list[sqlite3.Row]) -> list[Supplemen
     return candidates
 
 
+def _existing_supplement_manifest_supplements(
+    conn: sqlite3.Connection,
+    literature_rows: list[sqlite3.Row],
+    *,
+    source_record_ids: list[str] | None,
+) -> list[dict[str, object]]:
+    if not source_record_ids:
+        return []
+    literature_by_id = {str(paper["record_id"]): paper for paper in literature_rows}
+    placeholders = ",".join("?" for _ in source_record_ids)
+    try:
+        rows = conn.execute(
+            f"""
+            SELECT payload_json
+            FROM record_payloads
+            WHERE source=?
+              AND json_extract(payload_json, '$.fact_type')='supplement_manifest'
+              AND json_extract(payload_json, '$.source_record_id') IN ({placeholders})
+            ORDER BY rowid
+            """,
+            [EXTRACTED_FACTS_SOURCE_ID, *source_record_ids],
+        ).fetchall()
+    except sqlite3.OperationalError:
+        return []
+    supplements: list[dict[str, object]] = []
+    for row in rows:
+        payload = _safe_json(row["payload_json"])
+        source_record_id = str(payload.get("source_record_id") or "")
+        if source_record_id not in literature_by_id:
+            continue
+        supplement = payload.get("supplement")
+        if not isinstance(supplement, dict):
+            continue
+        supplements.append(
+            {
+                "source_record_id": source_record_id,
+                "supplement": supplement,
+            }
+        )
+    return supplements
+
+
 def _supplement_candidates_with_discovery(
     literature_rows: list[sqlite3.Row],
     *,
     text_candidates: list[TextCandidate],
+    existing_supplements: list[dict[str, object]],
     discover_supplements: bool,
     fetch_supplement_metadata_fn: Callable[[dict[str, object]], list[dict[str, object]]] | None,
     max_supplement_discovery_records: int | None,
@@ -1180,12 +1223,19 @@ def _supplement_candidates_with_discovery(
             )
         )
 
+    literature_by_id = {str(paper["record_id"]): paper for paper in literature_rows}
+    for existing in existing_supplements:
+        paper = literature_by_id.get(str(existing.get("source_record_id") or ""))
+        supplement = existing.get("supplement")
+        if paper is None or not isinstance(supplement, dict):
+            continue
+        add_candidate(paper, supplement, "existing_manifest")
+
     for paper in literature_rows:
         payload = _safe_json(paper["payload_json"])
         for raw_supplement in _payload_supplements(payload):
             add_candidate(paper, raw_supplement, "record_payload")
 
-    literature_by_id = {str(paper["record_id"]): paper for paper in literature_rows}
     if discover_supplements:
         for text_candidate in text_candidates:
             paper = literature_by_id.get(text_candidate.source_record_id)
@@ -2247,6 +2297,11 @@ def build_extracted_fact_records(
     conn.row_factory = sqlite3.Row
     try:
         literature_rows = _source_rows(conn, source_record_ids=source_record_ids)
+        existing_supplements = _existing_supplement_manifest_supplements(
+            conn,
+            literature_rows,
+            source_record_ids=source_record_ids,
+        )
         (
             text_candidates,
             fulltext_unit_count,
@@ -2272,6 +2327,7 @@ def build_extracted_fact_records(
     ) = _supplement_candidates_with_discovery(
         literature_rows,
         text_candidates=text_candidates,
+        existing_supplements=existing_supplements,
         discover_supplements=discover_supplements,
         fetch_supplement_metadata_fn=fetch_supplement_metadata_fn,
         max_supplement_discovery_records=max_supplement_discovery_records,

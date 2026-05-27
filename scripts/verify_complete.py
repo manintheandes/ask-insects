@@ -931,6 +931,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "every_schema_promotable_row_is_promoted_to_a_structured_lane",
         "candidate_manifest_or_parsed_not_human_validated",
         "supplement file-gap atoms",
+        "existing_manifest seeds during incremental refresh",
         "bounded_opt_in_supplement_discovery_and_download",
         "csv",
         "xlsx",

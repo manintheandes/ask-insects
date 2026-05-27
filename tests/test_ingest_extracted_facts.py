@@ -268,6 +268,99 @@ class IngestExtractedFactsTests(unittest.TestCase):
             self.assertEqual(second["supplement_audit_record_count"], 2)
             self.assertEqual(second["papers_with_promoted_supplement_rows_count"], 1)
 
+    def test_incremental_merge_preserves_existing_supplement_manifest_candidates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WKEEP",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti paper with previously mined supplement",
+                        text="Aedes aegypti vector competence paper.",
+                        species="Aedes aegypti",
+                        url="https://example.org/keep",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WKEEP",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_manifest:openalex:WKEEP:existing",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement manifest: mined-table.csv",
+                        text="Previously mined supplement manifest.",
+                        species="Aedes aegypti",
+                        url="https://example.org/mined-table.csv",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:WKEEP;supplement#0",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            source_url="https://example.org/mined-table.csv",
+                        ),
+                        payload={
+                            "fact_type": "supplement_manifest",
+                            "source_record_id": "openalex:WKEEP",
+                            "supplement": {
+                                "title": "mined-table.csv",
+                                "url": "https://example.org/mined-table.csv",
+                                "file_type": "csv",
+                                "source": "fulltext_link_mining",
+                            },
+                            "confidence": "manifest",
+                        },
+                    ),
+                ]
+            )
+
+            second = ingest_extracted_facts(
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [],
+                source_record_ids=["openalex:WKEEP"],
+                merge_existing=True,
+            )
+
+            self.assertTrue(second["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                """
+                select payload_json
+                from record_payloads
+                where source='aedes_extracted_facts'
+                  and json_extract(payload_json, '$.fact_type')='supplement_manifest'
+                  and json_extract(payload_json, '$.source_record_id')='openalex:WKEEP'
+                """,
+                limit=10,
+            )
+            self.assertEqual(len(rows), 1)
+            payload = json.loads(rows[0]["payload_json"])
+            self.assertEqual(payload["supplement"]["url"], "https://example.org/mined-table.csv")
+            audits = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                """
+                select payload_json
+                from record_payloads
+                where source='aedes_extracted_facts'
+                  and json_extract(payload_json, '$.fact_type')='supplement_audit'
+                  and json_extract(payload_json, '$.source_record_id')='openalex:WKEEP'
+                """,
+                limit=5,
+            )
+            self.assertEqual(len(audits), 1)
+            audit_payload = json.loads(audits[0]["payload_json"])
+            self.assertEqual(audit_payload["fields"]["supplement_candidate_count"], 1)
+            self.assertEqual(
+                audit_payload["fields"]["coverage_status"],
+                "supplement_manifest_found_table_download_not_run",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

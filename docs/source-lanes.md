@@ -213,6 +213,8 @@ The assay-candidate lane reads source-grade `aedes_literature_openalex` records 
 
 Payloads preserve `fact_type`, schema version, matched fields, source paper ID, full-text unit ID when available, supplement metadata, table row values when parsed, file-gap reasons when parsing cannot produce rows, evidence text, confidence, extraction method, and source provenance. Confidence values are intentionally conservative: `candidate` for text-derived facts, `manifest` for supplement pointers, `parsed` for supported `.csv`, `.tsv`, `.xlsx`, `.docx`, XML table, or simple HTML table rows that match a structured lane, `parsed_no_structured_lane_match` for parsed table rows preserved only as inspectable source evidence, and `gap` for file-level supplement parse gaps. The lane makes cross-domain paper facts queryable now, but it is not a claim that every PDF supplement, image table, workbook variant, or archive has been parsed or human validated.
 
+Incremental refreshes seed supplement discovery from already installed `supplement_manifest` records for the selected papers before deleting and replacing those papers' extracted-fact records. This prevents a narrower current fetch from forgetting a previously mapped public supplement file.
+
 ## Insecticide Resistance
 
 Insecticide susceptibility, resistance phenotype, mechanism, mutation, assay protocol, geography, time, and reference records for `Aedes aegypti`.

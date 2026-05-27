@@ -897,7 +897,7 @@ sources:
   - id: aedes_extracted_facts
     name: Aedes aegypti extracted literature facts, supplement manifests, and per-paper supplement audits
     source_type: derived_sqlite_source
-    boundary: Deterministic cross-lane candidate facts, supplement manifests, per-paper supplement audit atoms, supported parsed supplement table rows, parsed-but-unpromoted supplement row atoms, and supplement file-gap atoms from indexed Aedes aegypti literature records, record payload supplement metadata, Europe PMC, PMC, Crossref relation metadata, DataCite related identifiers, Unpaywall OA locations, Figshare or Zenodo metadata, publisher landing-page links, public supplement files, and legal literature_fulltext_units
+    boundary: Deterministic cross-lane candidate facts, supplement manifests, per-paper supplement audit atoms, supported parsed supplement table rows, parsed-but-unpromoted supplement row atoms, and supplement file-gap atoms from indexed Aedes aegypti literature records, existing_manifest seeds during incremental refresh, record payload supplement metadata, Europe PMC, PMC, Crossref relation metadata, DataCite related identifiers, Unpaywall OA locations, Figshare or Zenodo metadata, publisher landing-page links, public supplement files, and legal literature_fulltext_units
     query_plane: literature_records_payloads_fulltext_units_supported_supplement_tables_and_per_paper_supplement_audits_to_sqlite_fact_records
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_extracted_facts.py
