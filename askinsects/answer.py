@@ -199,8 +199,13 @@ def _wants_video_atoms(question: str) -> bool:
         "coordinates",
         "gap",
         "gaps",
+        "missing",
         "failed",
         "failure",
+        "license",
+        "unclear",
+        "restricted",
+        "access restricted",
         "discovery",
     )
     if any(term in q for term in ("dryad", "mendeley", "osf", "flighttrackai", "flighttrack", "pmc", "figshare")) and not any(
@@ -234,6 +239,11 @@ def _wants_video_atoms(question: str) -> bool:
         "tracking",
         "track id",
         "coordinates",
+        "license",
+        "licenses",
+        "missing",
+        "unclear",
+        "restricted",
     )
     return any(term in q for term in video_specific_terms)
 

@@ -1796,6 +1796,62 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["record_id"], "video_atom:gap:osf:license")
             self.assertIn("Source SHA-256", answer["evidence"][0]["text"])
 
+    def test_plain_missing_license_video_questions_return_gap_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="osf:flighttrackai:file:video_a",
+                        lane="media",
+                        source="osf_flighttrackai_aedes_videos",
+                        title="Aedes aegypti OSF FlightTrackAI video file Video A.mp4",
+                        text="OSF FlightTrackAI video file for Aedes aegypti flight-behavior tracking.",
+                        species="Aedes aegypti",
+                        url="https://osf.io/cx762/",
+                        media_url="https://osf.io/download/pu8zf/",
+                        provenance=Provenance(
+                            source_id="osf_flighttrackai_aedes_videos",
+                            locator="raw/osf_flighttrackai_videos/cx762_folder_processed.json#files/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="OSF project license not supplied",
+                            source_url="https://api.osf.io/v2/files/video-a/",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:gap:osf:license",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_license_unclear",
+                        text=(
+                            "Aedes aegypti video source gap: video_license_unclear. Repository: osf. "
+                            "Download URL: https://osf.io/download/pu8zf/. Source byte size: 74364708. "
+                            "License: OSF project license not supplied."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://osf.io/cx762/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/osf/file.json#files/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "reason": "video_license_unclear", "repository": "osf"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "What OSF Aedes aegypti videos are missing because the license is unclear?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "video_atom:gap:osf:license")
+            self.assertIn("video_license_unclear", answer["evidence"][0]["text"])
+
     def test_video_discovery_questions_return_repository_assets_or_gaps(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
