@@ -595,7 +595,7 @@ sources:
   - id: dryad_aedes_behavior_videos
     name: Dryad Aedes aegypti behavior and video dataset manifests
     source_type: public_dataset_api
-    boundary: Public Dryad datasets with materially Aedes aegypti behavior/video data, including host-seeking, visual-threat, flight-escape, mating, courtship, and thermal-infrared assay files, plus queryable archive-decode gaps until video archives are expanded into inspectable assets and motion rows
+    boundary: Public Dryad datasets with materially Aedes aegypti behavior/video data, including host-seeking, visual-threat, flight-escape, mating, courtship, thermal-infrared assay files, bounded CSV/XLSX table parse attempts, queryable table-download/parse gaps, and queryable archive-decode gaps until video archives are expanded into inspectable assets and motion rows
     query_plane: dryad_dataset_version_file_manifest_to_sqlite
     api_base: https://datadryad.org/api/v2
     artifact_dir: artifacts/mosquito-v1/raw/dryad_behavior_videos

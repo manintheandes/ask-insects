@@ -1,6 +1,8 @@
+import io
 import tempfile
 import unittest
 from pathlib import Path
+from zipfile import ZipFile
 
 from askinsects.sources.dryad_behavior_videos import (
     DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
@@ -66,6 +68,97 @@ class DryadFetcher:
         raise AssertionError(f"unexpected URL: {url}")
 
 
+def tiny_xlsx(rows):
+    out = io.BytesIO()
+    with ZipFile(out, "w") as zf:
+        zf.writestr(
+            "[Content_Types].xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>""",
+        )
+        zf.writestr(
+            "_rels/.rels",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>""",
+        )
+        zf.writestr(
+            "xl/workbook.xml",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Assay" sheetId="1" r:id="rId1"/></sheets>
+</workbook>""",
+        )
+        zf.writestr(
+            "xl/_rels/workbook.xml.rels",
+            """<?xml version="1.0" encoding="UTF-8"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>""",
+        )
+        row_xml = []
+        for row_index, row in enumerate(rows, start=1):
+            cells = []
+            for col_index, value in enumerate(row):
+                col = chr(ord("A") + col_index)
+                cells.append(f'<c r="{col}{row_index}" t="inlineStr"><is><t>{value}</t></is></c>')
+            row_xml.append(f'<row r="{row_index}">{"".join(cells)}</row>')
+        zf.writestr(
+            "xl/worksheets/sheet1.xml",
+            f"""<?xml version="1.0" encoding="UTF-8"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>{"".join(row_xml)}</sheetData>
+</worksheet>""",
+        )
+    return out.getvalue()
+
+
+class DryadTableFetcher(DryadFetcher):
+    def __init__(self):
+        super().__init__()
+        self.files["_embedded"]["stash:files"].extend(
+            [
+                {
+                    "_links": {"stash:download": {"href": "/api/v2/files/12/download"}},
+                    "path": "Male_preferences_Ae._aegypti.csv",
+                    "size": 34,
+                    "mimeType": "text/csv",
+                    "digest": "csv-aegypti",
+                    "digestType": "sha-256",
+                },
+                {
+                    "_links": {"stash:download": {"href": "/api/v2/files/13/download"}},
+                    "path": "SourceData_Figure3.xlsx",
+                    "size": 4096,
+                    "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "digest": "xlsx-aegypti",
+                    "digestType": "sha-256",
+                },
+                {
+                    "_links": {"stash:download": {"href": "/api/v2/files/14/download"}},
+                    "path": "Female_preferences_Ae._notoscriptus.csv",
+                    "size": 28,
+                    "mimeType": "text/csv",
+                    "digest": "csv-other-species",
+                    "digestType": "sha-256",
+                },
+            ]
+        )
+
+    def bytes_for(self, url):
+        if url.endswith("/files/12/download"):
+            return b"sex,response\nmale,landing\nfemale,landing\n"
+        if url.endswith("/files/13/download"):
+            return tiny_xlsx([["stimulus", "response"], ["shadow", "escape"]])
+        raise AssertionError(f"unexpected download URL: {url}")
+
+
 class DryadBehaviorVideoSourceTests(unittest.TestCase):
     def test_fetch_dryad_behavior_video_records_normalizes_dataset_and_file_manifest(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -110,6 +203,54 @@ class DryadBehaviorVideoSourceTests(unittest.TestCase):
             readme = next(record for record in result.records if record.title.endswith("README.md"))
             self.assertEqual(readme.lane, "behavior")
             self.assertIsNone(readme.media_url)
+
+    def test_fetch_dryad_behavior_video_records_parses_downloaded_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = DryadTableFetcher()
+            result = fetch_dryad_behavior_video_records(
+                [DryadDatasetSpec(doi="10.5061/dryad.example", behavior_labels=("host seeking", "escape"))],
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fetcher,
+                fetch_bytes=fetcher.bytes_for,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            self.assertEqual(result.table_file_count, 3)
+            self.assertEqual(result.parsed_table_file_count, 2)
+            self.assertEqual(result.skipped_table_file_count, 1)
+            self.assertEqual(result.table_sheet_count, 2)
+            self.assertEqual(result.table_row_count, 3)
+
+            sheet = next(record for record in result.records if record.record_id.startswith("dryad:table:"))
+            self.assertEqual(sheet.lane, "behavior")
+            self.assertEqual(sheet.payload["headers"], ["sex", "response"])
+            self.assertEqual(sheet.payload["row_count"], 2)
+
+            rows = [record for record in result.records if record.record_id.startswith("dryad:table-row:")]
+            self.assertEqual(len(rows), 3)
+            self.assertTrue(any(record.payload["values"].get("response") == "landing" for record in rows))
+            self.assertTrue(any("shadow" in record.text and "escape" in record.text for record in rows))
+            self.assertFalse(any("notoscriptus" in record.record_id for record in rows))
+            self.assertTrue(any(Path(path).name.endswith((".json", ".csv", ".xlsx")) for path in result.raw_artifacts))
+
+    def test_fetch_dryad_behavior_video_records_promotes_table_download_failures_to_gap_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = DryadTableFetcher()
+            result = fetch_dryad_behavior_video_records(
+                [DryadDatasetSpec(doi="10.5061/dryad.example", behavior_labels=("host seeking", "escape"))],
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fetcher,
+                fetch_bytes=lambda url: (_ for _ in ()).throw(RuntimeError("download blocked")),
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            gaps = [record for record in result.records if record.record_id.startswith("dryad:table-gap:")]
+            self.assertEqual(len(gaps), 2)
+            self.assertEqual(result.parsed_table_file_count, 0)
+            self.assertEqual(result.skipped_table_file_count, 3)
+            self.assertTrue(all(record.payload["reason"] == "dryad_table_file_download_or_parse_failed" for record in gaps))
+            self.assertTrue(all("download blocked" in record.text for record in gaps))
+            self.assertFalse(any("notoscriptus" in record.record_id for record in gaps))
 
     def test_fetch_dryad_behavior_video_records_records_gap_on_fetch_failure(self):
         with tempfile.TemporaryDirectory() as tmpdir:

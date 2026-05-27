@@ -3461,6 +3461,29 @@ def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str]
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _dryad_table_gap_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if "dryad" not in q or not any(term in q for term in ("table", "tables", "row", "rows", "source data", "sourcedata")):
+        return []
+    if not any(term in q for term in ("gap", "gaps", "failed", "failure", "blocked", "missing", "not parsed", "unparsed")):
+        return []
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT r.*
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = 'dryad_aedes_behavior_videos'
+              AND r.lane = 'behavior'
+              AND json_extract(p.payload_json, '$.atom_type') = 'table_gap'
+            ORDER BY r.record_id
+            LIMIT ?
+            """,
+            (limit,),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
 def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, limit: int = 5) -> dict[str, object]:
     plan = plan_question(question)
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
@@ -3486,6 +3509,11 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         for record in _source_coverage_records(index, plan.question, list(plan.lanes), limit=limit):
             all_records.append(record)
             seen_record_ids.add(record.record_id)
+    for record in _dryad_table_gap_records(index, plan.question, limit=limit):
+        if record.record_id in seen_record_ids:
+            continue
+        all_records.append(record)
+        seen_record_ids.add(record.record_id)
 
     named_video_repository = _video_discovery_repository(plan.question) if plan.answer_shape == "media" else None
     if named_video_repository:

@@ -73,6 +73,8 @@ def plan_question(question: str) -> QueryPlan:
     )
     if any(term in q for term in video_motion_terms):
         return QueryPlan(question, "behavior", ("behavior", "media"), question)
+    if "dryad" in q and any(term in q for term in ("table", "tables", "row", "rows", "source data", "sourcedata")):
+        return QueryPlan(question, "behavior", ("behavior", "media"), question)
     image_media_terms = (
         "image",
         "images",
