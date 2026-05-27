@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import re
 import sqlite3
@@ -3516,6 +3517,160 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+SOURCE_COVERAGE_DOMAIN_ALIASES = {
+    "literature": ("literature", "paper", "papers", "full text", "full-text", "supplement", "supplements", "supplementary"),
+    "genomics": ("genomics", "genomic", "genome", "genes", "proteins", "orthology", "variant", "variants"),
+    "behavior": ("behavior", "behaviour", "host seeking", "oviposition", "mating", "flight", "larval"),
+    "observations": ("observations", "observation", "occurrence", "occurrences", "surveillance observations"),
+    "images": ("images", "image", "photos", "photo", "picture", "pictures"),
+    "video": ("video", "videos", "movie", "movies", "motion"),
+    "neurobiology": ("neurobiology", "brain", "neuron", "neurons", "connectome"),
+    "vector_competence": ("vector_competence", "vector competence", "infection", "transmission", "dissemination"),
+    "resistance": ("resistance", "insecticide", "kdr", "marker", "markers"),
+    "ecology": ("ecology", "climate", "range", "habitat", "suitability"),
+    "public_health": ("public_health", "public health", "dengue", "outbreak", "cases", "deaths", "intervention"),
+}
+
+
+def _source_coverage_requested_domains(question: str) -> list[str]:
+    q = question.lower()
+    requested_domains: list[str] = []
+    for domain, aliases in SOURCE_COVERAGE_DOMAIN_ALIASES.items():
+        if any(alias in q for alias in aliases):
+            requested_domains.append(domain)
+    return list(dict.fromkeys(requested_domains))
+
+
+def _source_coverage_payload(row: sqlite3.Row) -> dict[str, object]:
+    try:
+        payload = json.loads(str(row["payload_json"]))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _short_list(values: object, *, limit: int = 4) -> str:
+    if not isinstance(values, list) or not values:
+        return "none recorded"
+    rendered = [str(value) for value in values[:limit]]
+    if len(values) > limit:
+        rendered.append(f"{len(values) - limit} more")
+    return "; ".join(rendered)
+
+
+def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    if "source_coverage" not in plan.lanes:
+        return None
+    q = plan.question.lower()
+    wants_missing = any(term in q for term in ("missing", "gap", "gaps", "next required", "what are we missing", "what is missing"))
+    requested_domains = _source_coverage_requested_domains(plan.question)
+    domain_filter = ""
+    params: list[object] = []
+    if requested_domains:
+        placeholders = ",".join("?" for _ in requested_domains)
+        domain_filter = f"AND json_extract(p.payload_json, '$.domain') IN ({placeholders})"
+        params.extend(requested_domains)
+    with index.connect() as conn:
+        overview_row = conn.execute(
+            """
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = 'aedes_source_coverage'
+              AND r.lane = 'source_coverage'
+              AND json_extract(p.payload_json, '$.atom_type') = 'source_coverage_overview'
+            ORDER BY r.record_id
+            LIMIT 1
+            """
+        ).fetchone()
+        domain_rows = conn.execute(
+            f"""
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = 'aedes_source_coverage'
+              AND r.lane = 'source_coverage'
+              AND json_extract(p.payload_json, '$.atom_type') = 'source_coverage_domain'
+              {domain_filter}
+            ORDER BY CAST(coalesce(json_extract(p.payload_json, '$.priority'), 999) AS INTEGER), r.record_id
+            """,
+            params,
+        ).fetchall()
+        gap_rows = conn.execute(
+            f"""
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = 'aedes_source_coverage'
+              AND r.lane = 'source_coverage'
+              AND json_extract(p.payload_json, '$.atom_type') = 'source_coverage_gap'
+              {domain_filter}
+            ORDER BY CAST(coalesce(json_extract(p.payload_json, '$.priority'), 999) AS INTEGER), r.record_id
+            """,
+            params,
+        ).fetchall()
+    if overview_row is None and not domain_rows and not gap_rows:
+        return None
+
+    overview_payload = _source_coverage_payload(overview_row) if overview_row is not None else {}
+    domain_payloads = [_source_coverage_payload(row) for row in domain_rows]
+    gap_payloads = [_source_coverage_payload(row) for row in gap_rows]
+    status_counts: dict[str, int] = {}
+    for payload in domain_payloads:
+        status = str(payload.get("status") or "unknown")
+        status_counts[status] = status_counts.get(status, 0) + 1
+    domain_count = int(overview_payload.get("domain_count") or len(domain_payloads))
+    gap_count = len(gap_payloads)
+    if requested_domains:
+        domain_bits = []
+        for payload in domain_payloads[: max(limit, 1)]:
+            domain = str(payload.get("domain") or "unknown").replace("_", " ")
+            status = str(payload.get("status") or "unknown").replace("_", " ")
+            sources = _short_list(payload.get("current_sources"), limit=4)
+            missing = [
+                str(gap.get("required_next_source"))
+                for gap in gap_payloads
+                if gap.get("domain") == payload.get("domain") and gap.get("required_next_source")
+            ]
+            domain_bits.append(
+                f"{domain} is {status}. Covered now: {sources}. Missing work: {_short_list(missing, limit=3)}."
+            )
+        answer = "Plainly: " + " ".join(domain_bits)
+    else:
+        status_text = ", ".join(f"{status.replace('_', ' ')}: {count}" for status, count in sorted(status_counts.items()))
+        top_gaps = []
+        for payload in gap_payloads[: max(limit, 1)]:
+            domain = str(payload.get("domain") or "unknown").replace("_", " ")
+            required = str(payload.get("required_next_source") or "missing source not recorded")
+            top_gaps.append(f"{domain}: {required}")
+        answer = (
+            f"Plainly: Ask Insects is not complete yet. It has {domain_count} tracked Aedes domains and currently lists "
+            f"{gap_count} missing-source gaps in the coverage ledger. Status mix: {status_text or 'not recorded'}. "
+            f"Missing work: {_short_list(top_gaps, limit=max(limit, 1))}."
+        )
+
+    evidence_records: list[EvidenceRecord] = []
+    if overview_row is not None and not requested_domains and not wants_missing:
+        evidence_records.append(EvidenceRecord.from_row(dict(overview_row)))
+    for row in gap_rows:
+        evidence_records.append(EvidenceRecord.from_row(dict(row)))
+    for row in domain_rows:
+        evidence_records.append(EvidenceRecord.from_row(dict(row)))
+    return {
+        "ok": True,
+        "answer_shape": plan.answer_shape,
+        "answer": answer,
+        "evidence": [record_to_evidence(record) for record in evidence_records[:limit]],
+        "source_gap": None,
+        "source_coverage": {
+            "tracked_domain_count": domain_count,
+            "coverage_gap_count": gap_count,
+            "status_counts": status_counts,
+            "requested_domains": requested_domains,
+        },
+    }
+
+
 def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
     if "source_coverage" not in lanes:
         return []
@@ -3528,24 +3683,8 @@ def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str]
         "source_coverage_domain": 1,
         "source_coverage_overview": 2 if wants_missing else 0,
     }
-    requested_domains: list[str] = []
     params: list[object] = [*atom_types]
-    domain_aliases = {
-        "literature": ("literature", "paper", "papers", "full text", "full-text", "supplement", "supplements", "supplementary"),
-        "genomics": ("genomics", "genomic", "genome", "genes", "proteins", "orthology", "variant", "variants"),
-        "behavior": ("behavior", "behaviour", "host seeking", "oviposition", "mating", "flight", "larval"),
-        "observations": ("observations", "observation", "occurrence", "occurrences", "surveillance observations"),
-        "images": ("images", "image", "photos", "photo", "picture", "pictures"),
-        "video": ("video", "videos", "movie", "movies", "motion"),
-        "neurobiology": ("neurobiology", "brain", "neuron", "neurons", "connectome"),
-        "vector_competence": ("vector_competence", "vector competence", "infection", "transmission", "dissemination"),
-        "resistance": ("resistance", "insecticide", "kdr", "marker", "markers"),
-        "ecology": ("ecology", "climate", "range", "habitat", "suitability"),
-        "public_health": ("public_health", "public health", "dengue", "outbreak", "cases", "deaths", "intervention"),
-    }
-    for domain, aliases in domain_aliases.items():
-        if any(alias in q for alias in aliases):
-            requested_domains.append(domain)
+    requested_domains = _source_coverage_requested_domains(question)
     domain_filter = ""
     if requested_domains:
         requested_domains = list(dict.fromkeys(requested_domains))
@@ -3613,6 +3752,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         return _supplement_audit_summary_answer(index, plan, limit=limit)
     if _wants_supplement_audit_summary(plan.question) and "source_coverage" not in plan.lanes:
         return _supplement_audit_summary_answer(index, plan, limit=limit)
+    coverage_summary = _source_coverage_summary_answer(index, plan, limit=limit)
+    if coverage_summary is not None:
+        return coverage_summary
 
     all_records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()

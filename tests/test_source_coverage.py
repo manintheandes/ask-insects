@@ -171,6 +171,9 @@ class SourceCoverageTests(unittest.TestCase):
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertIn("Plainly", answer["answer"])
+            self.assertIn("not complete", answer["answer"])
+            self.assertIn("behavior", answer["answer"])
             self.assertEqual(answer["evidence"][0]["source"], SOURCE_COVERAGE_SOURCE_ID)
             self.assertIn("Missing Aedes aegypti", answer["evidence"][0]["text"])
 
@@ -178,6 +181,7 @@ class SourceCoverageTests(unittest.TestCase):
 
             self.assertTrue(source_answer["ok"])
             self.assertEqual(source_answer["answer_shape"], "evidence")
+            self.assertIn("Missing work", source_answer["answer"])
             self.assertEqual(source_answer["evidence"][0]["source"], SOURCE_COVERAGE_SOURCE_ID)
             self.assertIn("Missing Aedes aegypti", source_answer["evidence"][0]["text"])
 
@@ -192,9 +196,27 @@ class SourceCoverageTests(unittest.TestCase):
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertIn("video is", answer["answer"])
+            self.assertIn("Missing work", answer["answer"])
             self.assertEqual(answer["evidence"][0]["source"], SOURCE_COVERAGE_SOURCE_ID)
             self.assertEqual(answer["evidence"][0]["record_id"], "aedes_source_coverage:gap:video:1")
             self.assertIn("broader repository sweeps", answer["evidence"][0]["text"])
+
+    def test_overall_status_question_summarizes_coverage_plainly(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            coverage_path = Path(tmpdir) / "coverage.json"
+            write_coverage_fixture(coverage_path)
+            ingest_source_coverage(artifact_dir=artifact_dir, coverage_path=coverage_path, retrieved_at=RETRIEVED_AT)
+
+            answer = answer_question("what is the overall status?", artifact_dir=artifact_dir, limit=3)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertIn("Plainly", answer["answer"])
+            self.assertIn("4 tracked Aedes domains", answer["answer"])
+            self.assertIn("5 missing-source gaps", answer["answer"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "aedes_source_coverage:overview")
 
     def test_domain_alias_coverage_questions_use_source_coverage_lane(self):
         with tempfile.TemporaryDirectory() as tmpdir:
