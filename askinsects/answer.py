@@ -242,6 +242,30 @@ def _wants_video_gaps(question: str) -> bool:
     return _wants_video_atoms(question) and any(term in q for term in ("gap", "gaps", "failed", "failure", "license", "too large"))
 
 
+def _requested_video_gap_reasons(question: str) -> list[str]:
+    q = question.lower()
+    reasons: list[str] = []
+    if "manifest" in q:
+        reasons.append("video_manifest_gap")
+    if "license" in q:
+        reasons.extend(["video_license_unclear", "video_discovery_license_unclear"])
+    if any(term in q for term in ("not aedes", "out of scope", "not in scope")):
+        reasons.append("video_discovery_not_aedes_scope")
+    if any(term in q for term in ("not video", "not-video", "nonvideo", "non-video")):
+        reasons.append("video_discovery_not_video_media")
+    if "no candidate" in q or "no candidates" in q:
+        reasons.append("video_discovery_no_candidates")
+    if (
+        "unmatched" in q
+        or "source video" in q
+        or "source videos" in q
+        or "motion table" in q
+        or "motion tables" in q
+    ) and any(term in q for term in ("motion", "trajectory", "track", "tracking")):
+        reasons.append("video_motion_unmatched_source_video")
+    return list(dict.fromkeys(reasons))
+
+
 def _wants_video_discovery(question: str) -> bool:
     return _wants_video_atoms(question) and "discovery" in question.lower()
 
@@ -3227,8 +3251,10 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
         verified_filter = "AND json_extract(p.payload_json, '$.verification_status') = 'verified'"
     motion_metric_order = ""
     gap_reason_order = ""
+    gap_reason_filter = ""
     wants_license_gap_order = False
     wants_hash_gap_order = False
+    requested_gap_reasons = _requested_video_gap_reasons(question) if _wants_video_gaps(question) else []
     if any(term in q for term in ("velocity", "distance moved", "movement", "locomotory")):
         motion_metric_order = """
               CASE WHEN json_extract(p.payload_json, '$.velocity_mean_cm_s') IS NOT NULL THEN 0 ELSE 1 END,
@@ -3246,12 +3272,17 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
         """
         wants_license_gap_order = "license" in q
         wants_hash_gap_order = any(term in q for term in ("hash", "hashes", "checksum", "sha-256", "sha256"))
+        if requested_gap_reasons:
+            placeholders = ",".join("?" for _ in requested_gap_reasons)
+            gap_reason_filter = f"AND json_extract(p.payload_json, '$.reason') IN ({placeholders})"
 
     def fetch_rows(selected_atom_types: list[str], selected_limit: int) -> list[sqlite3.Row]:
         lane_placeholders = ",".join("?" for _ in lanes)
         atom_placeholders = ",".join("?" for _ in selected_atom_types)
         repository_filter = ""
         params: list[object] = [*lanes, *selected_atom_types]
+        if gap_reason_filter:
+            params.extend(requested_gap_reasons)
         if repository:
             repository_filter = """
                   AND (
@@ -3274,6 +3305,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
                 WHERE r.source = 'aedes_video_atoms'
                   AND r.lane IN ({lane_placeholders})
                   AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
+                  {gap_reason_filter}
                   {repository_filter}
                   {verified_filter}
                 ORDER BY

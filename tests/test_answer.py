@@ -1670,6 +1670,74 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_video_atoms")
             self.assertIn("video_probe_failed", answer["evidence"][0]["text"])
 
+    def test_specific_video_gap_questions_filter_to_requested_reason(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:gap:manifest",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_manifest_gap",
+                        text="Aedes aegypti video source gap: video_manifest_gap. Repository: figshare.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/discovery_sweeps.json#figshare/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "reason": "video_manifest_gap", "repository": "figshare"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:gap:motion-unmatched",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_motion_unmatched_source_video",
+                        text="Aedes aegypti video source gap: video_motion_unmatched_source_video.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/mendeley_behavior_media/table_files/tracks.csv#row/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "reason": "video_motion_unmatched_source_video"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:gap:not-aedes",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video gap video_discovery_not_aedes_scope",
+                        text="Aedes aegypti video source gap: video_discovery_not_aedes_scope. Repository: institutional.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/discovery_sweeps.json#institutional/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "reason": "video_discovery_not_aedes_scope", "repository": "institutional"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes video manifest gaps", artifact_dir=artifact_dir, limit=3)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual([item["record_id"] for item in answer["evidence"]], ["video_atom:gap:manifest"])
+
+            motion_answer = answer_question("show Aedes video motion unmatched source video gaps", artifact_dir=artifact_dir, limit=3)
+
+            self.assertTrue(motion_answer["ok"])
+            self.assertEqual([item["record_id"] for item in motion_answer["evidence"]], ["video_atom:gap:motion-unmatched"])
+
     def test_video_license_gap_questions_prefer_source_hash_gaps(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
