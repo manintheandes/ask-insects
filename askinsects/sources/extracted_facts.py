@@ -2001,6 +2001,63 @@ def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[
     )
 
 
+def _record_for_unpromoted_supplement_row(candidate: TextCandidate, *, retrieved_at: str) -> EvidenceRecord:
+    row = candidate.table_row or {}
+    row_index = candidate.table_row_index or 0
+    raw_file = candidate.raw_file_path or "supplement"
+    digest = _digest(candidate.source_record_id, raw_file, row_index, json.dumps(row, sort_keys=True))
+    locator_parts = [f"records#{candidate.source_record_id}"]
+    if candidate.supplement_index is not None:
+        locator_parts.append(f"supplement#{candidate.supplement_index}")
+    if candidate.raw_file_path:
+        locator_parts.append(candidate.raw_file_path)
+    if candidate.table_row_index is not None:
+        locator_parts.append(f"row#{candidate.table_row_index}")
+    provenance = Provenance(
+        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        locator=";".join(locator_parts),
+        retrieved_at=retrieved_at,
+        license=candidate.unit_license,
+        source_url=candidate.unit_url or candidate.paper_url,
+    )
+    headers = list(row)
+    text = (
+        f"Aedes aegypti parsed supplement table row from {candidate.source_title}. "
+        "This row was parsed but did not match a structured lane schema. "
+        f"Headers: {', '.join(headers)}. "
+        f"Values: {'; '.join(f'{key}: {value}' for key, value in row.items() if value)}"
+    )
+    return EvidenceRecord(
+        record_id=f"extracted_fact:supplement_table_row:{_normalize_id(candidate.source_record_id)}:{digest}",
+        lane="literature",
+        source=EXTRACTED_FACTS_SOURCE_ID,
+        title="Aedes aegypti parsed supplement table row",
+        text=text,
+        species=candidate.species or "Aedes aegypti",
+        url=candidate.unit_url or candidate.paper_url,
+        media_url=None,
+        provenance=provenance,
+        payload={
+            "fact_type": "supplement_table_row",
+            "schema_version": SCHEMA_VERSION,
+            "fields": {
+                "table_row": row,
+                "table_headers": headers,
+                "table_row_index": candidate.table_row_index,
+                "non_promotion_reason": "no_structured_lane_schema_match",
+            },
+            "source_record_id": candidate.source_record_id,
+            "fulltext_unit_id": candidate.unit_id,
+            "supplement": candidate.supplement,
+            "evidence_text": _table_row_text(row),
+            "confidence": "parsed_no_structured_lane_match",
+            "extraction_method": "deterministic_supplement_table_row_unpromoted",
+            "source_provenance": candidate.source_provenance,
+            "unit_provenance": candidate.unit_provenance,
+        },
+    )
+
+
 def build_extracted_fact_records(
     artifact_dir: Path,
     *,
@@ -2154,6 +2211,7 @@ def build_extracted_fact_records(
             )
         combined_text = "\n".join([candidate.source_title, candidate.text])
         declared_fact_type = _row_declared_fact_type(candidate.table_row)
+        promoted_table_row = False
         for family in FACT_FAMILIES:
             if declared_fact_type and declared_fact_type != family.fact_type:
                 continue
@@ -2177,7 +2235,10 @@ def build_extracted_fact_records(
             records.append(_record_for_fact(candidate, family, enriched_fields, retrieved_at=retrieved_at))
             if candidate.table_row:
                 promoted_supplement_row_counts_by_paper[candidate.source_record_id] += 1
+                promoted_table_row = True
             fact_counts[family.fact_type] += 1
+        if candidate.table_row and not promoted_table_row:
+            records.append(_record_for_unpromoted_supplement_row(candidate, retrieved_at=retrieved_at))
     print(
         f"[aedes_extracted_facts] supplement audit records={len(literature_rows)}",
         file=sys.stderr,

@@ -1031,12 +1031,12 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             write_extracted_facts_fixture(artifact_dir)
             payloads: dict[str, bytes] = {
                 "https://example.org/aedes-facts/supp-table-1.csv": (
-                    "Attractant,Assay,Area (%)\n"
-                    "Isoamyl acetate,Cage bioassay,9.06\n"
+                    "domain,Replicate,Measurement\n"
+                    "quality_control,A,9.06\n"
                 ).encode("utf-8"),
                 "https://example.org/europepmc/attractant.csv": (
-                    "Attractant,Assay,Area (%)\n"
-                    "Isoamyl acetate,Cage bioassay,9.06\n"
+                    "domain,Replicate,Measurement\n"
+                    "quality_control,B,8.72\n"
                 ).encode("utf-8"),
             }
 
@@ -1070,6 +1070,17 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                 if record.payload["fact_type"] == "resistance" and record.payload["confidence"] == "parsed"
             ]
             self.assertEqual(parsed_resistance, [])
+            unpromoted_rows = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_table_row"
+                and record.payload["confidence"] == "parsed_no_structured_lane_match"
+            ]
+            self.assertEqual(len(unpromoted_rows), 2)
+            self.assertEqual(unpromoted_rows[0].payload["fields"]["table_row"]["Replicate"], "A")
+            self.assertEqual(unpromoted_rows[0].payload["fields"]["table_row_index"], 1)
+            self.assertIn("raw/extracted_facts/supplements/", unpromoted_rows[0].provenance.locator)
+            self.assertIn("row#1", unpromoted_rows[0].provenance.locator)
             self.assertEqual(result.parsed_supplement_row_count, 2)
 
     def test_build_extracted_fact_records_promotes_true_resistance_table_without_declared_domain(self):
