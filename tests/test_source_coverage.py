@@ -27,6 +27,23 @@ def write_coverage_fixture(path: Path) -> None:
                 "source_contract_gates": ["mapped", "accessible", "atomically_queryable", "receipted", "ask_surface_wired"],
                 "domains": [
                     {
+                        "id": "literature",
+                        "priority": 1,
+                        "status": "partial_source_grade",
+                        "target_state": "Aedes papers, legal full text, supplements, and explicit literature gaps.",
+                        "current_sources": ["aedes_literature_openalex", "aedes_extracted_facts"],
+                        "current_gates": {
+                            "mapped": "yes",
+                            "accessible": "yes",
+                            "atomically_queryable": "partial",
+                            "receipted": "yes",
+                            "ask_surface_wired": "partial",
+                        },
+                        "current_evidence": ["paper metadata is queryable"],
+                        "required_next_sources": ["deeper supplement table parsing and promotion"],
+                        "completion_evidence": ["supplement coverage questions answer from audit rows or explicit coverage gaps"],
+                    },
+                    {
                         "id": "behavior",
                         "priority": 3,
                         "status": "partial_source_grade",
@@ -100,8 +117,8 @@ class SourceCoverageTests(unittest.TestCase):
             self.assertEqual(records[0].lane, "source_coverage")
             domain_records = [record for record in records if record.payload and record.payload["atom_type"] == "source_coverage_domain"]
             gap_records = [record for record in records if record.payload and record.payload["atom_type"] == "source_coverage_gap"]
-            self.assertEqual(len(domain_records), 3)
-            self.assertEqual(len(gap_records), 4)
+            self.assertEqual(len(domain_records), 4)
+            self.assertEqual(len(gap_records), 5)
             self.assertTrue(any("decoded trajectory tables" in record.text for record in gap_records))
             behavior = next(record for record in domain_records if record.payload["domain"] == "behavior")
             self.assertIn("atomically_queryable=partial", behavior.text)
@@ -133,15 +150,15 @@ class SourceCoverageTests(unittest.TestCase):
 
             self.assertTrue(result["ok"])
             self.assertEqual(result["source"], SOURCE_COVERAGE_SOURCE_ID)
-            self.assertEqual(result["domain_count"], 3)
-            self.assertEqual(result["coverage_gap_count"], 4)
+            self.assertEqual(result["domain_count"], 4)
+            self.assertEqual(result["coverage_gap_count"], 5)
             rows = index.sql("select source, lane, count(*) as n from records group by source, lane", limit=100)
             counts = {(row["source"], row["lane"]): int(row["n"]) for row in rows}
             self.assertEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 1)
-            self.assertEqual(counts[(SOURCE_COVERAGE_SOURCE_ID, "source_coverage")], 8)
+            self.assertEqual(counts[(SOURCE_COVERAGE_SOURCE_ID, "source_coverage")], 10)
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertIn(SOURCE_COVERAGE_SOURCE_ID, status["sources"])
-            self.assertEqual(status[SOURCE_COVERAGE_SOURCE_ID]["coverage_gap_count"], 4)
+            self.assertEqual(status[SOURCE_COVERAGE_SOURCE_ID]["coverage_gap_count"], 5)
 
     def test_missing_coverage_question_uses_source_coverage_lane(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -171,6 +188,25 @@ class SourceCoverageTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], SOURCE_COVERAGE_SOURCE_ID)
             self.assertEqual(answer["evidence"][0]["record_id"], "aedes_source_coverage:gap:video:1")
             self.assertIn("broader repository sweeps", answer["evidence"][0]["text"])
+
+    def test_domain_alias_coverage_questions_use_source_coverage_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            coverage_path = Path(tmpdir) / "coverage.json"
+            write_coverage_fixture(coverage_path)
+            ingest_source_coverage(artifact_dir=artifact_dir, coverage_path=coverage_path, retrieved_at=RETRIEVED_AT)
+
+            image_answer = answer_question("what is missing from Aedes image coverage?", artifact_dir=artifact_dir, limit=3)
+
+            self.assertTrue(image_answer["ok"])
+            self.assertEqual(image_answer["evidence"][0]["record_id"], "aedes_source_coverage:gap:images:1")
+            self.assertIn("sex and anatomy", image_answer["evidence"][0]["text"])
+
+            supplement_answer = answer_question("what is missing from Aedes supplement coverage?", artifact_dir=artifact_dir, limit=3)
+
+            self.assertTrue(supplement_answer["ok"])
+            self.assertEqual(supplement_answer["evidence"][0]["record_id"], "aedes_source_coverage:gap:literature:1")
+            self.assertIn("supplement table parsing", supplement_answer["evidence"][0]["text"])
 
 
 if __name__ == "__main__":

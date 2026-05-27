@@ -3445,26 +3445,25 @@ def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str]
     }
     requested_domains: list[str] = []
     params: list[object] = [*atom_types]
-    for domain in (
-        "literature",
-        "genomics",
-        "behavior",
-        "observations",
-        "images",
-        "video",
-        "neurobiology",
-        "vector_competence",
-        "vector competence",
-        "resistance",
-        "ecology",
-        "public_health",
-        "public health",
-    ):
-        if domain in q:
-            normalized = domain.replace(" ", "_")
-            requested_domains.append(normalized)
+    domain_aliases = {
+        "literature": ("literature", "paper", "papers", "full text", "full-text", "supplement", "supplements", "supplementary"),
+        "genomics": ("genomics", "genomic", "genome", "genes", "proteins", "orthology", "variant", "variants"),
+        "behavior": ("behavior", "behaviour", "host seeking", "oviposition", "mating", "flight", "larval"),
+        "observations": ("observations", "observation", "occurrence", "occurrences", "surveillance observations"),
+        "images": ("images", "image", "photos", "photo", "picture", "pictures"),
+        "video": ("video", "videos", "movie", "movies", "motion"),
+        "neurobiology": ("neurobiology", "brain", "neuron", "neurons", "connectome"),
+        "vector_competence": ("vector_competence", "vector competence", "infection", "transmission", "dissemination"),
+        "resistance": ("resistance", "insecticide", "kdr", "marker", "markers"),
+        "ecology": ("ecology", "climate", "range", "habitat", "suitability"),
+        "public_health": ("public_health", "public health", "dengue", "outbreak", "cases", "deaths", "intervention"),
+    }
+    for domain, aliases in domain_aliases.items():
+        if any(alias in q for alias in aliases):
+            requested_domains.append(domain)
     domain_filter = ""
     if requested_domains:
+        requested_domains = list(dict.fromkeys(requested_domains))
         placeholders = ",".join("?" for _ in requested_domains)
         domain_filter = f"AND json_extract(p.payload_json, '$.domain') IN ({placeholders})"
         params.extend(requested_domains)
@@ -3524,7 +3523,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     if not _index_ready(index):
         return source_gap(plan, "The Ask Insects source index has not been built yet.")
 
-    if _wants_supplement_audit_summary(plan.question):
+    q = plan.question.lower()
+    if _wants_supplement_audit_summary(plan.question) and ("audit" in q or "audited" in q):
+        return _supplement_audit_summary_answer(index, plan, limit=limit)
+    if _wants_supplement_audit_summary(plan.question) and "source_coverage" not in plan.lanes:
         return _supplement_audit_summary_answer(index, plan, limit=limit)
 
     all_records: list[EvidenceRecord] = []
