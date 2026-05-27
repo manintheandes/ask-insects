@@ -46,7 +46,8 @@
         "mosquito_repellent_literature maps PubMed and Crossref public metadata for mosquito repellent research since 2020 into deduplicated article records with candidate_sources, repellent_terms, mosquito_terms, coverage_status, matched_record_ids, and raw PubMed or Crossref locators.",
         "mosquito_repellent_external_discovery maps bounded OpenAlex, Europe PMC, AGRICOLA-through-Europe-PMC, Semantic Scholar, Crossref posted-content preprint, DataCite, Zenodo, and Figshare metadata into literature or dataset records, with queryable patent and blocked-source gap records for PatentsView, USPTO Open Data Portal, CABI, Google Scholar, and native bioRxiv/medRxiv text search.",
         "literature_fulltext_units and literature_fulltext_fts are searchable through search fulltext and literature-answer fallback",
-        "aedes_extracted_facts can discover Europe PMC, PMC, and Figshare supplement metadata when opted in and parse supported CSV, TSV, XLSX, DOCX, XML, and HTML supplement tables into row-level fact records with raw-file provenance."
+        "aedes_extracted_facts can discover Europe PMC, PMC, and Figshare supplement metadata when opted in and parse supported CSV, TSV, XLSX, DOCX, XML, and HTML supplement tables into row-level fact records with raw-file provenance.",
+        "aedes_extracted_facts emits one supplement_audit atom per indexed Aedes literature paper so supplement coverage can be counted by paper, with coverage_status values for promoted rows, parsed rows without a lane match, manifests without promoted rows, download not run, no supplement metadata found, missing discovery identifier, and discovery not run."
       ],
       "required_next_sources": [
         "deeper PDF, archive, image-table, and claim extraction across behavior, resistance, vector competence, ecology, and public-health papers beyond supported deterministic table formats"
@@ -54,7 +55,7 @@
       "completion_evidence": [
         "CLI answers use full-text chunks when abstract metadata is insufficient",
         "remaining inaccessible full text is represented as structured gaps",
-        "supplement manifests, parsed supported table rows, and extracted candidate facts are queryable with source paper, raw supplement file, row, or full-text-unit provenance"
+        "supplement manifests, per-paper supplement audits, parsed supported table rows, and extracted candidate facts are queryable with source paper, raw supplement file, row, or full-text-unit provenance"
       ]
     },
     {
@@ -313,7 +314,7 @@
         "aedes_vector_competence_assays extracts pathogen-specific assay-candidate records from indexed Aedes literature and legal full-text units, preserving source paper and full-text-unit provenance plus structured pathogen, infection, dissemination, transmission, dose, temperature, tissue, strain, population, and timepoint fields when detected.",
         "aedes_vector_competence_assays also promotes parsed aedes_extracted_facts vector-competence supplement table rows into schema-validated assay-table records when the row has a supported pathogen, a non-empty table row, and infection, dissemination, or transmission evidence. These records preserve extracted-fact row provenance and are explicitly not human-validated.",
         "aedes_vectorbyte_traits contributes temperature-dependent VecTraits rows such as transmission potential where VectorByte exposes Aedes aegypti trait measurements.",
-        "aedes_extracted_facts adds cross-lane vector-competence candidate facts, supplement manifests, and parsed supported supplement table rows from indexed literature payloads, Europe PMC or PMC metadata, public supplement files, and legal full-text units."
+        "aedes_extracted_facts adds cross-lane vector-competence candidate facts, supplement manifests, per-paper supplement audits, and parsed supported supplement table rows from indexed literature payloads, Europe PMC or PMC metadata, public supplement files, and legal full-text units."
       ],
       "required_next_sources": [
         "broader parsed table and supplement coverage beyond currently supported deterministic formats and schema-validated extracted-facts rows",

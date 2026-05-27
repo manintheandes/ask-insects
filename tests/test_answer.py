@@ -4088,6 +4088,84 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(volume["ok"])
             self.assertTrue(any("volume" in item["record_id"] for item in volume["evidence"]))
 
+    def test_supplement_audit_questions_return_counts_without_broad_search(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_audit:paper1",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement audit",
+                        text=(
+                            "Aedes aegypti supplement audit for paper One. "
+                            "Coverage status: supplement_rows_promoted. Supplement manifests: 1. "
+                            "Parsed supplement rows: 3. Promoted structured supplement rows: 2."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1000/paper1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#paper1;supplement_audit",
+                            retrieved_at="2026-05-27T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_audit",
+                            "confidence": "audit",
+                            "fields": {
+                                "coverage_status": "supplement_rows_promoted",
+                                "supplement_candidate_count": 1,
+                                "parsed_supplement_row_count": 3,
+                                "promoted_supplement_row_count": 2,
+                            },
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_audit:paper2",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement audit",
+                        text=(
+                            "Aedes aegypti supplement audit for paper Two. "
+                            "Coverage status: no_supplement_metadata_found. Supplement manifests: 0. "
+                            "Parsed supplement rows: 0. Promoted structured supplement rows: 0."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1000/paper2",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#paper2;supplement_audit",
+                            retrieved_at="2026-05-27T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_audit",
+                            "confidence": "audit",
+                            "fields": {
+                                "coverage_status": "no_supplement_metadata_found",
+                                "supplement_candidate_count": 0,
+                                "parsed_supplement_row_count": 0,
+                                "promoted_supplement_row_count": 0,
+                            },
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti supplement audit coverage status", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["supplement_audit"]["audited_papers"], 2)
+            self.assertEqual(answer["supplement_audit"]["supplement_manifest_count"], 1)
+            self.assertEqual(answer["supplement_audit"]["parsed_supplement_row_count"], 3)
+            self.assertEqual(answer["supplement_audit"]["promoted_supplement_row_count"], 2)
+            self.assertEqual(answer["status_counts"]["supplement_rows_promoted"], 1)
+            self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:supplement_audit:paper1")
+
 
 if __name__ == "__main__":
     unittest.main()

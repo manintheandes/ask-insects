@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import csv
+from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import lru_cache
@@ -12,6 +14,7 @@ from pathlib import Path
 import re
 import sqlite3
 import subprocess
+import sys
 import tempfile
 from typing import Callable, Iterable
 from urllib.parse import urlencode, urlparse
@@ -26,6 +29,9 @@ EXTRACTED_FACTS_SOURCE_ID = "aedes_extracted_facts"
 INPUT_LITERATURE_SOURCE_ID = "aedes_literature_openalex"
 SCHEMA_VERSION = "2026-05-24.v1"
 MAX_CANDIDATE_TEXT_CHARS = 50_000
+EXTERNAL_METADATA_TIMEOUT_SECONDS = 8
+SUPPLEMENT_FILE_TIMEOUT_SECONDS = 30
+SUPPLEMENT_DISCOVERY_WORKERS = 8
 
 
 @dataclass(frozen=True)
@@ -80,6 +86,10 @@ class ExtractedFactsResult:
     truncated_fulltext_unit_count: int
     selected_record_text_count: int
     supplement_manifest_count: int
+    supplement_audit_record_count: int
+    papers_with_supplement_manifest_count: int
+    papers_with_parsed_supplement_rows_count: int
+    papers_with_promoted_supplement_rows_count: int
     supplement_discovery_record_count: int
     max_repository_supplement_discovery_records: int | None
     discovered_supplement_count: int
@@ -329,7 +339,7 @@ def _digest(*parts: object) -> str:
 
 def _fetch_json_url(url: str) -> dict[str, object]:
     request = Request(url, headers={"User-Agent": "ask-insects/0.1"})
-    with urlopen(request, timeout=30) as response:
+    with urlopen(request, timeout=EXTERNAL_METADATA_TIMEOUT_SECONDS) as response:
         payload = json.loads(response.read().decode("utf-8"))
     if not isinstance(payload, dict):
         raise ValueError(f"URL returned non-object JSON for {url}")
@@ -338,7 +348,7 @@ def _fetch_json_url(url: str) -> dict[str, object]:
 
 def _fetch_bytes_url(url: str, max_bytes: int) -> bytes:
     request = Request(url, headers={"User-Agent": "ask-insects/0.1"})
-    with urlopen(request, timeout=60) as response:
+    with urlopen(request, timeout=SUPPLEMENT_FILE_TIMEOUT_SECONDS) as response:
         content_length = response.headers.get("content-length")
         if content_length and int(content_length) > max_bytes:
             raise ValueError(f"supplement exceeds max bytes: {content_length} > {max_bytes}")
@@ -912,23 +922,45 @@ def _supplement_candidates_with_discovery(
                 }
             )
             discovery_rows = bounded_rows + repository_rows
-        for paper in discovery_rows:
+        print(
+            f"[aedes_extracted_facts] supplement discovery records={len(discovery_rows)}",
+            file=sys.stderr,
+            flush=True,
+        )
+
+        def fetch_for_paper(paper: sqlite3.Row) -> tuple[sqlite3.Row, list[dict[str, object]], str | None]:
             request = _identifier_request(paper)
-            discovery_record_count += 1
             try:
-                fetched = fetch_supplement_metadata_fn(request)
+                return paper, fetch_supplement_metadata_fn(request), None
+            except Exception as exc:
+                return paper, [], str(exc)
+
+        worker_count = min(SUPPLEMENT_DISCOVERY_WORKERS, max(1, len(discovery_rows)))
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            fetched_results = executor.map(fetch_for_paper, discovery_rows)
+            for paper, fetched, error in fetched_results:
+                discovery_record_count += 1
+                if discovery_record_count == 1 or discovery_record_count % 100 == 0:
+                    print(
+                        "[aedes_extracted_facts] supplement discovery "
+                        f"{discovery_record_count}/{len(discovery_rows)} "
+                        f"candidates={len(candidates)} discovered={discovered_count}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                if error is not None:
+                    gaps.append(
+                        {
+                            "source": EXTRACTED_FACTS_SOURCE_ID,
+                            "reason": "supplement_metadata_fetch_failed",
+                            "record_id": str(paper["record_id"]),
+                            "error": error,
+                        }
+                    )
+                    continue
                 discovered_count += len(fetched)
                 for raw_supplement in fetched:
                     add_candidate(paper, raw_supplement, "metadata_fetch")
-            except Exception as exc:
-                gaps.append(
-                    {
-                        "source": EXTRACTED_FACTS_SOURCE_ID,
-                        "reason": "supplement_metadata_fetch_failed",
-                        "record_id": str(paper["record_id"]),
-                        "error": str(exc),
-                    }
-                )
     return candidates, discovered_count, discovery_record_count
 
 
@@ -1311,6 +1343,14 @@ def _download_and_parse_supplement_rows(
                 }
             )
             break
+        if index == 0 or (index + 1) % 50 == 0:
+            print(
+                "[aedes_extracted_facts] supplement download "
+                f"{index + 1}/{len(supplement_candidates)} "
+                f"downloaded={downloaded_count} parsed_files={parsed_file_count} parsed_rows={parsed_row_count}",
+                file=sys.stderr,
+                flush=True,
+            )
         url = candidate.supplement.get("url")
         if not isinstance(url, str) or not url:
             continue
@@ -1476,6 +1516,83 @@ def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrie
     )
 
 
+def _record_for_supplement_audit(
+    paper: sqlite3.Row,
+    *,
+    supplement_candidate_count: int,
+    parsed_supplement_row_count: int,
+    promoted_supplement_row_count: int,
+    discover_supplements: bool,
+    download_supplements: bool,
+    retrieved_at: str,
+) -> EvidenceRecord:
+    request = _identifier_request(paper)
+    has_discovery_identifier = any(request.get(key) for key in ("doi", "pmid", "pmcid"))
+    if promoted_supplement_row_count:
+        coverage_status = "supplement_rows_promoted"
+    elif parsed_supplement_row_count:
+        coverage_status = "supplement_rows_parsed_no_structured_lane_match"
+    elif supplement_candidate_count and download_supplements:
+        coverage_status = "supplement_manifest_found_no_supported_table_rows_promoted"
+    elif supplement_candidate_count:
+        coverage_status = "supplement_manifest_found_table_download_not_run"
+    elif discover_supplements and has_discovery_identifier:
+        coverage_status = "no_supplement_metadata_found"
+    elif discover_supplements:
+        coverage_status = "supplement_discovery_missing_identifier"
+    else:
+        coverage_status = "supplement_discovery_not_run"
+
+    title = str(paper["title"])
+    source_record_id = str(paper["record_id"])
+    fields = {
+        "coverage_status": coverage_status,
+        "supplement_candidate_count": supplement_candidate_count,
+        "parsed_supplement_row_count": parsed_supplement_row_count,
+        "promoted_supplement_row_count": promoted_supplement_row_count,
+        "discover_supplements": discover_supplements,
+        "download_supplements": download_supplements,
+        "has_discovery_identifier": has_discovery_identifier,
+    }
+    text = (
+        f"Aedes aegypti supplement audit for paper {title}. "
+        f"Coverage status: {coverage_status}. "
+        f"Supplement manifests: {supplement_candidate_count}. "
+        f"Parsed supplement rows: {parsed_supplement_row_count}. "
+        f"Promoted structured supplement rows: {promoted_supplement_row_count}."
+    )
+    provenance = Provenance(
+        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        locator=f"records#{source_record_id};supplement_audit",
+        retrieved_at=retrieved_at,
+        license=None,
+        source_url=paper["url"],
+    )
+    return EvidenceRecord(
+        record_id=f"extracted_fact:supplement_audit:{_normalize_id(source_record_id)}",
+        lane="literature",
+        source=EXTRACTED_FACTS_SOURCE_ID,
+        title="Aedes aegypti supplement audit",
+        text=text,
+        species=paper["species"] or "Aedes aegypti",
+        url=paper["url"],
+        media_url=None,
+        provenance=provenance,
+        payload={
+            "fact_type": "supplement_audit",
+            "schema_version": SCHEMA_VERSION,
+            "fields": fields,
+            "source_record_id": source_record_id,
+            "fulltext_unit_id": None,
+            "supplement": None,
+            "evidence_text": text,
+            "confidence": "audit",
+            "extraction_method": "deterministic_per_paper_supplement_audit",
+            "source_provenance": _safe_json(paper["provenance_json"]),
+        },
+    )
+
+
 def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[str, object], *, retrieved_at: str) -> EvidenceRecord:
     combined_text = "\n".join([candidate.source_title, candidate.text])
     flat_terms = [term for values in fields.values() if isinstance(values, list) for term in values if isinstance(term, str)]
@@ -1580,6 +1697,10 @@ def build_extracted_fact_records(
             fulltext_unit_count=0,
             max_fulltext_units=max_fulltext_units,
             supplement_manifest_count=0,
+            supplement_audit_record_count=0,
+            papers_with_supplement_manifest_count=0,
+            papers_with_parsed_supplement_rows_count=0,
+            papers_with_promoted_supplement_rows_count=0,
             fact_counts={family.fact_type: 0 for family in FACT_FAMILIES},
             selected_fulltext_unit_count=0,
             truncated_fulltext_unit_count=0,
@@ -1630,13 +1751,21 @@ def build_extracted_fact_records(
     )
     for index, candidate in enumerate(supplement_candidates):
         records.append(_record_for_supplement(candidate, index=index, retrieved_at=retrieved_at))
+    supplement_candidate_counts_by_paper = Counter(candidate.source_record_id for candidate in supplement_candidates)
     downloaded_supplement_file_count = 0
     parsed_supplement_file_count = 0
     parsed_supplement_row_count = 0
     parsed_pdf_supplement_file_count = 0
     skipped_pdf_supplement_file_count = 0
+    supplement_text_candidates: list[TextCandidate] = []
     if download_supplements:
         supplement_file_fetcher = fetch_supplement_file_fn or _fetch_bytes_url
+        print(
+            f"[aedes_extracted_facts] supplement download candidates={len(supplement_candidates)} "
+            f"max_files={max_supplement_files}",
+            file=sys.stderr,
+            flush=True,
+        )
         (
             supplement_text_candidates,
             downloaded_supplement_file_count,
@@ -1655,9 +1784,31 @@ def build_extracted_fact_records(
             gaps=gaps,
         )
         text_candidates.extend(supplement_text_candidates)
+        print(
+            "[aedes_extracted_facts] supplement download completed "
+            f"downloaded={downloaded_supplement_file_count} "
+            f"parsed_files={parsed_supplement_file_count} "
+            f"parsed_rows={parsed_supplement_row_count}",
+            file=sys.stderr,
+            flush=True,
+        )
+    parsed_supplement_row_counts_by_paper = Counter(candidate.source_record_id for candidate in supplement_text_candidates)
 
     fact_counts = {family.fact_type: 0 for family in FACT_FAMILIES}
-    for candidate in text_candidates:
+    promoted_supplement_row_counts_by_paper: Counter[str] = Counter()
+    print(
+        f"[aedes_extracted_facts] fact extraction candidates={len(text_candidates)}",
+        file=sys.stderr,
+        flush=True,
+    )
+    for candidate_index, candidate in enumerate(text_candidates, start=1):
+        if candidate_index == 1 or candidate_index % 5000 == 0:
+            print(
+                "[aedes_extracted_facts] fact extraction "
+                f"{candidate_index}/{len(text_candidates)} records={len(records)}",
+                file=sys.stderr,
+                flush=True,
+            )
         combined_text = "\n".join([candidate.source_title, candidate.text])
         declared_fact_type = _row_declared_fact_type(candidate.table_row)
         for family in FACT_FAMILIES:
@@ -1675,7 +1826,28 @@ def build_extracted_fact_records(
                 continue
             enriched_fields = _enrich_fields(combined_text, fields)
             records.append(_record_for_fact(candidate, family, enriched_fields, retrieved_at=retrieved_at))
+            if candidate.table_row:
+                promoted_supplement_row_counts_by_paper[candidate.source_record_id] += 1
             fact_counts[family.fact_type] += 1
+    print(
+        f"[aedes_extracted_facts] supplement audit records={len(literature_rows)}",
+        file=sys.stderr,
+        flush=True,
+    )
+
+    supplement_audit_records = [
+        _record_for_supplement_audit(
+            paper,
+            supplement_candidate_count=supplement_candidate_counts_by_paper[str(paper["record_id"])],
+            parsed_supplement_row_count=parsed_supplement_row_counts_by_paper[str(paper["record_id"])],
+            promoted_supplement_row_count=promoted_supplement_row_counts_by_paper[str(paper["record_id"])],
+            discover_supplements=discover_supplements,
+            download_supplements=download_supplements,
+            retrieved_at=retrieved_at,
+        )
+        for paper in literature_rows
+    ]
+    records.extend(supplement_audit_records)
 
     if not literature_rows:
         gaps.append(
@@ -1742,6 +1914,10 @@ def build_extracted_fact_records(
         truncated_fulltext_unit_count=truncated_fulltext_unit_count,
         selected_record_text_count=selected_record_text_count,
         supplement_manifest_count=len(supplement_candidates),
+        supplement_audit_record_count=len(supplement_audit_records),
+        papers_with_supplement_manifest_count=len(supplement_candidate_counts_by_paper),
+        papers_with_parsed_supplement_rows_count=len(parsed_supplement_row_counts_by_paper),
+        papers_with_promoted_supplement_rows_count=len(promoted_supplement_row_counts_by_paper),
         supplement_discovery_record_count=supplement_discovery_record_count,
         max_repository_supplement_discovery_records=max_repository_supplement_discovery_records,
         discovered_supplement_count=discovered_supplement_count,

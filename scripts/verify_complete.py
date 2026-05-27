@@ -926,7 +926,9 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in (
         "aedes_extracted_facts",
         "scripts/ingest_extracted_facts.py",
-        "literature_records_payloads_fulltext_units_and_supported_supplement_tables_to_sqlite_fact_records",
+        "literature_records_payloads_fulltext_units_supported_supplement_tables_and_per_paper_supplement_audits_to_sqlite_fact_records",
+        "one_supplement_audit_atom_per_indexed_aedes_literature_paper",
+        "every_schema_promotable_row_is_promoted_to_a_structured_lane",
         "candidate_manifest_or_parsed_not_human_validated",
         "bounded_opt_in_supplement_discovery_and_download",
         "csv",
