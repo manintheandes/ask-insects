@@ -3472,12 +3472,16 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     named_video_repository = _video_discovery_repository(plan.question) if plan.answer_shape == "media" else None
-    if named_video_repository and not all_records:
+    if named_video_repository:
         source_id = _video_repository_source_id(named_video_repository)
         if source_id:
-            for record in _source_records(index, source_id, ["media", "behavior"], limit=limit):
+            source_lanes = ["media"] if plan.answer_shape == "media" else ["media", "behavior"]
+            for record in _source_records(index, source_id, source_lanes, limit=limit):
+                if record.record_id in seen_record_ids:
+                    continue
                 all_records.append(record)
                 seen_record_ids.add(record.record_id)
+    if named_video_repository and not all_records:
         if not all_records:
             for record in _video_atom_records(index, f"{plan.question} discovery", list(plan.lanes), limit=limit):
                 all_records.append(record)

@@ -1808,6 +1808,72 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["record_id"], "video_atom:gap:dryad")
 
+    def test_named_dryad_video_questions_return_dryad_media_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:sweep:dryad",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video discovery sweep: dryad",
+                        text="Aedes aegypti video discovery sweep for dryad.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/discovery_sweeps.json#dryad",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_sweep", "repository": "dryad"},
+                    ),
+                    EvidenceRecord(
+                        record_id="dryad:dataset:host-seeking",
+                        lane="behavior",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad behavior dataset",
+                        text="Dryad behavior dataset for Aedes aegypti host seeking.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/dataset.json#dataset",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="dryad:file:host-seeking-videos",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad video/archive file host_seeking_videos.zip",
+                        text="Dryad video archive for Aedes aegypti host seeking behavior.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://datadryad.org/api/v2/files/10/download",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/files.json#file/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                        payload={"download_url": "https://datadryad.org/api/v2/files/10/download"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Dryad Aedes aegypti behavior videos", artifact_dir=artifact_dir, limit=2)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["source"], "dryad_aedes_behavior_videos")
+            self.assertEqual(answer["evidence"][0]["media_url"], "https://datadryad.org/api/v2/files/10/download")
+
     def test_video_atom_motion_questions_prefer_queryable_motion_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
