@@ -1385,6 +1385,11 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(set(receipts), set(DISCOVERY_REPOSITORIES))
         self.assertEqual(receipts["zenodo"]["status"], "accepted_candidates")
         self.assertEqual(receipts["paper_supplements"]["status"], "no_candidates")
+        gap_keys = [
+            (gap.get("source"), gap.get("lane"), gap.get("reason"), gap.get("record_id"), gap.get("locator"))
+            for gap in result.gaps
+        ]
+        self.assertEqual(len(gap_keys), len(set(gap_keys)))
         sweep_records = [record for record in result.records if record.payload.get("atom_type") == "video_sweep"]
         self.assertEqual({record.payload["repository"] for record in sweep_records}, set(DISCOVERY_REPOSITORIES))
 

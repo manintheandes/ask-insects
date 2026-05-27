@@ -416,6 +416,7 @@ def _gap_context(candidate: VideoCandidate, reason: str, **extra: object) -> dic
 def _discovery_gap(raw: dict[str, object], reason: str, repository: str, title: str) -> dict[str, object]:
     download_url = raw.get("download_url") or raw.get("media_url")
     source_url = raw.get("source_url") or raw.get("url")
+    locator = raw.get("locator") or f"raw/video_atoms/discovery_sweeps.json#{repository}/{_digest(title, download_url, source_url, reason)}"
     context: dict[str, object] = {
         "source": VIDEO_ATOMS_SOURCE_ID,
         "lane": "media",
@@ -427,7 +428,7 @@ def _discovery_gap(raw: dict[str, object], reason: str, repository: str, title: 
         "source_url": source_url,
         "license": raw.get("license"),
         "source_dataset": raw.get("source_dataset") or raw.get("dataset_name") or title,
-        "locator": raw.get("locator"),
+        "locator": locator,
     }
     size = _size_from_raw(raw)
     if size is not None:
@@ -2527,7 +2528,15 @@ def _discover_candidates(
         }
         client = discovery_clients.get(repository)
         if client is None:
-            gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_client_missing", "repository": repository})
+            gaps.append(
+                {
+                    "source": VIDEO_ATOMS_SOURCE_ID,
+                    "lane": "media",
+                    "reason": "video_discovery_client_missing",
+                    "repository": repository,
+                    "locator": receipt["locator"],
+                }
+            )
             receipt.update({"status": "client_missing", "gap_count": 1})
             sweep_receipts.append(receipt)
             continue
@@ -2535,19 +2544,45 @@ def _discover_candidates(
             raw_items, receipt_metadata = _normalize_discovery_result(repository, client())
             receipt.update({key: value for key, value in receipt_metadata.items() if value is not None})
         except Exception as exc:
-            gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_fetch_failed", "repository": repository, "error": str(exc)})
+            gaps.append(
+                {
+                    "source": VIDEO_ATOMS_SOURCE_ID,
+                    "lane": "media",
+                    "reason": "video_discovery_fetch_failed",
+                    "repository": repository,
+                    "error": str(exc),
+                    "locator": receipt["locator"],
+                }
+            )
             receipt.update({"status": "fetch_failed", "gap_count": 1, "error": str(exc)})
             sweep_receipts.append(receipt)
             continue
         if not raw_items:
-            gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_no_candidates", "repository": repository})
+            gaps.append(
+                {
+                    "source": VIDEO_ATOMS_SOURCE_ID,
+                    "lane": "media",
+                    "reason": "video_discovery_no_candidates",
+                    "repository": repository,
+                    "locator": receipt["locator"],
+                }
+            )
             receipt.update({"status": "no_candidates", "gap_count": 1})
             sweep_receipts.append(receipt)
             continue
         receipt["raw_candidate_count"] = len(raw_items)
         for raw in raw_items:
             if count >= max_discovery_results:
-                gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_discovery_limit_applied", "max_discovery_results": max_discovery_results})
+                gaps.append(
+                    {
+                        "source": VIDEO_ATOMS_SOURCE_ID,
+                        "lane": "media",
+                        "reason": "video_discovery_limit_applied",
+                        "repository": repository,
+                        "max_discovery_results": max_discovery_results,
+                        "locator": receipt["locator"],
+                    }
+                )
                 receipt.update(
                     {
                         "status": "limit_applied",
