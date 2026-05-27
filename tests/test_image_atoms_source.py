@@ -123,6 +123,13 @@ class ImageAtomsSourceTests(unittest.TestCase):
             self.assertIn(("life_stage", "Adult"), label_pairs)
             self.assertIn(("quality_grade", "research"), label_pairs)
             self.assertIn(("media_format", "image/jpeg"), label_pairs)
+            summaries = [record for record in result.records if record.payload and record.payload.get("atom_type") == "image_observation"]
+            self.assertEqual(len(summaries), 2)
+            inat_summary = next(record for record in summaries if record.payload["source_record_id"] == "inat:media:99")
+            self.assertIn("place: Brazil", inat_summary.text)
+            self.assertIn("alive_or_dead: alive", inat_summary.text)
+            self.assertEqual(inat_summary.payload["label_values"]["life_stage"], ["adult"])
+            self.assertEqual(inat_summary.payload["label_values"]["sex"], ["cannot_be_determined"])
             coverage = {
                 record.payload["input_source"]: record
                 for record in result.records

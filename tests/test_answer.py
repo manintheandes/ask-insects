@@ -2203,6 +2203,94 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(alive_answer["evidence"][0]["source"], "aedes_image_atoms")
             self.assertIn("alive_or_dead = alive", alive_answer["evidence"][0]["text"])
 
+    def test_image_atom_questions_can_return_combined_observation_summaries(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="image_atom:observation:aaa_dead",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image observation summary from inaturalist_api",
+                        text=(
+                            "Aedes aegypti image observation summary for inat:media:01. "
+                            "place: Brazil; observed on: 2026-05-01; life_stage: adult; sex: female; alive_or_dead: dead."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/1",
+                        media_url="raw/image_atoms/assets/inat_media_01.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#inat:media:01;image_observation_summary",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                        ),
+                        payload={
+                            "atom_type": "image_observation",
+                            "source_record_id": "inat:media:01",
+                            "source": "inaturalist_api",
+                            "input_source": "inaturalist_api",
+                            "place": "Brazil",
+                            "label_values": {"life_stage": ["adult"], "sex": ["female"], "alive_or_dead": ["dead"]},
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="image_atom:observation:inat_media_99",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image observation summary from inaturalist_api",
+                        text=(
+                            "Aedes aegypti image observation summary for inat:media:99. "
+                            "place: Brazil; observed on: 2026-05-01; life_stage: adult; sex: female; alive_or_dead: alive."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/12345",
+                        media_url="raw/image_atoms/assets/inat_media_99.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#inat:media:99;image_observation_summary",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                        ),
+                        payload={
+                            "atom_type": "image_observation",
+                            "source_record_id": "inat:media:99",
+                            "source": "inaturalist_api",
+                            "input_source": "inaturalist_api",
+                            "place": "Brazil",
+                            "label_values": {"life_stage": ["adult"], "sex": ["female"], "alive_or_dead": ["alive"]},
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="image_atom:label:inat_media_99:alive",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image label alive_or_dead: alive",
+                        text="Aedes aegypti image label from source metadata: alive_or_dead = alive. Source image record: inat:media:99.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/12345",
+                        media_url="https://static.inaturalist.org/photos/99/medium.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#inat:media:99;label/alive_or_dead",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                        ),
+                        payload={"atom_type": "image_label", "label_type": "alive_or_dead", "label_value": "alive"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes aegypti Brazil female alive image evidence", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "image_atom:observation:inat_media_99")
+            self.assertIn("place: Brazil", answer["evidence"][0]["text"])
+            self.assertIn("sex: female", answer["evidence"][0]["text"])
+
     def test_image_gap_questions_return_queryable_gap_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -76,7 +76,7 @@ class IngestImageAtomsTests(unittest.TestCase):
             self.assertEqual(status["aedes_image_atoms"]["mirrored_image_count"], 2)
             self.assertEqual(status["aedes_image_atoms"]["verified_image_count"], 2)
             rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
-                "select count(*) as n from record_payloads where source='aedes_image_atoms' and json_extract(payload_json, '$.raw_asset_path') is not null",
+                "select count(*) as n from record_payloads where source='aedes_image_atoms' and json_extract(payload_json, '$.atom_type')='image_asset' and json_extract(payload_json, '$.raw_asset_path') is not null",
                 limit=5,
             )
             self.assertEqual(rows[0]["n"], 2)

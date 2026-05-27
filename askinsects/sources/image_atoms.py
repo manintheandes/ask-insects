@@ -537,6 +537,103 @@ def _label_records(candidate: ImageCandidate, asset_payload: dict[str, object], 
     return records
 
 
+def _label_values(label_records: list[EvidenceRecord]) -> dict[str, list[str]]:
+    values: dict[str, list[str]] = {}
+    for record in label_records:
+        payload = record.payload or {}
+        label_type = payload.get("label_type")
+        label_value = payload.get("label_value")
+        if not label_type or label_value in (None, ""):
+            continue
+        values.setdefault(str(label_type), [])
+        normalized = str(label_value)
+        if normalized not in values[str(label_type)]:
+            values[str(label_type)].append(normalized)
+    return values
+
+
+def _image_observation_record(
+    candidate: ImageCandidate,
+    asset_payload: dict[str, object],
+    label_records: list[EvidenceRecord],
+    *,
+    retrieved_at: str,
+) -> EvidenceRecord:
+    label_values = _label_values(label_records)
+    detail_parts = []
+    for key, label in (
+        ("place", "place"),
+        ("country", "country"),
+        ("observed_on", "observed on"),
+        ("event_date", "event date"),
+        ("quality_grade", "quality"),
+        ("verification_status", "verification"),
+        ("raw_asset_path", "raw asset"),
+        ("sha256", "sha256"),
+    ):
+        value = asset_payload.get(key)
+        if value:
+            detail_parts.append(f"{label}: {value}")
+    for label_type, values in sorted(label_values.items()):
+        if values:
+            detail_parts.append(f"{label_type}: {', '.join(values)}")
+    detail_text = "; ".join(detail_parts) if detail_parts else "no structured image labels supplied"
+    return EvidenceRecord(
+        record_id=f"image_atom:observation:{_safe_id(candidate.source_record_id)}",
+        lane="media",
+        source=IMAGE_ATOMS_SOURCE_ID,
+        title=f"Aedes aegypti image observation summary from {candidate.source}",
+        text=(
+            f"Aedes aegypti image observation summary for {candidate.source_record_id}. "
+            f"{detail_text}."
+        ),
+        species="Aedes aegypti",
+        url=candidate.url,
+        media_url=str(asset_payload.get("raw_asset_path") or candidate.media_url),
+        provenance=Provenance(
+            source_id=IMAGE_ATOMS_SOURCE_ID,
+            locator=f"records#{candidate.source_record_id};image_observation_summary",
+            retrieved_at=retrieved_at,
+            license=candidate.provenance.get("license") if isinstance(candidate.provenance.get("license"), str) else None,
+            source_url=candidate.url or candidate.media_url,
+        ),
+        payload={
+            "atom_type": "image_observation",
+            "source_record_id": candidate.source_record_id,
+            "source_image_record_id": candidate.source_record_id,
+            "source": candidate.source,
+            "input_source": candidate.source,
+            "image_url": candidate.media_url,
+            "label_values": label_values,
+            "label_types": sorted(label_values),
+            **{
+                key: value
+                for key, value in asset_payload.items()
+                if key
+                in {
+                    "place",
+                    "place_guess",
+                    "country",
+                    "country_code",
+                    "observed_on",
+                    "event_date",
+                    "latitude",
+                    "longitude",
+                    "license",
+                    "photo_license",
+                    "media_license",
+                    "verification_status",
+                    "sha256",
+                    "byte_size",
+                    "width",
+                    "height",
+                    "raw_asset_path",
+                }
+            },
+        },
+    )
+
+
 def _label_types(records: list[EvidenceRecord]) -> set[str]:
     types = set()
     for record in records:
@@ -739,6 +836,7 @@ def build_image_atom_records(
         records.append(_asset_record(candidate, asset_payload, retrieved_at=retrieved))
         labels = _label_records(candidate, asset_payload, retrieved_at=retrieved)
         label_records_by_id[candidate.source_record_id] = labels
+        records.append(_image_observation_record(candidate, asset_payload, labels, retrieved_at=retrieved))
         records.extend(labels)
     records.extend(_coverage_records(_label_coverage_by_source(candidates, label_records_by_id), retrieved_at=retrieved))
     if mirror_images and mirrored_image_count >= max_image_mirrors:

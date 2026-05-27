@@ -3396,27 +3396,37 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     elif _wants_image_coverage(question):
         atom_types = ["image_coverage", "image_gap"]
     elif _wants_image_asset_metadata(question):
-        atom_types = ["image_asset"]
+        atom_types = ["image_observation", "image_asset"]
     elif _wants_image_labels(question):
-        atom_types = ["image_label"]
+        atom_types = ["image_observation", "image_label"]
     else:
-        atom_types = ["image_asset", "image_label"]
+        atom_types = ["image_observation", "image_asset", "image_label"]
     lane_placeholders = ",".join("?" for _ in media_lanes)
     atom_placeholders = ",".join("?" for _ in atom_types)
     filters: list[str] = []
     params: list[object] = [*media_lanes, *atom_types]
+    special_label_filters = (
+        ("female", "sex", "female"),
+        ("male", "sex", "male"),
+        ("alive", "alive_or_dead", "alive"),
+        ("dead", "alive_or_dead", "dead"),
+    )
+    for token, label_type, label_value in special_label_filters:
+        if re.search(rf"\b{re.escape(token)}\b", q):
+            label_json_path = f"$.label_values.{label_type}"
+            filters.append(
+                "((lower(r.text) LIKE ? OR lower(r.text) LIKE ?) "
+                "OR (json_extract(p.payload_json, '$.label_type') = ? AND lower(json_extract(p.payload_json, '$.label_value')) = ?) "
+                f"OR lower(coalesce(json_extract(p.payload_json, '{label_json_path}'), '')) LIKE ?)"
+            )
+            params.extend([f"%{label_type}: {label_value}%", f"%{label_type} = {label_value}%", label_type, label_value, f"%\"{label_value}\"%"])
     for token in (
         "adult",
         "larva",
         "larval",
         "egg",
-        "female",
-        "male",
         "sex",
-        "alive",
-        "dead",
         "organism",
-        "evidence",
         "presence",
         "cannot",
         "determined",
@@ -3427,13 +3437,35 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
         "needs_id",
         "format",
     ):
-        if token in q:
+        if re.search(rf"\b{re.escape(token)}\b", q):
             filters.append("(lower(r.title) LIKE ? OR lower(r.text) LIKE ?)")
             like = f"%{token}%"
             params.extend([like, like])
+    place_aliases = {
+        "brazil": ("brazil", "brasil"),
+    }
+    for token, aliases in place_aliases.items():
+        if re.search(rf"\b{re.escape(token)}\b", q) or any(re.search(rf"\b{re.escape(alias)}\b", q) for alias in aliases):
+            place_clauses: list[str] = []
+            place_params: list[object] = []
+            for alias in aliases:
+                like = f"%{alias}%"
+                place_clauses.extend(
+                    [
+                        "lower(r.text) LIKE ?",
+                        "lower(coalesce(json_extract(p.payload_json, '$.place'), '')) LIKE ?",
+                        "lower(coalesce(json_extract(p.payload_json, '$.place_guess'), '')) LIKE ?",
+                        "lower(coalesce(json_extract(p.payload_json, '$.country'), '')) LIKE ?",
+                    ]
+                )
+                place_params.extend([like, like, like, like])
+            filters.append(
+                "(" + " OR ".join(place_clauses) + ")"
+            )
+            params.extend(place_params)
     label_filter = ""
     if filters:
-        label_filter = "AND (" + " OR ".join(filters) + ")"
+        label_filter = "AND (" + " AND ".join(filters) + ")"
     source_filter = ""
     if "mosquito alert" in q or "mosquito_alert" in q:
         source_filter = """
@@ -3470,10 +3502,11 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
               END,
               CASE json_extract(p.payload_json, '$.atom_type')
                 WHEN 'image_coverage' THEN 0
-                WHEN 'image_asset' THEN 1
-                WHEN 'image_label' THEN 2
-                WHEN 'image_gap' THEN 3
-                ELSE 4
+                WHEN 'image_observation' THEN 1
+                WHEN 'image_asset' THEN 2
+                WHEN 'image_label' THEN 3
+                WHEN 'image_gap' THEN 4
+                ELSE 5
               END,
               r.record_id
             LIMIT ?
