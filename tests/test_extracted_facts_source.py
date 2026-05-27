@@ -281,6 +281,65 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertTrue(any(record.payload["supplement"]["source"] == "europe_pmc" for record in manifests))
             self.assertTrue(any(record.payload["supplement"]["url"] == "https://example.org/europepmc/table-a.tsv" for record in manifests))
 
+    def test_build_extracted_fact_records_discovers_supplements_from_fulltext_links(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            paper = EvidenceRecord(
+                record_id="openalex:WFULLTEXTSUPP",
+                lane="literature",
+                source="aedes_literature_openalex",
+                title="Aedes aegypti vector competence paper with full text supplement link",
+                text="Aedes aegypti dengue vector competence paper.",
+                species="Aedes aegypti",
+                url="https://publisher.example/fulltext-link-paper",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/literature/page.json#WFULLTEXTSUPP",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                ),
+                payload={"ids": {"doi": "10.1234/fulltext.supp"}},
+            )
+            fulltext = FullTextUnit(
+                unit_id="openalex:WFULLTEXTSUPP:fulltext:0",
+                record_id="openalex:WFULLTEXTSUPP",
+                source="aedes_literature_openalex",
+                unit_index=0,
+                text=(
+                    "The supplementary data are public at "
+                    "https://publisher.example/files/supplementary-table-s2.csv. "
+                    "Table S2 reports dengue vector competence infection rate results."
+                ),
+                url="https://publisher.example/fulltext-link-paper/fulltext",
+                license="CC-BY",
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="raw/fulltext/WFULLTEXTSUPP.txt#chunk/0",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="CC-BY",
+                    source_url="https://publisher.example/fulltext-link-paper/fulltext",
+                ),
+            )
+            index.upsert_records_and_fulltext_units([paper], [fulltext])
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [],
+            )
+
+            manifests = [record for record in result.records if record.payload["fact_type"] == "supplement_manifest"]
+            self.assertEqual(result.supplement_manifest_count, 1)
+            self.assertEqual(result.supplement_discovery_route_counts["fulltext_link_mining"], 1)
+            self.assertEqual(manifests[0].payload["supplement"]["source"], "fulltext_link_mining")
+            self.assertEqual(
+                manifests[0].payload["supplement"]["url"],
+                "https://publisher.example/files/supplementary-table-s2.csv",
+            )
+
     def test_fetch_public_supplement_metadata_discovers_zenodo_supported_files(self):
         def fake_json(url: str) -> dict[str, object]:
             if "europepmc" in url:
@@ -318,6 +377,144 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertEqual(supplements[0]["license"], "cc-by-4.0")
         self.assertEqual(supplements[0]["checksum"], "md5:abc123")
         self.assertEqual(supplements[1]["file_type"], "pdf")
+
+    def test_fetch_public_supplement_metadata_discovers_crossref_relations(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            if "api.crossref.org/works/" in url:
+                return {
+                    "message": {
+                        "relation": {
+                            "has-supplement": [
+                                {
+                                    "id": "https://example.org/publisher/supplement-table.xlsx",
+                                    "id-type": "uri",
+                                }
+                            ],
+                            "is-supplemented-by": [
+                                {
+                                    "id": "10.6084/m9.figshare.12345",
+                                    "id-type": "doi",
+                                }
+                            ],
+                        }
+                    }
+                }
+            return {}
+
+        with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WCROSSREF",
+                    "doi": "10.1111/aedes.crossref",
+                    "url": "https://doi.org/10.1111/aedes.crossref",
+                }
+            )
+
+        urls = {str(item["url"]) for item in supplements}
+        self.assertIn("https://example.org/publisher/supplement-table.xlsx", urls)
+        self.assertIn("https://doi.org/10.6084/m9.figshare.12345", urls)
+        self.assertTrue(any(item["source"] == "crossref_relation" for item in supplements))
+
+    def test_fetch_public_supplement_metadata_discovers_datacite_relations(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            if "api.datacite.org/dois/" in url:
+                return {
+                    "data": {
+                        "attributes": {
+                            "relatedIdentifiers": [
+                                {
+                                    "relatedIdentifier": "https://example.org/datacite/supplement.csv",
+                                    "relatedIdentifierType": "URL",
+                                    "relationType": "IsSupplementTo",
+                                }
+                            ]
+                        }
+                    }
+                }
+            return {}
+
+        with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WDATACITE",
+                    "doi": "10.5061/dryad.aedes",
+                    "url": "https://doi.org/10.5061/dryad.aedes",
+                }
+            )
+
+        self.assertTrue(any(item["source"] == "datacite_relation" for item in supplements))
+        self.assertTrue(any(item["url"] == "https://example.org/datacite/supplement.csv" for item in supplements))
+
+    def test_fetch_public_supplement_metadata_discovers_unpaywall_oa_locations(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            if "api.unpaywall.org" in url:
+                return {
+                    "best_oa_location": {
+                        "url": "https://publisher.example/article",
+                        "url_for_pdf": "https://publisher.example/article/supplement.pdf",
+                        "license": "cc-by",
+                    },
+                    "oa_locations": [
+                        {
+                            "url": "https://repository.example/files/supplement-table.tsv",
+                            "license": "cc-by",
+                        }
+                    ],
+                }
+            return {}
+
+        with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WUNPAYWALL",
+                    "doi": "10.1000/aedes.unpaywall",
+                    "url": "https://doi.org/10.1000/aedes.unpaywall",
+                }
+            )
+
+        urls = {str(item["url"]) for item in supplements}
+        self.assertIn("https://publisher.example/article/supplement.pdf", urls)
+        self.assertIn("https://repository.example/files/supplement-table.tsv", urls)
+        self.assertTrue(all(item["source"] == "unpaywall_oa_location" for item in supplements))
+
+    def test_fetch_public_supplement_metadata_discovers_landing_page_links(self):
+        html = b"""
+        <html><body>
+          <a href="/article/supplementary-table-s1.csv">Supplementary Table S1</a>
+          <a href="https://example.org/article/Figure1.jpg">Figure 1</a>
+        </body></html>
+        """
+
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            return {}
+
+        def fake_bytes(url: str, max_bytes: int) -> bytes:
+            self.assertEqual(url, "https://publisher.example/article")
+            return html
+
+        with (
+            patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json),
+            patch("askinsects.sources.extracted_facts._fetch_bytes_url", side_effect=fake_bytes),
+        ):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WLANDING",
+                    "doi": "10.1000/aedes.landing",
+                    "url": "https://publisher.example/article",
+                }
+            )
+
+        self.assertEqual(len(supplements), 1)
+        self.assertEqual(supplements[0]["source"], "publisher_landing_page")
+        self.assertEqual(supplements[0]["url"], "https://publisher.example/article/supplementary-table-s1.csv")
 
     def test_build_extracted_fact_records_emits_per_paper_supplement_audits(self):
         with tempfile.TemporaryDirectory() as tmpdir:

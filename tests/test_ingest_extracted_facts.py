@@ -97,6 +97,7 @@ class IngestExtractedFactsTests(unittest.TestCase):
             self.assertEqual(result["parsed_pdf_supplement_file_count"], 0)
             self.assertEqual(result["skipped_pdf_supplement_file_count"], 0)
             self.assertEqual(result["supplement_discovery_record_count"], 0)
+            self.assertEqual(result["supplement_discovery_route_counts"]["publisher"], 1)
             rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select payload_json, provenance_json from record_payloads where source='aedes_extracted_facts' and json_extract(payload_json, '$.confidence')='parsed'",
                 limit=5,
@@ -106,6 +107,7 @@ class IngestExtractedFactsTests(unittest.TestCase):
             self.assertIn("raw/extracted_facts/supplements/", rows[0]["provenance_json"])
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertEqual(status["aedes_extracted_facts"]["parsed_supplement_row_count"], 1)
+            self.assertEqual(status["aedes_extracted_facts"]["supplement_discovery_route_counts"]["publisher"], 1)
 
     def test_incremental_merge_replaces_one_paper_without_removing_other_extracted_facts(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -170,6 +172,29 @@ class IngestExtractedFactsTests(unittest.TestCase):
             }
             self.assertGreater(before["openalex:WFACT1"], 0)
             self.assertGreater(before["openalex:WFACT2"], 0)
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="resistance_table:openalex-WFACT1:row1",
+                        lane="resistance",
+                        source="aedes_resistance_table_rows",
+                        title="Promoted supplement row",
+                        text="Promoted parsed resistance supplement row.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_resistance_table_rows",
+                            locator="aedes_extracted_facts#row1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "confidence": "parsed_table_schema_validated",
+                            "source_record_id": "openalex:WFACT1",
+                        },
+                    )
+                ]
+            )
 
             second = ingest_extracted_facts(
                 artifact_dir=artifact_dir,
@@ -197,6 +222,11 @@ class IngestExtractedFactsTests(unittest.TestCase):
             }
             self.assertEqual(after["openalex:WFACT1"], before["openalex:WFACT1"])
             self.assertEqual(after["openalex:WFACT2"], before["openalex:WFACT2"])
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            self.assertEqual(status["aedes_extracted_facts"]["supplement_audit_record_count"], 2)
+            self.assertEqual(status["aedes_extracted_facts"]["papers_with_promoted_supplement_rows_count"], 1)
+            self.assertEqual(second["supplement_audit_record_count"], 2)
+            self.assertEqual(second["papers_with_promoted_supplement_rows_count"], 1)
 
 
 if __name__ == "__main__":

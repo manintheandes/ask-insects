@@ -17,7 +17,7 @@ import subprocess
 import sys
 import tempfile
 from typing import Callable, Iterable
-from urllib.parse import urlencode, urlparse
+from urllib.parse import quote, urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
 import zipfile
@@ -101,6 +101,7 @@ class ExtractedFactsResult:
     parsed_pdf_supplement_file_count: int
     skipped_pdf_supplement_file_count: int
     fact_counts: dict[str, int]
+    supplement_discovery_route_counts: dict[str, int]
 
 
 FACT_FAMILIES: tuple[FactFamily, ...] = (
@@ -265,6 +266,10 @@ EUROPE_PMC_SEARCH_BASE = "https://www.ebi.ac.uk/europepmc/webservices/rest/searc
 PMC_OA_SERVICE_BASE = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
 FIGSHARE_ARTICLE_API_BASE = "https://api.figshare.com/v2/articles"
 ZENODO_RECORD_API_BASE = "https://zenodo.org/api/records"
+CROSSREF_WORKS_API_BASE = "https://api.crossref.org/works"
+DATACITE_DOI_API_BASE = "https://api.datacite.org/dois"
+UNPAYWALL_API_BASE = "https://api.unpaywall.org/v2"
+UNPAYWALL_EMAIL = "sources@openinsects.org"
 RESISTANCE_DISCOVERY_TERMS = (
     "insecticide resistance",
     "insecticide",
@@ -507,6 +512,10 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
             pass
     supplements.extend(_figshare_supplements(request))
     supplements.extend(_zenodo_supplements(request))
+    supplements.extend(_crossref_relation_supplements(request))
+    supplements.extend(_datacite_relation_supplements(request))
+    supplements.extend(_unpaywall_supplements(request))
+    supplements.extend(_publisher_landing_page_supplements(request))
     return supplements
 
 
@@ -545,6 +554,254 @@ def _normalize_pmcid(value: object) -> str | None:
         return None
     match = re.search(r"PMC\d+", str(value), re.I)
     return match.group(0).upper() if match else str(value).strip() or None
+
+
+def _url_file_type(url: str) -> str | None:
+    suffix = Path(urlparse(url).path).suffix.lower()
+    if suffix in SUPPORTED_SUPPLEMENT_EXTENSIONS:
+        return suffix.lstrip(".")
+    return None
+
+
+def _supplement_reference_score(url: str, label: str | None = None) -> int:
+    haystack = f"{url} {label or ''}".lower()
+    strong_terms = (
+        "supplement",
+        "supplementary",
+        "supporting information",
+        "supporting-information",
+        "additional file",
+        "additional-file",
+        "appendix",
+    )
+    if any(term in haystack for term in strong_terms):
+        return 3
+    if re.search(r"\bsupp[-_ ]?\d*\b", haystack) or re.search(r"\bs\d+[-_ ]?(?:table|data|file)?\b", haystack):
+        return 2
+    if "table" in haystack and _url_file_type(url):
+        return 1
+    return 0
+
+
+def _looks_like_supplement_reference(url: str, label: str | None = None) -> bool:
+    return bool(url and _supplement_reference_score(url, label) > 0)
+
+
+def _doi_or_url_identifier(value: object, id_type: object = None) -> str | None:
+    if not value:
+        return None
+    identifier = str(value).strip()
+    lowered_type = str(id_type or "").lower()
+    if not identifier:
+        return None
+    if lowered_type == "doi" or (identifier.lower().startswith("10.") and "/" in identifier):
+        return f"https://doi.org/{_normalize_doi(identifier)}"
+    if re.match(r"https?://", identifier, flags=re.I):
+        return identifier
+    return identifier
+
+
+def _supplement_from_url(
+    *,
+    url: str,
+    title: str,
+    source: str,
+    metadata_url: str | None = None,
+    license_value: object = None,
+    file_type: str | None = None,
+) -> dict[str, object]:
+    supplement: dict[str, object] = {
+        "title": title,
+        "url": url,
+        "source": source,
+    }
+    inferred_file_type = file_type or _url_file_type(url)
+    if inferred_file_type:
+        supplement["file_type"] = inferred_file_type
+    if metadata_url:
+        supplement["metadata_url"] = metadata_url
+    if isinstance(license_value, str) and license_value:
+        supplement["license"] = license_value
+    return supplement
+
+
+def _crossref_relation_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    doi = request.get("doi")
+    if not doi:
+        return []
+    api_url = f"{CROSSREF_WORKS_API_BASE}/{quote(str(doi), safe='')}"
+    try:
+        payload = _fetch_json_url(api_url)
+    except Exception:
+        return []
+    message = payload.get("message") if isinstance(payload.get("message"), dict) else {}
+    relations = message.get("relation") if isinstance(message.get("relation"), dict) else {}
+    supplements: list[dict[str, object]] = []
+    for relation_type, entries in relations.items():
+        relation_lower = str(relation_type).lower()
+        if "supplement" not in relation_lower:
+            continue
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            url = _doi_or_url_identifier(entry.get("id"), entry.get("id-type"))
+            if not url:
+                continue
+            supplements.append(
+                _supplement_from_url(
+                    url=url,
+                    title=f"Crossref {relation_type} supplement",
+                    source="crossref_relation",
+                    metadata_url=api_url,
+                )
+            )
+    return supplements
+
+
+def _datacite_relation_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    doi = request.get("doi")
+    if not doi:
+        return []
+    api_url = f"{DATACITE_DOI_API_BASE}/{quote(str(doi), safe='')}"
+    try:
+        payload = _fetch_json_url(api_url)
+    except Exception:
+        return []
+    data = payload.get("data") if isinstance(payload.get("data"), dict) else {}
+    attributes = data.get("attributes") if isinstance(data.get("attributes"), dict) else {}
+    related = attributes.get("relatedIdentifiers") if isinstance(attributes.get("relatedIdentifiers"), list) else []
+    supplements: list[dict[str, object]] = []
+    for entry in related:
+        if not isinstance(entry, dict):
+            continue
+        relation_type = str(entry.get("relationType") or entry.get("relation_type") or "")
+        raw_identifier = entry.get("relatedIdentifier") or entry.get("related_identifier")
+        identifier_type = entry.get("relatedIdentifierType") or entry.get("related_identifier_type")
+        url = _doi_or_url_identifier(raw_identifier, identifier_type)
+        if not url:
+            continue
+        if "supplement" not in relation_type.lower() and not _looks_like_supplement_reference(url, relation_type):
+            continue
+        supplements.append(
+            _supplement_from_url(
+                url=url,
+                title=f"DataCite {relation_type or 'related'} supplement",
+                source="datacite_relation",
+                metadata_url=api_url,
+            )
+        )
+    return supplements
+
+
+def _unpaywall_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    doi = request.get("doi")
+    if not doi:
+        return []
+    api_url = f"{UNPAYWALL_API_BASE}/{quote(str(doi), safe='')}?{urlencode({'email': UNPAYWALL_EMAIL})}"
+    try:
+        payload = _fetch_json_url(api_url)
+    except Exception:
+        return []
+    locations: list[dict[str, object]] = []
+    best = payload.get("best_oa_location")
+    if isinstance(best, dict):
+        locations.append(best)
+    oa_locations = payload.get("oa_locations")
+    if isinstance(oa_locations, list):
+        locations.extend(item for item in oa_locations if isinstance(item, dict))
+    supplements: list[dict[str, object]] = []
+    seen_urls: set[str] = set()
+    for location in locations:
+        license_value = location.get("license")
+        for key in ("url_for_pdf", "url", "url_for_landing_page"):
+            value = location.get(key)
+            if not isinstance(value, str) or not value or value in seen_urls:
+                continue
+            if not _looks_like_supplement_reference(value, key):
+                continue
+            seen_urls.add(value)
+            supplements.append(
+                _supplement_from_url(
+                    url=value,
+                    title=f"Unpaywall OA supplement location ({key})",
+                    source="unpaywall_oa_location",
+                    metadata_url=api_url,
+                    license_value=license_value,
+                )
+            )
+    return supplements
+
+
+class _SupplementLinkParser(HTMLParser):
+    def __init__(self, base_url: str) -> None:
+        super().__init__()
+        self.base_url = base_url
+        self._href_stack: list[str | None] = []
+        self._current_href: str | None = None
+        self._current_text: list[str] = []
+        self.links: list[tuple[str, str]] = []
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        if tag.lower() != "a":
+            return
+        href = next((str(value) for key, value in attrs if key.lower() == "href" and value), None)
+        self._href_stack.append(self._current_href)
+        self._current_href = href
+        self._current_text = []
+
+    def handle_data(self, data: str) -> None:
+        if self._current_href and data.strip():
+            self._current_text.append(data.strip())
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() != "a":
+            return
+        if self._current_href:
+            label = " ".join(self._current_text)
+            self.links.append((urljoin(self.base_url, self._current_href), label))
+        self._current_href = self._href_stack.pop() if self._href_stack else None
+        self._current_text = []
+
+
+def _publisher_landing_page_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    landing_url = request.get("url")
+    if not isinstance(landing_url, str) or not landing_url:
+        return []
+    parsed = urlparse(landing_url)
+    if parsed.scheme not in {"http", "https"}:
+        return []
+    if parsed.netloc.lower() in {"doi.org", "dx.doi.org"}:
+        return []
+    try:
+        html = _fetch_bytes_url(landing_url, 1_000_000)
+    except Exception:
+        return []
+    parser = _SupplementLinkParser(landing_url)
+    try:
+        parser.feed(html.decode("utf-8", errors="replace"))
+    except Exception:
+        return []
+    supplements: list[dict[str, object]] = []
+    seen_urls: set[str] = set()
+    for url, label in parser.links:
+        if url in seen_urls:
+            continue
+        if not _url_file_type(url):
+            continue
+        if not _looks_like_supplement_reference(url, label):
+            continue
+        seen_urls.add(url)
+        supplements.append(
+            _supplement_from_url(
+                url=url,
+                title=label or Path(urlparse(url).path).name or "Publisher supplementary file",
+                source="publisher_landing_page",
+                metadata_url=landing_url,
+            )
+        )
+    return supplements
 
 
 def _figshare_article_id_from_request(request: dict[str, object]) -> str | None:
@@ -877,12 +1134,13 @@ def _supplement_candidates(literature_rows: list[sqlite3.Row]) -> list[Supplemen
 def _supplement_candidates_with_discovery(
     literature_rows: list[sqlite3.Row],
     *,
+    text_candidates: list[TextCandidate],
     discover_supplements: bool,
     fetch_supplement_metadata_fn: Callable[[dict[str, object]], list[dict[str, object]]] | None,
     max_supplement_discovery_records: int | None,
     max_repository_supplement_discovery_records: int | None,
     gaps: list[dict[str, object]],
-) -> tuple[list[SupplementCandidate], int, int]:
+) -> tuple[list[SupplementCandidate], int, int, dict[str, int]]:
     if max_supplement_discovery_records is not None and max_supplement_discovery_records < 1:
         raise ValueError("max_supplement_discovery_records must be positive")
     if max_repository_supplement_discovery_records is not None and max_repository_supplement_discovery_records < 0:
@@ -891,6 +1149,7 @@ def _supplement_candidates_with_discovery(
     seen: set[tuple[str, str, str]] = set()
     discovered_count = 0
     discovery_record_count = 0
+    route_counts: Counter[str] = Counter()
 
     def add_candidate(paper: sqlite3.Row, raw_supplement: dict[str, object], fallback_source: str) -> None:
         nonlocal candidates
@@ -900,6 +1159,7 @@ def _supplement_candidates_with_discovery(
         if key in seen:
             return
         seen.add(key)
+        route_counts[str(supplement.get("source") or fallback_source)] += 1
         candidates.append(
             SupplementCandidate(
                 source_record_id=str(paper["record_id"]),
@@ -915,6 +1175,15 @@ def _supplement_candidates_with_discovery(
         payload = _safe_json(paper["payload_json"])
         for raw_supplement in _payload_supplements(payload):
             add_candidate(paper, raw_supplement, "record_payload")
+
+    literature_by_id = {str(paper["record_id"]): paper for paper in literature_rows}
+    if discover_supplements:
+        for text_candidate in text_candidates:
+            paper = literature_by_id.get(text_candidate.source_record_id)
+            if paper is None:
+                continue
+            for raw_supplement in _fulltext_link_supplements(text_candidate):
+                add_candidate(paper, raw_supplement, "fulltext_link_mining")
 
     if discover_supplements and fetch_supplement_metadata_fn is not None:
         discovery_rows = _prioritized_supplement_discovery_rows(literature_rows)
@@ -981,7 +1250,37 @@ def _supplement_candidates_with_discovery(
                 discovered_count += len(fetched)
                 for raw_supplement in fetched:
                     add_candidate(paper, raw_supplement, "metadata_fetch")
-    return candidates, discovered_count, discovery_record_count
+    return candidates, discovered_count, discovery_record_count, dict(sorted(route_counts.items()))
+
+
+URL_RE = re.compile(r"https?://[^\s<>'\"\)\]\}]+", re.I)
+
+
+def _fulltext_link_supplements(candidate: TextCandidate) -> list[dict[str, object]]:
+    supplements: list[dict[str, object]] = []
+    seen_urls: set[str] = set()
+    for match in URL_RE.finditer(candidate.text):
+        url = match.group(0).rstrip(".,;:")
+        if url in seen_urls:
+            continue
+        if not _url_file_type(url):
+            continue
+        context_start = max(0, match.start() - 120)
+        context_end = min(len(candidate.text), match.end() + 120)
+        context = candidate.text[context_start:context_end]
+        if not _looks_like_supplement_reference(url, context):
+            continue
+        seen_urls.add(url)
+        supplements.append(
+            _supplement_from_url(
+                url=url,
+                title=Path(urlparse(url).path).name or "Full-text linked supplementary file",
+                source="fulltext_link_mining",
+                metadata_url=candidate.unit_url or candidate.paper_url,
+                license_value=candidate.unit_license,
+            )
+        )
+    return supplements
 
 
 def _repository_supplement_rank(request: dict[str, object], url: str) -> int:
@@ -1746,6 +2045,7 @@ def build_extracted_fact_records(
             max_pdf_supplement_files=max_pdf_supplement_files,
             parsed_pdf_supplement_file_count=0,
             skipped_pdf_supplement_file_count=0,
+            supplement_discovery_route_counts={},
         )
 
     conn = sqlite3.connect(index_path)
@@ -1773,8 +2073,10 @@ def build_extracted_fact_records(
         supplement_candidates,
         discovered_supplement_count,
         supplement_discovery_record_count,
+        supplement_discovery_route_counts,
     ) = _supplement_candidates_with_discovery(
         literature_rows,
+        text_candidates=text_candidates,
         discover_supplements=discover_supplements,
         fetch_supplement_metadata_fn=fetch_supplement_metadata_fn,
         max_supplement_discovery_records=max_supplement_discovery_records,
@@ -1966,4 +2268,5 @@ def build_extracted_fact_records(
         parsed_pdf_supplement_file_count=parsed_pdf_supplement_file_count,
         skipped_pdf_supplement_file_count=skipped_pdf_supplement_file_count,
         fact_counts=fact_counts,
+        supplement_discovery_route_counts=supplement_discovery_route_counts,
     )
