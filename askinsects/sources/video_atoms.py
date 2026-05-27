@@ -1130,6 +1130,9 @@ def _dataverse_institutional_discovery_candidates() -> DiscoverySweepResult:
     discovered: list[dict[str, object]] = []
     seen_urls: set[str] = set()
     request_urls: list[str] = []
+    search_result_count = 0
+    source_material_aedes_candidate_count = 0
+    filtered_search_false_positive_count = 0
     for query in queries:
         url = f"https://dataverse.harvard.edu/api/search?{urlencode({'q': query, 'type': 'file', 'per_page': 50})}"
         request_urls.append(url)
@@ -1140,12 +1143,27 @@ def _dataverse_institutional_discovery_candidates() -> DiscoverySweepResult:
         for item in items:
             if not isinstance(item, dict):
                 continue
+            search_result_count += 1
             filename = str(item.get("name") or "")
             content_type = str(item.get("file_content_type") or item.get("file_type") or "")
             download_url = item.get("url")
-            if not isinstance(download_url, str) or not download_url or download_url in seen_urls:
+            if not isinstance(download_url, str) or not download_url:
                 continue
             if not _looks_like_video(filename, content_type, item.get("dataset_name"), item.get("description")):
+                continue
+            raw_scope = {
+                "title": item.get("dataset_name") or item.get("name"),
+                "description": item.get("description"),
+                "filename": filename,
+                "name": item.get("name"),
+                "dataset_name": item.get("dataset_name"),
+                "dataset_citation": item.get("dataset_citation"),
+            }
+            if not _has_discovery_aedes_scope(raw_scope):
+                filtered_search_false_positive_count += 1
+                continue
+            source_material_aedes_candidate_count += 1
+            if download_url in seen_urls:
                 continue
             seen_urls.add(download_url)
             discovered.append(
@@ -1184,6 +1202,9 @@ def _dataverse_institutional_discovery_candidates() -> DiscoverySweepResult:
             "cursor_or_page_complete": True,
             "input_sources": ["Harvard Dataverse API"],
             "candidate_limit": len(queries) * 50,
+            "search_result_count": search_result_count,
+            "source_material_aedes_candidate_count": source_material_aedes_candidate_count,
+            "filtered_search_false_positive_count": filtered_search_false_positive_count,
         },
     )
 

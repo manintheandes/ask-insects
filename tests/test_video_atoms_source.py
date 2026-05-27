@@ -1528,7 +1528,7 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertFalse(any(gap["reason"] == "video_discovery_not_aedes_scope" for gap in result.gaps))
         self.assertEqual(result.video_asset_count, 1)
 
-    def test_dataverse_search_terms_do_not_count_as_aedes_scope(self):
+    def test_dataverse_filters_search_false_positives_before_video_gap_records(self):
         payload = {
             "data": {
                 "items": [
@@ -1541,6 +1541,16 @@ class VideoAtomsSourceTests(unittest.TestCase):
                         "dataset_citation": "Unrelated social science dataset.",
                         "license": "CC0",
                         "file_id": 1,
+                    },
+                    {
+                        "name": "aedes_movie.mp4",
+                        "file_content_type": "video/mp4",
+                        "url": "https://dataverse.harvard.edu/file.xhtml?fileId=2",
+                        "dataset_name": "Aedes aegypti larval behavior recordings",
+                        "description": "Aedes aegypti larval motion assay video.",
+                        "dataset_citation": "Aedes aegypti larval behavior dataset.",
+                        "license": "CC0",
+                        "file_id": 2,
                     }
                 ]
             }
@@ -1555,9 +1565,13 @@ class VideoAtomsSourceTests(unittest.TestCase):
 
         discovered = discovery_result.items
         self.assertEqual(len(discovered), 1)
-        self.assertNotIn("Aedes aegypti", discovered[0]["species_scope"])
+        self.assertIn("Aedes aegypti", discovered[0]["species_scope"])
+        self.assertEqual(discovered[0]["file_id"], 2)
         self.assertEqual(discovery_result.receipt["coverage_method"], "api_search")
         self.assertEqual(discovery_result.receipt["page_count"], 3)
+        self.assertEqual(discovery_result.receipt["search_result_count"], 6)
+        self.assertEqual(discovery_result.receipt["source_material_aedes_candidate_count"], 3)
+        self.assertEqual(discovery_result.receipt["filtered_search_false_positive_count"], 3)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -1573,8 +1587,13 @@ class VideoAtomsSourceTests(unittest.TestCase):
             )
 
         dataverse_gaps = [gap for gap in result.gaps if gap.get("repository") == "institutional"]
-        self.assertIn("video_discovery_not_aedes_scope", {gap["reason"] for gap in dataverse_gaps})
-        self.assertNotIn("video_discovery_license_unclear", {gap["reason"] for gap in dataverse_gaps})
+        self.assertEqual(dataverse_gaps, [])
+        discovered_records = [
+            record
+            for record in result.records
+            if record.payload.get("discovery_repository") == "institutional"
+        ]
+        self.assertEqual(len(discovered_records), 1)
 
     def test_default_discovery_clients_cover_declared_repositories(self):
         with tempfile.TemporaryDirectory() as tmpdir:
