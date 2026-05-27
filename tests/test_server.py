@@ -2803,6 +2803,41 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.status, 400)
             self.assertIn("discovery_repositories requires merge_existing", response.payload["error"])
 
+    def test_video_atom_scoped_merge_refresh_updates_in_place_without_staging_copy(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            fake_result = {
+                "ok": True,
+                "source": "aedes_video_atoms",
+                "record_count": 1,
+                "discovery_repositories": ["institutional"],
+            }
+            with (
+                mock.patch("askinsects.server.prepare_mutable_staging", side_effect=AssertionError("should not stage-copy scoped refresh")),
+                mock.patch("scripts.ingest_video_atoms.ingest_video_atoms", return_value=fake_result) as ingest,
+            ):
+                response = ingest_video_atoms_staged(
+                    {
+                        "discover_sources": True,
+                        "discovery_repositories": ["institutional"],
+                        "merge_existing": True,
+                        "parse_motion_rows": False,
+                    },
+                    artifact_dir=artifact_dir,
+                )
+
+            self.assertTrue(response["ok"])
+            self.assertFalse(response["staged"])
+            self.assertTrue(response["updated_in_place"])
+            self.assertEqual(response["activated_artifact_dir"], str(artifact_dir))
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.video-atoms-staging").exists())
+            self.assertEqual(ingest.call_args.kwargs["artifact_dir"], artifact_dir)
+            self.assertEqual(ingest.call_args.kwargs["discovery_repositories"], ["institutional"])
+            self.assertTrue(ingest.call_args.kwargs["merge_existing"])
+            self.assertFalse(ingest.call_args.kwargs["parse_motion_rows"])
+
     def test_ingest_occurrence_ecology_adds_records_without_removing_existing_sources(self):
         from tests.test_occurrence_ecology_source import write_occurrence_ecology_fixture
 

@@ -3101,6 +3101,27 @@ def ingest_video_atoms_staged(
     if discovery_repositories and not merge_existing:
         raise ValueError("discovery_repositories requires merge_existing")
 
+    if discovery_repositories and merge_existing:
+        result = ingest_video_atoms(
+            artifact_dir=artifact_dir,
+            retrieved_at=retrieved_at,
+            max_video_bytes=max_video_bytes,
+            mirror_videos=_payload_bool(payload, "mirror_videos"),
+            generate_artifacts=_payload_bool(payload, "generate_artifacts"),
+            discover_sources=_payload_bool(payload, "discover_sources"),
+            allow_unclear_license=_payload_bool(payload, "allow_unclear_license"),
+            allowed_licenses=allowed_licenses,
+            discovery_repositories=discovery_repositories,
+            max_discovery_results=max_discovery_results,
+            motion_table_paths=motion_table_paths,
+            merge_existing=merge_existing,
+            parse_motion_rows=parse_motion_rows,
+        )
+        result["activated_artifact_dir"] = str(artifact_dir)
+        result["staged"] = False
+        result["updated_in_place"] = True
+        return result
+
     staging = artifact_dir.parent / f".{artifact_dir.name}.video-atoms-staging"
     if staging.exists():
         shutil.rmtree(staging)
