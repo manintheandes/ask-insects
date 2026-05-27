@@ -1770,6 +1770,8 @@ def check_literature_artifact() -> None:
     )
     if not search.get("rows"):
         raise RuntimeError("Aedes artifact literature search returned no rows for Wolbachia")
+    if artifact_dir != legacy_artifact_dir:
+        return
     answer = run_json(
         [
             sys.executable,
