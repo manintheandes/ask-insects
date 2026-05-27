@@ -897,21 +897,31 @@ sources:
   - id: aedes_extracted_facts
     name: Aedes aegypti extracted literature facts, supplement manifests, and per-paper supplement audits
     source_type: derived_sqlite_source
-    boundary: Deterministic cross-lane candidate facts, supplement manifests, per-paper supplement audit atoms, and supported parsed supplement table rows from indexed Aedes aegypti literature records, record payload supplement metadata, Europe PMC, PMC, or Figshare metadata, public supplement files, and legal literature_fulltext_units
+    boundary: Deterministic cross-lane candidate facts, supplement manifests, per-paper supplement audit atoms, and supported parsed supplement table rows from indexed Aedes aegypti literature records, record payload supplement metadata, Europe PMC, PMC, Crossref relation metadata, DataCite related identifiers, Unpaywall OA locations, Figshare or Zenodo metadata, publisher landing-page links, public supplement files, and legal literature_fulltext_units
     query_plane: literature_records_payloads_fulltext_units_supported_supplement_tables_and_per_paper_supplement_audits_to_sqlite_fact_records
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_extracted_facts.py
     api_base:
       europe_pmc: https://www.ebi.ac.uk/europepmc/webservices/rest/search
       pmc_oa: https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi
+      crossref: https://api.crossref.org/works
+      datacite: https://api.datacite.org/dois
+      unpaywall: https://api.unpaywall.org/v2
       figshare: https://api.figshare.com/v2/articles
+      zenodo: https://zenodo.org/api/records
     input_sources:
       - aedes_literature_openalex
       - record_payloads
       - literature_fulltext_units
       - europe_pmc_metadata
       - pmc_oa_metadata
+      - crossref_relation_metadata
+      - datacite_related_identifiers
+      - unpaywall_oa_locations
       - figshare_metadata
+      - zenodo_metadata
+      - publisher_landing_page_links
+      - fulltext_link_mining
     supported_supplement_formats:
       - csv
       - tsv

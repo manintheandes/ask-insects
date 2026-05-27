@@ -48,6 +48,91 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
+def _scalar(index: SourceIndex, sql: str) -> int:
+    rows = index.sql(sql, limit=1)
+    return int(rows[0]["n"]) if rows else 0
+
+
+def _global_extracted_fact_metrics(index: SourceIndex) -> dict[str, object]:
+    fact_rows = index.sql(
+        """
+        select json_extract(payload_json, '$.fact_type') as fact_type, count(*) as n
+        from record_payloads
+        where source='aedes_extracted_facts'
+          and json_extract(payload_json, '$.fact_type') is not null
+        group by fact_type
+        order by fact_type
+        """,
+        limit=1000,
+    )
+    fact_counts = {
+        str(row["fact_type"]): int(row["n"])
+        for row in fact_rows
+        if str(row["fact_type"]) not in {"supplement_manifest", "supplement_audit"}
+    }
+    route_rows = index.sql(
+        """
+        select coalesce(json_extract(payload_json, '$.supplement.source'), 'unknown') as route, count(*) as n
+        from record_payloads
+        where source='aedes_extracted_facts'
+          and json_extract(payload_json, '$.fact_type')='supplement_manifest'
+        group by route
+        order by route
+        """,
+        limit=1000,
+    )
+    route_counts = {str(row["route"]): int(row["n"]) for row in route_rows}
+    promoted_paper_count = _scalar(
+        index,
+        """
+        select count(distinct json_extract(payload_json, '$.source_record_id')) as n
+        from record_payloads
+        where source in ('aedes_vector_competence_assays', 'aedes_resistance_table_rows')
+          and json_extract(payload_json, '$.confidence')='parsed_table_schema_validated'
+          and json_extract(payload_json, '$.source_record_id') is not null
+        """,
+    )
+    return {
+        "source_record_count": _scalar(
+            index,
+            """
+            select count(*) as n
+            from records
+            where source='aedes_literature_openalex'
+              and lane='literature'
+              and lower(coalesce(species, ''))='aedes aegypti'
+            """,
+        ),
+        "supplement_manifest_count": int(
+            next((row["n"] for row in fact_rows if row["fact_type"] == "supplement_manifest"), 0)
+        ),
+        "supplement_audit_record_count": int(
+            next((row["n"] for row in fact_rows if row["fact_type"] == "supplement_audit"), 0)
+        ),
+        "papers_with_supplement_manifest_count": _scalar(
+            index,
+            """
+            select count(distinct json_extract(payload_json, '$.source_record_id')) as n
+            from record_payloads
+            where source='aedes_extracted_facts'
+              and json_extract(payload_json, '$.fact_type')='supplement_manifest'
+            """,
+        ),
+        "papers_with_parsed_supplement_rows_count": _scalar(
+            index,
+            """
+            select count(distinct json_extract(payload_json, '$.source_record_id')) as n
+            from record_payloads
+            where source='aedes_extracted_facts'
+              and json_extract(payload_json, '$.confidence')='parsed'
+            """,
+        ),
+        "papers_with_promoted_supplement_rows_count": promoted_paper_count,
+        "fact_counts": fact_counts,
+        "supplement_discovery_route_counts": route_counts,
+    }
+
+
 def _update_metadata(
     artifact_dir: Path,
     result,
@@ -59,6 +144,7 @@ def _update_metadata(
     summary = index.summary()
     source_counts = _source_counts(index)
     installed_record_count = int(source_counts.get(EXTRACTED_FACTS_SOURCE_ID, len(result.records)))
+    global_metrics = _global_extracted_fact_metrics(index)
     source_payload = {
         "source": EXTRACTED_FACTS_SOURCE_ID,
         "record_count": installed_record_count,
@@ -66,18 +152,18 @@ def _update_metadata(
         "merge_existing": merge_existing,
         "source_record_ids": source_record_ids or None,
         "candidate_count": result.candidate_count,
-        "source_record_count": result.source_record_count,
+        "source_record_count": global_metrics["source_record_count"],
         "fulltext_unit_count": result.fulltext_unit_count,
         "max_fulltext_units": result.max_fulltext_units,
         "max_candidate_text_chars": MAX_CANDIDATE_TEXT_CHARS,
         "selected_fulltext_unit_count": result.selected_fulltext_unit_count,
         "truncated_fulltext_unit_count": result.truncated_fulltext_unit_count,
         "selected_record_text_count": result.selected_record_text_count,
-        "supplement_manifest_count": result.supplement_manifest_count,
-        "supplement_audit_record_count": result.supplement_audit_record_count,
-        "papers_with_supplement_manifest_count": result.papers_with_supplement_manifest_count,
-        "papers_with_parsed_supplement_rows_count": result.papers_with_parsed_supplement_rows_count,
-        "papers_with_promoted_supplement_rows_count": result.papers_with_promoted_supplement_rows_count,
+        "supplement_manifest_count": global_metrics["supplement_manifest_count"],
+        "supplement_audit_record_count": global_metrics["supplement_audit_record_count"],
+        "papers_with_supplement_manifest_count": global_metrics["papers_with_supplement_manifest_count"],
+        "papers_with_parsed_supplement_rows_count": global_metrics["papers_with_parsed_supplement_rows_count"],
+        "papers_with_promoted_supplement_rows_count": global_metrics["papers_with_promoted_supplement_rows_count"],
         "supplement_discovery_record_count": result.supplement_discovery_record_count,
         "max_repository_supplement_discovery_records": result.max_repository_supplement_discovery_records,
         "discovered_supplement_count": result.discovered_supplement_count,
@@ -87,7 +173,8 @@ def _update_metadata(
         "max_pdf_supplement_files": result.max_pdf_supplement_files,
         "parsed_pdf_supplement_file_count": result.parsed_pdf_supplement_file_count,
         "skipped_pdf_supplement_file_count": result.skipped_pdf_supplement_file_count,
-        "fact_counts": result.fact_counts,
+        "fact_counts": global_metrics["fact_counts"],
+        "supplement_discovery_route_counts": global_metrics["supplement_discovery_route_counts"],
         "gap_count": len(result.gaps),
         "method": "deterministic supplement manifest discovery, supported supplement table parsing, and cross-lane Aedes fact extraction from literature records and bounded legal full-text units",
     }
@@ -121,18 +208,18 @@ def _update_metadata(
         "merge_existing": merge_existing,
         "source_record_ids": source_record_ids or None,
         "candidate_count": result.candidate_count,
-        "source_record_count": result.source_record_count,
+        "source_record_count": global_metrics["source_record_count"],
         "fulltext_unit_count": result.fulltext_unit_count,
         "max_fulltext_units": result.max_fulltext_units,
         "max_candidate_text_chars": MAX_CANDIDATE_TEXT_CHARS,
         "selected_fulltext_unit_count": result.selected_fulltext_unit_count,
         "truncated_fulltext_unit_count": result.truncated_fulltext_unit_count,
         "selected_record_text_count": result.selected_record_text_count,
-        "supplement_manifest_count": result.supplement_manifest_count,
-        "supplement_audit_record_count": result.supplement_audit_record_count,
-        "papers_with_supplement_manifest_count": result.papers_with_supplement_manifest_count,
-        "papers_with_parsed_supplement_rows_count": result.papers_with_parsed_supplement_rows_count,
-        "papers_with_promoted_supplement_rows_count": result.papers_with_promoted_supplement_rows_count,
+        "supplement_manifest_count": global_metrics["supplement_manifest_count"],
+        "supplement_audit_record_count": global_metrics["supplement_audit_record_count"],
+        "papers_with_supplement_manifest_count": global_metrics["papers_with_supplement_manifest_count"],
+        "papers_with_parsed_supplement_rows_count": global_metrics["papers_with_parsed_supplement_rows_count"],
+        "papers_with_promoted_supplement_rows_count": global_metrics["papers_with_promoted_supplement_rows_count"],
         "supplement_discovery_record_count": result.supplement_discovery_record_count,
         "max_repository_supplement_discovery_records": result.max_repository_supplement_discovery_records,
         "discovered_supplement_count": result.discovered_supplement_count,
@@ -142,7 +229,8 @@ def _update_metadata(
         "max_pdf_supplement_files": result.max_pdf_supplement_files,
         "parsed_pdf_supplement_file_count": result.parsed_pdf_supplement_file_count,
         "skipped_pdf_supplement_file_count": result.skipped_pdf_supplement_file_count,
-        "fact_counts": result.fact_counts,
+        "fact_counts": global_metrics["fact_counts"],
+        "supplement_discovery_route_counts": global_metrics["supplement_discovery_route_counts"],
         "gap_count": len(result.gaps),
         "source_counts": source_counts,
         "artifact_dir": artifact_dir.as_posix(),
@@ -150,7 +238,12 @@ def _update_metadata(
     }
 
 
-def _delete_extracted_fact_records_for_source_records(index: SourceIndex, source_record_ids: list[str]) -> int:
+def _delete_extracted_fact_records_for_source_records(
+    index: SourceIndex,
+    source_record_ids: list[str],
+    *,
+    delete_fts: bool = True,
+) -> int:
     if not source_record_ids:
         return 0
     deleted = 0
@@ -173,7 +266,8 @@ def _delete_extracted_fact_records_for_source_records(index: SourceIndex, source
             for start in range(0, len(record_ids), 500):
                 chunk = record_ids[start : start + 500]
                 placeholders = ",".join("?" for _ in chunk)
-                conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+                if delete_fts:
+                    conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
                 conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
                 conn.execute(f"DELETE FROM records WHERE record_id IN ({placeholders})", chunk)
     return deleted
@@ -195,6 +289,8 @@ def ingest_extracted_facts(
     max_pdf_supplement_files: int = 10,
     source_record_ids: list[str] | None = None,
     merge_existing: bool = False,
+    update_fts: bool = True,
+    update_metadata: bool = True,
 ) -> dict[str, object]:
     result = build_extracted_fact_records(
         artifact_dir,
@@ -217,16 +313,36 @@ def ingest_extracted_facts(
     if merge_existing:
         if not source_record_ids:
             raise ValueError("merge_existing requires at least one source_record_id")
-        deleted_existing_record_count = _delete_extracted_fact_records_for_source_records(index, source_record_ids)
-        index.upsert_records(result.records)
+        deleted_existing_record_count = _delete_extracted_fact_records_for_source_records(
+            index,
+            source_record_ids,
+            delete_fts=update_fts,
+        )
+        index.upsert_records(result.records, update_fts=update_fts)
     else:
-        index.replace_source_records(EXTRACTED_FACTS_SOURCE_ID, result.records)
-    payload = _update_metadata(
-        artifact_dir,
-        result,
-        merge_existing=merge_existing,
-        source_record_ids=source_record_ids,
-    )
+        index.replace_source_records(
+            EXTRACTED_FACTS_SOURCE_ID,
+            result.records,
+            update_fts=update_fts,
+            delete_existing_fts=update_fts,
+        )
+    if update_metadata:
+        payload = _update_metadata(
+            artifact_dir,
+            result,
+            merge_existing=merge_existing,
+            source_record_ids=source_record_ids,
+        )
+    else:
+        payload = {
+            "ok": True,
+            "source": EXTRACTED_FACTS_SOURCE_ID,
+            "record_count": len(result.records),
+            "last_build_record_count": len(result.records),
+            "merge_existing": merge_existing,
+            "source_record_ids": source_record_ids or None,
+            "metadata_update_skipped": True,
+        }
     payload["deleted_existing_record_count"] = deleted_existing_record_count
     return payload
 
@@ -245,6 +361,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-pdf-supplement-files", type=int, default=10)
     parser.add_argument("--source-record-id", action="append", default=[])
     parser.add_argument("--merge-existing", action="store_true")
+    parser.add_argument("--skip-fts-update", action="store_true")
+    parser.add_argument("--skip-metadata-update", action="store_true")
     args = parser.parse_args(argv)
     result = ingest_extracted_facts(
         artifact_dir=Path(args.artifact_dir),
@@ -259,6 +377,8 @@ def main(argv: list[str] | None = None) -> int:
         max_pdf_supplement_files=args.max_pdf_supplement_files,
         source_record_ids=args.source_record_id or None,
         merge_existing=args.merge_existing,
+        update_fts=not args.skip_fts_update,
+        update_metadata=not args.skip_metadata_update,
     )
     print(json.dumps(result, sort_keys=True))
     return 0 if result.get("ok") else 2
