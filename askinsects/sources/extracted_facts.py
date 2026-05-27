@@ -642,6 +642,9 @@ def _crossref_relation_supplements(request: dict[str, object]) -> list[dict[str,
     supplements: list[dict[str, object]] = []
     for relation_type, entries in relations.items():
         relation_lower = str(relation_type).lower()
+        relation_key = re.sub(r"[^a-z]", "", relation_lower)
+        if relation_key == "issupplementto":
+            continue
         if "supplement" not in relation_lower:
             continue
         if not isinstance(entries, list):

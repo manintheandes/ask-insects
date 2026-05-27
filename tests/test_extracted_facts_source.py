@@ -398,6 +398,12 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                                     "id-type": "doi",
                                 }
                             ],
+                            "is-supplement-to": [
+                                {
+                                    "id": "10.1186/s13071-025-07140-z",
+                                    "id-type": "doi",
+                                }
+                            ],
                         }
                     }
                 }
@@ -415,6 +421,7 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         urls = {str(item["url"]) for item in supplements}
         self.assertIn("https://example.org/publisher/supplement-table.xlsx", urls)
         self.assertIn("https://doi.org/10.6084/m9.figshare.12345", urls)
+        self.assertNotIn("https://doi.org/10.1186/s13071-025-07140-z", urls)
         self.assertTrue(any(item["source"] == "crossref_relation" for item in supplements))
 
     def test_fetch_public_supplement_metadata_discovers_datacite_relations(self):
