@@ -4154,6 +4154,40 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "public_health")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_public_health_guidance")
 
+    def test_public_health_source_locator_questions_prefer_extracted_fact_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    public_health_record(
+                        "public_health:guidance:cdc",
+                        "aedes_public_health_guidance",
+                        "Official public-health guidance for Aedes aegypti dengue travelers from CDC.",
+                    ),
+                    public_health_record(
+                        "extracted_fact:public_health:openalex:W3019929805:row3",
+                        "aedes_extracted_facts",
+                        (
+                            "Aedes aegypti extracted public health fact. "
+                            "Source record: openalex:W3019929805. "
+                            "Source URL: https://www.forth.go.jp/ihr/fragment2/index.html. "
+                            "Information: quarantine vector surveillance data report."
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Aedes aegypti public health evidence from openalex W3019929805",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "public_health")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
+
     def test_dengue_prevention_guidance_questions_route_to_public_health(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

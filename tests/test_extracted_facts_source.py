@@ -1294,6 +1294,46 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(table_row["insecticide"], "deltamethrin")
             self.assertEqual(table_row["mortality_rate"], "75")
 
+    def test_build_extracted_fact_records_promotes_japanese_vector_surveillance_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://www.forth.go.jp/ihr/fragment2/index.html"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:WJAPANVECTOR",
+                title=(
+                    "Genetic analysis of Aedes aegypti captured at two international airports "
+                    "serving to the Greater Tokyo Area"
+                ),
+                text="Aedes aegypti airport introduction and quarantine vector surveillance report.",
+                supplement_url=supplement_url,
+            )
+            payload = (
+                "<table><tr><th>更新年月日</th><th>情報内容</th></tr>"
+                "<tr><td>2025年9月29日</td>"
+                "<td>2024年　検疫所ベクターサーベイランスデータ報告書［12.9MB］</td></tr>"
+                "</table>"
+            ).encode("utf-8")
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(len(parsed), 1)
+            self.assertEqual(parsed[0].lane, "public_health")
+            self.assertIn("openalex:WJAPANVECTOR", parsed[0].text)
+            self.assertIn(supplement_url, parsed[0].text)
+            table_row = parsed[0].payload["fields"]["table_row"]
+            self.assertEqual(table_row["更新年月日"], "2025年9月29日")
+            self.assertIn("検疫所ベクターサーベイランスデータ報告書", table_row["情報内容"])
+
     def test_build_extracted_fact_records_promotes_zikv_infected_sample_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

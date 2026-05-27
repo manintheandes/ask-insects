@@ -214,6 +214,10 @@ FACT_FAMILIES: tuple[FactFamily, ...] = (
             "serotype",
             "wolbachia",
             "public health",
+            "vector surveillance",
+            "検疫所",
+            "サーベイランス",
+            "報告書",
         ),
         field_terms={
             "case_metric": ("cases", "incidence", "outbreak"),
@@ -222,7 +226,7 @@ FACT_FAMILIES: tuple[FactFamily, ...] = (
             "location": ("brazil", "kenya", "india", "thailand", "mexico", "colombia", "peru", "usa"),
             "date": ("2024", "2025", "2026"),
             "serotype": ("denv-1", "denv-2", "denv-3", "denv-4", "serotype"),
-            "source": ("paho", "who", "cdc", "surveillance"),
+            "source": ("paho", "who", "cdc", "surveillance", "vector surveillance", "検疫所", "サーベイランス", "報告書"),
         },
     ),
 )
@@ -2153,8 +2157,16 @@ def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[
         source_url=candidate.unit_url or candidate.paper_url,
     )
     title = f"Aedes aegypti extracted {family.fact_type.replace('_', ' ')} fact"
+    source_locator_text = f"Source record: {candidate.source_record_id}."
+    if candidate.unit_url:
+        source_locator_text += f" Source URL: {candidate.unit_url}."
+    if candidate.supplement:
+        supplement_title = candidate.supplement.get("title")
+        if supplement_title:
+            source_locator_text += f" Supplement title: {supplement_title}."
     text = (
         f"{title} from {candidate.source_title}. "
+        f"{source_locator_text} "
         f"Matched fields: {', '.join(sorted(fields))}. "
         f"Evidence: {evidence_text}"
     )

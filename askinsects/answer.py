@@ -141,6 +141,17 @@ def _wants_extracted_facts(question: str) -> bool:
     return any(term in q for term in ("extracted", "extracted fact", "extracted facts", "supplement", "supplementary", "table", "tables", "row", "rows"))
 
 
+def _wants_source_locator_evidence(question: str) -> bool:
+    q = question.lower()
+    return (
+        "source record" in q
+        or "source url" in q
+        or "openalex" in q
+        or "forth.go.jp" in q
+        or bool(re.search(r"\bW\d{6,}\b", question, flags=re.IGNORECASE))
+    )
+
+
 def _wants_supplement_audit_summary(question: str) -> bool:
     q = question.lower()
     if not any(term in q for term in ("supplement", "supplementary")):
@@ -2542,6 +2553,25 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
 
 def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if _wants_source_locator_evidence(question):
+        exact_terms = [match.lower() for match in re.findall(r"\bW\d{6,}\b", question, flags=re.IGNORECASE)]
+        for term in ("forth.go.jp", "fragment2"):
+            if term in q:
+                exact_terms.append(term)
+        return sorted(
+            records,
+            key=lambda record: (
+                0
+                if exact_terms
+                and any(term in f"{record.record_id}\n{record.title}\n{record.text}\n{record.url or ''}".lower() for term in exact_terms)
+                else 1,
+                0
+                if record.source == EXTRACTED_FACTS_SOURCE_ID
+                and any(term in f"{record.record_id}\n{record.title}\n{record.text}\n{record.url or ''}".lower() for term in ("openalex", "forth.go.jp"))
+                else 1,
+                0 if record.lane == "public_health" else 1,
+            ),
+        )
     if any(term in q for term in ("wolbachia", "world mosquito program", "wmp", "yogyakarta")):
         return sorted(
             records,
@@ -3206,6 +3236,42 @@ def _extracted_fact_records(index: SourceIndex, lanes: list[str], *, limit: int)
             LIMIT ?
             """,
             [EXTRACTED_FACTS_SOURCE_ID, *params],
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
+def _source_locator_records(index: SourceIndex, lanes: list[str], question: str, *, limit: int) -> list[EvidenceRecord]:
+    if not lanes:
+        return []
+    locator_terms = [match.upper() for match in re.findall(r"\bW\d{6,}\b", question, flags=re.IGNORECASE)]
+    q = question.lower()
+    if not locator_terms and "openalex" in q:
+        locator_terms.append("openalex")
+    for term in ("forth.go.jp", "fragment2"):
+        if term in q:
+            locator_terms.append(term)
+    locator_terms = list(dict.fromkeys(locator_terms))
+    if not locator_terms:
+        return []
+    lane_placeholders = ",".join("?" for _ in lanes)
+    term_clauses = []
+    params: list[object] = [EXTRACTED_FACTS_SOURCE_ID, *lanes]
+    for term in locator_terms:
+        pattern = f"%{term}%"
+        term_clauses.append("(record_id LIKE ? OR title LIKE ? OR text LIKE ? OR url LIKE ?)")
+        params.extend([pattern, pattern, pattern, pattern])
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT *
+            FROM records
+            WHERE source = ?
+              AND lane IN ({lane_placeholders})
+              AND ({" OR ".join(term_clauses)})
+            ORDER BY lane, record_id
+            LIMIT ?
+            """,
+            [*params, limit],
         ).fetchall()
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
@@ -3927,6 +3993,23 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "public_health":
+        if _wants_source_locator_evidence(plan.question):
+            for record in _source_locator_records(index, ["public_health"], plan.question, limit=max(limit * 20, 50)):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
+            for record in _source_search_records(
+                index,
+                EXTRACTED_FACTS_SOURCE_ID,
+                "public_health",
+                plan.search_query,
+                limit=max(limit * 20, 50),
+            ):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
         for record in _opendatasus_surveillance_records(index, plan.question, limit=limit):
             all_records.append(record)
             seen_record_ids.add(record.record_id)
