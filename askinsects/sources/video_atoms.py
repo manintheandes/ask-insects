@@ -1080,14 +1080,15 @@ def _default_institutional_discovery_client(artifact_dir: Path) -> DiscoverySwee
     source_placeholders = ", ".join(repr(source) for source in INSTITUTIONAL_VIDEO_LOCATOR_SCAN_SOURCES)
     rows = index.sql(
         f"""
-        SELECT r.record_id, r.title, r.text, r.url, r.provenance_json, p.payload_json
+        SELECT r.record_id, r.title, r.text, r.url, r.media_url, r.provenance_json
         FROM records r
-        LEFT JOIN record_payloads p ON p.record_id = r.record_id
         WHERE r.source IN ({source_placeholders})
-          AND lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%aedes aegypti%'
+          AND lower(coalesce(r.species, '') || ' ' || coalesce(r.title, '') || ' ' || coalesce(r.text, '')) LIKE '%aedes aegypti%'
           AND (lower(coalesce(r.url, '')) LIKE '%.mp4%'
-               OR lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%.mp4%'
-               OR lower(coalesce(r.text, '') || ' ' || coalesce(p.payload_json, '')) LIKE '%.mov%')
+               OR lower(coalesce(r.media_url, '')) LIKE '%.mp4%'
+               OR lower(coalesce(r.media_url, '')) LIKE '%.mov%'
+               OR lower(coalesce(r.text, '')) LIKE '%.mp4%'
+               OR lower(coalesce(r.text, '')) LIKE '%.mov%')
         ORDER BY r.record_id
         """,
         limit=250,
@@ -1095,7 +1096,7 @@ def _default_institutional_discovery_client(artifact_dir: Path) -> DiscoverySwee
     known_hosts = ("zenodo.org", "figshare.com", "mendeley.com", "datadryad.org", "osf.io", "pmc.ncbi.nlm.nih.gov")
     for row in rows:
         provenance = _safe_json(row.get("provenance_json"))
-        text = f"{row.get('url') or ''} {row.get('text') or ''} {row.get('payload_json') or ''}"
+        text = f"{row.get('url') or ''} {row.get('media_url') or ''} {row.get('text') or ''}"
         urls = re.findall(r"https?://[^\s\"'<>]+?\.(?:mp4|mov|avi|webm|m4v)(?:\?[^\s\"'<>]+)?", text, flags=re.I)
         for index, url in enumerate(dict.fromkeys(urls), start=1):
             host = urlparse(url).netloc.lower()

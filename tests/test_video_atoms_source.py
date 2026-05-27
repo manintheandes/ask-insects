@@ -1678,6 +1678,46 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(len(paper_result.items), 1)
         self.assertEqual(paper_result.items[0]["repository"], "paper_supplements")
 
+    def test_institutional_sqlite_scan_uses_record_fields_without_payload_scan(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="dryad_aedes_behavior_videos",
+                locator="raw/dryad/dataset.json#file/1",
+                retrieved_at=RETRIEVED_AT,
+                license="CC0",
+                source_url="https://datadryad.org/stash/dataset/doi:10.5061/test",
+            )
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:institutional-sidecar:1",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti sidecar institutional video",
+                        text="Aedes aegypti behavior assay sidecar file.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/test",
+                        media_url="https://repository.example.edu/aedes-sidecar.mp4",
+                        provenance=provenance,
+                        payload={"large_blob": "ignored for institutional discovery"},
+                    )
+                ]
+            )
+
+            original_fetch_json = video_atoms._fetch_json
+            try:
+                video_atoms._fetch_json = lambda url: {"data": {"items": []}}
+                discovery_result = video_atoms._default_institutional_discovery_client(artifact_dir)
+            finally:
+                video_atoms._fetch_json = original_fetch_json
+
+        self.assertEqual(len(discovery_result.items), 1)
+        self.assertEqual(discovery_result.items[0]["download_url"], "https://repository.example.edu/aedes-sidecar.mp4")
+        self.assertIn("dryad_aedes_behavior_videos", discovery_result.receipt["input_sources"])
+
     def test_figshare_discovery_uses_broader_page_size(self):
         requested_urls: list[str] = []
 
