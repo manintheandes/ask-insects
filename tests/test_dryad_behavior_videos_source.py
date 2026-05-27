@@ -81,7 +81,7 @@ class DryadBehaviorVideoSourceTests(unittest.TestCase):
             self.assertEqual(result.dataset_count, 1)
             self.assertEqual(result.file_count, 2)
             self.assertEqual(result.media_file_count, 1)
-            self.assertEqual(len(result.records), 3)
+            self.assertEqual(len(result.records), 4)
             self.assertEqual(len(result.raw_artifacts), 3)
             self.assertTrue(any("/versions/123/files" in url for url in fetcher.urls))
 
@@ -97,6 +97,15 @@ class DryadBehaviorVideoSourceTests(unittest.TestCase):
             self.assertIn("video/archive file", media.title)
             self.assertEqual(media.payload["raw_file"]["digest"], "abc")
             self.assertIn("#file/1", media.provenance.locator)
+
+            gap = next(record for record in result.records if record.record_id.startswith("dryad:gap:"))
+            self.assertEqual(gap.lane, "media")
+            self.assertIsNone(gap.media_url)
+            self.assertIn("dryad_archive_contents_not_decoded", gap.text)
+            self.assertEqual(gap.payload["atom_type"], "video_gap")
+            self.assertEqual(gap.payload["source_video_record_id"], media.record_id)
+            self.assertEqual(gap.payload["download_url"], "https://datadryad.org/api/v2/files/10/download")
+            self.assertEqual(gap.payload["byte_size"], 1234)
 
             readme = next(record for record in result.records if record.title.endswith("README.md"))
             self.assertEqual(readme.lane, "behavior")

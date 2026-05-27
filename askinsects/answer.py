@@ -2859,12 +2859,20 @@ def _vector_competence_assay_grain_rank(question: str, record: EvidenceRecord) -
 def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
     if _wants_video_atoms(question):
+        wants_gap = _wants_video_gaps(question) or any(term in q for term in ("missing", "not decoded", "undecoded", "not expanded"))
+
+        def score_video(record: EvidenceRecord) -> tuple[int, int, int]:
+            haystack = f"{record.record_id} {record.title} {record.text}".lower()
+            is_gap = "video gap" in haystack or ":gap:" in record.record_id
+            return (
+                0 if record.source == "aedes_video_atoms" else 1,
+                0 if wants_gap and is_gap else 1 if wants_gap else 0,
+                0 if record.lane in {"media", "behavior"} else 1,
+            )
+
         return sorted(
             records,
-            key=lambda record: (
-                0 if record.source == "aedes_video_atoms" else 1,
-                0 if record.lane in {"media", "behavior"} else 1,
-            ),
+            key=score_video,
         )
     if _wants_image_atoms(question):
         return sorted(
@@ -2989,12 +2997,20 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             key=score_pathogen,
         )
     if "dryad" in q:
+        wants_gap = _wants_video_gaps(question) or any(term in q for term in ("missing", "not decoded", "undecoded", "not expanded"))
+
+        def score_dryad(record: EvidenceRecord) -> tuple[int, int, int]:
+            haystack = f"{record.record_id} {record.title} {record.text}".lower()
+            is_gap = "video gap" in haystack or ":gap:" in record.record_id
+            return (
+                0 if record.source == "dryad_aedes_behavior_videos" else 1,
+                0 if wants_gap and is_gap else 1 if wants_gap else 0,
+                0 if record.lane in {"media", "behavior"} else 1,
+            )
+
         return sorted(
             records,
-            key=lambda record: (
-                0 if record.source == "dryad_aedes_behavior_videos" else 1,
-                0 if record.lane in {"media", "behavior"} else 1,
-            ),
+            key=score_dryad,
         )
     if "osf" in q or "flighttrackai" in q or "flighttrack" in q or "flight tracking" in q:
         return sorted(
@@ -3476,7 +3492,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         source_id = _video_repository_source_id(named_video_repository)
         if source_id:
             source_lanes = ["media"] if plan.answer_shape == "media" else ["media", "behavior"]
-            for record in _source_records(index, source_id, source_lanes, limit=limit):
+            q = plan.question.lower()
+            wants_named_video_gap = _wants_video_gaps(plan.question) or any(term in q for term in ("missing", "not decoded", "undecoded", "not expanded", "gap", "gaps"))
+            source_limit = max(limit * 20, 50) if wants_named_video_gap else limit
+            for record in _source_records(index, source_id, source_lanes, limit=source_limit):
                 if record.record_id in seen_record_ids:
                     continue
                 all_records.append(record)

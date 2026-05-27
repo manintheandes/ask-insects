@@ -1874,6 +1874,60 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "dryad_aedes_behavior_videos")
             self.assertEqual(answer["evidence"][0]["media_url"], "https://datadryad.org/api/v2/files/10/download")
 
+    def test_named_dryad_gap_questions_return_dryad_archive_gap_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:file:host-seeking-videos",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad video/archive file host_seeking_videos.zip",
+                        text="Dryad video archive for Aedes aegypti host seeking behavior.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://datadryad.org/api/v2/files/10/download",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/files.json#file/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="dryad:gap:host-seeking-videos:archive_contents_not_decoded",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad video gap archive contents not decoded host_seeking_videos.zip",
+                        text="Aedes aegypti Dryad video source gap: dryad_archive_contents_not_decoded. Source file: host_seeking_videos.zip.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/files.json#file/1/gap/archive_contents_not_decoded",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                        payload={
+                            "atom_type": "video_gap",
+                            "reason": "dryad_archive_contents_not_decoded",
+                            "repository": "dryad",
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Dryad archive contents not decoded gaps", artifact_dir=artifact_dir, limit=1)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["record_id"], "dryad:gap:host-seeking-videos:archive_contents_not_decoded")
+            self.assertIn("dryad_archive_contents_not_decoded", answer["evidence"][0]["text"])
+
     def test_video_atom_motion_questions_prefer_queryable_motion_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -270,6 +270,80 @@ def _file_record(
     )
 
 
+def _archive_decode_gap_record(
+    *,
+    spec: DryadDatasetSpec,
+    dataset_payload: dict[str, object],
+    file_payload: dict[str, object],
+    raw_path: Path,
+    file_index: int,
+    retrieved_at: str,
+) -> EvidenceRecord:
+    doi = _doi_from_identifier(dataset_payload, spec.doi)
+    dataset_title = _clean_text(dataset_payload.get("title")) or doi
+    file_path = str(file_payload.get("path") or f"file-{file_index}")
+    mime_type = str(file_payload.get("mimeType") or "")
+    download_href = _link(file_payload, "stash:download")
+    download_url = urljoin(DRYAD_API_BASE, download_href) if download_href else _dataset_web_url(doi)
+    size = file_payload.get("size")
+    digest = file_payload.get("digest")
+    digest_type = file_payload.get("digestType")
+    labels = ", ".join(spec.behavior_labels)
+    source_video_record_id = f"dryad:file:{_safe_id(doi)}:{_safe_id(file_path)}"
+    text_parts = [
+        "Aedes aegypti Dryad video source gap: dryad_archive_contents_not_decoded.",
+        f"Source dataset: {dataset_title}.",
+        f"Source file: {file_path}.",
+        f"Behavior labels: {labels}.",
+        "The downloadable file is manifest-indexed, but its archive contents are not yet expanded into per-video assets, keyframes, previews, frame manifests, or motion rows.",
+    ]
+    if size is not None:
+        text_parts.append(f"Size bytes: {size}.")
+    if mime_type:
+        text_parts.append(f"MIME type: {mime_type}.")
+    if digest and digest_type:
+        text_parts.append(f"Checksum: {digest_type} {digest}.")
+    return EvidenceRecord(
+        record_id=f"dryad:gap:{_safe_id(doi)}:{_safe_id(file_path)}:archive_contents_not_decoded",
+        lane="media",
+        source=DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+        title=f"Aedes aegypti Dryad video gap archive contents not decoded {file_path}",
+        text=" ".join(text_parts),
+        species="Aedes aegypti",
+        url=_dataset_web_url(doi),
+        media_url=None,
+        provenance=Provenance(
+            source_id=DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+            locator=f"{raw_path.as_posix()}#file/{file_index}/gap/archive_contents_not_decoded",
+            retrieved_at=retrieved_at,
+            license=str(dataset_payload.get("license") or "Dryad dataset license not supplied"),
+            source_url=download_url,
+        ),
+        payload={
+            "atom_type": "video_gap",
+            "reason": "dryad_archive_contents_not_decoded",
+            "repository": "dryad",
+            "doi": doi,
+            "dataset_title": dataset_title,
+            "file_path": file_path,
+            "mime_type": mime_type,
+            "byte_size": size,
+            "source_hash": digest,
+            "source_hash_type": digest_type,
+            "download_url": download_url,
+            "source_video_record_id": source_video_record_id,
+            "behavior_labels": list(spec.behavior_labels),
+            "required_next_artifacts": [
+                "archive_member_manifest",
+                "per_video_asset_rows",
+                "duration_fps_resolution_codec_probe_rows",
+                "thumbnail_keyframe_preview_frame_manifest_rows",
+                "source_table_or_motion_tracking_rows_when_available",
+            ],
+        },
+    )
+
+
 def fetch_dryad_behavior_video_records(
     dataset_specs: list[DryadDatasetSpec] | tuple[DryadDatasetSpec, ...] = DEFAULT_DRYAD_DATASETS,
     *,
@@ -345,7 +419,8 @@ def fetch_dryad_behavior_video_records(
             )
         for index, file_payload in enumerate(files, start=1):
             file_count += 1
-            if _is_media_file(str(file_payload.get("path") or ""), str(file_payload.get("mimeType") or "")):
+            is_media = _is_media_file(str(file_payload.get("path") or ""), str(file_payload.get("mimeType") or ""))
+            if is_media:
                 media_file_count += 1
             records.append(
                 _file_record(
@@ -357,6 +432,17 @@ def fetch_dryad_behavior_video_records(
                     retrieved_at=retrieved,
                 )
             )
+            if is_media:
+                records.append(
+                    _archive_decode_gap_record(
+                        spec=spec,
+                        dataset_payload=dataset_payload,
+                        file_payload=file_payload,
+                        raw_path=files_raw_path,
+                        file_index=index,
+                        retrieved_at=retrieved,
+                    )
+                )
 
     return DryadBehaviorVideoResult(
         source_id=DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,

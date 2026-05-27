@@ -262,7 +262,7 @@ python3 -m askinsects ask "show Dryad Aedes aegypti behavior videos" --json
 python3 -m askinsects search behavior "thermal infrared host seeking"
 ```
 
-The lane uses source id `dryad_aedes_behavior_videos`. It writes Dryad dataset, version, and file-manifest API responses under `raw/dryad_behavior_videos/`, normalizes one `behavior` record per dataset plus file-level `media` records for video/archive files and `behavior` records for README/source-data files, stores raw manifest payloads in SQLite, and preserves DOI, license, size, checksum, behavior labels, and download URL provenance. It indexes manifest metadata by default; it does not mirror multi-gigabyte video archives unless a future repo plan explicitly requires binary mirroring.
+The lane uses source id `dryad_aedes_behavior_videos`. It writes Dryad dataset, version, and file-manifest API responses under `raw/dryad_behavior_videos/`, normalizes one `behavior` record per dataset plus file-level `media` records for video/archive files and `behavior` records for README/source-data files, stores raw manifest payloads in SQLite, and preserves DOI, license, size, checksum, behavior labels, and download URL provenance. Each video/archive file also gets a queryable `dryad_archive_contents_not_decoded` gap record until the archive is expanded into per-video assets, keyframes, previews, frame manifests, and motion rows. It indexes manifest metadata by default; it does not mirror multi-gigabyte video archives unless a future repo plan explicitly requires binary mirroring.
 
 ## Mendeley Behavior And Media Source Lane
 

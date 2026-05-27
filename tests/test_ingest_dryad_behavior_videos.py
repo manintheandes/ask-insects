@@ -49,11 +49,20 @@ class IngestDryadBehaviorVideosTests(unittest.TestCase):
             counts = {(row["source"], row["lane"]): row["n"] for row in rows}
             self.assertEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 1)
             self.assertEqual(counts[("dryad_aedes_behavior_videos", "behavior")], 2)
-            self.assertEqual(counts[("dryad_aedes_behavior_videos", "media")], 1)
+            self.assertEqual(counts[("dryad_aedes_behavior_videos", "media")], 2)
             payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select count(*) as n from record_payloads where source='dryad_aedes_behavior_videos'"
             )
-            self.assertEqual(payload_rows[0]["n"], 3)
+            self.assertEqual(payload_rows[0]["n"], 4)
+            gap_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                """
+                select json_extract(payload_json, '$.reason') as reason
+                from record_payloads
+                where source='dryad_aedes_behavior_videos'
+                  and json_extract(payload_json, '$.atom_type')='video_gap'
+                """
+            )
+            self.assertEqual(gap_rows[0]["reason"], "dryad_archive_contents_not_decoded")
 
 
 if __name__ == "__main__":
