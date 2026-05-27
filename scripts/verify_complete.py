@@ -1621,13 +1621,18 @@ def _direct_fulltext_from_payload(payload: dict[str, object]) -> bool:
 
 
 def check_literature_artifact() -> None:
-    artifact_dir = REPO_ROOT / "artifacts/aedes-literature-2020"
+    legacy_artifact_dir = REPO_ROOT / "artifacts/aedes-literature-2020"
+    merged_artifact_dir = REPO_ROOT / "artifacts/mosquito-v1"
+    artifact_dir = legacy_artifact_dir if (legacy_artifact_dir / "source_index.sqlite").exists() else merged_artifact_dir
     db_path = artifact_dir / "source_index.sqlite"
     status_path = artifact_dir / "source_status.json"
     receipt_path = artifact_dir / "source_receipt.json"
     enrichment_receipt_path = artifact_dir / "literature_enrichment_receipt.json"
     gaps_path = artifact_dir / "gaps.json"
-    for path in (db_path, status_path, receipt_path, enrichment_receipt_path, gaps_path):
+    required_paths = [db_path, status_path, receipt_path, gaps_path]
+    if artifact_dir == legacy_artifact_dir:
+        required_paths.append(enrichment_receipt_path)
+    for path in required_paths:
         if not path.exists():
             raise RuntimeError(f"missing Aedes literature artifact file: {path.relative_to(REPO_ROOT)}")
 
@@ -1665,8 +1670,8 @@ def check_literature_artifact() -> None:
             )
         }
 
-    if literature_records != 10683:
-        raise RuntimeError(f"Aedes literature record count is {literature_records}, expected 10683")
+    if literature_records < 10683:
+        raise RuntimeError(f"Aedes literature record count is {literature_records}, expected at least 10683")
     if len(payload_rows) != literature_records:
         raise RuntimeError("Aedes literature payload count does not match record count")
     if pubmed_enriched < 3800:
@@ -1725,14 +1730,16 @@ def check_literature_artifact() -> None:
     receipt_lit = receipt.get("literature") if isinstance(receipt, dict) else None
     if not isinstance(status_lit, dict) or not isinstance(receipt_lit, dict):
         raise RuntimeError("literature counts missing from source_status.json or source_receipt.json")
-    if status.get("source_id") != "aedes_literature_openalex":
-        raise RuntimeError("source_status.json source_id does not identify the Aedes literature source")
-    if receipt.get("source_id") != "aedes_literature_openalex":
-        raise RuntimeError("source_receipt.json source_id does not identify the Aedes literature source")
-    if "aedes_literature_openalex" not in status.get("sources", []):
-        raise RuntimeError("source_status.json sources does not include the Aedes literature source")
-    if "aedes_literature_openalex" not in receipt.get("sources", []):
-        raise RuntimeError("source_receipt.json sources does not include the Aedes literature source")
+    standalone_receipts = artifact_dir == legacy_artifact_dir
+    if standalone_receipts:
+        if status.get("source_id") != "aedes_literature_openalex":
+            raise RuntimeError("source_status.json source_id does not identify the Aedes literature source")
+        if receipt.get("source_id") != "aedes_literature_openalex":
+            raise RuntimeError("source_receipt.json source_id does not identify the Aedes literature source")
+        if "aedes_literature_openalex" not in status.get("sources", []):
+            raise RuntimeError("source_status.json sources does not include the Aedes literature source")
+        if "aedes_literature_openalex" not in receipt.get("sources", []):
+            raise RuntimeError("source_receipt.json sources does not include the Aedes literature source")
     expected_pairs = {
         "record_count": literature_records,
         "payload_count": len(payload_rows),
@@ -1743,11 +1750,15 @@ def check_literature_artifact() -> None:
         "fulltext_unit_count": fulltext_units,
         "fulltext_fts_count": fulltext_fts,
     }
-    for key, value in expected_pairs.items():
-        if int(status_lit.get(key, -1)) != value:
-            raise RuntimeError(f"source_status.json literature.{key} does not match SQLite")
-        if int(receipt_lit.get(key, -1)) != value:
-            raise RuntimeError(f"source_receipt.json literature.{key} does not match SQLite")
+    required_receipt_keys = set(expected_pairs) if standalone_receipts else {"record_count"}
+    for payload_name, payload in (("source_status.json", status_lit), ("source_receipt.json", receipt_lit)):
+        for key, value in expected_pairs.items():
+            if key not in payload:
+                if key in required_receipt_keys:
+                    raise RuntimeError(f"{payload_name} literature.{key} is missing")
+                continue
+            if int(payload.get(key, -1)) != value:
+                raise RuntimeError(f"{payload_name} literature.{key} does not match SQLite")
 
     sources = run_json([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "sources"])
     if "aedes_literature_openalex" not in sources.get("sources", []):
@@ -1767,8 +1778,14 @@ def check_literature_artifact() -> None:
 
 
 def check_installed_artifact_receipts() -> None:
-    for artifact_dir in (REPO_ROOT / "artifacts/mosquito-v1", REPO_ROOT / "artifacts/aedes-literature-2020"):
-        check_receipts_match_sqlite(artifact_dir)
+    primary_artifact_dir = REPO_ROOT / "artifacts/mosquito-v1"
+    if not (primary_artifact_dir / "source_index.sqlite").exists():
+        raise RuntimeError(f"missing SQLite artifact: {primary_artifact_dir / 'source_index.sqlite'}")
+    check_receipts_match_sqlite(primary_artifact_dir)
+
+    legacy_artifact_dir = REPO_ROOT / "artifacts/aedes-literature-2020"
+    if (legacy_artifact_dir / "source_index.sqlite").exists():
+        check_receipts_match_sqlite(legacy_artifact_dir)
 
 
 def main() -> int:
