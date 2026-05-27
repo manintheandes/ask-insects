@@ -140,6 +140,13 @@ def _wants_extracted_facts(question: str) -> bool:
     return any(term in q for term in ("extracted", "extracted fact", "extracted facts", "supplement", "supplementary", "table", "tables", "row", "rows"))
 
 
+def _wants_supplement_audit_summary(question: str) -> bool:
+    q = question.lower()
+    if not any(term in q for term in ("supplement", "supplementary")):
+        return False
+    return any(term in q for term in ("audit", "coverage", "status"))
+
+
 def _public_health_focus_terms(question: str) -> list[str]:
     terms: list[str] = []
     for token in re.findall(r"[A-Za-z][A-Za-z.-]{2,}", question):
@@ -2380,6 +2387,88 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
     return _source_records(index, RESISTANCE_TABLE_ROW_SOURCE_ID, ["resistance"], limit=limit)
 
 
+def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object]:
+    with index.connect() as conn:
+        summary = conn.execute(
+            """
+            SELECT
+                count(*) AS audited_papers,
+                coalesce(sum(json_extract(p.payload_json, '$.fields.supplement_candidate_count')), 0) AS supplement_manifests,
+                coalesce(sum(json_extract(p.payload_json, '$.fields.parsed_supplement_row_count')), 0) AS parsed_rows,
+                coalesce(sum(json_extract(p.payload_json, '$.fields.promoted_supplement_row_count')), 0) AS promoted_rows
+            FROM record_payloads p
+            WHERE p.source = ?
+              AND json_extract(p.payload_json, '$.fact_type') = 'supplement_audit'
+            """,
+            (EXTRACTED_FACTS_SOURCE_ID,),
+        ).fetchone()
+        status_rows = conn.execute(
+            """
+            SELECT json_extract(p.payload_json, '$.fields.coverage_status') AS status, count(*) AS n
+            FROM record_payloads p
+            WHERE p.source = ?
+              AND json_extract(p.payload_json, '$.fact_type') = 'supplement_audit'
+            GROUP BY status
+            ORDER BY n DESC, status
+            """,
+            (EXTRACTED_FACTS_SOURCE_ID,),
+        ).fetchall()
+        evidence_rows = conn.execute(
+            """
+            SELECT r.*
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ?
+              AND json_extract(p.payload_json, '$.fact_type') = 'supplement_audit'
+            ORDER BY
+                CASE json_extract(p.payload_json, '$.fields.coverage_status')
+                    WHEN 'supplement_rows_promoted' THEN 0
+                    WHEN 'supplement_rows_parsed_no_structured_lane_match' THEN 1
+                    WHEN 'supplement_manifest_found_no_supported_table_rows_promoted' THEN 2
+                    WHEN 'supplement_manifest_found_table_download_not_run' THEN 3
+                    WHEN 'no_supplement_metadata_found' THEN 4
+                    ELSE 5
+                END,
+                json_extract(p.payload_json, '$.fields.promoted_supplement_row_count') DESC,
+                json_extract(p.payload_json, '$.fields.parsed_supplement_row_count') DESC,
+                r.record_id
+            LIMIT ?
+            """,
+            (EXTRACTED_FACTS_SOURCE_ID, max(limit, 1)),
+        ).fetchall()
+
+    audited_papers = int(summary["audited_papers"] or 0) if summary else 0
+    if audited_papers == 0:
+        return source_gap(plan, "The Ask Insects supplement audit lane has no indexed audit atoms yet.")
+
+    supplement_manifests = int(summary["supplement_manifests"] or 0)
+    parsed_rows = int(summary["parsed_rows"] or 0)
+    promoted_rows = int(summary["promoted_rows"] or 0)
+    status_counts = {str(row["status"]): int(row["n"]) for row in status_rows}
+    status_text = "; ".join(f"{status}: {count}" for status, count in status_counts.items())
+    records = [EvidenceRecord.from_row(dict(row)) for row in evidence_rows]
+    answer = (
+        f"The Aedes aegypti supplement audit covers {audited_papers} indexed paper records. "
+        f"Across those papers, Ask Insects found {supplement_manifests} public supplement manifests, "
+        f"parsed {parsed_rows} supported supplement table rows, and promoted {promoted_rows} rows into structured evidence lanes. "
+        f"Coverage status counts: {status_text}."
+    )
+    return {
+        "ok": True,
+        "answer_shape": "literature",
+        "answer": answer,
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+        "status_counts": status_counts,
+        "supplement_audit": {
+            "audited_papers": audited_papers,
+            "supplement_manifest_count": supplement_manifests,
+            "parsed_supplement_row_count": parsed_rows,
+            "promoted_supplement_row_count": promoted_rows,
+        },
+    }
+
+
 def _prioritize_public_health_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
     if any(term in q for term in ("wolbachia", "world mosquito program", "wmp", "yogyakarta")):
@@ -3291,6 +3380,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
     if not _index_ready(index):
         return source_gap(plan, "The Ask Insects source index has not been built yet.")
+
+    if _wants_supplement_audit_summary(plan.question):
+        return _supplement_audit_summary_answer(index, plan, limit=limit)
 
     all_records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()

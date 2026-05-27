@@ -319,7 +319,18 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show dengue vect
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select lane, count(*) as n from records where source='aedes_extracted_facts' group by lane order by lane"
 ```
 
-This lane emits supplement manifests plus deterministic candidate facts for vector competence, resistance, behavior, ecology, and public health. With opt-in supplement discovery and download, it also parses supported `.csv`, `.tsv`, `.xlsx`, `.docx`, XML table, and simple HTML table rows into `parsed` fact records with raw-file and row provenance. Metadata discovery covers identifier-backed Europe PMC, PMC, and Figshare records and is separately bounded by `--max-supplement-discovery-records` so production runs do not make unbounded literature-wide lookups. It is not yet human-validated extraction.
+This lane emits supplement manifests plus deterministic candidate facts for vector competence, resistance, behavior, ecology, and public health. With opt-in supplement discovery and download, it also parses supported `.csv`, `.tsv`, `.xlsx`, `.docx`, XML table, and simple HTML table rows into `parsed` fact records with raw-file and row provenance. Metadata discovery covers identifier-backed Europe PMC, PMC, and Figshare records and is separately bounded by `--max-supplement-discovery-records` so production runs do not make unbounded literature-wide lookups. It now also emits one `supplement_audit` literature record per indexed Aedes paper, so supplement coverage can be counted by paper instead of by lucky manifest hits. It is not yet human-validated extraction.
+
+Supplement completeness should be checked at paper grain:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json,'$.fields.coverage_status') as status, count(*) as n from record_payloads where source='aedes_extracted_facts' and json_extract(payload_json,'$.fact_type')='supplement_audit' group by status order by n desc"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select count(distinct json_extract(payload_json,'$.source_record_id')) as papers_with_promoted_rows from record_payloads where source in ('aedes_vector_competence_assays','aedes_resistance_table_rows') and provenance_json like '%supplement#%'"
+```
+
+Do not report Aedes literature supplement coverage as complete unless the
+supplement audit count equals the source paper count and every non-promoted
+paper has a queryable audit status explaining why.
 
 Literature records use source id `aedes_literature_openalex`. OpenAlex is the canonical discovery source. The boundary is `Aedes aegypti` material in title, abstract, or accepted topic metadata from 2020-01-01 through the run date. PubMed is an identifier and metadata enrichment. Unpaywall is a legal open full-text resolver. Do not use Sci-Hub, private cookies, or institutional scraping.
 

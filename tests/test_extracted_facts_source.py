@@ -273,6 +273,51 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertEqual(supplements[0]["checksum"], "md5:abc123")
         self.assertEqual(supplements[1]["file_type"], "pdf")
 
+    def test_build_extracted_fact_records_emits_per_paper_supplement_audits(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WNO_SUPP",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti paper with no public supplement metadata",
+                        text="Aedes aegypti dengue paper with identifier metadata.",
+                        species="Aedes aegypti",
+                        url="https://example.org/no-supp",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WNO_SUPP",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1234/no.supp"}},
+                    )
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [],
+                fetch_supplement_file_fn=lambda url, max_bytes: b"",
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            audits = [record for record in result.records if record.payload["fact_type"] == "supplement_audit"]
+            self.assertEqual(result.supplement_audit_record_count, 2)
+            self.assertEqual({record.payload["source_record_id"] for record in audits}, {"openalex:WFACT1", "openalex:WNO_SUPP"})
+            by_source = {record.payload["source_record_id"]: record for record in audits}
+            self.assertEqual(by_source["openalex:WFACT1"].payload["fields"]["coverage_status"], "supplement_manifest_found_no_supported_table_rows_promoted")
+            self.assertEqual(by_source["openalex:WNO_SUPP"].payload["fields"]["coverage_status"], "no_supplement_metadata_found")
+            self.assertEqual(result.papers_with_supplement_manifest_count, 1)
+            self.assertEqual(result.papers_with_promoted_supplement_rows_count, 0)
+
     def test_build_extracted_fact_records_bounds_supplement_discovery_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -1350,7 +1395,8 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                 max_fulltext_units=6,
             )
 
-            self.assertFalse(any(record.payload.get("source_record_id") == "openalex:WHTML" for record in result.records))
+            html_records = [record for record in result.records if record.payload.get("source_record_id") == "openalex:WHTML"]
+            self.assertEqual([record.payload["fact_type"] for record in html_records], ["supplement_audit"])
 
     def test_build_extracted_fact_records_ignores_non_openalex_literature_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:

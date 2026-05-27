@@ -883,10 +883,10 @@ sources:
     provenance_required: true
     live_fetch: derived_from_indexed_literature
   - id: aedes_extracted_facts
-    name: Aedes aegypti extracted literature facts and supplement manifests
+    name: Aedes aegypti extracted literature facts, supplement manifests, and per-paper supplement audits
     source_type: derived_sqlite_source
-    boundary: Deterministic cross-lane candidate facts, supplement manifests, and supported parsed supplement table rows from indexed Aedes aegypti literature records, record payload supplement metadata, Europe PMC, PMC, or Figshare metadata, public supplement files, and legal literature_fulltext_units
-    query_plane: literature_records_payloads_fulltext_units_and_supported_supplement_tables_to_sqlite_fact_records
+    boundary: Deterministic cross-lane candidate facts, supplement manifests, per-paper supplement audit atoms, and supported parsed supplement table rows from indexed Aedes aegypti literature records, record payload supplement metadata, Europe PMC, PMC, or Figshare metadata, public supplement files, and legal literature_fulltext_units
+    query_plane: literature_records_payloads_fulltext_units_supported_supplement_tables_and_per_paper_supplement_audits_to_sqlite_fact_records
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_extracted_facts.py
     api_base:
@@ -915,6 +915,19 @@ sources:
     bounds:
       max_repository_supplement_discovery_records: configurable, default 100
       max_pdf_supplement_files: configurable, default 10
+    supplement_completion_contract:
+      required_grain: one_supplement_audit_atom_per_indexed_aedes_literature_paper
+      complete_only_if:
+        - supplement_audit_count_equals_source_paper_count
+        - every_public_supported_supplement_table_row_is_parsed
+        - every_schema_promotable_row_is_promoted_to_a_structured_lane
+        - every_non_promoted_case_has_queryable_reason_and_provenance
+      structured_lane_targets:
+        - vector_competence
+        - resistance
+        - behavior
+        - ecology
+        - public_health
     lanes:
       - literature
       - behavior
