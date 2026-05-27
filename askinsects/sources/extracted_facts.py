@@ -1435,6 +1435,16 @@ def _parse_delimited_rows(data: bytes, delimiter: str) -> list[dict[str, str]]:
     return rows
 
 
+def _sniff_csv_delimiter(data: bytes) -> str:
+    text = _decode_table_bytes(data)
+    sample = text[:4096]
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t")
+    except csv.Error:
+        return ","
+    return str(dialect.delimiter or ",")
+
+
 def _xml_text(element: ET.Element) -> str:
     return " ".join(part.strip() for part in element.itertext() if part and part.strip())
 
@@ -1599,7 +1609,7 @@ def _parse_docx_rows(data: bytes) -> list[dict[str, str]]:
 
 def _parse_supported_table_rows(data: bytes, extension: str) -> list[dict[str, str]]:
     if extension == ".csv":
-        return _parse_delimited_rows(data, ",")
+        return _parse_delimited_rows(data, _sniff_csv_delimiter(data))
     if extension == ".tsv":
         return _parse_delimited_rows(data, "\t")
     if extension == ".xlsx":

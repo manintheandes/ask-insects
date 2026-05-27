@@ -1257,6 +1257,43 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(vector.payload["fields"]["table_row"]["infection rate"], "83%")
             self.assertIn(".docx", vector.provenance.locator)
 
+    def test_build_extracted_fact_records_sniffs_semicolon_csv_supplement_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://example.org/aedes-facts/resistance-semicolon.csv"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:WSEMICOLON",
+                title=(
+                    "A genomic amplification affecting a carboxylesterase gene cluster "
+                    "confers organophosphate resistance in the mosquito Aedes aegypti"
+                ),
+                text="Aedes aegypti insecticide resistance mortality supplement.",
+                supplement_url=supplement_url,
+            )
+            payload = (
+                "lines;insecticide;repetition;nb_dead;nb_alive;total;mortality_rate\n"
+                "G5_Mala;deltamethrin;1;12;4;16;75\n"
+            ).encode("utf-8")
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(len(parsed), 1)
+            self.assertEqual(parsed[0].lane, "resistance")
+            table_row = parsed[0].payload["fields"]["table_row"]
+            self.assertEqual(table_row["lines"], "G5_Mala")
+            self.assertEqual(table_row["insecticide"], "deltamethrin")
+            self.assertEqual(table_row["mortality_rate"], "75")
+
     def test_build_extracted_fact_records_promotes_zikv_infected_sample_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
