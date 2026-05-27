@@ -483,6 +483,44 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertIn("https://repository.example/files/supplement-table.tsv", urls)
         self.assertTrue(all(item["source"] == "unpaywall_oa_location" for item in supplements))
 
+    def test_fetch_public_supplement_metadata_does_not_treat_article_ids_as_supplements(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            if "api.unpaywall.org" in url:
+                return {
+                    "best_oa_location": {
+                        "url_for_pdf": "https://www.nature.com/articles/s41598-024-63165-x.pdf",
+                        "url_for_landing_page": "https://www.nature.com/articles/s41598-024-63165-x",
+                    },
+                    "oa_locations": [
+                        {
+                            "url_for_pdf": "https://publisher.example/files/S1.pdf",
+                            "license": "cc-by",
+                        },
+                        {
+                            "url": "https://publisher.example/files/supplementary-table-s2.csv",
+                            "license": "cc-by",
+                        },
+                    ],
+                }
+            return {}
+
+        with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WUNPAYWALLARTICLE",
+                    "doi": "10.1000/aedes.unpaywall.article",
+                    "url": "https://doi.org/10.1000/aedes.unpaywall.article",
+                }
+            )
+
+        urls = {str(item["url"]) for item in supplements}
+        self.assertNotIn("https://www.nature.com/articles/s41598-024-63165-x.pdf", urls)
+        self.assertNotIn("https://www.nature.com/articles/s41598-024-63165-x", urls)
+        self.assertIn("https://publisher.example/files/S1.pdf", urls)
+        self.assertIn("https://publisher.example/files/supplementary-table-s2.csv", urls)
+
     def test_fetch_public_supplement_metadata_discovers_landing_page_links(self):
         html = b"""
         <html><body>

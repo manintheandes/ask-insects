@@ -576,7 +576,10 @@ def _supplement_reference_score(url: str, label: str | None = None) -> int:
     )
     if any(term in haystack for term in strong_terms):
         return 3
-    if re.search(r"\bsupp[-_ ]?\d*\b", haystack) or re.search(r"\bs\d+[-_ ]?(?:table|data|file)?\b", haystack):
+    if re.search(r"\bsupp[-_ ]?\d*\b", haystack) or re.search(
+        r"\bs\d{1,3}(?:[-_ ]?(?:table|data|file|fig|figure))?\b",
+        haystack,
+    ):
         return 2
     if "table" in haystack and _url_file_type(url):
         return 1
