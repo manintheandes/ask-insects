@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
 from askinsects.index import SourceIndex
 from askinsects.sources.extracted_facts import (
+    DEFAULT_MAX_SUPPLEMENT_BYTES,
     EXTRACTED_FACTS_SOURCE_ID,
     MAX_CANDIDATE_TEXT_CHARS,
     build_extracted_fact_records,
@@ -190,7 +191,7 @@ def ingest_extracted_facts(
     max_supplement_discovery_records: int | None = 500,
     max_repository_supplement_discovery_records: int | None = 100,
     max_supplement_files: int = 100,
-    max_supplement_bytes: int = 2_000_000,
+    max_supplement_bytes: int = DEFAULT_MAX_SUPPLEMENT_BYTES,
     max_pdf_supplement_files: int = 10,
     source_record_ids: list[str] | None = None,
     merge_existing: bool = False,
@@ -240,7 +241,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-supplement-discovery-records", type=int, default=500)
     parser.add_argument("--max-repository-supplement-discovery-records", type=int, default=100)
     parser.add_argument("--max-supplement-files", type=int, default=100)
-    parser.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
+    parser.add_argument("--max-supplement-bytes", type=int, default=DEFAULT_MAX_SUPPLEMENT_BYTES)
     parser.add_argument("--max-pdf-supplement-files", type=int, default=10)
     parser.add_argument("--source-record-id", action="append", default=[])
     parser.add_argument("--merge-existing", action="store_true")

@@ -32,6 +32,7 @@ MAX_CANDIDATE_TEXT_CHARS = 50_000
 EXTERNAL_METADATA_TIMEOUT_SECONDS = 8
 SUPPLEMENT_FILE_TIMEOUT_SECONDS = 30
 SUPPLEMENT_DISCOVERY_WORKERS = 8
+DEFAULT_MAX_SUPPLEMENT_BYTES = 10_000_000
 
 
 @dataclass(frozen=True)
@@ -109,8 +110,11 @@ FACT_FAMILIES: tuple[FactFamily, ...] = (
         context_terms=(
             "vector competence",
             "infection rate",
+            "infected",
             "dissemination rate",
             "transmission rate",
+            "zika virus",
+            "zikv",
             "blood meal",
             "saliva",
             "dpi",
@@ -176,12 +180,15 @@ FACT_FAMILIES: tuple[FactFamily, ...] = (
         lane="ecology",
         context_terms=(
             "ecology",
+            "ecological",
             "habitat",
             "breeding site",
             "larval",
             "season",
             "range",
             "climate",
+            "abundance",
+            "mosquito abundance",
         ),
         field_terms={
             "habitat": ("habitat", "urban", "peri-urban", "rural"),
@@ -189,6 +196,9 @@ FACT_FAMILIES: tuple[FactFamily, ...] = (
             "climate": ("temperature", "rainfall", "rainy season", "humidity"),
             "seasonality": ("season", "rainy season", "dry season"),
             "range": ("range", "distribution", "survey"),
+            "abundance": ("abundance", "total ae. aegypti caught", "mean per trap", "median per trap", "number of females"),
+            "sampling": ("trap", "traps", "capture station", "month of collection"),
+            "species": ("aedes aegypti", "ae. aegypti", "a. aegypti"),
             "location": ("brazil", "kenya", "india", "thailand", "mexico", "colombia", "peru", "usa"),
         },
     ),
@@ -284,6 +294,16 @@ RESISTANCE_TABLE_STRONG_FIELDS = {
     "lc_value",
     "mortality",
     "mutation",
+}
+VECTOR_COMPETENCE_TABLE_STRONG_FIELDS = {
+    "dissemination",
+    "dose",
+    "infection",
+    "strain",
+    "temperature",
+    "timepoint",
+    "tissue",
+    "transmission",
 }
 
 
@@ -1308,6 +1328,18 @@ def _is_supported_parsed_resistance_row(
     return any(field in fields for field in RESISTANCE_TABLE_STRONG_FIELDS)
 
 
+def _is_supported_parsed_vector_competence_row(
+    row: dict[str, str] | None,
+    fields: dict[str, list[str]],
+    declared_fact_type: str | None,
+) -> bool:
+    if not row:
+        return True
+    if declared_fact_type == "vector_competence":
+        return True
+    return any(field in fields for field in VECTOR_COMPETENCE_TABLE_STRONG_FIELDS)
+
+
 def _download_and_parse_supplement_rows(
     supplement_candidates: list[SupplementCandidate],
     *,
@@ -1673,7 +1705,7 @@ def build_extracted_fact_records(
     max_supplement_discovery_records: int | None = 500,
     max_repository_supplement_discovery_records: int | None = 100,
     max_supplement_files: int = 100,
-    max_supplement_bytes: int = 2_000_000,
+    max_supplement_bytes: int = DEFAULT_MAX_SUPPLEMENT_BYTES,
     max_pdf_supplement_files: int = 10,
     source_record_ids: list[str] | None = None,
 ) -> ExtractedFactsResult:
@@ -1817,6 +1849,12 @@ def build_extracted_fact_records(
             fields = _field_matches(combined_text, family)
             context_hits = _matched_terms(combined_text, family.context_terms)
             if not fields or not context_hits:
+                continue
+            if family.fact_type == "vector_competence" and not _is_supported_parsed_vector_competence_row(
+                candidate.table_row,
+                fields,
+                declared_fact_type,
+            ):
                 continue
             if family.fact_type == "resistance" and not _is_supported_parsed_resistance_row(
                 candidate.table_row,

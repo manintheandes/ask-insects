@@ -17,6 +17,7 @@ from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR, build_source_index
 from .index import SourceIndex
 from .sources.dryad_behavior_videos import DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, fetch_dryad_behavior_video_records
+from .sources.extracted_facts import DEFAULT_MAX_SUPPLEMENT_BYTES
 from .sources.aedes_deep_sources import fetch_aedes_deep_source_records
 from .sources.cdc_dengue_surveillance import (
     CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
@@ -2960,7 +2961,9 @@ def ingest_extracted_facts_staged(
     if max_supplement_files < 1:
         raise ValueError("max_supplement_files must be positive")
     max_supplement_bytes_value = payload.get("max_supplement_bytes")
-    max_supplement_bytes = 2_000_000 if max_supplement_bytes_value is None else int(max_supplement_bytes_value)
+    max_supplement_bytes = (
+        DEFAULT_MAX_SUPPLEMENT_BYTES if max_supplement_bytes_value is None else int(max_supplement_bytes_value)
+    )
     if max_supplement_bytes < 1:
         raise ValueError("max_supplement_bytes must be positive")
     max_pdf_supplement_files_value = payload.get("max_pdf_supplement_files")

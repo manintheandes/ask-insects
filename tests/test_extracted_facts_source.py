@@ -10,6 +10,7 @@ import zipfile
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.sources.extracted_facts import (
+    DEFAULT_MAX_SUPPLEMENT_BYTES,
     EXTRACTED_FACTS_SOURCE_ID,
     build_extracted_fact_records,
     fetch_public_supplement_metadata,
@@ -166,6 +167,51 @@ def write_extracted_facts_fixture(artifact_dir: Path) -> None:
         ),
     )
     index.upsert_records_and_fulltext_units([paper], [fulltext])
+
+
+def write_single_supplement_fixture(
+    artifact_dir: Path,
+    *,
+    record_id: str,
+    title: str,
+    text: str,
+    supplement_url: str,
+) -> None:
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    index.upsert_records(
+        [
+            EvidenceRecord(
+                record_id=record_id,
+                lane="literature",
+                source="aedes_literature_openalex",
+                title=title,
+                text=text,
+                species="Aedes aegypti",
+                url=f"https://example.org/{record_id.replace(':', '-')}",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator=f"raw/literature/page.json#{record_id}",
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    license="open metadata",
+                    source_url=f"https://openalex.org/{record_id.split(':')[-1]}",
+                ),
+                payload={
+                    "ids": {"doi": "10.1234/aedes.supplement"},
+                    "supplementary_materials": [
+                        {
+                            "title": "Additional file",
+                            "url": supplement_url,
+                            "file_type": "docx",
+                            "license": "CC-BY",
+                            "source": "publisher",
+                        }
+                    ],
+                },
+            )
+        ]
+    )
 
 
 class ExtractedFactsSourceTests(unittest.TestCase):
@@ -935,6 +981,192 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             vector = next(record for record in parsed if record.lane == "vector_competence")
             self.assertEqual(vector.payload["fields"]["table_row"]["infection rate"], "83%")
             self.assertIn(".docx", vector.provenance.locator)
+
+    def test_build_extracted_fact_records_promotes_zikv_infected_sample_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://example.org/aedes-facts/zikv-samples.docx"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:WZIKV",
+                title=(
+                    "Mosquito host background impacts microbiome-Zika virus interactions "
+                    "in field- and laboratory-reared Aedes aegypti"
+                ),
+                text="Aedes aegypti ZIKV infection sample metadata supplement.",
+                supplement_url=supplement_url,
+            )
+            payload = make_docx_bytes(
+                [
+                    ["Sample ID", "Reads", "Type", "ZIKV", "Location", "Sequencing Batch"],
+                    ["Austin1-4_S4", "R1.fastq.gz R2.fastq.gz", "Field", "Infected", "Austin", "Batch_1"],
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(len(parsed), 1)
+            self.assertEqual(parsed[0].lane, "vector_competence")
+            self.assertIn("zikv", parsed[0].payload["fields"]["pathogen"])
+            self.assertIn("infected", parsed[0].payload["fields"]["infection"])
+            self.assertEqual(parsed[0].payload["fields"]["table_row"]["ZIKV"], "Infected")
+
+    def test_build_extracted_fact_records_promotes_aedes_abundance_trap_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://example.org/aedes-facts/abundance.docx"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:WABUNDANCE",
+                title=(
+                    "Environmental correlates of Aedes aegypti abundance in San Bernardino County: "
+                    "an ecological modeling study"
+                ),
+                text="Aedes aegypti monthly abundance and trap summary supplement.",
+                supplement_url=supplement_url,
+            )
+            payload = make_docx_bytes(
+                [
+                    [
+                        "Month",
+                        "total Ae. aegypti caught",
+                        "mean per trap",
+                        "median per trap",
+                        "total number of traps",
+                        "proportion of traps with no mosquitoes",
+                    ],
+                    ["04", "61", "0.13", "0", "484", "0.93"],
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(len(parsed), 1)
+            self.assertEqual(parsed[0].lane, "ecology")
+            self.assertIn("total ae. aegypti caught", parsed[0].payload["fields"]["abundance"])
+            self.assertIn("trap", parsed[0].payload["fields"]["sampling"])
+            self.assertEqual(parsed[0].payload["fields"]["table_row"]["total Ae. aegypti caught"], "61")
+
+    def test_build_extracted_fact_records_default_bytes_allow_medium_docx_tables(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://example.org/aedes-facts/medium-abundance.docx"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:WMEDIUM",
+                title="Environmental correlates of Aedes aegypti abundance: an ecological modeling study",
+                text="Aedes aegypti monthly abundance and trap summary supplement.",
+                supplement_url=supplement_url,
+            )
+            payload = make_docx_bytes(
+                [
+                    ["Month", "total Ae. aegypti caught", "mean per trap", "total number of traps"],
+                    ["05", "283", "0.37", "755"],
+                ]
+            )
+
+            def fake_file_fetch(url: str, max_bytes: int) -> bytes:
+                self.assertEqual(url, supplement_url)
+                self.assertEqual(max_bytes, DEFAULT_MAX_SUPPLEMENT_BYTES)
+                self.assertGreaterEqual(max_bytes, 6_500_000)
+                return payload
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=fake_file_fetch,
+                max_supplement_files=10,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(len(parsed), 1)
+            self.assertEqual(parsed[0].lane, "ecology")
+
+    def test_build_extracted_fact_records_keeps_prisma_checklists_as_audit_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://example.org/aedes-facts/prisma.docx"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:WPRISMA",
+                title="Repellent effects of insecticides against Aedes aegypti: a systematic review",
+                text="Aedes aegypti repellent systematic review supplement.",
+                supplement_url=supplement_url,
+            )
+            payload = make_docx_bytes(
+                [
+                    ["Section / Topic", "Item Number", "Checklist Item", "Reported on Page/Section in Manuscript"],
+                    ["Title", "1", "Identify the report as a systematic review.", "The title states systematic review."],
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            audits = [record for record in result.records if record.payload["fact_type"] == "supplement_audit"]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(parsed, [])
+            self.assertEqual(audits[0].payload["fields"]["coverage_status"], "supplement_rows_parsed_no_structured_lane_match")
+
+    def test_build_extracted_fact_records_does_not_promote_pathogen_title_only_collection_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://example.org/aedes-facts/collections.docx"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:WCOLLECTIONS",
+                title=(
+                    "Control and mitigation of dengue and Zika virus transmission in a hospital in Recife, "
+                    "Brazil: an integrated control program against Aedes aegypti"
+                ),
+                text="Aedes aegypti collection summary supplement.",
+                supplement_url=supplement_url,
+            )
+            payload = make_docx_bytes(
+                [
+                    ["Month of Collection", "Sample Name", "Species", "Number of females", "Capture Station"],
+                    ["Aug/18", "Sample 1", "A. aegypti", "10", "General"],
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(parsed, [])
 
     def test_build_extracted_fact_records_extracts_text_supplement_candidates(self):
         with tempfile.TemporaryDirectory() as tmpdir:

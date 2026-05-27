@@ -9,6 +9,7 @@ from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
 from .hosted import CONFIG_PATH as HOSTED_CONFIG_PATH
 from .hosted import HostedConfig, hosted_request, load_config, save_config
+from .sources.extracted_facts import DEFAULT_MAX_SUPPLEMENT_BYTES
 from .sources.video_atoms import DISCOVERY_REPOSITORIES
 from .sources.zenodo_aedes_videos import DEFAULT_ZENODO_SIZE
 from .sources.figshare_aedes_videos import DEFAULT_FIGSHARE_PAGE_SIZE
@@ -315,7 +316,7 @@ def main(argv: list[str] | None = None) -> int:
     ingest_extracted_facts.add_argument("--max-supplement-discovery-records", type=int, default=500)
     ingest_extracted_facts.add_argument("--max-repository-supplement-discovery-records", type=int, default=100)
     ingest_extracted_facts.add_argument("--max-supplement-files", type=int, default=100)
-    ingest_extracted_facts.add_argument("--max-supplement-bytes", type=int, default=2_000_000)
+    ingest_extracted_facts.add_argument("--max-supplement-bytes", type=int, default=DEFAULT_MAX_SUPPLEMENT_BYTES)
     ingest_extracted_facts.add_argument("--max-pdf-supplement-files", type=int, default=10)
     ingest_extracted_facts.add_argument("--source-record-id", action="append", default=[])
     ingest_extracted_facts.add_argument("--merge-existing", action="store_true")
