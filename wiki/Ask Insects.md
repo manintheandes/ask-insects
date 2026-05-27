@@ -30,7 +30,7 @@ ask-insects ask "where has Aedes aegypti been spotted this year?"
 
 What's inside:
 
-- **1,463,970 hosted source records:** [[Source Map|Aedes aegypti source lanes]] across public biodiversity, genomics, behavior, neurobiology, literature, public health, surveillance, images, videos, repellents, and media evidence
+- **1,463,819 hosted source records:** [[Source Map|Aedes aegypti source lanes]] across public biodiversity, genomics, behavior, neurobiology, literature, public health, surveillance, images, videos, repellents, and media evidence
 - **100,736 observations / 26,208 media records:** [[Sources/Observations and Images|GBIF, iNaturalist, Mosquito Alert, licensed images, and media locators]]
 - **1,059,215 genomics records:** [[Sources/Genome and BioSample Evidence|genes, transcripts, proteins, genome features, BioSamples, DNA barcodes, expression metadata, traits, and assembly records]]
 - **100,018 neurobiology records:** [[Sources/Neurobiology and Connectome Evidence|brain atlas, cell atlas, CATMAID skeleton metadata, voxel access, SRA workflow records, and connectome gaps]]

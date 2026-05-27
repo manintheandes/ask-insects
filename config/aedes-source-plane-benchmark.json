@@ -28,7 +28,7 @@
   ],
   "ask_insects_current": {
     "hosted_health_checked_at": "2026-05-27",
-    "hosted_record_count": 1463970,
+    "hosted_record_count": 1463819,
     "hosted_trait_records": 4972,
     "hosted_image_atom_records": 19439,
     "hosted_verified_image_mirrors": 5828,
@@ -110,11 +110,11 @@
       "patents": 2,
       "proteins": 56960,
       "public_health": 59422,
-      "resistance": 28279,
+      "resistance": 28094,
       "taxonomy": 10,
       "traits": 4972,
       "transcripts": 102915,
-      "vector_competence": 11491
+      "vector_competence": 11525
     },
     "proof_commands": [
       "python3 -m askinsects health --hosted",
