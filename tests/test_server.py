@@ -62,6 +62,41 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.status, 401)
             self.assertFalse(response.payload["ok"])
 
+    def test_read_endpoints_reject_missing_source_index_without_creating_db(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            response = dispatch_request(
+                "POST",
+                "/sql",
+                {"sql": "select count(*) as n from records"},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 503)
+            self.assertFalse(response.payload["ok"])
+            self.assertEqual(response.payload["error"], "source_index_unavailable")
+            self.assertEqual(response.payload["reason"], "source_index_missing")
+            self.assertFalse((artifact_dir / "source_index.sqlite").exists())
+
+    def test_read_endpoints_reject_empty_source_index(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            (artifact_dir / "source_index.sqlite").write_bytes(b"")
+            response = dispatch_request(
+                "POST",
+                "/ask",
+                {"question": "What Aedes papers are indexed?"},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 503)
+            self.assertFalse(response.payload["ok"])
+            self.assertEqual(response.payload["reason"], "source_index_empty")
+
     def test_staging_copy_hardlinks_raw_files_but_copies_mutable_files(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

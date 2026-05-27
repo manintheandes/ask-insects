@@ -126,18 +126,56 @@ def read_sources(artifact_dir: Path) -> list[str]:
     return []
 
 
+def source_index_readiness(artifact_dir: Path) -> tuple[bool, str | None]:
+    db_path = artifact_dir / "source_index.sqlite"
+    if not db_path.exists():
+        return False, "source_index_missing"
+    if db_path.stat().st_size == 0:
+        return False, "source_index_empty"
+    try:
+        with sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True) as conn:
+            row = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='records'"
+            ).fetchone()
+    except sqlite3.Error as exc:
+        return False, f"source_index_unreadable:{exc}"
+    if row is None:
+        return False, "source_index_missing_records_table"
+    return True, None
+
+
+def source_index_unavailable_response(artifact_dir: Path, reason: str | None) -> Response:
+    db_path = artifact_dir / "source_index.sqlite"
+    return json_response(
+        503,
+        {
+            "ok": False,
+            "error": "source_index_unavailable",
+            "reason": reason or "unknown",
+            "artifact_dir": str(artifact_dir),
+            "db_path": str(db_path),
+            "db_exists": db_path.exists(),
+            "status_exists": (artifact_dir / "source_status.json").exists(),
+        },
+    )
+
+
 def health_payload(artifact_dir: Path) -> dict[str, object]:
     db_path = artifact_dir / "source_index.sqlite"
     status_path = artifact_dir / "source_status.json"
+    ready, reason = source_index_readiness(artifact_dir)
     payload: dict[str, object] = {
-        "ok": db_path.exists() and status_path.exists(),
+        "ok": ready and status_path.exists(),
         "db_exists": db_path.exists(),
         "status_exists": status_path.exists(),
         "db_path": str(db_path),
         "artifact_dir": str(artifact_dir),
         "sources": read_sources(artifact_dir),
     }
-    if db_path.exists():
+    if not ready:
+        payload["error"] = "source_index_unavailable"
+        payload["reason"] = reason
+    else:
         try:
             payload.update(SourceIndex(db_path).summary())
         except sqlite3.Error as exc:
@@ -3397,6 +3435,10 @@ def dispatch_request(
     try:
         if method == "GET" and path == "/health":
             return json_response(200, health_payload(artifact_dir))
+        if method in {"GET", "POST"} and path in {"/summary", "/ask", "/search", "/sql"}:
+            ready, reason = source_index_readiness(artifact_dir)
+            if not ready:
+                return source_index_unavailable_response(artifact_dir, reason)
         if method == "GET" and path == "/summary":
             return json_response(200, index.summary())
         if method == "GET" and path == "/sources":
