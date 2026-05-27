@@ -394,6 +394,126 @@ class IngestVideoAtomsTests(unittest.TestCase):
             self.assertEqual(receipts["mendeley"]["status"], "accepted_candidates")
             self.assertEqual(receipts["dryad"]["status"], "accepted_candidates")
 
+    def test_scoped_refresh_replaces_stale_repository_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            stale_dryad_asset = EvidenceRecord(
+                record_id="video_atom:asset:stale-dryad",
+                lane="media",
+                source="aedes_video_atoms",
+                title="Stale Dryad candidate",
+                text="Old Dryad Aedes aegypti candidate.",
+                species="Aedes aegypti",
+                url="https://example.org/dryad",
+                media_url="https://example.org/dryad.mp4",
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="records#stale-dryad",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={"atom_type": "video_asset", "repository": "dryad", "verification_status": "candidate"},
+            )
+            stale_dryad_artifact = EvidenceRecord(
+                record_id="video_atom:video_thumbnail:stale-dryad",
+                lane="media",
+                source="aedes_video_atoms",
+                title="Stale Dryad thumbnail",
+                text="Old Dryad thumbnail.",
+                species="Aedes aegypti",
+                url="https://example.org/dryad",
+                media_url="raw/video_atoms/artifacts/stale/thumbnail.jpg",
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="records#stale-dryad;raw/video_atoms/artifacts/stale/thumbnail.jpg",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={
+                    "atom_type": "video_thumbnail",
+                    "source_video_asset_id": stale_dryad_asset.record_id,
+                    "source_video_record_id": "dryad:video:stale",
+                    "artifact_path": "raw/video_atoms/artifacts/stale/thumbnail.jpg",
+                },
+            )
+            mendeley_asset = EvidenceRecord(
+                record_id="video_atom:asset:mendeley",
+                lane="media",
+                source="aedes_video_atoms",
+                title="Mendeley candidate",
+                text="Mendeley Aedes aegypti candidate.",
+                species="Aedes aegypti",
+                url="https://example.org/mendeley",
+                media_url="https://example.org/mendeley.mp4",
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="records#mendeley",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={"atom_type": "video_asset", "repository": "mendeley", "verification_status": "candidate"},
+            )
+            index.upsert_records([stale_dryad_asset, stale_dryad_artifact, mendeley_asset])
+
+            new_dryad_gap = EvidenceRecord(
+                record_id="video_atom:gap:dryad-download-failed",
+                lane="media",
+                source="aedes_video_atoms",
+                title="Dryad download gap",
+                text="Dryad video could not be downloaded.",
+                species="Aedes aegypti",
+                url="https://example.org/dryad",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="records#dryad-gap",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={"atom_type": "video_gap", "repository": "dryad", "reason": "video_download_failed"},
+            )
+            fake_result = AedesVideoAtomsResult(
+                source_id="aedes_video_atoms",
+                records=[new_dryad_gap],
+                gaps=[{"source": "aedes_video_atoms", "repository": "dryad", "reason": "video_download_failed"}],
+                video_asset_count=0,
+                mirrored_video_count=0,
+                verified_video_count=0,
+                artifact_count=0,
+                motion_row_count=0,
+                discovery_candidate_count=0,
+                discovery_sweep_receipts=[{"repository": "dryad", "status": "accepted_candidates"}],
+            )
+
+            with patch("scripts.ingest_video_atoms.build_video_atom_records", return_value=fake_result):
+                result = ingest_video_atoms(
+                    artifact_dir=artifact_dir,
+                    retrieved_at=RETRIEVED_AT,
+                    discover_sources=True,
+                    discovery_repositories=("dryad",),
+                    merge_existing=True,
+                    parse_motion_rows=False,
+                )
+
+            self.assertTrue(result["ok"])
+            rows = index.sql(
+                """
+                select record_id,
+                       json_extract(payload_json, '$.repository') as repository,
+                       json_extract(payload_json, '$.atom_type') as atom_type,
+                       json_extract(payload_json, '$.verification_status') as status,
+                       json_extract(payload_json, '$.reason') as reason
+                from record_payloads
+                where source='aedes_video_atoms'
+                order by record_id
+                """,
+                limit=10,
+            )
+            by_id = {row["record_id"]: row for row in rows}
+            self.assertNotIn("video_atom:asset:stale-dryad", by_id)
+            self.assertNotIn("video_atom:video_thumbnail:stale-dryad", by_id)
+            self.assertEqual(by_id["video_atom:asset:mendeley"]["repository"], "mendeley")
+            self.assertEqual(by_id["video_atom:gap:dryad-download-failed"]["repository"], "dryad")
+            self.assertEqual(by_id["video_atom:gap:dryad-download-failed"]["reason"], "video_download_failed")
+
     def test_repository_scoped_refresh_requires_merge_existing(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -44,6 +44,48 @@ def _dedupe_records(records):
     return list(deduped.values())
 
 
+def _chunks(values: list[str], size: int = 500):
+    for index in range(0, len(values), size):
+        yield values[index : index + size]
+
+
+def _payload_repository(payload: dict[str, object]) -> str | None:
+    repository = payload.get("repository") or payload.get("discovery_repository")
+    return str(repository) if repository else None
+
+
+def _delete_video_atom_repository_records(index: SourceIndex, repositories: Iterable[str]) -> int:
+    repository_scope = {str(repository) for repository in repositories}
+    if not repository_scope:
+        return 0
+    with index.connect() as conn:
+        rows = conn.execute(
+            "SELECT record_id, payload_json FROM record_payloads WHERE source=?",
+            (VIDEO_ATOMS_SOURCE_ID,),
+        ).fetchall()
+        record_payloads: dict[str, dict[str, object]] = {}
+        delete_ids: set[str] = set()
+        for row in rows:
+            payload = json.loads(row["payload_json"])
+            if not isinstance(payload, dict):
+                continue
+            record_id = str(row["record_id"])
+            record_payloads[record_id] = payload
+            if _payload_repository(payload) in repository_scope:
+                delete_ids.add(record_id)
+        if delete_ids:
+            for record_id, payload in record_payloads.items():
+                source_asset_id = payload.get("source_video_asset_id")
+                if isinstance(source_asset_id, str) and source_asset_id in delete_ids:
+                    delete_ids.add(record_id)
+        for chunk in _chunks(sorted(delete_ids)):
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+            conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
+            conn.execute(f"DELETE FROM records WHERE record_id IN ({placeholders})", chunk)
+    return len(delete_ids)
+
+
 def _existing_sweep_receipts(artifact_dir: Path) -> list[dict[str, object]]:
     payload = _read_json(artifact_dir / "source_status.json", {})
     if not isinstance(payload, dict):
@@ -276,6 +318,8 @@ def ingest_video_atoms(
     index.initialize()
     records = _dedupe_records(result.records)
     if merge_existing:
+        if discovery_repositories:
+            _delete_video_atom_repository_records(index, discovery_repositories)
         index.upsert_records(records)
     else:
         index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, records)

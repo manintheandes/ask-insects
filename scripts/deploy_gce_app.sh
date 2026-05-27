@@ -5,7 +5,9 @@ ZONE="${ASK_INSECTS_GCP_ZONE:-us-central1-a}"
 VM="${ASK_INSECTS_VM:-ask-insects}"
 REMOTE_DIR="${ASK_INSECTS_REMOTE_DIR:-/home/josh/ask-insects}"
 TOKEN="${ASK_INSECTS_TOKEN:?Set ASK_INSECTS_TOKEN before deploying}"
+ARCHIVE="/tmp/ask-insects-deploy.tgz"
 
+rm -f "$ARCHIVE"
 tar \
   --exclude='.git' \
   --exclude='.worktrees' \
@@ -16,8 +18,8 @@ tar \
   --exclude='._*' \
   --exclude='artifacts' \
   --exclude='demo-recordings' \
-  -czf /tmp/ask-insects-deploy.tgz .
-gcloud compute scp /tmp/ask-insects-deploy.tgz "$VM:/tmp/ask-insects-deploy.tgz" --zone "$ZONE"
+  -czf "$ARCHIVE" .
+gcloud compute scp "$ARCHIVE" "$VM:/tmp/ask-insects-deploy.tgz" --zone "$ZONE"
 
 gcloud compute ssh "$VM" --zone "$ZONE" --command "
   set -euo pipefail
