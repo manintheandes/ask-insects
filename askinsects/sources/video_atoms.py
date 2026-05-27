@@ -12,6 +12,7 @@ import shutil
 import subprocess
 import tarfile
 from typing import Callable, Iterable
+from urllib.error import HTTPError
 from urllib.parse import quote, unquote, urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 import zipfile
@@ -164,6 +165,14 @@ FIGSHARE_DISCOVERY_PAGE_SIZE = 100
 
 class VideoDownloadNotVideoError(ValueError):
     """Raised when a video URL returns HTML or another clearly non-video payload."""
+
+
+class VideoDownloadAccessRestrictedError(PermissionError):
+    """Raised when a video URL exists but denies unauthenticated download."""
+
+    def __init__(self, message: str, *, status_code: int | None = None):
+        super().__init__(message)
+        self.status_code = status_code
 
 
 @dataclass(frozen=True)
@@ -552,14 +561,19 @@ def _record_for_asset(
 
 def _default_fetch_video_bytes(url: str, max_bytes: int) -> bytes:
     request = Request(url, headers={"User-Agent": "AskInsects/0.1 video-atoms"})
-    with urlopen(request, timeout=120) as response:
-        content_type = str(response.headers.get("content-type") or "").lower()
-        if "text/html" in content_type or "application/xhtml" in content_type:
-            raise VideoDownloadNotVideoError(f"download content-type is not video: {content_type}")
-        content_length = response.headers.get("content-length")
-        if content_length and int(content_length) > max_bytes:
-            raise ValueError(f"video exceeds max bytes: {content_length} > {max_bytes}")
-        data = response.read(max_bytes + 1)
+    try:
+        with urlopen(request, timeout=120) as response:
+            content_type = str(response.headers.get("content-type") or "").lower()
+            if "text/html" in content_type or "application/xhtml" in content_type:
+                raise VideoDownloadNotVideoError(f"download content-type is not video: {content_type}")
+            content_length = response.headers.get("content-length")
+            if content_length and int(content_length) > max_bytes:
+                raise ValueError(f"video exceeds max bytes: {content_length} > {max_bytes}")
+            data = response.read(max_bytes + 1)
+    except HTTPError as exc:
+        if exc.code in {401, 403}:
+            raise VideoDownloadAccessRestrictedError(str(exc), status_code=exc.code) from exc
+        raise
     if len(data) > max_bytes:
         raise ValueError(f"video exceeds max bytes: {len(data)} > {max_bytes}")
     prefix = data[:512].lstrip().lower()
@@ -1528,6 +1542,9 @@ def _mirror_candidate(
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_too_large"), None
     try:
         data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
+    except VideoDownloadAccessRestrictedError as exc:
+        gaps.append(_gap_context(candidate, "video_download_access_restricted", error=str(exc), status_code=exc.status_code))
+        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_access_restricted"), None
     except VideoDownloadNotVideoError as exc:
         gaps.append(_gap_context(candidate, "video_download_not_video", error=str(exc)))
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None
@@ -1589,6 +1606,9 @@ def _mirror_archive_candidate(
         return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_unsupported_format"), None)]
     try:
         data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
+    except VideoDownloadAccessRestrictedError as exc:
+        gaps.append(_gap_context(candidate, "video_download_access_restricted", error=str(exc), status_code=exc.status_code))
+        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_access_restricted"), None)]
     except VideoDownloadNotVideoError as exc:
         gaps.append(_gap_context(candidate, "video_download_not_video", error=str(exc)))
         return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None)]

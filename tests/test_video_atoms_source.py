@@ -19,6 +19,7 @@ from askinsects.sources.video_atoms import (
     DISCOVERY_REPOSITORIES,
     DiscoverySweepResult,
     VIDEO_ATOMS_SOURCE_ID,
+    VideoDownloadAccessRestrictedError,
     VideoDownloadNotVideoError,
     build_video_atom_records,
     default_discovery_clients,
@@ -300,6 +301,29 @@ class VideoAtomsSourceTests(unittest.TestCase):
             self.assertNotIn("raw_asset_path", asset.payload)
             self.assertEqual(result.mirrored_video_count, 0)
             self.assertTrue(any(gap["reason"] == "video_download_not_video" for gap in result.gaps))
+
+    def test_access_restricted_download_becomes_specific_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+
+            def fake_fetch(url: str, max_bytes: int) -> bytes:
+                raise VideoDownloadAccessRestrictedError("HTTP Error 403: Forbidden", status_code=403)
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                max_video_bytes=10_000,
+                fetch_video_bytes_fn=fake_fetch,
+                allowed_licenses=("Creative Commons Attribution License",),
+            )
+
+            asset = next(record for record in result.records if record.payload["source_video_record_id"] == "pmc:video:PMC123:video1.mp4")
+            self.assertEqual(asset.payload["verification_status"], "gapped_download_access_restricted")
+            gap = next(gap for gap in result.gaps if gap["reason"] == "video_download_access_restricted")
+            self.assertEqual(gap["status_code"], 403)
+            self.assertEqual(result.mirrored_video_count, 0)
 
     def test_records_video_gaps_for_large_or_unclear_assets(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -746,6 +746,7 @@ sources:
     binary_policy: bounded_mirror_when_license_and_size_allow_else_structured_gap
     gap_reasons:
       - video_download_not_video
+      - video_download_access_restricted
       - video_download_failed
       - video_download_url_missing
       - video_license_unclear
@@ -787,6 +788,7 @@ sources:
         - video_license_unclear
         - video_too_large
         - video_download_url_missing
+        - video_download_access_restricted
         - video_probe_failed
         - video_artifact_generation_failed
         - video_discovery_not_aedes_scope
