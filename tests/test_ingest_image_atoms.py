@@ -50,6 +50,10 @@ class IngestImageAtomsTests(unittest.TestCase):
             self.assertEqual(receipt["aedes_image_atoms"]["record_count"], result["record_count"])
             gaps = json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))
             self.assertTrue(any(gap.get("source") == "aedes_image_atoms" for gap in gaps))
+            alive_rows = index.search("alive", lane="media", limit=5)
+            self.assertTrue(any(row.source == "aedes_image_atoms" for row in alive_rows))
+            organism_rows = index.search("organism", lane="media", limit=5)
+            self.assertTrue(any(row.source == "aedes_image_atoms" for row in organism_rows))
 
     def test_ingest_records_mirrored_image_counts(self):
         with tempfile.TemporaryDirectory() as tmpdir:

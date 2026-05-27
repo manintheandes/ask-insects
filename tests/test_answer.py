@@ -2165,6 +2165,28 @@ class AnswerTests(unittest.TestCase):
                             "source_record_id": "inat:media:99",
                         },
                     ),
+                    EvidenceRecord(
+                        record_id="image_atom:label:inat_media_99:alive",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image label alive_or_dead: alive",
+                        text="Aedes aegypti image label from source metadata: alive_or_dead = alive. Source image record: inat:media:99.",
+                        species="Aedes aegypti",
+                        url="https://www.inaturalist.org/observations/12345",
+                        media_url="https://static.inaturalist.org/photos/99/medium.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#inat:media:99;label/alive_or_dead",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                            license="cc-by",
+                        ),
+                        payload={
+                            "atom_type": "image_label",
+                            "label_type": "alive_or_dead",
+                            "label_value": "alive",
+                            "source_record_id": "inat:media:99",
+                        },
+                    ),
                 ]
             )
 
@@ -2174,6 +2196,12 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "evidence")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_image_atoms")
             self.assertIn("life_stage = adult", answer["evidence"][0]["text"])
+
+            alive_answer = answer_question("show Aedes aegypti alive image labels", artifact_dir=artifact_dir)
+
+            self.assertTrue(alive_answer["ok"])
+            self.assertEqual(alive_answer["evidence"][0]["source"], "aedes_image_atoms")
+            self.assertIn("alive_or_dead = alive", alive_answer["evidence"][0]["text"])
 
     def test_image_gap_questions_return_queryable_gap_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

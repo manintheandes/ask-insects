@@ -46,7 +46,12 @@ def write_image_fixture(artifact_dir: Path) -> None:
                         "place_guess": "Brazil",
                         "quality_grade": "research",
                         "geojson": {"type": "Point", "coordinates": [-43.2, -22.9]},
-                        "annotations": [{"controlled_attribute_id": 1, "controlled_value_id": 2, "concatenated_attr_val": "1|2"}],
+                        "annotations": [
+                            {"controlled_attribute_id": 1, "controlled_value_id": 2, "concatenated_attr_val": "1|2"},
+                            {"controlled_attribute_id": 17, "controlled_value_id": 18, "concatenated_attr_val": "17|18"},
+                            {"controlled_attribute_id": 22, "controlled_value_id": 24, "concatenated_attr_val": "22|24"},
+                            {"controlled_attribute_id": 9, "controlled_value_id": 20, "concatenated_attr_val": "9|20"},
+                        ],
                     },
                     "raw_photo": {
                         "id": 99,
@@ -112,6 +117,9 @@ class ImageAtomsSourceTests(unittest.TestCase):
             labels = [record for record in result.records if record.payload and record.payload.get("atom_type") == "image_label"]
             label_pairs = {(record.payload["label_type"], record.payload["label_value"]) for record in labels}
             self.assertIn(("life_stage", "adult"), label_pairs)
+            self.assertIn(("alive_or_dead", "alive"), label_pairs)
+            self.assertIn(("evidence_of_presence", "organism"), label_pairs)
+            self.assertIn(("sex", "cannot_be_determined"), label_pairs)
             self.assertIn(("life_stage", "Adult"), label_pairs)
             self.assertIn(("quality_grade", "research"), label_pairs)
             self.assertIn(("media_format", "image/jpeg"), label_pairs)
@@ -124,7 +132,8 @@ class ImageAtomsSourceTests(unittest.TestCase):
             inat_coverage = coverage["inaturalist_api"].payload
             self.assertEqual(inat_coverage["asset_count"], 1)
             self.assertEqual(inat_coverage["label_counts"]["life_stage"], 1)
-            self.assertEqual(inat_coverage["missing_counts"]["sex"], 1)
+            self.assertEqual(inat_coverage["label_counts"]["sex"], 1)
+            self.assertEqual(inat_coverage["missing_counts"]["sex"], 0)
             self.assertEqual(inat_coverage["missing_counts"]["anatomy"], 1)
             self.assertEqual(inat_coverage["missing_counts"]["body_part"], 1)
             mosquito_alert_coverage = coverage["mosquito_alert_gbif"].payload

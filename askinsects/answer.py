@@ -519,6 +519,13 @@ def _wants_image_labels(question: str) -> bool:
             "female",
             "male",
             "sex",
+            "alive",
+            "dead",
+            "organism",
+            "evidence of presence",
+            "presence",
+            "cannot be determined",
+            "cannot_be_determined",
             "anatomy",
             "body part",
             "quality",
@@ -3398,7 +3405,28 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     atom_placeholders = ",".join("?" for _ in atom_types)
     filters: list[str] = []
     params: list[object] = [*media_lanes, *atom_types]
-    for token in ("adult", "larva", "larval", "egg", "female", "male", "sex", "anatomy", "body part", "quality", "research", "needs_id", "format"):
+    for token in (
+        "adult",
+        "larva",
+        "larval",
+        "egg",
+        "female",
+        "male",
+        "sex",
+        "alive",
+        "dead",
+        "organism",
+        "evidence",
+        "presence",
+        "cannot",
+        "determined",
+        "anatomy",
+        "body part",
+        "quality",
+        "research",
+        "needs_id",
+        "format",
+    ):
         if token in q:
             filters.append("(lower(r.title) LIKE ? OR lower(r.text) LIKE ?)")
             like = f"%{token}%"

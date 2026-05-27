@@ -121,7 +121,7 @@ def ingest_image_atoms(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(IMAGE_ATOMS_SOURCE_ID, result.records, update_fts=False)
+    index.replace_source_records(IMAGE_ATOMS_SOURCE_ID, result.records)
     return _update_metadata(artifact_dir, result)
 
 
