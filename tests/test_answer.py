@@ -1966,6 +1966,64 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_image_atoms")
             self.assertIn("without source-provided sex", answer["evidence"][0]["text"])
 
+    def test_image_coverage_questions_return_summary_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="image_atom:gap:inaturalist_api:sex",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image gap missing sex",
+                        text="Aedes aegypti image label gap: inaturalist_api has 4 image asset(s) without source-provided sex metadata.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="gaps.json#aedes_image_atoms/1",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                        payload={"atom_type": "image_gap", "reason": "image_label_missing", "label_type": "sex"},
+                    ),
+                    EvidenceRecord(
+                        record_id="image_atom:coverage:inaturalist_api",
+                        lane="media",
+                        source="aedes_image_atoms",
+                        title="Aedes aegypti image label coverage: inaturalist_api",
+                        text=(
+                            "Aedes aegypti image-label coverage summary for inaturalist_api: 10 image asset(s). "
+                            "life_stage: 6 present, 4 missing; sex: 2 present, 8 missing."
+                        ),
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_image_atoms",
+                            locator="records#aedes_image_atoms/image_label_coverage/inaturalist_api",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "image_coverage",
+                            "input_source": "inaturalist_api",
+                            "asset_count": 10,
+                            "label_counts": {"life_stage": 6, "sex": 2},
+                            "missing_counts": {"life_stage": 4, "sex": 8},
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Aedes image label coverage summary", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertEqual(answer["evidence"][0]["record_id"], "image_atom:coverage:inaturalist_api")
+            self.assertIn("10 image asset", answer["evidence"][0]["text"])
+
     def test_image_checksum_questions_prefer_verified_image_assets(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

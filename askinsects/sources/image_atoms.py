@@ -529,6 +529,83 @@ def _label_types(records: list[EvidenceRecord]) -> set[str]:
     return types
 
 
+def _label_coverage_by_source(
+    candidates: list[ImageCandidate],
+    label_records_by_id: dict[str, list[EvidenceRecord]],
+) -> dict[str, dict[str, object]]:
+    coverage: dict[str, dict[str, object]] = {}
+    for candidate in candidates:
+        source_coverage = coverage.setdefault(
+            candidate.source,
+            {
+                "source": candidate.source,
+                "asset_count": 0,
+                "label_counts": {label_type: 0 for label_type in IMAGE_LABEL_GAP_TYPES},
+                "missing_counts": {label_type: 0 for label_type in IMAGE_LABEL_GAP_TYPES},
+            },
+        )
+        source_coverage["asset_count"] = int(source_coverage["asset_count"]) + 1
+        label_counts = source_coverage["label_counts"]
+        missing_counts = source_coverage["missing_counts"]
+        assert isinstance(label_counts, dict)
+        assert isinstance(missing_counts, dict)
+        present = _label_types(label_records_by_id.get(candidate.source_record_id, []))
+        for label_type in IMAGE_LABEL_GAP_TYPES:
+            if label_type in present:
+                label_counts[label_type] = int(label_counts[label_type]) + 1
+            else:
+                missing_counts[label_type] = int(missing_counts[label_type]) + 1
+    return coverage
+
+
+def _coverage_records(
+    coverage_by_source: dict[str, dict[str, object]],
+    *,
+    retrieved_at: str,
+) -> list[EvidenceRecord]:
+    records: list[EvidenceRecord] = []
+    for source, coverage in sorted(coverage_by_source.items()):
+        asset_count = int(coverage.get("asset_count") or 0)
+        label_counts = coverage.get("label_counts") if isinstance(coverage.get("label_counts"), dict) else {}
+        missing_counts = coverage.get("missing_counts") if isinstance(coverage.get("missing_counts"), dict) else {}
+        coverage_parts = [
+            f"{label_type}: {int(label_counts.get(label_type, 0))} present, {int(missing_counts.get(label_type, 0))} missing"
+            for label_type in IMAGE_LABEL_GAP_TYPES
+        ]
+        text = (
+            f"Aedes aegypti image-label coverage summary for {source}: {asset_count} image asset(s). "
+            + "; ".join(coverage_parts)
+            + "."
+        )
+        records.append(
+            EvidenceRecord(
+                record_id=f"image_atom:coverage:{_safe_id(source)}",
+                lane="media",
+                source=IMAGE_ATOMS_SOURCE_ID,
+                title=f"Aedes aegypti image label coverage: {source}",
+                text=text,
+                species="Aedes aegypti",
+                url=None,
+                media_url=None,
+                provenance=Provenance(
+                    source_id=IMAGE_ATOMS_SOURCE_ID,
+                    locator=f"records#aedes_image_atoms/image_label_coverage/{source}",
+                    retrieved_at=retrieved_at,
+                ),
+                payload={
+                    "atom_type": "image_coverage",
+                    "input_source": source,
+                    "source": source,
+                    "asset_count": asset_count,
+                    "label_counts": label_counts,
+                    "missing_counts": missing_counts,
+                    "label_types": list(IMAGE_LABEL_GAP_TYPES),
+                },
+            )
+        )
+    return records
+
+
 def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> EvidenceRecord:
     reason = str(gap.get("reason") or "image_gap")
     upstream_source = str(gap.get("upstream_source") or gap.get("source") or "unknown")
@@ -584,6 +661,7 @@ def _gap_records_and_payloads(candidates: list[ImageCandidate], label_records_by
             "source": IMAGE_ATOMS_SOURCE_ID,
             "lane": "media",
             "reason": "image_label_missing",
+            "gap_type": "image_label_missing",
             "upstream_source": source,
             "label_type": label_type,
             "missing_count": len(record_ids),
@@ -646,6 +724,7 @@ def build_image_atom_records(
         labels = _label_records(candidate, asset_payload, retrieved_at=retrieved)
         label_records_by_id[candidate.source_record_id] = labels
         records.extend(labels)
+    records.extend(_coverage_records(_label_coverage_by_source(candidates, label_records_by_id), retrieved_at=retrieved))
     if mirror_images and mirrored_image_count >= max_image_mirrors:
         omitted = max(len(candidates) - mirrored_image_count, 0)
         if omitted:

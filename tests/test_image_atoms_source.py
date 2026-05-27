@@ -108,12 +108,29 @@ class ImageAtomsSourceTests(unittest.TestCase):
             self.assertEqual(result.image_asset_count, 2)
             self.assertGreaterEqual(result.image_label_count, 6)
             self.assertTrue(any(gap["reason"] == "image_label_missing" for gap in result.gaps))
+            self.assertTrue(all(gap["gap_type"] == "image_label_missing" for gap in result.gaps if gap["reason"] == "image_label_missing"))
             labels = [record for record in result.records if record.payload and record.payload.get("atom_type") == "image_label"]
             label_pairs = {(record.payload["label_type"], record.payload["label_value"]) for record in labels}
             self.assertIn(("life_stage", "adult"), label_pairs)
             self.assertIn(("life_stage", "Adult"), label_pairs)
             self.assertIn(("quality_grade", "research"), label_pairs)
             self.assertIn(("media_format", "image/jpeg"), label_pairs)
+            coverage = {
+                record.payload["input_source"]: record
+                for record in result.records
+                if record.payload and record.payload.get("atom_type") == "image_coverage"
+            }
+            self.assertEqual(set(coverage), {"inaturalist_api", "mosquito_alert_gbif"})
+            inat_coverage = coverage["inaturalist_api"].payload
+            self.assertEqual(inat_coverage["asset_count"], 1)
+            self.assertEqual(inat_coverage["label_counts"]["life_stage"], 1)
+            self.assertEqual(inat_coverage["missing_counts"]["sex"], 1)
+            self.assertEqual(inat_coverage["missing_counts"]["anatomy"], 1)
+            self.assertEqual(inat_coverage["missing_counts"]["body_part"], 1)
+            mosquito_alert_coverage = coverage["mosquito_alert_gbif"].payload
+            self.assertEqual(mosquito_alert_coverage["asset_count"], 1)
+            self.assertEqual(mosquito_alert_coverage["label_counts"]["life_stage"], 1)
+            self.assertEqual(mosquito_alert_coverage["missing_counts"]["sex"], 1)
             asset = next(record for record in result.records if record.payload and record.payload.get("atom_type") == "image_asset")
             self.assertEqual(asset.source, IMAGE_ATOMS_SOURCE_ID)
             self.assertIn("records#inat:media:99", asset.provenance.locator)

@@ -264,6 +264,11 @@ def _wants_image_gaps(question: str) -> bool:
     return _wants_image_atoms(question) and any(term in q for term in ("gap", "gaps", "missing", "unlabeled", "label missing"))
 
 
+def _wants_image_coverage(question: str) -> bool:
+    q = question.lower()
+    return _wants_image_atoms(question) and any(term in q for term in ("coverage", "summary", "how many", "counts", "label coverage"))
+
+
 def _wants_olfaction_literature(question: str) -> bool:
     q = question.lower()
     return any(
@@ -3309,6 +3314,8 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     q = question.lower()
     if _wants_image_gaps(question):
         atom_types = ["image_gap"]
+    elif _wants_image_coverage(question):
+        atom_types = ["image_coverage", "image_gap"]
     elif _wants_image_asset_metadata(question):
         atom_types = ["image_asset"]
     elif _wants_image_labels(question):
@@ -3362,10 +3369,11 @@ def _image_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
                 ELSE 1
               END,
               CASE json_extract(p.payload_json, '$.atom_type')
-                WHEN 'image_asset' THEN 0
-                WHEN 'image_label' THEN 1
-                WHEN 'image_gap' THEN 2
-                ELSE 3
+                WHEN 'image_coverage' THEN 0
+                WHEN 'image_asset' THEN 1
+                WHEN 'image_label' THEN 2
+                WHEN 'image_gap' THEN 3
+                ELSE 4
               END,
               r.record_id
             LIMIT ?
