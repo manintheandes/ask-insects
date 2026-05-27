@@ -1064,6 +1064,35 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(gap_records[0].payload["source_video_record_id"], "unknown-video.mp4")
         self.assertIn("raw/mendeley_behavior_media/unknown-motion.csv#row/1", gap_records[0].provenance.locator)
 
+    def test_motion_rows_without_explicit_video_id_do_not_emit_unmatched_video_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_path = artifact_dir / "raw" / "mendeley_behavior_media" / "table-motion.csv"
+            table_path.parent.mkdir(parents=True)
+            table_path.write_text(
+                "track_id,frame,time_seconds,x,y,behavior\n"
+                "track-1,1,0.1,2,3,flight\n",
+                encoding="utf-8",
+            )
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                motion_table_paths=[table_path],
+            )
+
+        rows = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].payload["source_video_record_id"], "table-motion")
+        gap_records = [
+            record
+            for record in result.records
+            if record.payload.get("atom_type") == "video_gap"
+            and record.payload.get("reason") == "video_motion_unmatched_source_video"
+        ]
+        self.assertEqual(gap_records, [])
+
     def test_motion_rows_inherit_dataset_behavior_labels_without_exact_video_match(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
