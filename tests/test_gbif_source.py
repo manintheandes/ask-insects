@@ -1,9 +1,13 @@
+import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.error import HTTPError
+from unittest import mock
 
-from askinsects.sources.gbif import GBIF_SOURCE_ID, fetch_gbif_records
+from askinsects.sources import gbif as gbif_module
+from askinsects.sources.gbif import GBIFClient, GBIF_SOURCE_ID, fetch_gbif_records
 
 
 class FakeGBIFFetcher:
@@ -49,6 +53,33 @@ class FakeGBIFFetcher:
 
 
 class GBIFSourceTests(unittest.TestCase):
+    def test_default_fetcher_retries_temporary_gbif_503(self):
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return b'{"ok": true}'
+
+        calls = {"n": 0}
+
+        def flaky_urlopen(_request, timeout):
+            self.assertEqual(timeout, 30)
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise HTTPError("https://api.gbif.org/example", 503, "Backend fetch failed", hdrs=None, fp=io.BytesIO())
+            return Response()
+
+        with mock.patch.object(gbif_module, "urlopen", side_effect=flaky_urlopen), mock.patch.object(gbif_module.time, "sleep") as sleep:
+            payload = GBIFClient._fetch_json("https://api.gbif.org/example")
+
+        self.assertEqual(payload, {"ok": True})
+        self.assertEqual(calls["n"], 2)
+        sleep.assert_called_once_with(1)
+
     def test_fetch_gbif_records_normalizes_taxonomy_and_occurrences(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             fetcher = FakeGBIFFetcher()

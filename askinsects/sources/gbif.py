@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import time
 from typing import Callable
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -50,9 +51,21 @@ class GBIFClient:
 
     @staticmethod
     def _fetch_json(url: str) -> dict[str, object]:
+        payload: object | None = None
         request = Request(url, headers={"User-Agent": "ask-insects/0.1"})
-        with urlopen(request, timeout=30) as response:
-            payload = json.loads(response.read().decode("utf-8"))
+        retryable_statuses = {429, 500, 502, 503, 504}
+        for attempt in range(5):
+            try:
+                with urlopen(request, timeout=30) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+                break
+            except HTTPError as exc:
+                if exc.code not in retryable_statuses or attempt == 4:
+                    raise
+            except (TimeoutError, URLError):
+                if attempt == 4:
+                    raise
+            time.sleep(2**attempt)
         if not isinstance(payload, dict):
             raise ValueError(f"GBIF returned non-object JSON for {url}")
         return payload
