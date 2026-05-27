@@ -1771,7 +1771,18 @@ def check_literature_artifact() -> None:
     if not search.get("rows"):
         raise RuntimeError("Aedes artifact literature search returned no rows for Wolbachia")
     answer = run_json(
-        [sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "ask", "Aedes aegypti research", "--json"]
+        [
+            sys.executable,
+            "-m",
+            "askinsects",
+            "--artifact-dir",
+            artifact_dir.as_posix(),
+            "ask",
+            "what papers since 2020 discuss Wolbachia and Aedes aegypti?",
+            "--limit",
+            "3",
+            "--json",
+        ]
     )
     if answer.get("ok") is not True or not answer.get("evidence"):
         raise RuntimeError("Aedes artifact ask query did not return provenance-bearing evidence")
