@@ -71,6 +71,65 @@ class RefreshArtifactReceiptsTests(unittest.TestCase):
                 self.assertEqual(refresh["cds_live_count"], 1)
                 self.assertEqual(refresh["transcript_sequence_live_count"], 1)
 
+    def test_backfills_missing_literature_fulltext_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            artifact_dir.mkdir()
+            payload = {
+                "unpaywall": {
+                    "is_oa": True,
+                    "best_oa_location": {"url_for_pdf": "https://example.org/paper.pdf"},
+                }
+            }
+            with sqlite3.connect(artifact_dir / "source_index.sqlite") as conn:
+                conn.executescript(
+                    """
+                    create table records (
+                      record_id text primary key,
+                      lane text not null,
+                      source text not null,
+                      title text not null,
+                      text text not null,
+                      species text,
+                      url text,
+                      media_url text,
+                      provenance_json text not null
+                    );
+                    create table record_payloads (
+                      record_id text primary key,
+                      source text not null,
+                      lane text not null,
+                      payload_json text not null,
+                      provenance_json text not null
+                    );
+                    create table literature_fulltext_units (
+                      record_id text not null,
+                      unit_index integer not null,
+                      text text not null,
+                      source_url text,
+                      license text,
+                      retrieved_at text,
+                      primary key (record_id, unit_index)
+                    );
+                    insert into records values ('openalex:W1', 'literature', 'aedes_literature_openalex', 'paper', 'paper', 'Aedes aegypti', null, null, '{}');
+                    """
+                )
+                conn.execute(
+                    "insert into record_payloads values ('openalex:W1', 'aedes_literature_openalex', 'literature', ?, '{}')",
+                    (json.dumps(payload),),
+                )
+            (artifact_dir / "source_status.json").write_text(json.dumps({}), encoding="utf-8")
+            (artifact_dir / "source_receipt.json").write_text(json.dumps({}), encoding="utf-8")
+            (artifact_dir / "gaps.json").write_text("[]", encoding="utf-8")
+
+            result = refresh_receipts(artifact_dir)
+
+            self.assertEqual(result["literature_fulltext_gap_backfill_count"], 1)
+            gaps = json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))
+            self.assertEqual(len(gaps), 1)
+            self.assertEqual(gaps[0]["reason"], "fulltext_fetch_failed")
+            self.assertEqual(gaps[0]["record_id"], "openalex:W1")
+
 
 if __name__ == "__main__":
     unittest.main()

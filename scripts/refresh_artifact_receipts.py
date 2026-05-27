@@ -9,6 +9,7 @@ from pathlib import Path
 
 
 VECTORBASE_SOURCE_ID = "vectorbase_aedes_genomics"
+LITERATURE_SOURCE_ID = "aedes_literature_openalex"
 
 
 def utc_now() -> str:
@@ -60,6 +61,91 @@ def dedupe_gaps(artifact_dir: Path) -> dict[str, int]:
     if deduped != gaps:
         gaps_path.write_text(json.dumps(deduped, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return {"gap_count_before": len(gaps), "gap_count_after": len(deduped), "deduped_gap_count": len(gaps) - len(deduped)}
+
+
+def sqlite_tables(conn: sqlite3.Connection) -> set[str]:
+    return {str(row[0]) for row in conn.execute("select name from sqlite_master where type='table'")}
+
+
+def direct_fulltext_target(payload: dict[str, object]) -> str | None:
+    unpaywall = payload.get("unpaywall")
+    if isinstance(unpaywall, dict) and unpaywall.get("is_oa"):
+        location = unpaywall.get("best_oa_location")
+        if isinstance(location, dict):
+            url = location.get("url_for_pdf") or location.get("url_for_xml")
+            if isinstance(url, str) and url.startswith(("http://", "https://")):
+                return url
+    work = payload.get("raw_openalex_work")
+    if isinstance(work, dict):
+        location = work.get("best_oa_location")
+        if isinstance(location, dict):
+            url = location.get("pdf_url")
+            if isinstance(url, str) and url.startswith(("http://", "https://")):
+                return url
+    return None
+
+
+def backfill_literature_fulltext_gaps(artifact_dir: Path, retrieved_at: str) -> dict[str, int]:
+    db_path = artifact_dir / "source_index.sqlite"
+    gaps_path = artifact_dir / "gaps.json"
+    gaps = read_json_list(gaps_path)
+    existing_gap_ids = {
+        str(gap.get("record_id"))
+        for gap in gaps
+        if isinstance(gap, dict)
+        and gap.get("source") == LITERATURE_SOURCE_ID
+        and gap.get("reason") in {"fulltext_fetch_failed", "fulltext_parse_failed"}
+    }
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        tables = sqlite_tables(conn)
+        if "record_payloads" not in tables or "literature_fulltext_units" not in tables:
+            return {"literature_fulltext_gap_backfill_count": 0}
+        fulltext_ids = {
+            str(row["record_id"])
+            for row in conn.execute("select distinct record_id from literature_fulltext_units")
+        }
+        rows = conn.execute(
+            """
+            select p.record_id, p.payload_json, r.species
+            from record_payloads p
+            left join records r on r.record_id = p.record_id
+            where p.source = ?
+            """,
+            (LITERATURE_SOURCE_ID,),
+        ).fetchall()
+    backfilled = 0
+    for row in rows:
+        record_id = str(row["record_id"])
+        if record_id in fulltext_ids or record_id in existing_gap_ids:
+            continue
+        try:
+            payload = json.loads(str(row["payload_json"]))
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(payload, dict):
+            continue
+        target = direct_fulltext_target(payload)
+        if not target:
+            continue
+        gaps.append(
+            {
+                "source": LITERATURE_SOURCE_ID,
+                "lane": "literature",
+                "species": str(row["species"] or "Aedes aegypti"),
+                "reason": "fulltext_fetch_failed",
+                "record_id": record_id,
+                "locator": target,
+                "external_id": target,
+                "detail": "Direct full-text candidate is not extracted in this merged artifact, so it is preserved as an explicit source gap.",
+                "retrieved_at": retrieved_at,
+            }
+        )
+        existing_gap_ids.add(record_id)
+        backfilled += 1
+    if backfilled:
+        gaps_path.write_text(json.dumps(gaps, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return {"literature_fulltext_gap_backfill_count": backfilled}
 
 
 def sqlite_summary(artifact_dir: Path) -> dict[str, object]:
@@ -165,9 +251,10 @@ def update_receipt_payload(
 
 
 def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh: bool = False) -> dict[str, object]:
+    retrieved_at = utc_now()
+    fulltext_gap_summary = backfill_literature_fulltext_gaps(artifact_dir, retrieved_at)
     gap_summary = dedupe_gaps(artifact_dir)
     summary = sqlite_summary(artifact_dir)
-    retrieved_at = utc_now()
     vectorbase_refresh = (
         vectorbase_sequence_refresh(artifact_dir, retrieved_at) if include_vectorbase_sequence_refresh else None
     )
@@ -185,6 +272,7 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
         "artifact_dir": artifact_dir.as_posix(),
         **summary,
         **gap_summary,
+        **fulltext_gap_summary,
         "vectorbase_sequence_atom_refresh": vectorbase_refresh,
     }
 
