@@ -10,6 +10,7 @@ from pathlib import Path
 
 VECTORBASE_SOURCE_ID = "vectorbase_aedes_genomics"
 LITERATURE_SOURCE_ID = "aedes_literature_openalex"
+VIDEO_ATOMS_SOURCE_ID = "aedes_video_atoms"
 
 
 def utc_now() -> str:
@@ -148,6 +149,52 @@ def backfill_literature_fulltext_gaps(artifact_dir: Path, retrieved_at: str) -> 
     return {"literature_fulltext_gap_backfill_count": backfilled}
 
 
+def _chunks(values: list[str], size: int = 500) -> list[list[str]]:
+    return [values[index : index + size] for index in range(0, len(values), size)]
+
+
+def dedupe_video_gap_records(artifact_dir: Path) -> dict[str, int]:
+    db_path = artifact_dir / "source_index.sqlite"
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        tables = sqlite_tables(conn)
+        if "records" not in tables or "record_payloads" not in tables:
+            return {"video_gap_record_dedupe_count": 0}
+        rows = conn.execute(
+            """
+            select record_id, payload_json
+            from record_payloads
+            where source = ?
+              and json_extract(payload_json, '$.atom_type') = 'video_gap'
+            order by record_id
+            """,
+            (VIDEO_ATOMS_SOURCE_ID,),
+        ).fetchall()
+        seen: set[tuple[str, str, str, str, str]] = set()
+        duplicate_ids: list[str] = []
+        for row in rows:
+            try:
+                payload = json.loads(str(row["payload_json"]))
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(payload, dict):
+                continue
+            key = gap_key(payload)
+            if key in seen:
+                duplicate_ids.append(str(row["record_id"]))
+                continue
+            seen.add(key)
+        if duplicate_ids:
+            for chunk in _chunks(duplicate_ids):
+                placeholders = ",".join("?" for _ in chunk)
+                if "records_fts" in tables:
+                    conn.execute(f"delete from records_fts where record_id in ({placeholders})", chunk)
+                conn.execute(f"delete from record_payloads where record_id in ({placeholders})", chunk)
+                conn.execute(f"delete from records where record_id in ({placeholders})", chunk)
+            conn.commit()
+    return {"video_gap_record_dedupe_count": len(duplicate_ids)}
+
+
 def sqlite_summary(artifact_dir: Path) -> dict[str, object]:
     db_path = artifact_dir / "source_index.sqlite"
     with sqlite3.connect(db_path) as conn:
@@ -254,6 +301,7 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
     retrieved_at = utc_now()
     fulltext_gap_summary = backfill_literature_fulltext_gaps(artifact_dir, retrieved_at)
     gap_summary = dedupe_gaps(artifact_dir)
+    video_gap_record_summary = dedupe_video_gap_records(artifact_dir)
     summary = sqlite_summary(artifact_dir)
     vectorbase_refresh = (
         vectorbase_sequence_refresh(artifact_dir, retrieved_at) if include_vectorbase_sequence_refresh else None
@@ -273,6 +321,7 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
         **summary,
         **gap_summary,
         **fulltext_gap_summary,
+        **video_gap_record_summary,
         "vectorbase_sequence_atom_refresh": vectorbase_refresh,
     }
 

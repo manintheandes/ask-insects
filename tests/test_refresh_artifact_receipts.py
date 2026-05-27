@@ -130,6 +130,67 @@ class RefreshArtifactReceiptsTests(unittest.TestCase):
             self.assertEqual(gaps[0]["reason"], "fulltext_fetch_failed")
             self.assertEqual(gaps[0]["record_id"], "openalex:W1")
 
+    def test_deduplicates_video_gap_records_from_sqlite(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            artifact_dir.mkdir()
+            gap_payload = {
+                "atom_type": "video_gap",
+                "source": "aedes_video_atoms",
+                "lane": "media",
+                "reason": "video_manifest_gap",
+                "record_id": "source:1",
+                "locator": "gaps.json#1",
+            }
+            with sqlite3.connect(artifact_dir / "source_index.sqlite") as conn:
+                conn.executescript(
+                    """
+                    create table records (
+                      record_id text primary key,
+                      lane text not null,
+                      source text not null,
+                      title text not null,
+                      text text not null,
+                      species text,
+                      url text,
+                      media_url text,
+                      provenance_json text not null
+                    );
+                    create virtual table records_fts using fts5(record_id unindexed, lane unindexed, species unindexed, title, text);
+                    create table record_payloads (
+                      record_id text primary key,
+                      source text not null,
+                      lane text not null,
+                      payload_json text not null,
+                      provenance_json text not null
+                    );
+                    """
+                )
+                for record_id in ("video_atom:gap:1", "video_atom:gap:2"):
+                    conn.execute(
+                        "insert into records values (?, 'media', 'aedes_video_atoms', 'gap', 'gap', 'Aedes aegypti', null, null, '{}')",
+                        (record_id,),
+                    )
+                    conn.execute(
+                        "insert into records_fts(record_id, lane, species, title, text) values (?, 'media', 'Aedes aegypti', 'gap', 'gap')",
+                        (record_id,),
+                    )
+                    conn.execute(
+                        "insert into record_payloads values (?, 'aedes_video_atoms', 'media', ?, '{}')",
+                        (record_id, json.dumps(gap_payload)),
+                    )
+            (artifact_dir / "source_status.json").write_text(json.dumps({}), encoding="utf-8")
+            (artifact_dir / "source_receipt.json").write_text(json.dumps({}), encoding="utf-8")
+            (artifact_dir / "gaps.json").write_text(json.dumps([gap_payload]), encoding="utf-8")
+
+            result = refresh_receipts(artifact_dir)
+
+            self.assertEqual(result["video_gap_record_dedupe_count"], 1)
+            with sqlite3.connect(artifact_dir / "source_index.sqlite") as conn:
+                self.assertEqual(conn.execute("select count(*) from records").fetchone()[0], 1)
+                self.assertEqual(conn.execute("select count(*) from record_payloads").fetchone()[0], 1)
+                self.assertEqual(conn.execute("select count(*) from records_fts").fetchone()[0], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
