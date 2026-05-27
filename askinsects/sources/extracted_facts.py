@@ -1648,6 +1648,13 @@ def _is_supported_parsed_vector_competence_row(
     return any(field in fields for field in VECTOR_COMPETENCE_TABLE_STRONG_FIELDS)
 
 
+def _supplement_locator(candidate: SupplementCandidate, index: int, raw_file_path: str | None = None) -> str:
+    locator_parts = [f"records#{candidate.source_record_id}", f"supplement#{index}"]
+    if raw_file_path:
+        locator_parts.append(raw_file_path)
+    return ";".join(locator_parts)
+
+
 def _download_and_parse_supplement_rows(
     supplement_candidates: list[SupplementCandidate],
     *,
@@ -1718,6 +1725,7 @@ def _download_and_parse_supplement_rows(
                     "source": EXTRACTED_FACTS_SOURCE_ID,
                     "reason": "unsupported_supplement_type",
                     "record_id": candidate.source_record_id,
+                    "locator": _supplement_locator(candidate, index),
                     "url": url,
                     "file_type": candidate.supplement.get("file_type"),
                 }
@@ -1739,6 +1747,7 @@ def _download_and_parse_supplement_rows(
                     "source": EXTRACTED_FACTS_SOURCE_ID,
                     "reason": "pdf_supplement_file_limit_applied",
                     "record_id": candidate.source_record_id,
+                    "locator": _supplement_locator(candidate, index),
                     "url": url,
                     "title": candidate.supplement.get("title"),
                     "max_pdf_supplement_files": max_pdf_supplement_files,
@@ -1771,6 +1780,7 @@ def _download_and_parse_supplement_rows(
                     "source": EXTRACTED_FACTS_SOURCE_ID,
                     "reason": "supplement_table_parse_failed",
                     "record_id": candidate.source_record_id,
+                    "locator": _supplement_locator(candidate, index),
                     "url": url,
                     "error": str(exc),
                 }
@@ -1820,6 +1830,7 @@ def _download_and_parse_supplement_rows(
                     "source": EXTRACTED_FACTS_SOURCE_ID,
                     "reason": "supplement_table_no_rows",
                     "record_id": candidate.source_record_id,
+                    "locator": _supplement_locator(candidate, index, raw_path.relative_to(artifact_dir).as_posix()),
                     "url": url,
                 }
             )
@@ -1920,9 +1931,7 @@ def _record_for_supplement_file_gap(
     supplement = candidate.supplement
     title_text = str(supplement.get("title") or "Supplementary material")
     url = supplement.get("url")
-    locator_parts = [f"records#{candidate.source_record_id}", f"supplement#{index}"]
-    if raw_file_path:
-        locator_parts.append(raw_file_path)
+    locator = _supplement_locator(candidate, index, raw_file_path)
     digest = _digest(candidate.source_record_id, index, reason, title_text, url)
     fields: dict[str, object] = {
         "reason": reason,
@@ -1946,7 +1955,7 @@ def _record_for_supplement_file_gap(
     )
     provenance = Provenance(
         source_id=EXTRACTED_FACTS_SOURCE_ID,
-        locator=";".join(locator_parts),
+        locator=locator,
         retrieved_at=retrieved_at,
         license=supplement.get("license") if isinstance(supplement.get("license"), str) else None,
         source_url=url if isinstance(url, str) else candidate.paper_url,

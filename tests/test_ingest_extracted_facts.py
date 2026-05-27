@@ -8,11 +8,51 @@ import unittest
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.sources.literature import FullTextUnit
-from scripts.ingest_extracted_facts import ingest_extracted_facts
+from scripts.ingest_extracted_facts import _append_dedup_gaps, ingest_extracted_facts
 from tests.test_extracted_facts_source import write_extracted_facts_fixture
 
 
 class IngestExtractedFactsTests(unittest.TestCase):
+    def test_append_dedup_gaps_collapses_receipt_key_duplicates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            gaps_path = Path(tmpdir) / "gaps.json"
+            gaps_path.write_text(
+                json.dumps(
+                    [
+                        {
+                            "source": "aedes_extracted_facts",
+                            "reason": "supplement_table_no_rows",
+                            "record_id": "openalex:W1",
+                            "url": "https://example.org/a.csv",
+                        },
+                        {
+                            "source": "aedes_extracted_facts",
+                            "reason": "supplement_table_no_rows",
+                            "record_id": "openalex:W1",
+                            "url": "https://example.org/a.csv",
+                        },
+                    ]
+                ),
+                encoding="utf-8",
+            )
+
+            count = _append_dedup_gaps(
+                gaps_path,
+                [
+                    {
+                        "source": "aedes_extracted_facts",
+                        "reason": "supplement_table_no_rows",
+                        "record_id": "openalex:W1",
+                        "url": "https://example.org/a.csv",
+                    }
+                ],
+                replace_source_gaps=False,
+            )
+
+            gaps = json.loads(gaps_path.read_text(encoding="utf-8"))
+            self.assertEqual(count, 1)
+            self.assertEqual(len(gaps), 1)
+
     def test_ingest_updates_existing_artifact_without_removing_other_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

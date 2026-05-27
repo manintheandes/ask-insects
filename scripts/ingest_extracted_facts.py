@@ -26,6 +26,30 @@ def _read_json(path: Path, default: object) -> object:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def _gap_receipt_key(gap: dict[str, object]) -> tuple[str, str, str, str, str]:
+    return (
+        str(gap.get("source")),
+        str(gap.get("lane")),
+        str(gap.get("reason")),
+        str(gap.get("record_id")),
+        str(gap.get("locator")),
+    )
+
+
+def _dedup_gap_rows(gaps: list[object]) -> list[dict[str, object]]:
+    deduped: list[dict[str, object]] = []
+    seen: set[tuple[str, str, str, str, str]] = set()
+    for gap in gaps:
+        if not isinstance(gap, dict):
+            continue
+        key = _gap_receipt_key(gap)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(gap)
+    return deduped
+
+
 def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]], *, replace_source_gaps: bool = True) -> int:
     existing = _read_json(gaps_path, [])
     if not isinstance(existing, list):
@@ -33,10 +57,11 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]], *, replac
     if replace_source_gaps:
         combined = [gap for gap in existing if not (isinstance(gap, dict) and gap.get("source") == EXTRACTED_FACTS_SOURCE_ID)]
     else:
-        combined = list(existing)
-        seen = {json.dumps(gap, sort_keys=True, default=str) for gap in combined if isinstance(gap, dict)}
-        gaps = [gap for gap in gaps if json.dumps(gap, sort_keys=True, default=str) not in seen]
+        combined = _dedup_gap_rows(existing)
+        seen = {_gap_receipt_key(gap) for gap in combined}
+        gaps = [gap for gap in gaps if _gap_receipt_key(gap) not in seen]
     combined.extend(gaps)
+    combined = _dedup_gap_rows(combined)
     write_json(gaps_path, combined)
     return len(combined)
 
