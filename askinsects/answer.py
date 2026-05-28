@@ -3349,14 +3349,71 @@ def _source_search_records(index: SourceIndex, source: str, lane: str, query: st
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _exact_extracted_fact_identifier_terms(question: str) -> list[str]:
+    terms: list[str] = []
+    terms.extend(match.upper() for match in re.findall(r"\b(?:PRJNA|GSE|PXD)\d+\b", question, flags=re.IGNORECASE))
+    for match in re.findall(r"10\.17504/protocols\.io[./][A-Za-z0-9_.-]+", question, flags=re.IGNORECASE):
+        terms.append(match)
+        terms.append(match.rsplit(".", 1)[-1].rsplit("/", 1)[-1])
+    if "github" in question.lower():
+        terms.extend(
+            match
+            for match in re.findall(r"\b[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+\b", question)
+            if not match.lower().startswith("doi.")
+        )
+    seen: set[str] = set()
+    unique_terms: list[str] = []
+    for term in terms:
+        normalized = term.strip().rstrip(".,;")
+        key = normalized.lower()
+        if not normalized or key in seen:
+            continue
+        seen.add(key)
+        unique_terms.append(normalized)
+    return unique_terms
+
+
 def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
-    identifiers = [match.upper() for match in re.findall(r"\b(?:PRJNA|GSE|PXD)\d+\b", question, flags=re.IGNORECASE)]
+    identifiers = _exact_extracted_fact_identifier_terms(question)
     if not identifiers:
         return []
     seen: set[str] = set()
     records: list[EvidenceRecord] = []
     with index.connect() as conn:
         for identifier in identifiers:
+            identifier_lower = identifier.lower()
+            exact_rows = conn.execute(
+                """
+                SELECT r.*
+                FROM record_payloads p
+                JOIN records r ON r.record_id = p.record_id
+                WHERE p.source = ?
+                  AND (
+                    lower(json_extract(p.payload_json, '$.fields.accession')) = ?
+                    OR lower(json_extract(p.payload_json, '$.fields.github_full_name')) = ?
+                    OR lower(json_extract(p.payload_json, '$.fields.protocol_doi')) = ?
+                  )
+                ORDER BY
+                  CASE json_extract(p.payload_json, '$.fact_type')
+                    WHEN 'supplement_manifest' THEN 0
+                    WHEN 'supplement_file_gap' THEN 1
+                    ELSE 2
+                  END,
+                  r.record_id
+                LIMIT ?
+                """,
+                (EXTRACTED_FACTS_SOURCE_ID, identifier_lower, identifier_lower, identifier_lower, limit),
+            ).fetchall()
+            for row in exact_rows:
+                record = EvidenceRecord.from_row(dict(row))
+                if record.record_id in seen:
+                    continue
+                seen.add(record.record_id)
+                records.append(record)
+                if len(records) >= limit:
+                    return records
+            if not re.fullmatch(r"(?:PRJNA|GSE|PXD)\d+", identifier, flags=re.IGNORECASE):
+                continue
             rows = conn.execute(
                 """
                 SELECT r.*

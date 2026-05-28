@@ -4228,6 +4228,89 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
             self.assertIn("PRJNA789580", answer["answer"])
 
+    def test_exact_protocols_io_questions_prefer_extracted_fact_manifest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_manifest:openalex_W3091230652:bddhi236",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="protocols.io 10.17504/protocols.io.bddhi236: Competition in Aedes aegypti larvae",
+                        text="Aedes aegypti supplement manifest. Repository: protocols.io. Accession: 10.17504/protocols.io.bddhi236. Protocol title: Competition in Aedes aegypti larvae.",
+                        species="Aedes aegypti",
+                        url="https://www.protocols.io/view/competition-in-aedes-aegypti-larvae-the-effects-of-8epv51e45l1b/v1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:W3091230652;supplement#bddhi236",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={
+                            "confidence": "manifest",
+                            "fact_type": "supplement_manifest",
+                            "fields": {
+                                "repository": "protocols.io",
+                                "accession": "10.17504/protocols.io.bddhi236",
+                                "protocol_doi": "10.17504/protocols.io.bddhi236",
+                            },
+                        },
+                    )
+                ]
+            )
+
+            answer = answer_question("Do we have protocols.io protocol bddhi236 for Aedes aegypti?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
+            self.assertIn("bddhi236", answer["answer"])
+
+    def test_exact_github_questions_prefer_extracted_fact_manifest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_manifest:openalex_W4280523569:optothermocycler",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="GitHub repository trevorsorrells/Optothermocycler",
+                        text="Aedes aegypti supplement manifest. Repository: github. Accession: trevorsorrells/Optothermocycler.",
+                        species="Aedes aegypti",
+                        url="https://github.com/trevorsorrells/Optothermocycler",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:W4280523569;supplement#trevorsorrells/Optothermocycler",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={
+                            "confidence": "manifest",
+                            "fact_type": "supplement_manifest",
+                            "fields": {
+                                "repository": "github",
+                                "accession": "trevorsorrells/Optothermocycler",
+                                "github_full_name": "trevorsorrells/Optothermocycler",
+                            },
+                        },
+                    )
+                ]
+            )
+
+            answer = answer_question(
+                "Do we have GitHub repository trevorsorrells/Optothermocycler for Aedes aegypti?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
+            self.assertIn("trevorsorrells/Optothermocycler", answer["answer"])
+
     def test_vectornet_questions_prefer_vectornet_surveillance_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
