@@ -1506,6 +1506,46 @@ def _supplement_extension(supplement: dict[str, object]) -> str:
     return suffix
 
 
+def _external_repository_reference_fields(url: str) -> dict[str, object]:
+    reference = url.strip()
+    lower = reference.lower()
+    fields: dict[str, object] = {}
+    accession_patterns = (
+        ("ncbi_bioproject", "bioproject", re.compile(r"\bPRJNA\d+\b", re.I)),
+        ("ncbi_geo", "geo_series", re.compile(r"\bGSE\d+\b", re.I)),
+        ("proteomexchange", "proteomexchange_project", re.compile(r"\bPXD\d+\b", re.I)),
+    )
+    for repository, reference_type, pattern in accession_patterns:
+        match = pattern.search(reference)
+        if match:
+            fields.update(
+                {
+                    "repository": repository,
+                    "reference_type": reference_type,
+                    "accession": match.group(0).upper(),
+                }
+            )
+            return fields
+    repository_markers = (
+        ("protocols.io", "protocol", ("protocols.io", "10.17504/protocols.io")),
+        ("figshare", "repository_doi", ("figshare", "10.6084/m9.figshare")),
+        ("zenodo", "repository_doi", ("zenodo", "10.5281/zenodo")),
+        ("dryad", "repository_doi", ("dryad", "10.5061/dryad")),
+        ("github", "repository_locator", ("github",)),
+    )
+    for repository, reference_type, markers in repository_markers:
+        if any(marker in lower for marker in markers):
+            fields.update(
+                {
+                    "repository": repository,
+                    "reference_type": reference_type,
+                    "accession": reference if lower != repository else None,
+                }
+            )
+            return fields
+    return fields
+
+
 def _safe_raw_filename(candidate: SupplementCandidate, index: int, extension: str) -> str:
     digest = _digest(candidate.source_record_id, candidate.supplement.get("url"), index)
     suffix = extension if extension in SUPPORTED_SUPPLEMENT_EXTENSIONS else ".dat"
@@ -1864,23 +1904,32 @@ def _download_and_parse_supplement_rows(
             continue
         extension = _supplement_extension(candidate.supplement)
         if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS:
+            repository_fields = _external_repository_reference_fields(url)
+            reason = (
+                "external_repository_reference_not_expanded"
+                if repository_fields
+                else "unsupported_supplement_type"
+            )
             gap_records.append(
                 _record_for_supplement_file_gap(
                     candidate,
                     index=index,
-                    reason="unsupported_supplement_type",
+                    reason=reason,
                     retrieved_at=retrieved_at,
+                    extra_fields=repository_fields or None,
                 )
             )
+            gap_payload: dict[str, object] = {
+                "source": EXTRACTED_FACTS_SOURCE_ID,
+                "reason": reason,
+                "record_id": candidate.source_record_id,
+                "locator": _supplement_locator(candidate, index),
+                "url": url,
+                "file_type": candidate.supplement.get("file_type"),
+            }
+            gap_payload.update(repository_fields)
             gaps.append(
-                {
-                    "source": EXTRACTED_FACTS_SOURCE_ID,
-                    "reason": "unsupported_supplement_type",
-                    "record_id": candidate.source_record_id,
-                    "locator": _supplement_locator(candidate, index),
-                    "url": url,
-                    "file_type": candidate.supplement.get("file_type"),
-                }
+                gap_payload
             )
             continue
         if extension == ".pdf" and parsed_pdf_count >= max_pdf_supplement_files:

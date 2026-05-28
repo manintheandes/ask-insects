@@ -644,6 +644,74 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(result.papers_with_supplement_manifest_count, 1)
             self.assertEqual(result.papers_with_promoted_supplement_rows_count, 0)
 
+    def test_build_extracted_fact_records_classifies_repository_reference_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WREPOGAP",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti paper with repository supplement references",
+                        text="Aedes aegypti transcriptome paper with external source accessions.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1000/repository-gap",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WREPOGAP",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1000/repository-gap"}},
+                    )
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "Crossref is-supplemented-by supplement",
+                        "url": "PRJNA612100",
+                        "source": "crossref_relation",
+                    },
+                    {
+                        "title": "Crossref is-supplemented-by supplement",
+                        "url": "GSE193470",
+                        "source": "crossref_relation",
+                    },
+                    {
+                        "title": "Crossref is-supplemented-by supplement",
+                        "url": "https://doi.org/10.5061/dryad.2bvq83btk",
+                        "source": "crossref_relation",
+                    },
+                ],
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            file_gaps = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+            ]
+            self.assertEqual(len(file_gaps), 3)
+            reasons = {record.payload["fields"]["reason"] for record in file_gaps}
+            self.assertEqual(reasons, {"external_repository_reference_not_expanded"})
+            fields_by_url = {str(record.payload["fields"]["url"]): record.payload["fields"] for record in file_gaps}
+            self.assertEqual(fields_by_url["PRJNA612100"]["repository"], "ncbi_bioproject")
+            self.assertEqual(fields_by_url["PRJNA612100"]["accession"], "PRJNA612100")
+            self.assertEqual(fields_by_url["GSE193470"]["repository"], "ncbi_geo")
+            self.assertEqual(fields_by_url["GSE193470"]["accession"], "GSE193470")
+            self.assertEqual(fields_by_url["https://doi.org/10.5061/dryad.2bvq83btk"]["repository"], "dryad")
+            self.assertFalse(any(gap.get("reason") == "unsupported_supplement_type" for gap in result.gaps))
+
     def test_build_extracted_fact_records_bounds_supplement_discovery_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

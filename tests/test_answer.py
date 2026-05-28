@@ -4792,6 +4792,39 @@ class AnswerTests(unittest.TestCase):
                             },
                         },
                     ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_file_gap:paper2:repo",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement file gap: external repository reference",
+                        text=(
+                            "Aedes aegypti supplement file gap for paper Two. "
+                            "Reason: external_repository_reference_not_expanded. "
+                            "Repository: ncbi_bioproject. Accession: PRJNA612100."
+                        ),
+                        species="Aedes aegypti",
+                        url="PRJNA612100",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#paper2;supplement#0",
+                            retrieved_at="2026-05-27T00:00:00Z",
+                            source_url="PRJNA612100",
+                        ),
+                        payload={
+                            "fact_type": "supplement_file_gap",
+                            "confidence": "gap",
+                            "fields": {
+                                "reason": "external_repository_reference_not_expanded",
+                                "source_record_id": "paper2",
+                                "url": "PRJNA612100",
+                                "source": "crossref_relation",
+                                "repository": "ncbi_bioproject",
+                                "reference_type": "bioproject",
+                                "accession": "PRJNA612100",
+                            },
+                        },
+                    ),
                 ]
             )
 
@@ -4803,6 +4836,9 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["supplement_audit"]["parsed_supplement_row_count"], 3)
             self.assertEqual(answer["supplement_audit"]["promoted_supplement_row_count"], 2)
             self.assertEqual(answer["status_counts"]["supplement_rows_promoted"], 1)
+            self.assertEqual(answer["supplement_file_gap_counts"][0]["reason"], "external_repository_reference_not_expanded")
+            self.assertEqual(answer["supplement_file_gap_counts"][0]["repository"], "ncbi_bioproject")
+            self.assertIn("Top supplement file gap reasons", answer["answer"])
             self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:supplement_audit:paper1")
 
 

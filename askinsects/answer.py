@@ -2552,6 +2552,23 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
             """,
             (EXTRACTED_FACTS_SOURCE_ID,),
         ).fetchall()
+        gap_rows = conn.execute(
+            """
+            SELECT
+                json_extract(p.payload_json, '$.fields.reason') AS reason,
+                json_extract(p.payload_json, '$.fields.source') AS source,
+                json_extract(p.payload_json, '$.fields.file_type') AS file_type,
+                json_extract(p.payload_json, '$.fields.repository') AS repository,
+                count(*) AS n
+            FROM record_payloads p
+            WHERE p.source = ?
+              AND json_extract(p.payload_json, '$.fact_type') = 'supplement_file_gap'
+            GROUP BY reason, source, file_type, repository
+            ORDER BY n DESC, reason, source, file_type, repository
+            LIMIT 8
+            """,
+            (EXTRACTED_FACTS_SOURCE_ID,),
+        ).fetchall()
         evidence_rows = conn.execute(
             """
             SELECT r.*
@@ -2608,7 +2625,30 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
     parsed_rows = int(summary["parsed_rows"] or 0)
     promoted_rows = int(summary["promoted_rows"] or 0)
     status_counts = {str(row["status"]): int(row["n"]) for row in status_rows}
+    supplement_file_gap_counts = [
+        {
+            "reason": str(row["reason"] or ""),
+            "source": row["source"],
+            "file_type": row["file_type"],
+            "repository": row["repository"],
+            "count": int(row["n"] or 0),
+        }
+        for row in gap_rows
+    ]
     status_text = "; ".join(f"{status}: {count}" for status, count in status_counts.items())
+    gap_text = "; ".join(
+        " ".join(
+            part
+            for part in (
+                f"{row['reason']}: {row['count']}",
+                f"source={row['source']}" if row["source"] else "",
+                f"file_type={row['file_type']}" if row["file_type"] else "",
+                f"repository={row['repository']}" if row["repository"] else "",
+            )
+            if part
+        )
+        for row in supplement_file_gap_counts
+    )
     records = [EvidenceRecord.from_row(dict(row)) for row in evidence_rows]
     answer = (
         f"The Aedes aegypti supplement audit covers {audited_papers} indexed paper records. "
@@ -2616,6 +2656,8 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
         f"parsed {parsed_rows} supported supplement table rows, and promoted {promoted_rows} rows into structured evidence lanes. "
         f"Coverage status counts: {status_text}."
     )
+    if gap_text:
+        answer += f" Top supplement file gap reasons: {gap_text}."
     return {
         "ok": True,
         "answer_shape": "literature",
@@ -2629,6 +2671,7 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
             "parsed_supplement_row_count": parsed_rows,
             "promoted_supplement_row_count": promoted_rows,
         },
+        "supplement_file_gap_counts": supplement_file_gap_counts,
     }
 
 
