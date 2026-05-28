@@ -204,6 +204,40 @@ class DryadBehaviorVideoSourceTests(unittest.TestCase):
             self.assertEqual(readme.lane, "behavior")
             self.assertIsNone(readme.media_url)
 
+    def test_fetch_dryad_behavior_video_records_indexes_landing_page_assay_methods(self):
+        landing_html = """
+        <html><body>
+          <a class="js-individual-dl" href="/downloads/file_stream/10">host_seeking_videos.zip</a>
+          <h3>Dataset corresponding to host-seeking assays</h3>
+          <p>Aedes aegypti mosquitoes were filmed in a tent experiment with human host cues.</p>
+          <h5>Repellent response</h5>
+          <p>Mosquito landing observations were scored after repellent was applied to human skin.</p>
+        </body></html>
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = DryadFetcher()
+            result = fetch_dryad_behavior_video_records(
+                [DryadDatasetSpec(doi="10.5061/dryad.example", behavior_labels=("host seeking", "repellent response"))],
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fetcher,
+                fetch_text=lambda url: landing_html,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            self.assertEqual(result.landing_page_count, 1)
+            self.assertEqual(result.assay_method_count, 2)
+            method_records = [
+                record
+                for record in result.records
+                if record.payload and record.payload.get("record_type") == "dryad_landing_assay_method"
+            ]
+            self.assertEqual(len(method_records), 2)
+            self.assertTrue(any("repellent" in record.text.lower() for record in method_records))
+            self.assertTrue(all(record.payload["file_stream_links"] == ["https://datadryad.org/downloads/file_stream/10"] for record in method_records))
+            media = next(record for record in result.records if record.lane == "media")
+            self.assertEqual(media.payload["file_stream_url"], "https://datadryad.org/downloads/file_stream/10")
+            self.assertTrue(any(path.endswith("_landing.html") for path in result.raw_artifacts))
+
     def test_fetch_dryad_behavior_video_records_parses_downloaded_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             fetcher = DryadTableFetcher()

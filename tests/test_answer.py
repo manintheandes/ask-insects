@@ -2070,6 +2070,70 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "dryad_aedes_behavior_videos")
             self.assertEqual(answer["evidence"][0]["media_url"], "https://datadryad.org/api/v2/files/10/download")
 
+    def test_specific_dryad_assay_questions_prefer_matching_assay_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:assay-method:mating",
+                        lane="behavior",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad assay metadata courtship",
+                        text=(
+                            "Dryad landing-page assay metadata for Aedes aegypti. "
+                            "Section: courtship. Behavior labels: mating, hearing. "
+                            "Method text: male and female mosquitoes were recorded during courtship and mating."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/mating",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/mating_landing.html#assay-method/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                        payload={"record_type": "dryad_landing_assay_method"},
+                    ),
+                    EvidenceRecord(
+                        record_id="dryad:assay-method:repellent",
+                        lane="behavior",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad assay metadata repellent response",
+                        text=(
+                            "Dryad landing-page assay metadata for Aedes aegypti. "
+                            "Section: host attraction and repellent response. Behavior labels: host seeking, repellent response. "
+                            "Method text: male Aedes aegypti mosquitoes were tested for human host attraction, "
+                            "landing observations, and repellent response in tent assays."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/repellent",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/repellent_landing.html#assay-method/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                        payload={"record_type": "dryad_landing_assay_method"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Dryad male host attraction repellent response assay metadata",
+                artifact_dir=artifact_dir,
+                limit=1,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["record_id"], "dryad:assay-method:repellent")
+            self.assertIn("repellent response", answer["evidence"][0]["text"])
+
     def test_named_dryad_gap_questions_return_dryad_archive_gap_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

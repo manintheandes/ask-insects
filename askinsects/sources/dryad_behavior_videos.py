@@ -3,6 +3,8 @@ from __future__ import annotations
 import csv
 from dataclasses import dataclass
 from datetime import UTC, datetime
+import hashlib
+from html.parser import HTMLParser
 from html import unescape
 import io
 import json
@@ -77,6 +79,8 @@ class DryadBehaviorVideoResult:
     skipped_table_file_count: int = 0
     table_sheet_count: int = 0
     table_row_count: int = 0
+    landing_page_count: int = 0
+    assay_method_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -90,10 +94,12 @@ class DryadClient:
         self,
         fetch_json: Callable[[str], dict[str, object]] | None = None,
         fetch_bytes: Callable[[str], bytes] | None = None,
+        fetch_text: Callable[[str], str] | None = None,
         request_delay_seconds: float = 0.0,
     ):
         self.fetch_json = fetch_json or self._fetch_json
         self.fetch_bytes = fetch_bytes or self._fetch_bytes
+        self.fetch_text = fetch_text or self._fetch_text
         self.request_delay_seconds = request_delay_seconds
 
     def dataset(self, doi: str) -> tuple[str, dict[str, object]]:
@@ -109,6 +115,11 @@ class DryadClient:
     def download_file(self, url: str) -> bytes:
         self._throttle()
         return self.fetch_bytes(url)
+
+    def landing_page(self, doi: str) -> tuple[str, str]:
+        url = _dataset_web_url(doi)
+        self._throttle()
+        return url, self.fetch_text(url)
 
     def _throttle(self) -> None:
         if self.request_delay_seconds > 0:
@@ -129,6 +140,12 @@ class DryadClient:
         with urlopen(request, timeout=120) as response:
             return response.read()
 
+    @staticmethod
+    def _fetch_text(url: str) -> str:
+        request = Request(url, headers={"User-Agent": USER_AGENT})
+        with urlopen(request, timeout=60) as response:
+            return response.read().decode("utf-8", errors="replace")
+
 
 def utc_now() -> str:
     return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -138,6 +155,13 @@ def write_raw_json(raw_dir: Path, filename: str, payload: dict[str, object]) -> 
     raw_dir.mkdir(parents=True, exist_ok=True)
     path = raw_dir / filename
     path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def write_raw_text(raw_dir: Path, filename: str, payload: str) -> Path:
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    path = raw_dir / filename
+    path.write_text(payload, encoding="utf-8")
     return path
 
 
@@ -219,6 +243,107 @@ def _doi_from_identifier(dataset_payload: dict[str, object], fallback: str) -> s
 
 def _dataset_web_url(doi: str) -> str:
     return f"{DRYAD_API_BASE}/dataset/{quote(f'doi:{doi}', safe='')}"
+
+
+def _file_id(file_payload: dict[str, object]) -> str | None:
+    for rel in ("self", "stash:download"):
+        href = _link(file_payload, rel)
+        if not href:
+            continue
+        match = re.search(r"/files/(?P<file_id>\d+)(?:/download)?$", href)
+        if match:
+            return match.group("file_id")
+    return None
+
+
+def _file_stream_url(file_payload: dict[str, object]) -> str | None:
+    file_id = _file_id(file_payload)
+    if not file_id:
+        return None
+    return f"{DRYAD_API_BASE}/downloads/file_stream/{file_id}"
+
+
+class _DryadLandingParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._capture_tag: str | None = None
+        self._capture_parts: list[str] = []
+        self.blocks: list[tuple[str, str]] = []
+        self.file_stream_links: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        attrs_dict = {key: value or "" for key, value in attrs}
+        href = attrs_dict.get("href")
+        if href and "/downloads/file_stream/" in href:
+            self.file_stream_links.append(urljoin(DRYAD_API_BASE, href))
+        if tag in {"h3", "h4", "h5", "p", "li"}:
+            self._flush()
+            self._capture_tag = tag
+            self._capture_parts = []
+
+    def handle_data(self, data: str) -> None:
+        if self._capture_tag:
+            self._capture_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == self._capture_tag:
+            self._flush()
+
+    def _flush(self) -> None:
+        if not self._capture_tag:
+            return
+        text = re.sub(r"\s+", " ", " ".join(self._capture_parts)).strip()
+        if text:
+            self.blocks.append((self._capture_tag, text))
+        self._capture_tag = None
+        self._capture_parts = []
+
+
+def _parse_landing_page(html: str) -> tuple[list[dict[str, str]], list[str]]:
+    parser = _DryadLandingParser()
+    parser.feed(html)
+    parser.close()
+    parser._flush()
+    sections: list[dict[str, str]] = []
+    current_heading = ""
+    section_parts: list[str] = []
+    for tag, text in parser.blocks:
+        if tag in {"h3", "h4", "h5"}:
+            if current_heading and section_parts:
+                sections.append({"heading": current_heading, "text": " ".join(section_parts)})
+            current_heading = text
+            section_parts = []
+            continue
+        if current_heading and _is_behavior_method_text(text):
+            section_parts.append(text)
+    if current_heading and section_parts:
+        sections.append({"heading": current_heading, "text": " ".join(section_parts)})
+    return sections, sorted(set(parser.file_stream_links))
+
+
+def _is_behavior_method_text(text: str) -> bool:
+    lower = text.lower()
+    method_terms = (
+        "aedes",
+        "mosquito",
+        "assay",
+        "experiment",
+        "trial",
+        "host",
+        "repellent",
+        "olfactometer",
+        "tent",
+        "landing",
+        "flight",
+        "visual",
+        "tracking",
+        "co2",
+        "blood",
+        "filmed",
+        "recorded",
+        "observation",
+    )
+    return any(term in lower for term in method_terms)
 
 
 def _local_name(tag: str) -> str:
@@ -497,7 +622,8 @@ def _file_record(
     mime_type = str(file_payload.get("mimeType") or "")
     media = _is_media_file(file_path, mime_type)
     download_href = _link(file_payload, "stash:download")
-    download_url = urljoin(DRYAD_API_BASE, download_href) if download_href else _dataset_web_url(doi)
+    api_download_url = urljoin(DRYAD_API_BASE, download_href) if download_href else _dataset_web_url(doi)
+    file_stream_url = _file_stream_url(file_payload)
     size = file_payload.get("size")
     digest = file_payload.get("digest")
     digest_type = file_payload.get("digestType")
@@ -522,20 +648,22 @@ def _file_record(
         text=" ".join(text_parts),
         species="Aedes aegypti",
         url=_dataset_web_url(doi),
-        media_url=download_url if media else None,
+        media_url=api_download_url if media else None,
         provenance=Provenance(
             source_id=DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
             locator=f"{raw_path.as_posix()}#file/{file_index}",
             retrieved_at=retrieved_at,
             license=str(dataset_payload.get("license") or "Dryad dataset license not supplied"),
-            source_url=download_url,
+            source_url=file_stream_url or api_download_url,
         ),
         payload={
             "doi": doi,
             "dataset_title": dataset_title,
             "behavior_labels": list(spec.behavior_labels),
             "raw_file": file_payload,
-            "download_url": download_url,
+            "download_url": api_download_url,
+            "api_download_url": api_download_url,
+            "file_stream_url": file_stream_url,
         },
     )
 
@@ -555,6 +683,7 @@ def _archive_decode_gap_record(
     mime_type = str(file_payload.get("mimeType") or "")
     download_href = _link(file_payload, "stash:download")
     download_url = urljoin(DRYAD_API_BASE, download_href) if download_href else _dataset_web_url(doi)
+    file_stream_url = _file_stream_url(file_payload)
     size = file_payload.get("size")
     digest = file_payload.get("digest")
     digest_type = file_payload.get("digestType")
@@ -601,6 +730,7 @@ def _archive_decode_gap_record(
             "source_hash": digest,
             "source_hash_type": digest_type,
             "download_url": download_url,
+            "file_stream_url": file_stream_url,
             "source_video_record_id": source_video_record_id,
             "behavior_labels": list(spec.behavior_labels),
             "required_next_artifacts": [
@@ -668,6 +798,7 @@ def _table_sheet_record(
             "sample_rows": sample_rows,
             "behavior_labels": list(spec.behavior_labels),
             "download_url": download_url,
+            "file_stream_url": _file_stream_url(file_payload),
         },
     )
 
@@ -721,9 +852,66 @@ def _table_row_record(
             "row_number": row_number,
             "values": row_values,
             "download_url": download_url,
+            "file_stream_url": _file_stream_url(file_payload),
             "behavior_labels": list(spec.behavior_labels),
         },
     )
+
+
+def _landing_assay_method_records(
+    *,
+    spec: DryadDatasetSpec,
+    dataset_payload: dict[str, object],
+    landing_url: str,
+    landing_path: Path,
+    html: str,
+    retrieved_at: str,
+) -> list[EvidenceRecord]:
+    doi = _doi_from_identifier(dataset_payload, spec.doi)
+    dataset_title = _clean_text(dataset_payload.get("title")) or doi
+    sections, file_stream_links = _parse_landing_page(html)
+    records: list[EvidenceRecord] = []
+    labels = ", ".join(spec.behavior_labels)
+    for index, section in enumerate(sections[:40], start=1):
+        heading = section.get("heading") or "Dryad landing page method"
+        method_text = re.sub(r"\s+", " ", section.get("text") or "").strip()
+        if not method_text:
+            continue
+        digest = hashlib.sha1(f"{doi}|{heading}|{method_text}".encode("utf-8")).hexdigest()[:12]
+        text = (
+            f"Dryad landing-page assay metadata for Aedes aegypti dataset {dataset_title}. "
+            f"Section: {heading}. Behavior labels: {labels}. Method text: {method_text[:1200]}"
+        )
+        records.append(
+            EvidenceRecord(
+                record_id=f"dryad:assay-method:{_safe_id(doi)}:{digest}",
+                lane="behavior",
+                source=DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+                title=f"Aedes aegypti Dryad assay metadata {heading}",
+                text=text,
+                species="Aedes aegypti",
+                url=landing_url,
+                media_url=None,
+                provenance=Provenance(
+                    source_id=DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+                    locator=f"{landing_path.as_posix()}#assay-method/{index}",
+                    retrieved_at=retrieved_at,
+                    license=str(dataset_payload.get("license") or "Dryad dataset license not supplied"),
+                    source_url=landing_url,
+                ),
+                payload={
+                    "record_type": "dryad_landing_assay_method",
+                    "doi": doi,
+                    "dataset_title": dataset_title,
+                    "heading": heading,
+                    "method_text": method_text,
+                    "behavior_labels": list(spec.behavior_labels),
+                    "landing_page_url": landing_url,
+                    "file_stream_links": file_stream_links,
+                },
+            )
+        )
+    return records
 
 
 def _table_records(
@@ -857,6 +1045,7 @@ def fetch_dryad_behavior_video_records(
     raw_dir: Path,
     fetch_json: Callable[[str], dict[str, object]] | None = None,
     fetch_bytes: Callable[[str], bytes] | None = None,
+    fetch_text: Callable[[str], str] | None = None,
     retrieved_at: str | None = None,
     max_table_bytes: int = DEFAULT_MAX_TABLE_BYTES,
     max_table_rows_per_file: int = DEFAULT_MAX_TABLE_ROWS_PER_FILE,
@@ -866,7 +1055,8 @@ def fetch_dryad_behavior_video_records(
     delay = 0.0 if (fetch_json or fetch_bytes) else DEFAULT_LIVE_REQUEST_DELAY_SECONDS
     if request_delay_seconds is not None:
         delay = request_delay_seconds
-    client = DryadClient(fetch_json, fetch_bytes, request_delay_seconds=delay)
+    client = DryadClient(fetch_json, fetch_bytes, fetch_text, request_delay_seconds=delay)
+    fetch_landing_pages = fetch_text is not None or (fetch_json is None and fetch_bytes is None)
     records: list[EvidenceRecord] = []
     gaps: list[dict[str, object]] = []
     raw_artifacts: list[str] = []
@@ -877,12 +1067,15 @@ def fetch_dryad_behavior_video_records(
     skipped_table_file_count = 0
     table_sheet_count = 0
     table_row_count = 0
+    landing_page_count = 0
+    assay_method_count = 0
 
     for spec in dataset_specs:
         safe_doi = _safe_id(spec.doi)
         dataset_raw_path = raw_dir / f"{safe_doi}_dataset.json"
         version_raw_path = raw_dir / f"{safe_doi}_version.json"
         files_raw_path = raw_dir / f"{safe_doi}_files.json"
+        landing_raw_path = raw_dir / f"{safe_doi}_landing.html"
         try:
             dataset_url, dataset_payload = client.dataset(spec.doi)
             dataset_raw_path = write_raw_json(raw_dir, dataset_raw_path.name, dataset_payload)
@@ -966,6 +1159,33 @@ def fetch_dryad_behavior_video_records(
                     "retrieved_at": retrieved,
                 }
             )
+        if fetch_landing_pages:
+            try:
+                landing_url, landing_html = client.landing_page(_doi_from_identifier(dataset_payload, spec.doi))
+                landing_raw_path = write_raw_text(raw_dir, landing_raw_path.name, landing_html)
+                raw_artifacts.append(landing_raw_path.as_posix())
+                landing_page_count += 1
+                landing_records = _landing_assay_method_records(
+                    spec=spec,
+                    dataset_payload=dataset_payload,
+                    landing_url=landing_url,
+                    landing_path=landing_raw_path,
+                    html=landing_html,
+                    retrieved_at=retrieved,
+                )
+                assay_method_count += len(landing_records)
+                records.extend(landing_records)
+            except Exception as exc:
+                gaps.append(
+                    {
+                        "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+                        "lane": "behavior",
+                        "doi": _doi_from_identifier(dataset_payload, spec.doi),
+                        "reason": "dryad_landing_page_fetch_failed",
+                        "error": str(exc),
+                        "retrieved_at": retrieved,
+                    }
+                )
         for index, file_payload in enumerate(files, start=1):
             file_count += 1
             filename = str(file_payload.get("path") or f"file-{index}")
@@ -1118,4 +1338,6 @@ def fetch_dryad_behavior_video_records(
         skipped_table_file_count=skipped_table_file_count,
         table_sheet_count=table_sheet_count,
         table_row_count=table_row_count,
+        landing_page_count=landing_page_count,
+        assay_method_count=assay_method_count,
     )

@@ -1157,7 +1157,30 @@ def _search_queries(question: str) -> list[str]:
         queries.extend(["Aedes aegypti GBIF occurrence", "GBIF occurrence", question])
         return list(dict.fromkeys(queries))
     if "dryad" in q:
-        return ["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset", question]
+        salient = [
+            token
+            for token in re.findall(r"[A-Za-z0-9]+", question)
+            if token.lower()
+            not in {
+                "aedes",
+                "aegypti",
+                "dryad",
+                "show",
+                "me",
+                "the",
+                "a",
+                "an",
+                "and",
+                "or",
+                "metadata",
+                "data",
+            }
+        ]
+        queries = [question]
+        if salient:
+            queries.append(f"Dryad Aedes aegypti {' '.join(salient[:8])}")
+        queries.extend(["Dryad Aedes aegypti behavior video", "Dryad video archive", "Dryad behavior dataset"])
+        return list(dict.fromkeys(queries))
     if "osf" in q or "flighttrackai" in q or "flighttrack" in q or "flight tracking" in q:
         return [
             "OSF FlightTrackAI Aedes aegypti video",
