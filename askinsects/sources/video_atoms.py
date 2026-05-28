@@ -19,7 +19,7 @@ import zipfile
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
-from askinsects.sources.mendeley_behavior_media import _parse_table, _row_values, _table_layout
+from askinsects.sources.mendeley_behavior_media import _parse_table, _row_values, _safe_id as _mendeley_safe_id, _table_layout
 
 
 VIDEO_ATOMS_SOURCE_ID = "aedes_video_atoms"
@@ -2121,21 +2121,41 @@ def _motion_video_id(row: dict[str, str], table_path: Path) -> str:
     return _motion_explicit_video_id(row) or table_path.stem
 
 
+def _motion_source_video_lookup_id(filename: str) -> str | None:
+    stem = Path(filename).stem
+    match = re.match(r"(.+?)\s*-\s*Spot Statistics$", stem, flags=re.I)
+    if match:
+        return match.group(1).strip()
+    return None
+
+
 def _motion_lookup_keys(value: object) -> set[str]:
     text = str(value or "").strip()
     if not text:
         return set()
     keys = {text.lower()}
+    spot_match = re.match(r"(.+?)\s*-\s*spot statistics$", text, flags=re.I)
+    if spot_match:
+        keys.add(spot_match.group(1).strip().lower())
     parsed = urlparse(text)
     if parsed.fragment:
         fragment = unquote(parsed.fragment).strip()
         if fragment:
             keys.add(fragment.lower())
             keys.add(Path(fragment).name.lower())
+            fragment_spot_match = re.match(r"(.+?)\s*-\s*spot statistics$", Path(fragment).stem, flags=re.I)
+            if fragment_spot_match:
+                keys.add(fragment_spot_match.group(1).strip().lower())
     path = unquote(parsed.path or text).strip()
     if path:
         keys.add(path.lower())
         keys.add(Path(path).name.lower())
+        stem = Path(path).stem.lower()
+        if stem:
+            keys.add(stem)
+            path_spot_match = re.match(r"(.+?)\s*-\s*spot statistics$", stem, flags=re.I)
+            if path_spot_match:
+                keys.add(path_spot_match.group(1).strip().lower())
     return {key for key in keys if key}
 
 
@@ -2180,6 +2200,49 @@ def _motion_asset_for_video_id(video_id: str, asset_lookup: dict[str, EvidenceRe
         if asset is not None:
             return asset
     return None
+
+
+def _mendeley_motion_table_contexts(artifact_dir: Path) -> dict[str, dict[str, object]]:
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    try:
+        rows = index.sql(
+            """
+            select payload_json
+            from record_payloads
+            where source='mendeley_aedes_behavior_media'
+              and record_id like 'mendeley:file:%'
+            """,
+            limit=100000,
+        )
+    except Exception:
+        return {}
+    contexts: dict[str, dict[str, object]] = {}
+    for row in rows:
+        payload = _safe_json(row.get("payload_json"))
+        filename = str(payload.get("filename") or "")
+        suffix = Path(filename).suffix.lower()
+        if suffix not in {".csv", ".tsv", ".xlsx"}:
+            continue
+        dataset_id = str(payload.get("dataset_id") or "")
+        version = payload.get("version")
+        file_id = str(payload.get("file_id") or "")
+        if not dataset_id or not version or not file_id:
+            continue
+        rel_path = (
+            Path("raw")
+            / "mendeley_behavior_media"
+            / "table_files"
+            / f"{_mendeley_safe_id(dataset_id)}_v{version}_{_mendeley_safe_id(file_id)}{suffix}"
+        ).as_posix()
+        context: dict[str, object] = {
+            "source_table_filename": filename,
+            "source_table_file_id": file_id,
+        }
+        lookup_id = _motion_source_video_lookup_id(filename)
+        if lookup_id:
+            context["source_video_lookup_id"] = lookup_id
+        contexts[rel_path] = context
+    return contexts
 
 
 def _list_text_values(value: object) -> list[str]:
@@ -2345,6 +2408,7 @@ def _motion_record(
     metric_text = f" Metrics: {', '.join(metrics)}." if metrics else ""
     label_text = _motion_behavior_from_labels(payload.get("source_behavior_labels"))
     source_label_text = f" Source behavior labels: {label_text}." if label_text else ""
+    source_video_label_text = f" Source video label: {payload.get('source_video_lookup_id')}." if payload.get("source_video_lookup_id") else ""
     return EvidenceRecord(
         record_id=f"video_atom:motion:{_safe_id(video_id)}:{digest}",
         lane="behavior",
@@ -2353,7 +2417,7 @@ def _motion_record(
         text=(
             f"Aedes aegypti video motion row for {behavior}. "
             f"Video: {video_id}. Track: {payload.get('track_id')}. Frame: {payload.get('frame')}. "
-            f"Time seconds: {payload.get('time_seconds')}. Coordinates: {payload.get('x')}, {payload.get('y')}.{metric_text}{source_label_text}"
+            f"Time seconds: {payload.get('time_seconds')}. Coordinates: {payload.get('x')}, {payload.get('y')}.{metric_text}{source_video_label_text}{source_label_text}"
         ),
         species="Aedes aegypti",
         url=source_video_asset.url if source_video_asset else None,
@@ -2419,6 +2483,7 @@ def _parse_motion_tables(
     retrieved_at: str,
     gaps: list[dict[str, object]],
     asset_lookup: dict[str, EvidenceRecord] | None = None,
+    table_contexts: dict[str, dict[str, object]] | None = None,
 ) -> list[EvidenceRecord]:
     records: list[EvidenceRecord] = []
     unmatched: set[tuple[str, str]] = set()
@@ -2427,13 +2492,18 @@ def _parse_motion_tables(
             path = Path(table_path)
             if path.name.startswith("._"):
                 continue
+            rel_path = path.relative_to(artifact_dir).as_posix()
+            table_context = (table_contexts or {}).get(rel_path, {})
             parsed_rows = _parse_xlsx_motion_table(path) if path.suffix.lower() == ".xlsx" else _parse_delimited_motion_table(path)
             for row_index, cleaned, locator_suffix in parsed_rows:
                 video_id = _motion_video_id(cleaned, path)
-                source_video_asset = _motion_asset_for_video_id(video_id, asset_lookup or {})
-                source_motion_context = _motion_dataset_payload(video_id, path, asset_lookup)
+                lookup_video_id = str(table_context.get("source_video_lookup_id") or video_id)
+                source_video_asset = _motion_asset_for_video_id(lookup_video_id, asset_lookup or {})
+                source_motion_context = {
+                    **_motion_dataset_payload(lookup_video_id, path, asset_lookup),
+                    **table_context,
+                }
                 if asset_lookup and source_video_asset is None and _motion_explicit_video_id(cleaned):
-                    rel_path = path.relative_to(artifact_dir).as_posix()
                     key = (rel_path, video_id)
                     if key not in unmatched:
                         unmatched.add(key)
@@ -2836,6 +2906,7 @@ def build_video_atom_records(
             retrieved_at=retrieved_at,
             gaps=gaps,
             asset_lookup=_build_motion_asset_lookup(records),
+            table_contexts=_mendeley_motion_table_contexts(artifact_dir),
         )
     else:
         motion_records = []

@@ -1206,6 +1206,13 @@ def _search_queries(question: str) -> list[str]:
                 ]
             )
             return list(dict.fromkeys(queries))
+        if any(term in q for term in ("audio", "sound", "acoustic", "wingbeat", "wing beat", "flight tone", "flight tones", "phonotaxis", "hearing", "wbf")):
+            return [
+                "Mendeley Aedes aegypti audio acoustic wingbeat sound file",
+                "Mendeley Aedes aegypti acoustic behavior file frequency white noise",
+                "Mendeley flight tone wingbeat hearing phonotaxis",
+                question,
+            ]
         return ["Mendeley Aedes aegypti behavior media", "Mendeley wing flash video", "Mendeley flight tone", question]
     if any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime", "temperature gradient", "temperature gradients")):
         return [
@@ -3283,13 +3290,16 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 0 if record.lane == "media" else 1,
             ),
         )
-    if "mendeley" in q or any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime", "temperature gradient", "temperature gradients")):
+    if "mendeley" in q or any(term in q for term in ("wing flash", "flight tone", "flight tones", "mate recognition", "locomotory", "temperature regime", "temperature gradient", "temperature gradients", "audio", "sound", "acoustic", "wingbeat", "wing beat", "phonotaxis", "hearing", "wbf")):
         wants_table_rows = any(term in q for term in ("table", "tables", "row", "rows", "xlsx", "csv", "temperature", "gradient", "gradients"))
+        wants_audio = any(term in q for term in ("audio", "sound", "acoustic", "wingbeat", "wing beat", "flight tone", "flight tones", "phonotaxis", "hearing", "wbf"))
         return sorted(
             records,
             key=lambda record: (
                 0 if record.source == "mendeley_aedes_behavior_media" else 1,
                 0 if record.lane in {"media", "behavior"} else 1,
+                0 if wants_audio and record.record_id.startswith("mendeley:audio-assay:") else 1,
+                0 if wants_audio and str((record.payload or {}).get("table_behavior_type", "")).startswith(("acoustic", "phonotaxis", "electrophysiology")) else 1,
                 0 if wants_table_rows and record.record_id.startswith("mendeley:table-row:") else 1,
                 0 if wants_table_rows and record.record_id.startswith("mendeley:table:") else 1,
             ),

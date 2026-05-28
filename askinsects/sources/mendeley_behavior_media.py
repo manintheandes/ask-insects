@@ -33,6 +33,8 @@ MEDIA_EXTENSIONS = (
     ".webm",
     ".zip",
 )
+VIDEO_EXTENSIONS = (".avi", ".m4v", ".mov", ".mp4", ".webm", ".mpg", ".mpeg")
+AUDIO_EXTENSIONS = (".m4a", ".mp3", ".wav")
 TABLE_EXTENSIONS = (".csv", ".tsv", ".xlsx")
 
 
@@ -73,6 +75,8 @@ class MendeleyBehaviorMediaResult:
     folder_count: int
     file_count: int
     media_file_count: int
+    audio_file_count: int = 0
+    acoustic_assay_record_count: int = 0
     table_file_count: int = 0
     parsed_table_file_count: int = 0
     skipped_table_file_count: int = 0
@@ -247,6 +251,18 @@ def _is_media_file(filename: str, content_type: str) -> bool:
     return lower.endswith(MEDIA_EXTENSIONS) or ctype.startswith("video/") or ctype.startswith("audio/") or "zip" in ctype
 
 
+def _is_audio_file(filename: str, content_type: str) -> bool:
+    lower = filename.lower()
+    ctype = content_type.lower()
+    return lower.endswith(AUDIO_EXTENSIONS) or ctype.startswith("audio/")
+
+
+def _is_video_file(filename: str, content_type: str) -> bool:
+    lower = filename.lower()
+    ctype = content_type.lower()
+    return lower.endswith(VIDEO_EXTENSIONS) or ctype.startswith("video/")
+
+
 def _is_table_file(filename: str, content_type: str) -> bool:
     lower = filename.lower()
     ctype = content_type.lower()
@@ -263,6 +279,75 @@ def _is_aedes_aegypti_table_file(spec: MendeleyDatasetSpec, filename: str) -> bo
     if spec.dataset_id == "sg5rrvdzvg" and "japonicus" in lower and "aegypti" not in lower:
         return False
     return True
+
+
+def _extract_frequency_hz(*values: object) -> list[str]:
+    text = " ".join(str(value or "") for value in values)
+    frequencies = []
+    for value, unit in re.findall(r"\b(\d+(?:\.\d+)?)\s*(k?hz)\b", text, flags=re.I):
+        suffix = "kHz" if unit.lower() == "khz" else "Hz"
+        frequencies.append(f"{value} {suffix}")
+    return list(dict.fromkeys(frequencies))
+
+
+def _extract_replicate_label(filename: str) -> str | None:
+    match = re.search(r"\bfile\s+(\d+)\b", filename, flags=re.I)
+    if match:
+        return f"File {match.group(1)}"
+    return None
+
+
+def _audio_assay_context(filename: str, folder_path: str) -> dict[str, object]:
+    folder_leaf = folder_path.split("/")[-1] if folder_path else ""
+    haystack = f"{folder_path} {filename}"
+    context: dict[str, object] = {
+        "assay": "acoustic behavior file",
+        "stimulus": folder_leaf or None,
+        "frequency_hz": _extract_frequency_hz(folder_path, filename),
+        "replicate_label": _extract_replicate_label(filename),
+        "source_context": "source_manifest_folder_metadata",
+    }
+    channel_match = re.search(r"\b(\d+)\s*channels?\b", haystack, flags=re.I)
+    if channel_match:
+        context["channel_count"] = int(channel_match.group(1))
+    if "white noise" in haystack.lower():
+        context["comparison_stimulus"] = "white noise"
+    return {key: value for key, value in context.items() if value not in (None, "", [], {})}
+
+
+def _species_from_row_values(row_values: dict[str, str]) -> str:
+    species_value = ""
+    for key, value in row_values.items():
+        normalized_key = re.sub(r"[^a-z0-9]+", "_", key.lower()).strip("_")
+        if normalized_key in {"species", "species_name", "taxon", "taxon_name"}:
+            species_value = value.strip()
+            break
+    lower = species_value.lower().replace("_", " ")
+    if re.search(r"\b(?:aedes|ae\.?|a\.)?\s*aegypti\b", lower) or lower == "aegypti":
+        return "Aedes aegypti"
+    if re.search(r"\b(?:aedes|ae\.?|a\.)?\s*albopictus\b", lower) or lower == "albopictus":
+        return "Aedes albopictus"
+    if re.search(r"\b(?:aedes|ae\.?|a\.)?\s*japonicus\b", lower) or lower == "japonicus":
+        return "Aedes japonicus"
+    return "Aedes aegypti"
+
+
+def _table_behavior_type(filename: str, sheet_name: str, headers: list[str], row_values: dict[str, str] | None = None) -> str:
+    text = " ".join([filename, sheet_name, *headers, *(row_values or {}).keys(), *(row_values or {}).values()]).lower()
+    normalized_headers = {re.sub(r"[^a-z0-9]+", "_", header.lower()).strip("_") for header in headers}
+    if {"track_id", "position_x", "position_y"} & normalized_headers and ("position_t" in normalized_headers or "frame" in normalized_headers):
+        return "trajectory"
+    if "spot statistics" in text:
+        return "trajectory"
+    if "phonotaxis" in text:
+        return "phonotaxis"
+    if any(term in text for term in ("electrophysiology", "threshold", "auditory nerve", "johnston")):
+        return "electrophysiology"
+    if any(term in text for term in ("wbf", "wingbeat", "wing beat", "flight tone", "acoustic", "frequency", "sound")):
+        return "acoustic_wingbeat"
+    if any(term in text for term in ("videoanalysis", "video analysis", "locomotory", "velocity", "distance moved", "behavioural_activity", "behavioral_activity")):
+        return "locomotory_assay"
+    return "behavior_table"
 
 
 def _table_file_path(raw_dir: Path, spec: MendeleyDatasetSpec, file_payload: dict[str, object], filename: str) -> Path:
@@ -647,6 +732,85 @@ def _file_record(
     )
 
 
+def _audio_assay_record(
+    *,
+    spec: MendeleyDatasetSpec,
+    snapshot: dict[str, object],
+    file_payload: dict[str, object],
+    folder_path: str,
+    raw_path: Path,
+    folder_id: str,
+    file_index: int,
+    retrieved_at: str,
+) -> EvidenceRecord:
+    dataset_title = _clean_text(snapshot.get("name")) or _doi(snapshot, spec)
+    filename = str(file_payload.get("filename") or f"file-{file_index}")
+    details = _content_details(file_payload)
+    download_url = str(details.get("download_url") or "")
+    view_url = str(details.get("view_url") or "")
+    size = details.get("size") if details.get("size") is not None else file_payload.get("size")
+    content_type = str(details.get("content_type") or "")
+    sha256_hash = str(details.get("sha256_hash") or "")
+    context = _audio_assay_context(filename, folder_path)
+    frequencies = ", ".join(str(value) for value in context.get("frequency_hz", []))
+    labels = ", ".join(spec.behavior_labels)
+    text_parts = [
+        f"Mendeley source-provided audio/acoustic file metadata for Aedes aegypti behavior dataset {dataset_title}.",
+        f"File: {filename}.",
+        f"Folder path: {folder_path}.",
+        f"Assay: {context.get('assay', 'acoustic behavior file')}.",
+        f"Stimulus/context: {context.get('stimulus', folder_path)}.",
+        f"Behavior labels: {labels}.",
+        "This record is manifest and folder-context evidence; waveform features have not been decoded.",
+    ]
+    if frequencies:
+        text_parts.append(f"Frequency label(s): {frequencies}.")
+    if context.get("comparison_stimulus"):
+        text_parts.append(f"Comparison stimulus: {context['comparison_stimulus']}.")
+    if size is not None:
+        text_parts.append(f"Size bytes: {size}.")
+    if content_type:
+        text_parts.append(f"Content type: {content_type}.")
+    if sha256_hash:
+        text_parts.append(f"SHA-256: {sha256_hash}.")
+    source_url = download_url or view_url or _dataset_web_url(snapshot, spec)
+    return EvidenceRecord(
+        record_id=f"mendeley:audio-assay:{_safe_id(spec.dataset_id)}:v{spec.version}:{_safe_id(str(file_payload.get('id') or filename))}",
+        lane="behavior",
+        source=MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
+        title=f"Aedes aegypti Mendeley acoustic behavior file {filename}",
+        text=" ".join(text_parts),
+        species="Aedes aegypti",
+        url=_dataset_web_url(snapshot, spec),
+        media_url=download_url or None,
+        provenance=Provenance(
+            source_id=MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
+            locator=f"{raw_path.as_posix()}#audio-assay/{folder_id}/{file_index}",
+            retrieved_at=retrieved_at,
+            license=_license(snapshot),
+            source_url=source_url,
+        ),
+        payload={
+            "record_type": "mendeley_audio_assay_metadata",
+            "dataset_id": spec.dataset_id,
+            "version": spec.version,
+            "doi": _doi(snapshot, spec),
+            "dataset_title": dataset_title,
+            "file_id": file_payload.get("id"),
+            "filename": filename,
+            "folder_id": file_payload.get("folder_id"),
+            "folder_path": folder_path,
+            "content_type": content_type,
+            "size": size,
+            "sha256_hash": sha256_hash,
+            "download_url": download_url,
+            "view_url": view_url,
+            "behavior_labels": list(spec.behavior_labels),
+            **context,
+        },
+    )
+
+
 def _table_sheet_record(
     *,
     spec: MendeleyDatasetSpec,
@@ -665,6 +829,7 @@ def _table_sheet_record(
     file_id = str(file_payload.get("id") or filename)
     sample_rows = [_row_values(headers, row) for _, row in data_rows[:3]]
     labels = ", ".join(spec.behavior_labels)
+    table_behavior_type = _table_behavior_type(filename, sheet_name, headers)
     return EvidenceRecord(
         record_id=(
             f"mendeley:table:{_safe_id(spec.dataset_id)}:v{spec.version}:"
@@ -676,7 +841,7 @@ def _table_sheet_record(
         text=(
             f"Parsed Mendeley behavior table for Aedes aegypti dataset {dataset_title}. "
             f"File: {filename}. Sheet: {sheet_name}. Folder path: {folder_path}. "
-            f"Rows: {len(data_rows)}. Columns: {len(headers)}. Behavior labels: {labels}. "
+            f"Rows: {len(data_rows)}. Columns: {len(headers)}. Table behavior type: {table_behavior_type}. Behavior labels: {labels}. "
             f"Headers: {', '.join(headers[:24])}."
         ),
         species="Aedes aegypti",
@@ -690,6 +855,7 @@ def _table_sheet_record(
             source_url=str(_content_details(file_payload).get("download_url") or _dataset_web_url(snapshot, spec)),
         ),
         payload={
+            "record_type": "mendeley_behavior_table_sheet",
             "dataset_id": spec.dataset_id,
             "version": spec.version,
             "doi": _doi(snapshot, spec),
@@ -699,6 +865,7 @@ def _table_sheet_record(
             "folder_path": folder_path,
             "sheet_name": sheet_name,
             "sheet_index": sheet_index,
+            "table_behavior_type": table_behavior_type,
             "row_count": len(data_rows),
             "column_count": len(headers),
             "headers": headers,
@@ -719,12 +886,15 @@ def _table_row_record(
     sheet_name: str,
     sheet_index: int,
     row_number: int,
+    headers: list[str],
     row_values: dict[str, str],
     retrieved_at: str,
 ) -> EvidenceRecord:
     dataset_title = _clean_text(snapshot.get("name")) or _doi(snapshot, spec)
     file_id = str(file_payload.get("id") or filename)
     formatted_values = _format_row_values(row_values)
+    row_species = _species_from_row_values(row_values)
+    table_behavior_type = _table_behavior_type(filename, sheet_name, headers, row_values)
     return EvidenceRecord(
         record_id=(
             f"mendeley:table-row:{_safe_id(spec.dataset_id)}:v{spec.version}:"
@@ -732,12 +902,13 @@ def _table_row_record(
         ),
         lane="behavior",
         source=MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
-        title=f"Aedes aegypti Mendeley behavior table row {filename} {sheet_name} row {row_number}",
+        title=f"{row_species} Mendeley {table_behavior_type} table row {filename} {sheet_name} row {row_number}",
         text=(
-            f"Parsed Mendeley Aedes aegypti behavior table row from dataset {dataset_title}. "
-            f"File: {filename}. Sheet: {sheet_name}. Row: {row_number}. Values: {formatted_values}."
+            f"Parsed Mendeley {row_species} behavior table row from dataset {dataset_title}. "
+            f"File: {filename}. Sheet: {sheet_name}. Row: {row_number}. "
+            f"Table behavior type: {table_behavior_type}. Values: {formatted_values}."
         ),
-        species="Aedes aegypti",
+        species=row_species,
         url=_dataset_web_url(snapshot, spec),
         media_url=None,
         provenance=Provenance(
@@ -748,6 +919,7 @@ def _table_row_record(
             source_url=str(_content_details(file_payload).get("download_url") or _dataset_web_url(snapshot, spec)),
         ),
         payload={
+            "record_type": "mendeley_behavior_table_row",
             "dataset_id": spec.dataset_id,
             "version": spec.version,
             "doi": _doi(snapshot, spec),
@@ -757,6 +929,8 @@ def _table_row_record(
             "sheet_name": sheet_name,
             "sheet_index": sheet_index,
             "row_number": row_number,
+            "row_species": row_species,
+            "table_behavior_type": table_behavior_type,
             "values": row_values,
             "download_url": str(_content_details(file_payload).get("download_url") or ""),
         },
@@ -812,6 +986,7 @@ def _table_records(
                     sheet_name=sheet.name,
                     sheet_index=sheet_index,
                     row_number=row_number,
+                    headers=headers,
                     row_values=values,
                     retrieved_at=retrieved_at,
                 )
@@ -835,6 +1010,8 @@ def fetch_mendeley_behavior_media_records(
     total_folders = 0
     total_files = 0
     total_media_files = 0
+    total_audio_files = 0
+    total_acoustic_assay_records = 0
     total_table_files = 0
     total_parsed_table_files = 0
     total_skipped_table_files = 0
@@ -900,9 +1077,15 @@ def fetch_mendeley_behavior_media_records(
             for _, _, file_payload in files_flat
             if _is_media_file(str(file_payload.get("filename") or ""), str(_content_details(file_payload).get("content_type") or ""))
         )
+        audio_file_count = sum(
+            1
+            for _, _, file_payload in files_flat
+            if _is_audio_file(str(file_payload.get("filename") or ""), str(_content_details(file_payload).get("content_type") or ""))
+        )
         total_folders += len(folders)
         total_files += len(files_flat)
         total_media_files += media_file_count
+        total_audio_files += audio_file_count
         records.append(
             _dataset_record(
                 spec=spec,
@@ -945,6 +1128,20 @@ def fetch_mendeley_behavior_media_records(
                     retrieved_at=retrieved,
                 )
             )
+            if _is_audio_file(filename, str(details.get("content_type") or "")):
+                records.append(
+                    _audio_assay_record(
+                        spec=spec,
+                        snapshot=snapshot,
+                        file_payload=file_payload,
+                        folder_path=folder_path,
+                        raw_path=files_raw_path,
+                        folder_id=folder_id,
+                        file_index=file_index,
+                        retrieved_at=retrieved,
+                    )
+                )
+                total_acoustic_assay_records += 1
             if not _is_table_file(filename, str(details.get("content_type") or "")):
                 continue
             total_table_files += 1
@@ -1010,6 +1207,8 @@ def fetch_mendeley_behavior_media_records(
         folder_count=total_folders,
         file_count=total_files,
         media_file_count=total_media_files,
+        audio_file_count=total_audio_files,
+        acoustic_assay_record_count=total_acoustic_assay_records,
         table_file_count=total_table_files,
         parsed_table_file_count=total_parsed_table_files,
         skipped_table_file_count=total_skipped_table_files,

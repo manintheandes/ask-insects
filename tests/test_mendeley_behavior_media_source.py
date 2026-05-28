@@ -176,6 +176,45 @@ class MendeleyTableFetcher(MendeleyFetcher):
         raise AssertionError(f"unexpected download URL: {url}")
 
 
+class MendeleyAudioFetcher(MendeleyFetcher):
+    def __init__(self):
+        super().__init__()
+        self.folders = [
+            {"id": "audio-root", "name": "Audio Files", "parent_id": None},
+            {"id": "audio-665", "name": "665 Hz vs white noise", "parent_id": "audio-root"},
+        ]
+        self.files_by_folder = {
+            "root": [],
+            "audio-root": [],
+            "audio-665": [
+                {
+                    "filename": "File 10.wav",
+                    "id": "file-audio",
+                    "folder_id": "audio-665",
+                    "status": "COMPLETED",
+                    "content_details": {
+                        "content_type": "audio/wav",
+                        "size": 13582844,
+                        "sha256_hash": "audio-hash",
+                        "download_url": "https://data.mendeley.com/public-files/audio/file_downloaded",
+                        "view_url": "https://data.mendeley.com/public-files/audio/file_viewed",
+                    },
+                }
+            ],
+        }
+
+    def __call__(self, url):
+        self.urls.append(url)
+        if "/snapshot/" in url:
+            return self.snapshot
+        if "/folders/" in url:
+            return self.folders
+        for folder_id, files in self.files_by_folder.items():
+            if f"folder_id={folder_id}" in url:
+                return files
+        raise AssertionError(f"unexpected URL: {url}")
+
+
 class MendeleyBehaviorMediaSourceTests(unittest.TestCase):
     def test_fetch_mendeley_behavior_media_records_normalizes_dataset_folders_and_files(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -218,6 +257,28 @@ class MendeleyBehaviorMediaSourceTests(unittest.TestCase):
             self.assertEqual(readme.lane, "behavior")
             self.assertIsNone(readme.media_url)
 
+    def test_fetch_mendeley_behavior_media_records_adds_audio_assay_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = MendeleyAudioFetcher()
+            result = fetch_mendeley_behavior_media_records(
+                [MendeleyDatasetSpec(dataset_id="6gvs94p6r2", version=1, behavior_labels=("wingbeat", "acoustic signal"))],
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fetcher,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            self.assertEqual(result.audio_file_count, 1)
+            self.assertEqual(result.acoustic_assay_record_count, 1)
+            audio = next(record for record in result.records if record.record_id.startswith("mendeley:audio-assay:"))
+            self.assertEqual(audio.lane, "behavior")
+            self.assertEqual(audio.species, "Aedes aegypti")
+            self.assertEqual(audio.media_url, "https://data.mendeley.com/public-files/audio/file_downloaded")
+            self.assertEqual(audio.payload["record_type"], "mendeley_audio_assay_metadata")
+            self.assertEqual(audio.payload["frequency_hz"], ["665 Hz"])
+            self.assertEqual(audio.payload["comparison_stimulus"], "white noise")
+            self.assertEqual(audio.payload["replicate_label"], "File 10")
+            self.assertIn("waveform features have not been decoded", audio.text)
+
     def test_fetch_mendeley_behavior_media_records_parses_downloaded_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             fetcher = MendeleyTableFetcher()
@@ -243,7 +304,36 @@ class MendeleyBehaviorMediaSourceTests(unittest.TestCase):
             self.assertEqual(len(rows), 3)
             self.assertTrue(any(record.payload["values"].get("response") == "flight" for record in rows))
             self.assertTrue(any("430 Hz" in record.text for record in rows))
+            self.assertTrue(any(record.payload["table_behavior_type"] == "acoustic_wingbeat" for record in rows))
             self.assertTrue(all(Path(path).name.endswith((".json", ".csv", ".xlsx")) for path in result.raw_artifacts))
+
+    def test_fetch_mendeley_behavior_media_records_preserves_table_row_species(self):
+        class MixedSpeciesFetcher(MendeleyTableFetcher):
+            def bytes_for(self, url):
+                if url.endswith("/csv/file_downloaded"):
+                    return b"Species,WBF,Frequency\nalbopictus,490,665 Hz\naegypti,430,715 Hz\n"
+                return super().bytes_for(url)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = MixedSpeciesFetcher()
+            result = fetch_mendeley_behavior_media_records(
+                [MendeleyDatasetSpec(dataset_id="6gvs94p6r2", version=1, behavior_labels=("wingbeat", "acoustic signal"))],
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fetcher,
+                fetch_bytes=fetcher.bytes_for,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            csv_rows = [
+                record
+                for record in result.records
+                if record.record_id.startswith("mendeley:table-row:")
+                and record.payload["filename"] == "assay.csv"
+            ]
+            self.assertEqual([record.species for record in csv_rows], ["Aedes albopictus", "Aedes aegypti"])
+            self.assertEqual(csv_rows[0].payload["row_species"], "Aedes albopictus")
+            self.assertIn("Parsed Mendeley Aedes albopictus behavior table row", csv_rows[0].text)
+            self.assertEqual(csv_rows[1].payload["table_behavior_type"], "acoustic_wingbeat")
 
     def test_fetch_mendeley_behavior_media_records_records_gap_on_fetch_failure(self):
         with tempfile.TemporaryDirectory() as tmpdir:

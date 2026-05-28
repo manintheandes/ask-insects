@@ -69,6 +69,20 @@ def plan_question(question: str) -> QueryPlan:
         return QueryPlan(question, "behavior", ("behavior", "media"), question)
     if "dryad" in q and any(term in q for term in ("table", "tables", "row", "rows", "source data", "sourcedata")):
         return QueryPlan(question, "behavior", ("behavior", "media"), question)
+    acoustic_behavior_terms = (
+        "audio",
+        "sound",
+        "acoustic",
+        "wingbeat",
+        "wing beat",
+        "flight tone",
+        "flight tones",
+        "phonotaxis",
+        "hearing",
+        "wbf",
+    )
+    if any(term in q for term in acoustic_behavior_terms):
+        return QueryPlan(question, "behavior", ("behavior", "media"), question)
     image_media_terms = (
         "image",
         "images",

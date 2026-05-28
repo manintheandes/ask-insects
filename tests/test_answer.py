@@ -443,6 +443,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
         self.assertEqual(plan_question("what Mendeley table rows mention temperature gradients?").answer_shape, "behavior")
+        self.assertEqual(plan_question("show Mendeley acoustic wingbeat audio files").answer_shape, "behavior")
         self.assertEqual(plan_question("show supplement table behavior response rate for Aedes aegypti").answer_shape, "behavior")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show Aedes aegypti BioSamples from China").lanes[0], "biosamples")
@@ -1491,6 +1492,61 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "mendeley_aedes_behavior_media")
+
+    def test_mendeley_acoustic_questions_prefer_audio_assay_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="mendeley:file:6gvs94p6r2:v1:file_audio",
+                        lane="media",
+                        source="mendeley_aedes_behavior_media",
+                        title="Aedes aegypti Mendeley video/audio/archive file File 10.wav",
+                        text="Mendeley wingbeat sound file for Aedes aegypti acoustic behavior.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/6gvs94p6r2/1",
+                        media_url="https://data.mendeley.com/public-files/audio/file_downloaded",
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/files.json#files/audio/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY 4.0",
+                            source_url="https://data.mendeley.com/public-files/audio/file_downloaded",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="mendeley:audio-assay:6gvs94p6r2:v1:file_audio",
+                        lane="behavior",
+                        source="mendeley_aedes_behavior_media",
+                        title="Aedes aegypti Mendeley acoustic behavior file File 10.wav",
+                        text="Mendeley source-provided audio/acoustic file metadata for Aedes aegypti. Frequency label 665 Hz. Comparison stimulus white noise. Waveform features have not been decoded.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/6gvs94p6r2/1",
+                        media_url="https://data.mendeley.com/public-files/audio/file_downloaded",
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/files.json#audio-assay/audio/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY 4.0",
+                            source_url="https://data.mendeley.com/public-files/audio/file_downloaded",
+                        ),
+                        payload={
+                            "record_type": "mendeley_audio_assay_metadata",
+                            "frequency_hz": ["665 Hz"],
+                            "comparison_stimulus": "white noise",
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Mendeley Aedes wingbeat acoustic audio files", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["record_id"], "mendeley:audio-assay:6gvs94p6r2:v1:file_audio")
 
     def test_osf_flighttrackai_questions_prefer_osf_video_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
