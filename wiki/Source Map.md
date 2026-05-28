@@ -1,6 +1,8 @@
 # Source Map
 
-Open Insects is built from public insect sources. Ask Insects is its first source-backed tool. Each source is a place Ask Insects can read from, such as biodiversity APIs, observation records, licensed photos, public videos, research papers, genomes, cell atlases, or official public-health pages.
+Open Insects is built from public insect sources. Ask Insects is its first source-backed tool, focused now on mosquito intelligence with Aedes aegypti as the deepest first lane.
+
+Each source is a place Ask Insects can read from, such as biodiversity APIs, observation records, licensed photos, public videos, research papers, genomes, cell atlases, or official public-health pages. The long-term goal is to use the same source-backed pattern for insect intelligence overall.
 
 This page exists so the interactive graph shows what is actually inside Ask Insects.
 
@@ -74,4 +76,4 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `who_malaria_threats_resistance_audit` | WHO Malaria Threats Map Aedes resistance audit records and explicit no-row gap when the Aedes filter returns no rows. |
 | `aedes_source_coverage` | Coverage-ledger domain records and queryable missing-source gaps. |
 
-<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->
+<!-- publish-bump: 2026-05-28T13:42:00-07:00 -->

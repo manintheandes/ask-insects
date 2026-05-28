@@ -19,9 +19,11 @@ sources:
 
 # Open Insects
 
-Open Insects is an open-source effort to make insect knowledge queryable, source-backed, and actionable.
+Open Insects is an open-source effort to make insect intelligence queryable, source-backed, and actionable.
 
-Its first tool is Ask Insects: a CLI and hosted source plane that brings together observations, images, videos, papers, genomes, behavior records, neurobiology, public-health evidence, and source gaps, then uses what it knows to answer questions and take action for insects.
+The work starts with mosquito intelligence because mosquitoes are urgent, data-rich, and world-changing. Its first tool is Ask Insects: a CLI and hosted source plane focused first on Aedes aegypti and nearby mosquito evidence: observations, images, videos, papers, genomes, behavior records, neurobiology, public-health evidence, and source gaps.
+
+The larger goal is insect intelligence overall. Mosquitoes are the first deep species lane, and the same source-backed system can expand outward to more mosquitoes and then to insects more broadly.
 
 The command is still simple:
 
@@ -29,9 +31,9 @@ The command is still simple:
 ask-insects ask "where has Aedes aegypti been spotted this year?"
 ```
 
-What's inside as of the May 28, 2026 hosted check:
+What's inside for mosquito intelligence as of the May 28, 2026 hosted check:
 
-- **1,388,102 hosted source records:** [[Source Map|Aedes aegypti source lanes]] across public biodiversity, genomics, behavior, neurobiology, literature, public health, surveillance, images, videos, repellents, and source gaps
+- **1,388,102 hosted source records:** [[Source Map|Aedes aegypti and mosquito source lanes]] across public biodiversity, genomics, behavior, neurobiology, literature, public health, surveillance, images, videos, repellents, and source gaps
 - **96,236 observations / 31,792 media records:** [[Sources/Observations and Images|GBIF, iNaturalist, Mosquito Alert, licensed images, image atoms, video atoms, and media locators]]
 - **850,489 genome and sample records:** [[Sources/Genome and BioSample Evidence|VectorBase, NCBI genome package, BioSamples, DNA barcodes, expression metadata, UniProt, VectorByte traits, and abundance records]]
 - **100,018 neurobiology records:** [[Sources/Neurobiology and Connectome Evidence|brain atlas, cell atlas, CATMAID skeleton metadata, voxel access, SRA workflow records, and connectome gaps]]
@@ -41,10 +43,10 @@ What's inside as of the May 28, 2026 hosted check:
 What it does:
 
 - **Answers and analyzes:** species, observation, genomics, behavior, neurobiology, ecology, and public-health questions with source provenance
-- **Searches public insect memory:** papers, images, observation records, datasets, genes, proteins, and source receipts
+- **Searches public mosquito memory:** papers, images, observation records, datasets, genes, proteins, and source receipts
 - **Inspects media:** public still images, supplementary videos, behavior datasets, OSF manifests, Dryad manifests, and Mendeley media records
 - **Acts on sources:** ingests new public lanes, parses artifacts into SQLite, refreshes hosted evidence, and tracks missing source coverage
-- **Improves over time:** starts with Aedes aegypti, then expands across mosquitoes and the wider insect world
+- **Improves over time:** builds Aedes aegypti deeply first, expands across mosquitoes next, and then grows toward insect intelligence overall
 
 ## Get Started
 
@@ -82,4 +84,4 @@ ask-insects health --hosted
 - Want to know what skills are installed: use [[Insects Skills]].
 - Want to know what changed: use [[Ask Insects Updates]].
 
-<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->
+<!-- publish-bump: 2026-05-28T13:42:00-07:00 -->
