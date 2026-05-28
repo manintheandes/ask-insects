@@ -632,6 +632,102 @@ class IngestVideoAtomsTests(unittest.TestCase):
             self.assertIn("video_atom:gap:legacy-dryad-parse-failed", by_id)
             self.assertEqual(by_id["video_atom:gap:new-mendeley-parse-failed"]["repository"], "mendeley")
 
+    def test_merge_existing_removes_duplicate_video_gap_identity_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            duplicate_payload = {
+                "atom_type": "video_gap",
+                "source": "aedes_video_atoms",
+                "lane": "media",
+                "reason": "video_manifest_gap",
+                "record_id": "zenodo_aedes_videos:15277051",
+                "locator": "raw/zenodo_aedes_videos/search.json#hits/1",
+                "original_source": "zenodo_aedes_videos",
+                "original_reason": "zenodo_material_record_no_video_files",
+                "repository": "zenodo",
+            }
+            duplicate_records = [
+                EvidenceRecord(
+                    record_id="video_atom:gap:old-a",
+                    lane="media",
+                    source="aedes_video_atoms",
+                    title="Old duplicate gap A",
+                    text="Old duplicate gap A.",
+                    species="Aedes aegypti",
+                    url=None,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="aedes_video_atoms",
+                        locator="raw/zenodo_aedes_videos/search.json#hits/1",
+                        retrieved_at=RETRIEVED_AT,
+                    ),
+                    payload=dict(duplicate_payload),
+                ),
+                EvidenceRecord(
+                    record_id="video_atom:gap:old-b",
+                    lane="media",
+                    source="aedes_video_atoms",
+                    title="Old duplicate gap B",
+                    text="Old duplicate gap B.",
+                    species="Aedes aegypti",
+                    url=None,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="aedes_video_atoms",
+                        locator="raw/zenodo_aedes_videos/search.json#hits/1",
+                        retrieved_at=RETRIEVED_AT,
+                    ),
+                    payload=dict(duplicate_payload),
+                ),
+            ]
+            index.upsert_records(duplicate_records)
+            fake_result = AedesVideoAtomsResult(
+                source_id="aedes_video_atoms",
+                records=[],
+                gaps=[],
+                video_asset_count=0,
+                mirrored_video_count=0,
+                verified_video_count=0,
+                artifact_count=0,
+                motion_row_count=0,
+                discovery_candidate_count=0,
+                discovery_sweep_receipts=[],
+            )
+
+            with patch("scripts.ingest_video_atoms.build_video_atom_records", return_value=fake_result):
+                result = ingest_video_atoms(
+                    artifact_dir=artifact_dir,
+                    retrieved_at=RETRIEVED_AT,
+                    merge_existing=True,
+                    parse_motion_rows=False,
+                )
+
+            self.assertTrue(result["ok"])
+            rows = index.sql(
+                """
+                select payload_json
+                from record_payloads
+                where source='aedes_video_atoms'
+                  and json_extract(payload_json, '$.atom_type')='video_gap'
+                """,
+                limit=10,
+            )
+            self.assertEqual(len(rows), 1)
+            gaps = json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))
+            gap_keys = {
+                (
+                    gap.get("source"),
+                    gap.get("lane"),
+                    gap.get("reason"),
+                    gap.get("record_id"),
+                    gap.get("locator"),
+                )
+                for gap in gaps
+            }
+            self.assertEqual(len(gaps), len(gap_keys))
+
     def test_scoped_refresh_preserves_queryable_sweep_records_when_discovery_is_not_rerun(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

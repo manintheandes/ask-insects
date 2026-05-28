@@ -39,7 +39,14 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
 
 def _dedupe_records(records):
     deduped = {}
+    gap_keys = set()
     for record in records:
+        payload = record.payload if isinstance(record.payload, dict) else {}
+        if payload.get("atom_type") == "video_gap":
+            gap_key = _video_gap_identity_key(payload)
+            if gap_key in gap_keys:
+                continue
+            gap_keys.add(gap_key)
         deduped[record.record_id] = record
     return list(deduped.values())
 
@@ -74,6 +81,41 @@ def _repository_from_video_gap_payload(payload: dict[str, object]) -> str | None
         if marker in locator:
             return repository_name
     return None
+
+
+def _video_gap_identity_key(payload: dict[str, object]) -> tuple[str, str, str, str, str]:
+    return (
+        str(payload.get("source") or VIDEO_ATOMS_SOURCE_ID),
+        str(payload.get("lane") or "media"),
+        str(payload.get("reason") or ""),
+        str(payload.get("record_id") or ""),
+        str(payload.get("locator") or ""),
+    )
+
+
+def _delete_duplicate_video_gap_records(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        rows = conn.execute(
+            "SELECT record_id, payload_json FROM record_payloads WHERE source=?",
+            (VIDEO_ATOMS_SOURCE_ID,),
+        ).fetchall()
+        seen: set[tuple[str, str, str, str, str]] = set()
+        delete_ids: list[str] = []
+        for row in rows:
+            payload = json.loads(row["payload_json"])
+            if not isinstance(payload, dict) or payload.get("atom_type") != "video_gap":
+                continue
+            key = _video_gap_identity_key(payload)
+            if key in seen:
+                delete_ids.append(str(row["record_id"]))
+            else:
+                seen.add(key)
+        for chunk in _chunks(delete_ids):
+            placeholders = ",".join("?" for _ in chunk)
+            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+            conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
+            conn.execute(f"DELETE FROM records WHERE record_id IN ({placeholders})", chunk)
+    return len(delete_ids)
 
 
 def _delete_video_atom_repository_records(index: SourceIndex, repositories: Iterable[str]) -> int:
@@ -347,6 +389,7 @@ def ingest_video_atoms(
         index.upsert_records(records)
     else:
         index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, records)
+    _delete_duplicate_video_gap_records(index)
     payload = _update_metadata(artifact_dir, result, merge_existing=merge_existing)
     payload["merge_existing"] = merge_existing
     if discovery_repositories:

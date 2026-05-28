@@ -1867,8 +1867,14 @@ def _existing_artifact_payload(source_asset: EvidenceRecord, artifact_dir: Path,
 def _gap_record(gap: dict[str, object], *, retrieved_at: str, index: int) -> EvidenceRecord:
     reason = str(gap.get("reason") or "video_gap")
     source_record_id = str(gap.get("record_id") or gap.get("title") or gap.get("repository") or f"gap-{index}")
-    digest = _digest(reason, source_record_id, json.dumps(gap, sort_keys=True, default=str), index)
     locator = str(gap.get("locator") or f"gaps.json#aedes_video_atoms/{index}")
+    digest = _digest(
+        str(gap.get("source") or VIDEO_ATOMS_SOURCE_ID),
+        str(gap.get("lane") or "media"),
+        reason,
+        source_record_id,
+        locator,
+    )
     source_url = gap.get("source_url")
     url = source_url if isinstance(source_url, str) and source_url else None
     license_value = gap.get("license")
