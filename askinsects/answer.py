@@ -3349,6 +3349,37 @@ def _source_search_records(index: SourceIndex, source: str, lane: str, query: st
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    identifiers = [match.upper() for match in re.findall(r"\b(?:PRJNA|GSE|PXD)\d+\b", question, flags=re.IGNORECASE)]
+    if not identifiers:
+        return []
+    seen: set[str] = set()
+    records: list[EvidenceRecord] = []
+    with index.connect() as conn:
+        for identifier in identifiers:
+            rows = conn.execute(
+                """
+                SELECT r.*
+                FROM records_fts f
+                JOIN records r ON r.record_id = f.record_id
+                WHERE records_fts MATCH ?
+                  AND r.source = ?
+                ORDER BY bm25(records_fts), r.record_id
+                LIMIT ?
+                """,
+                (f"{identifier}*", EXTRACTED_FACTS_SOURCE_ID, limit),
+            ).fetchall()
+            for row in rows:
+                record = EvidenceRecord.from_row(dict(row))
+                if record.record_id in seen:
+                    continue
+                seen.add(record.record_id)
+                records.append(record)
+                if len(records) >= limit:
+                    return records
+    return records
+
+
 def _extracted_fact_records(index: SourceIndex, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
     if not lanes:
         return []
@@ -3970,6 +4001,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     coverage_summary = _source_coverage_summary_answer(index, plan, limit=limit)
     if coverage_summary is not None:
         return coverage_summary
+
+    exact_identifier_records = _exact_extracted_fact_identifier_records(index, plan.question, limit=limit)
+    if exact_identifier_records:
+        evidence = [record_to_evidence(record) for record in exact_identifier_records[:limit]]
+        return {
+            "ok": True,
+            "answer_shape": plan.answer_shape,
+            "answer": _answer_text(plan, exact_identifier_records),
+            "evidence": evidence,
+            "source_gap": None,
+        }
 
     all_records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()

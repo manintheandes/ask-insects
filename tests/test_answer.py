@@ -4177,6 +4177,57 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(compendium["evidence"][0]["source"], "aedes_global_compendium_occurrence")
             self.assertEqual(population["evidence"][0]["source"], "aedes_population_genomics")
 
+    def test_exact_bioproject_questions_prefer_extracted_fact_manifest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="population_genomics:bioproject:PRJNA1090933",
+                        lane="genome_features",
+                        source="aedes_population_genomics",
+                        title="Aedes population genomics BioProject PRJNA1090933",
+                        text="NCBI BioProject population-genomics record PRJNA1090933 for Aedes aegypti.",
+                        species="Aedes aegypti",
+                        url="https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1090933",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_population_genomics",
+                            locator="raw/aedes_deep_sources/population_genomics/summary.json#result/PRJNA1090933",
+                            retrieved_at="2026-05-25T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_manifest:openalex_W4226382829:prjna789580",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="NCBI BioProject PRJNA789580: Mosquito transcriptomics",
+                        text="Aedes aegypti supplement manifest. Repository: ncbi_bioproject. Accession: PRJNA789580. Project title: Mosquito transcriptomics.",
+                        species="Aedes aegypti",
+                        url="https://www.ncbi.nlm.nih.gov/bioproject/PRJNA789580",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:W4226382829;supplement#PRJNA789580",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "confidence": "manifest",
+                            "fact_type": "supplement_manifest",
+                            "fields": {"repository": "ncbi_bioproject", "accession": "PRJNA789580"},
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("Do we have NCBI BioProject PRJNA789580 for Aedes aegypti?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
+            self.assertIn("PRJNA789580", answer["answer"])
+
     def test_vectornet_questions_prefer_vectornet_surveillance_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
