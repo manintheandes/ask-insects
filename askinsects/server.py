@@ -2276,6 +2276,7 @@ def write_dryad_behavior_video_metadata(staging: Path, source_payload: dict[str,
             "species_count": summary["species_count"],
             "lanes": summary["lanes"],
             "gap_count": len(gaps),
+            "dryad_behavior_videos": source_payload,
         }
     )
 
