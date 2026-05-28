@@ -28,6 +28,7 @@ TABLE_EXTENSIONS = (".csv", ".tsv", ".xlsx")
 DEFAULT_MAX_TABLE_BYTES = 10_000_000
 DEFAULT_MAX_TABLE_ROWS_PER_FILE = 5000
 DEFAULT_LIVE_REQUEST_DELAY_SECONDS = 2.1
+DEFAULT_DOWNLOAD_TIMEOUT_SECONDS = 20
 
 
 @dataclass(frozen=True)
@@ -137,7 +138,7 @@ class DryadClient:
     @staticmethod
     def _fetch_bytes(url: str) -> bytes:
         request = Request(url, headers={"User-Agent": USER_AGENT})
-        with urlopen(request, timeout=120) as response:
+        with urlopen(request, timeout=DEFAULT_DOWNLOAD_TIMEOUT_SECONDS) as response:
             return response.read()
 
     @staticmethod
