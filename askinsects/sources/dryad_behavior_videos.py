@@ -1050,6 +1050,33 @@ def _preview_table_path(raw_dir: Path, doi: str, file_payload: dict[str, object]
     return raw_dir / "table_previews" / f"{_safe_id(doi)}_{_safe_id(file_token)}.js"
 
 
+def _gap_payload(
+    *,
+    lane: str,
+    doi: str,
+    reason: str,
+    retrieved_at: str,
+    filename: str | None = None,
+    record_id: str | None = None,
+    locator: str | None = None,
+    **extra: object,
+) -> dict[str, object]:
+    identity = record_id or f"dryad:gap:{_safe_id(doi)}:{_safe_id(filename or reason)}:{_safe_id(reason)}"
+    payload: dict[str, object] = {
+        "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+        "lane": lane,
+        "doi": doi,
+        "reason": reason,
+        "record_id": identity,
+        "locator": locator or f"dryad://{_safe_id(doi)}/{_safe_id(filename or reason)}/{_safe_id(reason)}",
+        "retrieved_at": retrieved_at,
+    }
+    if filename is not None:
+        payload["filename"] = filename
+    payload.update({key: value for key, value in extra.items() if value is not None})
+    return payload
+
+
 def _table_gap_record(
     *,
     spec: DryadDatasetSpec,
@@ -1061,6 +1088,7 @@ def _table_gap_record(
     reason: str,
     retrieved_at: str,
     error: str | None = None,
+    preview_url: str | None = None,
 ) -> EvidenceRecord:
     doi = _doi_from_identifier(dataset_payload, spec.doi)
     dataset_title = _clean_text(dataset_payload.get("title")) or doi
@@ -1075,14 +1103,23 @@ def _table_gap_record(
         f"Source dataset: {dataset_title}.",
         f"Source file: {filename}.",
         f"Behavior labels: {labels}.",
-        "The table is present in the Dryad file manifest, but Ask Insects has not parsed it into row-level behavior records.",
     ]
+    if reason == "dryad_table_file_download_blocked_preview_used":
+        text_parts.append(
+            "The direct table download is blocked, but Ask Insects parsed Dryad's public preview table into row-level behavior records."
+        )
+    else:
+        text_parts.append(
+            "The table is present in the Dryad file manifest, but Ask Insects has not parsed it into row-level behavior records."
+        )
     if size is not None:
         text_parts.append(f"Size bytes: {size}.")
     if digest and digest_type:
         text_parts.append(f"Checksum: {digest_type} {digest}.")
     if error:
         text_parts.append(f"Error: {error}.")
+    if preview_url:
+        text_parts.append(f"Preview URL: {preview_url}.")
     return EvidenceRecord(
         record_id=f"dryad:table-gap:{_safe_id(doi)}:{_safe_id(filename)}:{_safe_id(reason)}",
         lane="behavior",
@@ -1109,6 +1146,7 @@ def _table_gap_record(
             "source_hash": digest,
             "source_hash_type": digest_type,
             "download_url": download_url,
+            "preview_url": preview_url,
             "behavior_labels": list(spec.behavior_labels),
             "error": error,
         },
@@ -1184,28 +1222,28 @@ def fetch_dryad_behavior_video_records(
                     raw_artifacts.extend([dataset_raw_path.as_posix(), version_raw_path.as_posix(), files_raw_path.as_posix()])
                     files = _file_rows(files_payload)
                     gaps.append(
-                        {
-                            "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
-                            "lane": "media",
-                            "doi": spec.doi,
-                            "reason": "dryad_live_fetch_failed_used_cached_raw",
-                            "error": str(exc),
-                            "retrieved_at": retrieved,
-                        }
+                        _gap_payload(
+                            lane="media",
+                            doi=spec.doi,
+                            reason="dryad_live_fetch_failed_used_cached_raw",
+                            locator=f"{files_raw_path.as_posix()}#cached-after-live-fetch-failed",
+                            error=str(exc),
+                            retrieved_at=retrieved,
+                        )
                     )
                     used_cached_raw = True
                 except Exception:
                     used_cached_raw = False
             if not used_cached_raw:
                 gaps.append(
-                    {
-                        "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
-                        "lane": "media",
-                        "doi": spec.doi,
-                        "reason": "dryad_dataset_fetch_failed",
-                        "error": str(exc),
-                        "retrieved_at": retrieved,
-                    }
+                    _gap_payload(
+                        lane="media",
+                        doi=spec.doi,
+                        reason="dryad_dataset_fetch_failed",
+                        locator=f"{DRYAD_API_BASE}/api/v2/datasets/{quote(f'doi:{spec.doi}', safe='')}",
+                        error=str(exc),
+                        retrieved_at=retrieved,
+                    )
                 )
                 continue
 
@@ -1227,13 +1265,13 @@ def fetch_dryad_behavior_video_records(
         )
         if not files:
             gaps.append(
-                {
-                    "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
-                    "lane": "media",
-                    "doi": spec.doi,
-                    "reason": "dryad_file_manifest_empty",
-                    "retrieved_at": retrieved,
-                }
+                _gap_payload(
+                    lane="media",
+                    doi=spec.doi,
+                    reason="dryad_file_manifest_empty",
+                    locator=f"{files_raw_path.as_posix()}#files",
+                    retrieved_at=retrieved,
+                )
             )
         if fetch_landing_pages:
             try:
@@ -1253,14 +1291,14 @@ def fetch_dryad_behavior_video_records(
                 records.extend(landing_records)
             except Exception as exc:
                 gaps.append(
-                    {
-                        "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
-                        "lane": "behavior",
-                        "doi": _doi_from_identifier(dataset_payload, spec.doi),
-                        "reason": "dryad_landing_page_fetch_failed",
-                        "error": str(exc),
-                        "retrieved_at": retrieved,
-                    }
+                    _gap_payload(
+                        lane="behavior",
+                        doi=_doi_from_identifier(dataset_payload, spec.doi),
+                        reason="dryad_landing_page_fetch_failed",
+                        locator=_dataset_web_url(_doi_from_identifier(dataset_payload, spec.doi)),
+                        error=str(exc),
+                        retrieved_at=retrieved,
+                    )
                 )
         for index, file_payload in enumerate(files, start=1):
             file_count += 1
@@ -1299,56 +1337,56 @@ def fetch_dryad_behavior_video_records(
             size = file_payload.get("size")
             if isinstance(size, int) and size > max_table_bytes:
                 skipped_table_file_count += 1
-                records.append(
-                    _table_gap_record(
-                        spec=spec,
-                        dataset_payload=dataset_payload,
-                        file_payload=file_payload,
-                        files_raw_path=files_raw_path,
-                        file_index=index,
+                gap_record = _table_gap_record(
+                    spec=spec,
+                    dataset_payload=dataset_payload,
+                    file_payload=file_payload,
+                    files_raw_path=files_raw_path,
+                    file_index=index,
+                    filename=filename,
+                    reason="dryad_table_file_too_large",
+                    retrieved_at=retrieved,
+                )
+                records.append(gap_record)
+                gaps.append(
+                    _gap_payload(
+                        lane="behavior",
+                        doi=_doi_from_identifier(dataset_payload, spec.doi),
                         filename=filename,
                         reason="dryad_table_file_too_large",
+                        record_id=gap_record.record_id,
+                        locator=gap_record.provenance.locator,
+                        byte_size=size,
+                        max_table_bytes=max_table_bytes,
                         retrieved_at=retrieved,
                     )
-                )
-                gaps.append(
-                    {
-                        "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
-                        "lane": "behavior",
-                        "doi": _doi_from_identifier(dataset_payload, spec.doi),
-                        "filename": filename,
-                        "reason": "dryad_table_file_too_large",
-                        "byte_size": size,
-                        "max_table_bytes": max_table_bytes,
-                        "retrieved_at": retrieved,
-                    }
                 )
                 continue
             download_href = _link(file_payload, "stash:download")
             download_url = urljoin(DRYAD_API_BASE, download_href) if download_href else ""
             if not download_url:
                 skipped_table_file_count += 1
-                records.append(
-                    _table_gap_record(
-                        spec=spec,
-                        dataset_payload=dataset_payload,
-                        file_payload=file_payload,
-                        files_raw_path=files_raw_path,
-                        file_index=index,
+                gap_record = _table_gap_record(
+                    spec=spec,
+                    dataset_payload=dataset_payload,
+                    file_payload=file_payload,
+                    files_raw_path=files_raw_path,
+                    file_index=index,
+                    filename=filename,
+                    reason="dryad_table_file_missing_download_url",
+                    retrieved_at=retrieved,
+                )
+                records.append(gap_record)
+                gaps.append(
+                    _gap_payload(
+                        lane="behavior",
+                        doi=_doi_from_identifier(dataset_payload, spec.doi),
                         filename=filename,
                         reason="dryad_table_file_missing_download_url",
+                        record_id=gap_record.record_id,
+                        locator=gap_record.provenance.locator,
                         retrieved_at=retrieved,
                     )
-                )
-                gaps.append(
-                    {
-                        "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
-                        "lane": "behavior",
-                        "doi": _doi_from_identifier(dataset_payload, spec.doi),
-                        "filename": filename,
-                        "reason": "dryad_table_file_missing_download_url",
-                        "retrieved_at": retrieved,
-                    }
                 )
                 continue
             table_path = _table_file_path(raw_dir, _doi_from_identifier(dataset_payload, spec.doi), file_payload, filename)
@@ -1400,20 +1438,34 @@ def fetch_dryad_behavior_video_records(
                     )
                     if table_records:
                         records.extend(table_records)
+                        gap_record = _table_gap_record(
+                            spec=spec,
+                            dataset_payload=dataset_payload,
+                            file_payload=file_payload,
+                            files_raw_path=files_raw_path,
+                            file_index=index,
+                            filename=filename,
+                            reason="dryad_table_file_download_blocked_preview_used",
+                            retrieved_at=retrieved,
+                            error=str(exc),
+                            preview_url=preview_url,
+                        )
+                        records.append(gap_record)
                         parsed_table_file_count += 1
                         table_sheet_count += sheet_count
                         table_row_count += row_count
                         gaps.append(
-                            {
-                                "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
-                                "lane": "behavior",
-                                "doi": _doi_from_identifier(dataset_payload, spec.doi),
-                                "filename": filename,
-                                "reason": "dryad_table_file_download_blocked_preview_used",
-                                "download_error": str(exc),
-                                "preview_url": preview_url,
-                                "retrieved_at": retrieved,
-                            }
+                            _gap_payload(
+                                lane="behavior",
+                                doi=_doi_from_identifier(dataset_payload, spec.doi),
+                                filename=filename,
+                                reason="dryad_table_file_download_blocked_preview_used",
+                                record_id=gap_record.record_id,
+                                locator=gap_record.provenance.locator,
+                                download_error=str(exc),
+                                preview_url=preview_url,
+                                retrieved_at=retrieved,
+                            )
                         )
                         continue
                 except Exception as fallback_exc:
@@ -1422,29 +1474,29 @@ def fetch_dryad_behavior_video_records(
                 error_text = str(exc)
                 if preview_error is not None:
                     error_text = f"{error_text}; preview fallback failed: {preview_error}"
-                records.append(
-                    _table_gap_record(
-                        spec=spec,
-                        dataset_payload=dataset_payload,
-                        file_payload=file_payload,
-                        files_raw_path=files_raw_path,
-                        file_index=index,
+                gap_record = _table_gap_record(
+                    spec=spec,
+                    dataset_payload=dataset_payload,
+                    file_payload=file_payload,
+                    files_raw_path=files_raw_path,
+                    file_index=index,
+                    filename=filename,
+                    reason="dryad_table_file_download_or_parse_failed",
+                    retrieved_at=retrieved,
+                    error=error_text,
+                )
+                records.append(gap_record)
+                gaps.append(
+                    _gap_payload(
+                        lane="behavior",
+                        doi=_doi_from_identifier(dataset_payload, spec.doi),
                         filename=filename,
                         reason="dryad_table_file_download_or_parse_failed",
-                        retrieved_at=retrieved,
+                        record_id=gap_record.record_id,
+                        locator=gap_record.provenance.locator,
                         error=error_text,
+                        retrieved_at=retrieved,
                     )
-                )
-                gaps.append(
-                    {
-                        "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
-                        "lane": "behavior",
-                        "doi": _doi_from_identifier(dataset_payload, spec.doi),
-                        "filename": filename,
-                        "reason": "dryad_table_file_download_or_parse_failed",
-                        "error": error_text,
-                        "retrieved_at": retrieved,
-                    }
                 )
                 continue
             records.extend(table_records)

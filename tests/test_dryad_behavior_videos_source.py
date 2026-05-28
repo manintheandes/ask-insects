@@ -340,6 +340,14 @@ class DryadBehaviorVideoSourceTests(unittest.TestCase):
             self.assertTrue(
                 any(gap["reason"] == "dryad_table_file_download_blocked_preview_used" for gap in result.gaps)
             )
+            preview_gaps = [
+                record
+                for record in result.records
+                if record.payload.get("reason") == "dryad_table_file_download_blocked_preview_used"
+            ]
+            self.assertEqual(len(preview_gaps), 2)
+            self.assertTrue(all(record.payload.get("preview_url") for record in preview_gaps))
+            self.assertTrue(all(gap.get("record_id") and gap.get("locator") for gap in result.gaps))
             self.assertFalse(
                 any(record.payload.get("reason") == "dryad_table_file_download_or_parse_failed" for record in result.records)
             )
