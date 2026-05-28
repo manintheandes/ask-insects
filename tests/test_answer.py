@@ -2336,7 +2336,6 @@ class AnswerTests(unittest.TestCase):
                             license="CC0",
                         ),
                         payload={
-                            "atom_type": "table_row",
                             "table_source": "dryad_preview",
                             "filename": "Female_preferences_Ae._aegypti.csv",
                             "row_number": 2,

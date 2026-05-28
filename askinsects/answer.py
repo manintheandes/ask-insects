@@ -4194,7 +4194,12 @@ def _dryad_table_records(index: SourceIndex, question: str, *, limit: int) -> li
     conditions = [
         "r.source = 'dryad_aedes_behavior_videos'",
         "r.lane = 'behavior'",
-        "json_extract(p.payload_json, '$.atom_type') IN ('table_row', 'table_sheet', 'table_gap')",
+        """(
+            json_extract(p.payload_json, '$.atom_type') IN ('table_row', 'table_sheet', 'table_gap')
+            OR r.record_id LIKE 'dryad:table-row:%'
+            OR r.record_id LIKE 'dryad:table:%'
+            OR r.record_id LIKE 'dryad:table-gap:%'
+        )""",
     ]
     if wants_gap:
         conditions.append("json_extract(p.payload_json, '$.atom_type') = 'table_gap'")
@@ -4217,6 +4222,7 @@ def _dryad_table_records(index: SourceIndex, question: str, *, limit: int) -> li
             WHERE {' AND '.join(conditions)}
             ORDER BY
               {row_order},
+              CASE WHEN r.record_id LIKE 'dryad:table-row:%' THEN 0 ELSE 1 END,
               CASE WHEN json_extract(p.payload_json, '$.atom_type') = 'table_row' THEN 0 ELSE 1 END,
               CASE WHEN json_extract(p.payload_json, '$.atom_type') = 'table_gap' THEN 0 ELSE 1 END,
               r.record_id
