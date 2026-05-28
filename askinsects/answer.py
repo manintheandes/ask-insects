@@ -3355,6 +3355,12 @@ def _exact_extracted_fact_identifier_terms(question: str) -> list[str]:
     for match in re.findall(r"10\.17504/protocols\.io[./][A-Za-z0-9_.-]+", question, flags=re.IGNORECASE):
         terms.append(match)
         terms.append(match.rsplit(".", 1)[-1].rsplit("/", 1)[-1])
+    if "protocol" in question.lower():
+        terms.extend(
+            match
+            for match in re.findall(r"\b[A-Za-z][A-Za-z0-9_.-]{5,}\b", question)
+            if any(char.isdigit() for char in match)
+        )
     if "github" in question.lower():
         terms.extend(
             match
@@ -3392,6 +3398,8 @@ def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, 
                     lower(json_extract(p.payload_json, '$.fields.accession')) = ?
                     OR lower(json_extract(p.payload_json, '$.fields.github_full_name')) = ?
                     OR lower(json_extract(p.payload_json, '$.fields.protocol_doi')) = ?
+                    OR lower(json_extract(p.payload_json, '$.fields.accession')) LIKE ?
+                    OR lower(json_extract(p.payload_json, '$.fields.protocol_doi')) LIKE ?
                   )
                 ORDER BY
                   CASE json_extract(p.payload_json, '$.fact_type')
@@ -3402,7 +3410,15 @@ def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, 
                   r.record_id
                 LIMIT ?
                 """,
-                (EXTRACTED_FACTS_SOURCE_ID, identifier_lower, identifier_lower, identifier_lower, limit),
+                (
+                    EXTRACTED_FACTS_SOURCE_ID,
+                    identifier_lower,
+                    identifier_lower,
+                    identifier_lower,
+                    f"%{identifier_lower}%",
+                    f"%{identifier_lower}%",
+                    limit,
+                ),
             ).fetchall()
             for row in exact_rows:
                 record = EvidenceRecord.from_row(dict(row))
