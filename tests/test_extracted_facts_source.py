@@ -176,6 +176,7 @@ def write_single_supplement_fixture(
     title: str,
     text: str,
     supplement_url: str,
+    file_type: str = "docx",
 ) -> None:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
@@ -203,7 +204,7 @@ def write_single_supplement_fixture(
                         {
                             "title": "Additional file",
                             "url": supplement_url,
-                            "file_type": "docx",
+                            "file_type": file_type,
                             "license": "CC-BY",
                             "source": "publisher",
                         }
@@ -1350,6 +1351,51 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(table_row["lines"], "G5_Mala")
             self.assertEqual(table_row["insecticide"], "deltamethrin")
             self.assertEqual(table_row["mortality_rate"], "75")
+
+    def test_build_extracted_fact_records_promotes_resistance_cnv_amplification_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://example.org/aedes-facts/data_CNV_individuals.csv"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:W3208836499",
+                title=(
+                    "A genomic amplification affecting a carboxylesterase gene cluster confers "
+                    "organophosphate resistance in the mosquito Aedes aegypti"
+                ),
+                text="Aedes aegypti copy number variation and carboxylesterase amplification resistance supplement.",
+                supplement_url=supplement_url,
+                file_type="csv",
+            )
+            payload = (
+                "gene,lines,positive_sample,population,CNV,CNV_normalized_bora,amplification\n"
+                "CCEAE3A,G5_Mala,G6 MAL 1,G6 MAL,30.86636,28.91394581,YES\n"
+            ).encode("utf-8")
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed_resistance = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "resistance" and record.payload["confidence"] == "parsed"
+            ]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(len(parsed_resistance), 1)
+            record = parsed_resistance[0]
+            self.assertEqual(record.lane, "resistance")
+            self.assertIn("copy_number", record.payload["fields"])
+            self.assertIn("amplification", record.payload["fields"])
+            self.assertIn("metabolic_marker", record.payload["fields"])
+            self.assertEqual(record.payload["fields"]["table_row"]["gene"], "CCEAE3A")
+            self.assertEqual(record.payload["fields"]["table_row"]["CNV"], "30.86636")
+            self.assertIn("raw/extracted_facts/supplements/", record.provenance.locator)
 
     def test_build_extracted_fact_records_promotes_japanese_vector_surveillance_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:

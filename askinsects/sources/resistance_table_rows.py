@@ -15,7 +15,16 @@ from askinsects.sources.resistance_markers import INSECTICIDE_TERMS, MARKER_SPEC
 
 RESISTANCE_TABLE_ROW_SOURCE_ID = "aedes_resistance_table_rows"
 
-METRIC_FIELDS = ("mortality", "knockdown", "lc_value", "genotype_frequency", "discriminating_concentration")
+METRIC_FIELDS = (
+    "mortality",
+    "knockdown",
+    "lc_value",
+    "genotype_frequency",
+    "discriminating_concentration",
+    "copy_number",
+    "fold_change",
+    "amplification",
+)
 ASSAY_TERMS = (
     "bioassay",
     "WHO tube",
@@ -28,6 +37,13 @@ ASSAY_TERMS = (
     "allele frequency",
     "genotype frequency",
     "haplotype",
+    "copy number",
+    "copy-number",
+    "CNV",
+    "gene amplification",
+    "genomic amplification",
+    "carboxylesterase",
+    "metabolic resistance",
 )
 
 
@@ -83,10 +99,10 @@ def _field_values(fields: dict[str, object], keys: Iterable[str]) -> list[str]:
 
 
 def _marker_terms(fields: dict[str, object], combined_text: str) -> list[str]:
-    field_terms = _field_values(fields, ("mutation", "genotype_frequency", "knockdown"))
+    field_terms = _field_values(fields, ("mutation", "genotype_frequency", "knockdown", "metabolic_marker", "gene"))
     matches: list[str] = []
     for value in field_terms:
-        if re.search(r"\b[A-Z][0-9]{2,4}[A-Z]\b", value):
+        if re.search(r"\b[A-Z][0-9]{2,4}[A-Z]\b", value) or re.search(r"\b(?:AAEL\d+|CCEAE[A-Z0-9]+)\b", value, re.I):
             matches.append(value)
     for spec in MARKER_SPECS:
         for alias in spec.aliases:
@@ -108,6 +124,12 @@ def _metric_fields(fields: dict[str, object], combined_text: str) -> list[str]:
         metrics.append("genotype_frequency")
     if "discriminating concentration" in lower:
         metrics.append("discriminating_concentration")
+    if "cnv" in lower or "copy number" in lower or "copy-number" in lower or "cnv_normalized_bora" in lower:
+        metrics.append("copy_number")
+    if "fold_change" in lower or "fold change" in lower:
+        metrics.append("fold_change")
+    if "amplification" in lower or "amplified" in lower:
+        metrics.append("amplification")
     ordered = [field for field in METRIC_FIELDS if field in set(metrics)]
     return sorted(ordered)
 
@@ -246,7 +268,7 @@ def _gap_record(
         f"Parsed resistance table rows seen: {parsed_rows_seen}. "
         f"Rows skipped by schema validation: {skipped_rows}. "
         "No schema-validated insecticide-resistance table rows are currently queryable from this lane. "
-        "Relevant future row types include V1016G frequency, F1534C frequency, genotype frequency, haplotype, mortality, knockdown, LC50, LC90, and discriminating concentration."
+        "Relevant future row types include V1016G frequency, F1534C frequency, genotype frequency, haplotype, mortality, knockdown, LC50, LC90, discriminating concentration, copy number variation, fold change, and gene amplification."
     )
     return EvidenceRecord(
         record_id=f"resistance_table:gap:{reason}",

@@ -178,6 +178,91 @@ class ResistanceTableRowSourceTests(unittest.TestCase):
             self.assertEqual(record.payload["table_row"]["Discriminating concentration s"], "Deltamethrin")
             self.assertIn("Source record: openalex:W7128925281.", record.text)
 
+    def test_build_resistance_table_row_records_promotes_cnv_amplification_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            parsed_fact = EvidenceRecord(
+                record_id="extracted_fact:resistance:openalex:W3208836499:row12",
+                lane="resistance",
+                source="aedes_extracted_facts",
+                title="Aedes aegypti extracted resistance fact",
+                text=(
+                    "Aedes aegypti extracted resistance fact from a genomic amplification affecting "
+                    "a carboxylesterase gene cluster. Supplement table row. Gene: CCEAE3A. "
+                    "CNV: 30.86636. CNV_normalized_bora: 28.91394581. amplification: YES."
+                ),
+                species="Aedes aegypti",
+                url="https://example.org/data_CNV_individuals.csv",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_extracted_facts",
+                    locator="records#openalex:W3208836499;supplement#0;raw/extracted_facts/supplements/data_CNV_individuals.csv;row#12",
+                    retrieved_at="2026-05-27T00:00:00Z",
+                    license="CC-BY",
+                    source_url="https://example.org/data_CNV_individuals.csv",
+                ),
+                payload={
+                    "fact_type": "resistance",
+                    "confidence": "parsed",
+                    "extraction_method": "deterministic_supplement_table_row_extract",
+                    "schema_version": "2026-05-24.v1",
+                    "source_record_id": "openalex:W3208836499",
+                    "source_title": (
+                        "A genomic amplification affecting a carboxylesterase gene cluster confers "
+                        "organophosphate resistance in the mosquito Aedes aegypti"
+                    ),
+                    "evidence_text": "CCEAE3A CNV 30.86636 CNV_normalized_bora 28.91394581 amplification YES.",
+                    "fields": {
+                        "copy_number": ["cnv", "cnv_normalized_bora"],
+                        "amplification": ["amplification"],
+                        "metabolic_marker": ["carboxylesterase", "cceae3a"],
+                        "gene": ["cceae3a"],
+                        "insecticide": ["organophosphate"],
+                        "table_headers": [
+                            "gene",
+                            "lines",
+                            "positive_sample",
+                            "population",
+                            "CNV",
+                            "CNV_normalized_bora",
+                            "amplification",
+                        ],
+                        "table_row": {
+                            "gene": "CCEAE3A",
+                            "lines": "G5_Mala",
+                            "positive_sample": "G6 MAL 1",
+                            "population": "G6 MAL",
+                            "CNV": "30.86636",
+                            "CNV_normalized_bora": "28.91394581",
+                            "amplification": "YES",
+                        },
+                        "table_row_index": 12,
+                    },
+                    "source_provenance": {
+                        "source_id": "aedes_literature_openalex",
+                        "locator": "raw/literature/page.json#W3208836499",
+                        "retrieved_at": "2026-05-23T22:26:07Z",
+                        "license": "OpenAlex metadata",
+                    },
+                },
+            )
+            index.upsert_records([parsed_fact])
+
+            result = build_resistance_table_row_records(artifact_dir, retrieved_at="2026-05-27T00:00:00Z")
+
+            self.assertEqual(result.parsed_table_row_count, 1)
+            self.assertEqual(result.skipped_table_row_count, 0)
+            record = result.records[0]
+            self.assertEqual(record.payload["insecticide_terms"], ["organophosphate"])
+            self.assertIn("copy_number", record.payload["metric_fields"])
+            self.assertIn("amplification", record.payload["metric_fields"])
+            self.assertTrue({"cceae3a", "carboxylesterase"} & set(record.payload["marker_terms"]))
+            self.assertEqual(record.payload["table_row"]["gene"], "CCEAE3A")
+            self.assertEqual(record.payload["table_row_index"], 12)
+            self.assertIn("Source record: openalex:W3208836499.", record.text)
+
     def test_build_resistance_table_row_records_records_gap_when_empty(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

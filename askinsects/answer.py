@@ -2454,10 +2454,44 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
                 "table rows",
                 "discriminating concentration",
                 "discriminating concentrations",
+                "copy number",
+                "copy-number",
+                "cnv",
+                "amplification",
+                "carboxylesterase",
+                "cceae",
             )
         )
     ):
         return []
+    locator_terms = [match.lower() for match in re.findall(r"\bW\d{6,}\b", question, flags=re.IGNORECASE)]
+    focus_groups: list[tuple[str, ...]] = []
+    if "copy number" in q or "copy-number" in q:
+        focus_groups.append(("copy number", "copy_number", "cnv"))
+    if "cnv" in q:
+        focus_groups.append(("cnv", "copy_number"))
+    if "amplification" in q or "amplified" in q:
+        focus_groups.append(("amplification", "amplified"))
+    if "carboxylesterase" in q:
+        focus_groups.append(("carboxylesterase",))
+    if "cceae" in q:
+        focus_groups.append(("cceae",))
+    for marker in re.findall(r"\b(?:AAEL\d+|CCEAE[A-Z0-9]+)\b", question, flags=re.IGNORECASE):
+        focus_groups.append((marker.lower(),))
+
+    def locator_rank(record: EvidenceRecord) -> int:
+        if not locator_terms:
+            return 0
+        haystack = (
+            f"{record.record_id}\n{record.title}\n{record.text}\n{record.url or ''}\n"
+            f"{record.provenance.locator}\n{record.provenance.source_url or ''}"
+        ).lower()
+        return 0 if any(term in haystack for term in locator_terms) else 1
+
+    def focus_miss_count(record: EvidenceRecord) -> int:
+        haystack = f"{record.record_id}\n{record.title}\n{record.text}\n{record.provenance.locator}\n{record.provenance.source_url or ''}".lower()
+        return sum(1 for group in focus_groups if not any(term in haystack for term in group))
+
     with index.connect() as conn:
         rows = conn.execute(
             """
@@ -2474,7 +2508,12 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
         ).fetchall()
     records = [EvidenceRecord.from_row(dict(row)) for row in rows]
     if records:
-        return _prioritize_named_source_records(question, records)[:limit]
+        prioritized = _prioritize_named_source_records(question, records)
+        order = {record.record_id: index for index, record in enumerate(prioritized)}
+        return sorted(
+            prioritized,
+            key=lambda record: (locator_rank(record), focus_miss_count(record), order[record.record_id]),
+        )[:limit]
     records = _source_search_records(
         index,
         RESISTANCE_TABLE_ROW_SOURCE_ID,

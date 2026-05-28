@@ -438,6 +438,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what insecticide resistance data exists for Aedes aegypti?").answer_shape, "resistance")
         self.assertEqual(plan_question("show CYP9J32 metabolic resistance markers in Aedes aegypti").answer_shape, "resistance")
         self.assertEqual(plan_question("show parsed resistance table V1016G frequency for Aedes aegypti").answer_shape, "resistance")
+        self.assertEqual(plan_question("show resistance copy number amplification evidence from openalex W3208836499 CCEAE3A").answer_shape, "resistance")
         self.assertEqual(plan_question("show schema-validated Aedes aegypti resistance supplement table rows").answer_shape, "resistance")
         self.assertEqual(plan_question("what vector competence data exists for dengue?").answer_shape, "vector_competence")
         self.assertEqual(plan_question("what host seeking behavior data exists for Aedes aegypti?").answer_shape, "behavior")
@@ -3861,6 +3862,27 @@ class AnswerTests(unittest.TestCase):
                         payload={"confidence": "parsed_table_schema_validated"},
                     ),
                     EvidenceRecord(
+                        record_id="resistance_table:extracted_fact:resistance:openalex:W3208836499:row21",
+                        lane="resistance",
+                        source="aedes_resistance_table_rows",
+                        title="Aedes aegypti parsed resistance table row: organophosphate CCEAE3A",
+                        text=(
+                            "Schema-validated parsed supplement table row. Source record: openalex:W3208836499. "
+                            "Insecticide terms: organophosphate. Marker terms: cceae3a, carboxylesterase. "
+                            "Metric fields: amplification, copy_number. Table row: gene: CCEAE3A. CNV: 18.32505. amplification: YES."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://example.org/w320-cnv",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_resistance_table_rows",
+                            locator="records#openalex:W3208836499;row#21",
+                            retrieved_at="2026-05-27T00:00:00Z",
+                            license="CC-BY",
+                        ),
+                        payload={"confidence": "parsed_table_schema_validated"},
+                    ),
+                    EvidenceRecord(
                         record_id="resistance_table:extracted_fact:resistance:openalex:W7128925281:row3",
                         lane="resistance",
                         source="aedes_resistance_table_rows",
@@ -3888,6 +3910,17 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["record_id"], "resistance_table:extracted_fact:resistance:openalex:W7128925281:row3")
             self.assertIn("Deltamethrin", answer["evidence"][0]["text"])
+
+            cnv_answer = answer_question(
+                "show resistance copy number amplification evidence from openalex W3208836499 CCEAE3A",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(cnv_answer["ok"])
+            self.assertEqual(cnv_answer["answer_shape"], "resistance")
+            self.assertEqual(cnv_answer["evidence"][0]["record_id"], "resistance_table:extracted_fact:resistance:openalex:W3208836499:row21")
+            self.assertIn("copy_number", cnv_answer["evidence"][0]["text"])
+            self.assertIn("CCEAE3A", cnv_answer["evidence"][0]["text"])
 
     def test_resistance_table_questions_return_table_gap_record(self):
         with tempfile.TemporaryDirectory() as tmpdir:
