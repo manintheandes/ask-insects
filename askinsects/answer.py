@@ -3391,6 +3391,60 @@ def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, 
     with index.connect() as conn:
         for identifier in identifiers:
             identifier_lower = identifier.lower()
+            if prefer_expression_rows:
+                source_record_rows = conn.execute(
+                    """
+                    SELECT DISTINCT json_extract(payload_json, '$.source_record_id') AS source_record_id
+                    FROM record_payloads
+                    WHERE source = ?
+                      AND json_extract(payload_json, '$.source_record_id') IS NOT NULL
+                      AND (
+                        lower(json_extract(payload_json, '$.fields.accession')) = ?
+                        OR lower(json_extract(payload_json, '$.fields.protocol_doi')) = ?
+                        OR lower(json_extract(payload_json, '$.supplement.accession')) = ?
+                        OR lower(json_extract(payload_json, '$.fields.accession')) LIKE ?
+                        OR lower(json_extract(payload_json, '$.fields.protocol_doi')) LIKE ?
+                        OR lower(json_extract(payload_json, '$.supplement.accession')) LIKE ?
+                      )
+                    ORDER BY source_record_id
+                    LIMIT ?
+                    """,
+                    (
+                        EXTRACTED_FACTS_SOURCE_ID,
+                        identifier_lower,
+                        identifier_lower,
+                        identifier_lower,
+                        f"%{identifier_lower}%",
+                        f"%{identifier_lower}%",
+                        f"%{identifier_lower}%",
+                        limit,
+                    ),
+                ).fetchall()
+                for source_record_row in source_record_rows:
+                    source_record_id = source_record_row["source_record_id"]
+                    if not source_record_id:
+                        continue
+                    expression_rows = conn.execute(
+                        """
+                        SELECT r.*
+                        FROM record_payloads p
+                        JOIN records r ON r.record_id = p.record_id
+                        WHERE p.source = ?
+                          AND json_extract(p.payload_json, '$.fact_type') = 'expression_omics'
+                          AND json_extract(p.payload_json, '$.source_record_id') = ?
+                        ORDER BY r.record_id
+                        LIMIT ?
+                        """,
+                        (EXTRACTED_FACTS_SOURCE_ID, source_record_id, limit),
+                    ).fetchall()
+                    for row in expression_rows:
+                        record = EvidenceRecord.from_row(dict(row))
+                        if record.record_id in seen:
+                            continue
+                        seen.add(record.record_id)
+                        records.append(record)
+                        if len(records) >= limit:
+                            return records
             exact_rows = conn.execute(
                 """
                 SELECT r.*

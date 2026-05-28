@@ -600,6 +600,7 @@ class AnswerTests(unittest.TestCase):
                         payload={
                             "fact_type": "supplement_manifest",
                             "fields": {"accession": "PXD030925"},
+                            "source_record_id": "openalex:W4319295297",
                             "supplement": supplement,
                             "confidence": "manifest",
                         },
@@ -625,7 +626,7 @@ class AnswerTests(unittest.TestCase):
                                 "protein_identifier": ["protein ids"],
                                 "table_row": {"IDs": "AAEL000001", "Fe_Ov_NBF_1_TPM": "12.4"},
                             },
-                            "supplement": supplement,
+                            "source_record_id": "openalex:W4319295297",
                             "confidence": "parsed",
                         },
                     ),
