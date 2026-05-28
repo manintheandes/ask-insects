@@ -2362,6 +2362,26 @@ class AnswerTests(unittest.TestCase):
                             "preview_url": "https://datadryad.org/data_file/preview/2671955.js",
                         },
                     ),
+                    EvidenceRecord(
+                        record_id="dryad:table-gap:aaa_parse_failed",
+                        lane="behavior",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad behavior table gap BehaviorVideoList.xlsx",
+                        text="Aedes aegypti Dryad table source gap: dryad_table_file_download_or_parse_failed. Source file: BehaviorVideoList.xlsx.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/dryad.j6q573nr3",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/files.json#file/1/gap/dryad_table_file_download_or_parse_failed",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                        payload={
+                            "atom_type": "table_gap",
+                            "reason": "dryad_table_file_download_or_parse_failed",
+                        },
+                    ),
                 ]
             )
 

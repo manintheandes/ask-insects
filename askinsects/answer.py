@@ -4158,19 +4158,26 @@ def _dryad_table_gap_records(index: SourceIndex, question: str, *, limit: int) -
         return []
     if not any(term in q for term in ("gap", "gaps", "failed", "failure", "blocked", "missing", "not parsed", "unparsed")):
         return []
+    reason_filter = ""
+    params: list[object] = []
+    if "preview" in q or "dryad_preview" in q:
+        reason_filter = "AND json_extract(p.payload_json, '$.reason') = ?"
+        params.append("dryad_table_file_download_blocked_preview_used")
+    params.append(limit)
     with index.connect() as conn:
         rows = conn.execute(
-            """
+            f"""
             SELECT r.*
             FROM records r
             JOIN record_payloads p ON p.record_id = r.record_id
             WHERE r.source = 'dryad_aedes_behavior_videos'
               AND r.lane = 'behavior'
               AND json_extract(p.payload_json, '$.atom_type') = 'table_gap'
+              {reason_filter}
             ORDER BY r.record_id
             LIMIT ?
             """,
-            (limit,),
+            params,
         ).fetchall()
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
