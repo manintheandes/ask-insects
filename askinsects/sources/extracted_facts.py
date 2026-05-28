@@ -337,7 +337,7 @@ CROSSREF_WORKS_API_BASE = "https://api.crossref.org/works"
 DATACITE_DOI_API_BASE = "https://api.datacite.org/dois"
 UNPAYWALL_API_BASE = "https://api.unpaywall.org/v2"
 UNPAYWALL_EMAIL = "sources@openinsects.org"
-REPOSITORY_METADATA_SUPPLEMENT_SOURCES = {"ncbi_bioproject"}
+REPOSITORY_METADATA_SUPPLEMENT_SOURCES = {"ncbi_bioproject", "ncbi_geo"}
 RESISTANCE_DISCOVERY_TERMS = (
     "insecticide resistance",
     "insecticide-resistant",
@@ -616,6 +616,7 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
     supplements.extend(_zenodo_supplements(request))
     supplements.extend(_dryad_supplements(request))
     supplements.extend(_ncbi_bioproject_supplements(request))
+    supplements.extend(_ncbi_geo_supplements(request))
     supplements.extend(_crossref_relation_supplements(request))
     supplements.extend(_datacite_relation_supplements(request))
     supplements.extend(_unpaywall_supplements(request))
@@ -795,6 +796,8 @@ def _expand_repository_relation_supplements(url: str) -> list[dict[str, object]]
         supplements.extend(_dryad_supplements(relation_request))
     if _ncbi_bioproject_accession_from_request(relation_request):
         supplements.extend(_ncbi_bioproject_supplements(relation_request))
+    if _ncbi_geo_accession_from_request(relation_request):
+        supplements.extend(_ncbi_geo_supplements(relation_request))
     for supplement in supplements:
         supplement.setdefault("discovered_via", "crossref_relation")
         supplement.setdefault("crossref_relation_url", url)
@@ -1173,6 +1176,65 @@ def _ncbi_bioproject_supplements(request: dict[str, object]) -> list[dict[str, o
     return [{key: value for key, value in supplement.items() if value not in (None, "")}]
 
 
+def _ncbi_geo_accession_from_request(request: dict[str, object]) -> str | None:
+    haystack = " ".join(str(request.get(key) or "") for key in ("doi", "url", "accession", "id"))
+    match = re.search(r"\bGSE\d+\b", haystack, re.I)
+    return match.group(0).upper() if match else None
+
+
+def _ncbi_geo_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    accession = _ncbi_geo_accession_from_request(request)
+    if not accession:
+        return []
+    search_url = f"{NCBI_EUTILS_BASE}/esearch.fcgi?{urlencode({'db': 'gds', 'term': accession, 'retmode': 'json'})}"
+    try:
+        search_payload = _fetch_ncbi_json_url(search_url)
+    except Exception:
+        return []
+    result = search_payload.get("esearchresult") if isinstance(search_payload.get("esearchresult"), dict) else {}
+    ids = result.get("idlist") if isinstance(result.get("idlist"), list) else []
+    uid = str(ids[0]) if ids else ""
+    if not uid:
+        return []
+    summary_url = f"{NCBI_EUTILS_BASE}/esummary.fcgi?{urlencode({'db': 'gds', 'id': uid, 'retmode': 'json'})}"
+    try:
+        summary_payload = _fetch_ncbi_json_url(summary_url)
+    except Exception:
+        return []
+    summary_result = summary_payload.get("result") if isinstance(summary_payload.get("result"), dict) else {}
+    item = summary_result.get(uid) if isinstance(summary_result.get(uid), dict) else {}
+    series_acc = str(item.get("accession") or accession).upper()
+    title = str(item.get("title") or f"NCBI GEO series {series_acc}")
+    pubmedids = item.get("pubmedids")
+    if isinstance(pubmedids, list):
+        pubmed_ids = "; ".join(str(value) for value in pubmedids if value)
+    else:
+        pubmed_ids = str(pubmedids or "")
+    supplement = {
+        "title": f"NCBI GEO {series_acc}: {title}",
+        "url": f"https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc={series_acc}",
+        "file_type": "repository_metadata",
+        "license": "NCBI public metadata",
+        "source": "ncbi_geo",
+        "metadata_url": summary_url,
+        "repository": "ncbi_geo",
+        "accession": series_acc,
+        "dataset_id": item.get("uid") or uid,
+        "dataset_title": title,
+        "dataset_summary": item.get("summary"),
+        "dataset_type": item.get("gdstype") or item.get("entrytype"),
+        "taxon": item.get("taxon"),
+        "sample_count": item.get("n_samples"),
+        "supplement_file_types": item.get("suppfile"),
+        "pubmed_ids": pubmed_ids or None,
+        "ftp_url": item.get("ftplink"),
+        "bioproject": item.get("bioproject"),
+        "registration_date": item.get("pdat"),
+        "search_url": search_url,
+    }
+    return [{key: value for key, value in supplement.items() if value not in (None, "")}]
+
+
 def _matches_prefilter(text: str) -> bool:
     lower = text.lower()
     return any(token in lower for token in PREFILTER_TOKENS)
@@ -1392,6 +1454,16 @@ def _normalize_supplement(raw: dict[str, object]) -> dict[str, object]:
         "registration_date",
         "submitter",
         "sequencing_status",
+        "dataset_id",
+        "dataset_title",
+        "dataset_summary",
+        "dataset_type",
+        "taxon",
+        "sample_count",
+        "supplement_file_types",
+        "pubmed_ids",
+        "ftp_url",
+        "bioproject",
         "search_url",
         "discovered_via",
         "crossref_relation_url",
@@ -2382,6 +2454,16 @@ def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrie
         "registration_date",
         "submitter",
         "sequencing_status",
+        "dataset_id",
+        "dataset_title",
+        "dataset_summary",
+        "dataset_type",
+        "taxon",
+        "sample_count",
+        "supplement_file_types",
+        "pubmed_ids",
+        "ftp_url",
+        "bioproject",
         "search_url",
         "discovered_via",
         "crossref_relation_url",

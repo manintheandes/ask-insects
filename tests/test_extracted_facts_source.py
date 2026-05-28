@@ -428,6 +428,54 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
             self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
 
+    def test_build_extracted_fact_records_keeps_geo_metadata_as_exact_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "NCBI GEO GSE193470: Two novel Aedes aegypti drought resilience genes",
+                        "url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE193470",
+                        "file_type": "repository_metadata",
+                        "license": "NCBI public metadata",
+                        "source": "ncbi_geo",
+                        "repository": "ncbi_geo",
+                        "accession": "GSE193470",
+                        "dataset_title": "Two novel Aedes aegypti drought resilience genes",
+                        "dataset_type": "Expression profiling by high throughput sequencing",
+                        "taxon": "Aedes aegypti",
+                        "sample_count": 33,
+                        "metadata_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=gds&id=200193470&retmode=json",
+                    }
+                ],
+                fetch_supplement_file_fn=lambda url, max_bytes: b"",
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            manifest = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+                and record.payload["supplement"]["source"] == "ncbi_geo"
+            )
+            self.assertEqual(manifest.payload["fields"]["accession"], "GSE193470")
+            self.assertEqual(manifest.payload["fields"]["dataset_type"], "Expression profiling by high throughput sequencing")
+            file_gap = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+                and record.payload["fields"].get("repository") == "ncbi_geo"
+            )
+            self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
+            self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
+
     def test_build_extracted_fact_records_expands_existing_bioproject_relation_manifest(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -856,6 +904,48 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertEqual(supplements[0]["source"], "ncbi_bioproject")
         self.assertEqual(supplements[0]["accession"], "PRJNA942966")
         self.assertEqual(supplements[0]["project_data_type"], "Raw sequence reads")
+
+    def test_fetch_public_supplement_metadata_discovers_direct_geo_metadata(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            if "eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi" in url and "GSE193470" in url:
+                return {"esearchresult": {"idlist": ["200193470"]}}
+            if "eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi" in url and "200193470" in url:
+                return {
+                    "result": {
+                        "uids": ["200193470"],
+                        "200193470": {
+                            "uid": "200193470",
+                            "accession": "GSE193470",
+                            "title": "Two novel, tightly linked, and rapidly evolving genes underlie Aedes aegypti drought resilience",
+                            "summary": "Aedes aegypti ovary transcriptomic and proteomic profiling under drought-like conditions.",
+                            "gdstype": "Expression profiling by high throughput sequencing",
+                            "taxon": "Aedes aegypti",
+                            "n_samples": 33,
+                            "suppfile": "TXT",
+                            "pubmedids": ["36744865"],
+                            "ftplink": "ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE193nnn/GSE193470/",
+                            "bioproject": "PRJNA796320",
+                            "pdat": "2022/03/01",
+                        },
+                    }
+                }
+            return {}
+
+        with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WGEO",
+                    "url": "GSE193470",
+                }
+            )
+
+        self.assertEqual(len(supplements), 1)
+        self.assertEqual(supplements[0]["source"], "ncbi_geo")
+        self.assertEqual(supplements[0]["accession"], "GSE193470")
+        self.assertEqual(supplements[0]["sample_count"], 33)
+        self.assertEqual(supplements[0]["pubmed_ids"], "36744865")
 
     def test_fetch_public_supplement_metadata_discovers_datacite_relations(self):
         def fake_json(url: str) -> dict[str, object]:
