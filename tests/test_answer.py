@@ -1573,6 +1573,39 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "behavior")
             self.assertEqual(answer["evidence"][0]["record_id"], "mendeley:audio-metadata:6gvs94p6r2:v1:file_audio")
 
+    def test_mendeley_acoustic_questions_use_direct_audio_metadata_rows_without_fts_match(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="mendeley:audio-metadata:6gvs94p6r2:v1:file_audio",
+                        lane="behavior",
+                        source="mendeley_aedes_behavior_media",
+                        title="File 10.wav measurements",
+                        text="Duration seconds: 1.0. Sample rate Hz: 44100. Channels: 2.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/6gvs94p6r2/1",
+                        media_url="https://data.mendeley.com/public-files/audio/file_downloaded",
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/audio_files/file_audio.wav#audio-metadata/audio/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY 4.0",
+                            source_url="https://data.mendeley.com/public-files/audio/file_downloaded",
+                        ),
+                    )
+                ]
+            )
+
+            answer = answer_question("show Mendeley Aedes wingbeat acoustic audio metadata", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["record_id"], "mendeley:audio-metadata:6gvs94p6r2:v1:file_audio")
+
     def test_osf_flighttrackai_questions_prefer_osf_video_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

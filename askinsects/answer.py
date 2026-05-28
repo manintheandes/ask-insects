@@ -3054,6 +3054,25 @@ def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -
     )
 
 
+def _wants_mendeley_audio_metadata(question: str) -> bool:
+    q = question.lower()
+    return "mendeley" in q and any(
+        term in q
+        for term in (
+            "audio",
+            "sound",
+            "acoustic",
+            "wingbeat",
+            "wing beat",
+            "flight tone",
+            "flight tones",
+            "phonotaxis",
+            "hearing",
+            "wbf",
+        )
+    )
+
+
 def _prioritize_trait_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     return sorted(
         records,
@@ -3404,6 +3423,25 @@ def _source_search_records(index: SourceIndex, source: str, lane: str, query: st
             LIMIT ?
             """,
             (match, source, lane, limit),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
+def _mendeley_audio_metadata_records(index: SourceIndex, *, limit: int) -> list[EvidenceRecord]:
+    lower, upper = _record_id_prefix_range("mendeley:audio-metadata:")
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM records
+            WHERE source = 'mendeley_aedes_behavior_media'
+              AND lane = 'behavior'
+              AND record_id >= ?
+              AND record_id < ?
+            ORDER BY title, record_id
+            LIMIT ?
+            """,
+            (lower, upper, limit),
         ).fetchall()
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
@@ -4485,6 +4523,13 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "vector_competence":
         for record in _vector_competence_assay_records(index, plan.question, limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "behavior" and _wants_mendeley_audio_metadata(plan.question):
+        for record in _mendeley_audio_metadata_records(index, limit=limit):
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

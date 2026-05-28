@@ -125,12 +125,13 @@
         "Dryad Aedes behavior/video dataset manifests map public host-seeking, visual-threat, flight-escape, mating/courtship, male host-attraction, and visual-tracking data files to behavior and media records with DOI, file, license, checksum, size, and download provenance.",
         "Mendeley Data Aedes behavior/media manifests map public mate-recognition, wingbeat, hearing, flight-tone, high-speed video, and locomotory video-analysis datasets to behavior and media records with dataset, folder, file, DOI, license, SHA-256, size, content-type, download, and view provenance.",
         "Mendeley public CSV, TSV, and XLSX Aedes behavior table files are parsed into sheet-level and row-level behavior records with headers, row values, row numbers, download URLs, licenses, and raw-file locators.",
+        "Mendeley public bounded WAV files are decoded into behavior records with duration, sample rate, channel count, sample width, frame count, byte rate, checksum, raw audio path, source dataset, license, and exact audio locator.",
         "aedes_vectorbyte_traits maps VectorByte/VecTraits Aedes aegypti trait rows into queryable trait observations with value, unit, temperature, stage, sex, habitat, location, citation, DOI, and raw dataset JSON provenance.",
         "aedes_extracted_facts emits behavior candidate facts from indexed Aedes literature and legal full-text units, and parsed behavior rows from supported public supplement tables, with matched assay, stimulus, sex, age, strain, response metric fields, and source provenance."
       ],
       "required_next_sources": [
         "decoded trajectory tables and assay-level rows from Dryad behavior archives",
-        "deep parsing of Mendeley sound files, high-speed video archives, and compressed archives into acoustic, assay, and trajectory records",
+        "deep acoustic feature extraction beyond Mendeley WAV header metadata, plus high-speed video archives and compressed archives parsed into assay and trajectory records",
         "repellent and attractant assay datasets",
         "host-seeking and oviposition experiment metadata"
       ],
