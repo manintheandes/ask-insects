@@ -1493,7 +1493,7 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "mendeley_aedes_behavior_media")
 
-    def test_mendeley_acoustic_questions_prefer_audio_assay_records(self):
+    def test_mendeley_acoustic_questions_prefer_decoded_audio_metadata_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             index = SourceIndex(artifact_dir / "source_index.sqlite")
@@ -1539,6 +1539,31 @@ class AnswerTests(unittest.TestCase):
                             "comparison_stimulus": "white noise",
                         },
                     ),
+                    EvidenceRecord(
+                        record_id="mendeley:audio-metadata:6gvs94p6r2:v1:file_audio",
+                        lane="behavior",
+                        source="mendeley_aedes_behavior_media",
+                        title="Aedes aegypti Mendeley decoded WAV metadata File 10.wav",
+                        text="Decoded Mendeley WAV metadata for Aedes aegypti acoustic behavior. Duration seconds: 1.0. Sample rate Hz: 44100. Channels: 2.",
+                        species="Aedes aegypti",
+                        url="https://data.mendeley.com/datasets/6gvs94p6r2/1",
+                        media_url="https://data.mendeley.com/public-files/audio/file_downloaded",
+                        provenance=Provenance(
+                            source_id="mendeley_aedes_behavior_media",
+                            locator="raw/mendeley_behavior_media/audio_files/file_audio.wav#audio-metadata/audio/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC BY 4.0",
+                            source_url="https://data.mendeley.com/public-files/audio/file_downloaded",
+                        ),
+                        payload={
+                            "record_type": "mendeley_audio_waveform_metadata",
+                            "duration_seconds": 1.0,
+                            "sample_rate_hz": 44100,
+                            "channels": 2,
+                            "frequency_hz": ["665 Hz"],
+                            "comparison_stimulus": "white noise",
+                        },
+                    ),
                 ]
             )
 
@@ -1546,7 +1571,7 @@ class AnswerTests(unittest.TestCase):
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "behavior")
-            self.assertEqual(answer["evidence"][0]["record_id"], "mendeley:audio-assay:6gvs94p6r2:v1:file_audio")
+            self.assertEqual(answer["evidence"][0]["record_id"], "mendeley:audio-metadata:6gvs94p6r2:v1:file_audio")
 
     def test_osf_flighttrackai_questions_prefer_osf_video_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:

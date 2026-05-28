@@ -1208,6 +1208,8 @@ def _search_queries(question: str) -> list[str]:
             return list(dict.fromkeys(queries))
         if any(term in q for term in ("audio", "sound", "acoustic", "wingbeat", "wing beat", "flight tone", "flight tones", "phonotaxis", "hearing", "wbf")):
             return [
+                "Decoded Mendeley WAV metadata Aedes aegypti acoustic behavior",
+                "Mendeley Aedes aegypti acoustic behavior",
                 "Mendeley Aedes aegypti audio acoustic wingbeat sound file",
                 "Mendeley Aedes aegypti acoustic behavior file frequency white noise",
                 "Mendeley flight tone wingbeat hearing phonotaxis",
@@ -3314,9 +3316,16 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             records,
             key=lambda record: (
                 0 if record.source == "mendeley_aedes_behavior_media" else 1,
-                0 if record.lane in {"media", "behavior"} else 1,
+                0
+                if wants_audio
+                and (
+                    record.record_id.startswith("mendeley:audio-metadata:")
+                    or (record.payload or {}).get("record_type") == "mendeley_audio_waveform_metadata"
+                )
+                else 1,
                 0 if wants_audio and record.record_id.startswith("mendeley:audio-assay:") else 1,
                 0 if wants_audio and str((record.payload or {}).get("table_behavior_type", "")).startswith(("acoustic", "phonotaxis", "electrophysiology")) else 1,
+                0 if record.lane in {"media", "behavior"} else 1,
                 0 if wants_table_rows and record.record_id.startswith("mendeley:table-row:") else 1,
                 0 if wants_table_rows and record.record_id.startswith("mendeley:table:") else 1,
             ),

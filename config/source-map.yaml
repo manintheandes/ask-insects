@@ -615,8 +615,8 @@ sources:
   - id: mendeley_aedes_behavior_media
     name: Mendeley Data Aedes aegypti behavior, media, and table rows
     source_type: public_dataset_api
-    boundary: Public Mendeley Data datasets where Aedes aegypti is materially present in the title, description, or topic, including high-speed mate-recognition videos, wingbeat sound files, flight-tone hearing data, locomotory behavior video-analysis files, source-provided audio/acoustic file context, row-level species truth for mixed Aedes tables, and parsed public CSV/XLSX table rows in Aedes aegypti scope
-    query_plane: mendeley_public_snapshot_folder_file_manifest_audio_context_and_typed_table_rows_to_sqlite
+    boundary: Public Mendeley Data datasets where Aedes aegypti is materially present in the title, description, or topic, including high-speed mate-recognition videos, wingbeat sound files, decoded bounded WAV duration/sample-rate/channel metadata, flight-tone hearing data, locomotory behavior video-analysis files, source-provided audio/acoustic file context, row-level species truth for mixed Aedes tables, and parsed public CSV/XLSX table rows in Aedes aegypti scope
+    query_plane: mendeley_public_snapshot_folder_file_manifest_audio_context_wav_metadata_and_typed_table_rows_to_sqlite
     api_base: https://data.mendeley.com/public-api
     artifact_dir: artifacts/mosquito-v1/raw/mendeley_behavior_media
     ingest_script: scripts/ingest_mendeley_behavior_media.py

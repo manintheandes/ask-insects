@@ -787,7 +787,7 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in (
         "mendeley_aedes_behavior_media",
         "scripts/ingest_mendeley_behavior_media.py",
-        "mendeley_public_snapshot_folder_file_manifest_audio_context_and_typed_table_rows_to_sqlite",
+        "mendeley_public_snapshot_folder_file_manifest_audio_context_wav_metadata_and_typed_table_rows_to_sqlite",
         "6gvs94p6r2:1",
     ):
         if term not in source_map:

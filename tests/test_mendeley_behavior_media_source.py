@@ -1,6 +1,7 @@
 import io
 import tempfile
 import unittest
+import wave
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -136,6 +137,16 @@ def tiny_xlsx(rows):
     return out.getvalue()
 
 
+def tiny_wav(*, channels=2, sample_rate=44100, seconds=1):
+    out = io.BytesIO()
+    with wave.open(out, "wb") as audio:
+        audio.setnchannels(channels)
+        audio.setsampwidth(2)
+        audio.setframerate(sample_rate)
+        audio.writeframes(b"\x00\x00" * channels * sample_rate * seconds)
+    return out.getvalue()
+
+
 class MendeleyTableFetcher(MendeleyFetcher):
     def __init__(self):
         super().__init__()
@@ -214,6 +225,11 @@ class MendeleyAudioFetcher(MendeleyFetcher):
                 return files
         raise AssertionError(f"unexpected URL: {url}")
 
+    def bytes_for(self, url):
+        if url.endswith("/audio/file_downloaded"):
+            return tiny_wav(channels=2, sample_rate=44100, seconds=1)
+        raise AssertionError(f"unexpected download URL: {url}")
+
 
 class MendeleyBehaviorMediaSourceTests(unittest.TestCase):
     def test_fetch_mendeley_behavior_media_records_normalizes_dataset_folders_and_files(self):
@@ -264,11 +280,15 @@ class MendeleyBehaviorMediaSourceTests(unittest.TestCase):
                 [MendeleyDatasetSpec(dataset_id="6gvs94p6r2", version=1, behavior_labels=("wingbeat", "acoustic signal"))],
                 raw_dir=Path(tmpdir) / "raw",
                 fetch_json=fetcher,
+                fetch_bytes=fetcher.bytes_for,
                 retrieved_at="2026-05-24T00:00:00Z",
             )
 
             self.assertEqual(result.audio_file_count, 1)
             self.assertEqual(result.acoustic_assay_record_count, 1)
+            self.assertEqual(result.decoded_audio_file_count, 1)
+            self.assertEqual(result.audio_metadata_record_count, 1)
+            self.assertEqual(result.skipped_audio_file_count, 0)
             audio = next(record for record in result.records if record.record_id.startswith("mendeley:audio-assay:"))
             self.assertEqual(audio.lane, "behavior")
             self.assertEqual(audio.species, "Aedes aegypti")
@@ -278,6 +298,15 @@ class MendeleyBehaviorMediaSourceTests(unittest.TestCase):
             self.assertEqual(audio.payload["comparison_stimulus"], "white noise")
             self.assertEqual(audio.payload["replicate_label"], "File 10")
             self.assertIn("waveform features have not been decoded", audio.text)
+            metadata = next(record for record in result.records if record.record_id.startswith("mendeley:audio-metadata:"))
+            self.assertEqual(metadata.lane, "behavior")
+            self.assertEqual(metadata.payload["record_type"], "mendeley_audio_waveform_metadata")
+            self.assertEqual(metadata.payload["audio_format"], "wav")
+            self.assertEqual(metadata.payload["duration_seconds"], 1.0)
+            self.assertEqual(metadata.payload["sample_rate_hz"], 44100)
+            self.assertEqual(metadata.payload["channels"], 2)
+            self.assertIn("Decoded Mendeley WAV metadata", metadata.text)
+            self.assertTrue(any(Path(path).name.endswith(".wav") for path in result.raw_artifacts))
 
     def test_fetch_mendeley_behavior_media_records_parses_downloaded_tables(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -11,6 +11,7 @@ import re
 from typing import Callable
 from urllib.parse import quote
 from urllib.request import Request, urlopen
+import wave
 from zipfile import ZipFile
 import xml.etree.ElementTree as ET
 
@@ -36,6 +37,7 @@ MEDIA_EXTENSIONS = (
 VIDEO_EXTENSIONS = (".avi", ".m4v", ".mov", ".mp4", ".webm", ".mpg", ".mpeg")
 AUDIO_EXTENSIONS = (".m4a", ".mp3", ".wav")
 TABLE_EXTENSIONS = (".csv", ".tsv", ".xlsx")
+DEFAULT_MAX_AUDIO_BYTES = 25_000_000
 
 
 @dataclass(frozen=True)
@@ -77,6 +79,9 @@ class MendeleyBehaviorMediaResult:
     media_file_count: int
     audio_file_count: int = 0
     acoustic_assay_record_count: int = 0
+    decoded_audio_file_count: int = 0
+    audio_metadata_record_count: int = 0
+    skipped_audio_file_count: int = 0
     table_file_count: int = 0
     parsed_table_file_count: int = 0
     skipped_table_file_count: int = 0
@@ -811,6 +816,156 @@ def _audio_assay_record(
     )
 
 
+def _audio_file_path(raw_dir: Path, spec: MendeleyDatasetSpec, file_payload: dict[str, object], filename: str) -> Path:
+    suffix = Path(filename).suffix.lower() or ".audio"
+    file_token = str(file_payload.get("id") or filename)
+    return raw_dir / "audio_files" / f"{_safe_id(spec.dataset_id)}_v{spec.version}_{_safe_id(file_token)}{suffix}"
+
+
+def _parse_wav_metadata(audio_path: Path) -> dict[str, object]:
+    with wave.open(str(audio_path), "rb") as handle:
+        channels = handle.getnchannels()
+        sample_width = handle.getsampwidth()
+        sample_rate = handle.getframerate()
+        frame_count = handle.getnframes()
+        compression_type = handle.getcomptype()
+        compression_name = handle.getcompname()
+    duration = frame_count / sample_rate if sample_rate else None
+    byte_rate = sample_rate * channels * sample_width if sample_rate else None
+    return {
+        "audio_format": "wav",
+        "channels": channels,
+        "sample_width_bytes": sample_width,
+        "sample_rate_hz": sample_rate,
+        "frame_count": frame_count,
+        "duration_seconds": round(duration, 6) if duration is not None else None,
+        "byte_rate": byte_rate,
+        "compression_type": compression_type,
+        "compression_name": compression_name,
+    }
+
+
+def _audio_metadata_record(
+    *,
+    spec: MendeleyDatasetSpec,
+    snapshot: dict[str, object],
+    file_payload: dict[str, object],
+    folder_path: str,
+    audio_path: Path,
+    raw_dir: Path,
+    folder_id: str,
+    file_index: int,
+    retrieved_at: str,
+    audio_metadata: dict[str, object],
+) -> EvidenceRecord:
+    dataset_title = _clean_text(snapshot.get("name")) or _doi(snapshot, spec)
+    filename = str(file_payload.get("filename") or f"file-{file_index}")
+    details = _content_details(file_payload)
+    download_url = str(details.get("download_url") or "")
+    view_url = str(details.get("view_url") or "")
+    size = details.get("size") if details.get("size") is not None else file_payload.get("size")
+    sha256_hash = str(details.get("sha256_hash") or "")
+    context = _audio_assay_context(filename, folder_path)
+    rel_path = audio_path.as_posix()
+    duration = audio_metadata.get("duration_seconds")
+    sample_rate = audio_metadata.get("sample_rate_hz")
+    channels = audio_metadata.get("channels")
+    sample_width = audio_metadata.get("sample_width_bytes")
+    labels = ", ".join(spec.behavior_labels)
+    text_parts = [
+        f"Decoded Mendeley WAV metadata for Aedes aegypti acoustic behavior dataset {dataset_title}.",
+        f"File: {filename}.",
+        f"Folder path: {folder_path}.",
+        f"Stimulus/context: {context.get('stimulus', folder_path)}.",
+        f"Behavior labels: {labels}.",
+    ]
+    if duration is not None:
+        text_parts.append(f"Duration seconds: {duration}.")
+    if sample_rate is not None:
+        text_parts.append(f"Sample rate Hz: {sample_rate}.")
+    if channels is not None:
+        text_parts.append(f"Channels: {channels}.")
+    if sample_width is not None:
+        text_parts.append(f"Sample width bytes: {sample_width}.")
+    if size is not None:
+        text_parts.append(f"Size bytes: {size}.")
+    if sha256_hash:
+        text_parts.append(f"SHA-256: {sha256_hash}.")
+    source_url = download_url or view_url or _dataset_web_url(snapshot, spec)
+    return EvidenceRecord(
+        record_id=f"mendeley:audio-metadata:{_safe_id(spec.dataset_id)}:v{spec.version}:{_safe_id(str(file_payload.get('id') or filename))}",
+        lane="behavior",
+        source=MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
+        title=f"Aedes aegypti Mendeley decoded WAV metadata {filename}",
+        text=" ".join(text_parts),
+        species="Aedes aegypti",
+        url=_dataset_web_url(snapshot, spec),
+        media_url=download_url or None,
+        provenance=Provenance(
+            source_id=MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
+            locator=f"{rel_path}#audio-metadata/{folder_id}/{file_index}",
+            retrieved_at=retrieved_at,
+            license=_license(snapshot),
+            source_url=source_url,
+        ),
+        payload={
+            "record_type": "mendeley_audio_waveform_metadata",
+            "dataset_id": spec.dataset_id,
+            "version": spec.version,
+            "doi": _doi(snapshot, spec),
+            "dataset_title": dataset_title,
+            "file_id": file_payload.get("id"),
+            "filename": filename,
+            "folder_id": file_payload.get("folder_id"),
+            "folder_path": folder_path,
+            "size": size,
+            "sha256_hash": sha256_hash,
+            "download_url": download_url,
+            "view_url": view_url,
+            "raw_audio_path": rel_path,
+            "behavior_labels": list(spec.behavior_labels),
+            **context,
+            **{key: value for key, value in audio_metadata.items() if value is not None},
+        },
+    )
+
+
+def _audio_gap_payload(
+    *,
+    spec: MendeleyDatasetSpec,
+    file_payload: dict[str, object],
+    filename: str,
+    folder_path: str,
+    reason: str,
+    retrieved_at: str,
+    error: str | None = None,
+    max_audio_bytes: int | None = None,
+) -> dict[str, object]:
+    details = _content_details(file_payload)
+    size = details.get("size") if details.get("size") is not None else file_payload.get("size")
+    file_id = str(file_payload.get("id") or filename)
+    locator = f"raw/mendeley_behavior_media/audio_files/{_safe_id(spec.dataset_id)}_v{spec.version}_{_safe_id(file_id)}#{reason}"
+    payload: dict[str, object] = {
+        "source": MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
+        "lane": "behavior",
+        "dataset_id": spec.dataset_id,
+        "version": spec.version,
+        "file_id": file_payload.get("id"),
+        "filename": filename,
+        "folder_path": folder_path,
+        "reason": reason,
+        "record_id": f"mendeley:audio-gap:{_safe_id(spec.dataset_id)}:v{spec.version}:{_safe_id(file_id)}:{_safe_id(reason)}",
+        "locator": locator,
+        "byte_size": size,
+        "retrieved_at": retrieved_at,
+    }
+    if error:
+        payload["error"] = error
+    if max_audio_bytes is not None:
+        payload["max_audio_bytes"] = max_audio_bytes
+    return payload
+
+
 def _table_sheet_record(
     *,
     spec: MendeleyDatasetSpec,
@@ -1001,6 +1156,7 @@ def fetch_mendeley_behavior_media_records(
     fetch_json: Callable[[str], object] | None = None,
     fetch_bytes: Callable[[str], bytes] | None = None,
     retrieved_at: str | None = None,
+    max_audio_bytes: int = DEFAULT_MAX_AUDIO_BYTES,
 ) -> MendeleyBehaviorMediaResult:
     retrieved = retrieved_at or utc_now()
     client = MendeleyClient(fetch_json, fetch_bytes)
@@ -1012,6 +1168,9 @@ def fetch_mendeley_behavior_media_records(
     total_media_files = 0
     total_audio_files = 0
     total_acoustic_assay_records = 0
+    total_decoded_audio_files = 0
+    total_audio_metadata_records = 0
+    total_skipped_audio_files = 0
     total_table_files = 0
     total_parsed_table_files = 0
     total_skipped_table_files = 0
@@ -1142,6 +1301,85 @@ def fetch_mendeley_behavior_media_records(
                     )
                 )
                 total_acoustic_assay_records += 1
+                download_url = str(details.get("download_url") or "")
+                size = details.get("size") if details.get("size") is not None else file_payload.get("size")
+                suffix = Path(filename).suffix.lower()
+                if suffix != ".wav":
+                    total_skipped_audio_files += 1
+                    gaps.append(
+                        _audio_gap_payload(
+                            spec=spec,
+                            file_payload=file_payload,
+                            filename=filename,
+                            folder_path=folder_path,
+                            reason="mendeley_audio_unsupported_format",
+                            retrieved_at=retrieved,
+                        )
+                    )
+                elif isinstance(size, int) and size > max_audio_bytes:
+                    total_skipped_audio_files += 1
+                    gaps.append(
+                        _audio_gap_payload(
+                            spec=spec,
+                            file_payload=file_payload,
+                            filename=filename,
+                            folder_path=folder_path,
+                            reason="mendeley_audio_file_too_large",
+                            max_audio_bytes=max_audio_bytes,
+                            retrieved_at=retrieved,
+                        )
+                    )
+                elif not download_url:
+                    total_skipped_audio_files += 1
+                    gaps.append(
+                        _audio_gap_payload(
+                            spec=spec,
+                            file_payload=file_payload,
+                            filename=filename,
+                            folder_path=folder_path,
+                            reason="mendeley_audio_missing_download_url",
+                            retrieved_at=retrieved,
+                        )
+                    )
+                else:
+                    audio_path = _audio_file_path(raw_dir, spec, file_payload, filename)
+                    audio_path.parent.mkdir(parents=True, exist_ok=True)
+                    try:
+                        audio_bytes = client.download_file(download_url)
+                        if len(audio_bytes) > max_audio_bytes:
+                            raise ValueError(f"Mendeley audio download exceeded max_audio_bytes={max_audio_bytes}: {len(audio_bytes)}")
+                        audio_path.write_bytes(audio_bytes)
+                        raw_artifacts.append(audio_path.as_posix())
+                        metadata = _parse_wav_metadata(audio_path)
+                        records.append(
+                            _audio_metadata_record(
+                                spec=spec,
+                                snapshot=snapshot,
+                                file_payload=file_payload,
+                                folder_path=folder_path,
+                                audio_path=audio_path,
+                                raw_dir=raw_dir,
+                                folder_id=folder_id,
+                                file_index=file_index,
+                                retrieved_at=retrieved,
+                                audio_metadata=metadata,
+                            )
+                        )
+                        total_decoded_audio_files += 1
+                        total_audio_metadata_records += 1
+                    except Exception as exc:
+                        total_skipped_audio_files += 1
+                        gaps.append(
+                            _audio_gap_payload(
+                                spec=spec,
+                                file_payload=file_payload,
+                                filename=filename,
+                                folder_path=folder_path,
+                                reason="mendeley_audio_decode_failed",
+                                error=str(exc),
+                                retrieved_at=retrieved,
+                            )
+                        )
             if not _is_table_file(filename, str(details.get("content_type") or "")):
                 continue
             total_table_files += 1
@@ -1209,6 +1447,9 @@ def fetch_mendeley_behavior_media_records(
         media_file_count=total_media_files,
         audio_file_count=total_audio_files,
         acoustic_assay_record_count=total_acoustic_assay_records,
+        decoded_audio_file_count=total_decoded_audio_files,
+        audio_metadata_record_count=total_audio_metadata_records,
+        skipped_audio_file_count=total_skipped_audio_files,
         table_file_count=total_table_files,
         parsed_table_file_count=total_parsed_table_files,
         skipped_table_file_count=total_skipped_table_files,
