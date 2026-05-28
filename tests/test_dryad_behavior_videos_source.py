@@ -159,6 +159,33 @@ class DryadTableFetcher(DryadFetcher):
         raise AssertionError(f"unexpected download URL: {url}")
 
 
+class DryadPreviewFetcher(DryadTableFetcher):
+    def bytes_for(self, url):
+        raise RuntimeError("download blocked")
+
+    def text_for(self, url):
+        if url.endswith("/data_file/preview/12.js"):
+            return """
+            document.getElementById('file_preview_box').innerHTML = `
+            <table>
+              <thead><tr><th>Species</th><th>Person</th><th>Number</th></tr></thead>
+              <tbody>
+                <tr><td>Ae. aegypti</td><td>Subject A</td><td>7</td></tr>
+                <tr><td>Ae. aegypti</td><td>Subject B</td><td>11</td></tr>
+              </tbody>
+            </table>`;
+            """
+        if url.endswith("/data_file/preview/13.js"):
+            return """
+            document.getElementById('file_preview_box').innerHTML = `
+            <table>
+              <thead><tr><th>stimulus</th><th>response</th></tr></thead>
+              <tbody><tr><td>shadow</td><td>escape</td></tr></tbody>
+            </table>`;
+            """
+        return "<html></html>"
+
+
 class DryadBehaviorVideoSourceTests(unittest.TestCase):
     def test_fetch_dryad_behavior_video_records_normalizes_dataset_and_file_manifest(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -285,6 +312,37 @@ class DryadBehaviorVideoSourceTests(unittest.TestCase):
             self.assertTrue(all(record.payload["reason"] == "dryad_table_file_download_or_parse_failed" for record in gaps))
             self.assertTrue(all("download blocked" in record.text for record in gaps))
             self.assertFalse(any("notoscriptus" in record.record_id for record in gaps))
+
+    def test_fetch_dryad_behavior_video_records_uses_public_preview_when_download_blocked(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = DryadPreviewFetcher()
+            result = fetch_dryad_behavior_video_records(
+                [DryadDatasetSpec(doi="10.5061/dryad.example", behavior_labels=("host seeking", "escape"))],
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fetcher,
+                fetch_bytes=fetcher.bytes_for,
+                fetch_text=fetcher.text_for,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            self.assertEqual(result.table_file_count, 3)
+            self.assertEqual(result.parsed_table_file_count, 2)
+            self.assertEqual(result.skipped_table_file_count, 1)
+            self.assertEqual(result.table_sheet_count, 2)
+            self.assertEqual(result.table_row_count, 3)
+
+            rows = [record for record in result.records if record.record_id.startswith("dryad:table-row:")]
+            self.assertEqual(len(rows), 3)
+            self.assertTrue(all(record.payload["table_source"] == "dryad_preview" for record in rows))
+            self.assertTrue(any(record.payload["values"].get("Person") == "Subject A" for record in rows))
+            self.assertTrue(any(record.payload["values"].get("response") == "escape" for record in rows))
+            self.assertTrue(any("table_previews" in path and path.endswith(".js") for path in result.raw_artifacts))
+            self.assertTrue(
+                any(gap["reason"] == "dryad_table_file_download_blocked_preview_used" for gap in result.gaps)
+            )
+            self.assertFalse(
+                any(record.payload.get("reason") == "dryad_table_file_download_or_parse_failed" for record in result.records)
+            )
 
     def test_fetch_dryad_behavior_video_records_records_gap_on_fetch_failure(self):
         with tempfile.TemporaryDirectory() as tmpdir:

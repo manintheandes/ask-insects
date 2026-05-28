@@ -96,11 +96,13 @@ class DryadClient:
         fetch_json: Callable[[str], dict[str, object]] | None = None,
         fetch_bytes: Callable[[str], bytes] | None = None,
         fetch_text: Callable[[str], str] | None = None,
+        fetch_preview_text: Callable[[str], str] | None = None,
         request_delay_seconds: float = 0.0,
     ):
         self.fetch_json = fetch_json or self._fetch_json
         self.fetch_bytes = fetch_bytes or self._fetch_bytes
         self.fetch_text = fetch_text or self._fetch_text
+        self.fetch_preview_text = fetch_preview_text or fetch_text or self._fetch_preview_text
         self.request_delay_seconds = request_delay_seconds
 
     def dataset(self, doi: str) -> tuple[str, dict[str, object]]:
@@ -121,6 +123,11 @@ class DryadClient:
         url = _dataset_web_url(doi)
         self._throttle()
         return url, self.fetch_text(url)
+
+    def file_preview(self, file_id: str) -> tuple[str, str]:
+        url = f"{DRYAD_API_BASE}/data_file/preview/{quote(file_id, safe='')}.js"
+        self._throttle()
+        return url, self.fetch_preview_text(url)
 
     def _throttle(self) -> None:
         if self.request_delay_seconds > 0:
@@ -144,6 +151,20 @@ class DryadClient:
     @staticmethod
     def _fetch_text(url: str) -> str:
         request = Request(url, headers={"User-Agent": USER_AGENT})
+        with urlopen(request, timeout=60) as response:
+            return response.read().decode("utf-8", errors="replace")
+
+    @staticmethod
+    def _fetch_preview_text(url: str) -> str:
+        request = Request(
+            url,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "text/javascript, application/javascript, */*;q=0.01",
+                "X-Requested-With": "XMLHttpRequest",
+                "Referer": DRYAD_API_BASE,
+            },
+        )
         with urlopen(request, timeout=60) as response:
             return response.read().decode("utf-8", errors="replace")
 
@@ -345,6 +366,45 @@ def _is_behavior_method_text(text: str) -> bool:
         "observation",
     )
     return any(term in lower for term in method_terms)
+
+
+class _PreviewTableParser(HTMLParser):
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._cell_tag: str | None = None
+        self._cell_parts: list[str] = []
+        self._current_row: list[str] | None = None
+        self.rows: list[list[str]] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "tr":
+            self._current_row = []
+        if tag in {"th", "td"}:
+            self._cell_tag = tag
+            self._cell_parts = []
+
+    def handle_data(self, data: str) -> None:
+        if self._cell_tag:
+            self._cell_parts.append(data)
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in {"th", "td"} and self._cell_tag:
+            if self._current_row is not None:
+                value = re.sub(r"\s+", " ", " ".join(self._cell_parts)).strip()
+                self._current_row.append(value)
+            self._cell_tag = None
+            self._cell_parts = []
+        if tag == "tr" and self._current_row:
+            self.rows.append(self._current_row)
+            self._current_row = None
+
+
+def _parse_preview_table(preview_js: str) -> list[ParsedTableSheet]:
+    parser = _PreviewTableParser()
+    parser.feed(preview_js)
+    parser.close()
+    rows = [row for row in parser.rows if not _is_blank_row(row)]
+    return [ParsedTableSheet(name="dryad_preview", rows=rows)] if rows else []
 
 
 def _local_name(tag: str) -> str:
@@ -757,6 +817,7 @@ def _table_sheet_record(
     headers: list[str],
     data_rows: list[tuple[int, list[str]]],
     retrieved_at: str,
+    table_source: str = "download",
 ) -> EvidenceRecord:
     doi = _doi_from_identifier(dataset_payload, spec.doi)
     dataset_title = _clean_text(dataset_payload.get("title")) or doi
@@ -775,6 +836,7 @@ def _table_sheet_record(
         text=(
             f"Parsed Dryad behavior table for Aedes aegypti dataset {dataset_title}. "
             f"File: {filename}. Sheet: {sheet_name}. Rows: {len(data_rows)}. "
+            f"Table source: {table_source}. "
             f"Columns: {len(headers)}. Behavior labels: {labels}. Headers: {', '.join(headers[:24])}."
         ),
         species="Aedes aegypti",
@@ -800,6 +862,7 @@ def _table_sheet_record(
             "behavior_labels": list(spec.behavior_labels),
             "download_url": download_url,
             "file_stream_url": _file_stream_url(file_payload),
+            "table_source": table_source,
         },
     )
 
@@ -816,6 +879,7 @@ def _table_row_record(
     row_number: int,
     row_values: dict[str, str],
     retrieved_at: str,
+    table_source: str = "download",
 ) -> EvidenceRecord:
     doi = _doi_from_identifier(dataset_payload, spec.doi)
     dataset_title = _clean_text(dataset_payload.get("title")) or doi
@@ -832,7 +896,8 @@ def _table_row_record(
         title=f"Aedes aegypti Dryad behavior table row {filename} {sheet_name} row {row_number}",
         text=(
             f"Parsed Dryad Aedes aegypti behavior table row from dataset {dataset_title}. "
-            f"File: {filename}. Sheet: {sheet_name}. Row: {row_number}. Values: {formatted_values}."
+            f"File: {filename}. Sheet: {sheet_name}. Row: {row_number}. "
+            f"Table source: {table_source}. Values: {formatted_values}."
         ),
         species="Aedes aegypti",
         url=_dataset_web_url(doi),
@@ -855,6 +920,7 @@ def _table_row_record(
             "download_url": download_url,
             "file_stream_url": _file_stream_url(file_payload),
             "behavior_labels": list(spec.behavior_labels),
+            "table_source": table_source,
         },
     )
 
@@ -924,9 +990,11 @@ def _table_records(
     filename: str,
     retrieved_at: str,
     max_table_rows_per_file: int,
+    sheets: list[ParsedTableSheet] | None = None,
+    table_source: str = "download",
 ) -> tuple[list[EvidenceRecord], int, int]:
     records: list[EvidenceRecord] = []
-    sheets = _parse_table(table_path, filename)
+    sheets = sheets or _parse_table(table_path, filename)
     sheet_count = 0
     row_count = 0
     rows_remaining = max_table_rows_per_file
@@ -952,6 +1020,7 @@ def _table_records(
                 headers=headers,
                 data_rows=bounded_rows,
                 retrieved_at=retrieved_at,
+                table_source=table_source,
             )
         )
         for row_number, row in bounded_rows:
@@ -970,9 +1039,15 @@ def _table_records(
                     row_number=row_number,
                     row_values=values,
                     retrieved_at=retrieved_at,
+                    table_source=table_source,
                 )
             )
     return records, sheet_count, row_count
+
+
+def _preview_table_path(raw_dir: Path, doi: str, file_payload: dict[str, object], filename: str) -> Path:
+    file_token = str(_file_id(file_payload) or file_payload.get("id") or file_payload.get("path") or filename)
+    return raw_dir / "table_previews" / f"{_safe_id(doi)}_{_safe_id(file_token)}.js"
 
 
 def _table_gap_record(
@@ -1294,7 +1369,59 @@ def fetch_dryad_behavior_video_records(
                     max_table_rows_per_file=max_table_rows_per_file,
                 )
             except Exception as exc:
+                preview_error: Exception | None = None
+                try:
+                    file_id = _file_id(file_payload)
+                    if not file_id:
+                        raise ValueError("Dryad file payload did not expose a file id for preview fallback")
+                    preview_url, preview_js = client.file_preview(file_id)
+                    preview_sheets = _parse_preview_table(preview_js)
+                    if not preview_sheets:
+                        raise ValueError("Dryad preview endpoint did not expose a parseable table")
+                    preview_path = _preview_table_path(
+                        raw_dir,
+                        _doi_from_identifier(dataset_payload, spec.doi),
+                        file_payload,
+                        filename,
+                    )
+                    preview_path.parent.mkdir(parents=True, exist_ok=True)
+                    preview_path.write_text(preview_js, encoding="utf-8")
+                    raw_artifacts.append(preview_path.as_posix())
+                    table_records, sheet_count, row_count = _table_records(
+                        spec=spec,
+                        dataset_payload=dataset_payload,
+                        file_payload=file_payload,
+                        table_path=preview_path,
+                        filename=filename,
+                        retrieved_at=retrieved,
+                        max_table_rows_per_file=max_table_rows_per_file,
+                        sheets=preview_sheets,
+                        table_source="dryad_preview",
+                    )
+                    if table_records:
+                        records.extend(table_records)
+                        parsed_table_file_count += 1
+                        table_sheet_count += sheet_count
+                        table_row_count += row_count
+                        gaps.append(
+                            {
+                                "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
+                                "lane": "behavior",
+                                "doi": _doi_from_identifier(dataset_payload, spec.doi),
+                                "filename": filename,
+                                "reason": "dryad_table_file_download_blocked_preview_used",
+                                "download_error": str(exc),
+                                "preview_url": preview_url,
+                                "retrieved_at": retrieved,
+                            }
+                        )
+                        continue
+                except Exception as fallback_exc:
+                    preview_error = fallback_exc
                 skipped_table_file_count += 1
+                error_text = str(exc)
+                if preview_error is not None:
+                    error_text = f"{error_text}; preview fallback failed: {preview_error}"
                 records.append(
                     _table_gap_record(
                         spec=spec,
@@ -1305,7 +1432,7 @@ def fetch_dryad_behavior_video_records(
                         filename=filename,
                         reason="dryad_table_file_download_or_parse_failed",
                         retrieved_at=retrieved,
-                        error=str(exc),
+                        error=error_text,
                     )
                 )
                 gaps.append(
@@ -1315,7 +1442,7 @@ def fetch_dryad_behavior_video_records(
                         "doi": _doi_from_identifier(dataset_payload, spec.doi),
                         "filename": filename,
                         "reason": "dryad_table_file_download_or_parse_failed",
-                        "error": str(exc),
+                        "error": error_text,
                         "retrieved_at": retrieved,
                     }
                 )
