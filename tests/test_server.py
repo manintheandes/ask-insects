@@ -2021,6 +2021,8 @@ class ServerTests(unittest.TestCase):
                     dataset_count=1,
                     file_count=1,
                     media_file_count=1,
+                    landing_page_count=1,
+                    assay_method_count=2,
                 )
 
             response = dispatch_request(
@@ -2048,6 +2050,10 @@ class ServerTests(unittest.TestCase):
             )
             self.assertIn(str(artifact_dir), provenance_rows[0]["provenance_json"])
             self.assertNotIn(".staging", provenance_rows[0]["provenance_json"])
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertEqual(receipt["source_counts"]["dryad_aedes_behavior_videos"], 1)
+            self.assertEqual(receipt["dryad_behavior_videos"]["landing_page_count"], 1)
+            self.assertEqual(receipt["dryad_behavior_videos"]["assay_method_count"], 2)
 
     def test_ingest_mendeley_behavior_media_adds_records_without_removing_existing_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:
