@@ -1223,6 +1223,41 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(result.motion_row_count, 1)
         self.assertIn("raw/mendeley_behavior_media/table_files/Video S1 - Spot Statistics.csv#row/1", rows[0].provenance.locator)
 
+    def test_motion_table_parse_failures_have_unique_locators_and_skip_appledouble_sidecars(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_video_fixture(artifact_dir)
+            table_dir = artifact_dir / "raw" / "mendeley_behavior_media" / "table_files"
+            table_dir.mkdir(parents=True)
+            bad_csv = table_dir / "bad-motion.csv"
+            bad_xlsx = table_dir / "bad-motion.xlsx"
+            sidecar = table_dir / "._bad-motion.csv"
+            bad_csv.write_bytes(b"\xa3not-valid-utf8")
+            bad_xlsx.write_text("not a zip file", encoding="utf-8")
+            sidecar.write_bytes(b"\xa3appledouble-sidecar")
+
+            result = build_video_atom_records(artifact_dir, retrieved_at=RETRIEVED_AT)
+
+        parse_gaps = [gap for gap in result.gaps if gap["reason"] == "video_motion_table_parse_failed"]
+        self.assertEqual(len(parse_gaps), 2)
+        self.assertEqual({gap["record_id"] for gap in parse_gaps}, {"bad-motion.csv", "bad-motion.xlsx"})
+        self.assertEqual(
+            len(
+                {
+                    (
+                        gap.get("source"),
+                        gap.get("lane"),
+                        gap.get("reason"),
+                        gap.get("record_id"),
+                        gap.get("locator"),
+                    )
+                    for gap in parse_gaps
+                }
+            ),
+            2,
+        )
+        self.assertTrue(all(gap["locator"].startswith("raw/mendeley_behavior_media/table_files/bad-motion") for gap in parse_gaps))
+
     def test_discovers_recursive_motion_tables_across_video_source_dirs(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

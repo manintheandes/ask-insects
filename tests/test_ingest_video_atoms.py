@@ -514,6 +514,225 @@ class IngestVideoAtomsTests(unittest.TestCase):
             self.assertEqual(by_id["video_atom:gap:dryad-download-failed"]["repository"], "dryad")
             self.assertEqual(by_id["video_atom:gap:dryad-download-failed"]["reason"], "video_download_failed")
 
+    def test_scoped_refresh_replaces_legacy_path_based_repository_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            legacy_mendeley_gap = EvidenceRecord(
+                record_id="video_atom:gap:legacy-mendeley-parse-failed",
+                lane="behavior",
+                source="aedes_video_atoms",
+                title="Legacy Mendeley motion table parse gap",
+                text="Old Mendeley motion table parse gap without repository metadata.",
+                species="Aedes aegypti",
+                url=None,
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="raw/mendeley_behavior_media/table_files/._bad.csv",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={
+                    "atom_type": "video_gap",
+                    "source": "aedes_video_atoms",
+                    "reason": "video_motion_table_parse_failed",
+                    "path": str(artifact_dir / "raw" / "mendeley_behavior_media" / "table_files" / "._bad.csv"),
+                },
+            )
+            legacy_dryad_gap = EvidenceRecord(
+                record_id="video_atom:gap:legacy-dryad-parse-failed",
+                lane="behavior",
+                source="aedes_video_atoms",
+                title="Legacy Dryad motion table parse gap",
+                text="Old Dryad motion table parse gap without repository metadata.",
+                species="Aedes aegypti",
+                url=None,
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="raw/dryad_behavior_videos/dataset-1/bad.csv",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={
+                    "atom_type": "video_gap",
+                    "source": "aedes_video_atoms",
+                    "reason": "video_motion_table_parse_failed",
+                    "path": str(artifact_dir / "raw" / "dryad_behavior_videos" / "dataset-1" / "bad.csv"),
+                },
+            )
+            index.upsert_records([legacy_mendeley_gap, legacy_dryad_gap])
+
+            new_mendeley_gap = EvidenceRecord(
+                record_id="video_atom:gap:new-mendeley-parse-failed",
+                lane="behavior",
+                source="aedes_video_atoms",
+                title="New Mendeley motion table parse gap",
+                text="New Mendeley motion table parse gap with repository metadata.",
+                species="Aedes aegypti",
+                url=None,
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="raw/mendeley_behavior_media/table_files/bad.csv",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={
+                    "atom_type": "video_gap",
+                    "repository": "mendeley",
+                    "reason": "video_motion_table_parse_failed",
+                    "locator": "raw/mendeley_behavior_media/table_files/bad.csv",
+                },
+            )
+            fake_result = AedesVideoAtomsResult(
+                source_id="aedes_video_atoms",
+                records=[new_mendeley_gap],
+                gaps=[
+                    {
+                        "source": "aedes_video_atoms",
+                        "repository": "mendeley",
+                        "reason": "video_motion_table_parse_failed",
+                        "locator": "raw/mendeley_behavior_media/table_files/bad.csv",
+                    }
+                ],
+                video_asset_count=0,
+                mirrored_video_count=0,
+                verified_video_count=0,
+                artifact_count=0,
+                motion_row_count=0,
+                discovery_candidate_count=0,
+                discovery_sweep_receipts=[{"repository": "mendeley", "status": "accepted_candidates"}],
+            )
+
+            with patch("scripts.ingest_video_atoms.build_video_atom_records", return_value=fake_result):
+                result = ingest_video_atoms(
+                    artifact_dir=artifact_dir,
+                    retrieved_at=RETRIEVED_AT,
+                    discover_sources=True,
+                    discovery_repositories=("mendeley",),
+                    merge_existing=True,
+                    parse_motion_rows=False,
+                )
+
+            self.assertTrue(result["ok"])
+            rows = index.sql(
+                """
+                select record_id,
+                       json_extract(payload_json, '$.repository') as repository,
+                       json_extract(payload_json, '$.path') as path,
+                       json_extract(payload_json, '$.locator') as locator
+                from record_payloads
+                where source='aedes_video_atoms'
+                order by record_id
+                """,
+                limit=10,
+            )
+            by_id = {row["record_id"]: row for row in rows}
+            self.assertNotIn("video_atom:gap:legacy-mendeley-parse-failed", by_id)
+            self.assertIn("video_atom:gap:legacy-dryad-parse-failed", by_id)
+            self.assertEqual(by_id["video_atom:gap:new-mendeley-parse-failed"]["repository"], "mendeley")
+
+    def test_scoped_refresh_preserves_queryable_sweep_records_when_discovery_is_not_rerun(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            stale_mendeley_asset = EvidenceRecord(
+                record_id="video_atom:asset:stale-mendeley",
+                lane="media",
+                source="aedes_video_atoms",
+                title="Stale Mendeley candidate",
+                text="Old Mendeley Aedes aegypti candidate.",
+                species="Aedes aegypti",
+                url="https://example.org/mendeley",
+                media_url="https://example.org/mendeley.mp4",
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="records#stale-mendeley",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={"atom_type": "video_asset", "repository": "mendeley", "verification_status": "candidate"},
+            )
+            mendeley_sweep = EvidenceRecord(
+                record_id="video_atom:sweep:mendeley",
+                lane="media",
+                source="aedes_video_atoms",
+                title="Aedes aegypti video discovery sweep: mendeley",
+                text="Existing Mendeley video discovery sweep.",
+                species="Aedes aegypti",
+                url=None,
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="raw/video_atoms/discovery_sweeps.json#mendeley",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={
+                    "atom_type": "video_sweep",
+                    "repository": "mendeley",
+                    "status": "accepted_candidates",
+                    "raw_candidate_count": 37,
+                    "gap_count": 31,
+                },
+            )
+            index.upsert_records([stale_mendeley_asset, mendeley_sweep])
+
+            new_mendeley_asset = EvidenceRecord(
+                record_id="video_atom:asset:new-mendeley",
+                lane="media",
+                source="aedes_video_atoms",
+                title="New Mendeley candidate",
+                text="New Mendeley Aedes aegypti candidate.",
+                species="Aedes aegypti",
+                url="https://example.org/mendeley-new",
+                media_url="https://example.org/mendeley-new.mp4",
+                provenance=Provenance(
+                    source_id="aedes_video_atoms",
+                    locator="records#new-mendeley",
+                    retrieved_at=RETRIEVED_AT,
+                ),
+                payload={"atom_type": "video_asset", "repository": "mendeley", "verification_status": "candidate"},
+            )
+            fake_result = AedesVideoAtomsResult(
+                source_id="aedes_video_atoms",
+                records=[new_mendeley_asset],
+                gaps=[],
+                video_asset_count=1,
+                mirrored_video_count=0,
+                verified_video_count=0,
+                artifact_count=0,
+                motion_row_count=0,
+                discovery_candidate_count=0,
+                discovery_sweep_receipts=[],
+            )
+
+            with patch("scripts.ingest_video_atoms.build_video_atom_records", return_value=fake_result):
+                result = ingest_video_atoms(
+                    artifact_dir=artifact_dir,
+                    retrieved_at=RETRIEVED_AT,
+                    discovery_repositories=("mendeley",),
+                    merge_existing=True,
+                    parse_motion_rows=False,
+                )
+
+            self.assertTrue(result["ok"])
+            rows = index.sql(
+                """
+                select record_id,
+                       json_extract(payload_json, '$.atom_type') as atom_type,
+                       json_extract(payload_json, '$.repository') as repository
+                from record_payloads
+                where source='aedes_video_atoms'
+                order by record_id
+                """,
+                limit=10,
+            )
+            by_id = {row["record_id"]: row for row in rows}
+            self.assertNotIn("video_atom:asset:stale-mendeley", by_id)
+            self.assertEqual(by_id["video_atom:asset:new-mendeley"]["repository"], "mendeley")
+            self.assertEqual(by_id["video_atom:sweep:mendeley"]["atom_type"], "video_sweep")
+            self.assertEqual(by_id["video_atom:sweep:mendeley"]["repository"], "mendeley")
+
     def test_repository_scoped_refresh_requires_merge_existing(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

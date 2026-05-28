@@ -54,6 +54,28 @@ def _payload_repository(payload: dict[str, object]) -> str | None:
     return str(repository) if repository else None
 
 
+def _repository_from_video_gap_payload(payload: dict[str, object]) -> str | None:
+    repository = _payload_repository(payload)
+    if repository:
+        return repository
+    locator = " ".join(
+        str(payload.get(key) or "")
+        for key in ("path", "locator", "source_table", "source_url", "raw_path")
+    )
+    path_repositories = (
+        ("raw/pmc_videos/", "pmc_oa"),
+        ("raw/dryad_behavior_videos/", "dryad"),
+        ("raw/mendeley_behavior_media/", "mendeley"),
+        ("raw/osf_flighttrackai_videos/", "osf"),
+        ("raw/zenodo_aedes_videos/", "zenodo"),
+        ("raw/figshare_aedes_videos/", "figshare"),
+    )
+    for marker, repository_name in path_repositories:
+        if marker in locator:
+            return repository_name
+    return None
+
+
 def _delete_video_atom_repository_records(index: SourceIndex, repositories: Iterable[str]) -> int:
     repository_scope = {str(repository) for repository in repositories}
     if not repository_scope:
@@ -71,7 +93,9 @@ def _delete_video_atom_repository_records(index: SourceIndex, repositories: Iter
                 continue
             record_id = str(row["record_id"])
             record_payloads[record_id] = payload
-            if _payload_repository(payload) in repository_scope:
+            if payload.get("atom_type") == "video_sweep":
+                continue
+            if _repository_from_video_gap_payload(payload) in repository_scope:
                 delete_ids.add(record_id)
         if delete_ids:
             for record_id, payload in record_payloads.items():

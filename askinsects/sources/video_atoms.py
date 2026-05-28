@@ -2396,6 +2396,22 @@ def _parse_xlsx_motion_table(table_path: Path) -> list[tuple[int, dict[str, str]
     return rows
 
 
+def _repository_for_motion_table_path(table_path: Path) -> str | None:
+    text = table_path.as_posix()
+    path_repositories = (
+        ("raw/pmc_videos/", "pmc_oa"),
+        ("raw/dryad_behavior_videos/", "dryad"),
+        ("raw/mendeley_behavior_media/", "mendeley"),
+        ("raw/osf_flighttrackai_videos/", "osf"),
+        ("raw/zenodo_aedes_videos/", "zenodo"),
+        ("raw/figshare_aedes_videos/", "figshare"),
+    )
+    for marker, repository in path_repositories:
+        if marker in text:
+            return repository
+    return None
+
+
 def _parse_motion_tables(
     motion_table_paths: Iterable[Path],
     *,
@@ -2409,6 +2425,8 @@ def _parse_motion_tables(
     for table_path in motion_table_paths:
         try:
             path = Path(table_path)
+            if path.name.startswith("._"):
+                continue
             parsed_rows = _parse_xlsx_motion_table(path) if path.suffix.lower() == ".xlsx" else _parse_delimited_motion_table(path)
             for row_index, cleaned, locator_suffix in parsed_rows:
                 video_id = _motion_video_id(cleaned, path)
@@ -2443,7 +2461,24 @@ def _parse_motion_tables(
                     )
                 )
         except Exception as exc:
-            gaps.append({"source": VIDEO_ATOMS_SOURCE_ID, "reason": "video_motion_table_parse_failed", "path": Path(table_path).as_posix(), "error": str(exc)})
+            path = Path(table_path)
+            try:
+                rel_path = path.relative_to(artifact_dir).as_posix()
+            except ValueError:
+                rel_path = path.as_posix()
+            gap = {
+                "source": VIDEO_ATOMS_SOURCE_ID,
+                "lane": "behavior",
+                "reason": "video_motion_table_parse_failed",
+                "record_id": path.name,
+                "path": path.as_posix(),
+                "locator": rel_path,
+                "error": str(exc),
+            }
+            repository = _repository_for_motion_table_path(path)
+            if repository:
+                gap["repository"] = repository
+            gaps.append(gap)
     return records
 
 
@@ -2464,6 +2499,8 @@ def _default_motion_table_paths(artifact_dir: Path) -> list[Path]:
         if not root.exists():
             continue
         for path in sorted([*root.rglob("*.csv"), *root.rglob("*.tsv"), *root.rglob("*.xlsx")]):
+            if path.name.startswith("._"):
+                continue
             resolved = path.resolve()
             if resolved in seen:
                 continue
