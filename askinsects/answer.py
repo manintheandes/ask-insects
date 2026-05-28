@@ -250,6 +250,10 @@ def _wants_video_atoms(question: str) -> bool:
         "tracking",
         "track id",
         "coordinates",
+        "gap",
+        "gaps",
+        "failed",
+        "failure",
         "license",
         "licenses",
         "missing",
@@ -262,6 +266,51 @@ def _wants_video_atoms(question: str) -> bool:
 def _wants_video_gaps(question: str) -> bool:
     q = question.lower()
     return _wants_video_atoms(question) and any(term in q for term in ("gap", "gaps", "failed", "failure", "license", "too large"))
+
+
+def _video_focus_tokens(question: str) -> set[str]:
+    generic = {
+        "aedes",
+        "aegypti",
+        "archive",
+        "archives",
+        "contents",
+        "decoded",
+        "dryad",
+        "failed",
+        "failure",
+        "figure",
+        "file",
+        "frame",
+        "frames",
+        "gap",
+        "gaps",
+        "keyframe",
+        "keyframes",
+        "manifest",
+        "manifests",
+        "media",
+        "missing",
+        "mosquito",
+        "mosquitoes",
+        "not",
+        "preview",
+        "previews",
+        "show",
+        "source",
+        "the",
+        "thumbnail",
+        "thumbnails",
+        "undecoded",
+        "video",
+        "videos",
+        "zip",
+    }
+    return {
+        token.lower()
+        for token in re.findall(r"[A-Za-z0-9]+", question)
+        if len(token) > 1 and token.lower() not in generic
+    }
 
 
 def _requested_video_gap_reasons(question: str) -> list[str]:
@@ -3159,14 +3208,17 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
 
     if _wants_video_atoms(question):
         wants_gap = _wants_video_gaps(question) or any(term in q for term in ("missing", "not decoded", "undecoded", "not expanded"))
+        focus_tokens = _video_focus_tokens(question)
 
         def score_video(record: EvidenceRecord) -> tuple[int, int, int, int]:
             haystack = f"{record.record_id} {record.title} {record.text}".lower()
             is_gap = "video gap" in haystack or ":gap:" in record.record_id
+            focus_rank = 0 if not focus_tokens or any(token in haystack for token in focus_tokens) else 1
             return (
                 locator_rank(record),
-                0 if record.source == "aedes_video_atoms" else 1,
                 0 if wants_gap and is_gap else 1 if wants_gap else 0,
+                focus_rank,
+                0 if record.source == "aedes_video_atoms" else 1,
                 0 if record.lane in {"media", "behavior"} else 1,
             )
 
@@ -3297,14 +3349,19 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             key=score_pathogen,
         )
     if "dryad" in q:
-        wants_gap = _wants_video_gaps(question) or any(term in q for term in ("missing", "not decoded", "undecoded", "not expanded"))
+        wants_gap = _wants_video_gaps(question) or any(
+            term in q for term in ("gap", "gaps", "failed", "failure", "missing", "not decoded", "undecoded", "not expanded")
+        )
+        focus_tokens = _video_focus_tokens(question)
 
-        def score_dryad(record: EvidenceRecord) -> tuple[int, int, int]:
+        def score_dryad(record: EvidenceRecord) -> tuple[int, int, int, int]:
             haystack = f"{record.record_id} {record.title} {record.text}".lower()
             is_gap = "video gap" in haystack or ":gap:" in record.record_id
+            focus_rank = 0 if not focus_tokens or any(token in haystack for token in focus_tokens) else 1
             return (
                 0 if record.source == "dryad_aedes_behavior_videos" else 1,
                 0 if wants_gap and is_gap else 1 if wants_gap else 0,
+                focus_rank,
                 0 if record.lane in {"media", "behavior"} else 1,
             )
 

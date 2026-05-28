@@ -175,6 +175,15 @@ class VideoDownloadAccessRestrictedError(PermissionError):
         self.status_code = status_code
 
 
+class VideoDownloadAttemptsFailedError(Exception):
+    """Raised when all known download locators for a video candidate fail."""
+
+    def __init__(self, attempts: list[dict[str, object]], last_error: Exception):
+        super().__init__(str(last_error))
+        self.attempts = attempts
+        self.last_error = last_error
+
+
 @dataclass(frozen=True)
 class AedesVideoAtomsResult:
     source_id: str
@@ -314,6 +323,59 @@ def _download_url(row: dict[str, object], payload: dict[str, object]) -> str | N
             return value
     media_url = row.get("media_url")
     return str(media_url) if media_url else None
+
+
+def _candidate_download_urls(candidate: VideoCandidate) -> list[str]:
+    urls: list[str] = []
+
+    def add(value: object) -> None:
+        if isinstance(value, str) and value and value not in urls:
+            urls.append(value)
+
+    add(candidate.media_url)
+    for key in ("download_url", "video_url", "media_url", "url", "source_url", "file_stream_url"):
+        add(candidate.payload.get(key))
+    raw_file = candidate.payload.get("raw_file")
+    if isinstance(raw_file, dict):
+        for key in ("download_url", "url", "file_stream_url"):
+            add(raw_file.get(key))
+        attrs = raw_file.get("attributes")
+        if isinstance(attrs, dict):
+            for key in ("download_url", "url", "file_stream_url"):
+                add(attrs.get(key))
+    source_url = candidate.provenance.get("source_url")
+    if isinstance(source_url, str) and "/downloads/file_stream/" in source_url:
+        add(source_url)
+    return urls
+
+
+def _fetch_candidate_bytes(
+    candidate: VideoCandidate,
+    *,
+    max_video_bytes: int,
+    fetch_video_bytes_fn: Callable[[str, int], bytes],
+) -> tuple[bytes, str, list[dict[str, object]]]:
+    attempts: list[dict[str, object]] = []
+    last_error: Exception | None = None
+    for url in _candidate_download_urls(candidate):
+        try:
+            data = fetch_video_bytes_fn(url, max_video_bytes)
+        except Exception as exc:
+            last_error = exc
+            attempt: dict[str, object] = {
+                "url": url,
+                "status": "failed",
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            }
+            status_code = getattr(exc, "status_code", None)
+            if status_code is not None:
+                attempt["status_code"] = status_code
+            attempts.append(attempt)
+            continue
+        attempts.append({"url": url, "status": "ok"})
+        return data, url, attempts
+    raise VideoDownloadAttemptsFailedError(attempts, last_error or ValueError("no download URL available"))
 
 
 def _source_dataset(row: dict[str, object], payload: dict[str, object]) -> str:
@@ -1345,9 +1407,28 @@ def _archive_manifest_record(
     archive_byte_size: int,
     raw_archive_path: str,
     members: list[dict[str, object]],
+    fetched_download_url: str | None = None,
+    download_attempts: list[dict[str, object]] | None = None,
 ) -> EvidenceRecord:
     digest = _digest(candidate.source_record_id, archive_sha256, "archive_manifest")
     video_member_count = sum(1 for member in members if member.get("is_video"))
+    payload = {
+        "atom_type": "video_archive_manifest",
+        "source_video_record_id": candidate.source_record_id,
+        "source_dataset": candidate.payload.get("source_dataset") or candidate.title,
+        "download_url": candidate.media_url,
+        "sha256": archive_sha256,
+        "byte_size": archive_byte_size,
+        "raw_archive_path": raw_archive_path,
+        "member_count": len(members),
+        "video_member_count": video_member_count,
+        "members": members[:250],
+        "source_video_provenance": candidate.provenance,
+    }
+    if fetched_download_url:
+        payload["fetched_download_url"] = fetched_download_url
+    if download_attempts:
+        payload["download_attempts"] = download_attempts
     return EvidenceRecord(
         record_id=f"video_atom:archive_manifest:{_safe_id(candidate.source_record_id)}:{digest}",
         lane="media",
@@ -1368,19 +1449,7 @@ def _archive_manifest_record(
             license=candidate.provenance.get("license") if isinstance(candidate.provenance.get("license"), str) else None,
             source_url=candidate.media_url or candidate.url,
         ),
-        payload={
-            "atom_type": "video_archive_manifest",
-            "source_video_record_id": candidate.source_record_id,
-            "source_dataset": candidate.payload.get("source_dataset") or candidate.title,
-            "download_url": candidate.media_url,
-            "sha256": archive_sha256,
-            "byte_size": archive_byte_size,
-            "raw_archive_path": raw_archive_path,
-            "member_count": len(members),
-            "video_member_count": video_member_count,
-            "members": members[:250],
-            "source_video_provenance": candidate.provenance,
-        },
+        payload=payload,
     )
 
 
@@ -1541,15 +1610,28 @@ def _mirror_candidate(
         )
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_too_large"), None
     try:
-        data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
-    except VideoDownloadAccessRestrictedError as exc:
-        gaps.append(_gap_context(candidate, "video_download_access_restricted", error=str(exc), status_code=exc.status_code))
-        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_access_restricted"), None
-    except VideoDownloadNotVideoError as exc:
-        gaps.append(_gap_context(candidate, "video_download_not_video", error=str(exc)))
-        return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None
-    except Exception as exc:
-        gaps.append(_gap_context(candidate, "video_download_failed", error=str(exc)))
+        data, fetched_download_url, download_attempts = _fetch_candidate_bytes(
+            candidate,
+            max_video_bytes=max_video_bytes,
+            fetch_video_bytes_fn=fetch_video_bytes_fn,
+        )
+    except VideoDownloadAttemptsFailedError as exc:
+        last_error = exc.last_error
+        if isinstance(last_error, VideoDownloadAccessRestrictedError):
+            gaps.append(
+                _gap_context(
+                    candidate,
+                    "video_download_access_restricted",
+                    error=str(last_error),
+                    status_code=last_error.status_code,
+                    download_attempts=exc.attempts,
+                )
+            )
+            return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_access_restricted"), None
+        if isinstance(last_error, VideoDownloadNotVideoError):
+            gaps.append(_gap_context(candidate, "video_download_not_video", error=str(last_error), download_attempts=exc.attempts))
+            return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None
+        gaps.append(_gap_context(candidate, "video_download_failed", error=str(last_error), download_attempts=exc.attempts))
         return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_failed"), None
     if len(data) > max_video_bytes:
         gaps.append(
@@ -1572,6 +1654,8 @@ def _mirror_candidate(
         "sha256": digest,
         "byte_size": len(data),
         "raw_asset_path": raw_path.relative_to(artifact_dir).as_posix(),
+        "fetched_download_url": fetched_download_url,
+        "download_attempts": download_attempts,
         **{key: value for key, value in probe_payload.items() if value is not None},
     }
     return _record_for_asset(candidate, retrieved_at=retrieved_at, verification_status=verification_status, extra_payload=extra_payload), raw_path
@@ -1605,15 +1689,28 @@ def _mirror_archive_candidate(
         gaps.append(_gap_context(candidate, "video_archive_unsupported_format", archive_format=archive_extension or "unknown"))
         return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_archive_unsupported_format"), None)]
     try:
-        data = fetch_video_bytes_fn(candidate.media_url, max_video_bytes)
-    except VideoDownloadAccessRestrictedError as exc:
-        gaps.append(_gap_context(candidate, "video_download_access_restricted", error=str(exc), status_code=exc.status_code))
-        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_access_restricted"), None)]
-    except VideoDownloadNotVideoError as exc:
-        gaps.append(_gap_context(candidate, "video_download_not_video", error=str(exc)))
-        return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None)]
-    except Exception as exc:
-        gaps.append(_gap_context(candidate, "video_download_failed", error=str(exc)))
+        data, fetched_download_url, download_attempts = _fetch_candidate_bytes(
+            candidate,
+            max_video_bytes=max_video_bytes,
+            fetch_video_bytes_fn=fetch_video_bytes_fn,
+        )
+    except VideoDownloadAttemptsFailedError as exc:
+        last_error = exc.last_error
+        if isinstance(last_error, VideoDownloadAccessRestrictedError):
+            gaps.append(
+                _gap_context(
+                    candidate,
+                    "video_download_access_restricted",
+                    error=str(last_error),
+                    status_code=last_error.status_code,
+                    download_attempts=exc.attempts,
+                )
+            )
+            return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_access_restricted"), None)]
+        if isinstance(last_error, VideoDownloadNotVideoError):
+            gaps.append(_gap_context(candidate, "video_download_not_video", error=str(last_error), download_attempts=exc.attempts))
+            return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_not_video"), None)]
+        gaps.append(_gap_context(candidate, "video_download_failed", error=str(last_error), download_attempts=exc.attempts))
         return [], [(_record_for_asset(candidate, retrieved_at=retrieved_at, verification_status="gapped_download_failed"), None)]
     if len(data) > max_video_bytes:
         gaps.append(_gap_context(candidate, "video_archive_too_large", byte_size=len(data), max_video_bytes=max_video_bytes))
@@ -1701,6 +1798,8 @@ def _mirror_archive_candidate(
             extra_payload = {
                 "archive_source_video_record_id": candidate.source_record_id,
                 "archive_url": candidate.media_url,
+                "fetched_archive_url": fetched_download_url,
+                "download_attempts": download_attempts,
                 "archive_sha256": archive_sha256,
                 "raw_archive_path": relative_archive_path,
                 "member_name": member_name,
@@ -1781,6 +1880,8 @@ def _mirror_archive_candidate(
             archive_byte_size=len(data),
             raw_archive_path=relative_archive_path,
             members=members,
+            fetched_download_url=fetched_download_url,
+            download_attempts=download_attempts,
         ),
     )
     if not any(member.get("is_video") for member in members):

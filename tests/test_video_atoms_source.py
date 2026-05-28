@@ -599,6 +599,76 @@ class VideoAtomsSourceTests(unittest.TestCase):
         self.assertEqual(asset.payload["verification_status"], "verified")
         self.assertEqual(asset.payload["member_name"], "clip.mp4")
 
+    def test_dryad_archive_download_falls_back_to_file_stream_url(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            api_url = "https://datadryad.org/api/v2/files/3544388/download"
+            file_stream_url = "https://datadryad.org/downloads/file_stream/3544388"
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="dryad:file:10_5061_dryad_qz612jmrb:figure_s7_zip",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad video/archive file Figure_S7.zip",
+                        text="ZIP archive containing Aedes aegypti TRPV mating videos.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/dataset/doi%3A10.5061%2Fdryad.qz612jmrb",
+                        media_url=api_url,
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/10_5061_dryad_qz612jmrb_files.json#file/14",
+                            retrieved_at=RETRIEVED_AT,
+                            license="https://spdx.org/licenses/CC0-1.0.html",
+                            source_url=file_stream_url,
+                        ),
+                        payload={
+                            "filename": "Figure_S7.zip",
+                            "size": 1_458_046,
+                            "file_stream_url": file_stream_url,
+                        },
+                    )
+                ]
+            )
+            archive_path = Path(tmpdir) / "Figure_S7.zip"
+            with zipfile.ZipFile(archive_path, "w") as archive:
+                archive.writestr("Figure_S7/clip.mp4", b"fake mp4 bytes")
+
+            attempted: list[str] = []
+
+            def fetch_with_fallback(url: str, max_bytes: int) -> bytes:
+                attempted.append(url)
+                if url == api_url:
+                    raise VideoDownloadAccessRestrictedError("HTTP Error 401: Unauthorized", status_code=401)
+                return archive_path.read_bytes()
+
+            result = build_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                fetch_video_bytes_fn=fetch_with_fallback,
+                probe_video_file_fn=lambda path: {
+                    "duration_seconds": 0.8,
+                    "fps": 120.0,
+                    "width": 320,
+                    "height": 240,
+                    "codec": "h264",
+                },
+            )
+
+        self.assertEqual(attempted, [api_url, file_stream_url])
+        self.assertNotIn("video_download_access_restricted", {gap["reason"] for gap in result.gaps})
+        manifest = next(record for record in result.records if record.payload.get("atom_type") == "video_archive_manifest")
+        self.assertEqual(manifest.payload["fetched_download_url"], file_stream_url)
+        self.assertEqual([attempt["url"] for attempt in manifest.payload["download_attempts"]], [api_url, file_stream_url])
+        member = next(record for record in result.records if record.payload.get("atom_type") == "video_archive_member")
+        self.assertEqual(member.payload["member_name"], "Figure_S7/clip.mp4")
+        asset = next(record for record in result.records if record.payload.get("atom_type") == "video_asset")
+        self.assertEqual(asset.payload["verification_status"], "verified")
+        self.assertEqual(asset.payload["fetched_archive_url"], file_stream_url)
+
     def test_archive_video_candidates_expand_bounded_tar_gz_members(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
