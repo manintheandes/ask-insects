@@ -338,7 +338,13 @@ DATACITE_DOI_API_BASE = "https://api.datacite.org/dois"
 PRIDE_ARCHIVE_API_BASE = "https://www.ebi.ac.uk/pride/ws/archive/v2"
 UNPAYWALL_API_BASE = "https://api.unpaywall.org/v2"
 UNPAYWALL_EMAIL = "sources@openinsects.org"
-REPOSITORY_METADATA_SUPPLEMENT_SOURCES = {"ncbi_bioproject", "ncbi_geo", "proteomexchange"}
+REPOSITORY_METADATA_SUPPLEMENT_SOURCES = {
+    "github_repository",
+    "ncbi_bioproject",
+    "ncbi_geo",
+    "proteomexchange",
+    "protocols_io",
+}
 RESISTANCE_DISCOVERY_TERMS = (
     "insecticide resistance",
     "insecticide-resistant",
@@ -606,7 +612,10 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
         query_parts.append(f'DOI:"{request["doi"]}"')
     if query_parts:
         url = f"{EUROPE_PMC_SEARCH_BASE}?{urlencode({'query': ' OR '.join(query_parts), 'format': 'json', 'pageSize': '1'})}"
-        payload = _fetch_json_url(url)
+        try:
+            payload = _fetch_json_url(url)
+        except Exception:
+            payload = {}
         for item in _payload_supplements(payload):
             item = dict(item)
             item.setdefault("source", "europe_pmc")
@@ -625,6 +634,7 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
     supplements.extend(_ncbi_bioproject_supplements(request))
     supplements.extend(_ncbi_geo_supplements(request))
     supplements.extend(_proteomexchange_supplements(request))
+    supplements.extend(_protocols_io_supplements(request))
     supplements.extend(_crossref_relation_supplements(request))
     supplements.extend(_datacite_relation_supplements(request))
     supplements.extend(_unpaywall_supplements(request))
@@ -775,7 +785,12 @@ def _crossref_relation_supplements(request: dict[str, object]) -> list[dict[str,
             url = _doi_or_url_identifier(entry.get("id"), entry.get("id-type"))
             if not url:
                 continue
-            expanded = _expand_repository_relation_supplements(url)
+            expanded = _expand_repository_relation_supplements(
+                url,
+                parent_request=request,
+                crossref_message=message,
+                crossref_api_url=api_url,
+            )
             if expanded:
                 supplements.extend(expanded)
                 continue
@@ -790,12 +805,23 @@ def _crossref_relation_supplements(request: dict[str, object]) -> list[dict[str,
     return supplements
 
 
-def _expand_repository_relation_supplements(url: str) -> list[dict[str, object]]:
+def _expand_repository_relation_supplements(
+    url: str,
+    *,
+    parent_request: dict[str, object] | None = None,
+    crossref_message: dict[str, object] | None = None,
+    crossref_api_url: str | None = None,
+) -> list[dict[str, object]]:
     relation_request = {
         "doi": _normalize_doi(url),
         "url": url,
     }
+    if parent_request:
+        parent_doi = parent_request.get("doi")
+        if parent_doi:
+            relation_request["source_doi"] = _normalize_doi(parent_doi)
     supplements: list[dict[str, object]] = []
+    supplements.extend(_github_supplements(relation_request, crossref_message=crossref_message, crossref_api_url=crossref_api_url))
     if _figshare_article_id_from_request(relation_request):
         supplements.extend(_figshare_supplements(relation_request))
     if _zenodo_record_id_from_request(relation_request):
@@ -808,6 +834,8 @@ def _expand_repository_relation_supplements(url: str) -> list[dict[str, object]]
         supplements.extend(_ncbi_geo_supplements(relation_request))
     if _proteomexchange_accession_from_request(relation_request):
         supplements.extend(_proteomexchange_supplements(relation_request))
+    if _protocols_io_doi_from_request(relation_request):
+        supplements.extend(_protocols_io_supplements(relation_request))
     for supplement in supplements:
         supplement.setdefault("discovered_via", "crossref_relation")
         supplement.setdefault("crossref_relation_url", url)
@@ -1365,6 +1393,227 @@ def _proteomexchange_supplements(request: dict[str, object]) -> list[dict[str, o
     return [{key: value for key, value in supplement.items() if value not in (None, "")}]
 
 
+def _github_repositories_from_text(text: str) -> list[str]:
+    repos: list[str] = []
+    seen: set[str] = set()
+    for match in re.finditer(r"https?://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)", text, re.I):
+        owner, repo = match.group(1), match.group(2)
+        if owner.lower() in {"features", "settings", "topics"}:
+            continue
+        full_name = f"{owner}/{repo}".rstrip(".,;")
+        key = full_name.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        repos.append(full_name)
+    return repos
+
+
+def _github_repositories_from_request(request: dict[str, object]) -> list[str]:
+    haystack = " ".join(str(request.get(key) or "") for key in ("url", "accession", "id"))
+    return _github_repositories_from_text(haystack)
+
+
+def _github_repositories_from_crossref_message(message: dict[str, object] | None) -> list[str]:
+    if not isinstance(message, dict):
+        return []
+    links = message.get("link")
+    if not isinstance(links, list):
+        return []
+    repos: list[str] = []
+    seen: set[str] = set()
+    for link in links:
+        if not isinstance(link, dict):
+            continue
+        url = str(link.get("URL") or link.get("url") or "")
+        content_type = str(link.get("content-type") or "").lower()
+        if not url or ("xml" not in content_type and not url.lower().endswith(".xml")):
+            continue
+        try:
+            text = _fetch_bytes_url(url, 2_000_000).decode("utf-8", errors="replace")
+        except Exception:
+            continue
+        for repo in _github_repositories_from_text(text):
+            key = repo.lower()
+            if key not in seen:
+                seen.add(key)
+                repos.append(repo)
+    return repos
+
+
+def _github_repository_supplement(
+    full_name: str,
+    *,
+    source_doi: str | None = None,
+    crossref_api_url: str | None = None,
+) -> dict[str, object] | None:
+    api_url = f"https://api.github.com/repos/{quote(full_name, safe='/')}"
+    try:
+        payload = _fetch_json_url(api_url)
+    except Exception:
+        return None
+    repository_name = str(payload.get("full_name") or full_name)
+    description = str(payload.get("description") or repository_name)
+    license_payload = payload.get("license") if isinstance(payload.get("license"), dict) else {}
+    license_value = license_payload.get("spdx_id") or license_payload.get("name") or "GitHub public repository metadata"
+    supplement = {
+        "title": f"GitHub repository {repository_name}: {description}",
+        "url": payload.get("html_url") or f"https://github.com/{repository_name}",
+        "file_type": "repository_metadata",
+        "license": license_value,
+        "source": "github_repository",
+        "metadata_url": api_url,
+        "repository": "github",
+        "accession": repository_name,
+        "github_full_name": repository_name,
+        "github_description": payload.get("description"),
+        "github_default_branch": payload.get("default_branch"),
+        "github_stargazers_count": payload.get("stargazers_count"),
+        "github_forks_count": payload.get("forks_count"),
+        "github_open_issues_count": payload.get("open_issues_count"),
+        "github_updated_at": payload.get("updated_at"),
+        "github_pushed_at": payload.get("pushed_at"),
+        "github_archived": str(payload.get("archived")).lower() if isinstance(payload.get("archived"), bool) else None,
+        "github_disabled": str(payload.get("disabled")).lower() if isinstance(payload.get("disabled"), bool) else None,
+        "github_visibility": payload.get("visibility"),
+        "github_api_url": api_url,
+        "source_doi": source_doi,
+        "crossref_api_url": crossref_api_url,
+        "search_url": api_url,
+    }
+    return {key: value for key, value in supplement.items() if value not in (None, "")}
+
+
+def _github_supplements(
+    request: dict[str, object],
+    *,
+    crossref_message: dict[str, object] | None = None,
+    crossref_api_url: str | None = None,
+) -> list[dict[str, object]]:
+    repos = _github_repositories_from_request(request)
+    if not repos and str(request.get("url") or "").strip().lower() == "github":
+        repos = _github_repositories_from_crossref_message(crossref_message)
+    if not repos:
+        return []
+    source_doi = _normalize_doi(request.get("source_doi"))
+    supplements: list[dict[str, object]] = []
+    seen: set[str] = set()
+    for repo in repos:
+        key = repo.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        supplement = _github_repository_supplement(repo, source_doi=source_doi, crossref_api_url=crossref_api_url)
+        if supplement:
+            supplements.append(supplement)
+    return supplements
+
+
+def _protocols_io_doi_from_request(request: dict[str, object]) -> str | None:
+    for key in ("doi", "url", "accession", "id"):
+        value = request.get(key)
+        if not value:
+            continue
+        text = str(value)
+        doi = _normalize_doi(text)
+        if doi and re.search(r"^10\.17504/protocols\.io[./][A-Za-z0-9_.-]+$", doi, re.I):
+            return doi
+        match = re.search(r"10\.17504/protocols\.io[./][A-Za-z0-9_.-]+", text, re.I)
+        if match:
+            return _normalize_doi(match.group(0))
+    return None
+
+
+class _ProtocolPageMetadataParser(HTMLParser):
+    def __init__(self, base_url: str) -> None:
+        super().__init__()
+        self.base_url = base_url
+        self.meta: dict[str, list[str]] = {}
+        self.canonical_url: str | None = None
+        self._in_title = False
+        self._title_parts: list[str] = []
+
+    @property
+    def title(self) -> str | None:
+        title = " ".join(part for part in self._title_parts if part).strip()
+        return title or None
+
+    def handle_starttag(self, tag: str, attrs) -> None:
+        attr_map = {str(key).lower(): str(value) for key, value in attrs if value is not None}
+        tag_lower = tag.lower()
+        if tag_lower == "title":
+            self._in_title = True
+            return
+        if tag_lower == "meta":
+            key = attr_map.get("name") or attr_map.get("property") or attr_map.get("itemprop")
+            content = attr_map.get("content")
+            if key and content:
+                self.meta.setdefault(key.lower(), []).append(content.strip())
+            return
+        if tag_lower == "link":
+            rel = attr_map.get("rel", "").lower()
+            href = attr_map.get("href")
+            if href and "canonical" in rel:
+                self.canonical_url = urljoin(self.base_url, href)
+
+    def handle_data(self, data: str) -> None:
+        if self._in_title and data.strip():
+            self._title_parts.append(data.strip())
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() == "title":
+            self._in_title = False
+
+    def first_meta(self, *keys: str) -> str | None:
+        for key in keys:
+            values = self.meta.get(key.lower())
+            if values:
+                return values[0]
+        return None
+
+    def joined_meta(self, key: str) -> str | None:
+        values = self.meta.get(key.lower()) or []
+        return "; ".join(value for value in values if value) or None
+
+
+def _protocols_io_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    doi = _protocols_io_doi_from_request(request)
+    if not doi:
+        return []
+    landing_url = f"https://doi.org/{doi}"
+    try:
+        html = _fetch_bytes_url(landing_url, 1_000_000).decode("utf-8", errors="replace")
+    except Exception:
+        return []
+    parser = _ProtocolPageMetadataParser(landing_url)
+    parser.feed(html)
+    title = parser.first_meta("citation_title", "og:title", "twitter:title") or parser.title or f"protocols.io {doi}"
+    canonical_url = parser.first_meta("og:url") or parser.canonical_url or landing_url
+    pdf_url = parser.first_meta("citation_pdf_url")
+    if pdf_url:
+        pdf_url = urljoin(canonical_url, pdf_url)
+    description = parser.first_meta("description", "og:description", "twitter:description")
+    supplement = {
+        "title": f"protocols.io {doi}: {title}",
+        "url": canonical_url,
+        "file_type": "repository_metadata",
+        "license": "protocols.io public metadata",
+        "source": "protocols_io",
+        "metadata_url": landing_url,
+        "repository": "protocols.io",
+        "accession": doi,
+        "protocol_doi": doi,
+        "protocol_title": title,
+        "protocol_description": description,
+        "protocol_authors": parser.joined_meta("citation_author") or parser.first_meta("article:author"),
+        "protocol_publication_date": parser.first_meta("citation_publication_date"),
+        "protocol_url": canonical_url,
+        "protocol_pdf_url": pdf_url,
+        "search_url": landing_url,
+    }
+    return [{key: value for key, value in supplement.items() if value not in (None, "")}]
+
+
 def _matches_prefilter(text: str) -> bool:
     lower = text.lower()
     return any(token in lower for token in PREFILTER_TOKENS)
@@ -1613,6 +1862,27 @@ def _normalize_supplement(raw: dict[str, object]) -> dict[str, object]:
         "pride_project_url",
         "proteomecentral_url",
         "file_manifest_url",
+        "github_full_name",
+        "github_description",
+        "github_default_branch",
+        "github_stargazers_count",
+        "github_forks_count",
+        "github_open_issues_count",
+        "github_updated_at",
+        "github_pushed_at",
+        "github_archived",
+        "github_disabled",
+        "github_visibility",
+        "github_api_url",
+        "source_doi",
+        "crossref_api_url",
+        "protocol_doi",
+        "protocol_title",
+        "protocol_description",
+        "protocol_authors",
+        "protocol_publication_date",
+        "protocol_url",
+        "protocol_pdf_url",
         "search_url",
         "discovered_via",
         "crossref_relation_url",
@@ -2384,7 +2654,7 @@ def _download_and_parse_supplement_rows(
             if supplement_source in REPOSITORY_METADATA_SUPPLEMENT_SOURCES:
                 reason = "repository_metadata_manifest_no_supported_table_rows"
                 extra_fields = {
-                    "repository": supplement_source,
+                    "repository": candidate.supplement.get("repository") or supplement_source,
                     "accession": candidate.supplement.get("accession"),
                     "metadata_url": candidate.supplement.get("metadata_url"),
                     "file_extension": extension.lower().lstrip(".") or None,
@@ -2632,6 +2902,27 @@ def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrie
         "pride_project_url",
         "proteomecentral_url",
         "file_manifest_url",
+        "github_full_name",
+        "github_description",
+        "github_default_branch",
+        "github_stargazers_count",
+        "github_forks_count",
+        "github_open_issues_count",
+        "github_updated_at",
+        "github_pushed_at",
+        "github_archived",
+        "github_disabled",
+        "github_visibility",
+        "github_api_url",
+        "source_doi",
+        "crossref_api_url",
+        "protocol_doi",
+        "protocol_title",
+        "protocol_description",
+        "protocol_authors",
+        "protocol_publication_date",
+        "protocol_url",
+        "protocol_pdf_url",
         "search_url",
         "discovered_via",
         "crossref_relation_url",

@@ -524,6 +524,102 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
             self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
 
+    def test_build_extracted_fact_records_keeps_protocols_io_metadata_as_exact_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "protocols.io 10.17504/protocols.io.bddhi236: Competition in Aedes aegypti larvae",
+                        "url": "https://www.protocols.io/view/competition-in-aedes-aegypti-larvae-the-effects-of-8epv51e45l1b/v1",
+                        "file_type": "repository_metadata",
+                        "license": "protocols.io public metadata",
+                        "source": "protocols_io",
+                        "repository": "protocols.io",
+                        "accession": "10.17504/protocols.io.bddhi236",
+                        "protocol_doi": "10.17504/protocols.io.bddhi236",
+                        "protocol_title": "Competition in Aedes aegypti larvae",
+                        "protocol_authors": "Kurt Steinwascher",
+                        "protocol_publication_date": "2020/03/08",
+                        "protocol_pdf_url": "https://www.protocols.io/view/competition-in-aedes-aegypti-larvae-the-effects-of-bddhi236.pdf",
+                        "metadata_url": "https://doi.org/10.17504/protocols.io.bddhi236",
+                    }
+                ],
+                fetch_supplement_file_fn=lambda url, max_bytes: b"",
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            manifest = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+                and record.payload["supplement"]["source"] == "protocols_io"
+            )
+            self.assertEqual(manifest.payload["fields"]["accession"], "10.17504/protocols.io.bddhi236")
+            self.assertEqual(manifest.payload["fields"]["protocol_authors"], "Kurt Steinwascher")
+            file_gap = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+                and record.payload["fields"].get("repository") == "protocols.io"
+            )
+            self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
+            self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
+
+    def test_build_extracted_fact_records_keeps_github_metadata_as_exact_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "GitHub repository trevorsorrells/Optothermocycler",
+                        "url": "https://github.com/trevorsorrells/Optothermocycler",
+                        "file_type": "repository_metadata",
+                        "license": "GPL-3.0",
+                        "source": "github_repository",
+                        "repository": "github",
+                        "accession": "trevorsorrells/Optothermocycler",
+                        "github_full_name": "trevorsorrells/Optothermocycler",
+                        "github_default_branch": "master",
+                        "github_updated_at": "2021-10-10T23:57:03Z",
+                        "metadata_url": "https://api.github.com/repos/trevorsorrells/Optothermocycler",
+                    }
+                ],
+                fetch_supplement_file_fn=lambda url, max_bytes: b"",
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            manifest = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+                and record.payload["supplement"]["source"] == "github_repository"
+            )
+            self.assertEqual(manifest.payload["fields"]["accession"], "trevorsorrells/Optothermocycler")
+            self.assertEqual(manifest.payload["fields"]["github_default_branch"], "master")
+            file_gap = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+                and record.payload["fields"].get("repository") == "github"
+            )
+            self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
+            self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
+
     def test_build_extracted_fact_records_expands_existing_bioproject_relation_manifest(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -1049,6 +1145,127 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertEqual(supplements[0]["file_category_counts"], '{"RAW": 1, "SEARCH": 1}')
         self.assertEqual(supplements[0]["submitters"], "henrik molina")
         self.assertNotIn("email", " ".join(str(value) for value in supplements[0].values()))
+
+    def test_fetch_public_supplement_metadata_discovers_direct_protocols_io_metadata(self):
+        html = b"""
+        <html>
+          <head>
+            <title>Competition in Aedes aegypti larvae</title>
+            <link rel="canonical" href="https://www.protocols.io/view/competition-in-aedes-aegypti-larvae-the-effects-of-8epv51e45l1b/v1">
+            <meta name="description" content="Competition in Aedes aegypti larvae: protocol details.">
+            <meta name="citation_title" content="Competition in Aedes aegypti larvae: the effects of distributing food inputs over time">
+            <meta name="citation_publication_date" content="2020/03/08">
+            <meta name="citation_pdf_url" content="https://www.protocols.io/view/competition-in-aedes-aegypti-larvae-the-effects-of-bddhi236.pdf">
+            <meta name="citation_author" content="Kurt Steinwascher">
+            <meta property="og:url" content="https://www.protocols.io/view/competition-in-aedes-aegypti-larvae-the-effects-of-8epv51e45l1b/v1">
+          </head>
+        </html>
+        """
+
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            return {}
+
+        def fake_bytes(url: str, max_bytes: int) -> bytes:
+            if url == "https://doi.org/10.17504/protocols.io.bddhi236":
+                return html
+            return b""
+
+        with (
+            patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json),
+            patch("askinsects.sources.extracted_facts._fetch_bytes_url", side_effect=fake_bytes),
+        ):
+            supplements = fetch_public_supplement_metadata(
+                {"record_id": "openalex:WPROTOCOL", "url": "https://doi.org/10.17504/protocols.io.bddhi236"}
+            )
+
+        self.assertEqual(len(supplements), 1)
+        self.assertEqual(supplements[0]["source"], "protocols_io")
+        self.assertEqual(supplements[0]["repository"], "protocols.io")
+        self.assertEqual(supplements[0]["accession"], "10.17504/protocols.io.bddhi236")
+        self.assertEqual(supplements[0]["protocol_authors"], "Kurt Steinwascher")
+        self.assertEqual(supplements[0]["protocol_publication_date"], "2020/03/08")
+        self.assertEqual(
+            supplements[0]["protocol_url"],
+            "https://www.protocols.io/view/competition-in-aedes-aegypti-larvae-the-effects-of-8epv51e45l1b/v1",
+        )
+
+    def test_fetch_public_supplement_metadata_expands_vague_crossref_github_relation(self):
+        xml = b"""
+        <article>
+          <p>Code is available at https://github.com/trevorsorrells/Optothermocycler.</p>
+          <p>Tracking used https://github.com/kristinbranson/APT.</p>
+        </article>
+        """
+
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                raise OSError("temporary Europe PMC failure")
+            if "api.crossref.org/works/10.7554%2FeLife.76663" in url:
+                return {
+                    "message": {
+                        "relation": {
+                            "is-supplemented-by": [
+                                {"id-type": "accession", "id": "GitHub", "asserted-by": "subject"}
+                            ]
+                        },
+                        "link": [
+                            {
+                                "URL": "https://cdn.elifesciences.org/articles/76663/elife-76663-v2.xml",
+                                "content-type": "application/xml",
+                                "intended-application": "text-mining",
+                            }
+                        ],
+                    }
+                }
+            if "api.github.com/repos/trevorsorrells/Optothermocycler" in url:
+                return {
+                    "full_name": "trevorsorrells/Optothermocycler",
+                    "description": "Optogenetic thermocycler control code",
+                    "html_url": "https://github.com/trevorsorrells/Optothermocycler",
+                    "license": {"spdx_id": "GPL-3.0"},
+                    "default_branch": "master",
+                    "stargazers_count": 0,
+                    "forks_count": 0,
+                    "open_issues_count": 0,
+                    "updated_at": "2021-10-10T23:57:03Z",
+                    "pushed_at": "2021-10-10T23:57:03Z",
+                    "archived": False,
+                    "disabled": False,
+                    "visibility": "public",
+                }
+            if "api.github.com/repos/kristinbranson/APT" in url:
+                return {
+                    "full_name": "kristinbranson/APT",
+                    "description": "Animal Part Tracker",
+                    "html_url": "https://github.com/kristinbranson/APT",
+                    "license": {"spdx_id": "GPL-3.0"},
+                    "default_branch": "master",
+                }
+            return {}
+
+        def fake_bytes(url: str, max_bytes: int) -> bytes:
+            if url == "https://cdn.elifesciences.org/articles/76663/elife-76663-v2.xml":
+                return xml
+            return b""
+
+        with (
+            patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json),
+            patch("askinsects.sources.extracted_facts._fetch_bytes_url", side_effect=fake_bytes),
+        ):
+            supplements = fetch_public_supplement_metadata(
+                {"record_id": "openalex:WGITHUB", "doi": "10.7554/eLife.76663"}
+            )
+
+        repos = {supplement["accession"]: supplement for supplement in supplements if supplement["source"] == "github_repository"}
+        self.assertEqual(set(repos), {"trevorsorrells/Optothermocycler", "kristinbranson/APT"})
+        self.assertEqual(repos["trevorsorrells/Optothermocycler"]["license"], "GPL-3.0")
+        self.assertEqual(repos["trevorsorrells/Optothermocycler"]["source_doi"], "10.7554/eLife.76663")
+        self.assertEqual(
+            repos["trevorsorrells/Optothermocycler"]["crossref_api_url"],
+            "https://api.crossref.org/works/10.7554%2FeLife.76663",
+        )
 
     def test_fetch_public_supplement_metadata_discovers_datacite_relations(self):
         def fake_json(url: str) -> dict[str, object]:
