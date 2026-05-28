@@ -329,6 +329,7 @@ EUROPE_PMC_SEARCH_BASE = "https://www.ebi.ac.uk/europepmc/webservices/rest/searc
 PMC_OA_SERVICE_BASE = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
 FIGSHARE_ARTICLE_API_BASE = "https://api.figshare.com/v2/articles"
 ZENODO_RECORD_API_BASE = "https://zenodo.org/api/records"
+DRYAD_API_BASE = "https://datadryad.org"
 CROSSREF_WORKS_API_BASE = "https://api.crossref.org/works"
 DATACITE_DOI_API_BASE = "https://api.datacite.org/dois"
 UNPAYWALL_API_BASE = "https://api.unpaywall.org/v2"
@@ -593,6 +594,7 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
             pass
     supplements.extend(_figshare_supplements(request))
     supplements.extend(_zenodo_supplements(request))
+    supplements.extend(_dryad_supplements(request))
     supplements.extend(_crossref_relation_supplements(request))
     supplements.extend(_datacite_relation_supplements(request))
     supplements.extend(_unpaywall_supplements(request))
@@ -768,6 +770,8 @@ def _expand_repository_relation_supplements(url: str) -> list[dict[str, object]]
         supplements.extend(_figshare_supplements(relation_request))
     if _zenodo_record_id_from_request(relation_request):
         supplements.extend(_zenodo_supplements(relation_request))
+    if _dryad_doi_from_request(relation_request):
+        supplements.extend(_dryad_supplements(relation_request))
     for supplement in supplements:
         supplement.setdefault("discovered_via", "crossref_relation")
         supplement.setdefault("crossref_relation_url", url)
@@ -1015,6 +1019,79 @@ def _zenodo_supplements(request: dict[str, object]) -> list[dict[str, object]]:
     return supplements
 
 
+def _dryad_doi_from_request(request: dict[str, object]) -> str | None:
+    haystack = " ".join(str(request.get(key) or "") for key in ("doi", "url"))
+    match = re.search(r"10\.5061/dryad\.[^\s<>'\"\)\]\}]+", haystack, re.I)
+    return match.group(0).rstrip(".,;:") if match else None
+
+
+def _dryad_link(payload: dict[str, object], rel: str) -> str | None:
+    links = payload.get("_links")
+    if not isinstance(links, dict):
+        return None
+    link = links.get(rel)
+    if not isinstance(link, dict):
+        return None
+    href = link.get("href")
+    return str(href) if href else None
+
+
+def _dryad_file_rows(files_payload: dict[str, object]) -> list[dict[str, object]]:
+    embedded = files_payload.get("_embedded")
+    if not isinstance(embedded, dict):
+        return []
+    files = embedded.get("stash:files")
+    if not isinstance(files, list):
+        return []
+    return [item for item in files if isinstance(item, dict)]
+
+
+def _dryad_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    doi = _dryad_doi_from_request(request)
+    if not doi:
+        return []
+    dataset_api_url = f"{DRYAD_API_BASE}/api/v2/datasets/{quote(f'doi:{doi}', safe='')}"
+    try:
+        dataset_payload = _fetch_json_url(dataset_api_url)
+        version_href = _dryad_link(dataset_payload, "stash:version")
+        if not version_href:
+            return []
+        version_api_url = urljoin(DRYAD_API_BASE, version_href)
+        version_payload = _fetch_json_url(version_api_url)
+        files_href = _dryad_link(version_payload, "stash:files")
+        if not files_href:
+            return []
+        files_api_url = urljoin(DRYAD_API_BASE, files_href)
+        files_payload = _fetch_json_url(files_api_url)
+    except Exception:
+        return []
+    license_value = dataset_payload.get("license") or version_payload.get("license")
+    supplements: list[dict[str, object]] = []
+    for file_payload in _dryad_file_rows(files_payload):
+        download_href = _dryad_link(file_payload, "stash:download")
+        if not download_href:
+            continue
+        url = urljoin(DRYAD_API_BASE, download_href)
+        name = str(file_payload.get("path") or Path(urlparse(url).path).name or "Dryad supplementary file")
+        extension = Path(name).suffix.lower()
+        mimetype = str(file_payload.get("mimeType") or file_payload.get("mime_type") or "")
+        supplement: dict[str, object] = {
+            "title": name,
+            "url": url,
+            "file_type": extension.lstrip(".") or mimetype,
+            "license": license_value if isinstance(license_value, str) else None,
+            "size": file_payload.get("size"),
+            "source": "dryad",
+            "metadata_url": files_api_url,
+        }
+        digest = file_payload.get("digest")
+        digest_type = str(file_payload.get("digestType") or "").lower().replace("-", "")
+        if digest and digest_type:
+            supplement[f"checksum_{digest_type}"] = digest
+        supplements.append(supplement)
+    return supplements
+
+
 def _matches_prefilter(text: str) -> bool:
     lower = text.lower()
     return any(token in lower for token in PREFILTER_TOKENS)
@@ -1220,21 +1297,42 @@ def _normalize_supplement(raw: dict[str, object]) -> dict[str, object]:
         "size": size if isinstance(size, int | float | str) else None,
         "source": str(source) if source else None,
     }
+    for metadata_key in (
+        "metadata_url",
+        "checksum",
+        "checksum_md5",
+        "checksum_sha1",
+        "checksum_sha256",
+        "checksum_sha512",
+    ):
+        metadata_value = raw.get(metadata_key)
+        if isinstance(metadata_value, str) and metadata_value:
+            supplement[metadata_key] = metadata_value
     return {key: value for key, value in supplement.items() if value is not None}
+
+
+def _merge_supplement_metadata(target: dict[str, object], source: dict[str, object]) -> None:
+    for key, value in source.items():
+        if value is None or value == "":
+            continue
+        if target.get(key) in (None, ""):
+            target[key] = value
 
 
 def _supplement_candidates(literature_rows: list[sqlite3.Row]) -> list[SupplementCandidate]:
     candidates: list[SupplementCandidate] = []
-    seen: set[tuple[str, str, str]] = set()
+    seen: dict[tuple[str, str, str], int] = {}
     for paper in literature_rows:
         payload = _safe_json(paper["payload_json"])
         for raw_supplement in _payload_supplements(payload):
             supplement = _normalize_supplement(raw_supplement)
             supplement.setdefault("source", "record_payload")
             key = (str(paper["record_id"]), str(supplement.get("url") or ""), str(supplement.get("title") or ""))
-            if key in seen:
+            seen_index = seen.get(key)
+            if seen_index is not None:
+                _merge_supplement_metadata(candidates[seen_index].supplement, supplement)
                 continue
-            seen.add(key)
+            seen[key] = len(candidates)
             candidates.append(
                 SupplementCandidate(
                     source_record_id=str(paper["record_id"]),
@@ -1312,7 +1410,7 @@ def _supplement_candidates_with_discovery(
     if max_repository_supplement_discovery_records is not None and max_repository_supplement_discovery_records < 0:
         raise ValueError("max_repository_supplement_discovery_records must not be negative")
     candidates: list[SupplementCandidate] = []
-    seen: set[tuple[str, str, str]] = set()
+    seen: dict[tuple[str, str, str], int] = {}
     discovered_count = 0
     discovery_record_count = 0
     route_counts: Counter[str] = Counter()
@@ -1322,9 +1420,11 @@ def _supplement_candidates_with_discovery(
         supplement = _normalize_supplement(raw_supplement)
         supplement.setdefault("source", fallback_source)
         key = (str(paper["record_id"]), str(supplement.get("url") or ""), str(supplement.get("title") or ""))
-        if key in seen:
+        seen_index = seen.get(key)
+        if seen_index is not None:
+            _merge_supplement_metadata(candidates[seen_index].supplement, supplement)
             return
-        seen.add(key)
+        seen[key] = len(candidates)
         route_counts[str(supplement.get("source") or fallback_source)] += 1
         candidates.append(
             SupplementCandidate(

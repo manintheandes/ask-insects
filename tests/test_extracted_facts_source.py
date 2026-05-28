@@ -282,6 +282,106 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertTrue(any(record.payload["supplement"]["source"] == "europe_pmc" for record in manifests))
             self.assertTrue(any(record.payload["supplement"]["url"] == "https://example.org/europepmc/table-a.tsv" for record in manifests))
 
+    def test_build_extracted_fact_records_preserves_metadata_file_checksums(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "Dryad phased variant file",
+                        "url": "https://datadryad.org/api/v2/files/2161819/download",
+                        "file_type": "bcf",
+                        "license": "CC0",
+                        "size": 385701286,
+                        "source": "dryad",
+                        "metadata_url": "https://datadryad.org/api/v2/versions/224963/files",
+                        "checksum_sha256": "90a5159bb781812e59349fc8921f09c9f7bbf1767e03be01633b312f60bc9808",
+                    }
+                ],
+            )
+
+            manifest = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+                and record.payload["supplement"]["source"] == "dryad"
+            )
+            supplement = manifest.payload["supplement"]
+            self.assertEqual(
+                supplement["checksum_sha256"],
+                "90a5159bb781812e59349fc8921f09c9f7bbf1767e03be01633b312f60bc9808",
+            )
+            self.assertEqual(supplement["metadata_url"], "https://datadryad.org/api/v2/versions/224963/files")
+
+    def test_build_extracted_fact_records_enriches_existing_manifest_duplicates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            stale_supplement = {
+                "title": "Dryad phased variant file",
+                "url": "https://datadryad.org/api/v2/files/2161819/download",
+                "file_type": "bcf",
+                "source": "dryad",
+                "size": 385701286,
+            }
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_manifest:openalex_WFACT1:stale",
+                        lane="literature",
+                        source=EXTRACTED_FACTS_SOURCE_ID,
+                        title="Aedes aegypti supplement manifest: Dryad phased variant file",
+                        text="Stale Dryad supplement manifest without checksum.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/api/v2/files/2161819/download",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id=EXTRACTED_FACTS_SOURCE_ID,
+                            locator="records#openalex:WFACT1;supplement#stale",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_manifest",
+                            "source_record_id": "openalex:WFACT1",
+                            "supplement": stale_supplement,
+                        },
+                    )
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        **stale_supplement,
+                        "metadata_url": "https://datadryad.org/api/v2/versions/224963/files",
+                        "checksum_sha256": "90a5159bb781812e59349fc8921f09c9f7bbf1767e03be01633b312f60bc9808",
+                    }
+                ],
+                source_record_ids=["openalex:WFACT1"],
+            )
+
+            dryad_manifests = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+                and record.payload["supplement"]["source"] == "dryad"
+            ]
+            self.assertEqual(len(dryad_manifests), 1)
+            self.assertEqual(
+                dryad_manifests[0].payload["supplement"]["checksum_sha256"],
+                "90a5159bb781812e59349fc8921f09c9f7bbf1767e03be01633b312f60bc9808",
+            )
+
     def test_build_extracted_fact_records_discovers_supplements_from_fulltext_links(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -401,6 +501,10 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                                 {
                                     "id": "10.5281/zenodo.67890",
                                     "id-type": "doi",
+                                },
+                                {
+                                    "id": "10.5061/dryad.aedes",
+                                    "id-type": "doi",
                                 }
                             ],
                             "is-supplement-to": [
@@ -436,6 +540,30 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                         }
                     ],
                 }
+            if "datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.aedes" in url:
+                return {
+                    "_links": {"stash:version": {"href": "/api/v2/versions/123"}},
+                    "license": "CC0",
+                }
+            if "datadryad.org/api/v2/versions/123/files" in url:
+                return {
+                    "_embedded": {
+                        "stash:files": [
+                            {
+                                "path": "dryad-readme.txt",
+                                "mimeType": "text/plain",
+                                "size": 123,
+                                "digest": "abc456",
+                                "digestType": "sha-256",
+                                "_links": {"stash:download": {"href": "/api/v2/files/555/download"}},
+                            }
+                        ]
+                    }
+                }
+            if "datadryad.org/api/v2/versions/123" in url:
+                return {
+                    "_links": {"stash:files": {"href": "/api/v2/versions/123/files"}},
+                }
             return {}
 
         with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
@@ -451,12 +579,69 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertIn("https://example.org/publisher/supplement-table.xlsx", urls)
         self.assertIn("https://ndownloader.figshare.com/files/123", urls)
         self.assertIn("https://zenodo.org/api/records/67890/files/zenodo-supplement.tsv/content", urls)
+        self.assertIn("https://datadryad.org/api/v2/files/555/download", urls)
         self.assertNotIn("https://doi.org/10.6084/m9.figshare.12345", urls)
         self.assertNotIn("https://doi.org/10.5281/zenodo.67890", urls)
+        self.assertNotIn("https://doi.org/10.5061/dryad.aedes", urls)
         self.assertNotIn("https://doi.org/10.1186/s13071-025-07140-z", urls)
         self.assertTrue(any(item["source"] == "crossref_relation" for item in supplements))
         self.assertTrue(any(item["source"] == "figshare" for item in supplements))
         self.assertTrue(any(item["source"] == "zenodo" for item in supplements))
+        self.assertTrue(any(item["source"] == "dryad" for item in supplements))
+
+    def test_fetch_public_supplement_metadata_discovers_dryad_files(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            if "datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.2bvq83btk" in url:
+                return {
+                    "_links": {"stash:version": {"href": "/api/v2/versions/224963"}},
+                    "license": "CC0",
+                }
+            if "datadryad.org/api/v2/versions/224963/files" in url:
+                return {
+                    "_embedded": {
+                        "stash:files": [
+                            {
+                                "path": "chr1_rose2020.phased.bcf",
+                                "mimeType": "application/octet-stream",
+                                "size": 385701286,
+                                "digest": "90a5159bb781812e59349fc8921f09c9f7bbf1767e03be01633b312f60bc9808",
+                                "digestType": "sha-256",
+                                "_links": {"stash:download": {"href": "/api/v2/files/2161819/download"}},
+                            },
+                            {
+                                "path": "README_file.txt",
+                                "mimeType": "text/plain",
+                                "size": 156,
+                                "_links": {"stash:download": {"href": "/api/v2/files/2161822/download"}},
+                            },
+                        ]
+                    }
+                }
+            if "datadryad.org/api/v2/versions/224963" in url:
+                return {
+                    "_links": {"stash:files": {"href": "/api/v2/versions/224963/files"}},
+                }
+            return {}
+
+        with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WDRYAD",
+                    "doi": "10.5061/dryad.2bvq83btk",
+                    "url": "https://doi.org/10.5061/dryad.2bvq83btk",
+                }
+            )
+
+        urls = {str(item["url"]) for item in supplements}
+        self.assertIn("https://datadryad.org/api/v2/files/2161819/download", urls)
+        self.assertIn("https://datadryad.org/api/v2/files/2161822/download", urls)
+        bcf = next(item for item in supplements if item["url"] == "https://datadryad.org/api/v2/files/2161819/download")
+        self.assertEqual(bcf["source"], "dryad")
+        self.assertEqual(bcf["file_type"], "bcf")
+        self.assertEqual(bcf["license"], "CC0")
+        self.assertEqual(bcf["checksum_sha256"], "90a5159bb781812e59349fc8921f09c9f7bbf1767e03be01633b312f60bc9808")
 
     def test_fetch_public_supplement_metadata_discovers_datacite_relations(self):
         def fake_json(url: str) -> dict[str, object]:
