@@ -12,7 +12,7 @@ What it contains:
 - 767,732 hosted genome-feature records
 - 20,656 hosted BioSample records
 - 3,561 hosted DNA barcode records
-- 422 expression and RNA-seq metadata records
+- 50 expression and RNA-seq metadata records
 - 4,972 VectorByte trait records
 - 7,160 VectorByte abundance records
 - 252 UniProt protein/proteome records
@@ -28,4 +28,4 @@ Connects to:
 - [[Neurobiology and Connectome Evidence]]
 - [[Source Map]]
 
-<!-- publish-bump: 2026-05-26T11:25:00-07:00 -->
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->

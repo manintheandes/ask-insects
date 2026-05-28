@@ -4,6 +4,13 @@ Source IDs: all Ask Insects lanes
 
 This page tracks explicit boundaries where Ask Insects should not overclaim.
 
+Current coverage ledger:
+
+- 11 tracked Aedes domains
+- 11 domains are partial source-grade
+- 29 queryable missing-source gaps
+- The largest near-term behavior gaps are decoded Dryad trajectory tables, deeper acoustic feature extraction, high-speed video/archive parsing, repellent and attractant assay datasets, and host-seeking or oviposition experiment metadata.
+
 Known gaps:
 
 - complete public whole-brain Aedes connectome bulk package
@@ -21,3 +28,5 @@ Connects to:
 - [[Neurobiology and Connectome Evidence]]
 - [[Public Health and Surveillance]]
 - [[Behavior Media and Datasets]]
+
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->

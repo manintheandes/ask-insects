@@ -6,9 +6,9 @@ This page covers public Aedes aegypti taxonomy, occurrence, citizen-science, obs
 
 What it contains:
 
-- 100,736 hosted observation records
-- 26,208 hosted media records
-- 19,439 derived still-image atom records
+- 96,236 hosted observation records
+- 31,792 hosted media records
+- 25,269 derived still-image atom records
 - GBIF Aedes aegypti taxonomy and occurrence records
 - iNaturalist public observations and licensed still photos
 - Mosquito Alert citizen-science observations and still-image metadata through GBIF
@@ -20,3 +20,5 @@ Connects to:
 - [[Behavior Media and Datasets]]
 - [[Public Health and Surveillance]]
 - [[Source Map]]
+
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->

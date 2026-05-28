@@ -6,7 +6,7 @@ This page covers derived Aedes aegypti ecology records from indexed observations
 
 What it contains:
 
-- 10,898 hosted ecology records
+- 16,382 hosted ecology records
 - country and country-month summaries
 - seasonality, range, and public habitat records
 - WorldClim climate source pages and bounded observation-climate joins
@@ -22,3 +22,5 @@ Connects to:
 - [[Research Papers]]
 - [[Public Health and Surveillance]]
 - [[Source Map]]
+
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->

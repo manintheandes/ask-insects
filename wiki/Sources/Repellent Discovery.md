@@ -6,10 +6,10 @@ This page covers mosquito repellent research since 2020 across article metadata,
 
 What it contains:
 
-- 1,355 mosquito repellent article candidates from PubMed and Crossref public metadata
+- 1,377 mosquito repellent article candidates from PubMed and Crossref public metadata
 - 411 article candidates already matched to existing Ask Insects records
 - 944 additional repellent metadata records not already matched in the canonical literature lane
-- 436 external discovery records across literature, datasets, and patent-source status
+- 551 external discovery records across literature, datasets, and patent-source status
 - external literature metadata from OpenAlex, Europe PMC, AGRICOLA-through-Europe-PMC, Semantic Scholar, and Crossref posted-content preprints
 - external dataset metadata from DataCite, Figshare, and Zenodo
 - queryable gap rows for native bioRxiv/medRxiv text search, PatentsView, USPTO Open Data Portal, CABI, and Google Scholar when supported public access is blocked, migrated, credentialed, or unavailable
@@ -31,6 +31,8 @@ External discovery breakdown:
 | literature | Google Scholar gap | 1 |
 | patents | PatentsView gap | 1 |
 | patents | USPTO Open Data Portal gap | 1 |
+
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->
 
 Connects to:
 

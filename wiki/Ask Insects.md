@@ -16,6 +16,7 @@ sources:
   - ../config/source-map.yaml
   - ../docs/source-lanes.md
 ---
+
 # Open Insects
 
 Open Insects is an open-source effort to make insect knowledge queryable, source-backed, and actionable.
@@ -28,13 +29,14 @@ The command is still simple:
 ask-insects ask "where has Aedes aegypti been spotted this year?"
 ```
 
-What's inside:
+What's inside as of the May 28, 2026 hosted check:
 
-- **1,463,819 hosted source records:** [[Source Map|Aedes aegypti source lanes]] across public biodiversity, genomics, behavior, neurobiology, literature, public health, surveillance, images, videos, repellents, and media evidence
-- **100,736 observations / 26,208 media records:** [[Sources/Observations and Images|GBIF, iNaturalist, Mosquito Alert, licensed images, and media locators]]
-- **1,059,215 genomics records:** [[Sources/Genome and BioSample Evidence|genes, transcripts, proteins, genome features, BioSamples, DNA barcodes, expression metadata, traits, and assembly records]]
+- **1,388,102 hosted source records:** [[Source Map|Aedes aegypti source lanes]] across public biodiversity, genomics, behavior, neurobiology, literature, public health, surveillance, images, videos, repellents, and source gaps
+- **96,236 observations / 31,792 media records:** [[Sources/Observations and Images|GBIF, iNaturalist, Mosquito Alert, licensed images, image atoms, video atoms, and media locators]]
+- **850,489 genome and sample records:** [[Sources/Genome and BioSample Evidence|VectorBase, NCBI genome package, BioSamples, DNA barcodes, expression metadata, UniProt, VectorByte traits, and abundance records]]
 - **100,018 neurobiology records:** [[Sources/Neurobiology and Connectome Evidence|brain atlas, cell atlas, CATMAID skeleton metadata, voxel access, SRA workflow records, and connectome gaps]]
 - **Scientific intelligence lanes:** [[Sources/Research Papers|papers and legal full text]], [[Sources/Repellent Discovery|repellent articles, datasets, preprints, patents, and source gaps]], [[Sources/Behavior Media and Datasets|behavior datasets and videos]], [[Sources/Vector Competence and Pathogens|pathogen/vector competence evidence]], [[Sources/Resistance and Control Evidence|resistance evidence]], [[Sources/Ecology and Occurrence Summaries|ecology summaries]], and [[Sources/Public Health and Surveillance|official public-health guidance and dengue surveillance]]
+- **Known gaps are explicit:** [[Sources/Source Gaps and Actions|29 coverage gaps]] remain queryable instead of being hidden or smoothed over.
 
 What it does:
 
@@ -80,4 +82,4 @@ ask-insects health --hosted
 - Want to know what skills are installed: use [[Insects Skills]].
 - Want to know what changed: use [[Ask Insects Updates]].
 
-<!-- publish-bump: 2026-05-26T12:05:00-07:00 -->
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->

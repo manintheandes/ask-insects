@@ -6,12 +6,12 @@ This page covers official Aedes aegypti public-health guidance, dengue surveilla
 
 What it contains:
 
-- 59,422 hosted public-health records
+- 65,423 hosted public-health records
 - WHO, PAHO, CDC, India NCVBDC, Brazil OpenDataSUS, and ECDC guidance or surveillance pages
 - 18,587 CDC dengue surveillance records
 - 221 India NCVBDC dengue surveillance records
 - 29,402 Brazil OpenDataSUS SINAN dengue aggregate records from 30,767,966 source CSV rows
-- 538 PAHO dengue surveillance records
+- PAHO dengue surveillance page and dashboard-locator records
 - 25 WHO dengue surveillance records
 - 563 VectorNet Aedes surveillance records
 - dengue, Zika, Aedes life-cycle, vector-control, travel-medicine, Wolbachia, community-prevention, and species-factsheet evidence
@@ -29,4 +29,4 @@ Connects to:
 - [[Ecology and Occurrence Summaries]]
 - [[Source Map]]
 
-<!-- publish-bump: 2026-05-26T11:25:00-07:00 -->
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->

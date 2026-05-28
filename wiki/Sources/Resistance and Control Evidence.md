@@ -6,10 +6,10 @@ This page covers Aedes aegypti insecticide resistance records, resistance marker
 
 What it contains:
 
-- 28,365 hosted resistance records
+- 34,952 hosted resistance records
 - 16,708 public IR Mapper Aedes aegypti resistance records
-- 6,449 literature-derived resistance-marker records
-- 186 parsed supported-format resistance supplement rows
+- 6,766 literature-derived resistance-marker records
+- 588 parsed supported-format resistance supplement rows
 - deterministic kdr, VGSC, and metabolic-resistance marker extraction from indexed literature and legal full-text units
 - marker IDs, marker classes, gene or family fields, alias matches, context terms, insecticide terms, snippets, and provenance
 - WHO discriminating-concentration and resistance-method source records
@@ -22,3 +22,5 @@ Connects to:
 - [[Genome and BioSample Evidence]]
 - [[Public Health and Surveillance]]
 - [[Source Map]]
+
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->

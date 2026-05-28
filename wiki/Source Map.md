@@ -15,7 +15,7 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 - [[Sources/Vector Competence and Pathogens]] covers pathogen taxonomy anchors and vector-competence assay candidates.
 - [[Sources/Resistance and Control Evidence]] covers IR Mapper records and literature-derived resistance markers.
 - [[Sources/Ecology and Occurrence Summaries]] covers derived country, country-month, seasonality, range, and habitat records.
-- [[Sources/Public Health and Surveillance]] covers official public-health guidance and PAHO dengue surveillance report evidence.
+- [[Sources/Public Health and Surveillance]] covers official public-health guidance, PAHO, WHO, CDC, India NCVBDC, Brazil OpenDataSUS, VectorNet, and Wolbachia evidence.
 - [[Sources/Source Gaps and Actions]] tracks explicit boundaries where Ask Insects knows a source is missing, partial, or not yet deeply parsed.
 
 ## Source IDs
@@ -27,6 +27,11 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `inaturalist_api` | iNaturalist public Aedes aegypti observations and licensed still photos. |
 | `mosquito_alert_gbif` | Mosquito Alert Aedes aegypti citizen-science occurrence and media records through GBIF. |
 | `aedes_occurrence_ecology` | Derived ecology records from GBIF, iNaturalist, and Mosquito Alert observations. |
+| `aedes_observation_climate_join` | Climate-linked observation sample records. |
+| `aedes_global_compendium_occurrence` | Global Aedes occurrence compendium rows filtered to Aedes aegypti. |
+| `aedes_worldclim_climate` | WorldClim climate page and bounded bioclim sample records. |
+| `harvard_dataverse_aedes_suitability` | Harvard Dataverse suitability/risk raster manifests. |
+| `aedes_taxonomy_authorities` | Taxonomy-authority records from public species pages and source documents. |
 | `aedes_literature_openalex` | Aedes aegypti literature records, metadata, abstracts, enrichment payloads, and legal full-text units when available. |
 | `aedes_literature_facets` | Literature-derived behavior, vector competence, resistance, ecology, and public-health facets. |
 | `aedes_olfaction_literature` | PubMed audit records for Aedes aegypti olfaction, odor, chemosensory, antenna, Orco, odorant receptor, and ionotropic receptor papers since 2020. |
@@ -41,6 +46,8 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `aedes_vectorbyte_traits` | VectorByte/VecTraits Aedes aegypti trait records with value, unit, stage, sex, habitat, location, citation, DOI, and provenance. |
 | `aedes_vectorbyte_abundance` | VectorByte Aedes abundance records. |
 | `bold_api` | BOLD Aedes aegypti DNA barcode specimen records. |
+| `aedes_ncbi_snp_variation` | dbSNP Aedes organism-query audit, currently a queryable no-record source gap. |
+| `aedes_population_genomics` | NCBI BioProject population-genomics metadata. |
 | `pmc_open_access_videos` | Curated open-access article supplementary videos. |
 | `dryad_aedes_behavior_videos` | Dryad Aedes behavior and video dataset manifests. |
 | `mendeley_aedes_behavior_media` | Mendeley Data Aedes behavior, media, sound, video, and parsed table records. |
@@ -52,6 +59,8 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `aedes_video_atoms` | Derived video atom records for Aedes aegypti video assets, manifests, probes, previews, keyframes, frame metadata, and structured video gaps. |
 | `irmapper_aedes` | Public IR Mapper Aedes aegypti resistance records. |
 | `aedes_resistance_markers` | Literature-derived kdr, VGSC, and metabolic-resistance marker records. |
+| `aedes_resistance_table_rows` | Parsed supported-format resistance supplement rows promoted from extracted facts. |
+| `aedes_who_resistance_guidance` | WHO Aedes resistance method and discriminating-concentration guidance records. |
 | `aedes_pathogen_taxonomy` | NCBI Taxonomy records for dengue, Zika, chikungunya, yellow fever, West Nile, and Mayaro virus. |
 | `aedes_vector_competence_assays` | Literature-derived vector-competence assay candidate records. |
 | `aedes_public_health_guidance` | WHO, PAHO, CDC, and ECDC guidance pages relevant to Aedes aegypti. |
@@ -60,5 +69,9 @@ This page exists so the interactive graph shows what is actually inside Ask Inse
 | `aedes_cdc_dengue_surveillance` | CDC dengue current-year and historic ArboNET pages, CDC visualization JSON configs, linked CSV rows, and ArboNET limitation evidence. |
 | `aedes_ncvbdc_dengue_surveillance` | India NCVBDC dengue cases/deaths table at state/UT-year, national-year, and latest-two-complete-year summary grain. |
 | `aedes_opendatasus_dengue_surveillance` | Brazil OpenDataSUS SINAN dengue CSV ZIP aggregates by source file, country-year, state-year, and epidemiological week. |
+| `aedes_wolbachia_interventions` | World Mosquito Program Wolbachia intervention evidence pages and metrics. |
 | `vectornet_aedes_surveillance` | VectorNet Aedes surveillance records. |
 | `who_malaria_threats_resistance_audit` | WHO Malaria Threats Map Aedes resistance audit records and explicit no-row gap when the Aedes filter returns no rows. |
+| `aedes_source_coverage` | Coverage-ledger domain records and queryable missing-source gaps. |
+
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->

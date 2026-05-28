@@ -13,7 +13,22 @@ tags:
 
 This page tracks meaningful Ask Insects changes. Most updates do not require user action.
 
-Latest Ask Insects source-plane update: 2026-05-27.
+Latest Ask Insects source-plane update: 2026-05-28.
+
+## 2026-05-28
+
+### Hosted Source Plane
+- Hosted Ask Insects health reports 1,388,102 source records.
+- Current hosted lanes include 585,275 genome-feature records, 109,374 behavior records, 102,915 transcript records, 100,018 neurobiology records, 96,236 observation records, 65,423 public-health records, 56,960 protein records, 52,950 literature records, 44,121 expression records, 39,045 gene records, 34,952 resistance records, 31,792 media records, 23,273 vector-competence records, 20,656 BioSample records, 16,382 ecology records, 4,972 trait records, 3,561 DNA-barcode records, 142 dataset records, 41 source-coverage records, and 2 patent records.
+- The current coverage ledger is honest about incompleteness: 11 tracked Aedes domains are partial source-grade, with 29 queryable missing-source gaps.
+
+### Shipped Behavior And Video Fix
+- Shipped Ask Insects commit `55aec35` end to end: merged to `main`, pushed, deployed to the hosted Ask Insects VM, service restarted, local installed `ask-insects` refreshed, and live hosted behavior verified.
+- Ask Insects now answers `show Dryad Figure_S7 archive gap` with the exact Dryad missing-source row first: `dryad:gap:10_5061_dryad_qz612jmrb:figure_s7_zip:archive_contents_not_decoded`.
+- Video archive downloads now preserve attempted locators and can fall back to Dryad file-stream URLs when the primary API download route is blocked.
+
+### Known Boundaries
+- The public site should not claim Ask Insects is complete. The largest remaining Aedes behavior gaps are decoded Dryad trajectory tables, deeper acoustic features, high-speed video/archive parsing, repellent and attractant assay datasets, and host-seeking or oviposition experiment metadata.
 
 ## 2026-05-27
 
@@ -80,4 +95,4 @@ Latest Ask Insects source-plane update: 2026-05-27.
 
 Future notes should be concrete. If there is no user-facing source, routing, setup, or documentation change, no note is needed.
 
-<!-- publish-bump: 2026-05-26T12:05:00-07:00 -->
+<!-- publish-bump: 2026-05-28T12:54:25-07:00 -->
