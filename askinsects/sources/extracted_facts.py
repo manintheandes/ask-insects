@@ -1491,11 +1491,18 @@ def _github_supplements(
     crossref_api_url: str | None = None,
 ) -> list[dict[str, object]]:
     repos = _github_repositories_from_request(request)
+    source_doi = _normalize_doi(request.get("source_doi"))
+    if not repos and str(request.get("url") or "").strip().lower() == "github" and source_doi and crossref_message is None:
+        crossref_api_url = crossref_api_url or f"{CROSSREF_WORKS_API_BASE}/{quote(source_doi, safe='')}"
+        try:
+            payload = _fetch_json_url(crossref_api_url)
+        except Exception:
+            payload = {}
+        crossref_message = payload.get("message") if isinstance(payload.get("message"), dict) else None
     if not repos and str(request.get("url") or "").strip().lower() == "github":
         repos = _github_repositories_from_crossref_message(crossref_message)
     if not repos:
         return []
-    source_doi = _normalize_doi(request.get("source_doi"))
     supplements: list[dict[str, object]] = []
     seen: set[str] = set()
     for repo in repos:
@@ -2033,7 +2040,7 @@ def _supplement_candidates_with_discovery(
         source = str(supplement.get("source") or "")
         url = str(supplement.get("url") or "")
         if discover_supplements and source in {"crossref_relation", "datacite_relation"} and _external_repository_reference_fields(url):
-            expanded_supplements = _expand_repository_relation_supplements(url)
+            expanded_supplements = _expand_repository_relation_supplements(url, parent_request=_identifier_request(paper))
             if expanded_supplements:
                 for expanded_supplement in expanded_supplements:
                     add_candidate(paper, expanded_supplement, "existing_manifest_expanded")
