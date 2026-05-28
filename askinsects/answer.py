@@ -3383,6 +3383,9 @@ def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, 
     identifiers = _exact_extracted_fact_identifier_terms(question)
     if not identifiers:
         return []
+    prefer_expression_rows = _wants_expression_computed_outputs(question) or any(
+        term in question.lower() for term in ("tpm", "ibaq", "lfq", "proteomics", "proteome", "protein ids")
+    )
     seen: set[str] = set()
     records: list[EvidenceRecord] = []
     with index.connect() as conn:
@@ -3398,13 +3401,16 @@ def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, 
                     lower(json_extract(p.payload_json, '$.fields.accession')) = ?
                     OR lower(json_extract(p.payload_json, '$.fields.github_full_name')) = ?
                     OR lower(json_extract(p.payload_json, '$.fields.protocol_doi')) = ?
+                    OR lower(json_extract(p.payload_json, '$.supplement.accession')) = ?
                     OR lower(json_extract(p.payload_json, '$.fields.accession')) LIKE ?
                     OR lower(json_extract(p.payload_json, '$.fields.protocol_doi')) LIKE ?
+                    OR lower(json_extract(p.payload_json, '$.supplement.accession')) LIKE ?
                   )
                 ORDER BY
                   CASE json_extract(p.payload_json, '$.fact_type')
-                    WHEN 'supplement_manifest' THEN 0
-                    WHEN 'supplement_file_gap' THEN 1
+                    WHEN 'expression_omics' THEN CASE WHEN ? THEN 0 ELSE 2 END
+                    WHEN 'supplement_manifest' THEN CASE WHEN ? THEN 1 ELSE 0 END
+                    WHEN 'supplement_file_gap' THEN CASE WHEN ? THEN 2 ELSE 1 END
                     ELSE 2
                   END,
                   r.record_id
@@ -3415,8 +3421,13 @@ def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, 
                     identifier_lower,
                     identifier_lower,
                     identifier_lower,
+                    identifier_lower,
                     f"%{identifier_lower}%",
                     f"%{identifier_lower}%",
+                    f"%{identifier_lower}%",
+                    1 if prefer_expression_rows else 0,
+                    1 if prefer_expression_rows else 0,
+                    1 if prefer_expression_rows else 0,
                     limit,
                 ),
             ).fetchall()

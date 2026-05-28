@@ -2732,6 +2732,55 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertIn("α-esterase", parsed[0].payload["fields"]["biochemical_response"])
             self.assertEqual(parsed[0].payload["fields"]["table_row"]["p -value"], "0.0006")
 
+    def test_build_extracted_fact_records_promotes_omics_matrix_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            supplement_url = "https://example.org/aedes-facts/omics-matrix.xlsx"
+            write_single_supplement_fixture(
+                artifact_dir,
+                record_id="openalex:WOMICS",
+                title=(
+                    "Two novel, tightly linked, and rapidly evolving genes underlie "
+                    "Aedes aegypti mosquito reproductive resilience during drought"
+                ),
+                text="Aedes aegypti ovary transcriptome and proteome expression matrix supplement.",
+                supplement_url=supplement_url,
+                file_type="xlsx",
+            )
+            payload = make_xlsx_bytes(
+                [
+                    [
+                        "IDs",
+                        "Symbols",
+                        "Fe_Ov_NBF_1_TPM",
+                        "Fe_Ov_3hBF_1_TPM",
+                        "T: Protein IDs",
+                        "N: LFQ intensity N-1a",
+                        "N: Peptides",
+                    ],
+                    ["AAEL000001", "GeneA", "12.4", "18.7", "AAEL000001-PA", "100000", "7"],
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                download_supplements=True,
+                fetch_supplement_file_fn=lambda url, max_bytes: payload,
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            parsed = [record for record in result.records if record.payload["confidence"] == "parsed"]
+            self.assertEqual(result.parsed_supplement_row_count, 1)
+            self.assertEqual(len(parsed), 1)
+            self.assertEqual(parsed[0].lane, "expression")
+            self.assertEqual(parsed[0].payload["fact_type"], "expression_omics")
+            self.assertIn("tpm", parsed[0].payload["fields"]["expression_metric"])
+            self.assertIn("lfq intensity", parsed[0].payload["fields"]["protein_abundance_metric"])
+            self.assertEqual(parsed[0].payload["fields"]["table_row"]["IDs"], "AAEL000001")
+            self.assertIn("raw/extracted_facts/supplements/", parsed[0].provenance.locator)
+
     def test_build_extracted_fact_records_keeps_prisma_checklists_as_audit_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

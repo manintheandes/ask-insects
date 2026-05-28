@@ -961,11 +961,13 @@ sources:
       structured_lane_targets:
         - vector_competence
         - resistance
+        - expression
         - behavior
         - ecology
         - public_health
     lanes:
       - literature
+      - expression
       - behavior
       - vector_competence
       - resistance

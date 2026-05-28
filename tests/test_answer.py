@@ -569,6 +569,76 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["record_id"], "expression:gap:differential_expression_outputs_not_indexed")
             self.assertIn("differential-expression outputs", answer["answer"])
 
+    def test_exact_proteomexchange_expression_questions_prefer_parsed_matrix_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            supplement = {
+                "title": "PXD030925 expression matrix",
+                "url": "https://example.org/PXD030925/matrix.xlsx",
+                "file_type": "xlsx",
+                "source": "proteomexchange",
+                "accession": "PXD030925",
+            }
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_manifest:openalex:W4319295297:p",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement manifest: ProteomeXchange PXD030925",
+                        text="Supplement manifest for ProteomeXchange PXD030925.",
+                        species="Aedes aegypti",
+                        url="https://example.org/PXD030925",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:W4319295297;supplement#40",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_manifest",
+                            "fields": {"accession": "PXD030925"},
+                            "supplement": supplement,
+                            "confidence": "manifest",
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:expression_omics:openalex:W4319295297:r1",
+                        lane="expression",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti extracted expression omics fact",
+                        text="Parsed PXD030925 expression matrix row. IDs: AAEL000001. Fe_Ov_NBF_1_TPM: 12.4. T: Protein IDs: AAEL000001-PA.",
+                        species="Aedes aegypti",
+                        url="https://example.org/PXD030925/matrix.xlsx",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:W4319295297;supplement#40;matrix.xlsx;row#1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "expression_omics",
+                            "fields": {
+                                "expression_metric": ["tpm"],
+                                "protein_identifier": ["protein ids"],
+                                "table_row": {"IDs": "AAEL000001", "Fe_Ov_NBF_1_TPM": "12.4"},
+                            },
+                            "supplement": supplement,
+                            "confidence": "parsed",
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("show PXD030925 TPM expression matrix rows for Aedes aegypti", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "expression")
+            self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:expression_omics:openalex:W4319295297:r1")
+            self.assertEqual(answer["evidence"][0]["source"], "aedes_extracted_facts")
+
     def test_uniprot_questions_prefer_uniprot_protein_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
