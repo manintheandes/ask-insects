@@ -16,7 +16,9 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 from typing import Callable, Iterable
+from urllib.error import HTTPError
 from urllib.parse import quote, urlencode, urljoin, urlparse
 from urllib.request import Request, urlopen
 import xml.etree.ElementTree as ET
@@ -330,10 +332,12 @@ PMC_OA_SERVICE_BASE = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
 FIGSHARE_ARTICLE_API_BASE = "https://api.figshare.com/v2/articles"
 ZENODO_RECORD_API_BASE = "https://zenodo.org/api/records"
 DRYAD_API_BASE = "https://datadryad.org"
+NCBI_EUTILS_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 CROSSREF_WORKS_API_BASE = "https://api.crossref.org/works"
 DATACITE_DOI_API_BASE = "https://api.datacite.org/dois"
 UNPAYWALL_API_BASE = "https://api.unpaywall.org/v2"
 UNPAYWALL_EMAIL = "sources@openinsects.org"
+REPOSITORY_METADATA_SUPPLEMENT_SOURCES = {"ncbi_bioproject"}
 RESISTANCE_DISCOVERY_TERMS = (
     "insecticide resistance",
     "insecticide-resistant",
@@ -451,6 +455,22 @@ def _fetch_json_url(url: str) -> dict[str, object]:
     if not isinstance(payload, dict):
         raise ValueError(f"URL returned non-object JSON for {url}")
     return payload
+
+
+def _fetch_ncbi_json_url(url: str) -> dict[str, object]:
+    for attempt in range(5):
+        try:
+            payload = _fetch_json_url(url)
+        except HTTPError as exc:
+            if exc.code == 429 and attempt < 4:
+                time.sleep(0.75 * (attempt + 1))
+                continue
+            raise
+        if payload.get("error") == "API rate limit exceeded" and attempt < 4:
+            time.sleep(0.75 * (attempt + 1))
+            continue
+        return payload
+    return _fetch_json_url(url)
 
 
 def _fetch_bytes_url(url: str, max_bytes: int) -> bytes:
@@ -595,6 +615,7 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
     supplements.extend(_figshare_supplements(request))
     supplements.extend(_zenodo_supplements(request))
     supplements.extend(_dryad_supplements(request))
+    supplements.extend(_ncbi_bioproject_supplements(request))
     supplements.extend(_crossref_relation_supplements(request))
     supplements.extend(_datacite_relation_supplements(request))
     supplements.extend(_unpaywall_supplements(request))
@@ -772,6 +793,8 @@ def _expand_repository_relation_supplements(url: str) -> list[dict[str, object]]
         supplements.extend(_zenodo_supplements(relation_request))
     if _dryad_doi_from_request(relation_request):
         supplements.extend(_dryad_supplements(relation_request))
+    if _ncbi_bioproject_accession_from_request(relation_request):
+        supplements.extend(_ncbi_bioproject_supplements(relation_request))
     for supplement in supplements:
         supplement.setdefault("discovered_via", "crossref_relation")
         supplement.setdefault("crossref_relation_url", url)
@@ -1092,6 +1115,64 @@ def _dryad_supplements(request: dict[str, object]) -> list[dict[str, object]]:
     return supplements
 
 
+def _ncbi_bioproject_accession_from_request(request: dict[str, object]) -> str | None:
+    haystack = " ".join(str(request.get(key) or "") for key in ("doi", "url", "accession", "id"))
+    match = re.search(r"\bPRJNA\d+\b", haystack, re.I)
+    return match.group(0).upper() if match else None
+
+
+def _ncbi_bioproject_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    accession = _ncbi_bioproject_accession_from_request(request)
+    if not accession:
+        return []
+    search_url = f"{NCBI_EUTILS_BASE}/esearch.fcgi?{urlencode({'db': 'bioproject', 'term': accession, 'retmode': 'json'})}"
+    try:
+        search_payload = _fetch_ncbi_json_url(search_url)
+    except Exception:
+        return []
+    result = search_payload.get("esearchresult") if isinstance(search_payload.get("esearchresult"), dict) else {}
+    ids = result.get("idlist") if isinstance(result.get("idlist"), list) else []
+    uid = str(ids[0]) if ids else ""
+    if not uid:
+        return []
+    summary_url = f"{NCBI_EUTILS_BASE}/esummary.fcgi?{urlencode({'db': 'bioproject', 'id': uid, 'retmode': 'json'})}"
+    try:
+        summary_payload = _fetch_ncbi_json_url(summary_url)
+    except Exception:
+        return []
+    summary_result = summary_payload.get("result") if isinstance(summary_payload.get("result"), dict) else {}
+    item = summary_result.get(uid) if isinstance(summary_result.get(uid), dict) else {}
+    project_acc = str(item.get("project_acc") or accession)
+    title = str(item.get("project_title") or f"NCBI BioProject {project_acc}")
+    submitters = item.get("submitter_organization_list")
+    if isinstance(submitters, list):
+        submitter = "; ".join(str(value) for value in submitters if value)
+    else:
+        submitter = str(item.get("submitter_organization") or "")
+    supplement = {
+        "title": f"NCBI BioProject {project_acc}: {title}",
+        "url": f"https://www.ncbi.nlm.nih.gov/bioproject/{project_acc}",
+        "file_type": "repository_metadata",
+        "license": "NCBI public metadata",
+        "source": "ncbi_bioproject",
+        "metadata_url": summary_url,
+        "repository": "ncbi_bioproject",
+        "accession": project_acc,
+        "project_id": item.get("project_id") or uid,
+        "project_title": title,
+        "project_description": item.get("project_description"),
+        "project_data_type": item.get("project_data_type"),
+        "project_target_scope": item.get("project_target_scope"),
+        "project_target_material": item.get("project_target_material"),
+        "project_methodtype": item.get("project_methodtype"),
+        "registration_date": item.get("registration_date"),
+        "submitter": submitter or None,
+        "sequencing_status": item.get("sequencing_status"),
+        "search_url": search_url,
+    }
+    return [{key: value for key, value in supplement.items() if value not in (None, "")}]
+
+
 def _matches_prefilter(text: str) -> bool:
     lower = text.lower()
     return any(token in lower for token in PREFILTER_TOKENS)
@@ -1299,6 +1380,21 @@ def _normalize_supplement(raw: dict[str, object]) -> dict[str, object]:
     }
     for metadata_key in (
         "metadata_url",
+        "repository",
+        "accession",
+        "project_id",
+        "project_title",
+        "project_description",
+        "project_data_type",
+        "project_target_scope",
+        "project_target_material",
+        "project_methodtype",
+        "registration_date",
+        "submitter",
+        "sequencing_status",
+        "search_url",
+        "discovered_via",
+        "crossref_relation_url",
         "checksum",
         "checksum_md5",
         "checksum_sha1",
@@ -1307,6 +1403,8 @@ def _normalize_supplement(raw: dict[str, object]) -> dict[str, object]:
     ):
         metadata_value = raw.get(metadata_key)
         if isinstance(metadata_value, str) and metadata_value:
+            supplement[metadata_key] = metadata_value
+        elif isinstance(metadata_value, int | float):
             supplement[metadata_key] = metadata_value
     return {key: value for key, value in supplement.items() if value is not None}
 
@@ -1383,8 +1481,6 @@ def _existing_supplement_manifest_supplements(
         if str(supplement.get("source") or "") == "unpaywall_oa_location":
             if not _looks_like_supplement_reference(url):
                 continue
-        if str(supplement.get("source") or "") in {"crossref_relation", "datacite_relation"} and _external_repository_reference_fields(url):
-            continue
         supplements.append(
             {
                 "source_record_id": source_record_id,
@@ -1443,6 +1539,14 @@ def _supplement_candidates_with_discovery(
         supplement = existing.get("supplement")
         if paper is None or not isinstance(supplement, dict):
             continue
+        source = str(supplement.get("source") or "")
+        url = str(supplement.get("url") or "")
+        if discover_supplements and source in {"crossref_relation", "datacite_relation"} and _external_repository_reference_fields(url):
+            expanded_supplements = _expand_repository_relation_supplements(url)
+            if expanded_supplements:
+                for expanded_supplement in expanded_supplements:
+                    add_candidate(paper, expanded_supplement, "existing_manifest_expanded")
+                continue
         add_candidate(paper, supplement, "existing_manifest")
 
     for paper in literature_rows:
@@ -2056,16 +2160,28 @@ def _download_and_parse_supplement_rows(
         extension = _supplement_extension(candidate.supplement)
         if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS:
             supplement_source = str(candidate.supplement.get("source") or "")
-            repository_fields = (
-                _external_repository_reference_fields(url)
-                if supplement_source not in {"figshare", "zenodo", "dryad"}
-                else {}
-            )
-            if repository_fields:
-                reason = "external_repository_reference_not_expanded"
-                extra_fields = repository_fields
+            if supplement_source in REPOSITORY_METADATA_SUPPLEMENT_SOURCES:
+                reason = "repository_metadata_manifest_no_supported_table_rows"
+                extra_fields = {
+                    "repository": supplement_source,
+                    "accession": candidate.supplement.get("accession"),
+                    "metadata_url": candidate.supplement.get("metadata_url"),
+                    "file_extension": extension.lower().lstrip(".") or None,
+                    "format_family": "repository_metadata",
+                    "format_note": "Repository metadata was expanded into an inspectable supplement manifest, but it is not a downloadable table file for row parsing.",
+                }
+                extra_fields = {key: value for key, value in extra_fields.items() if value is not None}
             else:
-                reason, extra_fields = _unsupported_supplement_format_fields(extension, url)
+                repository_fields = (
+                    _external_repository_reference_fields(url)
+                    if supplement_source not in {"figshare", "zenodo", "dryad"}
+                    else {}
+                )
+                if repository_fields:
+                    reason = "external_repository_reference_not_expanded"
+                    extra_fields = repository_fields
+                else:
+                    reason, extra_fields = _unsupported_supplement_format_fields(extension, url)
             gap_records.append(
                 _record_for_supplement_file_gap(
                     candidate,
@@ -2243,6 +2359,40 @@ def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrie
         license=supplement.get("license") if isinstance(supplement.get("license"), str) else None,
         source_url=url if isinstance(url, str) else candidate.paper_url,
     )
+    fields: dict[str, object] = {
+        "source_record_id": candidate.source_record_id,
+        "title": title_text,
+        "url": url,
+        "file_type": supplement.get("file_type"),
+        "source": supplement.get("source", "record_payload"),
+        "license": supplement.get("license"),
+        "size": supplement.get("size"),
+    }
+    for metadata_key in (
+        "metadata_url",
+        "repository",
+        "accession",
+        "project_id",
+        "project_title",
+        "project_description",
+        "project_data_type",
+        "project_target_scope",
+        "project_target_material",
+        "project_methodtype",
+        "registration_date",
+        "submitter",
+        "sequencing_status",
+        "search_url",
+        "discovered_via",
+        "crossref_relation_url",
+        "checksum",
+        "checksum_md5",
+        "checksum_sha1",
+        "checksum_sha256",
+        "checksum_sha512",
+    ):
+        if supplement.get(metadata_key) is not None:
+            fields[metadata_key] = supplement.get(metadata_key)
     return EvidenceRecord(
         record_id=f"extracted_fact:supplement_manifest:{_normalize_id(candidate.source_record_id)}:{digest}",
         lane="literature",
@@ -2256,15 +2406,7 @@ def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrie
         payload={
             "fact_type": "supplement_manifest",
             "schema_version": SCHEMA_VERSION,
-            "fields": {
-                "source_record_id": candidate.source_record_id,
-                "title": title_text,
-                "url": url,
-                "file_type": supplement.get("file_type"),
-                "source": supplement.get("source", "record_payload"),
-                "license": supplement.get("license"),
-                "size": supplement.get("size"),
-            },
+            "fields": fields,
             "source_record_id": candidate.source_record_id,
             "fulltext_unit_id": None,
             "supplement": supplement,

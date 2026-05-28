@@ -382,6 +382,148 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                 "90a5159bb781812e59349fc8921f09c9f7bbf1767e03be01633b312f60bc9808",
             )
 
+    def test_build_extracted_fact_records_keeps_bioproject_metadata_as_exact_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "NCBI BioProject PRJNA612100: Sex-specific mosquito brain transcriptomes",
+                        "url": "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA612100",
+                        "file_type": "repository_metadata",
+                        "license": "NCBI public metadata",
+                        "source": "ncbi_bioproject",
+                        "repository": "ncbi_bioproject",
+                        "accession": "PRJNA612100",
+                        "project_title": "Sex-specific mosquito brain transcriptomes",
+                        "project_description": "Sex-specific brain transcriptomes of Aedes aegypti and other mosquitoes.",
+                        "project_data_type": "Raw sequence reads",
+                        "metadata_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=bioproject&id=612100&retmode=json",
+                    }
+                ],
+                fetch_supplement_file_fn=lambda url, max_bytes: b"",
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            manifest = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+                and record.payload["supplement"]["source"] == "ncbi_bioproject"
+            )
+            self.assertEqual(manifest.payload["fields"]["accession"], "PRJNA612100")
+            file_gap = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+                and record.payload["fields"].get("repository") == "ncbi_bioproject"
+            )
+            self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
+            self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
+
+    def test_build_extracted_fact_records_expands_existing_bioproject_relation_manifest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            stale_supplement = {
+                "title": "Crossref is-supplemented-by supplement",
+                "url": "PRJNA789580",
+                "source": "crossref_relation",
+            }
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_manifest:openalex_WFACT1:prjna789580",
+                        lane="literature",
+                        source=EXTRACTED_FACTS_SOURCE_ID,
+                        title="Aedes aegypti supplement manifest: PRJNA789580",
+                        text="Stale Crossref relation manifest with an unexpanded NCBI BioProject accession.",
+                        species="Aedes aegypti",
+                        url="PRJNA789580",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id=EXTRACTED_FACTS_SOURCE_ID,
+                            locator="records#openalex:WFACT1;supplement#PRJNA789580",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_manifest",
+                            "source_record_id": "openalex:WFACT1",
+                            "supplement": stale_supplement,
+                        },
+                    )
+                ]
+            )
+
+            def fake_json(url: str) -> dict[str, object]:
+                if "eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi" in url and "PRJNA789580" in url:
+                    return {"esearchresult": {"idlist": ["789580"]}}
+                if "eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi" in url and "789580" in url:
+                    return {
+                        "result": {
+                            "uids": ["789580"],
+                            "789580": {
+                                "uid": "789580",
+                                "project_id": 789580,
+                                "project_acc": "PRJNA789580",
+                                "project_title": "Mosquito transcriptomics",
+                                "project_description": "Aedes aegypti transcriptomic atlas source metadata.",
+                                "project_data_type": "Raw sequence reads",
+                                "registration_date": "2021/12/16 00:00",
+                                "submitter_organization": "Cornell University",
+                            },
+                        }
+                    }
+                return {}
+
+            with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+                result = build_extracted_fact_records(
+                    artifact_dir,
+                    retrieved_at="2026-05-24T00:00:00Z",
+                    discover_supplements=True,
+                    download_supplements=True,
+                    fetch_supplement_metadata_fn=lambda request: [],
+                    fetch_supplement_file_fn=lambda url, max_bytes: b"",
+                    max_supplement_files=10,
+                    max_supplement_bytes=100_000,
+                    source_record_ids=["openalex:WFACT1"],
+                )
+
+            bioproject_manifests = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+                and record.payload["supplement"]["source"] == "ncbi_bioproject"
+            ]
+            self.assertEqual(len(bioproject_manifests), 1)
+            self.assertEqual(bioproject_manifests[0].payload["fields"]["accession"], "PRJNA789580")
+            self.assertEqual(bioproject_manifests[0].payload["fields"]["project_title"], "Mosquito transcriptomics")
+            self.assertFalse(
+                any(
+                    record.payload["fact_type"] == "supplement_manifest"
+                    and record.payload["supplement"].get("source") == "crossref_relation"
+                    and record.payload["supplement"].get("url") == "PRJNA789580"
+                    for record in result.records
+                )
+            )
+            file_gap = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+                and record.payload["fields"].get("accession") == "PRJNA789580"
+            )
+            self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
+            self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
+
     def test_build_extracted_fact_records_discovers_supplements_from_fulltext_links(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -495,6 +637,10 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                             ],
                             "is-supplemented-by": [
                                 {
+                                    "id": "PRJNA612100",
+                                    "id-type": "uri",
+                                },
+                                {
                                     "id": "10.6084/m9.figshare.12345",
                                     "id-type": "doi",
                                 },
@@ -527,6 +673,29 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                             "computed_md5": "abc123",
                         }
                     ],
+                }
+            if "eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi" in url and "PRJNA612100" in url:
+                return {"esearchresult": {"idlist": ["612100"]}}
+            if "eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi" in url and "612100" in url:
+                return {
+                    "result": {
+                        "uids": ["612100"],
+                        "612100": {
+                            "uid": "612100",
+                            "project_id": 612100,
+                            "project_acc": "PRJNA612100",
+                            "project_title": "Sex-specific mosquito brain transcriptomes",
+                            "project_description": "Sex-specific brain transcriptomes of Aedes aegypti and other mosquitoes.",
+                            "project_data_type": "Raw sequence reads",
+                            "project_target_scope": "Multispecies",
+                            "project_target_material": "Genome",
+                            "project_methodtype": "Sequencing",
+                            "registration_date": "2020/03/11 00:00",
+                            "submitter_organization": "HHMI-The Rockefeller University",
+                            "submitter_organization_list": ["HHMI-The Rockefeller University"],
+                            "sequencing_status": "SRA/Trace",
+                        },
+                    }
                 }
             if "zenodo.org/api/records/67890" in url:
                 return {
@@ -577,17 +746,23 @@ class ExtractedFactsSourceTests(unittest.TestCase):
 
         urls = {str(item["url"]) for item in supplements}
         self.assertIn("https://example.org/publisher/supplement-table.xlsx", urls)
+        self.assertIn("https://www.ncbi.nlm.nih.gov/bioproject/PRJNA612100", urls)
         self.assertIn("https://ndownloader.figshare.com/files/123", urls)
         self.assertIn("https://zenodo.org/api/records/67890/files/zenodo-supplement.tsv/content", urls)
         self.assertIn("https://datadryad.org/api/v2/files/555/download", urls)
+        self.assertNotIn("PRJNA612100", urls)
         self.assertNotIn("https://doi.org/10.6084/m9.figshare.12345", urls)
         self.assertNotIn("https://doi.org/10.5281/zenodo.67890", urls)
         self.assertNotIn("https://doi.org/10.5061/dryad.aedes", urls)
         self.assertNotIn("https://doi.org/10.1186/s13071-025-07140-z", urls)
         self.assertTrue(any(item["source"] == "crossref_relation" for item in supplements))
+        self.assertTrue(any(item["source"] == "ncbi_bioproject" for item in supplements))
         self.assertTrue(any(item["source"] == "figshare" for item in supplements))
         self.assertTrue(any(item["source"] == "zenodo" for item in supplements))
         self.assertTrue(any(item["source"] == "dryad" for item in supplements))
+        bioproject = next(item for item in supplements if item["source"] == "ncbi_bioproject")
+        self.assertEqual(bioproject["accession"], "PRJNA612100")
+        self.assertEqual(bioproject["project_data_type"], "Raw sequence reads")
 
     def test_fetch_public_supplement_metadata_discovers_dryad_files(self):
         def fake_json(url: str) -> dict[str, object]:
@@ -642,6 +817,45 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertEqual(bcf["file_type"], "bcf")
         self.assertEqual(bcf["license"], "CC0")
         self.assertEqual(bcf["checksum_sha256"], "90a5159bb781812e59349fc8921f09c9f7bbf1767e03be01633b312f60bc9808")
+
+    def test_fetch_public_supplement_metadata_discovers_direct_bioproject_metadata(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            if "eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi" in url and "PRJNA942966" in url:
+                return {"esearchresult": {"idlist": ["942966"]}}
+            if "eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi" in url and "942966" in url:
+                return {
+                    "result": {
+                        "uids": ["942966"],
+                        "942966": {
+                            "uid": "942966",
+                            "project_id": 942966,
+                            "project_acc": "PRJNA942966",
+                            "project_title": "Targeting Sex Determination to Suppress Mosquito Populations",
+                            "project_description": "CRISPR-Cas9 disruption of sex determination genes in Ae. aegypti.",
+                            "project_data_type": "Raw sequence reads",
+                            "project_target_scope": "Multispecies",
+                            "registration_date": "2023/03/09 00:00",
+                            "submitter_organization": "Caltech",
+                            "sequencing_status": "SRA/Trace",
+                        },
+                    }
+                }
+            return {}
+
+        with patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json):
+            supplements = fetch_public_supplement_metadata(
+                {
+                    "record_id": "openalex:WBIOPROJECT",
+                    "url": "PRJNA942966",
+                }
+            )
+
+        self.assertEqual(len(supplements), 1)
+        self.assertEqual(supplements[0]["source"], "ncbi_bioproject")
+        self.assertEqual(supplements[0]["accession"], "PRJNA942966")
+        self.assertEqual(supplements[0]["project_data_type"], "Raw sequence reads")
 
     def test_fetch_public_supplement_metadata_discovers_datacite_relations(self):
         def fake_json(url: str) -> dict[str, object]:
