@@ -645,7 +645,12 @@ def _url_file_type(url: str) -> str | None:
 
 
 def _supplement_reference_score(url: str, label: str | None = None) -> int:
-    haystack = f"{url} {label or ''}".lower()
+    parsed = urlparse(url)
+    path = parsed.path.lower()
+    filename = Path(parsed.path).name.lower()
+    label_text = (label or "").lower()
+    haystack = f"{filename} {label_text}"
+    path_haystack = f"{path} {label_text}"
     strong_terms = (
         "supplement",
         "supplementary",
@@ -657,12 +662,14 @@ def _supplement_reference_score(url: str, label: str | None = None) -> int:
     )
     if any(term in haystack for term in strong_terms):
         return 3
+    if any(term in path for term in strong_terms) and not re.search(r"/supplement[_-]?\d+/", path):
+        return 3
     if re.search(r"\bsupp[-_ ]?\d*\b", haystack) or re.search(
-        r"\bs\d{1,3}(?!\.\d)(?:[-_ ]?(?:table|data|file|fig|figure))?\b",
+        r"(?<![A-Za-z0-9])s\d{1,3}(?!\d|\.\d)(?:[-_ ]?(?:table|data|file|fig|figure))?(?=\.|[-_ ]|$)",
         haystack,
     ):
         return 2
-    if "table" in haystack and _url_file_type(url):
+    if re.search(r"(?<![A-Za-z0-9])tables?(?![A-Za-z0-9])", path_haystack) and _url_file_type(url):
         return 1
     return 0
 
@@ -1254,6 +1261,10 @@ def _existing_supplement_manifest_supplements(
         supplement = payload.get("supplement")
         if not isinstance(supplement, dict):
             continue
+        if str(supplement.get("source") or "") == "unpaywall_oa_location":
+            url = str(supplement.get("url") or "")
+            if not _looks_like_supplement_reference(url):
+                continue
         supplements.append(
             {
                 "source_record_id": source_record_id,

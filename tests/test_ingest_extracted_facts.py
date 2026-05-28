@@ -361,6 +361,95 @@ class IngestExtractedFactsTests(unittest.TestCase):
                 "supplement_manifest_found_table_download_not_run",
             )
 
+    def test_incremental_merge_drops_stale_unpaywall_article_pdf_manifests(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WSTALE",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti paper with ordinary article PDF",
+                        text="Aedes aegypti public health paper.",
+                        species="Aedes aegypti",
+                        url="https://example.org/stale",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WSTALE",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1234/stale"}},
+                    ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_manifest:openalex:WSTALE:existing",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement manifest: article PDF",
+                        text="Stale manifest that was created by an over-broad Unpaywall article-PDF match.",
+                        species="Aedes aegypti",
+                        url="https://sciresol.s3.us-east-2.amazonaws.com/IJST/Articles/2020/Issue-12/Article6.pdf",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:WSTALE;supplement#0",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            source_url="https://sciresol.s3.us-east-2.amazonaws.com/IJST/Articles/2020/Issue-12/Article6.pdf",
+                        ),
+                        payload={
+                            "fact_type": "supplement_manifest",
+                            "source_record_id": "openalex:WSTALE",
+                            "supplement": {
+                                "title": "Unpaywall OA supplement location (url_for_pdf)",
+                                "url": "https://sciresol.s3.us-east-2.amazonaws.com/IJST/Articles/2020/Issue-12/Article6.pdf",
+                                "file_type": "pdf",
+                                "source": "unpaywall_oa_location",
+                            },
+                            "confidence": "manifest",
+                        },
+                    ),
+                ]
+            )
+
+            second = ingest_extracted_facts(
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [],
+                source_record_ids=["openalex:WSTALE"],
+                merge_existing=True,
+            )
+
+            self.assertTrue(second["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                """
+                select payload_json
+                from record_payloads
+                where source='aedes_extracted_facts'
+                  and json_extract(payload_json, '$.fact_type')='supplement_manifest'
+                  and json_extract(payload_json, '$.source_record_id')='openalex:WSTALE'
+                """,
+                limit=10,
+            )
+            self.assertEqual(rows, [])
+            audits = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                """
+                select payload_json
+                from record_payloads
+                where source='aedes_extracted_facts'
+                  and json_extract(payload_json, '$.fact_type')='supplement_audit'
+                  and json_extract(payload_json, '$.source_record_id')='openalex:WSTALE'
+                """,
+                limit=5,
+            )
+            self.assertEqual(len(audits), 1)
+            audit_payload = json.loads(audits[0]["payload_json"])
+            self.assertEqual(audit_payload["fields"]["supplement_candidate_count"], 0)
+            self.assertEqual(audit_payload["fields"]["coverage_status"], "no_supplement_metadata_found")
+
 
 if __name__ == "__main__":
     unittest.main()

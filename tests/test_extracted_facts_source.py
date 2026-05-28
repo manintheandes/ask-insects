@@ -513,6 +513,18 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                             "license": "cc-by",
                         },
                         {
+                            "url_for_pdf": "https://sciresol.s3.us-east-2.amazonaws.com/IJST/Articles/2020/Issue-12/Article6.pdf",
+                            "license": "cc-by",
+                        },
+                        {
+                            "url_for_pdf": "https://academic.oup.com/eurpub/article-pdf/30/Supplement_5/ckaa166.141/33821633/ckaa166.141.pdf",
+                            "license": "cc-by",
+                        },
+                        {
+                            "url_for_pdf": "https://researchonline.lshtm.ac.uk/id/eprint/4661319/3/Regional_suitable_index.pdf",
+                            "license": "cc-by",
+                        },
+                        {
                             "url_for_pdf": "https://publisher.example/files/S1.pdf",
                             "license": "cc-by",
                         },
@@ -537,6 +549,9 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertNotIn("https://www.nature.com/articles/s41598-024-63165-x.pdf", urls)
         self.assertNotIn("https://www.nature.com/articles/s41598-024-63165-x", urls)
         self.assertNotIn("https://ars.els-cdn.com/content/image/1-s2.0-S0306456522000201-ga1_lrg.jpg", urls)
+        self.assertNotIn("https://sciresol.s3.us-east-2.amazonaws.com/IJST/Articles/2020/Issue-12/Article6.pdf", urls)
+        self.assertNotIn("https://academic.oup.com/eurpub/article-pdf/30/Supplement_5/ckaa166.141/33821633/ckaa166.141.pdf", urls)
+        self.assertNotIn("https://researchonline.lshtm.ac.uk/id/eprint/4661319/3/Regional_suitable_index.pdf", urls)
         self.assertIn("https://publisher.example/files/S1.pdf", urls)
         self.assertIn("https://publisher.example/files/supplementary-table-s2.csv", urls)
 
