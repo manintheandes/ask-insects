@@ -397,6 +397,10 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                                 {
                                     "id": "10.6084/m9.figshare.12345",
                                     "id-type": "doi",
+                                },
+                                {
+                                    "id": "10.5281/zenodo.67890",
+                                    "id-type": "doi",
                                 }
                             ],
                             "is-supplement-to": [
@@ -407,6 +411,30 @@ class ExtractedFactsSourceTests(unittest.TestCase):
                             ],
                         }
                     }
+                }
+            if "api.figshare.com/v2/articles/12345" in url:
+                return {
+                    "license": {"name": "CC-BY"},
+                    "files": [
+                        {
+                            "name": "figshare-supplement.csv",
+                            "download_url": "https://ndownloader.figshare.com/files/123",
+                            "size": 1234,
+                            "computed_md5": "abc123",
+                        }
+                    ],
+                }
+            if "zenodo.org/api/records/67890" in url:
+                return {
+                    "metadata": {"license": {"id": "cc-by-4.0"}},
+                    "files": [
+                        {
+                            "key": "zenodo-supplement.tsv",
+                            "size": 2345,
+                            "checksum": "md5:def456",
+                            "links": {"self": "https://zenodo.org/api/records/67890/files/zenodo-supplement.tsv/content"},
+                        }
+                    ],
                 }
             return {}
 
@@ -421,9 +449,14 @@ class ExtractedFactsSourceTests(unittest.TestCase):
 
         urls = {str(item["url"]) for item in supplements}
         self.assertIn("https://example.org/publisher/supplement-table.xlsx", urls)
-        self.assertIn("https://doi.org/10.6084/m9.figshare.12345", urls)
+        self.assertIn("https://ndownloader.figshare.com/files/123", urls)
+        self.assertIn("https://zenodo.org/api/records/67890/files/zenodo-supplement.tsv/content", urls)
+        self.assertNotIn("https://doi.org/10.6084/m9.figshare.12345", urls)
+        self.assertNotIn("https://doi.org/10.5281/zenodo.67890", urls)
         self.assertNotIn("https://doi.org/10.1186/s13071-025-07140-z", urls)
         self.assertTrue(any(item["source"] == "crossref_relation" for item in supplements))
+        self.assertTrue(any(item["source"] == "figshare" for item in supplements))
+        self.assertTrue(any(item["source"] == "zenodo" for item in supplements))
 
     def test_fetch_public_supplement_metadata_discovers_datacite_relations(self):
         def fake_json(url: str) -> dict[str, object]:
@@ -711,6 +744,144 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(fields_by_url["GSE193470"]["accession"], "GSE193470")
             self.assertEqual(fields_by_url["https://doi.org/10.5061/dryad.2bvq83btk"]["repository"], "dryad")
             self.assertFalse(any(gap.get("reason") == "unsupported_supplement_type" for gap in result.gaps))
+
+    def test_build_extracted_fact_records_does_not_call_expanded_repository_files_unexpanded(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WZENODOFILE",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti paper with expanded repository files",
+                        text="Aedes aegypti supplement repository with sequence files.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1000/zenodo-file",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WZENODOFILE",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1000/zenodo-file"}},
+                    )
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "Supplementary sequence file",
+                        "url": "https://zenodo.org/api/records/7758401/files/sequences.fasta/content",
+                        "file_type": "fasta",
+                        "source": "zenodo",
+                    }
+                ],
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            file_gaps = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+            ]
+            self.assertEqual(len(file_gaps), 1)
+            fields = file_gaps[0].payload["fields"]
+            self.assertEqual(fields["reason"], "unsupported_supplement_file_format")
+            self.assertEqual(fields["file_extension"], "fasta")
+            self.assertNotIn("repository", fields)
+
+    def test_build_extracted_fact_records_skips_stale_relation_repository_manifests_for_scoped_refresh(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WSTALEFIGSHARE",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti paper with stale Crossref Figshare relation",
+                        text="Aedes aegypti supplement repository with a now-expandable Figshare relation.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1000/stale-figshare",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WSTALEFIGSHARE",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1000/stale-figshare"}},
+                    ),
+                    EvidenceRecord(
+                        record_id="aedes-extracted-facts:stale-manifest",
+                        lane="literature",
+                        source=EXTRACTED_FACTS_SOURCE_ID,
+                        title="Stale Crossref Figshare supplement manifest",
+                        text="Previously indexed unexpanded Crossref relation.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.6084/m9.figshare.21805593",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id=EXTRACTED_FACTS_SOURCE_ID,
+                            locator="records#openalex:WSTALEFIGSHARE/supplement#0",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_manifest",
+                            "source_record_id": "openalex:WSTALEFIGSHARE",
+                            "supplement": {
+                                "title": "Crossref is-supplemented-by supplement",
+                                "url": "https://doi.org/10.6084/m9.figshare.21805593",
+                                "source": "crossref_relation",
+                            },
+                        },
+                    ),
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "Expanded Figshare supplement table",
+                        "url": "https://ndownloader.figshare.com/files/38693835",
+                        "file_type": "docx",
+                        "source": "figshare",
+                    }
+                ],
+                fetch_supplement_file_fn=lambda url, max_bytes: make_docx_bytes([["assay", "mortality"], ["permethrin", "55%"]]),
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+                source_record_ids=["openalex:WSTALEFIGSHARE"],
+            )
+
+            manifest_urls = {
+                str(record.payload["supplement"]["url"])
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+            }
+            self.assertIn("https://ndownloader.figshare.com/files/38693835", manifest_urls)
+            self.assertNotIn("https://doi.org/10.6084/m9.figshare.21805593", manifest_urls)
+            self.assertFalse(
+                any(
+                    record.payload["fields"].get("url") == "https://doi.org/10.6084/m9.figshare.21805593"
+                    for record in result.records
+                    if record.payload["fact_type"] == "supplement_file_gap"
+                )
+            )
 
     def test_build_extracted_fact_records_classifies_crystallography_format_gaps(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -743,6 +743,10 @@ def _crossref_relation_supplements(request: dict[str, object]) -> list[dict[str,
             url = _doi_or_url_identifier(entry.get("id"), entry.get("id-type"))
             if not url:
                 continue
+            expanded = _expand_repository_relation_supplements(url)
+            if expanded:
+                supplements.extend(expanded)
+                continue
             supplements.append(
                 _supplement_from_url(
                     url=url,
@@ -751,6 +755,22 @@ def _crossref_relation_supplements(request: dict[str, object]) -> list[dict[str,
                     metadata_url=api_url,
                 )
             )
+    return supplements
+
+
+def _expand_repository_relation_supplements(url: str) -> list[dict[str, object]]:
+    relation_request = {
+        "doi": _normalize_doi(url),
+        "url": url,
+    }
+    supplements: list[dict[str, object]] = []
+    if _figshare_article_id_from_request(relation_request):
+        supplements.extend(_figshare_supplements(relation_request))
+    if _zenodo_record_id_from_request(relation_request):
+        supplements.extend(_zenodo_supplements(relation_request))
+    for supplement in supplements:
+        supplement.setdefault("discovered_via", "crossref_relation")
+        supplement.setdefault("crossref_relation_url", url)
     return supplements
 
 
@@ -1261,10 +1281,12 @@ def _existing_supplement_manifest_supplements(
         supplement = payload.get("supplement")
         if not isinstance(supplement, dict):
             continue
+        url = str(supplement.get("url") or "")
         if str(supplement.get("source") or "") == "unpaywall_oa_location":
-            url = str(supplement.get("url") or "")
             if not _looks_like_supplement_reference(url):
                 continue
+        if str(supplement.get("source") or "") in {"crossref_relation", "datacite_relation"} and _external_repository_reference_fields(url):
+            continue
         supplements.append(
             {
                 "source_record_id": source_record_id,
@@ -1503,6 +1525,8 @@ def _supplement_extension(supplement: dict[str, object]) -> str:
         return ".log"
     if file_type in {"r", "rscript", "text/x-r", "application/r"}:
         return ".r"
+    if re.fullmatch(r"[a-z0-9]{1,12}", file_type):
+        return f".{file_type}"
     return suffix
 
 
@@ -1931,7 +1955,12 @@ def _download_and_parse_supplement_rows(
             continue
         extension = _supplement_extension(candidate.supplement)
         if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS:
-            repository_fields = _external_repository_reference_fields(url)
+            supplement_source = str(candidate.supplement.get("source") or "")
+            repository_fields = (
+                _external_repository_reference_fields(url)
+                if supplement_source not in {"figshare", "zenodo", "dryad"}
+                else {}
+            )
             if repository_fields:
                 reason = "external_repository_reference_not_expanded"
                 extra_fields = repository_fields
