@@ -335,9 +335,10 @@ DRYAD_API_BASE = "https://datadryad.org"
 NCBI_EUTILS_BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 CROSSREF_WORKS_API_BASE = "https://api.crossref.org/works"
 DATACITE_DOI_API_BASE = "https://api.datacite.org/dois"
+PRIDE_ARCHIVE_API_BASE = "https://www.ebi.ac.uk/pride/ws/archive/v2"
 UNPAYWALL_API_BASE = "https://api.unpaywall.org/v2"
 UNPAYWALL_EMAIL = "sources@openinsects.org"
-REPOSITORY_METADATA_SUPPLEMENT_SOURCES = {"ncbi_bioproject", "ncbi_geo"}
+REPOSITORY_METADATA_SUPPLEMENT_SOURCES = {"ncbi_bioproject", "ncbi_geo", "proteomexchange"}
 RESISTANCE_DISCOVERY_TERMS = (
     "insecticide resistance",
     "insecticide-resistant",
@@ -471,6 +472,12 @@ def _fetch_ncbi_json_url(url: str) -> dict[str, object]:
             continue
         return payload
     return _fetch_json_url(url)
+
+
+def _fetch_json_value_url(url: str) -> object:
+    request = Request(url, headers={"User-Agent": "ask-insects/0.1"})
+    with urlopen(request, timeout=EXTERNAL_METADATA_TIMEOUT_SECONDS) as response:
+        return json.loads(response.read().decode("utf-8"))
 
 
 def _fetch_bytes_url(url: str, max_bytes: int) -> bytes:
@@ -617,6 +624,7 @@ def fetch_public_supplement_metadata(request: dict[str, object]) -> list[dict[st
     supplements.extend(_dryad_supplements(request))
     supplements.extend(_ncbi_bioproject_supplements(request))
     supplements.extend(_ncbi_geo_supplements(request))
+    supplements.extend(_proteomexchange_supplements(request))
     supplements.extend(_crossref_relation_supplements(request))
     supplements.extend(_datacite_relation_supplements(request))
     supplements.extend(_unpaywall_supplements(request))
@@ -798,6 +806,8 @@ def _expand_repository_relation_supplements(url: str) -> list[dict[str, object]]
         supplements.extend(_ncbi_bioproject_supplements(relation_request))
     if _ncbi_geo_accession_from_request(relation_request):
         supplements.extend(_ncbi_geo_supplements(relation_request))
+    if _proteomexchange_accession_from_request(relation_request):
+        supplements.extend(_proteomexchange_supplements(relation_request))
     for supplement in supplements:
         supplement.setdefault("discovered_via", "crossref_relation")
         supplement.setdefault("crossref_relation_url", url)
@@ -1235,6 +1245,126 @@ def _ncbi_geo_supplements(request: dict[str, object]) -> list[dict[str, object]]
     return [{key: value for key, value in supplement.items() if value not in (None, "")}]
 
 
+def _proteomexchange_accession_from_request(request: dict[str, object]) -> str | None:
+    haystack = " ".join(str(request.get(key) or "") for key in ("doi", "url", "accession", "id"))
+    match = re.search(r"\bPXD\d+\b", haystack, re.I)
+    return match.group(0).upper() if match else None
+
+
+def _cv_names(values: object) -> str | None:
+    if not isinstance(values, list):
+        return None
+    names: list[str] = []
+    for value in values:
+        if isinstance(value, dict):
+            name = value.get("name") or value.get("value") or value.get("accession")
+        else:
+            name = value
+        if name:
+            names.append(str(name))
+    return "; ".join(names) if names else None
+
+
+def _person_names(values: object) -> str | None:
+    if not isinstance(values, list):
+        return None
+    names: list[str] = []
+    for value in values:
+        if isinstance(value, dict):
+            name = value.get("name") or " ".join(str(value.get(key) or "") for key in ("firstName", "lastName")).strip()
+        else:
+            name = value
+        if name:
+            names.append(str(name))
+    return "; ".join(names) if names else None
+
+
+def _proteomexchange_file_summary(accession: str, files_url: str) -> dict[str, object]:
+    try:
+        payload = _fetch_json_value_url(files_url)
+    except Exception:
+        return {}
+    if not isinstance(payload, list):
+        return {}
+    category_counts: Counter[str] = Counter()
+    ftp_urls: list[str] = []
+    for file_payload in payload:
+        if not isinstance(file_payload, dict):
+            continue
+        category = file_payload.get("fileCategory")
+        if isinstance(category, dict):
+            category_name = str(category.get("value") or category.get("name") or "unknown")
+        else:
+            category_name = "unknown"
+        category_counts[category_name] += 1
+        locations = file_payload.get("publicFileLocations")
+        if isinstance(locations, list):
+            for location in locations:
+                if isinstance(location, dict):
+                    value = str(location.get("value") or "")
+                    if value.startswith("ftp://"):
+                        ftp_urls.append(value)
+    ftp_root = None
+    for url in ftp_urls:
+        marker = f"/{accession}/"
+        if marker in url:
+            ftp_root = url.split(marker, 1)[0] + marker.rstrip("/")
+            break
+    return {
+        "file_count": len(payload),
+        "file_category_counts": json.dumps(dict(sorted(category_counts.items()))),
+        "ftp_url": ftp_root,
+    }
+
+
+def _proteomexchange_supplements(request: dict[str, object]) -> list[dict[str, object]]:
+    accession = _proteomexchange_accession_from_request(request)
+    if not accession:
+        return []
+    project_url = f"{PRIDE_ARCHIVE_API_BASE}/projects/{accession}"
+    try:
+        project = _fetch_json_url(project_url)
+    except Exception:
+        return []
+    files_url = f"{PRIDE_ARCHIVE_API_BASE}/projects/{accession}/files?{urlencode({'pageSize': '100'})}"
+    file_summary = _proteomexchange_file_summary(accession, files_url)
+    title = str(project.get("title") or f"ProteomeXchange project {accession}")
+    supplement = {
+        "title": f"ProteomeXchange {accession}: {title}",
+        "url": f"https://www.ebi.ac.uk/pride/archive/projects/{accession}",
+        "file_type": "repository_metadata",
+        "license": project.get("license") or "PRIDE public metadata",
+        "source": "proteomexchange",
+        "metadata_url": project_url,
+        "repository": "proteomexchange",
+        "accession": accession,
+        "project_title": title,
+        "project_description": project.get("projectDescription"),
+        "sample_processing_protocol": project.get("sampleProcessingProtocol"),
+        "data_processing_protocol": project.get("dataProcessingProtocol"),
+        "submission_type": project.get("submissionType"),
+        "submission_date": project.get("submissionDate"),
+        "publication_date": project.get("publicationDate"),
+        "organisms": _cv_names(project.get("organisms")),
+        "organism_parts": _cv_names(project.get("organismParts")),
+        "instruments": _cv_names(project.get("instruments")),
+        "experiment_types": _cv_names(project.get("experimentTypes")),
+        "quantification_methods": _cv_names(project.get("quantificationMethods")),
+        "keywords": "; ".join(str(value) for value in project.get("keywords") or [] if value)
+        if isinstance(project.get("keywords"), list)
+        else project.get("keywords"),
+        "submitters": _person_names(project.get("submitters")),
+        "lab_pis": _person_names(project.get("labPIs")),
+        "total_file_downloads": project.get("totalFileDownloads"),
+        "pride_project_url": f"https://www.ebi.ac.uk/pride/archive/projects/{accession}",
+        "proteomecentral_url": f"https://proteomecentral.proteomexchange.org/dataset/{accession}",
+        "file_manifest_url": files_url,
+        "search_url": project_url,
+        **file_summary,
+    }
+    return [{key: value for key, value in supplement.items() if value not in (None, "")}]
+
+
 def _matches_prefilter(text: str) -> bool:
     lower = text.lower()
     return any(token in lower for token in PREFILTER_TOKENS)
@@ -1464,6 +1594,25 @@ def _normalize_supplement(raw: dict[str, object]) -> dict[str, object]:
         "pubmed_ids",
         "ftp_url",
         "bioproject",
+        "sample_processing_protocol",
+        "data_processing_protocol",
+        "submission_type",
+        "submission_date",
+        "publication_date",
+        "organisms",
+        "organism_parts",
+        "instruments",
+        "experiment_types",
+        "quantification_methods",
+        "keywords",
+        "submitters",
+        "lab_pis",
+        "file_count",
+        "file_category_counts",
+        "total_file_downloads",
+        "pride_project_url",
+        "proteomecentral_url",
+        "file_manifest_url",
         "search_url",
         "discovered_via",
         "crossref_relation_url",
@@ -2464,6 +2613,25 @@ def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrie
         "pubmed_ids",
         "ftp_url",
         "bioproject",
+        "sample_processing_protocol",
+        "data_processing_protocol",
+        "submission_type",
+        "submission_date",
+        "publication_date",
+        "organisms",
+        "organism_parts",
+        "instruments",
+        "experiment_types",
+        "quantification_methods",
+        "keywords",
+        "submitters",
+        "lab_pis",
+        "file_count",
+        "file_category_counts",
+        "total_file_downloads",
+        "pride_project_url",
+        "proteomecentral_url",
+        "file_manifest_url",
         "search_url",
         "discovered_via",
         "crossref_relation_url",

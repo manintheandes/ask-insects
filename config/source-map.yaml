@@ -899,7 +899,7 @@ sources:
   - id: aedes_extracted_facts
     name: Aedes aegypti extracted literature facts, supplement manifests, and per-paper supplement audits
     source_type: derived_sqlite_source
-    boundary: Deterministic cross-lane candidate facts, supplement manifests, per-paper supplement audit atoms, supported parsed supplement table rows, parsed-but-unpromoted supplement row atoms, and supplement file-gap atoms from indexed Aedes aegypti literature records, existing_manifest seeds during incremental refresh, record payload supplement metadata, Europe PMC, PMC, Crossref relation metadata, DataCite related identifiers, Unpaywall OA locations, Figshare, Zenodo, Dryad, NCBI BioProject metadata, or NCBI GEO metadata, publisher landing-page links, public supplement files, and legal literature_fulltext_units
+    boundary: Deterministic cross-lane candidate facts, supplement manifests, per-paper supplement audit atoms, supported parsed supplement table rows, parsed-but-unpromoted supplement row atoms, and supplement file-gap atoms from indexed Aedes aegypti literature records, existing_manifest seeds during incremental refresh, record payload supplement metadata, Europe PMC, PMC, Crossref relation metadata, DataCite related identifiers, Unpaywall OA locations, Figshare, Zenodo, Dryad, NCBI BioProject metadata, NCBI GEO metadata, or ProteomeXchange/PRIDE metadata, publisher landing-page links, public supplement files, and legal literature_fulltext_units
     query_plane: literature_records_payloads_fulltext_units_supported_supplement_tables_and_per_paper_supplement_audits_to_sqlite_fact_records
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_extracted_facts.py
@@ -914,6 +914,7 @@ sources:
       dryad: https://datadryad.org/api/v2
       ncbi_bioproject: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
       ncbi_geo: https://eutils.ncbi.nlm.nih.gov/entrez/eutils
+      pride_archive: https://www.ebi.ac.uk/pride/ws/archive/v2
     input_sources:
       - aedes_literature_openalex
       - record_payloads
@@ -928,6 +929,7 @@ sources:
       - dryad_metadata
       - ncbi_bioproject_metadata
       - ncbi_geo_metadata
+      - proteomexchange_pride_metadata
       - publisher_landing_page_links
       - fulltext_link_mining
     supported_supplement_formats:

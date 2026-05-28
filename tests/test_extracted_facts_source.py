@@ -476,6 +476,54 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
             self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
 
+    def test_build_extracted_fact_records_keeps_proteomexchange_metadata_as_exact_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_extracted_facts_fixture(artifact_dir)
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "ProteomeXchange PXD030925: Aedes aegypti drought resilience proteomics",
+                        "url": "https://www.ebi.ac.uk/pride/archive/projects/PXD030925",
+                        "file_type": "repository_metadata",
+                        "license": "Creative Commons Public Domain (CC0)",
+                        "source": "proteomexchange",
+                        "repository": "proteomexchange",
+                        "accession": "PXD030925",
+                        "project_title": "Aedes aegypti drought resilience proteomics",
+                        "organisms": "Aedes aegypti",
+                        "file_count": 52,
+                        "file_category_counts": '{"RAW": 50, "SEARCH": 2}',
+                        "metadata_url": "https://www.ebi.ac.uk/pride/ws/archive/v2/projects/PXD030925",
+                    }
+                ],
+                fetch_supplement_file_fn=lambda url, max_bytes: b"",
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            manifest = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_manifest"
+                and record.payload["supplement"]["source"] == "proteomexchange"
+            )
+            self.assertEqual(manifest.payload["fields"]["accession"], "PXD030925")
+            self.assertEqual(manifest.payload["fields"]["organisms"], "Aedes aegypti")
+            file_gap = next(
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+                and record.payload["fields"].get("repository") == "proteomexchange"
+            )
+            self.assertEqual(file_gap.payload["fields"]["reason"], "repository_metadata_manifest_no_supported_table_rows")
+            self.assertFalse(any(gap.get("reason") == "external_repository_reference_not_expanded" for gap in result.gaps))
+
     def test_build_extracted_fact_records_expands_existing_bioproject_relation_manifest(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -946,6 +994,61 @@ class ExtractedFactsSourceTests(unittest.TestCase):
         self.assertEqual(supplements[0]["accession"], "GSE193470")
         self.assertEqual(supplements[0]["sample_count"], 33)
         self.assertEqual(supplements[0]["pubmed_ids"], "36744865")
+
+    def test_fetch_public_supplement_metadata_discovers_direct_proteomexchange_metadata(self):
+        def fake_json(url: str) -> dict[str, object]:
+            if "europepmc" in url:
+                return {}
+            if "ebi.ac.uk/pride/ws/archive/v2/projects/PXD030925" in url:
+                return {
+                    "accession": "PXD030925",
+                    "title": "Rapidly evolving genes underlie Aedes aegypti mosquito reproductive resilience during drought",
+                    "projectDescription": "Aedes aegypti ovary and hemolymph proteomics under drought-like conditions.",
+                    "sampleProcessingProtocol": "Protein pellets were digested and analyzed by LC-MS/MS.",
+                    "dataProcessingProtocol": "Data were searched with MaxQuant.",
+                    "submissionType": "PARTIAL",
+                    "license": "Creative Commons Public Domain (CC0)",
+                    "submissionDate": "2022-01-13",
+                    "publicationDate": "2022-03-02",
+                    "organisms": [{"name": "Aedes aegypti"}],
+                    "organismParts": [{"name": "Ovary"}, {"name": "Hemolymph"}],
+                    "instruments": [{"name": "Orbitrap Fusion Lumos"}, {"name": "Q Exactive Plus"}],
+                    "experimentTypes": [{"name": "Shotgun proteomics"}],
+                    "quantificationMethods": [{"name": "Label free"}],
+                    "keywords": ["Aedes aegypti", "proteomics"],
+                    "submitters": [{"name": "henrik molina", "email": "not-preserved@example.org"}],
+                    "labPIs": [{"name": "Leslie B. Vosshall"}],
+                    "totalFileDownloads": 123,
+                }
+            return {}
+
+        def fake_value(url: str) -> object:
+            if "projects/PXD030925/files" in url:
+                return [
+                    {
+                        "fileCategory": {"value": "RAW"},
+                        "publicFileLocations": [
+                            {"value": "ftp://ftp.pride.ebi.ac.uk/pride/data/archive/2022/03/PXD030925/sample.raw"}
+                        ],
+                    },
+                    {"fileCategory": {"value": "SEARCH"}},
+                ]
+            return {}
+
+        with (
+            patch("askinsects.sources.extracted_facts._fetch_json_url", side_effect=fake_json),
+            patch("askinsects.sources.extracted_facts._fetch_json_value_url", side_effect=fake_value),
+        ):
+            supplements = fetch_public_supplement_metadata({"record_id": "openalex:WPXD", "url": "PXD030925"})
+
+        self.assertEqual(len(supplements), 1)
+        self.assertEqual(supplements[0]["source"], "proteomexchange")
+        self.assertEqual(supplements[0]["accession"], "PXD030925")
+        self.assertEqual(supplements[0]["organisms"], "Aedes aegypti")
+        self.assertEqual(supplements[0]["file_count"], 2)
+        self.assertEqual(supplements[0]["file_category_counts"], '{"RAW": 1, "SEARCH": 1}')
+        self.assertEqual(supplements[0]["submitters"], "henrik molina")
+        self.assertNotIn("email", " ".join(str(value) for value in supplements[0].values()))
 
     def test_fetch_public_supplement_metadata_discovers_datacite_relations(self):
         def fake_json(url: str) -> dict[str, object]:
