@@ -2298,6 +2298,90 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["record_id"], "dryad:table-gap:host-seeking-table:download")
             self.assertIn("dryad_table_file_download_or_parse_failed", answer["evidence"][0]["text"])
 
+    def test_named_dryad_preview_table_questions_return_preview_rows_and_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:behavior:generic",
+                        lane="behavior",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti extracted behavior fact",
+                        text="Aedes aegypti extracted behavior fact from older literature.",
+                        species="Aedes aegypti",
+                        url="https://example.org/paper",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:W1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="dryad:table-row:10_5061_dryad_tb2rbp04x:female_preferences_ae_aegypti_csv:dryad_preview:r2",
+                        lane="behavior",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad behavior table row Female_preferences_Ae._aegypti.csv dryad_preview row 2",
+                        text="Parsed Dryad Aedes aegypti behavior table row. File: Female_preferences_Ae._aegypti.csv. Sheet: dryad_preview. Row: 2. Table source: dryad_preview.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/dryad.tb2rbp04x",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/table_previews/10_5061_dryad_tb2rbp04x_2671955.js#sheet/1/row/2",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                        payload={
+                            "atom_type": "table_row",
+                            "table_source": "dryad_preview",
+                            "filename": "Female_preferences_Ae._aegypti.csv",
+                            "row_number": 2,
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="dryad:table-gap:10_5061_dryad_tb2rbp04x:female_preferences_ae_aegypti_csv:dryad_table_file_download_blocked_preview_used",
+                        lane="behavior",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti Dryad behavior table gap Female_preferences_Ae._aegypti.csv",
+                        text="Aedes aegypti Dryad table source gap: dryad_table_file_download_blocked_preview_used. Source file: Female_preferences_Ae._aegypti.csv.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/dryad.tb2rbp04x",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad_behavior_videos/files.json#file/1/gap/dryad_table_file_download_blocked_preview_used",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC0",
+                        ),
+                        payload={
+                            "atom_type": "table_gap",
+                            "reason": "dryad_table_file_download_blocked_preview_used",
+                            "preview_url": "https://datadryad.org/data_file/preview/2671955.js",
+                        },
+                    ),
+                ]
+            )
+
+            row_answer = answer_question(
+                "Dryad Female_preferences_Ae._aegypti.csv dryad_preview row 2",
+                artifact_dir=artifact_dir,
+                limit=1,
+            )
+            gap_answer = answer_question(
+                "show Dryad table gaps where preview was used",
+                artifact_dir=artifact_dir,
+                limit=1,
+            )
+
+            self.assertTrue(row_answer["ok"])
+            self.assertEqual(row_answer["evidence"][0]["record_id"], "dryad:table-row:10_5061_dryad_tb2rbp04x:female_preferences_ae_aegypti_csv:dryad_preview:r2")
+            self.assertTrue(gap_answer["ok"])
+            self.assertEqual(gap_answer["evidence"][0]["record_id"], "dryad:table-gap:10_5061_dryad_tb2rbp04x:female_preferences_ae_aegypti_csv:dryad_table_file_download_blocked_preview_used")
+
     def test_video_atom_motion_questions_prefer_queryable_motion_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

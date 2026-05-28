@@ -3016,6 +3016,7 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
 
 
 def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    q = question.lower()
     if _wants_video_motion(question):
         return sorted(
             records,
@@ -3024,6 +3025,22 @@ def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -
                 0 if record.lane == "behavior" else 1,
             ),
         )
+    if "dryad" in q and any(term in q for term in ("table", "tables", "row", "rows", "source data", "sourcedata", "preview", "csv", "xlsx")):
+        wants_gap = any(term in q for term in ("gap", "gaps", "failed", "failure", "blocked", "missing", "not parsed", "unparsed"))
+        wants_row = any(term in q for term in ("row", "rows"))
+
+        def score_dryad_table(record: EvidenceRecord) -> tuple[int, int, int, int]:
+            haystack = f"{record.record_id} {record.title} {record.text}".lower()
+            is_gap = ":table-gap:" in record.record_id or "table source gap" in haystack
+            is_row = ":table-row:" in record.record_id or "table row" in haystack
+            return (
+                0 if record.source == "dryad_aedes_behavior_videos" else 1,
+                0 if wants_gap and is_gap else 1 if wants_gap else 0,
+                0 if wants_row and is_row else 1 if wants_row else 0,
+                0 if record.lane == "behavior" else 1,
+            )
+
+        return sorted(records, key=score_dryad_table)
     if not _wants_extracted_facts(question):
         return records
     return sorted(
@@ -4158,6 +4175,61 @@ def _dryad_table_gap_records(index: SourceIndex, question: str, *, limit: int) -
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _dryad_table_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    q = question.lower()
+    if "dryad" not in q or not any(
+        term in q for term in ("table", "tables", "row", "rows", "source data", "sourcedata", "preview", "csv", "xlsx")
+    ):
+        return []
+    wants_gap = any(term in q for term in ("gap", "gaps", "failed", "failure", "blocked", "missing", "not parsed", "unparsed"))
+    wants_preview = "preview" in q or "dryad_preview" in q
+    wants_row = any(term in q for term in ("row", "rows"))
+    row_numbers = re.findall(r"\brow\s*(\d+)\b", q)
+    row_suffix = f":r{row_numbers[0]}" if row_numbers else ""
+    filename_terms = [
+        term
+        for term in ("female", "male", "landing", "tent", "preferences", "prefereces")
+        if term in q
+    ]
+    conditions = [
+        "r.source = 'dryad_aedes_behavior_videos'",
+        "r.lane = 'behavior'",
+        "json_extract(p.payload_json, '$.atom_type') IN ('table_row', 'table_sheet', 'table_gap')",
+    ]
+    if wants_gap:
+        conditions.append("json_extract(p.payload_json, '$.atom_type') = 'table_gap'")
+    if wants_preview:
+        conditions.append(
+            "(json_extract(p.payload_json, '$.table_source') = 'dryad_preview' OR json_extract(p.payload_json, '$.reason') = 'dryad_table_file_download_blocked_preview_used')"
+        )
+    if filename_terms:
+        like_terms = " OR ".join("lower(r.record_id || ' ' || r.title || ' ' || r.text) LIKE ?" for _ in filename_terms)
+        conditions.append(f"({like_terms})")
+    params: list[object] = [f"%{term}%" for term in filename_terms]
+    params.append(max(limit * 20, 50))
+    row_order = "CASE WHEN 1=1 THEN 0 ELSE 1 END" if not row_suffix else f"CASE WHEN r.record_id LIKE '%{row_suffix}' THEN 0 ELSE 1 END"
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE {' AND '.join(conditions)}
+            ORDER BY
+              {row_order},
+              CASE WHEN json_extract(p.payload_json, '$.atom_type') = 'table_row' THEN 0 ELSE 1 END,
+              CASE WHEN json_extract(p.payload_json, '$.atom_type') = 'table_gap' THEN 0 ELSE 1 END,
+              r.record_id
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+    records = [EvidenceRecord.from_row(dict(row)) for row in rows]
+    if wants_row:
+        return records[:limit]
+    return records[:limit]
+
+
 def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, limit: int = 5) -> dict[str, object]:
     plan = plan_question(question)
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
@@ -4201,6 +4273,11 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             all_records.append(record)
             seen_record_ids.add(record.record_id)
     for record in _dryad_table_gap_records(index, plan.question, limit=limit):
+        if record.record_id in seen_record_ids:
+            continue
+        all_records.append(record)
+        seen_record_ids.add(record.record_id)
+    for record in _dryad_table_records(index, plan.question, limit=limit):
         if record.record_id in seen_record_ids:
             continue
         all_records.append(record)
