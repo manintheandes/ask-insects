@@ -712,6 +712,71 @@ class ExtractedFactsSourceTests(unittest.TestCase):
             self.assertEqual(fields_by_url["https://doi.org/10.5061/dryad.2bvq83btk"]["repository"], "dryad")
             self.assertFalse(any(gap.get("reason") == "unsupported_supplement_type" for gap in result.gaps))
 
+    def test_build_extracted_fact_records_classifies_crystallography_format_gaps(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="openalex:WCRYSTAL",
+                        lane="literature",
+                        source="aedes_literature_openalex",
+                        title="Aedes aegypti paper with crystallography supplements",
+                        text="Aedes aegypti paper with crystallography supplement files.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1000/crystal-gap",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_literature_openalex",
+                            locator="raw/literature/page.json#WCRYSTAL",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"ids": {"doi": "10.1000/crystal-gap"}},
+                    )
+                ]
+            )
+
+            result = build_extracted_fact_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+                discover_supplements=True,
+                download_supplements=True,
+                fetch_supplement_metadata_fn=lambda request: [
+                    {
+                        "title": "Crossref is-supplemented-by supplement",
+                        "url": "https://doi.org/10.1107/S2053229623003753/ef3042sup1.cif",
+                        "source": "crossref_relation",
+                    },
+                    {
+                        "title": "Crossref is-supplemented-by supplement",
+                        "url": "https://doi.org/10.1107/S2053229623003753/ef3042CBZ5SAsup3.hkl",
+                        "source": "crossref_relation",
+                    },
+                    {
+                        "title": "Crossref is-supplemented-by supplement",
+                        "url": "https://doi.org/10.1107/S2053229623003753/ef3042CBZ5SAsup7.cml",
+                        "source": "crossref_relation",
+                    },
+                ],
+                max_supplement_files=10,
+                max_supplement_bytes=100_000,
+            )
+
+            file_gaps = [
+                record
+                for record in result.records
+                if record.payload["fact_type"] == "supplement_file_gap"
+            ]
+            self.assertEqual(len(file_gaps), 3)
+            reasons = {record.payload["fields"]["reason"] for record in file_gaps}
+            self.assertEqual(reasons, {"unsupported_crystallography_supplement_format"})
+            extensions = {record.payload["fields"]["file_extension"] for record in file_gaps}
+            self.assertEqual(extensions, {"cif", "hkl", "cml"})
+            self.assertTrue(all(record.payload["fields"]["format_family"] == "crystallography" for record in file_gaps))
+            self.assertFalse(any(gap.get("reason") == "unsupported_supplement_type" for gap in result.gaps))
+
     def test_build_extracted_fact_records_bounds_supplement_discovery_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

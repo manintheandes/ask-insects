@@ -1546,6 +1546,33 @@ def _external_repository_reference_fields(url: str) -> dict[str, object]:
     return fields
 
 
+def _unsupported_supplement_format_fields(extension: str, url: str) -> tuple[str, dict[str, object]]:
+    normalized = extension.lower().lstrip(".")
+    if normalized in {"cif", "hkl", "cml"}:
+        return (
+            "unsupported_crystallography_supplement_format",
+            {
+                "file_extension": normalized,
+                "format_family": "crystallography",
+                "format_note": "Crystallography structure/factor files are preserved as queryable supplement gaps until a chemistry/crystal parser lane exists.",
+            },
+        )
+    if normalized:
+        return (
+            "unsupported_supplement_file_format",
+            {
+                "file_extension": normalized,
+                "format_family": "unknown",
+            },
+        )
+    return (
+        "unsupported_supplement_type",
+        {
+            "file_extension": None,
+        },
+    )
+
+
 def _safe_raw_filename(candidate: SupplementCandidate, index: int, extension: str) -> str:
     digest = _digest(candidate.source_record_id, candidate.supplement.get("url"), index)
     suffix = extension if extension in SUPPORTED_SUPPLEMENT_EXTENSIONS else ".dat"
@@ -1905,18 +1932,18 @@ def _download_and_parse_supplement_rows(
         extension = _supplement_extension(candidate.supplement)
         if extension not in SUPPORTED_SUPPLEMENT_EXTENSIONS:
             repository_fields = _external_repository_reference_fields(url)
-            reason = (
-                "external_repository_reference_not_expanded"
-                if repository_fields
-                else "unsupported_supplement_type"
-            )
+            if repository_fields:
+                reason = "external_repository_reference_not_expanded"
+                extra_fields = repository_fields
+            else:
+                reason, extra_fields = _unsupported_supplement_format_fields(extension, url)
             gap_records.append(
                 _record_for_supplement_file_gap(
                     candidate,
                     index=index,
                     reason=reason,
                     retrieved_at=retrieved_at,
-                    extra_fields=repository_fields or None,
+                    extra_fields=extra_fields or None,
                 )
             )
             gap_payload: dict[str, object] = {
@@ -1927,7 +1954,7 @@ def _download_and_parse_supplement_rows(
                 "url": url,
                 "file_type": candidate.supplement.get("file_type"),
             }
-            gap_payload.update(repository_fields)
+            gap_payload.update(extra_fields)
             gaps.append(
                 gap_payload
             )

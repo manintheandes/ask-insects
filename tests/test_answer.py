@@ -4825,6 +4825,56 @@ class AnswerTests(unittest.TestCase):
                             },
                         },
                     ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_file_gap:paper2:crossref-unsupported",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement file gap: unsupported type",
+                        text="Aedes aegypti supplement file gap. Reason: unsupported_supplement_type. Source: crossref_relation.",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1107/example/file.dat",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#paper2;supplement#1",
+                            retrieved_at="2026-05-27T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_file_gap",
+                            "confidence": "gap",
+                            "fields": {
+                                "reason": "unsupported_supplement_type",
+                                "source_record_id": "paper2",
+                                "url": "https://doi.org/10.1107/example/file.dat",
+                                "source": "crossref_relation",
+                            },
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_file_gap:paper2:unpaywall-unsupported",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement file gap: unsupported type",
+                        text="Aedes aegypti supplement file gap. Reason: unsupported_supplement_type. Source: unpaywall_oa_location.",
+                        species="Aedes aegypti",
+                        url="https://example.org/supplement",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#paper2;supplement#2",
+                            retrieved_at="2026-05-27T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_file_gap",
+                            "confidence": "gap",
+                            "fields": {
+                                "reason": "unsupported_supplement_type",
+                                "source_record_id": "paper2",
+                                "url": "https://example.org/supplement",
+                                "source": "unpaywall_oa_location",
+                            },
+                        },
+                    ),
                 ]
             )
 
@@ -4838,6 +4888,12 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["status_counts"]["supplement_rows_promoted"], 1)
             self.assertEqual(answer["supplement_file_gap_counts"][0]["reason"], "external_repository_reference_not_expanded")
             self.assertEqual(answer["supplement_file_gap_counts"][0]["repository"], "ncbi_bioproject")
+            unsupported_routes = {
+                row["source"]
+                for row in answer["supplement_file_gap_counts"]
+                if row["reason"] == "unsupported_supplement_type"
+            }
+            self.assertEqual(unsupported_routes, {"crossref_relation", "unpaywall_oa_location"})
             self.assertIn("Top supplement file gap reasons", answer["answer"])
             self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:supplement_audit:paper1")
 

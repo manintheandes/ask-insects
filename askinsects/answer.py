@@ -2556,15 +2556,15 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
             """
             SELECT
                 json_extract(p.payload_json, '$.fields.reason') AS reason,
-                json_extract(p.payload_json, '$.fields.source') AS source,
+                json_extract(p.payload_json, '$.fields.source') AS route,
                 json_extract(p.payload_json, '$.fields.file_type') AS file_type,
                 json_extract(p.payload_json, '$.fields.repository') AS repository,
                 count(*) AS n
             FROM record_payloads p
             WHERE p.source = ?
               AND json_extract(p.payload_json, '$.fact_type') = 'supplement_file_gap'
-            GROUP BY reason, source, file_type, repository
-            ORDER BY n DESC, reason, source, file_type, repository
+            GROUP BY reason, route, file_type, repository
+            ORDER BY n DESC, reason, route, file_type, repository
             LIMIT 8
             """,
             (EXTRACTED_FACTS_SOURCE_ID,),
@@ -2628,7 +2628,7 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
     supplement_file_gap_counts = [
         {
             "reason": str(row["reason"] or ""),
-            "source": row["source"],
+            "source": row["route"],
             "file_type": row["file_type"],
             "repository": row["repository"],
             "count": int(row["n"] or 0),
