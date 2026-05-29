@@ -18,7 +18,7 @@ from askinsects.sources.video_atoms import generate_video_artifacts, probe_video
 DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID = "drosophila_suzukii_video_atoms"
 SPECIES = "Drosophila suzukii"
 COMMON_NAME = "spotted wing drosophila"
-INPUT_SOURCES = ("drosophila_suzukii_deep_sources", "drosophila_suzukii_extracted_facts")
+INPUT_SOURCES = ("drosophila_suzukii_deep_sources",)
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 UNCLEAR_LICENSE_MARKERS = ("not supplied", "unknown", "unclear", "not parsed", "missing")
 DRYAD_FRAME_ARCHIVE_DOI = "10.5061/dryad.8vd762q"
