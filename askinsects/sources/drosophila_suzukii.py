@@ -126,7 +126,7 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "This first source-grade pass maps taxonomy, public observations, licensed still images, literature metadata, "
                 "DNA barcodes, and per-domain coverage status. Follow-on lanes now promote genome files, supplement audits, "
                 "PubMed literature reconciliation, GenBank nucleotide cross-checks, dbSNP variation audits, "
-                "literature-derived crop damage, management, resistance, biocontrol, behavior, ecology, "
+                "extension/IPM guidance, literature-derived crop damage, management, resistance, biocontrol, behavior, ecology, "
                 "and the first inspectable video atoms."
             ),
             species=DROSOPHILA_SUZUKII_SPECIES,
@@ -202,8 +202,12 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
         (
             "management_resistance_biocontrol",
             "partial_source_grade",
-            ["literature-derived management, resistance, and biocontrol candidate rows", "supplement manifests and parsed rows when available"],
-            ["dedicated extension guidance", "structured susceptibility assay tables", "human-validated biocontrol tables"],
+            [
+                "extension/IPM guidance pages",
+                "literature-derived management, resistance, and biocontrol candidate rows",
+                "supplement manifests and parsed rows when available",
+            ],
+            ["structured susceptibility assay tables", "human-validated biocontrol tables"],
         ),
     ]
     for index, (domain, status, current_sources, missing_sources) in enumerate(specs, start=1):

@@ -47,7 +47,7 @@ python3 -m askinsects ask "what do we know about spotted wing drosophila?" --jso
 python3 -m askinsects search source_coverage "Drosophila suzukii missing"
 ```
 
-This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, dbSNP availability audits, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are motion-table rows, broader marker and variant-table review, and human-validated pest-science tables.
+This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, dbSNP availability audits, extension/IPM guidance, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are motion-table rows, broader marker and variant-table review, structured susceptibility assay tables, and human-validated pest-science tables.
 
 The next depth layer is `drosophila_suzukii_deep_sources`. It adds bounded NCBI assembly, BioProject, BioSample, and SRA metadata, UniProt protein and proteome metadata, and repository candidate sweeps across Zenodo, Figshare, and Dryad:
 
@@ -57,7 +57,7 @@ python3 -m askinsects ask "show Drosophila suzukii SRA and genome evidence" --js
 python3 -m askinsects search media "Drosophila suzukii video"
 ```
 
-Genome-file parsing, legal direct full-text enrichment, per-paper supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, management, resistance, and biocontrol are now promoted through follow-on SWD lanes. Larger full-text coverage, motion-table rows, and human-validated pest-science tables remain follow-on work.
+Genome-file parsing, legal direct full-text enrichment, per-paper supplement audit, first video atoms, occurrence ecology, extension/IPM guidance, and literature-derived crop-damage, management, resistance, and biocontrol are now promoted through follow-on SWD lanes. Larger full-text coverage, motion-table rows, structured susceptibility assay tables, and human-validated pest-science tables remain follow-on work.
 
 The `drosophila_suzukii_genome_files` lane promotes the genome-file gap into parsed rows for a selected NCBI assembly. It downloads bounded public NCBI GFF and protein FASTA files, then indexes assembly, gene, transcript, functional genome-feature, and protein rows with locators back to the mirrored files.
 
@@ -104,6 +104,13 @@ The `drosophila_suzukii_ncbi_snp_variation` lane audits NCBI dbSNP for SWD organ
 ```bash
 python3 -m askinsects ingest-drosophila-suzukii-ncbi-snp-variation --limit 1000 --page-size 200
 python3 -m askinsects ask "show Drosophila suzukii dbSNP variant records" --json
+```
+
+The `drosophila_suzukii_extension_guidance` lane promotes the dedicated extension-guidance gap into page-grain management records. It fetches public university extension/IPM and SWD-management guidance pages, saves raw HTML, and indexes organization, region, topic terms, guidance type, source URL, and raw locator.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-extension-guidance
+python3 -m askinsects ask "show Drosophila suzukii extension IPM guidance" --json
 ```
 
 The first Aedes-depth literature gate for spotted wing drosophila is `drosophila_suzukii_extracted_facts`. It audits every indexed SWD paper for supplements, preserves supplement manifests, parses supported public supplement tables when opted in, and emits source-backed candidate rows for behavior, crop damage, management, resistance, biocontrol, ecology, and genomics.

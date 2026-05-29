@@ -208,6 +208,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_ncbi_snp.add_argument("--delay-seconds", type=float, default=0.34)
     ingest_drosophila_suzukii_ncbi_snp.add_argument("--retrieved-at")
 
+    ingest_drosophila_suzukii_extension = sub.add_parser("ingest-drosophila-suzukii-extension-guidance")
+    ingest_drosophila_suzukii_extension.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_extension.add_argument("--source-url", action="append", default=[])
+    ingest_drosophila_suzukii_extension.add_argument("--retrieved-at")
+
     ingest_gbif = sub.add_parser("ingest-gbif")
     ingest_gbif.add_argument("--hosted", action="store_true")
     ingest_gbif.add_argument("--species", action="append", default=[])
@@ -754,6 +759,22 @@ def main(argv: list[str] | None = None) -> int:
         from scripts.ingest_drosophila_suzukii_ncbi_snp_variation import ingest_drosophila_suzukii_ncbi_snp_variation
 
         payload = ingest_drosophila_suzukii_ncbi_snp_variation(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-extension-guidance":
+        request_payload = {
+            "source_urls": args.source_url,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-extension-guidance", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_extension_guidance import ingest_drosophila_suzukii_extension_guidance
+
+        payload = ingest_drosophila_suzukii_extension_guidance(
             artifact_dir=artifact_dir,
             **request_payload,
         )

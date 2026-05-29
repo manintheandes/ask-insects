@@ -126,6 +126,16 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila 
 
 If NCBI returns zero organism records, Ask Insects stores that as a queryable source-gap atom. That means the system can answer variant questions honestly while broader non-dbSNP variant tables remain a separate source gap.
 
+To ingest dedicated spotted wing drosophila extension/IPM guidance:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-extension-guidance
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii extension IPM guidance" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.organization') as organization, count(*) as n from record_payloads where source='drosophila_suzukii_extension_guidance' group by organization"
+```
+
+This lane treats extension guidance as page-grain management evidence. It keeps the raw HTML locator and source URL for each page, but does not claim structured susceptibility assay rows or human-validated biocontrol outcomes.
+
 To make spotted wing drosophila video evidence inspectable:
 
 ```bash

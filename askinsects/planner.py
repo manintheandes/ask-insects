@@ -14,6 +14,7 @@ class QueryPlan:
 
 def plan_question(question: str) -> QueryPlan:
     q = question.lower()
+    is_spotted_wing = any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"))
     if (
         any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila"))
         and any(term in q for term in ("pubmed", "pmid", "reconciliation"))
@@ -320,6 +321,41 @@ def plan_question(question: str) -> QueryPlan:
         )
     ) or re.search(r"\b[A-Z][0-9]{2,4}[A-Z]\b", question):
         return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
+    if is_spotted_wing and not any(
+        term in q
+        for term in (
+            "biocontrol",
+            "biological control",
+            "parasitoid",
+            "parasitoids",
+            "predator",
+            "predators",
+            "natural enemy",
+            "natural enemies",
+        )
+    ) and any(
+        term in q
+        for term in (
+            "extension",
+            "guidance",
+            "guidelines",
+            "recommendation",
+            "recommendations",
+            "management",
+            "pest management",
+            "integrated pest management",
+            "ipm",
+            "control",
+            "monitoring",
+            "trap",
+            "traps",
+            "bait",
+            "baits",
+            "sanitation",
+            "exclusion netting",
+        )
+    ):
+        return QueryPlan(question, "management", ("management", "biocontrol", "crop_damage", "resistance", "literature", "taxonomy"), question)
     if any(
         term in q
         for term in (
@@ -440,7 +476,6 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "behavior", ("behavior", "neurobiology", "literature", "taxonomy"), question)
-    is_spotted_wing = any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"))
     if is_spotted_wing and any(
         term in q
         for term in (

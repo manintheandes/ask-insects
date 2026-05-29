@@ -3621,6 +3621,24 @@ def ingest_drosophila_suzukii_ncbi_snp_variation_hosted(
     return response
 
 
+def ingest_drosophila_suzukii_extension_guidance_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_extension_guidance import ingest_drosophila_suzukii_extension_guidance
+
+    source_urls = payload.get("source_urls") or None
+    response = ingest_drosophila_suzukii_extension_guidance(
+        artifact_dir=artifact_dir,
+        source_urls=list(source_urls) if isinstance(source_urls, list) else None,
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_aedes_olfaction_literature_hosted(
     payload: dict[str, object],
     *,
@@ -3916,6 +3934,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-ncbi-snp-variation":
             result = ingest_drosophila_suzukii_ncbi_snp_variation_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-extension-guidance":
+            result = ingest_drosophila_suzukii_extension_guidance_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-extracted-facts":

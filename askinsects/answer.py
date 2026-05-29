@@ -21,6 +21,7 @@ from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_A
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
+from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_nucleotide import DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_snp_variation import DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID
@@ -4355,7 +4356,7 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
             required = str(payload.get("required_next_source") or "missing source not recorded")
             top_gaps.append(f"{domain}: {required}")
         answer = (
-            f"Plainly: Ask Insects is not complete yet for {taxon_label}. It has {domain_count} tracked domains and currently lists "
+            f"Plainly: Ask Insects is not complete yet for {taxon_label}. It has {domain_count} tracked {taxon_label} domains and currently lists "
             f"{gap_count} missing-source gaps in the coverage ledger. Status mix: {status_text or 'not recorded'}. "
             f"Missing work: {_short_list(top_gaps, limit=max(limit, 1))}."
         )
@@ -4876,6 +4877,13 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         )
     ):
         for record in _source_records(index, AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID, ["resistance"], limit=limit):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "management" and requested_species and requested_species.lower() == "drosophila suzukii":
+        for record in _source_records(index, DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID, ["management"], limit=limit):
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

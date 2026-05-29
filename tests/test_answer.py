@@ -447,6 +447,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show supplement table behavior response rate for Aedes aegypti").answer_shape, "behavior")
         self.assertEqual(plan_question("what crop damage evidence exists for spotted wing drosophila?").answer_shape, "crop_damage")
         self.assertEqual(plan_question("show Drosophila suzukii pest management evidence").answer_shape, "management")
+        self.assertEqual(plan_question("show Drosophila suzukii extension IPM guidance").answer_shape, "management")
         self.assertEqual(plan_question("show Drosophila suzukii biocontrol parasitoid evidence").answer_shape, "biocontrol")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show Aedes aegypti BioSamples from China").lanes[0], "biosamples")
@@ -1654,6 +1655,52 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "crop_damage")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_extracted_facts")
             self.assertEqual(answer["evidence"][0]["lane"], "crop_damage")
+
+    def test_spotted_wing_management_guidance_questions_prefer_extension_guidance(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_extracted_fact:management:paper1",
+                        lane="management",
+                        source="drosophila_suzukii_extracted_facts",
+                        title="Drosophila suzukii management fact",
+                        text="Drosophila suzukii literature-derived pest management candidate row.",
+                        species="Drosophila suzukii",
+                        url="https://doi.org/10.1000/swd-management",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_extracted_facts",
+                            locator="records#swd:paper1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_extension_guidance:abc123",
+                        lane="management",
+                        source="drosophila_suzukii_extension_guidance",
+                        title="Extension SWD guidance",
+                        text="Extension/IPM guidance for Drosophila suzukii. Topic: monitoring, trapping, sanitation, and insecticide rotation.",
+                        species="Drosophila suzukii",
+                        url="https://extension.example/swd",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_extension_guidance",
+                            locator="raw/drosophila_suzukii_extension_guidance/page.html#page",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii extension IPM guidance", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "management")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_extension_guidance")
 
     def test_spotted_wing_ecology_questions_prefer_occurrence_summaries(self):
         with tempfile.TemporaryDirectory() as tmpdir:

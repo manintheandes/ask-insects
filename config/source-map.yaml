@@ -67,6 +67,7 @@ sources:
         - drosophila_suzukii_ncbi_nucleotide
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
+        - drosophila_suzukii_extension_guidance
   - id: drosophila_suzukii_deep_sources
     name: Drosophila suzukii deep public source expansion
     source_type: public_api_composite
@@ -117,6 +118,7 @@ sources:
         - drosophila_suzukii_literature_fulltext
         - drosophila_suzukii_pubmed_literature
         - drosophila_suzukii_ncbi_snp_variation
+        - drosophila_suzukii_extension_guidance
   - id: drosophila_suzukii_dryad_table_rows
     name: Drosophila suzukii Dryad preview table rows
     source_type: derived_sqlite_source
@@ -423,6 +425,30 @@ sources:
         - decimalLongitude
         - place_guess
         - ofvs
+  - id: drosophila_suzukii_extension_guidance
+    name: Drosophila suzukii extension and IPM guidance
+    source_type: public_web_guidance
+    boundary: Public extension, university IPM, and multi-institution spotted wing drosophila management guidance pages for Drosophila suzukii, indexed at page grain with raw HTML locators, topic terms, organization, region, and management context. This lane covers guidance-page evidence, not human-validated susceptibility assays or biocontrol outcome tables.
+    query_plane: extension_guidance_html_to_sqlite_management_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_extension_guidance
+    ingest_script: scripts/ingest_drosophila_suzukii_extension_guidance.py
+    lanes:
+      - management
+    provenance_required: true
+    live_fetch: opt_in
+    source_contract:
+      guidance_page_records:
+        - organization
+        - region
+        - declared_topic
+        - topics
+        - guidance_type
+        - source_url
+        - raw_html_path
+      structured_gaps:
+        - swd_extension_guidance_url_missing
+        - swd_extension_guidance_fetch_failed
   - id: gbif_api
     name: Global Biodiversity Information Facility API
     source_type: public_api
