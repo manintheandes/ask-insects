@@ -23,6 +23,7 @@ from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRA
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.drosophila_suzukii_video_atoms import DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
+from .sources.drosophila_suzukii import DROSOPHILA_SUZUKII_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.expression_omics import EXPRESSION_OMICS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
@@ -4187,6 +4188,12 @@ def _source_coverage_requested_domains(question: str) -> list[str]:
     return list(dict.fromkeys(requested_domains))
 
 
+def _source_coverage_source_id(question: str) -> str:
+    if _requested_species(question) == "Drosophila suzukii":
+        return DROSOPHILA_SUZUKII_SOURCE_ID
+    return "aedes_source_coverage"
+
+
 def _source_coverage_payload(row: sqlite3.Row) -> dict[str, object]:
     try:
         payload = json.loads(str(row["payload_json"]))
@@ -4208,8 +4215,8 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
     if "source_coverage" not in plan.lanes:
         return None
     q = plan.question.lower()
-    if any(term in q for term in ("drosophila", "suzukii", "spotted wing")):
-        return None
+    source_id = _source_coverage_source_id(plan.question)
+    taxon_label = "spotted wing drosophila" if source_id == DROSOPHILA_SUZUKII_SOURCE_ID else "Aedes"
     wants_missing = any(term in q for term in ("missing", "gap", "gaps", "next required", "what are we missing", "what is missing"))
     requested_domains = _source_coverage_requested_domains(plan.question)
     domain_filter = ""
@@ -4224,38 +4231,39 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
             SELECT r.*, p.payload_json
             FROM records r
             JOIN record_payloads p ON p.record_id = r.record_id
-            WHERE r.source = 'aedes_source_coverage'
+            WHERE r.source = ?
               AND r.lane = 'source_coverage'
               AND json_extract(p.payload_json, '$.atom_type') = 'source_coverage_overview'
             ORDER BY r.record_id
             LIMIT 1
-            """
+            """,
+            (source_id,),
         ).fetchone()
         domain_rows = conn.execute(
             f"""
             SELECT r.*, p.payload_json
             FROM records r
             JOIN record_payloads p ON p.record_id = r.record_id
-            WHERE r.source = 'aedes_source_coverage'
+            WHERE r.source = ?
               AND r.lane = 'source_coverage'
               AND json_extract(p.payload_json, '$.atom_type') = 'source_coverage_domain'
               {domain_filter}
             ORDER BY CAST(coalesce(json_extract(p.payload_json, '$.priority'), 999) AS INTEGER), r.record_id
             """,
-            params,
+            [source_id, *params],
         ).fetchall()
         gap_rows = conn.execute(
             f"""
             SELECT r.*, p.payload_json
             FROM records r
             JOIN record_payloads p ON p.record_id = r.record_id
-            WHERE r.source = 'aedes_source_coverage'
+            WHERE r.source = ?
               AND r.lane = 'source_coverage'
               AND json_extract(p.payload_json, '$.atom_type') = 'source_coverage_gap'
               {domain_filter}
             ORDER BY CAST(coalesce(json_extract(p.payload_json, '$.priority'), 999) AS INTEGER), r.record_id
             """,
-            params,
+            [source_id, *params],
         ).fetchall()
     if overview_row is None and not domain_rows and not gap_rows:
         return None
@@ -4263,6 +4271,15 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
     overview_payload = _source_coverage_payload(overview_row) if overview_row is not None else {}
     domain_payloads = [_source_coverage_payload(row) for row in domain_rows]
     gap_payloads = [_source_coverage_payload(row) for row in gap_rows]
+    if source_id == DROSOPHILA_SUZUKII_SOURCE_ID and not gap_payloads:
+        for payload in domain_payloads:
+            for missing in payload.get("missing_sources") or []:
+                gap_payloads.append(
+                    {
+                        "domain": payload.get("domain"),
+                        "required_next_source": missing,
+                    }
+                )
     status_counts: dict[str, int] = {}
     for payload in domain_payloads:
         status = str(payload.get("status") or "unknown")
@@ -4292,7 +4309,7 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
             required = str(payload.get("required_next_source") or "missing source not recorded")
             top_gaps.append(f"{domain}: {required}")
         answer = (
-            f"Plainly: Ask Insects is not complete yet. It has {domain_count} tracked Aedes domains and currently lists "
+            f"Plainly: Ask Insects is not complete yet for {taxon_label}. It has {domain_count} tracked domains and currently lists "
             f"{gap_count} missing-source gaps in the coverage ledger. Status mix: {status_text or 'not recorded'}. "
             f"Missing work: {_short_list(top_gaps, limit=max(limit, 1))}."
         )
@@ -4302,7 +4319,15 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
         evidence_records.append(EvidenceRecord.from_row(dict(overview_row)))
     for row in gap_rows:
         evidence_records.append(EvidenceRecord.from_row(dict(row)))
-    for row in domain_rows:
+    sorted_domain_rows = list(domain_rows)
+    if wants_missing and source_id == DROSOPHILA_SUZUKII_SOURCE_ID:
+        sorted_domain_rows.sort(
+            key=lambda row: (
+                0 if _source_coverage_payload(row).get("missing_sources") else 1,
+                str(_source_coverage_payload(row).get("domain") or ""),
+            )
+        )
+    for row in sorted_domain_rows:
         evidence_records.append(EvidenceRecord.from_row(dict(row)))
     return {
         "ok": True,
@@ -4323,8 +4348,12 @@ def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str]
     if "source_coverage" not in lanes:
         return []
     q = question.lower()
+    source_id = _source_coverage_source_id(question)
     wants_missing = any(term in q for term in ("missing", "gap", "gaps", "next required", "what are we missing", "what is missing"))
-    atom_types = ["source_coverage_gap"] if wants_missing else ["source_coverage_overview", "source_coverage_domain", "source_coverage_gap"]
+    if source_id == DROSOPHILA_SUZUKII_SOURCE_ID and wants_missing:
+        atom_types = ["source_coverage_domain"]
+    else:
+        atom_types = ["source_coverage_gap"] if wants_missing else ["source_coverage_overview", "source_coverage_domain", "source_coverage_gap"]
     atom_placeholders = ",".join("?" for _ in atom_types)
     atom_rank = {
         "source_coverage_gap": 0 if wants_missing else 2,
@@ -4346,9 +4375,10 @@ def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str]
             SELECT r.*
             FROM records r
             JOIN record_payloads p ON p.record_id = r.record_id
-            WHERE r.source = 'aedes_source_coverage'
+            WHERE r.source = ?
               AND r.lane = 'source_coverage'
               AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
+              {"AND json_array_length(coalesce(json_extract(p.payload_json, '$.missing_sources'), json('[]'))) > 0" if source_id == DROSOPHILA_SUZUKII_SOURCE_ID and wants_missing else ""}
               {domain_filter}
             ORDER BY
               CASE json_extract(p.payload_json, '$.atom_type')
@@ -4361,7 +4391,7 @@ def _source_coverage_records(index: SourceIndex, question: str, lanes: list[str]
               r.record_id
             LIMIT ?
             """,
-            params,
+            [source_id, *params],
         ).fetchall()
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 

@@ -5924,6 +5924,87 @@ class AnswerTests(unittest.TestCase):
                 "swd:dryad_table:row:swd:dryad:file:doi:10.5061_dryad.example:mean_distance_dryad.csv:11",
             )
 
+    def test_swd_missing_source_questions_return_plain_coverage_summary(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:coverage:overview",
+                        lane="source_coverage",
+                        source="drosophila_suzukii_core",
+                        title="Spotted wing drosophila source-plane overview",
+                        text="Ask Insects boundary for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="repo:drosophila_suzukii_core#coverage/overview",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "source_coverage_overview",
+                            "primary_taxon": "Drosophila suzukii",
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:coverage:taxonomy",
+                        lane="source_coverage",
+                        source="drosophila_suzukii_core",
+                        title="Spotted wing drosophila coverage: taxonomy",
+                        text="Source coverage for Drosophila suzukii, domain taxonomy. Missing or next source work: none recorded.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="repo:drosophila_suzukii_core#coverage/1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "source_coverage_domain",
+                            "domain": "taxonomy",
+                            "status": "mapped_queryable",
+                            "current_sources": ["GBIF species match"],
+                            "missing_sources": [],
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:coverage:literature",
+                        lane="source_coverage",
+                        source="drosophila_suzukii_core",
+                        title="Spotted wing drosophila coverage: literature",
+                        text="Source coverage for Drosophila suzukii, domain literature. Missing or next source work: PubMed reconciliation.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="repo:drosophila_suzukii_core#coverage/2",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "source_coverage_domain",
+                            "domain": "literature",
+                            "status": "partial_source_grade",
+                            "current_sources": ["OpenAlex metadata"],
+                            "missing_sources": ["PubMed reconciliation", "legal full-text extraction"],
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("what are we missing for spotted wing drosophila?", artifact_dir=artifact_dir, limit=2)
+
+            self.assertTrue(answer["ok"])
+            self.assertIn("not complete yet for spotted wing drosophila", answer["answer"])
+            self.assertIn("literature: PubMed reconciliation", answer["answer"])
+            self.assertEqual(answer["source_coverage"]["coverage_gap_count"], 2)
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd:coverage:literature")
+
 
 if __name__ == "__main__":
     unittest.main()
