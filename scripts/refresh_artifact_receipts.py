@@ -269,12 +269,75 @@ def vectorbase_sequence_refresh(artifact_dir: Path, retrieved_at: str) -> dict[s
     }
 
 
+def literature_counts(artifact_dir: Path) -> dict[str, object]:
+    db_path = artifact_dir / "source_index.sqlite"
+    gaps = read_json_list(artifact_dir / "gaps.json")
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        tables = sqlite_tables(conn)
+        if "records" not in tables or "record_payloads" not in tables:
+            return {}
+        payload_rows = conn.execute(
+            "select record_id, payload_json from record_payloads where source=?",
+            (LITERATURE_SOURCE_ID,),
+        ).fetchall()
+        direct_candidates = 0
+        for row in payload_rows:
+            try:
+                payload = json.loads(str(row["payload_json"]))
+            except json.JSONDecodeError:
+                continue
+            if isinstance(payload, dict) and direct_fulltext_target(payload):
+                direct_candidates += 1
+        return {
+            "source": LITERATURE_SOURCE_ID,
+            "record_count": int(
+                conn.execute("select count(*) from records where source=?", (LITERATURE_SOURCE_ID,)).fetchone()[0]
+            ),
+            "payload_count": len(payload_rows),
+            "pubmed_enriched_count": int(
+                conn.execute(
+                    "select count(*) from record_payloads where source=? and json_type(payload_json, '$.pubmed')='object'",
+                    (LITERATURE_SOURCE_ID,),
+                ).fetchone()[0]
+            ),
+            "unpaywall_enriched_count": int(
+                conn.execute(
+                    "select count(*) from record_payloads where source=? and json_type(payload_json, '$.unpaywall')='object'",
+                    (LITERATURE_SOURCE_ID,),
+                ).fetchone()[0]
+            ),
+            "direct_fulltext_candidate_count": direct_candidates,
+            "fulltext_record_count": int(
+                conn.execute("select count(distinct record_id) from literature_fulltext_units").fetchone()[0]
+            )
+            if "literature_fulltext_units" in tables
+            else 0,
+            "fulltext_unit_count": int(conn.execute("select count(*) from literature_fulltext_units").fetchone()[0])
+            if "literature_fulltext_units" in tables
+            else 0,
+            "fulltext_fts_count": int(conn.execute("select count(*) from literature_fulltext_fts").fetchone()[0])
+            if "literature_fulltext_fts" in tables
+            else 0,
+            "gap_count": len(
+                [
+                    gap
+                    for gap in gaps
+                    if isinstance(gap, dict) and gap.get("source") == LITERATURE_SOURCE_ID
+                ]
+            ),
+            "payload_store": "record_payloads.payload_json",
+            "fulltext_store": "literature_fulltext_units",
+        }
+
+
 def update_receipt_payload(
     payload: dict[str, object],
     *,
     summary: dict[str, object],
     video_counts: dict[str, int],
     vectorbase_refresh: dict[str, object] | None,
+    literature_refresh: dict[str, object] | None,
 ) -> dict[str, object]:
     payload["record_count"] = summary["record_count"]
     payload["species_count"] = summary["species_count"]
@@ -317,6 +380,21 @@ def update_receipt_payload(
             if VECTORBASE_SOURCE_ID not in sources:
                 sources.append(VECTORBASE_SOURCE_ID)
             payload["sources"] = sources
+    if literature_refresh:
+        literature_payload = payload.get("literature")
+        if not isinstance(literature_payload, dict):
+            literature_payload = {}
+        literature_payload.update(literature_refresh)
+        payload["literature"] = literature_payload
+        payload[LITERATURE_SOURCE_ID] = literature_payload
+        sources = payload.get("sources")
+        if isinstance(sources, dict):
+            sources[LITERATURE_SOURCE_ID] = literature_payload
+            payload["sources"] = sources
+        elif isinstance(sources, list):
+            if LITERATURE_SOURCE_ID not in sources:
+                sources.append(LITERATURE_SOURCE_ID)
+            payload["sources"] = sources
     video_payload = payload.get(VIDEO_ATOMS_SOURCE_ID)
     if not isinstance(video_payload, dict):
         video_payload = {}
@@ -348,6 +426,7 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
     vectorbase_refresh = (
         vectorbase_sequence_refresh(artifact_dir, retrieved_at) if include_vectorbase_sequence_refresh else None
     )
+    literature_refresh = literature_counts(artifact_dir)
     for filename in ("source_status.json", "source_receipt.json"):
         path = artifact_dir / filename
         payload = update_receipt_payload(
@@ -355,6 +434,7 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
             summary=summary,
             video_counts=video_counts,
             vectorbase_refresh=vectorbase_refresh,
+            literature_refresh=literature_refresh,
         )
         payload["gap_count"] = gap_summary["gap_count_after"]
         write_json(path, payload)
@@ -365,6 +445,7 @@ def refresh_receipts(artifact_dir: Path, *, include_vectorbase_sequence_refresh:
         **gap_summary,
         **fulltext_gap_summary,
         **video_gap_record_summary,
+        "literature_refresh": literature_refresh,
         "vectorbase_sequence_atom_refresh": vectorbase_refresh,
     }
 

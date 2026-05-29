@@ -133,6 +133,13 @@ class RefreshArtifactReceiptsTests(unittest.TestCase):
             self.assertEqual(len(gaps), 1)
             self.assertEqual(gaps[0]["reason"], "fulltext_fetch_failed")
             self.assertEqual(gaps[0]["record_id"], "openalex:W1")
+            for filename in ("source_status.json", "source_receipt.json"):
+                payload = json.loads((artifact_dir / filename).read_text(encoding="utf-8"))
+                self.assertEqual(payload["literature"]["source"], "aedes_literature_openalex")
+                self.assertEqual(payload["literature"]["record_count"], 1)
+                self.assertEqual(payload["literature"]["payload_count"], 1)
+                self.assertEqual(payload["literature"]["direct_fulltext_candidate_count"], 1)
+                self.assertEqual(payload["literature"]["gap_count"], 1)
 
     def test_deduplicates_video_gap_records_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:
