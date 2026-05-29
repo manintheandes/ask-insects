@@ -90,6 +90,22 @@ def _looks_like_video(*values: object) -> bool:
     return any(ext in text for ext in VIDEO_EXTENSIONS) or any(term in text for term in (" video", " movie", "moving image"))
 
 
+def _payload_declares_video_file(payload: dict[str, object]) -> bool:
+    text_values: list[object] = [
+        payload.get("file_path"),
+        payload.get("filename"),
+        payload.get("file_name"),
+        payload.get("name"),
+        payload.get("mime_type"),
+        payload.get("mimetype"),
+    ]
+    for key in ("raw_file", "raw_file_payload"):
+        value = payload.get(key)
+        if isinstance(value, dict):
+            text_values.extend(value.get(field) for field in ("path", "key", "name", "filename", "mimeType", "mimetype", "type"))
+    return _looks_like_video(*text_values)
+
+
 def _walk_payload(value: object) -> Iterable[object]:
     if isinstance(value, dict):
         for nested in value.values():
@@ -194,7 +210,7 @@ def _source_candidates(index: SourceIndex) -> list[DrosophilaSuzukiiVideoCandida
         urls = [str(row["media_url"])] if row["media_url"] else []
         urls.extend(_payload_video_urls(payload))
         for url in [url for url in urls if url]:
-            if not _looks_like_video(url, row["title"], row["text"], payload):
+            if not (_looks_like_video(url) or _payload_declares_video_file(payload)):
                 continue
             key = (str(row["record_id"]), url)
             if key in seen:

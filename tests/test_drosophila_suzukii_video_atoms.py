@@ -42,6 +42,38 @@ def write_swd_video_fixture(artifact_dir: Path, *, license_text: str = "CC BY 4.
     )
 
 
+def write_swd_dryad_archive_fixture(artifact_dir: Path) -> None:
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    index.initialize()
+    index.upsert_records(
+        [
+            EvidenceRecord(
+                record_id="swd:dryad:file:doi:test:dryad_files.zip",
+                lane="media",
+                source="drosophila_suzukii_deep_sources",
+                title="Drosophila suzukii Dryad video/archive file Dryad_files.zip",
+                text="Dryad archive manifest for Drosophila suzukii behavior data.",
+                species="Drosophila suzukii",
+                url="https://datadryad.org/stash/dataset/doi:test",
+                media_url="https://datadryad.org/api/v2/files/1/download",
+                provenance=Provenance(
+                    source_id="drosophila_suzukii_deep_sources",
+                    locator="raw/drosophila_suzukii_deep_sources/dryad/files.json#files/1",
+                    retrieved_at=RETRIEVED_AT,
+                    license="CC0",
+                    source_url="https://datadryad.org/api/v2/files/1/download",
+                ),
+                payload={
+                    "record_type": "dryad_file_manifest",
+                    "file_path": "Dryad_files.zip",
+                    "mime_type": "application/zip",
+                    "download_url": "https://datadryad.org/api/v2/files/1/download",
+                },
+            )
+        ]
+    )
+
+
 class DrosophilaSuzukiiVideoAtomsTests(unittest.TestCase):
     def test_builds_manifest_video_asset_and_motion_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -77,6 +109,19 @@ class DrosophilaSuzukiiVideoAtomsTests(unittest.TestCase):
             self.assertIn("video_license_unclear", reasons)
             asset = [record for record in result.records if record.payload.get("atom_type") == "video_asset"][0]
             self.assertEqual(asset.payload["verification_status"], "manifest_only_license_unclear")
+
+    def test_dryad_archive_manifest_is_not_treated_as_direct_video(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_swd_dryad_archive_fixture(artifact_dir)
+
+            result = build_drosophila_suzukii_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+            )
+
+            self.assertEqual(result.video_asset_count, 0)
+            self.assertTrue(any(gap["reason"] == "swd_video_candidates_not_found" for gap in result.gaps))
 
     def test_mirror_probe_and_artifact_rows_are_queryable(self):
         with tempfile.TemporaryDirectory() as tmpdir:
