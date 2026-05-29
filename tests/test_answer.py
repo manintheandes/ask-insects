@@ -4529,6 +4529,56 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_nucleotide")
             self.assertEqual(answer["evidence"][0]["record_id"], "swd_ncbi_nucleotide:nuccore:PV080836.1")
 
+    def test_swd_variant_questions_prefer_swd_dbsnp_audit_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:genome:gff:gene:variantlike",
+                        lane="genome_features",
+                        source="drosophila_suzukii_genome_files",
+                        title="Drosophila suzukii genome feature",
+                        text="Drosophila suzukii genome GFF feature row.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/gff",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_genome_files",
+                            locator="raw/gff#feature",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_ncbi_snp_variation:gap:drosophila_suzukii:ncbi_snp_no_swd_records",
+                        lane="genome_features",
+                        source="drosophila_suzukii_ncbi_snp_variation",
+                        title="Drosophila suzukii NCBI dbSNP variation source gap",
+                        text="NCBI dbSNP returned zero records for Drosophila suzukii using the bounded organism query.",
+                        species="Drosophila suzukii",
+                        url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ncbi_snp_variation",
+                            locator="raw/drosophila_suzukii_ncbi_snp_variation/Drosophila_suzukii_snp_esearch_000000.json#gap/ncbi_snp_no_swd_records",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"gap": {"reason": "ncbi_snp_no_swd_records"}},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii dbSNP variant records",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_snp_variation")
+
     def test_biosample_questions_prefer_ncbi_biosamples(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

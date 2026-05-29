@@ -115,6 +115,17 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane treats NCBI nuccore as a bounded metadata cross-check for COI/barcode-like accessions. It says whether an accession matched an indexed BOLD row or is currently GenBank-only metadata; it does not claim sequence equivalence beyond accession matching.
 
+To audit whether NCBI dbSNP exposes spotted wing drosophila variant records:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-ncbi-snp-variation \
+  --limit 1000 \
+  --page-size 200
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii dbSNP variant records" --json
+```
+
+If NCBI returns zero organism records, Ask Insects stores that as a queryable source-gap atom. That means the system can answer variant questions honestly while broader non-dbSNP variant tables remain a separate source gap.
+
 To make spotted wing drosophila video evidence inspectable:
 
 ```bash

@@ -116,6 +116,7 @@ sources:
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_literature_fulltext
         - drosophila_suzukii_pubmed_literature
+        - drosophila_suzukii_ncbi_snp_variation
   - id: drosophila_suzukii_dryad_table_rows
     name: Drosophila suzukii Dryad preview table rows
     source_type: derived_sqlite_source
@@ -374,6 +375,26 @@ sources:
         - swd_ncbi_nucleotide_limit_applied
         - swd_ncbi_nucleotide_search_failed
         - swd_ncbi_nucleotide_summary_failed
+  - id: drosophila_suzukii_ncbi_snp_variation
+    name: Drosophila suzukii NCBI dbSNP variation audit
+    source_type: public_ncbi_eutils
+    boundary: Bounded NCBI dbSNP organism-query audit for Drosophila suzukii. If dbSNP returns zero organism records, Ask Insects stores that as a queryable source-gap record instead of implying variant coverage. This is an audit of dbSNP availability, not a broader population-variant table parser.
+    query_plane: ncbi_dbsnp_esearch_esummary_to_sqlite_variant_or_gap_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_ncbi_snp_variation
+    ingest_script: scripts/ingest_drosophila_suzukii_ncbi_snp_variation.py
+    input_sources:
+      - ncbi_eutilities_snp
+    lanes:
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      structured_gaps:
+        - ncbi_snp_no_swd_records
+        - ncbi_snp_search_failed
+        - ncbi_snp_summary_failed
+        - ncbi_snp_limit_applied
   - id: drosophila_suzukii_occurrence_ecology
     name: Drosophila suzukii occurrence ecology from indexed observations
     source_type: derived_sqlite_source

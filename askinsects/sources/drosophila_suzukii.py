@@ -125,8 +125,9 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 f"Ask Insects boundary for {DROSOPHILA_SUZUKII_SPECIES} ({DROSOPHILA_SUZUKII_COMMON_NAME}). "
                 "This first source-grade pass maps taxonomy, public observations, licensed still images, literature metadata, "
                 "DNA barcodes, and per-domain coverage status. Follow-on lanes now promote genome files, supplement audits, "
-                "PubMed literature reconciliation, GenBank nucleotide cross-checks, literature-derived crop damage, "
-                "management, resistance, biocontrol, behavior, ecology, and the first inspectable video atoms."
+                "PubMed literature reconciliation, GenBank nucleotide cross-checks, dbSNP variation audits, "
+                "literature-derived crop damage, management, resistance, biocontrol, behavior, ecology, "
+                "and the first inspectable video atoms."
             ),
             species=DROSOPHILA_SUZUKII_SPECIES,
             url=None,
@@ -184,8 +185,13 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
         (
             "genomics",
             "mapped_queryable_deep",
-            ["NCBI assembly, BioProject, BioSample, and SRA metadata", "UniProt/proteome metadata", "parsed NCBI GFF and protein FASTA rows"],
-            ["orthology/current-ID mapping", "variant tables", "computed expression matrices"],
+            [
+                "NCBI assembly, BioProject, BioSample, and SRA metadata",
+                "UniProt/proteome metadata",
+                "parsed NCBI GFF and protein FASTA rows",
+                "NCBI dbSNP organism-query audit",
+            ],
+            ["orthology/current-ID mapping", "non-dbSNP variant tables", "computed expression matrices"],
         ),
         (
             "traits_ecology_crop_damage",

@@ -22,6 +22,7 @@ from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURC
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_nucleotide import DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID
+from .sources.drosophila_suzukii_ncbi_snp_variation import DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.drosophila_suzukii_video_atoms import DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
 from .sources.drosophila_suzukii import DROSOPHILA_SUZUKII_SOURCE_ID
@@ -1924,6 +1925,14 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
     q = question.lower()
     requested_species = _requested_species(question)
     if requested_species and requested_species.lower() == "drosophila suzukii":
+        if _wants_snp_variation(question):
+            return sorted(
+                records,
+                key=lambda record: (
+                    0 if record.source == DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID else 1,
+                    0 if record.lane == "genome_features" else 1,
+                ),
+            )
         if _wants_swd_ncbi_nucleotide(question):
             return sorted(
                 records,
@@ -4624,6 +4633,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "genomics":
         if requested_species and requested_species.lower() == "drosophila suzukii":
+            if _wants_snp_variation(plan.question):
+                for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID, ["genome_features"], limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
             if _wants_swd_ncbi_nucleotide(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID, ["dna_barcodes"], limit=max(limit * 5, 25)):
                     if record.record_id in seen_record_ids:
@@ -4632,7 +4647,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
             swd_genome_lanes = ["genes", "transcripts", "genome_features", "proteins", "genome_assemblies"]
             swd_records: list[EvidenceRecord] = []
-            if not _wants_swd_ncbi_nucleotide(plan.question):
+            if not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question):
                 for lane in swd_genome_lanes:
                     for search_query in _search_queries(plan.question):
                         for record in index.search(search_query, lane=lane, limit=max(limit * 5, 25)):
@@ -4650,13 +4665,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                         seen_record_ids.add(record.record_id)
             all_records = swd_records + all_records
         if _wants_snp_variation(plan.question):
-            if _source_count(index, NCBI_SNP_VARIATION_SOURCE_ID) == 0:
+            if requested_species and requested_species.lower() == "drosophila suzukii":
+                if _source_count(index, DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID) == 0:
+                    return source_gap(plan, "The Ask Insects Drosophila suzukii NCBI dbSNP variation audit lane is not installed in this source index.")
+            elif _source_count(index, NCBI_SNP_VARIATION_SOURCE_ID) == 0:
                 return source_gap(plan, "The Ask Insects NCBI dbSNP variation audit lane is not installed in this source index.")
-            for record in _source_records(index, NCBI_SNP_VARIATION_SOURCE_ID, ["genome_features"], limit=limit):
-                if record.record_id in seen_record_ids:
-                    continue
-                all_records.append(record)
-                seen_record_ids.add(record.record_id)
+            else:
+                for record in _source_records(index, NCBI_SNP_VARIATION_SOURCE_ID, ["genome_features"], limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
         uniprot_exact_terms = _uniprot_exact_terms(plan.question)
         uniprot_records = _uniprot_direct_records(index, plan.question, limit=limit)
         if uniprot_exact_terms and not uniprot_records:
