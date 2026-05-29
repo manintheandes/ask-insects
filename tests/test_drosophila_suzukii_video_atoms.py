@@ -183,6 +183,39 @@ class DrosophilaSuzukiiVideoAtomsTests(unittest.TestCase):
             self.assertEqual(motion.payload["behavior_type"], "feeding")
             self.assertEqual(motion.payload["confidence"], "derived_video_interval_no_tracking_table")
 
+    def test_existing_mirror_is_reused_without_redownload(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_swd_video_fixture(artifact_dir)
+            mirror_dir = artifact_dir / "raw" / "drosophila_suzukii_video_atoms" / "mirrors"
+            mirror_dir.mkdir(parents=True)
+            mirror_path = mirror_dir / (
+                "swd:figshare:video:27176940:d_suzukii_on_fungus_mcevey.mp4_"
+                "a8c4ce16f7c3.mp4"
+            )
+            mirror_path.write_bytes(b"existing video bytes")
+
+            def fail_fetch(url: str, max_bytes: int) -> bytes:
+                raise AssertionError("existing mirror should not be downloaded again")
+
+            def fake_probe(path: Path) -> dict[str, object]:
+                self.assertEqual(path, mirror_path)
+                return {"duration_seconds": 1.0, "fps": 10.0, "width": 320, "height": 240, "codec": "h264"}
+
+            result = build_drosophila_suzukii_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                fetch_video_bytes_fn=fail_fetch,
+                probe_video_file_fn=fake_probe,
+            )
+
+            self.assertEqual(result.mirrored_video_count, 1)
+            self.assertEqual(result.verified_video_count, 1)
+            asset = [record for record in result.records if record.payload.get("atom_type") == "video_asset"][0]
+            self.assertEqual(asset.payload["byte_size"], len(b"existing video bytes"))
+            self.assertEqual(asset.payload["verification_status"], "verified")
+
 
 if __name__ == "__main__":
     unittest.main()

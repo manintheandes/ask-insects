@@ -581,9 +581,12 @@ def build_drosophila_suzukii_video_atom_records(
         suffix = Path(str(candidate.media_url).split("?", 1)[0]).suffix or ".mp4"
         asset_path = raw_dir / f"{_safe_id(candidate.source_record_id)}_{_digest(candidate.media_url)}{suffix}"
         try:
-            video_bytes = fetcher(str(candidate.media_url), max_video_bytes)
-            asset_path.write_bytes(video_bytes)
-            byte_size = len(video_bytes)
+            if asset_path.exists() and asset_path.stat().st_size > 0:
+                byte_size = asset_path.stat().st_size
+            else:
+                video_bytes = fetcher(str(candidate.media_url), max_video_bytes)
+                asset_path.write_bytes(video_bytes)
+                byte_size = len(video_bytes)
             if byte_size > max_video_bytes:
                 raise ValueError(f"video_too_large:{byte_size}")
         except Exception as exc:
