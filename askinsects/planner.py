@@ -280,6 +280,13 @@ def plan_question(question: str) -> QueryPlan:
             "transcript",
             "transcripts",
             "aael",
+            "ortholog",
+            "orthologs",
+            "orthology",
+            "homolog",
+            "homologs",
+            "current id",
+            "current-id",
         )
     ):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)

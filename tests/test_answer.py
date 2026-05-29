@@ -4694,6 +4694,56 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_marker_review")
             self.assertEqual(answer["evidence"][0]["record_id"], "swd_ncbi_marker_review:nuccore:PV000002.1")
 
+    def test_swd_ortholog_questions_prefer_ncbi_gene_orthologs(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:genome_files:gene:gene-Orco",
+                        lane="genes",
+                        source="drosophila_suzukii_genome_files",
+                        title="Drosophila suzukii gene Orco",
+                        text="Drosophila suzukii genome GFF gene row for odorant receptor co-receptor.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/gff",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_genome_files",
+                            locator="raw/gff#gene/orco",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_ncbi_gene_ortholog:108011252:7227:40650:2",
+                        lane="genome_features",
+                        source="drosophila_suzukii_ncbi_gene_orthologs",
+                        title="Drosophila suzukii NCBI Gene ortholog: Orco to Drosophila melanogaster GeneID 40650",
+                        text="NCBI Gene ortholog row for Drosophila suzukii GeneID 108011252 (Orco, odorant receptor co-receptor) links by Ortholog to Drosophila melanogaster GeneID 40650.",
+                        species="Drosophila suzukii",
+                        url="https://www.ncbi.nlm.nih.gov/gene/108011252",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ncbi_gene_orthologs",
+                            locator="raw/drosophila_suzukii_ncbi_gene_orthologs/gene_orthologs.gz#line/2",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "ncbi_gene_ortholog_pair", "relationship": "Ortholog"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii Orco orthologs",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_gene_orthologs")
+
     def test_biosample_questions_prefer_ncbi_biosamples(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

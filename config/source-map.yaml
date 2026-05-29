@@ -67,6 +67,7 @@ sources:
         - drosophila_suzukii_ncbi_nucleotide
         - drosophila_suzukii_ncbi_marker_review
         - drosophila_suzukii_ncbi_snp_variation
+        - drosophila_suzukii_ncbi_gene_orthologs
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
@@ -433,6 +434,35 @@ sources:
         - ncbi_snp_search_failed
         - ncbi_snp_summary_failed
         - ncbi_snp_limit_applied
+  - id: drosophila_suzukii_ncbi_gene_orthologs
+    name: Drosophila suzukii NCBI Gene ortholog pairs
+    source_type: public_ncbi_ftp
+    boundary: Bounded NCBI Gene ortholog FTP rows where either side of the public gene_orthologs table is Drosophila suzukii taxon 28584, joined back to indexed NCBI GFF GeneID rows when possible. This is NCBI-computed orthology and GeneID-to-GFF mapping evidence, not Ensembl stable-ID history, a full synteny reanalysis, or a non-NCBI orthology database.
+    query_plane: ncbi_gene_orthologs_ftp_to_sqlite_genome_feature_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_ncbi_gene_orthologs
+    ingest_script: scripts/ingest_drosophila_suzukii_ncbi_gene_orthologs.py
+    input_sources:
+      - ncbi_gene_orthologs_ftp
+      - drosophila_suzukii_genome_files
+    lanes:
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - swd_gene_id
+        - swd_gene_symbol
+        - swd_gene_record_id
+        - relationship
+        - partner_tax_id
+        - partner_gene_id
+        - current_id_mapping
+        - line_number
+      structured_gaps:
+        - swd_ncbi_gene_orthologs_download_failed
+        - swd_ncbi_gene_orthologs_limit_applied
+        - swd_ncbi_gene_orthologs_no_swd_rows
   - id: drosophila_suzukii_occurrence_ecology
     name: Drosophila suzukii occurrence ecology from indexed observations
     source_type: derived_sqlite_source

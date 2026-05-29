@@ -47,7 +47,7 @@ python3 -m askinsects ask "what do we know about spotted wing drosophila?" --jso
 python3 -m askinsects search source_coverage "Drosophila suzukii missing"
 ```
 
-This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, broader mitochondrial/nuclear marker reviews, dbSNP availability audits, extension/IPM guidance, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are motion-table rows, broader non-dbSNP variant-table review, structured susceptibility assay tables, and human-validated pest-science tables.
+This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, broader mitochondrial/nuclear marker reviews, NCBI Gene orthology plus GeneID-to-GFF mapping, dbSNP availability audits, extension/IPM guidance, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are motion-table rows, Ensembl stable-ID history/current-ID mapping, broader non-dbSNP variant-table review, structured susceptibility assay tables, and human-validated pest-science tables.
 
 The next depth layer is `drosophila_suzukii_deep_sources`. It adds bounded NCBI assembly, BioProject, BioSample, and SRA metadata, UniProt protein and proteome metadata, and repository candidate sweeps across Zenodo, Figshare, and Dryad:
 
@@ -112,6 +112,14 @@ The `drosophila_suzukii_ncbi_snp_variation` lane audits NCBI dbSNP for SWD organ
 ```bash
 python3 -m askinsects ingest-drosophila-suzukii-ncbi-snp-variation --limit 1000 --page-size 200
 python3 -m askinsects ask "show Drosophila suzukii dbSNP variant records" --json
+```
+
+The `drosophila_suzukii_ncbi_gene_orthologs` lane closes the first SWD orthology gap. It fetches the public NCBI Gene `gene_orthologs.gz` FTP table, keeps rows where either side is `Drosophila suzukii` taxon 28584, and joins SWD GeneIDs back to indexed GFF gene records when possible. Ensembl stable-ID history remains a separate current-ID source lane.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-ncbi-gene-orthologs
+python3 -m askinsects ask "show Drosophila suzukii Orco orthologs" --json
+python3 -m askinsects sql "select json_extract(payload_json, '$.partner_tax_id') as partner_tax_id, count(*) as n from record_payloads where source='drosophila_suzukii_ncbi_gene_orthologs' group by partner_tax_id order by n desc limit 10"
 ```
 
 The `drosophila_suzukii_extension_guidance` lane promotes the dedicated extension-guidance gap into page-grain management records. It fetches public university extension/IPM and SWD-management guidance pages, saves raw HTML, and indexes organization, region, topic terms, guidance type, source URL, and raw locator.

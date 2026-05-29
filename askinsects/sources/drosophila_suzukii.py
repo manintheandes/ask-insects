@@ -193,9 +193,10 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "NCBI assembly, BioProject, BioSample, and SRA metadata",
                 "UniProt/proteome metadata",
                 "parsed NCBI GFF and protein FASTA rows",
+                "NCBI Gene ortholog pairs and GeneID-to-GFF mapping",
                 "NCBI dbSNP organism-query audit",
             ],
-            ["orthology/current-ID mapping", "non-dbSNP variant tables", "computed expression matrices"],
+            ["Ensembl Metazoa stable-ID history/current-ID mapping", "non-dbSNP variant tables", "computed expression matrices"],
         ),
         (
             "traits_ecology_crop_damage",

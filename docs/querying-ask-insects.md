@@ -138,6 +138,16 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila 
 
 If NCBI returns zero organism records, Ask Insects stores that as a queryable source-gap atom. That means the system can answer variant questions honestly while broader non-dbSNP variant tables remain a separate source gap.
 
+To add NCBI Gene orthology and GeneID-to-GFF mapping for spotted wing drosophila:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-ncbi-gene-orthologs
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii Orco orthologs" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.partner_tax_id') as partner_tax_id, count(*) as n from record_payloads where source='drosophila_suzukii_ncbi_gene_orthologs' group by partner_tax_id order by n desc limit 10"
+```
+
+This lane uses NCBI Gene's public FTP ortholog table. It is source-grade orthology metadata and GeneID mapping, not Ensembl stable-ID history or a new comparative-genomics computation.
+
 To ingest dedicated spotted wing drosophila extension/IPM guidance:
 
 ```bash

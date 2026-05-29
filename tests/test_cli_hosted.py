@@ -1552,6 +1552,35 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_drosophila_suzukii_ncbi_gene_orthologs_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = object()
+            code, output = self.run_cli(
+                "ingest-drosophila-suzukii-ncbi-gene-orthologs",
+                "--hosted",
+                "--max-download-bytes",
+                "123456",
+                "--max-rows",
+                "42",
+                "--retrieved-at",
+                "2026-05-29T00:00:00Z",
+            )
+
+        self.assertEqual(code, 0, output)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii-ncbi-gene-orthologs")
+        self.assertEqual(calls[0][2]["max_download_bytes"], 123456)
+        self.assertEqual(calls[0][2]["max_rows"], 42)
+        self.assertEqual(calls[0][2]["retrieved_at"], "2026-05-29T00:00:00Z")
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_drosophila_suzukii_video_atoms_ingest_sends_options(self):
         calls = []
 

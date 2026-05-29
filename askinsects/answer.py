@@ -22,6 +22,7 @@ from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURC
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
+from .sources.drosophila_suzukii_ncbi_gene_orthologs import DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_marker_review import DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_nucleotide import DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_snp_variation import DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID
@@ -1942,6 +1943,60 @@ def _wants_swd_marker_review(question: str) -> bool:
     )
 
 
+def _wants_swd_gene_orthologs(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "ortholog",
+            "orthologs",
+            "orthology",
+            "homolog",
+            "homologs",
+            "current id",
+            "current-id",
+            "geneid",
+            "gene id",
+            "drosophila melanogaster",
+            "melanogaster",
+        )
+    )
+
+
+def _swd_gene_ortholog_search_terms(question: str) -> list[str]:
+    excluded = {
+        "show",
+        "what",
+        "which",
+        "drosophila",
+        "suzukii",
+        "spotted",
+        "wing",
+        "ortholog",
+        "orthologs",
+        "orthology",
+        "homolog",
+        "homologs",
+        "gene",
+        "genes",
+        "geneid",
+        "geneids",
+        "current",
+        "mapping",
+        "id",
+        "ids",
+        "to",
+        "for",
+        "with",
+    }
+    terms: list[str] = []
+    for token in re.findall(r"\b[A-Za-z][A-Za-z0-9_.:-]*\b|\b\d{5,}\b", question):
+        if token.lower() in excluded:
+            continue
+        terms.append(token)
+    return list(dict.fromkeys(terms))
+
+
 def _swd_marker_review_rank(question: str, record: EvidenceRecord) -> int:
     if record.source != DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID:
         return 10
@@ -2011,6 +2066,15 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
                     0 if record.source == DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID else 1,
                     _swd_marker_review_rank(question, record),
                     0 if record.lane == "dna_barcodes" else 1,
+                ),
+            )
+        if _wants_swd_gene_orthologs(question):
+            return sorted(
+                records,
+                key=lambda record: (
+                    0 if record.source == DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID else 1,
+                    0 if record.lane == "genome_features" else 1,
+                    0 if _record_matches_any_token(record, {"orco", "odorant", "receptor"}) else 1,
                 ),
             )
         if _wants_swd_ncbi_nucleotide(question):
@@ -4725,6 +4789,18 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                         continue
                     all_records.append(record)
                     seen_record_ids.add(record.record_id)
+            if _wants_swd_gene_orthologs(plan.question):
+                for search_query in _swd_gene_ortholog_search_terms(plan.question):
+                    for record in index.search(search_query, lane="genome_features", limit=max(limit * 20, 100)):
+                        if record.source != DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID or record.record_id in seen_record_ids:
+                            continue
+                        all_records.append(record)
+                        seen_record_ids.add(record.record_id)
+                for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID, ["genome_features"], limit=max(limit * 1000, 5000)):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
             if _wants_swd_ncbi_nucleotide(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID, ["dna_barcodes"], limit=max(limit * 5, 25)):
                     if record.record_id in seen_record_ids:
@@ -4733,7 +4809,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
             swd_genome_lanes = ["genes", "transcripts", "genome_features", "proteins", "genome_assemblies"]
             swd_records: list[EvidenceRecord] = []
-            if not _wants_swd_marker_review(plan.question) and not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question):
+            if not _wants_swd_gene_orthologs(plan.question) and not _wants_swd_marker_review(plan.question) and not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question):
                 for lane in swd_genome_lanes:
                     for search_query in _search_queries(plan.question):
                         for record in index.search(search_query, lane=lane, limit=max(limit * 5, 25)):
