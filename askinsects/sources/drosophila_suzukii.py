@@ -198,8 +198,13 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "GEO differential-expression matrix rows for cold acclimation and insecticide-response studies",
                 "NCBI dbSNP organism-query audit",
                 "Figshare McDonald-Kreitman selection table rows",
+                "Dryad population-variant VCF manifest, checksum, byte size, and explicit non-mirrored row gaps",
             ],
-            ["Ensembl Metazoa stable-ID history tables are present but empty", "giant VCF mirroring and broader non-dbSNP variant tables", "broader publisher-hosted expression matrices and raw count matrices"],
+            [
+                "Ensembl Metazoa stable-ID history tables are present but empty",
+                "Dryad VCF row mirroring/parsing and broader non-dbSNP variant tables",
+                "broader publisher-hosted expression matrices and raw count matrices",
+            ],
         ),
         (
             "traits_ecology_crop_damage",
