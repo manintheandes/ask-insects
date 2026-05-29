@@ -239,6 +239,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_figshare_mk.add_argument("--max-rows", type=int)
     ingest_drosophila_suzukii_figshare_mk.add_argument("--retrieved-at")
 
+    ingest_drosophila_suzukii_population_genomics = sub.add_parser("ingest-drosophila-suzukii-population-genomics")
+    ingest_drosophila_suzukii_population_genomics.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_population_genomics.add_argument("--limit", type=int, default=100)
+    ingest_drosophila_suzukii_population_genomics.add_argument("--retrieved-at")
+
     ingest_drosophila_suzukii_extension = sub.add_parser("ingest-drosophila-suzukii-extension-guidance")
     ingest_drosophila_suzukii_extension.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_extension.add_argument("--source-url", action="append", default=[])
@@ -876,6 +881,22 @@ def main(argv: list[str] | None = None) -> int:
         from scripts.ingest_drosophila_suzukii_figshare_mk_selection import ingest_drosophila_suzukii_figshare_mk_selection
 
         payload = ingest_drosophila_suzukii_figshare_mk_selection(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-population-genomics":
+        request_payload = {
+            "limit": args.limit,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-population-genomics", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_population_genomics import ingest_drosophila_suzukii_population_genomics
+
+        payload = ingest_drosophila_suzukii_population_genomics(
             artifact_dir=artifact_dir,
             **request_payload,
         )

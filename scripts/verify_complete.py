@@ -160,6 +160,7 @@ REQUIRED_FILES = (
     "askinsects/sources/drosophila_suzukii_ncbi_marker_review.py",
     "askinsects/sources/drosophila_suzukii_ncbi_snp_variation.py",
     "askinsects/sources/drosophila_suzukii_figshare_mk_selection.py",
+    "askinsects/sources/drosophila_suzukii_population_genomics.py",
     "askinsects/sources/drosophila_suzukii_ncbi_gene_orthologs.py",
     "askinsects/sources/drosophila_suzukii_ensembl_metazoa_orthology.py",
     "askinsects/sources/drosophila_suzukii_geo_expression_matrices.py",
@@ -227,6 +228,7 @@ REQUIRED_FILES = (
     "scripts/ingest_drosophila_suzukii_ncbi_marker_review.py",
     "scripts/ingest_drosophila_suzukii_ncbi_snp_variation.py",
     "scripts/ingest_drosophila_suzukii_figshare_mk_selection.py",
+    "scripts/ingest_drosophila_suzukii_population_genomics.py",
     "scripts/ingest_drosophila_suzukii_ncbi_gene_orthologs.py",
     "scripts/ingest_drosophila_suzukii_ensembl_metazoa_orthology.py",
     "scripts/ingest_drosophila_suzukii_geo_expression_matrices.py",
@@ -480,6 +482,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_drosophila_suzukii_ncbi_snp_variation",
     "tests.test_drosophila_suzukii_figshare_mk_selection_source",
     "tests.test_ingest_drosophila_suzukii_figshare_mk_selection",
+    "tests.test_drosophila_suzukii_population_genomics_source",
+    "tests.test_ingest_drosophila_suzukii_population_genomics",
     "tests.test_drosophila_suzukii_ncbi_gene_orthologs_source",
     "tests.test_ingest_drosophila_suzukii_ncbi_gene_orthologs",
     "tests.test_drosophila_suzukii_ensembl_metazoa_orthology_source",
@@ -1111,6 +1115,16 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii Figshare MK selection term: {term}")
+    for term in (
+        "drosophila_suzukii_population_genomics",
+        "scripts/ingest_drosophila_suzukii_population_genomics.py",
+        "ncbi_bioproject_esearch_esummary_to_sqlite_population_genomics_records",
+        "pool-seq",
+        "whole-genome sequencing",
+        "swd_population_genomics_bioproject_search_empty",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii population genomics term: {term}")
     for term in (
         "drosophila_suzukii_occurrence_ecology",
         "scripts/ingest_drosophila_suzukii_occurrence_ecology.py",

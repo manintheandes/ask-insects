@@ -575,6 +575,14 @@ python3 -m askinsects ask "which spotted wing drosophila MK test rows have signi
 python3 -m askinsects sql "select count(*) as n from records where source='drosophila_suzukii_figshare_mk_selection'"
 ```
 
+SWD population-genomics BioProject records use source id `drosophila_suzukii_population_genomics` and lane `genome_features`. The ingest queries NCBI BioProject for Drosophila suzukii population genomics, pool-seq, population samples, whole-genome sequencing, and genome-sequencing projects, saves raw ESearch/ESummary JSON under `artifacts/mosquito-v1/raw/drosophila_suzukii_population_genomics/`, and indexes one project-level record per BioProject accession. This is a project/source-discovery lane, not raw-read mirroring or VCF parsing.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-population-genomics
+python3 -m askinsects ask "show Drosophila suzukii population genomics BioProject records" --json
+python3 -m askinsects sql "select count(*) as n from records where source='drosophila_suzukii_population_genomics'"
+```
+
 Neurobiology records use source id `aedes_neurobiology_sources`. Metadata-only builds index source records for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies. Artifact-cache builds additionally index GEO matrix summaries and features, SRA `SRP290992` run/sample metadata, raw SRA access and reanalysis workflow records, Zenodo file and ZIP-member inventory, H5AD AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, coordinate-queryable voxel access locators, public Aedes EM/CATMAID project, stack, annotation, volume, skeleton-manifest, skeleton-filter, and skeleton-ID metadata, public Aedes EM/CATMAID CSV inventories, and a searchable whole-brain connectome source-gap row. Exact voxel values are available on demand:
 
 ```bash

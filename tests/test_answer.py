@@ -4695,6 +4695,55 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["record_id"], "swd_figshare_mk_selection:DS20_00004020:r1")
 
+    def test_swd_population_genomics_questions_prefer_bioproject_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:genome_files:gene:gene-128up",
+                        lane="genes",
+                        source="drosophila_suzukii_genome_files",
+                        title="Drosophila suzukii gene 128up",
+                        text="Generic genome gene metadata, not population genomics evidence.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/gff",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_genome_files",
+                            locator="raw/gff#gene",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_population_genomics:bioproject:PRJNA1289399",
+                        lane="genome_features",
+                        source="drosophila_suzukii_population_genomics",
+                        title="Drosophila suzukii population genomics BioProject PRJNA1289399",
+                        text="NCBI BioProject population-genomics record PRJNA1289399 for Drosophila suzukii. Title: Pool-seq data from 3 Drosophila suzukii populations collected in Northern Portugal.",
+                        species="Drosophila suzukii",
+                        url="https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1289399",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_population_genomics",
+                            locator="raw/drosophila_suzukii_population_genomics/summary.json#result/1289399",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii population genomics BioProject records",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_population_genomics")
+
     def test_swd_expression_matrix_questions_prefer_geo_matrix_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

@@ -70,6 +70,7 @@ sources:
         - drosophila_suzukii_ncbi_gene_orthologs
         - drosophila_suzukii_ensembl_metazoa_orthology
         - drosophila_suzukii_geo_expression_matrices
+        - drosophila_suzukii_population_genomics
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
@@ -124,6 +125,7 @@ sources:
         - drosophila_suzukii_pubmed_literature
         - drosophila_suzukii_ncbi_snp_variation
         - drosophila_suzukii_geo_expression_matrices
+        - drosophila_suzukii_population_genomics
         - drosophila_suzukii_extension_guidance
   - id: drosophila_suzukii_dryad_table_rows
     name: Drosophila suzukii Dryad preview table rows
@@ -480,6 +482,35 @@ sources:
         - figshare_mk_selection_row_count_changed
         - figshare_mk_selection_row_limit_applied
         - figshare_mk_selection_fetch_or_parse_failed
+  - id: drosophila_suzukii_population_genomics
+    name: Drosophila suzukii population genomics BioProject metadata
+    source_type: public_ncbi_eutils
+    boundary: Bounded NCBI BioProject metadata for Drosophila suzukii population genomics, pool-seq, population samples, whole-genome sequencing, and genome-sequencing projects. This is project-level source discovery and provenance, not raw read mirroring, VCF parsing, or variant interpretation.
+    query_plane: ncbi_bioproject_esearch_esummary_to_sqlite_population_genomics_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_population_genomics
+    ingest_script: scripts/ingest_drosophila_suzukii_population_genomics.py
+    input_sources:
+      - ncbi_eutilities_bioproject
+    lanes:
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - accession
+        - title
+        - description
+        - data_type
+        - target_scope
+        - submitter
+        - registration_date
+      structured_gaps:
+        - swd_population_genomics_bioproject_search_failed
+        - swd_population_genomics_bioproject_search_empty
+        - swd_population_genomics_bioproject_summary_failed
+        - swd_population_genomics_bioproject_limit_applied
+        - swd_population_genomics_no_queryable_records_built
   - id: drosophila_suzukii_ncbi_gene_orthologs
     name: Drosophila suzukii NCBI Gene ortholog pairs
     source_type: public_ncbi_ftp

@@ -30,6 +30,7 @@ from .sources.drosophila_suzukii_ncbi_marker_review import DROSOPHILA_SUZUKII_NC
 from .sources.drosophila_suzukii_ncbi_nucleotide import DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_snp_variation import DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID
+from .sources.drosophila_suzukii_population_genomics import DROSOPHILA_SUZUKII_POPULATION_GENOMICS_SOURCE_ID
 from .sources.drosophila_suzukii_video_atoms import DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
 from .sources.drosophila_suzukii import DROSOPHILA_SUZUKII_SOURCE_ID
 from .sources.drosophila_suzukii_pubmed_literature import DROSOPHILA_SUZUKII_PUBMED_LITERATURE_SOURCE_ID
@@ -1797,6 +1798,25 @@ def _wants_swd_figshare_mk_selection(question: str) -> bool:
     ) or bool(re.search(r"\b(?:DS\d{2}_\d+|FBgn\d+)\b", question, flags=re.IGNORECASE))
 
 
+def _wants_swd_population_genomics(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "bioproject",
+            "bioprojects",
+            "population genomics",
+            "population-genomics",
+            "population samples",
+            "pool-seq",
+            "pool seq",
+            "whole genome sequence",
+            "genome sequencing",
+            "invasion genomics",
+        )
+    )
+
+
 def _record_payload_reason(record: EvidenceRecord) -> str:
     if record.payload:
         return str(record.payload.get("reason") or "")
@@ -2189,6 +2209,14 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
                 records,
                 key=lambda record: (
                     0 if record.source == DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID else 1,
+                    0 if record.lane == "genome_features" else 1,
+                ),
+            )
+        if _wants_swd_population_genomics(question):
+            return sorted(
+                records,
+                key=lambda record: (
+                    0 if record.source == DROSOPHILA_SUZUKII_POPULATION_GENOMICS_SOURCE_ID else 1,
                     0 if record.lane == "genome_features" else 1,
                 ),
             )
@@ -5050,6 +5078,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                         continue
                     all_records.append(record)
                     seen_record_ids.add(record.record_id)
+            if _wants_swd_population_genomics(plan.question):
+                for record in _source_records(index, DROSOPHILA_SUZUKII_POPULATION_GENOMICS_SOURCE_ID, ["genome_features"], limit=max(limit * 5, 25)):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
             if _wants_swd_marker_review(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID, ["dna_barcodes"], limit=max(limit * 1000, 5000)):
                     if record.record_id in seen_record_ids:
@@ -5091,7 +5125,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
             swd_genome_lanes = ["genes", "transcripts", "genome_features", "proteins", "genome_assemblies"]
             swd_records: list[EvidenceRecord] = []
-            if not _wants_swd_gene_orthologs(plan.question) and not _wants_swd_marker_review(plan.question) and not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question):
+            if not _wants_swd_gene_orthologs(plan.question) and not _wants_swd_marker_review(plan.question) and not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question) and not _wants_swd_population_genomics(plan.question):
                 for lane in swd_genome_lanes:
                     for search_query in _search_queries(plan.question):
                         for record in index.search(search_query, lane=lane, limit=max(limit * 5, 25)):
@@ -5108,6 +5142,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                         swd_records.append(record)
                         seen_record_ids.add(record.record_id)
             all_records = swd_records + all_records
+        if _wants_swd_population_genomics(plan.question) and requested_species and requested_species.lower() == "drosophila suzukii":
+            if _source_count(index, DROSOPHILA_SUZUKII_POPULATION_GENOMICS_SOURCE_ID) == 0:
+                return source_gap(plan, "The Ask Insects Drosophila suzukii population-genomics BioProject lane is not installed in this source index.")
         if _wants_snp_variation(plan.question):
             if requested_species and requested_species.lower() == "drosophila suzukii":
                 if _source_count(index, DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID) == 0:
