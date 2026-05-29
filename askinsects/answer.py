@@ -1260,15 +1260,6 @@ def _search_queries(question: str) -> list[str]:
             queries.append(f"{' '.join(salient)} GBIF")
         queries.extend(["Aedes aegypti GBIF occurrence", "GBIF occurrence", question])
         return list(dict.fromkeys(queries))
-    if _is_spotted_wing_question(question) and "dryad" in q and any(term in q for term in ("frame", "archive", "copulat", "video", "movie")):
-        return sorted(
-            records,
-            key=lambda record: (
-                0 if record.source == DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID else 1,
-                0 if "video_frame_archive" in f"{record.record_id} {record.title} {record.text}".lower() else 1,
-                0 if record.lane == "media" else 1,
-            ),
-        )
     if "dryad" in q:
         salient = [
             token
@@ -4564,6 +4555,12 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
         atom_types = ["video_sweep", "video_gap"] if "sweep" in q else ["video_gap"]
     elif _wants_video_discovery(question):
         atom_types = ["video_sweep", "video_asset", "video_gap"]
+    elif (
+        source_id == DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
+        and "dryad" in q
+        and any(term in q for term in ("frame", "archive", "copulat", "video", "movie", "8vd762q"))
+    ):
+        atom_types = ["video_frame_archive", "video_asset", "video_gap"]
     elif any(term in q for term in ("motion", "velocity", "distance moved", "movement", "locomotory", "trajectory", "trajectories", "tracking", "track id", "coordinates")):
         atom_types = ["video_motion_row"]
     elif any(term in q for term in ("fps", "codec", "duration", "resolution")):
@@ -4579,7 +4576,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
         if "frame manifest" in q:
             atom_types.append("video_frame_manifest")
         if not atom_types:
-            atom_types = ["video_keyframe", "video_preview_clip", "video_thumbnail", "video_frame_manifest", "video_asset"]
+            atom_types = ["video_keyframe", "video_preview_clip", "video_thumbnail", "video_frame_manifest", "video_frame_archive", "video_asset"]
     artifact_atom_types = {"video_keyframe", "video_preview_clip", "video_thumbnail", "video_frame_manifest"}
     repository = _video_discovery_repository(question)
     verified_filter = ""
@@ -4649,6 +4646,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
                   {motion_metric_order}
                   CASE json_extract(p.payload_json, '$.atom_type')
                     WHEN 'video_sweep' THEN 0
+                    WHEN 'video_frame_archive' THEN 0
                     WHEN 'video_keyframe' THEN 0
                     WHEN 'video_preview_clip' THEN 1
                     WHEN 'video_thumbnail' THEN 2

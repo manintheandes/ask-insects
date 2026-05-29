@@ -1539,6 +1539,22 @@ class AnswerTests(unittest.TestCase):
                         payload={"atom_type": "video_asset"},
                     ),
                     EvidenceRecord(
+                        record_id="swd:video_atom:asset:dryad_avi",
+                        lane="media",
+                        source="drosophila_suzukii_video_atoms",
+                        title="Drosophila suzukii video atom: Dryad video/archive file DC-19.avi",
+                        text="spotted wing drosophila video asset from drosophila_suzukii_deep_sources.",
+                        species="Drosophila suzukii",
+                        url="https://datadryad.org/api/v2/files/4124325/download",
+                        media_url="https://datadryad.org/api/v2/files/4124325/download",
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_video_atoms",
+                            locator="raw/drosophila_suzukii_deep_sources/dryad/files.json#files/11",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_asset"},
+                    ),
+                    EvidenceRecord(
                         record_id="swd:dryad_8vd762q:frame_archive:41799",
                         lane="media",
                         source="drosophila_suzukii_video_atoms",
