@@ -161,6 +161,7 @@ REQUIRED_FILES = (
     "askinsects/sources/drosophila_suzukii_ncbi_snp_variation.py",
     "askinsects/sources/drosophila_suzukii_ncbi_gene_orthologs.py",
     "askinsects/sources/drosophila_suzukii_ensembl_metazoa_orthology.py",
+    "askinsects/sources/drosophila_suzukii_geo_expression_matrices.py",
     "askinsects/sources/drosophila_suzukii_extension_guidance.py",
     "askinsects/sources/drosophila_suzukii_video_atoms.py",
     "askinsects/sources/drosophila_suzukii_dryad_table_rows.py",
@@ -226,6 +227,7 @@ REQUIRED_FILES = (
     "scripts/ingest_drosophila_suzukii_ncbi_snp_variation.py",
     "scripts/ingest_drosophila_suzukii_ncbi_gene_orthologs.py",
     "scripts/ingest_drosophila_suzukii_ensembl_metazoa_orthology.py",
+    "scripts/ingest_drosophila_suzukii_geo_expression_matrices.py",
     "scripts/ingest_drosophila_suzukii_extension_guidance.py",
     "scripts/ingest_drosophila_suzukii_video_atoms.py",
     "scripts/ingest_drosophila_suzukii_dryad_table_rows.py",
@@ -351,6 +353,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_drosophila_suzukii_ncbi_gene_orthologs.py",
     "tests/test_drosophila_suzukii_ensembl_metazoa_orthology_source.py",
     "tests/test_ingest_drosophila_suzukii_ensembl_metazoa_orthology.py",
+    "tests/test_drosophila_suzukii_geo_expression_matrices_source.py",
+    "tests/test_ingest_drosophila_suzukii_geo_expression_matrices.py",
     "tests/test_drosophila_suzukii_extension_guidance.py",
     "tests/test_ingest_drosophila_suzukii_extension_guidance.py",
     "tests/test_drosophila_suzukii_video_atoms.py",
@@ -476,6 +480,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_drosophila_suzukii_ncbi_gene_orthologs",
     "tests.test_drosophila_suzukii_ensembl_metazoa_orthology_source",
     "tests.test_ingest_drosophila_suzukii_ensembl_metazoa_orthology",
+    "tests.test_drosophila_suzukii_geo_expression_matrices_source",
+    "tests.test_ingest_drosophila_suzukii_geo_expression_matrices",
     "tests.test_drosophila_suzukii_extension_guidance",
     "tests.test_ingest_drosophila_suzukii_extension_guidance",
     "tests.test_drosophila_suzukii_video_atoms",
@@ -1076,6 +1082,18 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii genome-files term: {term}")
+    for term in (
+        "drosophila_suzukii_geo_expression_matrices",
+        "scripts/ingest_drosophila_suzukii_geo_expression_matrices.py",
+        "ncbi_geo_supplementary_gzip_tsv_to_sqlite_expression_rows",
+        "GSE126708",
+        "GSE73595",
+        "log2_fold_change",
+        "q_value",
+        "geo_expression_file_fetch_or_parse_failed",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii GEO expression matrix term: {term}")
     for term in (
         "drosophila_suzukii_occurrence_ecology",
         "scripts/ingest_drosophila_suzukii_occurrence_ecology.py",

@@ -158,6 +158,16 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane also audits the release 62 `stable_id_event` and `gene_archive` tables. For this species those tables are present but empty, so stable-ID history is represented as an explicit source gap rather than as covered data.
 
+To add GEO differential-expression matrix rows for spotted wing drosophila:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-geo-expression-matrices
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii GSE126708 differential expression matrix rows" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.accession') as accession, count(*) as n from record_payloads where source='drosophila_suzukii_geo_expression_matrices' group by accession order by accession"
+```
+
+This lane currently parses public GEO supplementary Cuffdiff tables for `GSE126708` cold acclimation and `GSE73595` insecticide response. It is row-level computed expression evidence with log2 fold change, p value, q value, and significance flags, not raw-read reanalysis or complete publisher-supplement expression coverage.
+
 To ingest dedicated spotted wing drosophila extension/IPM guidance:
 
 ```bash

@@ -20,6 +20,7 @@ from .sources.aedes_deep_sources import (
 from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
+from .sources.drosophila_suzukii_geo_expression_matrices import DROSOPHILA_SUZUKII_GEO_EXPRESSION_MATRICES_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_gene_orthologs import DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID
@@ -1836,7 +1837,80 @@ def _expression_computed_gap_records(index: SourceIndex, question: str, *, limit
     return sorted(records, key=lambda record: reason_rank.get(_record_payload_reason(record), len(reason_rank)))[:limit]
 
 
+def _swd_geo_expression_matrix_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    if not _wants_expression_computed_outputs(question):
+        return []
+    q = question.lower()
+    accession_terms = [term.upper() for term in re.findall(r"\bGSE\d+\b", question, flags=re.IGNORECASE)]
+    gene_terms = [
+        term.lower()
+        for term in re.findall(r"\b(?:DS10_\d+|XLOC_\d+|[A-Za-z][A-Za-z0-9_.-]{2,})\b", question)
+        if term.lower()
+        not in {
+            "drosophila",
+            "suzukii",
+            "spotted",
+            "wing",
+            "show",
+            "gene",
+            "genes",
+            "expression",
+            "matrix",
+            "matrices",
+            "differential",
+            "data",
+            "rows",
+            "significant",
+            "geo",
+        }
+    ]
+    conditions = [
+        "r.source = ?",
+        "r.lane = 'expression'",
+    ]
+    params: list[object] = [DROSOPHILA_SUZUKII_GEO_EXPRESSION_MATRICES_SOURCE_ID]
+    if accession_terms:
+        placeholders = ",".join("?" for _ in accession_terms)
+        conditions.append(f"json_extract(p.payload_json, '$.accession') IN ({placeholders})")
+        params.extend(accession_terms)
+    if "significant" in q:
+        conditions.append("json_extract(p.payload_json, '$.significant') = 1")
+    if gene_terms:
+        like_clause = " OR ".join("lower(r.record_id || ' ' || r.title || ' ' || r.text) LIKE ?" for _ in gene_terms)
+        conditions.append(f"({like_clause})")
+        params.extend(f"%{term}%" for term in gene_terms)
+    params.append(max(limit * 20, 50))
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE {' AND '.join(conditions)}
+            ORDER BY
+              CASE WHEN json_extract(p.payload_json, '$.significant') = 1 THEN 0 ELSE 1 END,
+              r.record_id
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+    records = [
+        replace(EvidenceRecord.from_row(dict(row)), payload=json.loads(str(row["payload_json"] or "{}")))
+        for row in rows
+    ]
+    return records[:limit]
+
+
 def _prioritize_expression_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    requested_species = _requested_species(question)
+    if requested_species and requested_species.lower() == "drosophila suzukii" and _wants_expression_computed_outputs(question):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == DROSOPHILA_SUZUKII_GEO_EXPRESSION_MATRICES_SOURCE_ID else 1,
+                0 if record.lane == "expression" else 1,
+            ),
+        )
     if not _wants_expression_computed_outputs(question):
         return sorted(
             records,
@@ -4945,6 +5019,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "expression":
+        if requested_species and requested_species.lower() == "drosophila suzukii":
+            for record in _swd_geo_expression_matrix_records(index, plan.question, limit=limit):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
         for record in _expression_computed_gap_records(index, plan.question, limit=limit):
             if record.record_id in seen_record_ids:
                 continue

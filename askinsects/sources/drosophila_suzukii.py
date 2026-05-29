@@ -195,9 +195,10 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "parsed NCBI GFF and protein FASTA rows",
                 "NCBI Gene ortholog pairs and GeneID-to-GFF mapping",
                 "Ensembl Metazoa release 62 current gene IDs, GeneID xrefs, and Dmel homolog rows",
+                "GEO differential-expression matrix rows for cold acclimation and insecticide-response studies",
                 "NCBI dbSNP organism-query audit",
             ],
-            ["Ensembl Metazoa stable-ID history tables are present but empty", "non-dbSNP variant tables", "computed expression matrices"],
+            ["Ensembl Metazoa stable-ID history tables are present but empty", "non-dbSNP variant tables", "broader publisher-hosted expression matrices and raw count matrices"],
         ),
         (
             "traits_ecology_crop_damage",

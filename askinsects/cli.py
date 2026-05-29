@@ -227,6 +227,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_ensembl_metazoa.add_argument("--max-rows-per-file", type=int)
     ingest_drosophila_suzukii_ensembl_metazoa.add_argument("--retrieved-at")
 
+    ingest_drosophila_suzukii_geo_expression = sub.add_parser("ingest-drosophila-suzukii-geo-expression-matrices")
+    ingest_drosophila_suzukii_geo_expression.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_geo_expression.add_argument("--max-download-bytes", type=int, default=10_000_000)
+    ingest_drosophila_suzukii_geo_expression.add_argument("--max-rows-per-file", type=int)
+    ingest_drosophila_suzukii_geo_expression.add_argument("--retrieved-at")
+
     ingest_drosophila_suzukii_extension = sub.add_parser("ingest-drosophila-suzukii-extension-guidance")
     ingest_drosophila_suzukii_extension.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_extension.add_argument("--source-url", action="append", default=[])
@@ -830,6 +836,23 @@ def main(argv: list[str] | None = None) -> int:
         from scripts.ingest_drosophila_suzukii_ensembl_metazoa_orthology import ingest_drosophila_suzukii_ensembl_metazoa_orthology
 
         payload = ingest_drosophila_suzukii_ensembl_metazoa_orthology(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-geo-expression-matrices":
+        request_payload = {
+            "max_download_bytes": args.max_download_bytes,
+            "max_rows_per_file": args.max_rows_per_file,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-geo-expression-matrices", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_geo_expression_matrices import ingest_drosophila_suzukii_geo_expression_matrices
+
+        payload = ingest_drosophila_suzukii_geo_expression_matrices(
             artifact_dir=artifact_dir,
             **request_payload,
         )

@@ -4627,6 +4627,90 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_snp_variation")
 
+    def test_swd_expression_matrix_questions_prefer_geo_matrix_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:sra:1",
+                        lane="expression",
+                        source="drosophila_suzukii_deep_sources",
+                        title="Drosophila suzukii SRA run",
+                        text="NCBI SRA run metadata for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/sra",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_deep_sources",
+                            locator="raw/sra.json#1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_geo_expression:GSE126708:file:r1",
+                        lane="expression",
+                        source="drosophila_suzukii_geo_expression_matrices",
+                        title="Drosophila suzukii GEO differential expression: GSE126708 DS10_00000001",
+                        text="GEO differential-expression row for Drosophila suzukii gene DS10_00000001. Accession: GSE126708. log2 fold change: -0.47. q value: 0.02. Significant: yes.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/GSE126708.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_geo_expression_matrices",
+                            locator="raw/geo/GSE126708.txt.gz#row/1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "geo_differential_expression_row",
+                            "accession": "GSE126708",
+                            "gene": "DS10_00000001",
+                            "significant": True,
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_geo_expression:GSE73595:file:r1",
+                        lane="expression",
+                        source="drosophila_suzukii_geo_expression_matrices",
+                        title="Drosophila suzukii GEO differential expression: GSE73595 DS10_00000002",
+                        text="GEO differential-expression row for Drosophila suzukii gene DS10_00000002. Accession: GSE73595. Significant: yes.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/GSE73595.txt.gz",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_geo_expression_matrices",
+                            locator="raw/geo/GSE73595.txt.gz#row/1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "geo_differential_expression_row",
+                            "accession": "GSE73595",
+                            "gene": "DS10_00000002",
+                            "significant": True,
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii GSE126708 differential expression matrix rows",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "expression")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_geo_expression_matrices")
+
+            answer = answer_question(
+                "show significant Drosophila suzukii GSE73595 differential expression matrix rows",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_geo_expression:GSE73595:file:r1")
+
     def test_swd_marker_review_questions_prefer_marker_review_lane(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

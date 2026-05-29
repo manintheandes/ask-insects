@@ -69,6 +69,7 @@ sources:
         - drosophila_suzukii_ncbi_snp_variation
         - drosophila_suzukii_ncbi_gene_orthologs
         - drosophila_suzukii_ensembl_metazoa_orthology
+        - drosophila_suzukii_geo_expression_matrices
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
@@ -122,6 +123,7 @@ sources:
         - drosophila_suzukii_literature_fulltext
         - drosophila_suzukii_pubmed_literature
         - drosophila_suzukii_ncbi_snp_variation
+        - drosophila_suzukii_geo_expression_matrices
         - drosophila_suzukii_extension_guidance
   - id: drosophila_suzukii_dryad_table_rows
     name: Drosophila suzukii Dryad preview table rows
@@ -498,6 +500,40 @@ sources:
         - swd_ensembl_metazoa_download_failed
         - swd_ensembl_metazoa_stable_id_event_empty
         - swd_ensembl_metazoa_gene_archive_empty
+  - id: drosophila_suzukii_geo_expression_matrices
+    name: Drosophila suzukii GEO expression matrices
+    source_type: public_ncbi_geo_supplementary_files
+    boundary: Public GEO supplementary differential-expression tables for Drosophila suzukii, currently GSE126708 cold acclimation and GSE73595 insecticide-response Cuffdiff gene-level files. This is computed expression-table evidence, not raw-read reanalysis, not every SWD expression supplement, and not publisher-hosted Excel supplement coverage outside this GEO lane.
+    query_plane: ncbi_geo_supplementary_gzip_tsv_to_sqlite_expression_rows
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_geo_expression_matrices
+    ingest_script: scripts/ingest_drosophila_suzukii_geo_expression_matrices.py
+    input_sources:
+      - geo_gse126708_supplementary_cuffdiff_table
+      - geo_gse73595_supplementary_cuffdiff_tables
+    lanes:
+      - expression
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - accession
+        - comparison
+        - gene
+        - locus
+        - sample_1
+        - sample_2
+        - value_1
+        - value_2
+        - log2_fold_change
+        - p_value
+        - q_value
+        - significant
+        - row_number
+      structured_gaps:
+        - geo_expression_file_too_large
+        - geo_expression_file_fetch_or_parse_failed
+        - geo_expression_row_limit_applied
   - id: drosophila_suzukii_occurrence_ecology
     name: Drosophila suzukii occurrence ecology from indexed observations
     source_type: derived_sqlite_source
