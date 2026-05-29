@@ -1205,13 +1205,17 @@ def check_mosquito_intelligence_coverage() -> None:
     for term in (
         "drosophila_suzukii_jki_drosomon_trap_captures",
         "scripts/ingest_drosophila_suzukii_jki_drosomon_trap_captures.py",
-        "data_europa_openagrar_registry_to_sqlite_ecology_manifest_and_gap_records",
+        "data_europa_openagrar_registry_and_captures_csv_to_sqlite_ecology_rows",
         "openagrar_mods_00041381",
         "10.3390/insects9040125",
         "trap_count_reported",
         "adult_captures_reported",
+        "trap_name",
+        "date_start",
+        "adult_captures",
         "openagrar_security_check_blocks_csv_download",
-        "jki_trap_deployment_rows_not_queryable",
+        "jki_trap_rows_parse_empty",
+        "trap_coordinate_table_not_queryable",
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii JKI DrosoMon trap-capture term: {term}")

@@ -202,7 +202,7 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila 
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n from record_payloads where source='drosophila_suzukii_jki_drosomon_trap_captures' group by atom_type"
 ```
 
-This lane preserves the data.europa/OpenAgrar registry record, file manifests, article DOI, license, and reported dataset scale. It also records the current OpenAgrar security-check blockage as a queryable gap, so Ask Insects can distinguish dataset-level monitoring evidence from individual trap-deployment rows that are not parsed yet.
+This lane preserves the data.europa/OpenAgrar registry record, file manifests, article DOI, license, and reported dataset scale. It also parses the current `captures_data.csv` into trap-deployment rows, so Ask Insects can answer from individual trap/date/capture evidence instead of only from the dataset summary. The registry-reported deployment count and the parsed CSV row count may differ because they come from different source surfaces; both are preserved in receipts.
 
 To ingest University of Minnesota SWD flight-assay rows:
 

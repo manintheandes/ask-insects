@@ -35,6 +35,12 @@ DATASET_FIXTURE = {
     }
 }
 
+CAPTURES_CSV_FIXTURE = (
+    "trap_name;date_start;date_stop;males;females\r\n"
+    "DA_BE1;09.04.2015;16.04.2015;0;2\r\n"
+    "DA_BE1;16.04.2015;23.04.2015;3;4\r\n"
+).encode("utf-8")
+
 
 class DrosophilaSuzukiiJkiDrosomonTrapCapturesSourceTests(unittest.TestCase):
     def test_dataset_and_blocked_csv_become_ecology_records_and_gaps(self):
@@ -75,6 +81,35 @@ class DrosophilaSuzukiiJkiDrosomonTrapCapturesSourceTests(unittest.TestCase):
 
         self.assertEqual(result.records, [])
         self.assertEqual(result.gaps[0]["reason"], "jki_drosomon_metadata_fetch_failed")
+
+    def test_captures_csv_becomes_trap_deployment_rows(self):
+        def fetch_body(url):
+            return FetchBody(
+                body=CAPTURES_CSV_FIXTURE,
+                content_type="text/csv",
+                status=200,
+                pow_challenge={"attempted": True, "solved": True, "difficulty": 16},
+            )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_drosophila_suzukii_jki_drosomon_trap_capture_records(
+                raw_dir=Path(tmpdir),
+                fetch_json=lambda url: DATASET_FIXTURE,
+                fetch_body=fetch_body,
+                retrieved_at="2026-05-29T00:00:00Z",
+            )
+
+        self.assertEqual(result.parsed_trap_row_count, 2)
+        reasons = {gap["reason"] for gap in result.gaps}
+        self.assertNotIn("jki_trap_deployment_rows_not_queryable", reasons)
+        trap_rows = [record for record in result.records if record.payload.get("atom_type") == "jki_drosomon_trap_deployment_row"]
+        self.assertEqual(len(trap_rows), 2)
+        self.assertEqual(trap_rows[0].payload["trap_name"], "DA_BE1")
+        self.assertEqual(trap_rows[0].payload["date_start"], "2015-04-09")
+        self.assertEqual(trap_rows[0].payload["date_stop"], "2015-04-16")
+        self.assertEqual(trap_rows[0].payload["adult_captures"], 2)
+        self.assertEqual(trap_rows[0].payload["trap_days"], 7)
+        self.assertEqual(trap_rows[1].payload["adult_captures"], 7)
 
 
 if __name__ == "__main__":

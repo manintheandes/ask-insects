@@ -137,7 +137,7 @@ python3 -m askinsects ingest-drosophila-suzukii-extension-guidance
 python3 -m askinsects ask "show Drosophila suzukii extension IPM guidance" --json
 ```
 
-The `drosophila_suzukii_jki_drosomon_trap_captures` lane adds source-grade field-monitoring evidence for SWD. It indexes the data.europa/OpenAgrar record for the 7-year JKI DrosoMon trap-capture dataset in southwest Germany, including reported scale (100 traps, 9,967 trap deployments, 116,602 trap-days, and 756,717 adult captures), file manifests, article DOI, license, and explicit gaps while the OpenAgrar CSV URL returns a security-check page instead of row data.
+The `drosophila_suzukii_jki_drosomon_trap_captures` lane adds source-grade field-monitoring evidence for SWD. It indexes the data.europa/OpenAgrar record for the 7-year JKI DrosoMon trap-capture dataset in southwest Germany, including reported scale (100 traps, 9,967 trap deployments, 116,602 trap-days, and 756,717 adult captures), file manifests, article DOI, license, and parsed `captures_data.csv` trap-deployment rows. The current CSV has 10,042 parsed rows with trap name, date window, male/female adult captures, total adult captures, trap-days, row locator, and CC-BY-4.0 provenance; the separate trap-coordinate table described by the dataset remains a future source gap unless an accessible machine-readable file is identified.
 
 ```bash
 python3 -m askinsects ingest-drosophila-suzukii-jki-drosomon-trap-captures

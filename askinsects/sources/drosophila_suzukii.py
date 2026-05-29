@@ -209,8 +209,13 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
         (
             "traits_ecology_crop_damage",
             "partial_source_grade",
-            ["GBIF/iNaturalist occurrence context", "literature-derived crop damage and ecology candidate rows", "parsed supplement rows when available"],
-            ["climate suitability files", "phenology and trap-count datasets", "human-validated crop damage tables"],
+            [
+                "GBIF/iNaturalist occurrence context",
+                "literature-derived crop damage and ecology candidate rows",
+                "parsed supplement rows when available",
+                "JKI DrosoMon trap-deployment capture rows",
+            ],
+            ["climate suitability files", "trap-coordinate table and additional regional/crop scout phenology feeds", "human-validated crop damage tables"],
         ),
         (
             "management_resistance_biocontrol",

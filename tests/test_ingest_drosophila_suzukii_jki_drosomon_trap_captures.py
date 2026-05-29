@@ -9,6 +9,7 @@ from scripts.ingest_drosophila_suzukii_jki_drosomon_trap_captures import (
     ingest_drosophila_suzukii_jki_drosomon_trap_captures,
 )
 from tests.test_drosophila_suzukii_jki_drosomon_trap_captures_source import DATASET_FIXTURE
+from tests.test_drosophila_suzukii_jki_drosomon_trap_captures_source import CAPTURES_CSV_FIXTURE
 
 
 class IngestDrosophilaSuzukiiJkiDrosomonTrapCapturesTests(unittest.TestCase):
@@ -47,6 +48,31 @@ class IngestDrosophilaSuzukiiJkiDrosomonTrapCapturesTests(unittest.TestCase):
             self.assertTrue(any("openagrar_security_check_blocks_csv_download" in row["payload_json"] for row in payload_rows))
             status = (artifact_dir / "source_status.json").read_text(encoding="utf-8")
             self.assertIn("drosophila_suzukii_jki_drosomon_trap_captures", status)
+
+    def test_ingest_installs_trap_deployment_rows_when_csv_is_available(self):
+        def fetch_body(url):
+            return FetchBody(body=CAPTURES_CSV_FIXTURE, content_type="text/csv", status=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            result = ingest_drosophila_suzukii_jki_drosomon_trap_captures(
+                artifact_dir=artifact_dir,
+                fetch_json=lambda url: DATASET_FIXTURE,
+                fetch_body=fetch_body,
+                retrieved_at="2026-05-29T00:00:00Z",
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["parsed_trap_row_count"], 2)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            rows = index.sql(
+                "select payload_json from record_payloads where source='drosophila_suzukii_jki_drosomon_trap_captures' and payload_json like '%jki_drosomon_trap_deployment_row%'",
+                limit=10,
+            )
+            self.assertEqual(len(rows), 2)
+            self.assertTrue(any('"adult_captures": 7' in row["payload_json"] for row in rows))
 
 
 if __name__ == "__main__":
