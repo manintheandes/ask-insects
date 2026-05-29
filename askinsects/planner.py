@@ -42,6 +42,20 @@ def plan_question(question: str) -> QueryPlan:
     )
     if any(term in q for term in source_coverage_terms):
         return QueryPlan(question, "evidence", ("source_coverage",), question)
+    if is_spotted_wing and any(
+        term in q
+        for term in (
+            "mk test",
+            "mcdonald-kreitman",
+            "mcdonald kreitman",
+            "positive selection",
+            "adaptive evolution",
+            "alpha",
+            "d. subpulchrella",
+            "d subpulchrella",
+        )
+    ):
+        return QueryPlan(question, "genomics", ("genome_features", "genes", "genome_assemblies", "literature", "taxonomy"), question)
     vectorbase_orthology_terms = (
         "orthogroup",
         "orthogroups",

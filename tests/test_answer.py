@@ -4627,6 +4627,70 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_snp_variation")
 
+    def test_swd_mk_selection_questions_prefer_figshare_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:genome:gff:gene:DS20_00004020",
+                        lane="genes",
+                        source="drosophila_suzukii_genome_files",
+                        title="Drosophila suzukii gene DS20_00004020",
+                        text="Genome gene metadata, not MK table evidence.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/gff",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_genome_files",
+                            locator="raw/gff#gene",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_figshare_mk_selection:DS20_00004020:r1",
+                        lane="genome_features",
+                        source="drosophila_suzukii_figshare_mk_selection",
+                        title="Drosophila suzukii Figshare MK selection row: DS20_00004020",
+                        text="Figshare McDonald-Kreitman selection row for Drosophila suzukii gene DS20_00004020. D. melanogaster homolog: FBgn0037025. Method 1 alpha: 0.297292584. Method 1 Fisher exact p value: 0.01017457.",
+                        species="Drosophila suzukii",
+                        url="https://figshare.com/articles/dataset/Suzukii_Subpulchrella_Sig_MK_two_methods_csv/13366079/3",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_figshare_mk_selection",
+                            locator="raw/drosophila_suzukii_figshare_mk_selection/Suzukii.Subpulchrella.Sig.MK_two_methods.csv#row/1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "figshare_mk_selection_row",
+                            "d_suzukii_gene": "DS20_00004020",
+                            "d_melanogaster_gene": "FBgn0037025",
+                            "method_1": {"FETpval": 0.01017457, "alpha": 0.297292584},
+                            "method_2": {"P-value": 0.0424, "Alpha": 0.301},
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii Figshare MK test rows for DS20_00004020",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_figshare_mk_selection")
+
+            answer = answer_question(
+                "which spotted wing drosophila MK test rows have significant alpha or positive selection evidence?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_figshare_mk_selection:DS20_00004020:r1")
+
     def test_swd_expression_matrix_questions_prefer_geo_matrix_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

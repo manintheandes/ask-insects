@@ -437,6 +437,49 @@ sources:
         - ncbi_snp_search_failed
         - ncbi_snp_summary_failed
         - ncbi_snp_limit_applied
+  - id: drosophila_suzukii_figshare_mk_selection
+    name: Drosophila suzukii Figshare McDonald-Kreitman selection table rows
+    source_type: public_figshare_csv
+    boundary: Public Figshare dataset DOI 10.6084/m9.figshare.13366079.v3, file 26251579, parsed at row grain for McDonald-Kreitman and adaptive-evolution statistics for Drosophila suzukii, D. subpulchrella, and D. melanogaster homolog rows. This lane is a small published selection table, not a whole-genome VCF mirror or dbSNP replacement.
+    query_plane: figshare_csv_to_sqlite_genome_feature_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_figshare_mk_selection
+    ingest_script: scripts/ingest_drosophila_suzukii_figshare_mk_selection.py
+    input_sources:
+      - figshare_file_26251579
+    lanes:
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - article_id
+        - dataset_doi
+        - file_id
+        - file_name
+        - file_size
+        - md5
+        - row_number
+        - d_sub_gene
+        - d_suzukii_gene
+        - d_melanogaster_gene
+        - NSpoly
+        - NSfix
+        - Spoly
+        - Sfix
+        - MKcodons
+        - FETpval
+        - alpha
+        - P-value
+        - pn_ps
+        - dn_ds
+      structured_gaps:
+        - figshare_mk_selection_file_too_large
+        - figshare_mk_selection_checksum_mismatch
+        - figshare_mk_selection_byte_size_changed
+        - figshare_mk_selection_row_count_changed
+        - figshare_mk_selection_row_limit_applied
+        - figshare_mk_selection_fetch_or_parse_failed
   - id: drosophila_suzukii_ncbi_gene_orthologs
     name: Drosophila suzukii NCBI Gene ortholog pairs
     source_type: public_ncbi_ftp

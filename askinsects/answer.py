@@ -23,6 +23,7 @@ from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRA
 from .sources.drosophila_suzukii_geo_expression_matrices import DROSOPHILA_SUZUKII_GEO_EXPRESSION_MATRICES_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
+from .sources.drosophila_suzukii_figshare_mk_selection import DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_gene_orthologs import DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID
 from .sources.drosophila_suzukii_ensembl_metazoa_orthology import DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_marker_review import DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID
@@ -1779,6 +1780,23 @@ def _wants_snp_variation(question: str) -> bool:
     return any(term in q for term in ("dbsnp", "snp", "snps", "variant", "variants", "variation"))
 
 
+def _wants_swd_figshare_mk_selection(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "mk test",
+            "mcdonald-kreitman",
+            "mcdonald kreitman",
+            "positive selection",
+            "adaptive evolution",
+            "alpha",
+            "d. subpulchrella",
+            "d subpulchrella",
+        )
+    ) or bool(re.search(r"\b(?:DS\d{2}_\d+|FBgn\d+)\b", question, flags=re.IGNORECASE))
+
+
 def _record_payload_reason(record: EvidenceRecord) -> str:
     if record.payload:
         return str(record.payload.get("reason") or "")
@@ -2166,6 +2184,14 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
     q = question.lower()
     requested_species = _requested_species(question)
     if requested_species and requested_species.lower() == "drosophila suzukii":
+        if _wants_swd_figshare_mk_selection(question):
+            return sorted(
+                records,
+                key=lambda record: (
+                    0 if record.source == DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID else 1,
+                    0 if record.lane == "genome_features" else 1,
+                ),
+            )
         if _wants_snp_variation(question):
             return sorted(
                 records,
@@ -3904,6 +3930,57 @@ def _swd_ensembl_stable_history_gap_records(index: SourceIndex, *, limit: int) -
     return records
 
 
+def _swd_figshare_mk_selection_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    if not _wants_swd_figshare_mk_selection(question):
+        return []
+    q = question.lower()
+    exact_terms = [
+        term.lower()
+        for term in re.findall(r"\b(?:DS\d{2}_\d+|FBgn\d+)\b", question, flags=re.IGNORECASE)
+    ]
+    conditions = ["r.source = ?", "r.lane = 'genome_features'"]
+    params: list[object] = [DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID]
+    if exact_terms:
+        like_clause = " OR ".join("lower(r.record_id || ' ' || r.title || ' ' || r.text) LIKE ?" for _ in exact_terms)
+        conditions.append(f"({like_clause})")
+        params.extend(f"%{term}%" for term in exact_terms)
+    if any(term in q for term in ("significant", "positive selection", "adaptive evolution")):
+        conditions.append(
+            """
+            (
+              CAST(json_extract(p.payload_json, '$.method_1.FETpval') AS REAL) <= 0.05
+              OR CAST(json_extract(p.payload_json, '$.method_2.P-value') AS REAL) <= 0.05
+              OR CAST(json_extract(p.payload_json, '$.method_1.alpha') AS REAL) > 0
+              OR CAST(json_extract(p.payload_json, '$.method_2.Alpha') AS REAL) > 0
+            )
+            """
+        )
+    params.append(max(limit * 20, 50))
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE {' AND '.join(conditions)}
+            ORDER BY
+              CASE
+                WHEN CAST(json_extract(p.payload_json, '$.method_1.FETpval') AS REAL) <= 0.05
+                  OR CAST(json_extract(p.payload_json, '$.method_2.P-value') AS REAL) <= 0.05
+                THEN 0 ELSE 1
+              END,
+              CAST(coalesce(json_extract(p.payload_json, '$.method_1.FETpval'), 999) AS REAL),
+              r.record_id
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+    return [
+        replace(EvidenceRecord.from_row(dict(row)), payload=json.loads(str(row["payload_json"] or "{}")))
+        for row in rows[:limit]
+    ]
+
+
 def _source_count(index: SourceIndex, source: str) -> int:
     with index.connect() as conn:
         return int(conn.execute("SELECT COUNT(*) FROM records WHERE source=?", (source,)).fetchone()[0])
@@ -4945,6 +5022,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "genomics":
         if requested_species and requested_species.lower() == "drosophila suzukii":
+            if _wants_swd_figshare_mk_selection(plan.question):
+                for record in _swd_figshare_mk_selection_records(index, plan.question, limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
             if _wants_snp_variation(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID, ["genome_features"], limit=limit):
                     if record.record_id in seen_record_ids:

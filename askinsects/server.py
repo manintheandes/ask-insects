@@ -3694,6 +3694,24 @@ def ingest_drosophila_suzukii_geo_expression_matrices_hosted(
     return response
 
 
+def ingest_drosophila_suzukii_figshare_mk_selection_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_figshare_mk_selection import ingest_drosophila_suzukii_figshare_mk_selection
+
+    response = ingest_drosophila_suzukii_figshare_mk_selection(
+        artifact_dir=artifact_dir,
+        max_download_bytes=int(payload.get("max_download_bytes", 10_000_000)),
+        max_rows=int(payload["max_rows"]) if payload.get("max_rows") else None,
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_drosophila_suzukii_extension_guidance_hosted(
     payload: dict[str, object],
     *,
@@ -4023,6 +4041,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-geo-expression-matrices":
             result = ingest_drosophila_suzukii_geo_expression_matrices_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-figshare-mk-selection":
+            result = ingest_drosophila_suzukii_figshare_mk_selection_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-extension-guidance":

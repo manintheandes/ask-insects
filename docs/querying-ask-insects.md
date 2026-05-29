@@ -566,6 +566,15 @@ python3 -m askinsects search genome_features "dbSNP variation source gap"
 python3 -m askinsects sql "select source, lane, count(*) as n from records where source='aedes_ncbi_snp_variation' group by source, lane"
 ```
 
+SWD Figshare McDonald-Kreitman selection rows use source id `drosophila_suzukii_figshare_mk_selection` and lane `genome_features`. The ingest downloads Figshare file `26251579` from DOI `10.6084/m9.figshare.13366079.v3`, saves the raw CSV under `artifacts/mosquito-v1/raw/drosophila_suzukii_figshare_mk_selection/`, checks byte size and md5, and indexes one row per D. suzukii gene.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-figshare-mk-selection
+python3 -m askinsects ask "show Drosophila suzukii Figshare MK test rows for DS20_00004020" --json
+python3 -m askinsects ask "which spotted wing drosophila MK test rows have significant alpha or positive selection evidence?" --json
+python3 -m askinsects sql "select count(*) as n from records where source='drosophila_suzukii_figshare_mk_selection'"
+```
+
 Neurobiology records use source id `aedes_neurobiology_sources`. Metadata-only builds index source records for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies. Artifact-cache builds additionally index GEO matrix summaries and features, SRA `SRP290992` run/sample metadata, raw SRA access and reanalysis workflow records, Zenodo file and ZIP-member inventory, H5AD AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, coordinate-queryable voxel access locators, public Aedes EM/CATMAID project, stack, annotation, volume, skeleton-manifest, skeleton-filter, and skeleton-ID metadata, public Aedes EM/CATMAID CSV inventories, and a searchable whole-brain connectome source-gap row. Exact voxel values are available on demand:
 
 ```bash
