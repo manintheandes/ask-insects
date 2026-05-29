@@ -648,10 +648,11 @@ def _reconcile_source_artifacts(
             "source_counts": {row["source"]: int(row["n"]) for row in source_rows},
             "lanes": {row["lane"]: int(row["n"]) for row in lane_rows},
             "gap_count": len(gaps),
-            "literature": literature_payload,
             source_id: literature_payload,
         }
     )
+    if source_id == LITERATURE_SOURCE_ID:
+        source_status["literature"] = literature_payload
     receipt_path = artifact_dir / "source_receipt.json"
     receipt = _load_receipt(receipt_path)
     receipt.update(
@@ -666,19 +667,22 @@ def _reconcile_source_artifacts(
             "gap_count": len(gaps),
         }
     )
-    literature = receipt.get("literature")
-    if not isinstance(literature, dict):
-        literature = {}
-    literature.update(literature_payload)
-    literature["open_fulltext_count"] = fulltext_record_count
-    literature["gap_count"] = len([gap for gap in gaps if gap.get("source") == source_id])
-    literature["gaps_path"] = (artifact_dir / "gaps.json").as_posix()
-    literature["payload_store"] = "record_payloads.payload_json"
-    literature["fulltext_store"] = "literature_fulltext_units"
-    receipt["literature"] = literature
+    receipt_payload = dict(literature_payload)
+    receipt_payload["open_fulltext_count"] = fulltext_record_count
+    receipt_payload["gap_count"] = len([gap for gap in gaps if gap.get("source") == source_id])
+    receipt_payload["gaps_path"] = (artifact_dir / "gaps.json").as_posix()
+    receipt_payload["payload_store"] = "record_payloads.payload_json"
+    receipt_payload["fulltext_store"] = "literature_fulltext_units"
+    if source_id == LITERATURE_SOURCE_ID:
+        literature = receipt.get("literature")
+        if not isinstance(literature, dict):
+            literature = {}
+        literature.update(receipt_payload)
+        receipt["literature"] = literature
+    receipt[source_id] = receipt_payload
     _write_json(artifact_dir / "source_status.json", source_status)
     _write_json(receipt_path, receipt)
-    return dict(source_status["literature"])
+    return dict(source_status[source_id])
 
 
 def run_enrichment(

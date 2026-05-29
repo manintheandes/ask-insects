@@ -222,8 +222,18 @@ class LiteratureEnrichmentTests(unittest.TestCase):
             self.assertIn("Drosophila suzukii", rows[0]["text"])
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertEqual(status["source_id"], "drosophila_suzukii_literature_fulltext")
-            self.assertEqual(status["literature"]["source"], "drosophila_suzukii_literature_fulltext")
-            self.assertEqual(status["literature"]["input_source"], "drosophila_suzukii_core")
+            self.assertNotIn("literature", status)
+            self.assertEqual(
+                status["drosophila_suzukii_literature_fulltext"]["source"],
+                "drosophila_suzukii_literature_fulltext",
+            )
+            self.assertEqual(
+                status["drosophila_suzukii_literature_fulltext"]["input_source"],
+                "drosophila_suzukii_core",
+            )
+            receipt = json.loads((artifact_dir / "source_receipt.json").read_text(encoding="utf-8"))
+            self.assertNotIn("literature", receipt)
+            self.assertEqual(receipt["drosophila_suzukii_literature_fulltext"]["fulltext_record_count"], 1)
 
     def test_resume_skips_already_enriched_rows(self) -> None:
         from scripts.enrich_literature_index import EnrichmentConfig, run_enrichment
