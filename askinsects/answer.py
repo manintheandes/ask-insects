@@ -1976,6 +1976,13 @@ def _wants_swd_ensembl_metazoa(question: str) -> bool:
     return any(term in q for term in ("ensembl", "metazoa", "fbgn", "fbpp", "stable id", "stable-id", "biomart"))
 
 
+def _wants_swd_ensembl_stable_history(question: str) -> bool:
+    q = question.lower()
+    return _wants_swd_ensembl_metazoa(question) and any(
+        term in q for term in ("stable id", "stable-id", "history", "historical", "gene archive", "stable-id event")
+    )
+
+
 def _swd_ensembl_atom_type(record: EvidenceRecord) -> str:
     atom_type = str((record.payload or {}).get("atom_type") or "")
     if atom_type:
@@ -2115,8 +2122,7 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
                     else 2,
                     0 if record.lane == "genome_features" else 1,
                     0
-                    if _wants_swd_ensembl_metazoa(question)
-                    and any(term in q for term in ("stable id", "stable-id", "history", "historical"))
+                    if _wants_swd_ensembl_stable_history(question)
                     and _swd_ensembl_atom_type(record) == "ensembl_metazoa_stable_id_history_gap"
                     else 1,
                     0
@@ -3802,6 +3808,28 @@ def _source_records_with_payload(index: SourceIndex, source: str, lanes: list[st
     return records
 
 
+def _swd_ensembl_stable_history_gap_records(index: SourceIndex, *, limit: int) -> list[EvidenceRecord]:
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ?
+              AND r.lane = 'genome_features'
+              AND json_extract(p.payload_json, '$.atom_type') = 'ensembl_metazoa_stable_id_history_gap'
+            ORDER BY r.record_id
+            LIMIT ?
+            """,
+            (DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID, limit),
+        ).fetchall()
+    records: list[EvidenceRecord] = []
+    for row in rows:
+        payload = json.loads(str(row["payload_json"] or "{}"))
+        records.append(replace(EvidenceRecord.from_row(dict(row)), payload=payload))
+    return records
+
+
 def _source_count(index: SourceIndex, source: str) -> int:
     with index.connect() as conn:
         return int(conn.execute("SELECT COUNT(*) FROM records WHERE source=?", (source,)).fetchone()[0])
@@ -4845,20 +4873,27 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     if _wants_swd_ensembl_metazoa(plan.question)
                     else [DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID]
                 )
-                for search_query in _swd_gene_ortholog_search_terms(plan.question):
-                    for record in index.search(search_query, lane="genome_features", limit=max(limit * 20, 100)):
-                        if record.source not in wanted_sources or record.record_id in seen_record_ids:
-                            continue
-                        all_records.append(record)
-                        seen_record_ids.add(record.record_id)
-                fallback_limit = max(limit * 20000, 50000) if _wants_swd_ensembl_metazoa(plan.question) else max(limit * 1000, 5000)
-                for source_id in wanted_sources:
-                    source_fetcher = _source_records_with_payload if source_id == DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID else _source_records
-                    for record in source_fetcher(index, source_id, ["genome_features"], limit=fallback_limit):
+                if _wants_swd_ensembl_stable_history(plan.question):
+                    for record in _swd_ensembl_stable_history_gap_records(index, limit=limit):
                         if record.record_id in seen_record_ids:
                             continue
                         all_records.append(record)
                         seen_record_ids.add(record.record_id)
+                else:
+                    for search_query in _swd_gene_ortholog_search_terms(plan.question):
+                        for record in index.search(search_query, lane="genome_features", limit=max(limit * 20, 100)):
+                            if record.source not in wanted_sources or record.record_id in seen_record_ids:
+                                continue
+                            all_records.append(record)
+                            seen_record_ids.add(record.record_id)
+                    fallback_limit = max(limit * 20000, 50000) if _wants_swd_ensembl_metazoa(plan.question) else max(limit * 1000, 5000)
+                    for source_id in wanted_sources:
+                        source_fetcher = _source_records_with_payload if source_id == DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID else _source_records
+                        for record in source_fetcher(index, source_id, ["genome_features"], limit=fallback_limit):
+                            if record.record_id in seen_record_ids:
+                                continue
+                            all_records.append(record)
+                            seen_record_ids.add(record.record_id)
             if _wants_swd_ncbi_nucleotide(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID, ["dna_barcodes"], limit=max(limit * 5, 25)):
                     if record.record_id in seen_record_ids:

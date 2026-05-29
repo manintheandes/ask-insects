@@ -4794,6 +4794,57 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ensembl_metazoa_orthology")
 
+    def test_swd_ensembl_stable_history_questions_use_gap_rows_directly(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_ensembl_current_gene:000001",
+                        lane="genome_features",
+                        source="drosophila_suzukii_ensembl_metazoa_orthology",
+                        title="Drosophila suzukii Ensembl Metazoa current gene: example",
+                        text="Ensembl Metazoa current gene row for Drosophila suzukii example.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ensembl_metazoa_orthology",
+                            locator="raw/ensembl/gene.txt.gz#line/1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "ensembl_metazoa_current_gene"},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_ensembl_history_gap:swd_ensembl_metazoa_stable_id_event_empty",
+                        lane="genome_features",
+                        source="drosophila_suzukii_ensembl_metazoa_orthology",
+                        title="Drosophila suzukii Ensembl Metazoa stable-ID event table is empty",
+                        text="Ensembl Metazoa release 62 provides stable_id_event.txt.gz for Drosophila suzukii, but it has zero rows.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ensembl_metazoa_orthology",
+                            locator="raw/ensembl/stable_id_event.txt.gz#empty",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "ensembl_metazoa_stable_id_history_gap"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii Ensembl stable ID history",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_ensembl_history_gap:swd_ensembl_metazoa_stable_id_event_empty")
+
     def test_biosample_questions_prefer_ncbi_biosamples(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
