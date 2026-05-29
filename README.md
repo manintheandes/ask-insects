@@ -47,7 +47,7 @@ python3 -m askinsects ask "what do we know about spotted wing drosophila?" --jso
 python3 -m askinsects search source_coverage "Drosophila suzukii missing"
 ```
 
-This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are larger full-text coverage, motion-table rows, and human-validated pest-science tables.
+This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are motion-table rows, broader marker review, and human-validated pest-science tables.
 
 The next depth layer is `drosophila_suzukii_deep_sources`. It adds bounded NCBI assembly, BioProject, BioSample, and SRA metadata, UniProt protein and proteome metadata, and repository candidate sweeps across Zenodo, Figshare, and Dryad:
 
@@ -89,6 +89,14 @@ The `drosophila_suzukii_pubmed_literature` lane reconciles SWD literature with P
 python3 -m askinsects ingest-drosophila-suzukii-pubmed-literature --max-results 1000 --page-size 100
 python3 -m askinsects search literature "Drosophila suzukii PubMed coverage_status"
 python3 -m askinsects sql "select json_extract(payload_json, '$.coverage_status') as status, count(*) as n from record_payloads where source='drosophila_suzukii_pubmed_literature' group by status"
+```
+
+The `drosophila_suzukii_ncbi_nucleotide` lane cross-checks SWD barcode coverage against NCBI nuccore/GenBank. It fetches bounded COI/barcode-like nucleotide metadata, stores one `dna_barcodes` row per accession, and marks whether the accession matched an existing BOLD row or is GenBank-only metadata.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-ncbi-nucleotide --max-results 1000 --page-size 100
+python3 -m askinsects ask "show Drosophila suzukii GenBank COI nucleotide cross-check" --json
+python3 -m askinsects sql "select json_extract(payload_json, '$.bold_match_status') as status, count(*) as n from record_payloads where source='drosophila_suzukii_ncbi_nucleotide' group by status"
 ```
 
 The first Aedes-depth literature gate for spotted wing drosophila is `drosophila_suzukii_extracted_facts`. It audits every indexed SWD paper for supplements, preserves supplement manifests, parses supported public supplement tables when opted in, and emits source-backed candidate rows for behavior, crop damage, management, resistance, biocontrol, ecology, and genomics.

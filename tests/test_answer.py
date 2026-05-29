@@ -4478,6 +4478,57 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["record_id"], "GBAAW12253-24")
             self.assertIn("Marker: COI-5P", answer["evidence"][0]["text"])
 
+    def test_swd_genbank_nucleotide_questions_prefer_ncbi_crosscheck_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:genome:gff:gene:orco",
+                        lane="genes",
+                        source="drosophila_suzukii_genome_files",
+                        title="Drosophila suzukii gene Orco",
+                        text="Drosophila suzukii genome GFF gene row.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/gff",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_genome_files",
+                            locator="raw/gff#gene/orco",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_ncbi_nucleotide:nuccore:PV080836.1",
+                        lane="dna_barcodes",
+                        source="drosophila_suzukii_ncbi_nucleotide",
+                        title="Drosophila suzukii voucher UHIM.BRU_04107 cytochrome oxidase subunit 1 (COI) gene",
+                        text="Drosophila suzukii NCBI GenBank nucleotide cross-check. accession=PV080836.1 marker=COI/COX1 bold_match_status=bold_accession_matched sequence_length=659 bp",
+                        species="Drosophila suzukii",
+                        url="https://www.ncbi.nlm.nih.gov/nuccore/PV080836.1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ncbi_nucleotide",
+                            locator="raw/drosophila_suzukii_ncbi_nucleotide/nuccore_esummary_0001.json#result/3040293388",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"accession": "PV080836", "bold_match_status": "bold_accession_matched"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii GenBank COI nucleotide cross-check",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_nucleotide")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_ncbi_nucleotide:nuccore:PV080836.1")
+
     def test_biosample_questions_prefer_ncbi_biosamples(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

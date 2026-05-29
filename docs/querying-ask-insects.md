@@ -103,6 +103,18 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane treats PubMed as an enrichment and reconciliation source, not as the canonical paper identity. `drosophila_suzukii_core` remains the canonical OpenAlex metadata lane; PubMed rows say whether a PMID matches an indexed paper by DOI or title, or whether it is currently PubMed-metadata-only.
 
+To cross-check spotted wing drosophila barcode coverage against NCBI GenBank/nuccore:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-ncbi-nucleotide \
+  --max-results 1000 \
+  --page-size 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii GenBank COI nucleotide cross-check" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.bold_match_status') as status, count(*) as n from record_payloads where source='drosophila_suzukii_ncbi_nucleotide' group by status"
+```
+
+This lane treats NCBI nuccore as a bounded metadata cross-check for COI/barcode-like accessions. It says whether an accession matched an indexed BOLD row or is currently GenBank-only metadata; it does not claim sequence equivalence beyond accession matching.
+
 To make spotted wing drosophila video evidence inspectable:
 
 ```bash

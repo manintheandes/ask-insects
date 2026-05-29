@@ -64,6 +64,7 @@ sources:
         - drosophila_suzukii_deep_sources
         - drosophila_suzukii_extracted_facts
         - drosophila_suzukii_genome_files
+        - drosophila_suzukii_ncbi_nucleotide
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
   - id: drosophila_suzukii_deep_sources
@@ -342,6 +343,37 @@ sources:
         - gff_attributes
         - protein_accession
         - sequence_length
+  - id: drosophila_suzukii_ncbi_nucleotide
+    name: Drosophila suzukii NCBI GenBank nucleotide cross-check
+    source_type: public_ncbi_eutils
+    boundary: Bounded NCBI nuccore/GenBank COI and barcode metadata cross-check for Drosophila suzukii, matching accessions back to BOLD when possible while preserving GenBank-only records as metadata evidence. This is a barcode/nucleotide cross-check, not canonical taxonomy, genome assembly parsing, or proof of sequence equivalence.
+    query_plane: ncbi_nuccore_esearch_esummary_to_sqlite_dna_barcode_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_ncbi_nucleotide
+    ingest_script: scripts/ingest_drosophila_suzukii_ncbi_nucleotide.py
+    input_sources:
+      - ncbi_eutilities_nuccore
+      - drosophila_suzukii_core
+      - BOLD accessions when available
+    lanes:
+      - dna_barcodes
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - uid
+        - accession_version
+        - marker
+        - sequence_length
+        - country
+        - collection_date
+        - specimen_voucher
+        - bold_match_status
+        - matched_bold_record_ids
+      structured_gaps:
+        - swd_ncbi_nucleotide_limit_applied
+        - swd_ncbi_nucleotide_search_failed
+        - swd_ncbi_nucleotide_summary_failed
   - id: drosophila_suzukii_occurrence_ecology
     name: Drosophila suzukii occurrence ecology from indexed observations
     source_type: derived_sqlite_source

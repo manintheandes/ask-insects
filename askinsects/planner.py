@@ -586,11 +586,13 @@ def plan_question(question: str) -> QueryPlan:
         "bold",
         "coi",
         "coi-5p",
+        "cox1",
         "codon",
         "codons",
         "codon usage",
         "dna barcode",
         "dna barcodes",
+        "genbank",
         "genome",
         "genomics",
         "gene",
@@ -610,6 +612,10 @@ def plan_question(question: str) -> QueryPlan:
         "samples",
         "strain",
         "strains",
+        "nuccore",
+        "nucleotide",
+        "nucleotide accession",
+        "nucleotide accessions",
         "isolate",
         "isolates",
         "sra",
@@ -660,7 +666,7 @@ def plan_question(question: str) -> QueryPlan:
         "veupathdb",
     )
     if any(term in q for term in genomics_terms):
-        if any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p")):
+        if any(term in q for term in ("barcode", "barcodes", "bold", "coi", "coi-5p", "cox1", "genbank", "nuccore", "nucleotide", "nucleotide accession")):
             lanes = ("dna_barcodes", "genes", "proteins", "literature", "taxonomy")
         elif any(term in q for term in ("dbsnp", "snp", "snps", "variant", "variants", "variation")):
             lanes = ("genome_features", "genes", "genome_assemblies", "literature", "taxonomy")

@@ -21,6 +21,7 @@ from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_A
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
+from .sources.drosophila_suzukii_ncbi_nucleotide import DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID
 from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.drosophila_suzukii_video_atoms import DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
 from .sources.drosophila_suzukii import DROSOPHILA_SUZUKII_SOURCE_ID
@@ -1883,6 +1884,25 @@ def _wants_current_id_resolution(question: str) -> bool:
     return any(term in q for term in ("current id resolution", "current-id resolution", "current identifier resolution"))
 
 
+def _wants_swd_ncbi_nucleotide(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "genbank",
+            "ncbi nucleotide",
+            "nuccore",
+            "nucleotide accession",
+            "nucleotide cross-check",
+            "coi",
+            "coi-5p",
+            "cox1",
+            "barcode",
+            "barcodes",
+        )
+    )
+
+
 def _wants_orthomcl_relationship(question: str, relationship_type: str) -> bool:
     q = question.lower()
     if relationship_type == "coortholog":
@@ -1904,6 +1924,14 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
     q = question.lower()
     requested_species = _requested_species(question)
     if requested_species and requested_species.lower() == "drosophila suzukii":
+        if _wants_swd_ncbi_nucleotide(question):
+            return sorted(
+                records,
+                key=lambda record: (
+                    0 if record.source == DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID else 1,
+                    0 if record.lane == "dna_barcodes" else 1,
+                ),
+            )
         return sorted(
             records,
             key=lambda record: (
@@ -4596,23 +4624,30 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "genomics":
         if requested_species and requested_species.lower() == "drosophila suzukii":
+            if _wants_swd_ncbi_nucleotide(plan.question):
+                for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID, ["dna_barcodes"], limit=max(limit * 5, 25)):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
             swd_genome_lanes = ["genes", "transcripts", "genome_features", "proteins", "genome_assemblies"]
             swd_records: list[EvidenceRecord] = []
-            for lane in swd_genome_lanes:
-                for search_query in _search_queries(plan.question):
-                    for record in index.search(search_query, lane=lane, limit=max(limit * 5, 25)):
-                        if record.source != "drosophila_suzukii_genome_files" or record.record_id in seen_record_ids:
+            if not _wants_swd_ncbi_nucleotide(plan.question):
+                for lane in swd_genome_lanes:
+                    for search_query in _search_queries(plan.question):
+                        for record in index.search(search_query, lane=lane, limit=max(limit * 5, 25)):
+                            if record.source != "drosophila_suzukii_genome_files" or record.record_id in seen_record_ids:
+                                continue
+                            swd_records.append(record)
+                            seen_record_ids.add(record.record_id)
+                        if swd_records:
+                            break
+                if not swd_records:
+                    for record in _source_records(index, "drosophila_suzukii_genome_files", swd_genome_lanes, limit=limit):
+                        if record.record_id in seen_record_ids:
                             continue
                         swd_records.append(record)
                         seen_record_ids.add(record.record_id)
-                    if swd_records:
-                        break
-            if not swd_records:
-                for record in _source_records(index, "drosophila_suzukii_genome_files", swd_genome_lanes, limit=limit):
-                    if record.record_id in seen_record_ids:
-                        continue
-                    swd_records.append(record)
-                    seen_record_ids.add(record.record_id)
             all_records = swd_records + all_records
         if _wants_snp_variation(plan.question):
             if _source_count(index, NCBI_SNP_VARIATION_SOURCE_ID) == 0:
