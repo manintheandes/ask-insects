@@ -87,6 +87,8 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila 
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show spotted wing drosophila motion evidence" --json
 ```
 
+The SWD motion rows are cautious full-video interval rows for verified clips. They make behavior, time range, fps-derived frame range, assay context, stimulus, and confidence queryable, but they still mark `coordinates_available=false` until a real source trajectory table is found and parsed.
+
 To add a bounded live GBIF pull:
 
 ```bash

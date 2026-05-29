@@ -59,7 +59,8 @@ class DrosophilaSuzukiiVideoAtomsTests(unittest.TestCase):
             self.assertEqual(asset.source, DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID)
             self.assertEqual(asset.species, "Drosophila suzukii")
             self.assertEqual(asset.payload["verification_status"], "manifest_only")
-            self.assertTrue(any(gap["reason"] == "video_motion_rows_not_available_for_swd" for gap in result.gaps))
+            self.assertEqual(result.motion_row_count, 0)
+            self.assertTrue(any(gap["reason"] == "source_trajectory_tables_not_available_for_swd" for gap in result.gaps))
 
     def test_license_unclear_blocks_mirror_but_keeps_queryable_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -117,12 +118,25 @@ class DrosophilaSuzukiiVideoAtomsTests(unittest.TestCase):
             self.assertEqual(result.mirrored_video_count, 1)
             self.assertEqual(result.verified_video_count, 1)
             self.assertEqual(result.artifact_count, 4)
+            self.assertEqual(result.motion_row_count, 1)
             atom_types = {record.payload.get("atom_type") for record in result.records if record.payload}
             self.assertIn("video_keyframe", atom_types)
             self.assertIn("video_preview_clip", atom_types)
+            self.assertIn("video_motion_row", atom_types)
             asset = [record for record in result.records if record.payload.get("atom_type") == "video_asset"][0]
             self.assertEqual(asset.payload["codec"], "h264")
             self.assertTrue(str(asset.payload["mirror_path"]).startswith("raw/drosophila_suzukii_video_atoms/"))
+            motion = [record for record in result.records if record.payload.get("atom_type") == "video_motion_row"][0]
+            self.assertEqual(motion.lane, "behavior")
+            self.assertEqual(motion.payload["source_video_asset_id"], asset.record_id)
+            self.assertEqual(motion.payload["time_start_seconds"], 0.0)
+            self.assertEqual(motion.payload["time_end_seconds"], 4.5)
+            self.assertEqual(motion.payload["frame_start"], 0)
+            self.assertEqual(motion.payload["frame_end"], 135)
+            self.assertFalse(motion.payload["coordinates_available"])
+            self.assertEqual(motion.payload["coordinate_detail"], "source trajectory table not available")
+            self.assertEqual(motion.payload["behavior_type"], "feeding")
+            self.assertEqual(motion.payload["confidence"], "derived_video_interval_no_tracking_table")
 
 
 if __name__ == "__main__":

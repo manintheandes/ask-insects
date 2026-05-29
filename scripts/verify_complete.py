@@ -1007,7 +1007,7 @@ def check_mosquito_intelligence_coverage() -> None:
         "scripts/ingest_drosophila_suzukii_video_atoms.py",
         "drosophila_suzukii_indexed_video_records_to_sqlite_video_atoms",
         "bounded_mirror_when_license_and_size_allow_else_structured_gap",
-        "video_motion_rows_not_available_for_swd",
+        "source_trajectory_tables_not_available_for_swd",
         "thumbnails",
         "keyframes",
         "preview_clips",

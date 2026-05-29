@@ -372,6 +372,145 @@ def _artifact_records(asset: EvidenceRecord, artifact_payload: dict[str, object]
     return records
 
 
+def _coerce_float(value: object) -> float | None:
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _infer_label(text: str, labels: tuple[tuple[str, tuple[str, ...]], ...], default: str | None = None) -> str | None:
+    lowered = text.lower()
+    for label, terms in labels:
+        if any(term in lowered for term in terms):
+            return label
+    return default
+
+
+def _motion_context(candidate: DrosophilaSuzukiiVideoCandidate) -> str:
+    return " ".join(
+        str(value or "")
+        for value in (
+            candidate.title,
+            candidate.text,
+            candidate.url,
+            candidate.media_url,
+            candidate.payload.get("download_url"),
+            candidate.payload.get("name"),
+            candidate.payload.get("file_name"),
+        )
+    )
+
+
+def _record_for_motion_interval(
+    asset: EvidenceRecord,
+    candidate: DrosophilaSuzukiiVideoCandidate,
+    *,
+    retrieved_at: str,
+    ordinal: int,
+) -> EvidenceRecord | None:
+    if asset.payload.get("verification_status") != "verified":
+        return None
+    duration_seconds = _coerce_float(asset.payload.get("duration_seconds"))
+    fps = _coerce_float(asset.payload.get("fps"))
+    frame_end = int(round(duration_seconds * fps)) if duration_seconds is not None and fps is not None else None
+    context = _motion_context(candidate)
+    behavior_type = _infer_label(
+        context,
+        (
+            ("oviposition", ("oviposition", "egg laying", "egg-laying", "egg")),
+            ("flight", ("flight", "flying")),
+            ("feeding", ("feeding", "feed", "fungus", "yeast", "fruit")),
+            ("locomotion", ("tracking", "walking", "locomotor", "locomotion", "movement", "moving")),
+            ("mating", ("mating", "courtship", "copulation")),
+            ("trap response", ("trap", "attractant", "bait")),
+        ),
+        default="visible motion",
+    )
+    life_stage = _infer_label(
+        context,
+        (
+            ("adult", ("adult", "female", "male")),
+            ("larva", ("larva", "larvae")),
+            ("pupa", ("pupa", "pupae")),
+            ("egg", ("egg",)),
+        ),
+    )
+    sex = _infer_label(context, (("female", ("female", "females")), ("male", ("male", "males"))))
+    stimulus = _infer_label(
+        context,
+        (
+            ("fruit", ("fruit", "berry", "cherry", "blueberry", "raspberry", "strawberry")),
+            ("fungus", ("fungus", "fungal")),
+            ("yeast", ("yeast",)),
+            ("trap attractant", ("trap", "attractant", "bait")),
+        ),
+    )
+    arena = _infer_label(
+        context,
+        (
+            ("laboratory arena", ("arena", "chamber", "cage", "assay")),
+            ("host substrate", ("fruit", "berry", "fungus", "yeast")),
+            ("field setting", ("field", "orchard", "vineyard")),
+        ),
+    )
+    mirror_path = asset.payload.get("mirror_path")
+    source_table_locator = str(mirror_path or candidate.locator)
+    payload = {
+        "atom_type": "video_motion_row",
+        "source_video_asset_id": asset.record_id,
+        "source_video_record_id": candidate.source_record_id,
+        "source_table": "derived_from_video_probe",
+        "source_table_locator": source_table_locator,
+        "track_id": "video-interval",
+        "frame_start": 0,
+        "frame_end": frame_end,
+        "time_start_seconds": 0.0,
+        "time_end_seconds": duration_seconds,
+        "x": None,
+        "y": None,
+        "coordinates_available": False,
+        "coordinate_detail": "source trajectory table not available",
+        "behavior_type": behavior_type,
+        "life_stage": life_stage,
+        "sex": sex,
+        "assay": "source video observation",
+        "stimulus": stimulus,
+        "arena": arena,
+        "confidence": "derived_video_interval_no_tracking_table",
+        "duration_seconds": duration_seconds,
+        "fps": fps,
+        "source_title": candidate.title,
+    }
+    range_text = "full verified video interval"
+    if duration_seconds is not None:
+        range_text = f"0.0 to {duration_seconds:g} seconds"
+    return EvidenceRecord(
+        record_id=f"swd:video_atom:motion_interval:{_safe_id(asset.record_id)}:{ordinal}",
+        lane="behavior",
+        source=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+        title=f"Drosophila suzukii video motion interval: {behavior_type}",
+        text=(
+            f"Derived {COMMON_NAME} motion interval from verified source video {asset.record_id}: "
+            f"{behavior_type} over {range_text}. Coordinates are not available because no source "
+            "trajectory table has been parsed for this video."
+        ),
+        species=SPECIES,
+        url=asset.url,
+        media_url=asset.media_url,
+        provenance=Provenance(
+            source_id=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+            locator=source_table_locator,
+            retrieved_at=retrieved_at,
+            license=asset.provenance.license,
+            source_url=asset.media_url,
+        ),
+        payload=payload,
+    )
+
+
 def build_drosophila_suzukii_video_atom_records(
     artifact_dir: Path,
     *,
@@ -396,6 +535,7 @@ def build_drosophila_suzukii_video_atom_records(
     mirrored_video_count = 0
     verified_video_count = 0
     artifact_count = 0
+    motion_row_count = 0
     fetcher = fetch_video_bytes_fn or _default_fetch_video_bytes
     probe_fn = probe_video_file_fn or probe_video_file
     artifact_fn = artifact_generator_fn or generate_video_artifacts
@@ -468,6 +608,10 @@ def build_drosophila_suzukii_video_atom_records(
             probe=probe,
         )
         records.append(asset)
+        motion_record = _record_for_motion_interval(asset, candidate, retrieved_at=retrieved_at, ordinal=ordinal)
+        if motion_record is not None:
+            motion_row_count += 1
+            records.append(motion_record)
         if generate_artifacts and verification_status == "verified":
             try:
                 output_dir = artifact_dir / "raw" / "drosophila_suzukii_video_atoms" / "artifacts" / _safe_id(asset.record_id)
@@ -490,11 +634,12 @@ def build_drosophila_suzukii_video_atom_records(
     if candidates:
         gap = {
             "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
-            "reason": "video_motion_rows_not_available_for_swd",
+            "reason": "source_trajectory_tables_not_available_for_swd",
             "candidate_count": len(candidates),
+            "derived_motion_interval_count": motion_row_count,
         }
         gaps.append(gap)
-        records.append(_record_for_gap("video_motion_rows_not_available_for_swd", retrieved_at=retrieved_at, payload=gap, ordinal=len(records) + 1))
+        records.append(_record_for_gap("source_trajectory_tables_not_available_for_swd", retrieved_at=retrieved_at, payload=gap, ordinal=len(records) + 1))
     return DrosophilaSuzukiiVideoAtomsResult(
         source_id=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
         records=records,
@@ -503,5 +648,5 @@ def build_drosophila_suzukii_video_atom_records(
         mirrored_video_count=mirrored_video_count,
         verified_video_count=verified_video_count,
         artifact_count=artifact_count,
-        motion_row_count=0,
+        motion_row_count=motion_row_count,
     )
