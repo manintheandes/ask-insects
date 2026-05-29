@@ -833,6 +833,8 @@ def fetch_drosophila_suzukii_deep_records(
         records.extend(built)
         if not built:
             gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": lane, "db": db, "reason": "no_queryable_records_built", "retrieved_at": retrieved})
+        if fetch is _fetch_json:
+            time.sleep(0.5)
 
     uniprot_records, uniprot_artifacts = _uniprot_records(
         raw_dir=raw_dir / "uniprot",
