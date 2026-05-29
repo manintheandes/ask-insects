@@ -29,7 +29,14 @@ def openalex_payload(work_id: str, *, doi: str | None = None, pmid: str | None =
     }
 
 
-def seed_record(artifact_dir: Path, record_id: str, payload: dict[str, object]) -> None:
+def seed_record(
+    artifact_dir: Path,
+    record_id: str,
+    payload: dict[str, object],
+    *,
+    source_id: str = LITERATURE_SOURCE_ID,
+    species: str = "Aedes aegypti",
+) -> None:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
     index.upsert_records(
@@ -37,14 +44,14 @@ def seed_record(artifact_dir: Path, record_id: str, payload: dict[str, object]) 
             EvidenceRecord(
                 record_id=record_id,
                 lane="literature",
-                source=LITERATURE_SOURCE_ID,
+                source=source_id,
                 title=str(payload["raw_openalex_work"]["display_name"]),
-                text="Aedes aegypti literature record",
-                species="Aedes aegypti",
+                text=f"{species} literature record",
+                species=species,
                 url="https://example.org/work",
                 media_url=None,
                 provenance=Provenance(
-                    source_id=LITERATURE_SOURCE_ID,
+                    source_id=source_id,
                     locator=f"raw/literature/{record_id}.json",
                     retrieved_at="2026-05-23T00:00:00Z",
                 ),
@@ -163,6 +170,48 @@ class LiteratureEnrichmentTests(unittest.TestCase):
             self.assertEqual(status["literature"]["fulltext_unit_count"], rows.__len__())
             self.assertEqual(receipt["literature"]["fulltext_record_count"], 1)
             self.assertEqual(receipt["literature"]["payload_store"], "record_payloads.payload_json")
+
+    def test_generic_source_fulltext_enrichment_preserves_swd_source_id(self) -> None:
+        from scripts.enrich_literature_index import EnrichmentConfig, run_enrichment
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            seed_record(
+                artifact_dir,
+                "swd:openalex:WPDF",
+                openalex_payload("WPDF", doi="10.1/swd", pdf_url="https://example.org/swd.pdf"),
+                source_id="drosophila_suzukii_core",
+                species="Drosophila suzukii",
+            )
+
+            summary = run_enrichment(
+                EnrichmentConfig(
+                    artifact_dir=artifact_dir,
+                    source_id="drosophila_suzukii_literature_fulltext",
+                    input_source_id="drosophila_suzukii_core",
+                    source_label="Drosophila suzukii literature",
+                    pubmed=False,
+                    unpaywall=False,
+                    fulltext=True,
+                    delay_seconds=0,
+                ),
+                fetch_bytes=lambda url: (b"%PDF fake", "application/pdf"),
+                pdf_to_text=lambda _path: "Drosophila suzukii legal open full text.",
+            )
+
+            self.assertEqual(summary["source"], "drosophila_suzukii_literature_fulltext")
+            self.assertEqual(summary["input_source"], "drosophila_suzukii_core")
+            self.assertEqual(summary["fulltext"]["records"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select record_id, source, text from literature_fulltext_units"
+            )
+            self.assertEqual(rows[0]["record_id"], "swd:openalex:WPDF")
+            self.assertEqual(rows[0]["source"], "drosophila_suzukii_literature_fulltext")
+            self.assertIn("Drosophila suzukii", rows[0]["text"])
+            status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
+            self.assertEqual(status["source_id"], "drosophila_suzukii_literature_fulltext")
+            self.assertEqual(status["literature"]["source"], "drosophila_suzukii_literature_fulltext")
+            self.assertEqual(status["literature"]["input_source"], "drosophila_suzukii_core")
 
     def test_resume_skips_already_enriched_rows(self) -> None:
         from scripts.enrich_literature_index import EnrichmentConfig, run_enrichment

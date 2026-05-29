@@ -46,6 +46,17 @@ class FactFamily:
 
 
 @dataclass(frozen=True)
+class ExtractedFactsProfile:
+    source_id: str
+    input_literature_source_id: str
+    species_name: str
+    label: str
+    record_prefix: str
+    raw_subdir: str
+    fact_families: tuple[FactFamily, ...]
+
+
+@dataclass(frozen=True)
 class TextCandidate:
     source_record_id: str
     source_title: str
@@ -338,6 +349,16 @@ FACT_FAMILIES: tuple[FactFamily, ...] = (
     ),
 )
 
+DEFAULT_PROFILE = ExtractedFactsProfile(
+    source_id=EXTRACTED_FACTS_SOURCE_ID,
+    input_literature_source_id=INPUT_LITERATURE_SOURCE_ID,
+    species_name="Aedes aegypti",
+    label="Aedes aegypti",
+    record_prefix="extracted_fact",
+    raw_subdir="extracted_facts",
+    fact_families=FACT_FAMILIES,
+)
+
 PREFILTER_STOPWORDS = {
     "after",
     "assay",
@@ -353,9 +374,9 @@ PREFILTER_STOPWORDS = {
 }
 
 
-def _prefilter_tokens() -> tuple[str, ...]:
+def _prefilter_tokens(fact_families: tuple[FactFamily, ...] = FACT_FAMILIES) -> tuple[str, ...]:
     tokens: set[str] = set()
-    for family in FACT_FAMILIES:
+    for family in fact_families:
         for term in family.context_terms:
             for token in re.findall(r"[A-Za-z0-9]+", term.lower()):
                 if len(token) >= 4 and token not in PREFILTER_STOPWORDS:
@@ -592,16 +613,21 @@ def _enrich_fields(text: str, fields: dict[str, list[str]]) -> dict[str, object]
     return enriched
 
 
-def _source_rows(conn: sqlite3.Connection, *, source_record_ids: list[str] | None = None) -> list[sqlite3.Row]:
+def _source_rows(
+    conn: sqlite3.Connection,
+    *,
+    source_record_ids: list[str] | None = None,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
+) -> list[sqlite3.Row]:
     where = """
         SELECT r.record_id, r.title, r.text, r.species, r.url, r.provenance_json, p.payload_json
         FROM records r
         LEFT JOIN record_payloads p ON p.record_id = r.record_id
         WHERE r.lane='literature'
           AND r.source=?
-          AND lower(coalesce(r.species, ''))='aedes aegypti'
+          AND lower(coalesce(r.species, ''))=?
     """
-    params: list[object] = [INPUT_LITERATURE_SOURCE_ID]
+    params: list[object] = [profile.input_literature_source_id, profile.species_name.lower()]
     if source_record_ids:
         placeholders = ",".join("?" for _ in source_record_ids)
         where += f" AND r.record_id IN ({placeholders})"
@@ -1667,9 +1693,10 @@ def _protocols_io_supplements(request: dict[str, object]) -> list[dict[str, obje
     return [{key: value for key, value in supplement.items() if value not in (None, "")}]
 
 
-def _matches_prefilter(text: str) -> bool:
+def _matches_prefilter(text: str, *, profile: ExtractedFactsProfile = DEFAULT_PROFILE) -> bool:
     lower = text.lower()
-    return any(token in lower for token in PREFILTER_TOKENS)
+    tokens = PREFILTER_TOKENS if profile is DEFAULT_PROFILE else _prefilter_tokens(profile.fact_families)
+    return any(token in lower for token in tokens)
 
 
 def _looks_like_markup_noise(text: str) -> bool:
@@ -1750,6 +1777,7 @@ def _text_candidates(
     *,
     max_fulltext_units: int | None,
     source_record_ids: list[str] | None = None,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
 ) -> tuple[list[TextCandidate], int, int, int, int]:
     if max_fulltext_units is not None and max_fulltext_units < 1:
         raise ValueError("max_fulltext_units must be positive")
@@ -1780,7 +1808,7 @@ def _text_candidates(
         if len(unit_text) > MAX_CANDIDATE_TEXT_CHARS:
             unit_text = unit_text[:MAX_CANDIDATE_TEXT_CHARS]
             truncated_fulltext_unit_count += 1
-        if not _matches_prefilter("\n".join([str(paper["title"]), unit_text])):
+        if not _matches_prefilter("\n".join([str(paper["title"]), unit_text]), profile=profile):
             continue
         fulltext_record_ids.add(str(unit["record_id"]))
         candidates.append(
@@ -1805,7 +1833,7 @@ def _text_candidates(
         if str(paper["record_id"]) in fulltext_record_ids:
             continue
         record_text = "\n".join([str(paper["title"]), str(paper["text"])])
-        if not _matches_prefilter(record_text):
+        if not _matches_prefilter(record_text, profile=profile):
             continue
         if max_fulltext_units is not None and selected_record_text_count >= max_fulltext_units:
             break
@@ -1993,6 +2021,7 @@ def _existing_supplement_manifest_supplements(
     literature_rows: list[sqlite3.Row],
     *,
     source_record_ids: list[str] | None,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
 ) -> list[dict[str, object]]:
     if not source_record_ids:
         return []
@@ -2008,7 +2037,7 @@ def _existing_supplement_manifest_supplements(
               AND json_extract(payload_json, '$.source_record_id') IN ({placeholders})
             ORDER BY rowid
             """,
-            [EXTRACTED_FACTS_SOURCE_ID, *source_record_ids],
+            [profile.source_id, *source_record_ids],
         ).fetchall()
     except sqlite3.OperationalError:
         return []
@@ -2044,6 +2073,7 @@ def _supplement_candidates_with_discovery(
     max_supplement_discovery_records: int | None,
     max_repository_supplement_discovery_records: int | None,
     gaps: list[dict[str, object]],
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
 ) -> tuple[list[SupplementCandidate], int, int, dict[str, int]]:
     if max_supplement_discovery_records is not None and max_supplement_discovery_records < 1:
         raise ValueError("max_supplement_discovery_records must be positive")
@@ -2121,7 +2151,7 @@ def _supplement_candidates_with_discovery(
                 repository_rows = repository_rows[:max_repository_supplement_discovery_records]
             gaps.append(
                 {
-                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "source": profile.source_id,
                     "reason": "supplement_discovery_record_limit_applied",
                     "max_supplement_discovery_records": max_supplement_discovery_records,
                     "max_repository_supplement_discovery_records": max_repository_supplement_discovery_records,
@@ -2133,7 +2163,7 @@ def _supplement_candidates_with_discovery(
             )
             discovery_rows = bounded_rows + repository_rows
         print(
-            f"[aedes_extracted_facts] supplement discovery records={len(discovery_rows)}",
+            f"[{profile.source_id}] supplement discovery records={len(discovery_rows)}",
             file=sys.stderr,
             flush=True,
         )
@@ -2152,7 +2182,7 @@ def _supplement_candidates_with_discovery(
                 discovery_record_count += 1
                 if discovery_record_count == 1 or discovery_record_count % 100 == 0:
                     print(
-                        "[aedes_extracted_facts] supplement discovery "
+                        f"[{profile.source_id}] supplement discovery "
                         f"{discovery_record_count}/{len(discovery_rows)} "
                         f"candidates={len(candidates)} discovered={discovered_count}",
                         file=sys.stderr,
@@ -2161,7 +2191,7 @@ def _supplement_candidates_with_discovery(
                 if error is not None:
                     gaps.append(
                         {
-                            "source": EXTRACTED_FACTS_SOURCE_ID,
+                            "source": profile.source_id,
                             "reason": "supplement_metadata_fetch_failed",
                             "record_id": str(paper["record_id"]),
                             "error": error,
@@ -2656,6 +2686,7 @@ def _download_and_parse_supplement_rows(
     max_supplement_bytes: int,
     max_pdf_supplement_files: int,
     gaps: list[dict[str, object]],
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
 ) -> tuple[list[TextCandidate], list[EvidenceRecord], int, int, int, int, int]:
     if max_supplement_files < 1:
         raise ValueError("max_supplement_files must be positive")
@@ -2663,7 +2694,7 @@ def _download_and_parse_supplement_rows(
         raise ValueError("max_supplement_bytes must be positive")
     if max_pdf_supplement_files < 0:
         raise ValueError("max_pdf_supplement_files must not be negative")
-    raw_dir = artifact_dir / "raw" / "extracted_facts" / "supplements"
+    raw_dir = artifact_dir / "raw" / profile.raw_subdir / "supplements"
     raw_dir.mkdir(parents=True, exist_ok=True)
     candidates: list[TextCandidate] = []
     gap_records: list[EvidenceRecord] = []
@@ -2676,7 +2707,7 @@ def _download_and_parse_supplement_rows(
         if downloaded_count >= max_supplement_files:
             gaps.append(
                 {
-                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "source": profile.source_id,
                     "reason": "supplement_file_limit_applied",
                     "max_supplement_files": max_supplement_files,
                 }
@@ -2684,7 +2715,7 @@ def _download_and_parse_supplement_rows(
             break
         if index == 0 or (index + 1) % 50 == 0:
             print(
-                "[aedes_extracted_facts] supplement download "
+                f"[{profile.source_id}] supplement download "
                 f"{index + 1}/{len(supplement_candidates)} "
                 f"downloaded={downloaded_count} parsed_files={parsed_file_count} parsed_rows={parsed_row_count}",
                 file=sys.stderr,
@@ -2698,6 +2729,7 @@ def _download_and_parse_supplement_rows(
                     index=index,
                     reason="supplement_file_missing_url",
                     retrieved_at=retrieved_at,
+                    profile=profile,
                 )
             )
             continue
@@ -2733,10 +2765,11 @@ def _download_and_parse_supplement_rows(
                     reason=reason,
                     retrieved_at=retrieved_at,
                     extra_fields=extra_fields or None,
+                    profile=profile,
                 )
             )
             gap_payload: dict[str, object] = {
-                "source": EXTRACTED_FACTS_SOURCE_ID,
+                "source": profile.source_id,
                 "reason": reason,
                 "record_id": candidate.source_record_id,
                 "locator": _supplement_locator(candidate, index),
@@ -2757,11 +2790,12 @@ def _download_and_parse_supplement_rows(
                     reason="pdf_supplement_file_limit_applied",
                     retrieved_at=retrieved_at,
                     extra_fields={"max_pdf_supplement_files": max_pdf_supplement_files},
+                    profile=profile,
                 )
             )
             gaps.append(
                 {
-                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "source": profile.source_id,
                     "reason": "pdf_supplement_file_limit_applied",
                     "record_id": candidate.source_record_id,
                     "locator": _supplement_locator(candidate, index),
@@ -2790,11 +2824,12 @@ def _download_and_parse_supplement_rows(
                     reason="supplement_table_parse_failed",
                     retrieved_at=retrieved_at,
                     extra_fields={"error": str(exc)},
+                    profile=profile,
                 )
             )
             gaps.append(
                 {
-                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "source": profile.source_id,
                     "reason": "supplement_table_parse_failed",
                     "record_id": candidate.source_record_id,
                     "locator": _supplement_locator(candidate, index),
@@ -2820,7 +2855,7 @@ def _download_and_parse_supplement_rows(
                     unit_url=url,
                     unit_license=candidate.supplement.get("license") if isinstance(candidate.supplement.get("license"), str) else None,
                     unit_provenance={
-                        "source_id": EXTRACTED_FACTS_SOURCE_ID,
+                        "source_id": profile.source_id,
                         "locator": raw_path.relative_to(artifact_dir).as_posix(),
                         "retrieved_at": retrieved_at,
                         "source_url": url,
@@ -2840,11 +2875,12 @@ def _download_and_parse_supplement_rows(
                     reason="supplement_table_no_rows",
                     retrieved_at=retrieved_at,
                     raw_file_path=raw_path.relative_to(artifact_dir).as_posix(),
+                    profile=profile,
                 )
             )
             gaps.append(
                 {
-                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "source": profile.source_id,
                     "reason": "supplement_table_no_rows",
                     "record_id": candidate.source_record_id,
                     "locator": _supplement_locator(candidate, index, raw_path.relative_to(artifact_dir).as_posix()),
@@ -2868,7 +2904,7 @@ def _download_and_parse_supplement_rows(
                     unit_url=url,
                     unit_license=candidate.supplement.get("license") if isinstance(candidate.supplement.get("license"), str) else None,
                     unit_provenance={
-                        "source_id": EXTRACTED_FACTS_SOURCE_ID,
+                        "source_id": profile.source_id,
                         "locator": f"{raw_path.relative_to(artifact_dir).as_posix()}#row/{row_index}",
                         "retrieved_at": retrieved_at,
                         "source_url": url,
@@ -2884,20 +2920,26 @@ def _download_and_parse_supplement_rows(
     return candidates, gap_records, downloaded_count, parsed_file_count, parsed_row_count, parsed_pdf_count, skipped_pdf_count
 
 
-def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrieved_at: str) -> EvidenceRecord:
+def _record_for_supplement(
+    candidate: SupplementCandidate,
+    *,
+    index: int,
+    retrieved_at: str,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
+) -> EvidenceRecord:
     supplement = candidate.supplement
     title_text = str(supplement.get("title") or "Supplementary material")
     url = supplement.get("url")
     digest = _digest(candidate.source_record_id, title_text, url, index)
     locator = f"records#{candidate.source_record_id};supplement#{index}"
     text = (
-        f"Supplement manifest for Aedes aegypti paper {candidate.source_title}. "
+        f"Supplement manifest for {profile.label} paper {candidate.source_title}. "
         f"Title: {title_text}. "
         f"File type: {supplement.get('file_type', 'unknown')}. "
         f"Source: {supplement.get('source', 'record_payload')}."
     )
     provenance = Provenance(
-        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        source_id=profile.source_id,
         locator=locator,
         retrieved_at=retrieved_at,
         license=supplement.get("license") if isinstance(supplement.get("license"), str) else None,
@@ -2988,12 +3030,12 @@ def _record_for_supplement(candidate: SupplementCandidate, *, index: int, retrie
         if supplement.get(metadata_key) is not None:
             fields[metadata_key] = supplement.get(metadata_key)
     return EvidenceRecord(
-        record_id=f"extracted_fact:supplement_manifest:{_normalize_id(candidate.source_record_id)}:{digest}",
+        record_id=f"{profile.record_prefix}:supplement_manifest:{_normalize_id(candidate.source_record_id)}:{digest}",
         lane="literature",
-        source=EXTRACTED_FACTS_SOURCE_ID,
-        title=f"Aedes aegypti supplement manifest: {title_text}",
+        source=profile.source_id,
+        title=f"{profile.label} supplement manifest: {title_text}",
         text=text,
-        species=candidate.species or "Aedes aegypti",
+        species=candidate.species or profile.species_name,
         url=url if isinstance(url, str) else candidate.paper_url,
         media_url=None,
         provenance=provenance,
@@ -3020,6 +3062,7 @@ def _record_for_supplement_file_gap(
     retrieved_at: str,
     raw_file_path: str | None = None,
     extra_fields: dict[str, object] | None = None,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
 ) -> EvidenceRecord:
     supplement = candidate.supplement
     title_text = str(supplement.get("title") or "Supplementary material")
@@ -3040,26 +3083,26 @@ def _record_for_supplement_file_gap(
     if extra_fields:
         fields.update(extra_fields)
     text = (
-        f"Aedes aegypti supplement file gap for paper {candidate.source_title}. "
+        f"{profile.label} supplement file gap for paper {candidate.source_title}. "
         f"Reason: {reason}. "
         f"Title: {title_text}. "
         f"File type: {supplement.get('file_type', 'unknown')}. "
         f"Source: {supplement.get('source', 'record_payload')}."
     )
     provenance = Provenance(
-        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        source_id=profile.source_id,
         locator=locator,
         retrieved_at=retrieved_at,
         license=supplement.get("license") if isinstance(supplement.get("license"), str) else None,
         source_url=url if isinstance(url, str) else candidate.paper_url,
     )
     return EvidenceRecord(
-        record_id=f"extracted_fact:supplement_file_gap:{_normalize_id(candidate.source_record_id)}:{digest}",
+        record_id=f"{profile.record_prefix}:supplement_file_gap:{_normalize_id(candidate.source_record_id)}:{digest}",
         lane="literature",
-        source=EXTRACTED_FACTS_SOURCE_ID,
-        title=f"Aedes aegypti supplement file gap: {reason}",
+        source=profile.source_id,
+        title=f"{profile.label} supplement file gap: {reason}",
         text=text,
-        species=candidate.species or "Aedes aegypti",
+        species=candidate.species or profile.species_name,
         url=url if isinstance(url, str) else candidate.paper_url,
         media_url=None,
         provenance=provenance,
@@ -3087,6 +3130,7 @@ def _record_for_supplement_audit(
     discover_supplements: bool,
     download_supplements: bool,
     retrieved_at: str,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
 ) -> EvidenceRecord:
     request = _identifier_request(paper)
     has_discovery_identifier = any(request.get(key) for key in ("doi", "pmid", "pmcid"))
@@ -3117,26 +3161,26 @@ def _record_for_supplement_audit(
         "has_discovery_identifier": has_discovery_identifier,
     }
     text = (
-        f"Aedes aegypti supplement audit for paper {title}. "
+        f"{profile.label} supplement audit for paper {title}. "
         f"Coverage status: {coverage_status}. "
         f"Supplement manifests: {supplement_candidate_count}. "
         f"Parsed supplement rows: {parsed_supplement_row_count}. "
         f"Promoted structured supplement rows: {promoted_supplement_row_count}."
     )
     provenance = Provenance(
-        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        source_id=profile.source_id,
         locator=f"records#{source_record_id};supplement_audit",
         retrieved_at=retrieved_at,
         license=None,
         source_url=paper["url"],
     )
     return EvidenceRecord(
-        record_id=f"extracted_fact:supplement_audit:{_normalize_id(source_record_id)}",
+        record_id=f"{profile.record_prefix}:supplement_audit:{_normalize_id(source_record_id)}",
         lane="literature",
-        source=EXTRACTED_FACTS_SOURCE_ID,
-        title="Aedes aegypti supplement audit",
+        source=profile.source_id,
+        title=f"{profile.label} supplement audit",
         text=text,
-        species=paper["species"] or "Aedes aegypti",
+        species=paper["species"] or profile.species_name,
         url=paper["url"],
         media_url=None,
         provenance=provenance,
@@ -3155,7 +3199,14 @@ def _record_for_supplement_audit(
     )
 
 
-def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[str, object], *, retrieved_at: str) -> EvidenceRecord:
+def _record_for_fact(
+    candidate: TextCandidate,
+    family: FactFamily,
+    fields: dict[str, object],
+    *,
+    retrieved_at: str,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
+) -> EvidenceRecord:
     combined_text = "\n".join([candidate.source_title, candidate.text])
     flat_terms = [term for values in fields.values() if isinstance(values, list) for term in values if isinstance(term, str)]
     context_hits = _matched_terms(combined_text, family.context_terms)
@@ -3179,13 +3230,13 @@ def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[
     if candidate.table_row_index is not None:
         locator_parts.append(f"row#{candidate.table_row_index}")
     provenance = Provenance(
-        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        source_id=profile.source_id,
         locator=";".join(locator_parts),
         retrieved_at=retrieved_at,
         license=candidate.unit_license,
         source_url=candidate.unit_url or candidate.paper_url,
     )
-    title = f"Aedes aegypti extracted {family.fact_type.replace('_', ' ')} fact"
+    title = f"{profile.label} extracted {family.fact_type.replace('_', ' ')} fact"
     source_locator_text = f"Source record: {candidate.source_record_id}."
     if candidate.unit_url:
         source_locator_text += f" Source URL: {candidate.unit_url}."
@@ -3200,12 +3251,12 @@ def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[
         f"Evidence: {evidence_text}"
     )
     return EvidenceRecord(
-        record_id=f"extracted_fact:{family.fact_type}:{_normalize_id(candidate.source_record_id)}:{digest}",
+        record_id=f"{profile.record_prefix}:{family.fact_type}:{_normalize_id(candidate.source_record_id)}:{digest}",
         lane=family.lane,
-        source=EXTRACTED_FACTS_SOURCE_ID,
+        source=profile.source_id,
         title=title,
         text=text,
-        species=candidate.species or "Aedes aegypti",
+        species=candidate.species or profile.species_name,
         url=candidate.unit_url or candidate.paper_url,
         media_url=None,
         provenance=provenance,
@@ -3231,7 +3282,12 @@ def _record_for_fact(candidate: TextCandidate, family: FactFamily, fields: dict[
     )
 
 
-def _record_for_unpromoted_supplement_row(candidate: TextCandidate, *, retrieved_at: str) -> EvidenceRecord:
+def _record_for_unpromoted_supplement_row(
+    candidate: TextCandidate,
+    *,
+    retrieved_at: str,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
+) -> EvidenceRecord:
     row = candidate.table_row or {}
     row_index = candidate.table_row_index or 0
     raw_file = candidate.raw_file_path or "supplement"
@@ -3244,7 +3300,7 @@ def _record_for_unpromoted_supplement_row(candidate: TextCandidate, *, retrieved
     if candidate.table_row_index is not None:
         locator_parts.append(f"row#{candidate.table_row_index}")
     provenance = Provenance(
-        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        source_id=profile.source_id,
         locator=";".join(locator_parts),
         retrieved_at=retrieved_at,
         license=candidate.unit_license,
@@ -3252,18 +3308,18 @@ def _record_for_unpromoted_supplement_row(candidate: TextCandidate, *, retrieved
     )
     headers = list(row)
     text = (
-        f"Aedes aegypti parsed supplement table row from {candidate.source_title}. "
+        f"{profile.label} parsed supplement table row from {candidate.source_title}. "
         "This row was parsed but did not match a structured lane schema. "
         f"Headers: {', '.join(headers)}. "
         f"Values: {'; '.join(f'{key}: {value}' for key, value in row.items() if value)}"
     )
     return EvidenceRecord(
-        record_id=f"extracted_fact:supplement_table_row:{_normalize_id(candidate.source_record_id)}:{digest}",
+        record_id=f"{profile.record_prefix}:supplement_table_row:{_normalize_id(candidate.source_record_id)}:{digest}",
         lane="literature",
-        source=EXTRACTED_FACTS_SOURCE_ID,
-        title="Aedes aegypti parsed supplement table row",
+        source=profile.source_id,
+        title=f"{profile.label} parsed supplement table row",
         text=text,
-        species=candidate.species or "Aedes aegypti",
+        species=candidate.species or profile.species_name,
         url=candidate.unit_url or candidate.paper_url,
         media_url=None,
         provenance=provenance,
@@ -3303,6 +3359,7 @@ def build_extracted_fact_records(
     max_supplement_bytes: int = DEFAULT_MAX_SUPPLEMENT_BYTES,
     max_pdf_supplement_files: int = 10,
     source_record_ids: list[str] | None = None,
+    profile: ExtractedFactsProfile = DEFAULT_PROFILE,
 ) -> ExtractedFactsResult:
     retrieved_at = retrieved_at or utc_now()
     index_path = artifact_dir / "source_index.sqlite"
@@ -3310,11 +3367,11 @@ def build_extracted_fact_records(
     records: list[EvidenceRecord] = []
     if not index_path.exists():
         return ExtractedFactsResult(
-            source_id=EXTRACTED_FACTS_SOURCE_ID,
+            source_id=profile.source_id,
             records=[],
             gaps=[
                 {
-                    "source": EXTRACTED_FACTS_SOURCE_ID,
+                    "source": profile.source_id,
                     "reason": "missing_source_index",
                     "artifact_dir": artifact_dir.as_posix(),
                 }
@@ -3328,7 +3385,7 @@ def build_extracted_fact_records(
             papers_with_supplement_manifest_count=0,
             papers_with_parsed_supplement_rows_count=0,
             papers_with_promoted_supplement_rows_count=0,
-            fact_counts={family.fact_type: 0 for family in FACT_FAMILIES},
+            fact_counts={family.fact_type: 0 for family in profile.fact_families},
             selected_fulltext_unit_count=0,
             truncated_fulltext_unit_count=0,
             selected_record_text_count=0,
@@ -3347,11 +3404,12 @@ def build_extracted_fact_records(
     conn = sqlite3.connect(index_path)
     conn.row_factory = sqlite3.Row
     try:
-        literature_rows = _source_rows(conn, source_record_ids=source_record_ids)
+        literature_rows = _source_rows(conn, source_record_ids=source_record_ids, profile=profile)
         existing_supplements = _existing_supplement_manifest_supplements(
             conn,
             literature_rows,
             source_record_ids=source_record_ids,
+            profile=profile,
         )
         (
             text_candidates,
@@ -3364,6 +3422,7 @@ def build_extracted_fact_records(
             literature_rows,
             max_fulltext_units=max_fulltext_units,
             source_record_ids=source_record_ids,
+            profile=profile,
         )
     finally:
         conn.close()
@@ -3384,9 +3443,10 @@ def build_extracted_fact_records(
         max_supplement_discovery_records=max_supplement_discovery_records,
         max_repository_supplement_discovery_records=max_repository_supplement_discovery_records,
         gaps=gaps,
+        profile=profile,
     )
     for index, candidate in enumerate(supplement_candidates):
-        records.append(_record_for_supplement(candidate, index=index, retrieved_at=retrieved_at))
+        records.append(_record_for_supplement(candidate, index=index, retrieved_at=retrieved_at, profile=profile))
     supplement_candidate_counts_by_paper = Counter(candidate.source_record_id for candidate in supplement_candidates)
     downloaded_supplement_file_count = 0
     parsed_supplement_file_count = 0
@@ -3398,7 +3458,7 @@ def build_extracted_fact_records(
     if download_supplements:
         supplement_file_fetcher = fetch_supplement_file_fn or _fetch_bytes_url
         print(
-            f"[aedes_extracted_facts] supplement download candidates={len(supplement_candidates)} "
+            f"[{profile.source_id}] supplement download candidates={len(supplement_candidates)} "
             f"max_files={max_supplement_files}",
             file=sys.stderr,
             flush=True,
@@ -3420,11 +3480,12 @@ def build_extracted_fact_records(
             max_supplement_bytes=max_supplement_bytes,
             max_pdf_supplement_files=max_pdf_supplement_files,
             gaps=gaps,
+            profile=profile,
         )
         records.extend(supplement_file_gap_records)
         text_candidates.extend(supplement_text_candidates)
         print(
-            "[aedes_extracted_facts] supplement download completed "
+            f"[{profile.source_id}] supplement download completed "
             f"downloaded={downloaded_supplement_file_count} "
             f"parsed_files={parsed_supplement_file_count} "
             f"parsed_rows={parsed_supplement_row_count}",
@@ -3433,17 +3494,17 @@ def build_extracted_fact_records(
         )
     parsed_supplement_row_counts_by_paper = Counter(candidate.source_record_id for candidate in supplement_text_candidates)
 
-    fact_counts = {family.fact_type: 0 for family in FACT_FAMILIES}
+    fact_counts = {family.fact_type: 0 for family in profile.fact_families}
     promoted_supplement_row_counts_by_paper: Counter[str] = Counter()
     print(
-        f"[aedes_extracted_facts] fact extraction candidates={len(text_candidates)}",
+        f"[{profile.source_id}] fact extraction candidates={len(text_candidates)}",
         file=sys.stderr,
         flush=True,
     )
     for candidate_index, candidate in enumerate(text_candidates, start=1):
         if candidate_index == 1 or candidate_index % 5000 == 0:
             print(
-                "[aedes_extracted_facts] fact extraction "
+                f"[{profile.source_id}] fact extraction "
                 f"{candidate_index}/{len(text_candidates)} records={len(records)}",
                 file=sys.stderr,
                 flush=True,
@@ -3451,7 +3512,7 @@ def build_extracted_fact_records(
         combined_text = "\n".join([candidate.source_title, candidate.text])
         declared_fact_type = _row_declared_fact_type(candidate.table_row)
         promoted_table_row = False
-        for family in FACT_FAMILIES:
+        for family in profile.fact_families:
             if declared_fact_type and declared_fact_type != family.fact_type:
                 continue
             fields = _field_matches(combined_text, family)
@@ -3471,15 +3532,15 @@ def build_extracted_fact_records(
             ):
                 continue
             enriched_fields = _enrich_fields(combined_text, fields)
-            records.append(_record_for_fact(candidate, family, enriched_fields, retrieved_at=retrieved_at))
+            records.append(_record_for_fact(candidate, family, enriched_fields, retrieved_at=retrieved_at, profile=profile))
             if candidate.table_row:
                 promoted_supplement_row_counts_by_paper[candidate.source_record_id] += 1
                 promoted_table_row = True
             fact_counts[family.fact_type] += 1
         if candidate.table_row and not promoted_table_row:
-            records.append(_record_for_unpromoted_supplement_row(candidate, retrieved_at=retrieved_at))
+            records.append(_record_for_unpromoted_supplement_row(candidate, retrieved_at=retrieved_at, profile=profile))
     print(
-        f"[aedes_extracted_facts] supplement audit records={len(literature_rows)}",
+        f"[{profile.source_id}] supplement audit records={len(literature_rows)}",
         file=sys.stderr,
         flush=True,
     )
@@ -3493,6 +3554,7 @@ def build_extracted_fact_records(
             discover_supplements=discover_supplements,
             download_supplements=download_supplements,
             retrieved_at=retrieved_at,
+            profile=profile,
         )
         for paper in literature_rows
     ]
@@ -3501,7 +3563,7 @@ def build_extracted_fact_records(
     if not literature_rows:
         gaps.append(
             {
-                "source": EXTRACTED_FACTS_SOURCE_ID,
+                "source": profile.source_id,
                 "reason": "no_literature_records",
                 "artifact_dir": artifact_dir.as_posix(),
             }
@@ -3509,15 +3571,15 @@ def build_extracted_fact_records(
     if literature_rows and not supplement_candidates:
         gaps.append(
             {
-                "source": EXTRACTED_FACTS_SOURCE_ID,
+                "source": profile.source_id,
                 "reason": "no_supplement_metadata_found",
                 "source_record_count": len(literature_rows),
             }
         )
-    if literature_rows and not any(fact_counts.values()):
+    if literature_rows and profile.fact_families and not any(fact_counts.values()):
         gaps.append(
             {
-                "source": EXTRACTED_FACTS_SOURCE_ID,
+                "source": profile.source_id,
                 "reason": "no_cross_lane_fact_candidates",
                 "candidate_count": len(text_candidates),
             }
@@ -3525,7 +3587,7 @@ def build_extracted_fact_records(
     if max_fulltext_units is not None and selected_fulltext_unit_count >= max_fulltext_units:
         gaps.append(
             {
-                "source": EXTRACTED_FACTS_SOURCE_ID,
+                "source": profile.source_id,
                 "reason": "fulltext_prefilter_limit_applied",
                 "max_fulltext_units": max_fulltext_units,
                 "fulltext_unit_count": fulltext_unit_count,
@@ -3535,7 +3597,7 @@ def build_extracted_fact_records(
     if max_fulltext_units is not None and selected_record_text_count >= max_fulltext_units:
         gaps.append(
             {
-                "source": EXTRACTED_FACTS_SOURCE_ID,
+                "source": profile.source_id,
                 "reason": "record_text_window_applied",
                 "max_record_text_candidates": max_fulltext_units,
                 "selected_record_text_count": selected_record_text_count,
@@ -3544,7 +3606,7 @@ def build_extracted_fact_records(
     if truncated_fulltext_unit_count:
         gaps.append(
             {
-                "source": EXTRACTED_FACTS_SOURCE_ID,
+                "source": profile.source_id,
                 "reason": "fulltext_text_window_applied",
                 "max_candidate_text_chars": MAX_CANDIDATE_TEXT_CHARS,
                 "truncated_fulltext_unit_count": truncated_fulltext_unit_count,
@@ -3552,7 +3614,7 @@ def build_extracted_fact_records(
         )
 
     return ExtractedFactsResult(
-        source_id=EXTRACTED_FACTS_SOURCE_ID,
+        source_id=profile.source_id,
         records=records,
         gaps=gaps,
         candidate_count=len(text_candidates),

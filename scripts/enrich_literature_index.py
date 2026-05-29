@@ -34,6 +34,9 @@ PdfToText = Callable[[Path], str]
 @dataclass(frozen=True)
 class EnrichmentConfig:
     artifact_dir: Path = Path("artifacts/aedes-literature-2020")
+    source_id: str = LITERATURE_SOURCE_ID
+    input_source_id: str | None = None
+    source_label: str = "Aedes aegypti literature since 2020"
     email: str | None = None
     pubmed: bool = True
     unpaywall: bool = True
@@ -124,7 +127,7 @@ def _load_rows(conn: sqlite3.Connection, config: EnrichmentConfig) -> list[sqlit
         WHERE p.source = ? AND p.lane = 'literature'
         ORDER BY p.record_id
     """
-    params: list[object] = [LITERATURE_SOURCE_ID]
+    params: list[object] = [config.input_source_id or config.source_id]
     rows = [
         row
         for row in conn.execute(query, params)
@@ -184,11 +187,12 @@ def _gap(
     species: object,
     retrieved_at: str,
     locator: str,
+    source_id: str = LITERATURE_SOURCE_ID,
     external_id: object | None = None,
     error: object | None = None,
 ) -> dict[str, object]:
     gap: dict[str, object] = {
-        "source": LITERATURE_SOURCE_ID,
+        "source": source_id,
         "lane": "literature",
         "reason": reason,
         "record_id": record_id,
@@ -292,6 +296,7 @@ def enrich_pubmed(
                     species=row["species"],
                     retrieved_at=retrieved_at,
                     locator=f"record_payloads#{row['record_id']}",
+                    source_id=config.source_id,
                 )
             )
             continue
@@ -316,6 +321,7 @@ def enrich_pubmed(
                         species=row["species"],
                         retrieved_at=retrieved_at,
                         locator=url,
+                        source_id=config.source_id,
                         external_id=pmid,
                         error=exc,
                     )
@@ -332,6 +338,7 @@ def enrich_pubmed(
                         species=row["species"],
                         retrieved_at=retrieved_at,
                         locator=url,
+                        source_id=config.source_id,
                         external_id=pmid,
                         error="PMID missing from ESummary result",
                     )
@@ -372,6 +379,7 @@ def enrich_unpaywall(
                     species=row["species"],
                     retrieved_at=retrieved_at,
                     locator=f"record_payloads#{row['record_id']}",
+                    source_id=config.source_id,
                 )
             )
             continue
@@ -389,6 +397,7 @@ def enrich_unpaywall(
                     species=row["species"],
                     retrieved_at=retrieved_at,
                     locator=url,
+                    source_id=config.source_id,
                     external_id=doi,
                     error=exc,
                 )
@@ -407,6 +416,7 @@ def enrich_unpaywall(
                     species=row["species"],
                     retrieved_at=retrieved_at,
                     locator=url,
+                    source_id=config.source_id,
                     external_id=landing if isinstance(landing, str) else doi,
                 )
             )
@@ -428,8 +438,11 @@ def _direct_fulltext_from_payload(payload: dict[str, object]) -> tuple[str, str 
     return None
 
 
-def _fulltext_exists(conn: sqlite3.Connection, record_id: str) -> bool:
-    row = conn.execute("SELECT 1 FROM literature_fulltext_units WHERE record_id=? LIMIT 1", (record_id,)).fetchone()
+def _fulltext_exists(conn: sqlite3.Connection, record_id: str, source_id: str) -> bool:
+    row = conn.execute(
+        "SELECT 1 FROM literature_fulltext_units WHERE record_id=? AND source=? LIMIT 1",
+        (record_id, source_id),
+    ).fetchone()
     return row is not None
 
 
@@ -470,7 +483,7 @@ def enrich_fulltext(
 
     for row_index, row in enumerate(rows):
         record_id = row["record_id"]
-        if config.resume and _fulltext_exists(conn, record_id):
+        if config.resume and _fulltext_exists(conn, record_id, config.source_id):
             counts["skipped"] += 1
             continue
         payload = json.loads(row["payload_json"])
@@ -482,7 +495,7 @@ def enrich_fulltext(
         url, license_value = target
         try:
             text = _text_from_direct_url(url, fetch_bytes, pdf_to_text, config.pdf_timeout_seconds)
-            units = fulltext_units_for_record(record_id, text, url, license_value, retrieved_at)
+            units = fulltext_units_for_record(record_id, text, url, license_value, retrieved_at, source_id=config.source_id)
         except Exception as exc:
             counts["failed"] += 1
             gaps.append(
@@ -492,6 +505,7 @@ def enrich_fulltext(
                     species=row["species"],
                     retrieved_at=retrieved_at,
                     locator=url,
+                    source_id=config.source_id,
                     external_id=url,
                     error=exc,
                 )
@@ -506,6 +520,7 @@ def enrich_fulltext(
                     species=row["species"],
                     retrieved_at=retrieved_at,
                     locator=url,
+                    source_id=config.source_id,
                     external_id=url,
                 )
             )
@@ -526,7 +541,7 @@ def _load_receipt(path: Path) -> dict[str, object]:
     return payload if isinstance(payload, dict) else {}
 
 
-def _update_receipt(artifact_dir: Path, summary: dict[str, object]) -> None:
+def _update_receipt(artifact_dir: Path, summary: dict[str, object], *, source_id: str) -> None:
     path = artifact_dir / "literature_enrichment_receipt.json"
     existing = _load_receipt(path)
     runs = existing.get("runs")
@@ -534,7 +549,7 @@ def _update_receipt(artifact_dir: Path, summary: dict[str, object]) -> None:
         runs = []
     runs.append(summary)
     receipt = {
-        "source": LITERATURE_SOURCE_ID,
+        "source": source_id,
         "latest": summary,
         "runs": runs[-20:],
     }
@@ -550,48 +565,64 @@ def _count_direct_fulltext_candidates(payload_rows: list[sqlite3.Row]) -> int:
     return count
 
 
-def _reconcile_source_artifacts(conn: sqlite3.Connection, artifact_dir: Path, generated_at: str) -> dict[str, object]:
+def _reconcile_source_artifacts(
+    conn: sqlite3.Connection,
+    artifact_dir: Path,
+    generated_at: str,
+    *,
+    source_id: str,
+    input_source_id: str,
+    source_label: str,
+) -> dict[str, object]:
     gaps = _load_json_list(artifact_dir / "gaps.json")
     lane_rows = conn.execute("SELECT lane, count(*) AS n FROM records GROUP BY lane ORDER BY lane").fetchall()
     source_rows = conn.execute("SELECT source, count(*) AS n FROM records GROUP BY source ORDER BY source").fetchall()
     payload_rows = conn.execute(
         "SELECT record_id, payload_json FROM record_payloads WHERE source=? ORDER BY record_id",
-        (LITERATURE_SOURCE_ID,),
+        (input_source_id,),
     ).fetchall()
     literature_count = int(
-        conn.execute("SELECT count(*) FROM records WHERE source=?", (LITERATURE_SOURCE_ID,)).fetchone()[0]
+        conn.execute("SELECT count(*) FROM records WHERE source=?", (input_source_id,)).fetchone()[0]
     )
     payload_count = len(payload_rows)
     pubmed_enriched = int(
         conn.execute(
             "SELECT count(*) FROM record_payloads WHERE source=? AND json_type(payload_json, '$.pubmed')='object'",
-            (LITERATURE_SOURCE_ID,),
+            (input_source_id,),
         ).fetchone()[0]
     )
     unpaywall_enriched = int(
         conn.execute(
             "SELECT count(*) FROM record_payloads WHERE source=? AND json_type(payload_json, '$.unpaywall')='object'",
-            (LITERATURE_SOURCE_ID,),
+            (input_source_id,),
         ).fetchone()[0]
     )
-    fulltext_record_count = int(conn.execute("SELECT count(distinct record_id) FROM literature_fulltext_units").fetchone()[0])
-    fulltext_unit_count = int(conn.execute("SELECT count(*) FROM literature_fulltext_units").fetchone()[0])
-    fulltext_fts_count = int(conn.execute("SELECT count(*) FROM literature_fulltext_fts").fetchone()[0])
+    fulltext_record_count = int(
+        conn.execute(
+            "SELECT count(distinct record_id) FROM literature_fulltext_units WHERE source=?",
+            (source_id,),
+        ).fetchone()[0]
+    )
+    fulltext_unit_count = int(
+        conn.execute("SELECT count(*) FROM literature_fulltext_units WHERE source=?", (source_id,)).fetchone()[0]
+    )
+    fulltext_fts_count = int(
+        conn.execute(
+            """
+            SELECT count(*)
+            FROM literature_fulltext_fts f
+            JOIN literature_fulltext_units u ON u.unit_id = f.unit_id
+            WHERE u.source=?
+            """,
+            (source_id,),
+        ).fetchone()[0]
+    )
     direct_candidates = _count_direct_fulltext_candidates(payload_rows)
     sources = [row["source"] for row in source_rows]
-    source_status = {
-        "ok": True,
-        "source_id": LITERATURE_SOURCE_ID,
-        "sources": sources,
-        "boundary": "Aedes aegypti literature since 2020 with fixture seed records retained when built with --fixtures",
-        "generated_at": generated_at,
-        "fully_parsed": True,
-        "record_count": sum(int(row["n"]) for row in source_rows),
-        "source_counts": {row["source"]: int(row["n"]) for row in source_rows},
-        "lanes": {row["lane"]: int(row["n"]) for row in lane_rows},
-        "gap_count": len(gaps),
-        "literature": {
-            "source": LITERATURE_SOURCE_ID,
+    source_status = _load_receipt(artifact_dir / "source_status.json")
+    literature_payload = {
+            "source": source_id,
+            "input_source": input_source_id,
             "record_count": literature_count,
             "payload_count": payload_count,
             "pubmed_enriched_count": pubmed_enriched,
@@ -600,14 +631,29 @@ def _reconcile_source_artifacts(conn: sqlite3.Connection, artifact_dir: Path, ge
             "fulltext_record_count": fulltext_record_count,
             "fulltext_unit_count": fulltext_unit_count,
             "fulltext_fts_count": fulltext_fts_count,
-        },
     }
+    source_status.update(
+        {
+            "ok": True,
+            "source_id": source_id,
+            "sources": sources,
+            "boundary": f"{source_label} with fixture seed records retained when present",
+            "generated_at": generated_at,
+            "fully_parsed": True,
+            "record_count": sum(int(row["n"]) for row in source_rows),
+            "source_counts": {row["source"]: int(row["n"]) for row in source_rows},
+            "lanes": {row["lane"]: int(row["n"]) for row in lane_rows},
+            "gap_count": len(gaps),
+            "literature": literature_payload,
+            source_id: literature_payload,
+        }
+    )
     receipt_path = artifact_dir / "source_receipt.json"
     receipt = _load_receipt(receipt_path)
     receipt.update(
         {
             "artifact_dir": artifact_dir.as_posix(),
-            "source_id": LITERATURE_SOURCE_ID,
+            "source_id": source_id,
             "sources": sources,
             "generated_at": generated_at,
             "record_count": source_status["record_count"],
@@ -619,9 +665,9 @@ def _reconcile_source_artifacts(conn: sqlite3.Connection, artifact_dir: Path, ge
     literature = receipt.get("literature")
     if not isinstance(literature, dict):
         literature = {}
-    literature.update(source_status["literature"])
+    literature.update(literature_payload)
     literature["open_fulltext_count"] = fulltext_record_count
-    literature["gap_count"] = len([gap for gap in gaps if gap.get("source") == LITERATURE_SOURCE_ID])
+    literature["gap_count"] = len([gap for gap in gaps if gap.get("source") == source_id])
     literature["gaps_path"] = (artifact_dir / "gaps.json").as_posix()
     literature["payload_store"] = "record_payloads.payload_json"
     literature["fulltext_store"] = "literature_fulltext_units"
@@ -646,7 +692,8 @@ def run_enrichment(
     all_gaps: list[dict[str, object]] = []
     summary: dict[str, object] = {
         "ok": True,
-        "source": LITERATURE_SOURCE_ID,
+        "source": config.source_id,
+        "input_source": config.input_source_id or config.source_id,
         "artifact_dir": artifact_dir.as_posix(),
         "started_at": started_at,
         "finished_at": None,
@@ -691,14 +738,24 @@ def run_enrichment(
     summary["finished_at"] = utc_now()
     with sqlite3.connect(db_path, timeout=30) as conn:
         conn.row_factory = sqlite3.Row
-        summary["artifact_totals"] = _reconcile_source_artifacts(conn, artifact_dir, str(summary["finished_at"]))
-    _update_receipt(artifact_dir, summary)
+        summary["artifact_totals"] = _reconcile_source_artifacts(
+            conn,
+            artifact_dir,
+            str(summary["finished_at"]),
+            source_id=config.source_id,
+            input_source_id=config.input_source_id or config.source_id,
+            source_label=config.source_label,
+        )
+    _update_receipt(artifact_dir, summary, source_id=config.source_id)
     return summary
 
 
 def parse_args(argv: list[str] | None = None) -> EnrichmentConfig:
     parser = argparse.ArgumentParser(description="Enrich the Ask Insects Aedes literature index in place.")
     parser.add_argument("--artifact-dir", type=Path, default=Path("artifacts/aedes-literature-2020"))
+    parser.add_argument("--source-id", default=LITERATURE_SOURCE_ID)
+    parser.add_argument("--input-source-id")
+    parser.add_argument("--source-label", default="Aedes aegypti literature since 2020")
     parser.add_argument("--email")
     parser.add_argument("--pubmed", action="store_true")
     parser.add_argument("--unpaywall", action="store_true")
@@ -738,6 +795,9 @@ def parse_args(argv: list[str] | None = None) -> EnrichmentConfig:
 
     return EnrichmentConfig(
         artifact_dir=args.artifact_dir,
+        source_id=args.source_id,
+        input_source_id=args.input_source_id,
+        source_label=args.source_label,
         email=args.email,
         pubmed=pubmed,
         unpaywall=unpaywall,

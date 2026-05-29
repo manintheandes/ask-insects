@@ -2854,6 +2854,17 @@ def ingest_occurrence_ecology(
     return ingest_occurrence_ecology_script(artifact_dir=artifact_dir)
 
 
+def ingest_drosophila_suzukii_occurrence_ecology(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_occurrence_ecology import ingest_drosophila_suzukii_occurrence_ecology as ingest_script
+
+    _ = payload
+    return ingest_script(artifact_dir=artifact_dir)
+
+
 def ingest_observation_climate(
     payload: dict[str, object],
     *,
@@ -3056,6 +3067,98 @@ def ingest_extracted_facts_staged(
         )
         response = rewrite_artifact_references(staging, artifact_dir, result, source="aedes_extracted_facts")
         activate_source_staging(staging, artifact_dir, Path("raw") / "extracted_facts")
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
+def ingest_drosophila_suzukii_extracted_facts_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_extracted_facts import ingest_drosophila_suzukii_extracted_facts
+
+    staged_payload = dict(payload)
+    source_record_ids_value = staged_payload.get("source_record_ids")
+    if source_record_ids_value is not None and not isinstance(source_record_ids_value, list):
+        raise ValueError("source_record_ids must be a list")
+    source_record_ids = [
+        str(source_record_id)
+        for source_record_id in source_record_ids_value or []
+        if str(source_record_id)
+    ] or None
+    merge_existing = bool(staged_payload.get("merge_existing", False))
+    if merge_existing and not source_record_ids:
+        raise ValueError("merge_existing requires at least one source_record_id")
+    staging = artifact_dir.parent / f".{artifact_dir.name}.drosophila-suzukii-extracted-facts-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_drosophila_suzukii_extracted_facts(
+            artifact_dir=staging,
+            retrieved_at=staged_payload.get("retrieved_at") if isinstance(staged_payload.get("retrieved_at"), str) else None,
+            max_fulltext_units=int(staged_payload.get("max_fulltext_units") or 5000),
+            discover_supplements=bool(staged_payload.get("discover_supplements")),
+            download_supplements=bool(staged_payload.get("download_supplements")),
+            max_supplement_discovery_records=int(staged_payload.get("max_supplement_discovery_records") or 500),
+            max_repository_supplement_discovery_records=int(staged_payload.get("max_repository_supplement_discovery_records") or 100),
+            max_supplement_files=int(staged_payload.get("max_supplement_files") or 100),
+            max_supplement_bytes=int(staged_payload.get("max_supplement_bytes") or DEFAULT_MAX_SUPPLEMENT_BYTES),
+            max_pdf_supplement_files=int(staged_payload.get("max_pdf_supplement_files") or 10),
+            source_record_ids=source_record_ids,
+            merge_existing=merge_existing,
+        )
+        response = rewrite_artifact_references(staging, artifact_dir, result, source="drosophila_suzukii_extracted_facts")
+        activate_source_staging(staging, artifact_dir, Path("raw") / "drosophila_suzukii_extracted_facts")
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
+def ingest_drosophila_suzukii_video_atoms_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_video_atoms import ingest_drosophila_suzukii_video_atoms
+
+    retrieved_at = payload.get("retrieved_at")
+    if retrieved_at is not None and not isinstance(retrieved_at, str):
+        raise ValueError("retrieved_at must be a string")
+    max_video_bytes = int(payload.get("max_video_bytes") or 750_000_000)
+    if max_video_bytes < 1:
+        raise ValueError("max_video_bytes must be positive")
+    allowed_licenses = _payload_string_list(payload, "allowed_licenses") or None
+    staging = artifact_dir.parent / f".{artifact_dir.name}.drosophila-suzukii-video-atoms-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_drosophila_suzukii_video_atoms(
+            artifact_dir=staging,
+            retrieved_at=retrieved_at,
+            max_video_bytes=max_video_bytes,
+            mirror_videos=_payload_bool(payload, "mirror_videos"),
+            generate_artifacts=_payload_bool(payload, "generate_artifacts"),
+            allow_unclear_license=_payload_bool(payload, "allow_unclear_license"),
+            allowed_licenses=allowed_licenses,
+        )
+        response = rewrite_artifact_references(staging, artifact_dir, result, source="drosophila_suzukii_video_atoms")
+        activate_source_staging(staging, artifact_dir, Path("raw") / "drosophila_suzukii_video_atoms")
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
         raise
@@ -3341,6 +3444,86 @@ def ingest_aedes_deep_sources_hosted(
     return response
 
 
+def ingest_drosophila_suzukii_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii import ingest_drosophila_suzukii
+
+    response = ingest_drosophila_suzukii(
+        artifact_dir=artifact_dir,
+        gbif_occurrence_limit=int(payload.get("gbif_occurrence_limit", 100)),
+        inaturalist_observation_limit=int(payload.get("inaturalist_observation_limit", 100)),
+        literature_max_works=int(payload.get("literature_max_works", 100)),
+        bold_limit=int(payload.get("bold_limit", 100)),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_drosophila_suzukii_deep_sources_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_deep_sources import ingest_drosophila_suzukii_deep_sources
+
+    response = ingest_drosophila_suzukii_deep_sources(
+        artifact_dir=artifact_dir,
+        ncbi_limit=int(payload.get("ncbi_limit", 50)),
+        protein_limit=int(payload.get("protein_limit", 100)),
+        proteome_limit=int(payload.get("proteome_limit", 10)),
+        repository_limit=int(payload.get("repository_limit", 50)),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_drosophila_suzukii_genome_files_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_genome_files import ingest_drosophila_suzukii_genome_files
+
+    response = ingest_drosophila_suzukii_genome_files(
+        artifact_dir=artifact_dir,
+        assembly_accession=str(payload.get("assembly_accession") or "GCF_043229965.1"),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+        max_download_bytes=int(payload.get("max_download_bytes") or 100_000_000),
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_drosophila_suzukii_literature_fulltext_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_literature_fulltext import ingest_drosophila_suzukii_literature_fulltext
+
+    raw_limit = payload.get("limit", 25)
+    response = ingest_drosophila_suzukii_literature_fulltext(
+        artifact_dir=artifact_dir,
+        email=str(payload["email"]) if payload.get("email") else None,
+        limit=int(raw_limit) if raw_limit is not None else None,
+        delay_seconds=float(payload.get("delay_seconds", 0.0)),
+        max_fulltext_bytes=int(payload.get("max_fulltext_bytes", 60_000_000)),
+        include_unpaywall=bool(payload.get("include_unpaywall", False)),
+        resume=bool(payload.get("resume", True)),
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_aedes_olfaction_literature_hosted(
     payload: dict[str, object],
     *,
@@ -3610,6 +3793,30 @@ def dispatch_request(
             result = ingest_aedes_deep_sources_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii":
+            result = ingest_drosophila_suzukii_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-deep-sources":
+            result = ingest_drosophila_suzukii_deep_sources_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-genome-files":
+            result = ingest_drosophila_suzukii_genome_files_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-literature-fulltext":
+            result = ingest_drosophila_suzukii_literature_fulltext_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-extracted-facts":
+            result = ingest_drosophila_suzukii_extracted_facts_staged(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-video-atoms":
+            result = ingest_drosophila_suzukii_video_atoms_staged(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
         if method == "POST" and path == "/ingest/aedes-olfaction-literature":
             result = ingest_aedes_olfaction_literature_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
@@ -3746,6 +3953,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/occurrence-ecology":
             result = ingest_occurrence_ecology(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-occurrence-ecology":
+            result = ingest_drosophila_suzukii_occurrence_ecology(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path in {"/ingest/observation-climate", "/ingest/observation-climate-join"}:

@@ -445,6 +445,9 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what Mendeley table rows mention temperature gradients?").answer_shape, "behavior")
         self.assertEqual(plan_question("show Mendeley acoustic wingbeat audio files").answer_shape, "behavior")
         self.assertEqual(plan_question("show supplement table behavior response rate for Aedes aegypti").answer_shape, "behavior")
+        self.assertEqual(plan_question("what crop damage evidence exists for spotted wing drosophila?").answer_shape, "crop_damage")
+        self.assertEqual(plan_question("show Drosophila suzukii pest management evidence").answer_shape, "management")
+        self.assertEqual(plan_question("show Drosophila suzukii biocontrol parasitoid evidence").answer_shape, "biocontrol")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show Aedes aegypti BioSamples from China").lanes[0], "biosamples")
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
@@ -1392,6 +1395,263 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "media")
             self.assertEqual(answer["evidence"][0]["source"], "pmc_open_access_videos")
+
+    def test_species_specific_video_questions_do_not_borrow_aedes_media(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:asset:aedes",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video keyframe",
+                        text="Inspectable Aedes aegypti video keyframe.",
+                        species="Aedes aegypti",
+                        url="https://example.org/aedes-video",
+                        media_url="raw/video_atoms/aedes.jpg",
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="records#aedes",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                            license="CC BY 4.0",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:figshare:video:1",
+                        lane="media",
+                        source="drosophila_suzukii_deep_sources",
+                        title="Drosophila suzukii Figshare video file",
+                        text="Figshare video candidate for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-video",
+                        media_url="https://example.org/swd-video.mp4",
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_deep_sources",
+                            locator="raw/drosophila_suzukii_deep_sources/figshare/article.json#files/1",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                            license="CC BY 4.0",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:video_atom:video_keyframe:1",
+                        lane="media",
+                        source="drosophila_suzukii_video_atoms",
+                        title="Drosophila suzukii video keyframe",
+                        text="Inspectable spotted wing drosophila video keyframe from Figshare.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-video",
+                        media_url="raw/drosophila_suzukii_video_atoms/artifacts/keyframe_000001.jpg",
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_video_atoms",
+                            locator="raw/drosophila_suzukii_video_atoms/artifacts/keyframe_000001.jpg",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                            license="CC BY 4.0",
+                        ),
+                        payload={"atom_type": "video_keyframe"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii videos", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["species"], "Drosophila suzukii")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_video_atoms")
+
+    def test_spotted_wing_genomics_questions_use_swd_deep_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="aedes:assembly:1",
+                        lane="genome_assemblies",
+                        source="ncbi_datasets_genome",
+                        title="Aedes aegypti assembly",
+                        text="Aedes aegypti genome assembly.",
+                        species="Aedes aegypti",
+                        url="https://example.org/aedes-assembly",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="ncbi_datasets_genome",
+                            locator="raw/ncbi/aedes.json#1",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                            license="NCBI public metadata",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:assembly:GCF_1",
+                        lane="genome_assemblies",
+                        source="drosophila_suzukii_deep_sources",
+                        title="Drosophila suzukii assembly GCF_1",
+                        text="NCBI Assembly record GCF_1 for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-assembly",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_deep_sources",
+                            locator="raw/drosophila_suzukii_deep_sources/ncbi/assembly.json#1",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                            license="NCBI public metadata",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii genomics", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["species"], "Drosophila suzukii")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_deep_sources")
+
+    def test_spotted_wing_genome_file_questions_prefer_parsed_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:assembly:GCF_1",
+                        lane="genome_assemblies",
+                        source="drosophila_suzukii_deep_sources",
+                        title="Drosophila suzukii assembly GCF_1",
+                        text="NCBI Assembly record GCF_1 for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-assembly",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_deep_sources",
+                            locator="raw/drosophila_suzukii_deep_sources/ncbi/assembly.json#1",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:genome_files:gene:gene-Orco",
+                        lane="genes",
+                        source="drosophila_suzukii_genome_files",
+                        title="Drosophila suzukii gene Orco",
+                        text="NCBI genome gene Orco for Drosophila suzukii, annotated as odorant receptor co-receptor.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-genome-files",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_genome_files",
+                            locator="raw/drosophila_suzukii_genome_files/GCF_1/genomic.gff#line/2",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii genome file genes orco", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_genome_files")
+            self.assertEqual(answer["evidence"][0]["lane"], "genes")
+
+    def test_spotted_wing_crop_management_questions_prefer_extracted_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:gbif:taxon",
+                        lane="taxonomy",
+                        source="drosophila_suzukii_core",
+                        title="Drosophila suzukii",
+                        text="GBIF accepted species match for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="raw/drosophila_suzukii/gbif/match.json",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_extracted_fact:crop_damage:paper1",
+                        lane="crop_damage",
+                        source="drosophila_suzukii_extracted_facts",
+                        title="Drosophila suzukii crop damage fact",
+                        text="Drosophila suzukii crop damage fact for blueberry fruit infestation and yield loss.",
+                        species="Drosophila suzukii",
+                        url="https://doi.org/10.1000/swd-crop",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_extracted_facts",
+                            locator="records#swd:paper1",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("what do we know about spotted wing drosophila crop damage?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "crop_damage")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_extracted_facts")
+            self.assertEqual(answer["evidence"][0]["lane"], "crop_damage")
+
+    def test_spotted_wing_ecology_questions_prefer_occurrence_summaries(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_occurrence_ecology:country_month:United_States_of_America:09",
+                        lane="ecology",
+                        source="drosophila_suzukii_occurrence_ecology",
+                        title="Drosophila suzukii seasonality in United States of America: September",
+                        text="Drosophila suzukii country-month seasonality record for United States of America in September.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-us-september",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_occurrence_ecology",
+                            locator="source_index.sqlite#swd-observation-ecology/country-month/United_States_of_America/09",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={"aggregation_type": "country_month_summary", "observation_count": 76},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_extracted_fact:ecology:paper1",
+                        lane="ecology",
+                        source="drosophila_suzukii_extracted_facts",
+                        title="Drosophila suzukii extracted ecology fact",
+                        text="Drosophila suzukii ecology candidate row from a paper.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-paper",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_extracted_facts",
+                            locator="records#swd:paper1",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("where is Drosophila suzukii observed by month?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "ecology")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_occurrence_ecology")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_occurrence_ecology:country_month:United_States_of_America:09")
 
     def test_dryad_video_questions_prefer_dryad_behavior_video_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2602,6 +2862,70 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(velocity_answer["ok"])
             self.assertEqual(velocity_answer["answer_shape"], "behavior")
             self.assertEqual(velocity_answer["evidence"][0]["source"], "aedes_video_atoms")
+
+    def test_spotted_wing_video_motion_questions_prefer_swd_atoms_not_aedes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="video_atom:motion:aedes:row1",
+                        lane="behavior",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video motion row",
+                        text="Aedes video motion row with tracking coordinates.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/motion.csv#row/1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_motion_row", "velocity_mean_cm_s": 2.0},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:video_atom:motion:row1",
+                        lane="behavior",
+                        source="drosophila_suzukii_video_atoms",
+                        title="Drosophila suzukii video motion row",
+                        text="Spotted wing drosophila video motion row with tracking coordinates and confidence.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_video_atoms",
+                            locator="raw/drosophila_suzukii_video_atoms/motion.csv#row/1",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_motion_row", "velocity_mean_cm_s": 1.5},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:extracted:behavior:motion",
+                        lane="behavior",
+                        source="drosophila_suzukii_extracted_facts",
+                        title="Drosophila suzukii behavior fact",
+                        text="Spotted wing drosophila extracted behavior fact mentioning movement.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_extracted_facts",
+                            locator="records#swd:openalex:W1",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show spotted wing drosophila video motion evidence", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_video_atoms")
+            self.assertEqual(answer["evidence"][0]["species"], "Drosophila suzukii")
 
     def test_image_atom_questions_prefer_queryable_image_labels(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -5456,6 +5780,79 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(unsupported_routes, {"crossref_relation", "unpaywall_oa_location"})
             self.assertIn("Top supplement file gap reasons", answer["answer"])
             self.assertEqual(answer["evidence"][0]["record_id"], "extracted_fact:supplement_audit:paper1")
+
+    def test_swd_supplement_audit_questions_use_swd_source(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_extracted_fact:supplement_audit:paper1",
+                        lane="literature",
+                        source="drosophila_suzukii_extracted_facts",
+                        title="Drosophila suzukii supplement audit",
+                        text=(
+                            "Drosophila suzukii supplement audit for paper One. "
+                            "Coverage status: supplement_manifest_found_table_download_not_run. "
+                            "Supplement manifests: 1. Parsed supplement rows: 0. Promoted structured supplement rows: 0."
+                        ),
+                        species="Drosophila suzukii",
+                        url="https://doi.org/10.1000/swd1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_extracted_facts",
+                            locator="records#swd:paper1;supplement_audit",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_audit",
+                            "confidence": "audit",
+                            "fields": {
+                                "coverage_status": "supplement_manifest_found_table_download_not_run",
+                                "supplement_candidate_count": 1,
+                                "parsed_supplement_row_count": 0,
+                                "promoted_supplement_row_count": 0,
+                            },
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_audit:aedes",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti supplement audit",
+                        text="Aedes aegypti supplement audit. Coverage status: supplement_rows_promoted.",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#aedes;supplement_audit",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={
+                            "fact_type": "supplement_audit",
+                            "confidence": "audit",
+                            "fields": {
+                                "coverage_status": "supplement_rows_promoted",
+                                "supplement_candidate_count": 5,
+                                "parsed_supplement_row_count": 10,
+                                "promoted_supplement_row_count": 10,
+                            },
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question("what is Drosophila suzukii supplement audit coverage?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertIn("Drosophila suzukii", answer["answer"])
+            self.assertEqual(answer["supplement_audit"]["audited_papers"], 1)
+            self.assertEqual(answer["supplement_audit"]["supplement_manifest_count"], 1)
+            self.assertEqual(answer["supplement_audit"]["parsed_supplement_row_count"], 0)
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_extracted_fact:supplement_audit:paper1")
 
 
 if __name__ == "__main__":

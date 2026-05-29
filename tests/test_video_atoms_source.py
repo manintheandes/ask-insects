@@ -350,6 +350,30 @@ class VideoAtomsSourceTests(unittest.TestCase):
                         payload={"size": 999_999},
                     ),
                     EvidenceRecord(
+                        record_id="dryad:file:nested_oversized",
+                        lane="media",
+                        source="dryad_aedes_behavior_videos",
+                        title="Aedes aegypti nested oversized archive.zip",
+                        text="Video archive file.",
+                        species="Aedes aegypti",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/example",
+                        media_url="https://example.org/nested-oversized.zip",
+                        provenance=Provenance(
+                            source_id="dryad_aedes_behavior_videos",
+                            locator="raw/dryad/file.json#files/2",
+                            retrieved_at=RETRIEVED_AT,
+                            license="https://spdx.org/licenses/CC0-1.0.html",
+                        ),
+                        payload={
+                            "raw_file": {
+                                "digest": "b" * 64,
+                                "digestType": "sha-256",
+                                "path": "nested-oversized.zip",
+                                "size": 999_999,
+                            }
+                        },
+                    ),
+                    EvidenceRecord(
                         record_id="osf:unclear:video.mp4",
                         lane="media",
                         source="osf_flighttrackai_aedes_videos",
@@ -398,7 +422,15 @@ class VideoAtomsSourceTests(unittest.TestCase):
             if record.payload and record.payload.get("atom_type") == "video_asset"
         }
         self.assertEqual(asset_statuses["dryad:file:oversized"], "gapped_too_large")
+        self.assertEqual(asset_statuses["dryad:file:nested_oversized"], "gapped_archive_too_large")
         self.assertEqual(asset_statuses["osf:unclear:video.mp4"], "gapped_license_unclear")
+        nested_gap = next(
+            gap
+            for gap in result.gaps
+            if gap["reason"] == "video_archive_too_large" and gap["record_id"] == "dryad:file:nested_oversized"
+        )
+        self.assertEqual(nested_gap["source_byte_size"], 999_999)
+        self.assertEqual(nested_gap["source_hashes"]["sha256"], "b" * 64)
         osf_asset = next(
             record
             for record in result.records

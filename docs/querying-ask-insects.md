@@ -13,6 +13,80 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-source-coverag
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is missing from Aedes coverage?" --json
 ```
 
+To add the first source-grade spotted wing drosophila boundary:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii \
+  --gbif-occurrence-limit 100 \
+  --inaturalist-observation-limit 100 \
+  --literature-max-works 100 \
+  --bold-limit 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what do we know about spotted wing drosophila?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search source_coverage "Drosophila suzukii missing"
+```
+
+To add deeper public-source metadata for spotted wing drosophila:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-deep-sources \
+  --ncbi-limit 50 \
+  --protein-limit 100 \
+  --proteome-limit 10 \
+  --repository-limit 50
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search genome_assemblies "Drosophila suzukii"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search expression "Drosophila suzukii SRA"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search proteins "Drosophila suzukii UniProt"
+```
+
+To parse public NCBI genome files for the main SWD assembly:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-genome-files \
+  --assembly-accession GCF_043229965.1
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search genes "Drosophila suzukii orco"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search proteins "Drosophila suzukii odorant receptor"
+```
+
+To derive country and seasonality ecology from indexed spotted wing drosophila observations:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-occurrence-ecology
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "where is Drosophila suzukii observed by month?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search ecology "Drosophila suzukii seasonality country"
+```
+
+To add a bounded legal direct full-text slice for indexed spotted wing drosophila papers:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-literature-fulltext \
+  --limit 25
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search fulltext "Drosophila suzukii oviposition"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select source, count(*) as n from literature_fulltext_units where source='drosophila_suzukii_literature_fulltext' group by source"
+```
+
+To add the first Aedes-style paper supplement audit for spotted wing drosophila:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-extracted-facts \
+  --discover-supplements \
+  --download-supplements \
+  --max-supplement-discovery-records 500 \
+  --max-supplement-files 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is Drosophila suzukii supplement audit coverage?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select lane, count(*) as n from records where source='drosophila_suzukii_extracted_facts' group by lane"
+```
+
+To make spotted wing drosophila video evidence inspectable:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-video-atoms \
+  --mirror-videos \
+  --generate-artifacts \
+  --max-video-bytes 750000000
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii videos" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show spotted wing drosophila motion evidence" --json
+```
+
 To add a bounded live GBIF pull:
 
 ```bash

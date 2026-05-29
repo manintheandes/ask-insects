@@ -404,6 +404,22 @@ def _size_from_candidate(candidate: VideoCandidate) -> int | None:
             return value
         if isinstance(value, str) and value.isdigit():
             return int(value)
+    raw_file = candidate.payload.get("raw_file")
+    if isinstance(raw_file, dict):
+        for key in ("size", "size_bytes", "byte_size", "source_byte_size"):
+            value = raw_file.get(key)
+            if isinstance(value, int):
+                return value
+            if isinstance(value, str) and value.isdigit():
+                return int(value)
+        attrs = raw_file.get("attributes")
+        if isinstance(attrs, dict):
+            for key in ("size", "size_bytes", "byte_size", "source_byte_size"):
+                value = attrs.get(key)
+                if isinstance(value, int):
+                    return value
+                if isinstance(value, str) and value.isdigit():
+                    return int(value)
     match = re.search(r"size bytes:\s*(\d+)", candidate.text, re.I)
     return int(match.group(1)) if match else None
 
@@ -421,8 +437,16 @@ def _source_hashes_from_candidate(candidate: VideoCandidate) -> dict[str, str]:
             hashes[key] = value.strip()
     raw_file = candidate.payload.get("raw_file")
     if isinstance(raw_file, dict):
+        digest = raw_file.get("digest")
+        digest_type = str(raw_file.get("digestType") or "digest").lower().replace("-", "")
+        if isinstance(digest, str) and digest.strip():
+            hashes[digest_type or "digest"] = digest.strip()
         attrs = raw_file.get("attributes")
         if isinstance(attrs, dict):
+            digest = attrs.get("digest")
+            digest_type = str(attrs.get("digestType") or "digest").lower().replace("-", "")
+            if isinstance(digest, str) and digest.strip():
+                hashes[digest_type or "digest"] = digest.strip()
             extra = attrs.get("extra")
             if isinstance(extra, dict):
                     raw_hashes = extra.get("hashes")

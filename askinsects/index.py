@@ -316,6 +316,13 @@ class SourceIndex:
         if not terms:
             return []
         match = " AND ".join(f"{term}*" for term in terms)
+        lowered_query = query.lower()
+        preferred_source_order = ""
+        if any(term in lowered_query for term in ("video", "videos", "movie", "motion", "keyframe", "preview")):
+            if any(term in lowered_query for term in ("drosophila suzukii", "spotted wing", "suzukii")):
+                preferred_source_order = "CASE WHEN r.source = 'drosophila_suzukii_video_atoms' THEN 0 ELSE 1 END,"
+            elif any(term in lowered_query for term in ("aedes", "aegypti", "mosquito")):
+                preferred_source_order = "CASE WHEN r.source = 'aedes_video_atoms' THEN 0 ELSE 1 END,"
         params: list[object] = [match]
         lane_filter = ""
         if lane:
@@ -330,7 +337,7 @@ class SourceIndex:
                 JOIN records r ON r.record_id = f.record_id
                 WHERE records_fts MATCH ?
                 {lane_filter}
-                ORDER BY bm25(records_fts)
+                ORDER BY {preferred_source_order} bm25(records_fts)
                 LIMIT ?
                 """,
                 params,

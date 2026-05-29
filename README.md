@@ -37,6 +37,68 @@ The derived source `aedes_source_coverage` creates one overview record, one reco
 
 The machine-readable benchmark is `config/aedes-source-plane-benchmark.json`, with the plain-English readout in `docs/aedes-source-plane-benchmark.md`. It currently marks the world-largest/world-deepest claim as not proven. The safe current wording is: Ask Insects is a broad, integrated, provenance-backed `Aedes aegypti` query plane.
 
+## Spotted Wing Drosophila Expansion
+
+Ask Insects now has an explicit expansion boundary for spotted wing drosophila, `Drosophila suzukii`. The first source-grade pass is `drosophila_suzukii_core`: a bounded composite source that can ingest GBIF taxonomy and occurrence rows, iNaturalist licensed still-image observations, OpenAlex literature metadata from 2020 onward, BOLD DNA barcode rows, and queryable coverage/gap records for the deeper lanes that still need work.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii --gbif-occurrence-limit 100 --inaturalist-observation-limit 100 --literature-max-works 100 --bold-limit 100
+python3 -m askinsects ask "what do we know about spotted wing drosophila?" --json
+python3 -m askinsects search source_coverage "Drosophila suzukii missing"
+```
+
+This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are larger full-text coverage, motion-table rows, and human-validated pest-science tables.
+
+The next depth layer is `drosophila_suzukii_deep_sources`. It adds bounded NCBI assembly, BioProject, BioSample, and SRA metadata, UniProt protein and proteome metadata, and repository candidate sweeps across Zenodo, Figshare, and Dryad:
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-deep-sources --ncbi-limit 50 --protein-limit 100 --repository-limit 50
+python3 -m askinsects ask "show Drosophila suzukii SRA and genome evidence" --json
+python3 -m askinsects search media "Drosophila suzukii video"
+```
+
+Genome-file parsing, legal direct full-text enrichment, per-paper supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, management, resistance, and biocontrol are now promoted through follow-on SWD lanes. Larger full-text coverage, motion-table rows, and human-validated pest-science tables remain follow-on work.
+
+The `drosophila_suzukii_genome_files` lane promotes the genome-file gap into parsed rows for a selected NCBI assembly. It downloads bounded public NCBI GFF and protein FASTA files, then indexes assembly, gene, transcript, functional genome-feature, and protein rows with locators back to the mirrored files.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-genome-files --assembly-accession GCF_043229965.1
+python3 -m askinsects search genes "Drosophila suzukii orco"
+python3 -m askinsects search proteins "Drosophila suzukii odorant receptor"
+```
+
+The `drosophila_suzukii_occurrence_ecology` lane turns existing spotted wing observation rows into country, month, seasonality, coordinate, and habitat-style ecology summaries. It does not fetch new observations; it derives queryable ecology rows from the indexed GBIF and iNaturalist payloads.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-occurrence-ecology
+python3 -m askinsects ask "where is Drosophila suzukii observed by month?" --json
+python3 -m askinsects search ecology "Drosophila suzukii seasonality country"
+```
+
+The `drosophila_suzukii_literature_fulltext` path enriches indexed SWD papers with legal direct open full-text chunks. It uses OpenAlex direct open-file URLs already in the paper payloads, and can optionally query Unpaywall when an email is supplied. It does not use paywalled PDFs, private cookies, institutional access, or publisher landing pages that do not expose a direct open file.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-literature-fulltext --limit 25
+python3 -m askinsects search fulltext "Drosophila suzukii oviposition"
+python3 -m askinsects sql "select source, count(*) as n from literature_fulltext_units where source='drosophila_suzukii_literature_fulltext' group by source"
+```
+
+The first Aedes-depth literature gate for spotted wing drosophila is `drosophila_suzukii_extracted_facts`. It audits every indexed SWD paper for supplements, preserves supplement manifests, parses supported public supplement tables when opted in, and emits source-backed candidate rows for behavior, crop damage, management, resistance, biocontrol, ecology, and genomics.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-extracted-facts --discover-supplements --download-supplements --max-supplement-discovery-records 500 --max-supplement-files 100
+python3 -m askinsects ask "what is Drosophila suzukii supplement audit coverage?" --json
+python3 -m askinsects sql "select lane, count(*) as n from records where source='drosophila_suzukii_extracted_facts' group by lane"
+```
+
+The first moving-image depth layer is `drosophila_suzukii_video_atoms`. It turns indexed SWD repository videos and supplement video locators into queryable video assets, bounded mirrors when license and size allow, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, and explicit gaps when motion rows or binary verification are not available yet.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-video-atoms --mirror-videos --generate-artifacts --max-video-bytes 750000000
+python3 -m askinsects ask "show Drosophila suzukii videos" --json
+python3 -m askinsects ask "show spotted wing drosophila motion evidence" --json
+```
+
 ## Quick Start
 
 ```bash

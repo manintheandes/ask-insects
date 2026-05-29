@@ -145,6 +145,8 @@ def fulltext_units_for_record(
     url: str | None,
     license: str | None,
     retrieved_at: str,
+    *,
+    source_id: str = LITERATURE_SOURCE_ID,
 ) -> list[FullTextUnit]:
     clean_text = re.sub(r"\s+", " ", text).strip()
     if not clean_text:
@@ -156,13 +158,13 @@ def fulltext_units_for_record(
             FullTextUnit(
                 unit_id=f"{record_id}:fulltext:{unit_index}",
                 record_id=record_id,
-                source=LITERATURE_SOURCE_ID,
+                source=source_id,
                 unit_index=unit_index,
                 text=unit_text,
                 url=url,
                 license=license,
                 provenance=Provenance(
-                    source_id=LITERATURE_SOURCE_ID,
+                    source_id=source_id,
                     locator=f"{record_id}#fulltext/{unit_index}",
                     retrieved_at=retrieved_at,
                     license=license,

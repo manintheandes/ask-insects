@@ -543,6 +543,196 @@ class ServerTests(unittest.TestCase):
                 worldclim_sample_limit=3,
             )
 
+    def test_ingest_drosophila_suzukii_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_drosophila_suzukii.ingest_drosophila_suzukii") as ingest:
+                ingest.return_value = {"ok": True, "sources": ["drosophila_suzukii_core"], "record_count": 5}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/drosophila-suzukii",
+                    {
+                        "gbif_occurrence_limit": 11,
+                        "inaturalist_observation_limit": 12,
+                        "literature_max_works": 13,
+                        "bold_limit": 14,
+                        "retrieved_at": "2026-05-28T00:00:00Z",
+                    },
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                gbif_occurrence_limit=11,
+                inaturalist_observation_limit=12,
+                literature_max_works=13,
+                bold_limit=14,
+                retrieved_at="2026-05-28T00:00:00Z",
+            )
+
+    def test_ingest_drosophila_suzukii_deep_sources_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_drosophila_suzukii_deep_sources.ingest_drosophila_suzukii_deep_sources") as ingest:
+                ingest.return_value = {"ok": True, "sources": ["drosophila_suzukii_deep_sources"], "record_count": 5}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/drosophila-suzukii-deep-sources",
+                    {
+                        "ncbi_limit": 15,
+                        "protein_limit": 16,
+                        "proteome_limit": 17,
+                        "repository_limit": 18,
+                        "retrieved_at": "2026-05-28T00:00:00Z",
+                    },
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                ncbi_limit=15,
+                protein_limit=16,
+                proteome_limit=17,
+                repository_limit=18,
+                retrieved_at="2026-05-28T00:00:00Z",
+            )
+
+    def test_ingest_drosophila_suzukii_genome_files_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch("scripts.ingest_drosophila_suzukii_genome_files.ingest_drosophila_suzukii_genome_files") as ingest:
+                ingest.return_value = {"ok": True, "source": "drosophila_suzukii_genome_files", "record_count": 5}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/drosophila-suzukii-genome-files",
+                    {
+                        "assembly_accession": "GCF_043229965.1",
+                        "max_download_bytes": 12345,
+                        "retrieved_at": "2026-05-28T00:00:00Z",
+                    },
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                assembly_accession="GCF_043229965.1",
+                retrieved_at="2026-05-28T00:00:00Z",
+                max_download_bytes=12345,
+            )
+
+    def test_ingest_drosophila_suzukii_literature_fulltext_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch(
+                "scripts.ingest_drosophila_suzukii_literature_fulltext.ingest_drosophila_suzukii_literature_fulltext"
+            ) as ingest:
+                ingest.return_value = {"ok": True, "source": "drosophila_suzukii_literature_fulltext"}
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/drosophila-suzukii-literature-fulltext",
+                    {
+                        "email": "sources@openinsects.org",
+                        "limit": 31,
+                        "delay_seconds": 0,
+                        "max_fulltext_bytes": 12345,
+                        "include_unpaywall": True,
+                        "resume": False,
+                    },
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                email="sources@openinsects.org",
+                limit=31,
+                delay_seconds=0.0,
+                max_fulltext_bytes=12345,
+                include_unpaywall=True,
+                resume=False,
+            )
+
+    def test_ingest_drosophila_suzukii_extracted_facts_route_installs_audit_rows(self):
+        from tests.test_drosophila_suzukii_extracted_facts import write_swd_literature_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_swd_literature_fixture(artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/drosophila-suzukii-extracted-facts",
+                {},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertTrue(response.payload["staged"])
+            self.assertEqual(response.payload["supplement_audit_record_count"], 2)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select source, lane, count(*) as n from records where source='drosophila_suzukii_extracted_facts' group by source, lane",
+                limit=20,
+            )
+            counts = {(row["source"], row["lane"]): int(row["n"]) for row in rows}
+            self.assertGreaterEqual(counts[("drosophila_suzukii_extracted_facts", "literature")], 3)
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.drosophila-suzukii-extracted-facts-staging").exists())
+
+    def test_ingest_drosophila_suzukii_video_atoms_route_installs_video_rows(self):
+        from tests.test_drosophila_suzukii_video_atoms import write_swd_video_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_swd_video_fixture(artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/drosophila-suzukii-video-atoms",
+                {"max_video_bytes": 1000},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertTrue(response.payload["staged"])
+            self.assertEqual(response.payload["video_asset_count"], 1)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select source, lane, count(*) as n from records where source='drosophila_suzukii_video_atoms' group by source, lane",
+                limit=20,
+            )
+            counts = {(row["source"], row["lane"]): int(row["n"]) for row in rows}
+            self.assertGreaterEqual(counts[("drosophila_suzukii_video_atoms", "media")], 2)
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.drosophila-suzukii-video-atoms-staging").exists())
+
     def test_ingest_aedes_olfaction_literature_route_passes_options(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -2873,6 +3063,34 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(counts["aedes_occurrence_ecology"], 7)
             payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
                 "select payload_json from record_payloads where source='aedes_occurrence_ecology' and record_id='occurrence_ecology:country:Brazil'",
+            )
+            self.assertIn('"observation_count": 3', payload_rows[0]["payload_json"])
+
+    def test_ingest_drosophila_suzukii_occurrence_ecology_adds_records_without_removing_existing_sources(self):
+        from tests.test_drosophila_suzukii_occurrence_ecology import write_swd_occurrence_ecology_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_swd_occurrence_ecology_fixture(artifact_dir)
+
+            response = dispatch_request(
+                "POST",
+                "/ingest/drosophila-suzukii-occurrence-ecology",
+                {},
+                headers={"Authorization": "Bearer secret"},
+                artifact_dir=artifact_dir,
+                token="secret",
+            )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql("select source, count(*) as n from records group by source")
+            counts = {row["source"]: row["n"] for row in rows}
+            self.assertEqual(counts["mosquito_v1_fixtures"], 7)
+            self.assertEqual(counts["drosophila_suzukii_occurrence_ecology"], 5)
+            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select payload_json from record_payloads where source='drosophila_suzukii_occurrence_ecology' and record_id='swd_occurrence_ecology:country:United_States_of_America'",
             )
             self.assertIn('"observation_count": 3', payload_rows[0]["payload_json"])
 

@@ -142,6 +142,51 @@ def main(argv: list[str] | None = None) -> int:
     ingest_inaturalist.add_argument("--page-size", type=int, default=200)
     ingest_inaturalist.add_argument("--delay-seconds", type=float, default=0.0)
 
+    ingest_drosophila_suzukii = sub.add_parser("ingest-drosophila-suzukii")
+    ingest_drosophila_suzukii.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii.add_argument("--gbif-occurrence-limit", type=int, default=100)
+    ingest_drosophila_suzukii.add_argument("--inaturalist-observation-limit", type=int, default=100)
+    ingest_drosophila_suzukii.add_argument("--literature-max-works", type=int, default=100)
+    ingest_drosophila_suzukii.add_argument("--bold-limit", type=int, default=100)
+    ingest_drosophila_suzukii.add_argument("--retrieved-at")
+
+    ingest_drosophila_suzukii_deep = sub.add_parser("ingest-drosophila-suzukii-deep-sources")
+    ingest_drosophila_suzukii_deep.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_deep.add_argument("--ncbi-limit", type=int, default=50)
+    ingest_drosophila_suzukii_deep.add_argument("--protein-limit", type=int, default=100)
+    ingest_drosophila_suzukii_deep.add_argument("--proteome-limit", type=int, default=10)
+    ingest_drosophila_suzukii_deep.add_argument("--repository-limit", type=int, default=50)
+    ingest_drosophila_suzukii_deep.add_argument("--retrieved-at")
+
+    ingest_drosophila_suzukii_genome_files = sub.add_parser("ingest-drosophila-suzukii-genome-files")
+    ingest_drosophila_suzukii_genome_files.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_genome_files.add_argument("--assembly-accession", default="GCF_043229965.1")
+    ingest_drosophila_suzukii_genome_files.add_argument("--max-download-bytes", type=int, default=100_000_000)
+    ingest_drosophila_suzukii_genome_files.add_argument("--retrieved-at")
+
+    ingest_drosophila_suzukii_extracted = sub.add_parser("ingest-drosophila-suzukii-extracted-facts")
+    ingest_drosophila_suzukii_extracted.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_extracted.add_argument("--max-fulltext-units", type=int, default=5000)
+    ingest_drosophila_suzukii_extracted.add_argument("--discover-supplements", action="store_true")
+    ingest_drosophila_suzukii_extracted.add_argument("--download-supplements", action="store_true")
+    ingest_drosophila_suzukii_extracted.add_argument("--max-supplement-discovery-records", type=int, default=500)
+    ingest_drosophila_suzukii_extracted.add_argument("--max-repository-supplement-discovery-records", type=int, default=100)
+    ingest_drosophila_suzukii_extracted.add_argument("--max-supplement-files", type=int, default=100)
+    ingest_drosophila_suzukii_extracted.add_argument("--max-supplement-bytes", type=int, default=DEFAULT_MAX_SUPPLEMENT_BYTES)
+    ingest_drosophila_suzukii_extracted.add_argument("--max-pdf-supplement-files", type=int, default=10)
+    ingest_drosophila_suzukii_extracted.add_argument("--source-record-id", action="append", default=[])
+    ingest_drosophila_suzukii_extracted.add_argument("--merge-existing", action="store_true")
+    ingest_drosophila_suzukii_extracted.add_argument("--retrieved-at")
+
+    ingest_drosophila_suzukii_fulltext = sub.add_parser("ingest-drosophila-suzukii-literature-fulltext")
+    ingest_drosophila_suzukii_fulltext.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_fulltext.add_argument("--email")
+    ingest_drosophila_suzukii_fulltext.add_argument("--limit", type=int, default=25)
+    ingest_drosophila_suzukii_fulltext.add_argument("--delay-seconds", type=float, default=0.0)
+    ingest_drosophila_suzukii_fulltext.add_argument("--max-fulltext-bytes", type=int, default=60_000_000)
+    ingest_drosophila_suzukii_fulltext.add_argument("--unpaywall", action="store_true")
+    ingest_drosophila_suzukii_fulltext.add_argument("--no-resume", dest="resume", action="store_false", default=True)
+
     ingest_gbif = sub.add_parser("ingest-gbif")
     ingest_gbif.add_argument("--hosted", action="store_true")
     ingest_gbif.add_argument("--species", action="append", default=[])
@@ -335,6 +380,14 @@ def main(argv: list[str] | None = None) -> int:
     ingest_video_atoms.add_argument("--merge-existing", action="store_true")
     ingest_video_atoms.add_argument("--skip-motion-rows", action="store_true")
 
+    ingest_drosophila_suzukii_video_atoms = sub.add_parser("ingest-drosophila-suzukii-video-atoms")
+    ingest_drosophila_suzukii_video_atoms.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_video_atoms.add_argument("--max-video-bytes", type=int, default=750_000_000)
+    ingest_drosophila_suzukii_video_atoms.add_argument("--mirror-videos", action="store_true")
+    ingest_drosophila_suzukii_video_atoms.add_argument("--generate-artifacts", action="store_true")
+    ingest_drosophila_suzukii_video_atoms.add_argument("--allow-unclear-license", action="store_true")
+    ingest_drosophila_suzukii_video_atoms.add_argument("--allowed-licenses")
+
     ingest_image_atoms = sub.add_parser("ingest-image-atoms")
     ingest_image_atoms.add_argument("--hosted", action="store_true")
     ingest_image_atoms.add_argument("--mirror-images", action="store_true")
@@ -349,6 +402,9 @@ def main(argv: list[str] | None = None) -> int:
 
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
+
+    ingest_drosophila_suzukii_occurrence_ecology = sub.add_parser("ingest-drosophila-suzukii-occurrence-ecology")
+    ingest_drosophila_suzukii_occurrence_ecology.add_argument("--hosted", action="store_true")
 
     ingest_aedes_deep_sources = sub.add_parser("ingest-aedes-deep-sources")
     ingest_aedes_deep_sources.add_argument("--hosted", action="store_true")
@@ -522,6 +578,106 @@ def main(argv: list[str] | None = None) -> int:
             },
             timeout=3600,
         )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii":
+        request_payload = {
+            "gbif_occurrence_limit": args.gbif_occurrence_limit,
+            "inaturalist_observation_limit": args.inaturalist_observation_limit,
+            "literature_max_works": args.literature_max_works,
+            "bold_limit": args.bold_limit,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii import ingest_drosophila_suzukii
+
+        payload = ingest_drosophila_suzukii(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-deep-sources":
+        request_payload = {
+            "ncbi_limit": args.ncbi_limit,
+            "protein_limit": args.protein_limit,
+            "proteome_limit": args.proteome_limit,
+            "repository_limit": args.repository_limit,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-deep-sources", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_deep_sources import ingest_drosophila_suzukii_deep_sources
+
+        payload = ingest_drosophila_suzukii_deep_sources(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-genome-files":
+        request_payload = {
+            "assembly_accession": args.assembly_accession,
+            "max_download_bytes": args.max_download_bytes,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-genome-files", request_payload, timeout=7200)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_genome_files import ingest_drosophila_suzukii_genome_files
+
+        payload = ingest_drosophila_suzukii_genome_files(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-extracted-facts":
+        request_payload = {
+            "max_fulltext_units": args.max_fulltext_units,
+            "discover_supplements": args.discover_supplements,
+            "download_supplements": args.download_supplements,
+            "max_supplement_discovery_records": args.max_supplement_discovery_records,
+            "max_repository_supplement_discovery_records": args.max_repository_supplement_discovery_records,
+            "max_supplement_files": args.max_supplement_files,
+            "max_supplement_bytes": args.max_supplement_bytes,
+            "max_pdf_supplement_files": args.max_pdf_supplement_files,
+            "source_record_ids": args.source_record_id or None,
+            "merge_existing": args.merge_existing,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-extracted-facts", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_extracted_facts import ingest_drosophila_suzukii_extracted_facts
+
+        payload = ingest_drosophila_suzukii_extracted_facts(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-literature-fulltext":
+        request_payload = {
+            "email": args.email,
+            "limit": args.limit,
+            "delay_seconds": args.delay_seconds,
+            "max_fulltext_bytes": args.max_fulltext_bytes,
+            "include_unpaywall": args.unpaywall or bool(args.email),
+            "resume": args.resume,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-literature-fulltext", request_payload, timeout=7200)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_literature_fulltext import ingest_drosophila_suzukii_literature_fulltext
+
+        payload = ingest_drosophila_suzukii_literature_fulltext(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-gbif":
         if not args.hosted:
@@ -1197,6 +1353,34 @@ def main(argv: list[str] | None = None) -> int:
             timeout=7200,
         )
         return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-video-atoms":
+        allowed_licenses = split_csv(args.allowed_licenses)
+        if not args.hosted:
+            from scripts.ingest_drosophila_suzukii_video_atoms import ingest_drosophila_suzukii_video_atoms
+
+            payload = ingest_drosophila_suzukii_video_atoms(
+                artifact_dir=artifact_dir,
+                max_video_bytes=args.max_video_bytes,
+                mirror_videos=args.mirror_videos,
+                generate_artifacts=args.generate_artifacts,
+                allow_unclear_license=args.allow_unclear_license,
+                allowed_licenses=allowed_licenses or None,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/drosophila-suzukii-video-atoms",
+            {
+                "max_video_bytes": args.max_video_bytes,
+                "mirror_videos": args.mirror_videos,
+                "generate_artifacts": args.generate_artifacts,
+                "allow_unclear_license": args.allow_unclear_license,
+                "allowed_licenses": allowed_licenses,
+            },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
     if args.command == "ingest-image-atoms":
         allowed_licenses = tuple(part.strip() for part in (args.allowed_licenses or "").split(",") if part.strip()) or None
         if not args.hosted:
@@ -1249,6 +1433,20 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/occurrence-ecology",
+            {},
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-occurrence-ecology":
+        if not args.hosted:
+            from scripts.ingest_drosophila_suzukii_occurrence_ecology import ingest_drosophila_suzukii_occurrence_ecology
+
+            payload = ingest_drosophila_suzukii_occurrence_ecology(artifact_dir=artifact_dir)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/drosophila-suzukii-occurrence-ecology",
             {},
             timeout=3600,
         )

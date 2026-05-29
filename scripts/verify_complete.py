@@ -62,6 +62,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-25-mosquito-repellent-literature-design.md",
     "docs/superpowers/specs/2026-05-25-mosquito-repellent-external-discovery-design.md",
     "docs/superpowers/specs/2026-05-24-open-insects-public-identity-design.md",
+    "docs/superpowers/specs/2026-05-28-drosophila-suzukii-source-plane-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -93,6 +94,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-25-mosquito-repellent-literature.md",
     "docs/superpowers/plans/2026-05-25-mosquito-repellent-external-discovery.md",
     "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
+    "docs/superpowers/plans/2026-05-28-drosophila-suzukii-source-plane.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -149,6 +151,12 @@ REQUIRED_FILES = (
     "askinsects/sources/video_atoms.py",
     "askinsects/sources/image_atoms.py",
     "askinsects/sources/aedes_deep_sources.py",
+    "askinsects/sources/drosophila_suzukii.py",
+    "askinsects/sources/drosophila_suzukii_deep_sources.py",
+    "askinsects/sources/drosophila_suzukii_extracted_facts.py",
+    "askinsects/sources/drosophila_suzukii_genome_files.py",
+    "askinsects/sources/drosophila_suzukii_video_atoms.py",
+    "askinsects/sources/drosophila_suzukii_occurrence_ecology.py",
     "askinsects/sources/ncbi_snp_variation.py",
     "askinsects/sources/harvard_dataverse_suitability.py",
     "scripts/build_source_index.py",
@@ -199,6 +207,13 @@ REQUIRED_FILES = (
     "scripts/ingest_video_atoms.py",
     "scripts/ingest_image_atoms.py",
     "scripts/ingest_aedes_deep_sources.py",
+    "scripts/ingest_drosophila_suzukii.py",
+    "scripts/ingest_drosophila_suzukii_deep_sources.py",
+    "scripts/ingest_drosophila_suzukii_extracted_facts.py",
+    "scripts/ingest_drosophila_suzukii_literature_fulltext.py",
+    "scripts/ingest_drosophila_suzukii_genome_files.py",
+    "scripts/ingest_drosophila_suzukii_video_atoms.py",
+    "scripts/ingest_drosophila_suzukii_occurrence_ecology.py",
     "scripts/ingest_harvard_dataverse_suitability.py",
     "scripts/refresh_artifact_receipts.py",
     "deploy/systemd/ask-insects.service",
@@ -299,6 +314,19 @@ REQUIRED_FILES = (
     "tests/test_ingest_image_atoms.py",
     "tests/test_aedes_deep_sources.py",
     "tests/test_ingest_aedes_deep_sources.py",
+    "tests/test_drosophila_suzukii_source.py",
+    "tests/test_ingest_drosophila_suzukii.py",
+    "tests/test_drosophila_suzukii_deep_sources.py",
+    "tests/test_ingest_drosophila_suzukii_deep_sources.py",
+    "tests/test_drosophila_suzukii_extracted_facts.py",
+    "tests/test_ingest_drosophila_suzukii_extracted_facts.py",
+    "tests/test_ingest_drosophila_suzukii_literature_fulltext.py",
+    "tests/test_drosophila_suzukii_genome_files.py",
+    "tests/test_ingest_drosophila_suzukii_genome_files.py",
+    "tests/test_drosophila_suzukii_video_atoms.py",
+    "tests/test_ingest_drosophila_suzukii_video_atoms.py",
+    "tests/test_drosophila_suzukii_occurrence_ecology.py",
+    "tests/test_ingest_drosophila_suzukii_occurrence_ecology.py",
     "tests/test_harvard_dataverse_suitability_source.py",
     "tests/test_ingest_harvard_dataverse_suitability.py",
     "tests/test_refresh_artifact_receipts.py",
@@ -395,6 +423,19 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_image_atoms",
     "tests.test_aedes_deep_sources",
     "tests.test_ingest_aedes_deep_sources",
+    "tests.test_drosophila_suzukii_source",
+    "tests.test_ingest_drosophila_suzukii",
+    "tests.test_drosophila_suzukii_deep_sources",
+    "tests.test_ingest_drosophila_suzukii_deep_sources",
+    "tests.test_drosophila_suzukii_extracted_facts",
+    "tests.test_ingest_drosophila_suzukii_extracted_facts",
+    "tests.test_ingest_drosophila_suzukii_literature_fulltext",
+    "tests.test_drosophila_suzukii_genome_files",
+    "tests.test_ingest_drosophila_suzukii_genome_files",
+    "tests.test_drosophila_suzukii_video_atoms",
+    "tests.test_ingest_drosophila_suzukii_video_atoms",
+    "tests.test_drosophila_suzukii_occurrence_ecology",
+    "tests.test_ingest_drosophila_suzukii_occurrence_ecology",
     "tests.test_harvard_dataverse_suitability_source",
     "tests.test_ingest_harvard_dataverse_suitability",
     "tests.test_refresh_artifact_receipts",
@@ -940,6 +981,64 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing extracted facts term: {term}")
+    for term in (
+        "drosophila_suzukii_literature_fulltext",
+        "scripts/ingest_drosophila_suzukii_literature_fulltext.py",
+        "drosophila_suzukii_literature_records_to_literature_fulltext_units_and_literature_fulltext_fts",
+        "legal_direct_fulltext",
+        "unpaywall_legal_direct_fulltext",
+        "paywalled_pdfs",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii literature fulltext term: {term}")
+    for term in (
+        "drosophila_suzukii_extracted_facts",
+        "scripts/ingest_drosophila_suzukii_extracted_facts.py",
+        "drosophila_suzukii_literature_records_payloads_fulltext_units_supported_supplement_tables_and_per_paper_supplement_audits_to_sqlite_fact_records",
+        "one_supplement_audit_atom_per_indexed_drosophila_suzukii_literature_paper",
+        "crop_damage",
+        "biocontrol",
+        "bounded_opt_in_supplement_discovery_and_download",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii extracted facts term: {term}")
+    for term in (
+        "drosophila_suzukii_video_atoms",
+        "scripts/ingest_drosophila_suzukii_video_atoms.py",
+        "drosophila_suzukii_indexed_video_records_to_sqlite_video_atoms",
+        "bounded_mirror_when_license_and_size_allow_else_structured_gap",
+        "video_motion_rows_not_available_for_swd",
+        "thumbnails",
+        "keyframes",
+        "preview_clips",
+        "frame_manifests",
+        "coordinates",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii video-atoms term: {term}")
+    for term in (
+        "drosophila_suzukii_genome_files",
+        "scripts/ingest_drosophila_suzukii_genome_files.py",
+        "drosophila_suzukii_ncbi_assembly_gff_protein_files_to_sqlite_genome_records",
+        "GCF_043229965.1",
+        "genomic.gff",
+        "protein.faa",
+        "gff_attributes",
+        "sequence_length",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii genome-files term: {term}")
+    for term in (
+        "drosophila_suzukii_occurrence_ecology",
+        "scripts/ingest_drosophila_suzukii_occurrence_ecology.py",
+        "drosophila_suzukii_indexed_observation_payloads_to_sqlite_ecology_records",
+        "country_month_summary",
+        "habitat_summary",
+        "raw_occurrence",
+        "raw_observation",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii occurrence ecology term: {term}")
     for term in (
         "aedes_wolbachia_interventions",
         "scripts/ingest_wolbachia_interventions.py",

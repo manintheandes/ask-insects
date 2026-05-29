@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import re
@@ -18,6 +19,9 @@ from .sources.aedes_deep_sources import (
 )
 from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
+from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
+from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID
+from .sources.drosophila_suzukii_video_atoms import DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.expression_omics import EXPRESSION_OMICS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
@@ -219,7 +223,10 @@ def _wants_video_atoms(question: str) -> bool:
         "access restricted",
         "discovery",
     )
-    if any(term in q for term in ("dryad", "mendeley", "osf", "flighttrackai", "flighttrack", "pmc", "figshare")) and not any(
+    if (
+        _requested_species(question) != "Drosophila suzukii"
+        and any(term in q for term in ("dryad", "mendeley", "osf", "flighttrackai", "flighttrack", "pmc", "figshare"))
+    ) and not any(
         term in q for term in atom_specific_terms
     ):
         return False
@@ -298,12 +305,15 @@ def _video_focus_tokens(question: str) -> set[str]:
         "previews",
         "show",
         "source",
+        "spotted",
+        "suzukii",
         "the",
         "thumbnail",
         "thumbnails",
         "undecoded",
         "video",
         "videos",
+        "wing",
         "zip",
     }
     return {
@@ -735,7 +745,7 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
         return f"From the local mosquito genomics index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "neurobiology":
         return f"From the local mosquito neurobiology index, {records[0].title}: {records[0].text}"
-    if plan.answer_shape in {"behavior", "traits", "vector_competence", "resistance", "ecology", "public_health"}:
+    if plan.answer_shape in {"behavior", "traits", "vector_competence", "resistance", "ecology", "public_health", "crop_damage", "management", "biocontrol"}:
         label = plan.answer_shape.replace("_", " ")
         return f"From the Ask Insects {label} index, {records[0].title}: {records[0].text}"
     return f"I found {len(records)} indexed Ask Insects record(s)."
@@ -1657,10 +1667,26 @@ def _asks_for_still_images(question: str) -> bool:
 
 
 def _requested_species(question: str) -> str | None:
-    species_match = re.search(r"\b(Aedes|Culex|Anopheles)\s+[a-z]+\b", question, flags=re.IGNORECASE)
+    if any(term in question.lower() for term in ("spotted wing drosophila", "spotted-wing drosophila", "drosophila suzukii")):
+        return "Drosophila suzukii"
+    species_match = re.search(r"\b(Aedes|Culex|Anopheles|Drosophila)\s+[a-z]+\b", question, flags=re.IGNORECASE)
     if not species_match:
         return None
     return species_match.group(0)
+
+
+def _video_atom_source_for_question(question: str) -> str:
+    species = _requested_species(question)
+    if species and species.lower() == "drosophila suzukii":
+        return DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
+    return "aedes_video_atoms"
+
+
+def _supplement_audit_source_for_question(question: str) -> tuple[str, str]:
+    species = _requested_species(question)
+    if species and species.lower() == "drosophila suzukii":
+        return DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID, "Drosophila suzukii"
+    return EXTRACTED_FACTS_SOURCE_ID, "Aedes aegypti"
 
 
 def _literature_topical_tokens(question: str, species: str | None) -> set[str]:
@@ -1867,6 +1893,16 @@ def _wants_orthomcl_relationship(question: str, relationship_type: str) -> bool:
 
 def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    requested_species = _requested_species(question)
+    if requested_species and requested_species.lower() == "drosophila suzukii":
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == "drosophila_suzukii_genome_files" else 1,
+                0 if record.lane in {"genes", "transcripts", "genome_features", "proteins"} else 1,
+                0 if _record_matches_any_token(record, {"orco", "odorant", "receptor"}) else 1,
+            ),
+        )
     if _wants_snp_variation(question):
         return sorted(
             records,
@@ -2608,6 +2644,7 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
 
 
 def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object]:
+    audit_source_id, audit_label = _supplement_audit_source_for_question(plan.question)
     with index.connect() as conn:
         summary = conn.execute(
             """
@@ -2620,7 +2657,7 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
             WHERE p.source = ?
               AND json_extract(p.payload_json, '$.fact_type') = 'supplement_audit'
             """,
-            (EXTRACTED_FACTS_SOURCE_ID,),
+            (audit_source_id,),
         ).fetchone()
         status_rows = conn.execute(
             """
@@ -2631,7 +2668,7 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
             GROUP BY status
             ORDER BY n DESC, status
             """,
-            (EXTRACTED_FACTS_SOURCE_ID,),
+            (audit_source_id,),
         ).fetchall()
         gap_rows = conn.execute(
             """
@@ -2648,7 +2685,7 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
             ORDER BY n DESC, reason, route, file_type, repository
             LIMIT 8
             """,
-            (EXTRACTED_FACTS_SOURCE_ID,),
+            (audit_source_id,),
         ).fetchall()
         evidence_rows = conn.execute(
             """
@@ -2671,14 +2708,14 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
                 r.record_id
             LIMIT ?
             """,
-            (EXTRACTED_FACTS_SOURCE_ID, max(limit, 1)),
+            (audit_source_id, max(limit, 1)),
         ).fetchall()
 
     audited_papers = int(summary["audited_papers"] or 0) if summary else 0
     if audited_papers == 0:
         coverage_records = _source_coverage_records(
             index,
-            "what is missing from Aedes supplement coverage?",
+            f"what is missing from {audit_label} supplement coverage?",
             ["source_coverage"],
             limit=max(limit, 1),
         )
@@ -2687,7 +2724,7 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
                 "ok": True,
                 "answer_shape": "literature",
                 "answer": (
-                    "The Ask Insects supplement audit lane has no indexed audit atoms in this source index yet. "
+                    f"The Ask Insects {audit_label} supplement audit lane has no indexed audit atoms in this source index yet. "
                     "The coverage ledger treats supplement parsing and promotion as an open literature-source gap."
                 ),
                 "evidence": [record_to_evidence(record) for record in coverage_records],
@@ -2700,7 +2737,7 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
                     "promoted_supplement_row_count": 0,
                 },
             }
-        return source_gap(plan, "The Ask Insects supplement audit lane has no indexed audit atoms yet.")
+        return source_gap(plan, f"The Ask Insects {audit_label} supplement audit lane has no indexed audit atoms yet.")
 
     supplement_manifests = int(summary["supplement_manifests"] or 0)
     parsed_rows = int(summary["parsed_rows"] or 0)
@@ -2732,7 +2769,7 @@ def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, lim
     )
     records = [EvidenceRecord.from_row(dict(row)) for row in evidence_rows]
     answer = (
-        f"The Aedes aegypti supplement audit covers {audited_papers} indexed paper records. "
+        f"The {audit_label} supplement audit covers {audited_papers} indexed paper records. "
         f"Across those papers, Ask Insects found {supplement_manifests} public supplement manifests, "
         f"parsed {parsed_rows} supported supplement table rows, and promoted {promoted_rows} rows into structured evidence lanes. "
         f"Coverage status counts: {status_text}."
@@ -2970,6 +3007,28 @@ def _prioritize_public_health_records(question: str, records: list[EvidenceRecor
 
 def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if _requested_species(question) == "Drosophila suzukii":
+        wants_month = any(term in q for term in ("month", "monthly", "seasonality", "seasonal"))
+        wants_country = any(term in q for term in ("where", "range", "distribution", "country", "countries"))
+
+        def swd_score(record: EvidenceRecord) -> tuple[object, ...]:
+            payload = record.payload or {}
+            aggregation_type = str(payload.get("aggregation_type") or "")
+            observation_count = int(payload.get("observation_count") or 0)
+            if wants_month:
+                aggregation_rank = 0 if aggregation_type == "country_month_summary" else 1
+            elif wants_country:
+                aggregation_rank = 0 if aggregation_type == "country_summary" else 1
+            else:
+                aggregation_rank = 0 if aggregation_type in {"country_summary", "country_month_summary", "habitat_summary"} else 1
+            return (
+                0 if record.source == "drosophila_suzukii_occurrence_ecology" else 1,
+                aggregation_rank,
+                -observation_count,
+                record.record_id,
+            )
+
+        return sorted(records, key=swd_score)
     if not any(
         term in q
         for term in (
@@ -3069,10 +3128,11 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
 def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
     if _wants_video_motion(question):
+        preferred_video_source = _video_atom_source_for_question(question)
         return sorted(
             records,
             key=lambda record: (
-                0 if record.source == "aedes_video_atoms" else 1,
+                0 if record.source == preferred_video_source else 1,
                 0 if record.lane == "behavior" else 1,
             ),
         )
@@ -3209,6 +3269,7 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
     if _wants_video_atoms(question):
         wants_gap = _wants_video_gaps(question) or any(term in q for term in ("missing", "not decoded", "undecoded", "not expanded"))
         focus_tokens = _video_focus_tokens(question)
+        preferred_video_source = _video_atom_source_for_question(question)
 
         def score_video(record: EvidenceRecord) -> tuple[int, int, int, int]:
             haystack = f"{record.record_id} {record.title} {record.text}".lower()
@@ -3218,7 +3279,7 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 locator_rank(record),
                 0 if wants_gap and is_gap else 1 if wants_gap else 0,
                 focus_rank,
-                0 if record.source == "aedes_video_atoms" else 1,
+                0 if record.source == preferred_video_source else 1,
                 0 if record.lane in {"media", "behavior"} else 1,
             )
 
@@ -3455,6 +3516,29 @@ def _source_records(index: SourceIndex, source: str, lanes: list[str], *, limit:
             [source, *lanes, limit],
         ).fetchall()
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
+
+
+def _source_records_with_payload(index: SourceIndex, source: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
+    if not lanes:
+        return []
+    placeholders = ",".join("?" for _ in lanes)
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*, p.payload_json
+            FROM records r
+            LEFT JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ? AND r.lane IN ({placeholders})
+            ORDER BY r.lane, r.record_id
+            LIMIT ?
+            """,
+            [source, *lanes, limit],
+        ).fetchall()
+    records: list[EvidenceRecord] = []
+    for row in rows:
+        payload = json.loads(str(row["payload_json"] or "{}"))
+        records.append(replace(EvidenceRecord.from_row(dict(row)), payload=payload))
+    return records
 
 
 def _source_count(index: SourceIndex, source: str) -> int:
@@ -3793,6 +3877,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
     if not lanes:
         return []
     q = question.lower()
+    source_id = _video_atom_source_for_question(question)
     atom_types: list[str]
     if _wants_video_gaps(question):
         atom_types = ["video_sweep", "video_gap"] if "sweep" in q else ["video_gap"]
@@ -3846,11 +3931,12 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
             placeholders = ",".join("?" for _ in requested_gap_reasons)
             gap_reason_filter = f"AND json_extract(p.payload_json, '$.reason') IN ({placeholders})"
 
-    def fetch_rows(selected_atom_types: list[str], selected_limit: int) -> list[sqlite3.Row]:
-        lane_placeholders = ",".join("?" for _ in lanes)
+    def fetch_rows(selected_atom_types: list[str], selected_limit: int, selected_lanes: list[str] | None = None) -> list[sqlite3.Row]:
+        active_lanes = selected_lanes or lanes
+        lane_placeholders = ",".join("?" for _ in active_lanes)
         atom_placeholders = ",".join("?" for _ in selected_atom_types)
         repository_filter = ""
-        params: list[object] = [*lanes, *selected_atom_types]
+        params: list[object] = [source_id, *active_lanes, *selected_atom_types]
         if gap_reason_filter:
             params.extend(requested_gap_reasons)
         if repository:
@@ -3872,7 +3958,7 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
                 SELECT r.*
                 FROM records r
                 JOIN record_payloads p ON p.record_id = r.record_id
-                WHERE r.source = 'aedes_video_atoms'
+                WHERE r.source = ?
                   AND r.lane IN ({lane_placeholders})
                   AND json_extract(p.payload_json, '$.atom_type') IN ({atom_placeholders})
                   {gap_reason_filter}
@@ -3922,6 +4008,8 @@ def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, 
         return [EvidenceRecord.from_row(dict(item)) for item in rows]
 
     rows = fetch_rows(atom_types, limit)
+    if not rows and source_id == DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID and atom_types == ["video_motion_row"]:
+        rows = fetch_rows(["video_gap"], limit, list(dict.fromkeys([*lanes, "media"])))
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
@@ -4100,6 +4188,8 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
     if "source_coverage" not in plan.lanes:
         return None
     q = plan.question.lower()
+    if any(term in q for term in ("drosophila", "suzukii", "spotted wing")):
+        return None
     wants_missing = any(term in q for term in ("missing", "gap", "gaps", "next required", "what are we missing", "what is missing"))
     requested_domains = _source_coverage_requested_domains(plan.question)
     domain_filter = ""
@@ -4375,6 +4465,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     all_records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
+    requested_species = _requested_species(plan.question)
     if _wants_video_atoms(plan.question):
         for record in _video_atom_records(index, plan.question, list(plan.lanes), limit=limit):
             all_records.append(record)
@@ -4422,6 +4513,25 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             return source_gap(plan, "The Ask Insects video discovery lane has no matching records for that repository.")
 
     if plan.answer_shape == "genomics":
+        if requested_species and requested_species.lower() == "drosophila suzukii":
+            swd_genome_lanes = ["genes", "transcripts", "genome_features", "proteins", "genome_assemblies"]
+            swd_records: list[EvidenceRecord] = []
+            for lane in swd_genome_lanes:
+                for search_query in _search_queries(plan.question):
+                    for record in index.search(search_query, lane=lane, limit=max(limit * 5, 25)):
+                        if record.source != "drosophila_suzukii_genome_files" or record.record_id in seen_record_ids:
+                            continue
+                        swd_records.append(record)
+                        seen_record_ids.add(record.record_id)
+                    if swd_records:
+                        break
+            if not swd_records:
+                for record in _source_records(index, "drosophila_suzukii_genome_files", swd_genome_lanes, limit=limit):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    swd_records.append(record)
+                    seen_record_ids.add(record.record_id)
+            all_records = swd_records + all_records
         if _wants_snp_variation(plan.question):
             if _source_count(index, NCBI_SNP_VARIATION_SOURCE_ID) == 0:
                 return source_gap(plan, "The Ask Insects NCBI dbSNP variation audit lane is not installed in this source index.")
@@ -4648,6 +4758,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "ecology":
         q = plan.question.lower()
+        if requested_species and requested_species.lower() == "drosophila suzukii":
+            for record in _source_records_with_payload(
+                index,
+                DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID,
+                ["ecology"],
+                limit=500,
+            ):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
         if "source-grade" in q or ("evidence" in q and "ecology" in q):
             for source_id in (
                 OCCURRENCE_ECOLOGY_SOURCE_ID,
@@ -4797,6 +4918,32 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 continue
             all_records.append(record)
             seen_record_ids.add(record.record_id)
+
+    requested_species = _requested_species(plan.question)
+    if requested_species and requested_species.lower() == "drosophila suzukii" and all_records:
+        species_records = [
+            record
+            for record in all_records
+            if record.species and record.species.lower() == requested_species.lower()
+        ]
+        if not species_records:
+            for lane in plan.lanes:
+                for search_query in [requested_species, f"{requested_species} video", *_search_queries(f"{requested_species} {plan.search_query}")]:
+                    for record in index.search(search_query, lane=lane, limit=max(limit * 20, 50)):
+                        if record.record_id in seen_record_ids:
+                            continue
+                        if not record.species or record.species.lower() != requested_species.lower():
+                            continue
+                        species_records.append(record)
+                        seen_record_ids.add(record.record_id)
+                    if species_records:
+                        break
+                if species_records:
+                    break
+        if species_records:
+            all_records = species_records
+        else:
+            return source_gap(plan, f"The Ask Insects index has no matching records for {requested_species}.")
 
     if plan.answer_shape == "media":
         if _wants_video_gaps(plan.question) or _wants_video_discovery(plan.question) or named_video_repository:

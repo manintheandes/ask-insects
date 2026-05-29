@@ -30,6 +30,291 @@ sources:
       - source_coverage
     provenance_required: true
     live_fetch: derived_from_repo_ledger
+  - id: drosophila_suzukii_core
+    name: Drosophila suzukii spotted wing drosophila core source boundary
+    source_type: public_api_composite
+    boundary: Bounded spotted wing drosophila source-grade expansion for Drosophila suzukii, preserving GBIF taxonomy and occurrences, iNaturalist licensed-photo observations, OpenAlex literature metadata since 2020, BOLD DNA barcode rows, and source-coverage status for deeper behavior video, genomics, ecology, crop-damage, management, resistance, and biocontrol lanes
+    query_plane: gbif_inaturalist_openalex_bold_to_sqlite_composite_source
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii
+    ingest_script: scripts/ingest_drosophila_suzukii.py
+    upstream_sources:
+      - gbif_api
+      - inaturalist_api
+      - openalex_api
+      - bold_api
+    lanes:
+      - taxonomy
+      - observations
+      - media
+      - literature
+      - dna_barcodes
+      - source_coverage
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      source_grade_now:
+        - taxonomy_match
+        - occurrence_records
+        - licensed_still_image_records
+        - literature_metadata_records
+        - dna_barcode_records_when_bold_exposes_rows
+        - per_domain_source_coverage_records
+      promoted_follow_on_lanes:
+        - drosophila_suzukii_deep_sources
+        - drosophila_suzukii_extracted_facts
+        - drosophila_suzukii_genome_files
+        - drosophila_suzukii_video_atoms
+        - drosophila_suzukii_occurrence_ecology
+  - id: drosophila_suzukii_deep_sources
+    name: Drosophila suzukii deep public source expansion
+    source_type: public_api_composite
+    boundary: Bounded deep spotted wing drosophila source expansion for Drosophila suzukii, preserving NCBI assembly, BioProject, BioSample, SRA, UniProt protein/proteome, Zenodo, Figshare, and Dryad repository-candidate metadata, plus explicit source status for follow-on genome-file parsing, supplement audit, crop-damage management guidance, resistance, and biocontrol assay extraction
+    query_plane: ncbi_uniprot_repository_metadata_to_sqlite_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_deep_sources
+    ingest_script: scripts/ingest_drosophila_suzukii_deep_sources.py
+    upstream_sources:
+      - ncbi_eutils_assembly
+      - ncbi_eutils_bioproject
+      - ncbi_eutils_biosample
+      - ncbi_eutils_sra
+      - uniprot_rest
+      - zenodo_records
+      - figshare_articles
+      - dryad_search
+    lanes:
+      - genome_assemblies
+      - genome_features
+      - biosamples
+      - expression
+      - proteins
+      - media
+      - behavior
+      - literature
+      - ecology
+      - resistance
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      source_grade_now:
+        - ncbi_assembly_metadata
+        - ncbi_bioproject_metadata
+        - ncbi_biosample_metadata
+        - ncbi_sra_run_metadata
+        - uniprot_protein_and_proteome_metadata
+        - repository_video_or_dataset_candidates
+        - explicit_gap_records_for_missing_deeper_lanes
+      promoted_follow_on_lanes:
+        - drosophila_suzukii_genome_files
+        - drosophila_suzukii_extracted_facts
+        - drosophila_suzukii_video_atoms
+        - drosophila_suzukii_occurrence_ecology
+        - drosophila_suzukii_literature_fulltext
+  - id: drosophila_suzukii_literature_fulltext
+    name: Drosophila suzukii legal literature full-text units
+    source_type: derived_sqlite_fulltext_source
+    boundary: Legal direct open full-text chunks for indexed Drosophila suzukii literature records when OpenAlex or Unpaywall exposes a direct PDF, XML, HTML, or text file that Ask Insects can fetch and parse without private access, cookies, institutional scraping, or paywalled workarounds
+    query_plane: drosophila_suzukii_literature_records_to_literature_fulltext_units_and_literature_fulltext_fts
+    artifact_dir: artifacts/mosquito-v1
+    sqlite_fulltext_table: literature_fulltext_units
+    ingest_script: scripts/ingest_drosophila_suzukii_literature_fulltext.py
+    input_sources:
+      - drosophila_suzukii_core
+      - openalex_best_oa_location
+      - unpaywall_legal_direct_fulltext
+    lanes:
+      - literature_fulltext
+    provenance_required: true
+    live_fetch: bounded_opt_in
+    legal_fulltext_only: true
+    source_contract:
+      source_grade_now:
+        - legal_direct_fulltext_chunks
+        - direct_open_pdf_or_xml_or_html_or_text_chunks_when_fetchable
+        - fulltext_fetch_or_parse_gaps_for_failed_direct_files
+        - unpaywall_no_direct_fulltext_gaps_when_unpaywall_is_enabled
+      not_claimed:
+        - paywalled_pdfs
+        - institutional_proxy_access
+        - publisher_landing_pages_without_direct_open_files
+        - human_validated_scientific_claim_extraction
+  - id: drosophila_suzukii_extracted_facts
+    name: Drosophila suzukii extracted literature facts, supplement manifests, and per-paper supplement audits
+    source_type: derived_sqlite_source
+    boundary: Deterministic spotted wing drosophila cross-lane candidate facts, supplement manifests, per-paper supplement audit atoms, supported parsed supplement table rows, parsed-but-unpromoted supplement row atoms, and supplement file-gap atoms from indexed Drosophila suzukii literature records, record payload supplement metadata, public supplement metadata routes reused from the Aedes extracted-facts lane, public supplement files, and legal literature_fulltext_units
+    query_plane: drosophila_suzukii_literature_records_payloads_fulltext_units_supported_supplement_tables_and_per_paper_supplement_audits_to_sqlite_fact_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_extracted_facts
+    ingest_script: scripts/ingest_drosophila_suzukii_extracted_facts.py
+    input_sources:
+      - drosophila_suzukii_core
+      - record_payloads
+      - literature_fulltext_units
+      - europe_pmc_metadata
+      - pmc_oa_metadata
+      - crossref_relation_metadata
+      - datacite_related_identifiers
+      - unpaywall_oa_locations
+      - figshare_metadata
+      - zenodo_metadata
+      - dryad_metadata
+      - publisher_landing_page_links
+      - fulltext_link_mining
+    supported_supplement_formats:
+      - csv
+      - tsv
+      - xlsx
+      - docx
+      - xml
+      - html
+      - txt
+      - md
+      - log
+      - r
+      - pdf
+    lanes:
+      - literature
+      - behavior
+      - crop_damage
+      - management
+      - resistance
+      - biocontrol
+      - ecology
+      - genomics
+    provenance_required: true
+    live_fetch: bounded_opt_in_supplement_discovery_and_download
+    legal_fulltext_only: true
+    confidence_policy: candidate_manifest_or_parsed_not_human_validated
+    supplement_completion_contract:
+      required_grain: one_supplement_audit_atom_per_indexed_drosophila_suzukii_literature_paper
+      complete_only_if:
+        - supplement_audit_count_equals_source_paper_count
+        - every_public_supported_supplement_table_row_is_parsed
+        - every_schema_promotable_row_is_promoted_to_a_structured_lane
+        - every_non_promoted_case_has_queryable_reason_and_provenance
+  - id: drosophila_suzukii_video_atoms
+    name: Drosophila suzukii verified video atoms and motion gaps
+    source_type: derived_sqlite_source
+    boundary: Derived spotted wing drosophila video intelligence records from indexed Drosophila suzukii repository media, paper-supplement manifests, bounded mirrors, ffprobe metadata, inspectable thumbnails, sampled keyframes, preview clips, frame manifests, and explicit structured gaps for huge files, unclear licenses, missing downloads, failed downloads, failed probes, failed artifact generation, or missing queryable motion rows
+    query_plane: drosophila_suzukii_indexed_video_records_to_sqlite_video_atoms
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_video_atoms
+    ingest_script: scripts/ingest_drosophila_suzukii_video_atoms.py
+    input_sources:
+      - drosophila_suzukii_deep_sources
+      - drosophila_suzukii_extracted_facts
+    lanes:
+      - media
+      - behavior
+    provenance_required: true
+    live_fetch: derived_from_indexed_spotted_wing_drosophila_video_sources
+    binary_policy: bounded_mirror_when_license_and_size_allow_else_structured_gap
+    gap_reasons:
+      - swd_video_candidates_not_found
+      - video_license_unclear
+      - video_too_large
+      - video_download_failed
+      - video_probe_failed
+      - video_probe_tool_missing
+      - video_artifact_generation_failed
+      - video_artifact_tool_missing
+      - video_motion_rows_not_available_for_swd
+    source_contract:
+      mirror_or_gap:
+        - checksum
+        - byte_size
+        - duration
+        - fps
+        - resolution
+        - codec
+        - source_paper_or_dataset
+        - license
+        - exact_locator
+      inspectable_artifacts:
+        - thumbnails
+        - keyframes
+        - preview_clips
+        - frame_manifests
+      queryable_motion_rows:
+        - behavior_type
+        - life_stage
+        - sex
+        - assay
+        - stimulus
+        - arena
+        - frame_or_time_range
+        - track_id
+        - coordinates
+        - confidence
+      structured_gaps:
+        - video_motion_rows_not_available_for_swd
+        - video_license_unclear
+        - video_too_large
+        - video_download_failed
+  - id: drosophila_suzukii_genome_files
+    name: Drosophila suzukii NCBI genome GFF and protein files
+    source_type: public_ncbi_genome_files
+    boundary: Parsed Drosophila suzukii NCBI RefSeq/GenBank genome annotation files for a selected assembly, including assembly metadata, downloaded genomic GFF rows, protein FASTA records, and structured gaps for missing assembly metadata, missing FTP paths, oversized files, or failed downloads
+    query_plane: drosophila_suzukii_ncbi_assembly_gff_protein_files_to_sqlite_genome_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_genome_files
+    ingest_script: scripts/ingest_drosophila_suzukii_genome_files.py
+    default_assembly_accession: GCF_043229965.1
+    input_sources:
+      - drosophila_suzukii_deep_sources
+      - NCBI genome FTP
+    lanes:
+      - genome_assemblies
+      - genome_features
+      - genes
+      - transcripts
+      - proteins
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    binary_policy: bounded_public_ncbi_text_downloads
+    source_contract:
+      parsed_files:
+        - genomic.gff
+        - protein.faa
+      parsed_fields:
+        - assembly_accession
+        - sequence_id
+        - feature_type
+        - start
+        - end
+        - strand
+        - gff_attributes
+        - protein_accession
+        - sequence_length
+  - id: drosophila_suzukii_occurrence_ecology
+    name: Drosophila suzukii occurrence ecology from indexed observations
+    source_type: derived_sqlite_source
+    boundary: Derived spotted wing drosophila occurrence ecology records from indexed Drosophila suzukii GBIF and iNaturalist observation payloads, including country summaries, country-month seasonality rows, coordinate bounding boxes, source counts, and public habitat-like observation metadata when available
+    query_plane: drosophila_suzukii_indexed_observation_payloads_to_sqlite_ecology_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_drosophila_suzukii_occurrence_ecology.py
+    input_sources:
+      - drosophila_suzukii_core
+    lanes:
+      - ecology
+    provenance_required: true
+    live_fetch: derived_from_existing_index
+    source_contract:
+      aggregations:
+        - country_summary
+        - country_month_summary
+        - habitat_summary
+      source_fields:
+        - raw_occurrence
+        - raw_observation
+        - upstream_source
+        - eventDate
+        - observed_on
+        - decimalLatitude
+        - decimalLongitude
+        - place_guess
+        - ofvs
   - id: gbif_api
     name: Global Biodiversity Information Facility API
     source_type: public_api

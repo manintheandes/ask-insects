@@ -164,6 +164,8 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "expression", ("expression", "transcripts", "genes", "proteins", "literature"), question)
+    if "drosophila suzukii" in q and "sra" in q:
+        return QueryPlan(question, "expression", ("expression", "biosamples", "genome_assemblies", "proteins", "literature", "taxonomy"), question)
     if any(term in q for term in ("vecdyn", "abundance", "trap count", "trap counts", "sample count", "sample counts", "mosquito count", "mosquito counts")):
         return QueryPlan(question, "ecology", ("observations", "ecology", "literature", "taxonomy"), question)
     if any(
@@ -433,6 +435,62 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "behavior", ("behavior", "neurobiology", "literature", "taxonomy"), question)
+    is_spotted_wing = any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"))
+    if is_spotted_wing and any(
+        term in q
+        for term in (
+            "biocontrol",
+            "biological control",
+            "parasitoid",
+            "parasitoids",
+            "predator",
+            "predators",
+            "natural enemy",
+            "natural enemies",
+        )
+    ):
+        return QueryPlan(question, "biocontrol", ("biocontrol", "management", "crop_damage", "literature", "taxonomy"), question)
+    if is_spotted_wing and any(
+        term in q
+        for term in (
+            "crop damage",
+            "fruit damage",
+            "crop loss",
+            "yield loss",
+            "infestation",
+            "infestations",
+            "host fruit",
+            "host crop",
+            "host plant",
+            "berry",
+            "berries",
+            "blueberry",
+            "raspberry",
+            "strawberry",
+            "cherry",
+            "grape",
+        )
+    ):
+        return QueryPlan(question, "crop_damage", ("crop_damage", "management", "ecology", "literature", "taxonomy"), question)
+    if is_spotted_wing and any(
+        term in q
+        for term in (
+            "management",
+            "pest management",
+            "integrated pest management",
+            "ipm",
+            "control",
+            "monitoring",
+            "trap",
+            "traps",
+            "bait",
+            "baits",
+            "attract and kill",
+            "sanitation",
+            "exclusion netting",
+        )
+    ):
+        return QueryPlan(question, "management", ("management", "biocontrol", "crop_damage", "resistance", "literature", "taxonomy"), question)
     if any(
         term in q
         for term in (
@@ -529,6 +587,7 @@ def plan_question(question: str) -> QueryPlan:
         "dna barcode",
         "dna barcodes",
         "genome",
+        "genomics",
         "gene",
         "genes",
         "bioproject",

@@ -1207,6 +1207,24 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_drosophila_suzukii_occurrence_ecology_ingest_sends_request(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 12}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli("ingest-drosophila-suzukii-occurrence-ecology", "--hosted")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii-occurrence-ecology")
+        self.assertEqual(calls[0][2], {})
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_resistance_table_rows_ingest_sends_request(self):
         calls = []
 
@@ -1251,6 +1269,196 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][2]["compendium_row_limit"], 25)
         self.assertEqual(calls[0][2]["bioproject_limit"], 7)
         self.assertEqual(calls[0][2]["worldclim_sample_limit"], 3)
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_drosophila_suzukii_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = object()
+            code, output = self.run_cli(
+                "ingest-drosophila-suzukii",
+                "--hosted",
+                "--gbif-occurrence-limit",
+                "11",
+                "--inaturalist-observation-limit",
+                "12",
+                "--literature-max-works",
+                "13",
+                "--bold-limit",
+                "14",
+            )
+
+        self.assertEqual(code, 0, output)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii")
+        self.assertEqual(calls[0][2]["gbif_occurrence_limit"], 11)
+        self.assertEqual(calls[0][2]["inaturalist_observation_limit"], 12)
+        self.assertEqual(calls[0][2]["literature_max_works"], 13)
+        self.assertEqual(calls[0][2]["bold_limit"], 14)
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_drosophila_suzukii_deep_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = object()
+            code, output = self.run_cli(
+                "ingest-drosophila-suzukii-deep-sources",
+                "--hosted",
+                "--ncbi-limit",
+                "15",
+                "--protein-limit",
+                "16",
+                "--proteome-limit",
+                "17",
+                "--repository-limit",
+                "18",
+            )
+
+        self.assertEqual(code, 0, output)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii-deep-sources")
+        self.assertEqual(calls[0][2]["ncbi_limit"], 15)
+        self.assertEqual(calls[0][2]["protein_limit"], 16)
+        self.assertEqual(calls[0][2]["proteome_limit"], 17)
+        self.assertEqual(calls[0][2]["repository_limit"], 18)
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_drosophila_suzukii_genome_files_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = object()
+            code, output = self.run_cli(
+                "ingest-drosophila-suzukii-genome-files",
+                "--hosted",
+                "--assembly-accession",
+                "GCF_043229965.1",
+                "--max-download-bytes",
+                "12345",
+            )
+
+        self.assertEqual(code, 0, output)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii-genome-files")
+        self.assertEqual(calls[0][2]["assembly_accession"], "GCF_043229965.1")
+        self.assertEqual(calls[0][2]["max_download_bytes"], 12345)
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_drosophila_suzukii_extracted_facts_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = object()
+            code, output = self.run_cli(
+                "ingest-drosophila-suzukii-extracted-facts",
+                "--hosted",
+                "--discover-supplements",
+                "--download-supplements",
+                "--max-supplement-discovery-records",
+                "19",
+                "--max-supplement-files",
+                "20",
+                "--source-record-id",
+                "swd:openalex:W1",
+                "--merge-existing",
+            )
+
+        self.assertEqual(code, 0, output)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii-extracted-facts")
+        self.assertTrue(calls[0][2]["discover_supplements"])
+        self.assertTrue(calls[0][2]["download_supplements"])
+        self.assertEqual(calls[0][2]["max_supplement_discovery_records"], 19)
+        self.assertEqual(calls[0][2]["max_supplement_files"], 20)
+        self.assertEqual(calls[0][2]["source_record_ids"], ["swd:openalex:W1"])
+        self.assertTrue(calls[0][2]["merge_existing"])
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_drosophila_suzukii_literature_fulltext_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = object()
+            code, output = self.run_cli(
+                "ingest-drosophila-suzukii-literature-fulltext",
+                "--hosted",
+                "--email",
+                "sources@openinsects.org",
+                "--limit",
+                "30",
+                "--delay-seconds",
+                "0",
+                "--max-fulltext-bytes",
+                "12345",
+            )
+
+        self.assertEqual(code, 0, output)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii-literature-fulltext")
+        self.assertEqual(calls[0][2]["email"], "sources@openinsects.org")
+        self.assertEqual(calls[0][2]["limit"], 30)
+        self.assertEqual(calls[0][2]["delay_seconds"], 0)
+        self.assertEqual(calls[0][2]["max_fulltext_bytes"], 12345)
+        self.assertTrue(calls[0][2]["include_unpaywall"])
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_drosophila_suzukii_video_atoms_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = object()
+            code, output = self.run_cli(
+                "ingest-drosophila-suzukii-video-atoms",
+                "--hosted",
+                "--mirror-videos",
+                "--generate-artifacts",
+                "--max-video-bytes",
+                "1234",
+                "--allow-unclear-license",
+                "--allowed-licenses",
+                "CC BY,CC0",
+            )
+
+        self.assertEqual(code, 0, output)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii-video-atoms")
+        self.assertTrue(calls[0][2]["mirror_videos"])
+        self.assertTrue(calls[0][2]["generate_artifacts"])
+        self.assertEqual(calls[0][2]["max_video_bytes"], 1234)
+        self.assertTrue(calls[0][2]["allow_unclear_license"])
+        self.assertEqual(calls[0][2]["allowed_licenses"], ["CC BY", "CC0"])
         self.assertEqual(calls[0][3], 7200)
         self.assertTrue(json.loads(output)["ok"])
 
