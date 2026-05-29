@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.parse import unquote
 
 from askinsects.index import SourceIndex
 from askinsects.sources.drosophila_suzukii_deep_sources import (
@@ -113,6 +114,9 @@ class DrosophilaSuzukiiDeepSourceTests(unittest.TestCase):
             self.assertIn("resistance", lanes)
             self.assertTrue(all(record.source == DROSOPHILA_SUZUKII_DEEP_SOURCE_ID for record in result.records))
             self.assertTrue(result.raw_artifacts)
+            requested = "\n".join(unquote(url).replace("+", " ") for url in result.requested_urls)
+            self.assertIn("Drosophila suzukii oviposition", requested)
+            self.assertIn("spotted wing drosophila video", requested)
 
     def test_deep_records_are_queryable_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:

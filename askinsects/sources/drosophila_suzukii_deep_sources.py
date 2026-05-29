@@ -27,6 +27,22 @@ DRYAD_API_BASE = "https://datadryad.org/api/v2/search"
 USER_AGENT = "AskInsects/0.1 source-plane"
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 SPECIES_PATTERN = re.compile(r"\bDrosophila\s+suzukii\b|spotted[-\s]+wing\s+drosophila|\bSWD\b", re.I)
+REPOSITORY_VIDEO_QUERIES = (
+    "Drosophila suzukii video",
+    "spotted wing drosophila video",
+    "Drosophila suzukii behavior",
+    "Drosophila suzukii oviposition",
+    "Drosophila suzukii tracking",
+    "Drosophila suzukii flight",
+    "Drosophila suzukii assay",
+)
+REPOSITORY_DATASET_QUERIES = (
+    "Drosophila suzukii",
+    "spotted wing drosophila",
+    "Drosophila suzukii behavior",
+    "Drosophila suzukii oviposition",
+    "Drosophila suzukii tracking",
+)
 
 
 @dataclass(frozen=True)
@@ -80,6 +96,13 @@ def _safe_id(value: object) -> str:
 
 def _digest(*parts: object) -> str:
     return hashlib.sha1("|".join(str(part) for part in parts).encode("utf-8")).hexdigest()[:12]
+
+
+def _dedupe_records(records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    deduped: dict[str, EvidenceRecord] = {}
+    for record in records:
+        deduped.setdefault(record.record_id, record)
+    return list(deduped.values())
 
 
 def _eutils_url(endpoint: str, **params: object) -> str:
@@ -503,16 +526,16 @@ def _zenodo_records(
     gaps: list[dict[str, object]],
     retrieved_at: str,
     size: int,
+    query: str = "Drosophila suzukii video",
 ) -> tuple[list[EvidenceRecord], list[str]]:
-    query = "Drosophila suzukii video"
     url = f"{ZENODO_API_BASE}?{urlencode({'q': query, 'size': max(1, min(int(size), 25)), 'sort': 'bestmatch'})}"
     requested_urls.append(url)
     try:
         payload = fetch_json(url)
     except Exception as exc:
-        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "zenodo_search_failed", "error": str(exc), "retrieved_at": retrieved_at})
+        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "zenodo_search_failed", "query": query, "error": str(exc), "retrieved_at": retrieved_at})
         return [], []
-    raw_path = _write_raw(raw_dir, "zenodo_drosophila_suzukii_videos.json", payload)
+    raw_path = _write_raw(raw_dir, f"zenodo_{_safe_id(query)}.json", payload)
     records: list[EvidenceRecord] = []
     hits = payload.get("hits", {}).get("hits", []) if isinstance(payload, dict) else []
     for hit_index, hit in enumerate(hits if isinstance(hits, list) else [], start=1):
@@ -524,7 +547,7 @@ def _zenodo_records(
             continue
         video_files = [file for file in files if isinstance(file, dict) and _is_video_file(str(file.get("key") or file.get("filename") or ""), str(file.get("type") or ""))]
         if not video_files:
-            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "zenodo_material_record_no_video_files", "record_id": hit.get("id"), "retrieved_at": retrieved_at})
+            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "zenodo_material_record_no_video_files", "record_id": hit.get("id"), "query": query, "retrieved_at": retrieved_at})
         for file_index, file_payload in enumerate(video_files, start=1):
             filename = str(file_payload.get("key") or file_payload.get("filename") or f"file-{file_index}")
             links = file_payload.get("links") if isinstance(file_payload.get("links"), dict) else {}
@@ -548,7 +571,7 @@ def _zenodo_records(
                 )
             )
     if not records:
-        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "zenodo_no_queryable_video_files", "retrieved_at": retrieved_at})
+        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "zenodo_no_queryable_video_files", "query": query, "retrieved_at": retrieved_at})
     return records, [raw_path.as_posix()]
 
 
@@ -560,9 +583,10 @@ def _figshare_records(
     gaps: list[dict[str, object]],
     retrieved_at: str,
     page_size: int,
+    query: str = "Drosophila suzukii video",
 ) -> tuple[list[EvidenceRecord], list[str]]:
     search_payload = {
-        "search_for": "Drosophila suzukii video",
+        "search_for": query,
         "page_size": max(1, min(int(page_size), 100)),
         "order": "published_date",
         "order_direction": "desc",
@@ -575,9 +599,9 @@ def _figshare_records(
         else:
             payload = fetch_json(f"{search_url}?{urlencode(search_payload)}")
     except Exception as exc:
-        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "figshare_search_failed", "error": str(exc), "retrieved_at": retrieved_at})
+        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "figshare_search_failed", "query": query, "error": str(exc), "retrieved_at": retrieved_at})
         return [], []
-    search_raw = _write_raw(raw_dir, "figshare_drosophila_suzukii_search.json", payload)
+    search_raw = _write_raw(raw_dir, f"figshare_{_safe_id(query)}_search.json", payload)
     records: list[EvidenceRecord] = []
     raw_paths = [search_raw.as_posix()]
     rows = payload if isinstance(payload, list) else []
@@ -589,7 +613,7 @@ def _figshare_records(
         try:
             detail = fetch_json(detail_url)
         except Exception as exc:
-            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "figshare_detail_fetch_failed", "article_id": row.get("id"), "error": str(exc), "retrieved_at": retrieved_at})
+            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "figshare_detail_fetch_failed", "article_id": row.get("id"), "query": query, "error": str(exc), "retrieved_at": retrieved_at})
             continue
         detail_raw = _write_raw(raw_dir, f"figshare_article_{row['id']}.json", detail)
         raw_paths.append(detail_raw.as_posix())
@@ -598,7 +622,7 @@ def _figshare_records(
         files = detail.get("files") if isinstance(detail.get("files"), list) else []
         video_files = [file for file in files if isinstance(file, dict) and _is_video_file(str(file.get("name") or file.get("filename") or ""), str(file.get("mimetype") or ""))]
         if not video_files:
-            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "figshare_material_record_no_video_files", "article_id": row.get("id"), "retrieved_at": retrieved_at})
+            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "figshare_material_record_no_video_files", "article_id": row.get("id"), "query": query, "retrieved_at": retrieved_at})
         for file_index, file_payload in enumerate(video_files, start=1):
             filename = str(file_payload.get("name") or file_payload.get("filename") or f"file-{file_index}")
             records.append(
@@ -618,7 +642,7 @@ def _figshare_records(
                 )
             )
     if not records:
-        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "figshare_no_queryable_video_files", "retrieved_at": retrieved_at})
+        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "media", "reason": "figshare_no_queryable_video_files", "query": query, "retrieved_at": retrieved_at})
     return records, raw_paths
 
 
@@ -630,16 +654,16 @@ def _dryad_records(
     gaps: list[dict[str, object]],
     retrieved_at: str,
     page_size: int,
+    query: str = "Drosophila suzukii",
 ) -> tuple[list[EvidenceRecord], list[str]]:
-    query = "Drosophila suzukii"
     url = f"{DRYAD_API_BASE}?{urlencode({'q': query, 'per_page': max(1, min(int(page_size), 100))})}"
     requested_urls.append(url)
     try:
         payload = fetch_json(url)
     except Exception as exc:
-        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_search_failed", "error": str(exc), "retrieved_at": retrieved_at})
+        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_search_failed", "query": query, "error": str(exc), "retrieved_at": retrieved_at})
         return [], []
-    raw_path = _write_raw(raw_dir, "dryad_drosophila_suzukii_search.json", payload)
+    raw_path = _write_raw(raw_dir, f"dryad_{_safe_id(query)}_search.json", payload)
     records: list[EvidenceRecord] = []
     embedded = payload.get("_embedded") if isinstance(payload, dict) else {}
     stash = embedded.get("stash:datasets", []) if isinstance(embedded, dict) else []
@@ -665,7 +689,7 @@ def _dryad_records(
             )
         )
     if not records:
-        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_no_material_dataset_candidates", "retrieved_at": retrieved_at})
+        gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_no_material_dataset_candidates", "query": query, "retrieved_at": retrieved_at})
     return records, [raw_path.as_posix()]
 
 
@@ -723,25 +747,39 @@ def fetch_drosophila_suzukii_deep_records(
     records.extend(uniprot_records)
     raw_artifacts.extend(uniprot_artifacts)
 
-    for repo_name, fetcher in (
-        ("zenodo", _zenodo_records),
-        ("figshare", _figshare_records),
-        ("dryad", _dryad_records),
-    ):
-        repo_records, repo_artifacts = fetcher(
-            raw_dir=raw_dir / repo_name,
+    for query in REPOSITORY_VIDEO_QUERIES:
+        repo_records, repo_artifacts = _zenodo_records(
+            raw_dir=raw_dir / "zenodo",
             fetch_json=fetch,
             requested_urls=requested_urls,
             gaps=gaps,
             retrieved_at=retrieved,
             size=repository_limit,
-        ) if repo_name == "zenodo" else fetcher(
-            raw_dir=raw_dir / repo_name,
+            query=query,
+        )
+        records.extend(repo_records)
+        raw_artifacts.extend(repo_artifacts)
+        repo_records, repo_artifacts = _figshare_records(
+            raw_dir=raw_dir / "figshare",
             fetch_json=fetch,
             requested_urls=requested_urls,
             gaps=gaps,
             retrieved_at=retrieved,
             page_size=repository_limit,
+            query=query,
+        )
+        records.extend(repo_records)
+        raw_artifacts.extend(repo_artifacts)
+
+    for query in REPOSITORY_DATASET_QUERIES:
+        repo_records, repo_artifacts = _dryad_records(
+            raw_dir=raw_dir / "dryad",
+            fetch_json=fetch,
+            requested_urls=requested_urls,
+            gaps=gaps,
+            retrieved_at=retrieved,
+            page_size=repository_limit,
+            query=query,
         )
         records.extend(repo_records)
         raw_artifacts.extend(repo_artifacts)
@@ -776,6 +814,7 @@ def fetch_drosophila_suzukii_deep_records(
         )
 
     source_counts: dict[str, int] = {}
+    records = _dedupe_records(records)
     for record in records:
         source_counts[record.lane] = source_counts.get(record.lane, 0) + 1
     return DrosophilaSuzukiiDeepResult(
