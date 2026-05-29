@@ -4961,6 +4961,22 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 "source_gap": None,
             }
 
+    if (
+        plan.answer_shape == "genomics"
+        and requested_species
+        and requested_species.lower() == "drosophila suzukii"
+        and _wants_swd_figshare_mk_selection(plan.question)
+    ):
+        swd_mk_records = _swd_figshare_mk_selection_records(index, plan.question, limit=limit)
+        if swd_mk_records:
+            return {
+                "ok": True,
+                "answer_shape": plan.answer_shape,
+                "answer": _answer_text(plan, swd_mk_records),
+                "evidence": [record_to_evidence(record) for record in swd_mk_records[:limit]],
+                "source_gap": None,
+            }
+
     exact_identifier_records = _exact_extracted_fact_identifier_records(index, plan.question, limit=limit)
     if exact_identifier_records:
         evidence = [record_to_evidence(record) for record in exact_identifier_records[:limit]]

@@ -4674,10 +4674,14 @@ class AnswerTests(unittest.TestCase):
                 ]
             )
 
-            answer = answer_question(
-                "show Drosophila suzukii Figshare MK test rows for DS20_00004020",
-                artifact_dir=artifact_dir,
-            )
+            from unittest.mock import patch
+
+            with patch("askinsects.answer.SourceIndex.search") as search:
+                search.side_effect = AssertionError("SWD MK questions should answer from the direct Figshare MK lane")
+                answer = answer_question(
+                    "show Drosophila suzukii Figshare MK test rows for DS20_00004020",
+                    artifact_dir=artifact_dir,
+                )
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "genomics")
