@@ -4859,6 +4859,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         return source_gap(plan, "The Ask Insects source index has not been built yet.")
 
     q = plan.question.lower()
+    requested_species = _requested_species(plan.question)
     if _wants_supplement_audit_summary(plan.question) and ("audit" in q or "audited" in q):
         return _supplement_audit_summary_answer(index, plan, limit=limit)
     if _wants_supplement_audit_summary(plan.question) and "source_coverage" not in plan.lanes:
@@ -4866,6 +4867,22 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     coverage_summary = _source_coverage_summary_answer(index, plan, limit=limit)
     if coverage_summary is not None:
         return coverage_summary
+
+    if (
+        plan.answer_shape == "expression"
+        and requested_species
+        and requested_species.lower() == "drosophila suzukii"
+        and _wants_expression_computed_outputs(plan.question)
+    ):
+        swd_expression_records = _swd_geo_expression_matrix_records(index, plan.question, limit=limit)
+        if swd_expression_records:
+            return {
+                "ok": True,
+                "answer_shape": plan.answer_shape,
+                "answer": _answer_text(plan, swd_expression_records),
+                "evidence": [record_to_evidence(record) for record in swd_expression_records[:limit]],
+                "source_gap": None,
+            }
 
     exact_identifier_records = _exact_extracted_fact_identifier_records(index, plan.question, limit=limit)
     if exact_identifier_records:
@@ -4880,7 +4897,6 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     all_records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
-    requested_species = _requested_species(plan.question)
     if _wants_video_atoms(plan.question):
         for record in _video_atom_records(index, plan.question, list(plan.lanes), limit=limit):
             all_records.append(record)

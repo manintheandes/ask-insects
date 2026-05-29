@@ -4694,19 +4694,25 @@ class AnswerTests(unittest.TestCase):
                 ]
             )
 
-            answer = answer_question(
-                "show Drosophila suzukii GSE126708 differential expression matrix rows",
-                artifact_dir=artifact_dir,
-            )
+            from unittest.mock import patch
+
+            with patch("askinsects.answer._exact_extracted_fact_identifier_records") as exact_records:
+                exact_records.side_effect = AssertionError("SWD GEO expression questions should use the direct matrix lane")
+                answer = answer_question(
+                    "show Drosophila suzukii GSE126708 differential expression matrix rows",
+                    artifact_dir=artifact_dir,
+                )
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "expression")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_geo_expression_matrices")
 
-            answer = answer_question(
-                "show significant Drosophila suzukii GSE73595 differential expression matrix rows",
-                artifact_dir=artifact_dir,
-            )
+            with patch("askinsects.answer._exact_extracted_fact_identifier_records") as exact_records:
+                exact_records.side_effect = AssertionError("SWD GEO expression questions should use the direct matrix lane")
+                answer = answer_question(
+                    "show significant Drosophila suzukii GSE73595 differential expression matrix rows",
+                    artifact_dir=artifact_dir,
+                )
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["evidence"][0]["record_id"], "swd_geo_expression:GSE73595:file:r1")
