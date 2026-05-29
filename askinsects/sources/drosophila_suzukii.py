@@ -127,7 +127,7 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "DNA barcodes, and per-domain coverage status. Follow-on lanes now promote genome files, supplement audits, "
                 "PubMed literature reconciliation, GenBank nucleotide cross-checks, dbSNP variation audits, Figshare MK selection rows, "
                 "GenBank mitochondrial/nuclear marker reviews, extension/IPM guidance, literature-derived crop damage, "
-                "management, resistance, biocontrol, behavior, ecology, and the first inspectable video atoms."
+                "management, resistance, candidate biocontrol outcome rows, behavior, ecology, and the first inspectable video atoms."
             ),
             species=DROSOPHILA_SUZUKII_SPECIES,
             url=None,
@@ -219,9 +219,10 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "extension/IPM guidance pages",
                 "literature-derived management, resistance, and biocontrol candidate rows",
                 "dedicated susceptibility/resistance evidence rows from extracted facts",
+                "dedicated candidate biocontrol outcome rows from extracted facts",
                 "supplement manifests and parsed rows when available",
             ],
-            ["broader parsed susceptibility assay table coverage", "human-validated biocontrol tables"],
+            ["broader parsed susceptibility and biocontrol table coverage", "human-validated biocontrol outcome review"],
         ),
     ]
     for index, (domain, status, current_sources, missing_sources) in enumerate(specs, start=1):

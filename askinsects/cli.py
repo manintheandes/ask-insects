@@ -474,6 +474,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_susceptibility_assay_rows.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_susceptibility_assay_rows.add_argument("--retrieved-at")
 
+    ingest_drosophila_suzukii_biocontrol_outcome_rows = sub.add_parser("ingest-drosophila-suzukii-biocontrol-outcome-rows")
+    ingest_drosophila_suzukii_biocontrol_outcome_rows.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_biocontrol_outcome_rows.add_argument("--retrieved-at")
+
     ingest_image_atoms = sub.add_parser("ingest-image-atoms")
     ingest_image_atoms.add_argument("--hosted", action="store_true")
     ingest_image_atoms.add_argument("--mirror-images", action="store_true")
@@ -1723,6 +1727,25 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/drosophila-suzukii-susceptibility-assay-rows",
+            {"retrieved_at": args.retrieved_at},
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-biocontrol-outcome-rows":
+        if not args.hosted:
+            from scripts.ingest_drosophila_suzukii_biocontrol_outcome_rows import (
+                ingest_drosophila_suzukii_biocontrol_outcome_rows,
+            )
+
+            payload = ingest_drosophila_suzukii_biocontrol_outcome_rows(
+                artifact_dir=artifact_dir,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/drosophila-suzukii-biocontrol-outcome-rows",
             {"retrieved_at": args.retrieved_at},
             timeout=7200,
         )

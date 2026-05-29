@@ -22,6 +22,7 @@ from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURC
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
 from .sources.drosophila_suzukii_geo_expression_matrices import DROSOPHILA_SUZUKII_GEO_EXPRESSION_MATRICES_SOURCE_ID
 from .sources.drosophila_suzukii_susceptibility_assay_rows import DROSOPHILA_SUZUKII_SUSCEPTIBILITY_ASSAY_ROWS_SOURCE_ID
+from .sources.drosophila_suzukii_biocontrol_outcome_rows import DROSOPHILA_SUZUKII_BIOCONTROL_OUTCOME_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
 from .sources.drosophila_suzukii_jki_drosomon_trap_captures import DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID
@@ -3066,6 +3067,25 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
     return sorted(records, key=score)
 
 
+def _prioritize_biocontrol_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
+    wants_swd = _requested_species(question) == "Drosophila suzukii"
+
+    def score(record: EvidenceRecord) -> tuple[object, ...]:
+        swd_outcome_rank = 0 if wants_swd and record.source == DROSOPHILA_SUZUKII_BIOCONTROL_OUTCOME_ROWS_SOURCE_ID else 1
+        swd_extracted_rank = 0 if wants_swd and record.source == DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID else 1
+        payload = record.payload if isinstance(record.payload, dict) else {}
+        gap_rank = 1 if payload.get("atom_type") == "source_gap" or "source gap" in record.title.lower() else 0
+        return (
+            swd_outcome_rank,
+            swd_extracted_rank,
+            gap_rank,
+            0 if record.lane == "biocontrol" else 1,
+            record.record_id,
+        )
+
+    return sorted(records, key=score)
+
+
 def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
     q = question.lower()
     source_id = _resistance_table_source_for_question(question)
@@ -5649,8 +5669,19 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         for record in _source_records(index, AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID, ["resistance"], limit=limit):
             if record.record_id in seen_record_ids:
                 continue
-            all_records.append(record)
-            seen_record_ids.add(record.record_id)
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
+
+    if plan.answer_shape == "biocontrol" and requested_species and requested_species.lower() == "drosophila suzukii":
+        for source_id in (
+            DROSOPHILA_SUZUKII_BIOCONTROL_OUTCOME_ROWS_SOURCE_ID,
+            DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID,
+        ):
+            for record in _source_records(index, source_id, ["biocontrol"], limit=max(limit * 10, 25)):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "management" and requested_species and requested_species.lower() == "drosophila suzukii":
         for record in _source_records(index, DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID, ["management"], limit=limit):
@@ -5932,6 +5963,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if plan.answer_shape == "resistance":
         all_records = _prioritize_resistance_records(plan.question, all_records)
+
+    if plan.answer_shape == "biocontrol":
+        all_records = _prioritize_biocontrol_records(plan.question, all_records)
 
     if plan.answer_shape == "behavior":
         all_records = _prioritize_behavior_records(plan.question, all_records)

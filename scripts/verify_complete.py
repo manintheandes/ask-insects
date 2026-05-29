@@ -96,6 +96,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-24-open-insects-public-identity.md",
     "docs/superpowers/plans/2026-05-28-drosophila-suzukii-source-plane.md",
     "docs/superpowers/plans/2026-05-29-swd-susceptibility-assay-lane.md",
+    "docs/superpowers/plans/2026-05-29-swd-biocontrol-outcome-lane.md",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -170,6 +171,7 @@ REQUIRED_FILES = (
     "askinsects/sources/drosophila_suzukii_jki_drosomon_trap_captures.py",
     "askinsects/sources/drosophila_suzukii_umn_flight_assay_rows.py",
     "askinsects/sources/drosophila_suzukii_susceptibility_assay_rows.py",
+    "askinsects/sources/drosophila_suzukii_biocontrol_outcome_rows.py",
     "askinsects/sources/drosophila_suzukii_video_atoms.py",
     "askinsects/sources/drosophila_suzukii_dryad_table_rows.py",
     "askinsects/sources/drosophila_suzukii_occurrence_ecology.py",
@@ -242,6 +244,7 @@ REQUIRED_FILES = (
     "scripts/ingest_drosophila_suzukii_jki_drosomon_trap_captures.py",
     "scripts/ingest_drosophila_suzukii_umn_flight_assay_rows.py",
     "scripts/ingest_drosophila_suzukii_susceptibility_assay_rows.py",
+    "scripts/ingest_drosophila_suzukii_biocontrol_outcome_rows.py",
     "scripts/ingest_drosophila_suzukii_video_atoms.py",
     "scripts/ingest_drosophila_suzukii_dryad_table_rows.py",
     "scripts/ingest_drosophila_suzukii_occurrence_ecology.py",
@@ -376,6 +379,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_drosophila_suzukii_umn_flight_assay_rows.py",
     "tests/test_drosophila_suzukii_susceptibility_assay_rows.py",
     "tests/test_ingest_drosophila_suzukii_susceptibility_assay_rows.py",
+    "tests/test_drosophila_suzukii_biocontrol_outcome_rows.py",
+    "tests/test_ingest_drosophila_suzukii_biocontrol_outcome_rows.py",
     "tests/test_drosophila_suzukii_video_atoms.py",
     "tests/test_ingest_drosophila_suzukii_video_atoms.py",
     "tests/test_drosophila_suzukii_dryad_table_rows.py",
@@ -1095,6 +1100,16 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii susceptibility assay term: {term}")
+    for term in (
+        "drosophila_suzukii_biocontrol_outcome_rows",
+        "scripts/ingest_drosophila_suzukii_biocontrol_outcome_rows.py",
+        "drosophila_suzukii_extracted_facts_biocontrol_records_to_sqlite_outcome_evidence",
+        "parsed_table_schema_validated_or_candidate_not_human_validated",
+        "candidate_literature_evidence_rows_for_biocontrol_agent_and_outcome_context",
+        "explicit_gap_when_no_parsed_biocontrol_table_rows_pass",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii biocontrol outcome term: {term}")
     for term in (
         "drosophila_suzukii_video_atoms",
         "scripts/ingest_drosophila_suzukii_video_atoms.py",

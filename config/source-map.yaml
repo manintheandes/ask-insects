@@ -290,6 +290,30 @@ sources:
         - human_validated_susceptibility_assay_interpretation
         - complete parsing of every publisher table format
         - replacement for raw supplementary assay spreadsheets not yet discovered or parsed
+  - id: drosophila_suzukii_biocontrol_outcome_rows
+    name: Drosophila suzukii biocontrol outcome evidence rows
+    source_type: derived_sqlite_source
+    boundary: Schema-validated promotion of parsed Drosophila suzukii biocontrol supplement table rows from drosophila_suzukii_extracted_facts when available, plus bounded candidate literature evidence when records include biological-control agent terms and assay, target-stage, effect-metric, percent, or temperature context; preserves agent terms, assay terms, effect metric terms, target stages, numeric values, source paper ID, extracted-fact ID, exact locator, and a queryable source-gap record when no parsed biocontrol table row passes validation
+    query_plane: drosophila_suzukii_extracted_facts_biocontrol_records_to_sqlite_outcome_evidence
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_drosophila_suzukii_biocontrol_outcome_rows.py
+    input_sources:
+      - drosophila_suzukii_extracted_facts
+    lanes:
+      - biocontrol
+    provenance_required: true
+    live_fetch: derived_from_indexed_extracted_facts
+    legal_fulltext_only: true
+    validation_status: parsed_table_schema_validated_or_candidate_not_human_validated
+    source_contract:
+      source_grade_now:
+        - schema_validated_table_rows_when_parsed_biocontrol_supplement_rows_pass
+        - candidate_literature_evidence_rows_for_biocontrol_agent_and_outcome_context
+        - explicit_gap_when_no_parsed_biocontrol_table_rows_pass
+      not_claimed:
+        - human_validated_biocontrol_outcome_interpretation
+        - complete parsing of every publisher table format
+        - replacement for raw supplementary biocontrol spreadsheets not yet discovered or parsed
   - id: drosophila_suzukii_video_atoms
     name: Drosophila suzukii verified video atoms, motion intervals, and trajectory gaps
     source_type: derived_sqlite_source
@@ -789,7 +813,7 @@ sources:
   - id: drosophila_suzukii_extension_guidance
     name: Drosophila suzukii extension and IPM guidance
     source_type: public_web_guidance
-    boundary: Public extension, university IPM, and multi-institution spotted wing drosophila management guidance pages for Drosophila suzukii, indexed at page grain with raw HTML locators, topic terms, organization, region, and management context. This lane covers guidance-page evidence, not human-validated susceptibility assays or biocontrol outcome tables.
+    boundary: Public extension, university IPM, and multi-institution spotted wing drosophila management guidance pages for Drosophila suzukii, indexed at page grain with raw HTML locators, topic terms, organization, region, and management context. This lane covers guidance-page evidence, not susceptibility assays, candidate biocontrol outcome rows, or human-validated biocontrol outcome tables.
     query_plane: extension_guidance_html_to_sqlite_management_records
     artifact_dir: artifacts/mosquito-v1
     raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_extension_guidance

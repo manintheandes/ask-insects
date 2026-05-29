@@ -276,6 +276,56 @@ def swd_susceptibility_record(record_id):
     )
 
 
+def swd_biocontrol_outcome_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="biocontrol",
+        source="drosophila_suzukii_biocontrol_outcome_rows",
+        title="Drosophila suzukii biocontrol outcome evidence: parasitoid, trichopria",
+        text=(
+            "Candidate literature evidence for Drosophila suzukii biological-control outcomes. "
+            "Agent terms: parasitoid, trichopria. Assay terms: laboratory. "
+            "Effect metric terms: parasitism, emergence. Evidence: Trichopria parasitized Drosophila suzukii pupae."
+        ),
+        species="Drosophila suzukii",
+        url="https://example.org/swd-biocontrol",
+        media_url=None,
+        provenance=Provenance(
+            source_id="drosophila_suzukii_biocontrol_outcome_rows",
+            locator="drosophila_suzukii_extracted_facts#swd_extracted_fact:biocontrol:W1",
+            retrieved_at="2026-05-29T00:00:00Z",
+            license="OpenAlex metadata",
+        ),
+        payload={
+            "confidence": "candidate_literature_evidence",
+            "validation_status": "candidate_not_table_validated",
+            "agent_terms": ["parasitoid", "trichopria"],
+            "assay_terms": ["laboratory"],
+            "effect_metric_terms": ["parasitism", "emergence"],
+        },
+    )
+
+
+def swd_extracted_biocontrol_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="biocontrol",
+        source="drosophila_suzukii_extracted_facts",
+        title="Drosophila suzukii extracted biocontrol fact",
+        text="Drosophila suzukii extracted biocontrol candidate row. Trichopria parasitoid parasitism evidence.",
+        species="Drosophila suzukii",
+        url="https://example.org/swd-extracted-biocontrol",
+        media_url=None,
+        provenance=Provenance(
+            source_id="drosophila_suzukii_extracted_facts",
+            locator="records#swd:openalex_literature:openalex:W2",
+            retrieved_at="2026-05-29T00:00:00Z",
+            license="OpenAlex metadata",
+        ),
+        payload={"confidence": "candidate", "fact_type": "biocontrol"},
+    )
+
+
 def swd_extracted_resistance_record(record_id):
     return EvidenceRecord(
         record_id=record_id,
@@ -5493,6 +5543,39 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "resistance")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_extracted_facts")
             self.assertIn("Spinosad", answer["evidence"][0]["text"])
+
+    def test_spotted_wing_biocontrol_questions_prefer_biocontrol_outcome_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    swd_extracted_biocontrol_record("swd_extracted_fact:biocontrol:W2"),
+                    swd_biocontrol_outcome_record("swd_biocontrol_candidate:W1"),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii parasitoid biocontrol outcomes", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "biocontrol")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_biocontrol_outcome_rows")
+            self.assertIn("Trichopria", answer["evidence"][0]["text"])
+
+    def test_spotted_wing_biocontrol_questions_fallback_to_extracted_facts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([swd_extracted_biocontrol_record("swd_extracted_fact:biocontrol:W2")])
+
+            answer = answer_question("show Drosophila suzukii parasitoid biocontrol outcomes", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "biocontrol")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_extracted_facts")
+            self.assertIn("Trichopria", answer["evidence"][0]["text"])
 
     def test_who_database_resistance_questions_prefer_malaria_threats_audit(self):
         with tempfile.TemporaryDirectory() as tmpdir:
