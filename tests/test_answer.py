@@ -4744,6 +4744,61 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_population_genomics")
 
+    def test_swd_non_dbsnp_variant_questions_prefer_dryad_vcf_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_ncbi_snp_variation:gap:drosophila_suzukii:ncbi_snp_no_swd_records",
+                        lane="genome_features",
+                        source="drosophila_suzukii_ncbi_snp_variation",
+                        title="Drosophila suzukii NCBI dbSNP variation source gap",
+                        text="NCBI dbSNP returned zero records for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ncbi_snp_variation",
+                            locator="raw/dbsnp#gap",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_dryad_population_variants:file:620083",
+                        lane="genome_features",
+                        source="drosophila_suzukii_dryad_population_variants",
+                        title="Drosophila suzukii Dryad population variant file SNPs-q30-original-SWD.vcf.gz",
+                        text="Dryad file manifest for Drosophila suzukii population variants. File: SNPs-q30-original-SWD.vcf.gz. Size: 18752495016 bytes.",
+                        species="Drosophila suzukii",
+                        url="https://doi.org/10.25338/B89P86",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_dryad_population_variants",
+                            locator="raw/dryad/files.json#files/2",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii non-dbSNP variant table evidence",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_dryad_population_variants")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_dryad_population_variants:file:620083")
+
+            dbsnp = answer_question("show Drosophila suzukii dbSNP variant records", artifact_dir=artifact_dir)
+
+            self.assertTrue(dbsnp["ok"])
+            self.assertEqual(dbsnp["evidence"][0]["source"], "drosophila_suzukii_ncbi_snp_variation")
+
     def test_swd_expression_matrix_questions_prefer_geo_matrix_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

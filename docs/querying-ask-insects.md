@@ -583,6 +583,15 @@ python3 -m askinsects ask "show Drosophila suzukii population genomics BioProjec
 python3 -m askinsects sql "select count(*) as n from records where source='drosophila_suzukii_population_genomics'"
 ```
 
+SWD Dryad population-variant records use source id `drosophila_suzukii_dryad_population_variants` and lane `genome_features`. The ingest queries Dryad dataset `10.25338/B89P86`, saves dataset/version/file JSON under `artifacts/mosquito-v1/raw/drosophila_suzukii_dryad_population_variants/`, indexes the VCF file manifest, and records explicit gaps for the 18.7 GB VCF not being mirrored or parsed yet.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-dryad-population-variants
+python3 -m askinsects ask "show Drosophila suzukii non-dbSNP variant table evidence" --json
+python3 -m askinsects ask "show Drosophila suzukii Dryad population VCF evidence" --json
+python3 -m askinsects sql "select count(*) as n from records where source='drosophila_suzukii_dryad_population_variants'"
+```
+
 Neurobiology records use source id `aedes_neurobiology_sources`. Metadata-only builds index source records for mosquitobrains.org, GEO brain snRNA-seq, Mosquito Cell Atlas metadata, and selected open neurobiology studies. Artifact-cache builds additionally index GEO matrix summaries and features, SRA `SRP290992` run/sample metadata, raw SRA access and reanalysis workflow records, Zenodo file and ZIP-member inventory, H5AD AnnData groups/datasets/obs/var columns, workbook sheets, MosquitoBrains volume headers and region labels, coordinate-queryable voxel access locators, public Aedes EM/CATMAID project, stack, annotation, volume, skeleton-manifest, skeleton-filter, and skeleton-ID metadata, public Aedes EM/CATMAID CSV inventories, and a searchable whole-brain connectome source-gap row. Exact voxel values are available on demand:
 
 ```bash

@@ -71,6 +71,7 @@ sources:
         - drosophila_suzukii_ensembl_metazoa_orthology
         - drosophila_suzukii_geo_expression_matrices
         - drosophila_suzukii_population_genomics
+        - drosophila_suzukii_dryad_population_variants
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
@@ -126,6 +127,7 @@ sources:
         - drosophila_suzukii_ncbi_snp_variation
         - drosophila_suzukii_geo_expression_matrices
         - drosophila_suzukii_population_genomics
+        - drosophila_suzukii_dryad_population_variants
         - drosophila_suzukii_extension_guidance
   - id: drosophila_suzukii_dryad_table_rows
     name: Drosophila suzukii Dryad preview table rows
@@ -511,6 +513,39 @@ sources:
         - swd_population_genomics_bioproject_summary_failed
         - swd_population_genomics_bioproject_limit_applied
         - swd_population_genomics_no_queryable_records_built
+  - id: drosophila_suzukii_dryad_population_variants
+    name: Drosophila suzukii Dryad population VCF manifest and gaps
+    source_type: public_dryad_api
+    boundary: Dryad dataset DOI 10.25338/B89P86 for Drosophila suzukii population structure and multiple invasions, preserving dataset metadata, file manifests, VCF byte size, sha-256 checksum, source URLs, related article DOI 10.1093/g3journal/jkab343, and BioProject PRJNA705744. This lane is a source-grade manifest and gap lane for an 18.7 GB whole-genome VCF, not a mirrored VCF parser or variant-interpretation lane.
+    query_plane: dryad_dataset_version_files_api_to_sqlite_variant_manifest_and_gap_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_dryad_population_variants
+    ingest_script: scripts/ingest_drosophila_suzukii_dryad_population_variants.py
+    input_sources:
+      - dryad_dataset_10.25338/B89P86
+    lanes:
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - dataset_doi
+        - article_doi
+        - bioproject
+        - storage_size
+        - file_id
+        - path
+        - mime_type
+        - byte_size
+        - digest
+        - digest_type
+        - download_url
+      structured_gaps:
+        - dryad_variant_file_too_large
+        - dryad_variant_header_not_indexed
+        - dryad_variant_rows_not_mirrored
+        - dryad_variant_checksum_unverified
+        - dryad_variant_metadata_fetch_failed
   - id: drosophila_suzukii_ncbi_gene_orthologs
     name: Drosophila suzukii NCBI Gene ortholog pairs
     source_type: public_ncbi_ftp

@@ -244,6 +244,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_population_genomics.add_argument("--limit", type=int, default=100)
     ingest_drosophila_suzukii_population_genomics.add_argument("--retrieved-at")
 
+    ingest_drosophila_suzukii_dryad_population_variants = sub.add_parser("ingest-drosophila-suzukii-dryad-population-variants")
+    ingest_drosophila_suzukii_dryad_population_variants.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_dryad_population_variants.add_argument("--max-mirror-bytes", type=int, default=1_000_000_000)
+    ingest_drosophila_suzukii_dryad_population_variants.add_argument("--retrieved-at")
+
     ingest_drosophila_suzukii_extension = sub.add_parser("ingest-drosophila-suzukii-extension-guidance")
     ingest_drosophila_suzukii_extension.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_extension.add_argument("--source-url", action="append", default=[])
@@ -897,6 +902,22 @@ def main(argv: list[str] | None = None) -> int:
         from scripts.ingest_drosophila_suzukii_population_genomics import ingest_drosophila_suzukii_population_genomics
 
         payload = ingest_drosophila_suzukii_population_genomics(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-dryad-population-variants":
+        request_payload = {
+            "max_mirror_bytes": args.max_mirror_bytes,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-dryad-population-variants", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_dryad_population_variants import ingest_drosophila_suzukii_dryad_population_variants
+
+        payload = ingest_drosophila_suzukii_dryad_population_variants(
             artifact_dir=artifact_dir,
             **request_payload,
         )

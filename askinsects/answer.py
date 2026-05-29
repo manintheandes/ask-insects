@@ -33,6 +33,7 @@ from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OC
 from .sources.drosophila_suzukii_population_genomics import DROSOPHILA_SUZUKII_POPULATION_GENOMICS_SOURCE_ID
 from .sources.drosophila_suzukii_video_atoms import DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
 from .sources.drosophila_suzukii import DROSOPHILA_SUZUKII_SOURCE_ID
+from .sources.drosophila_suzukii_dryad_population_variants import DROSOPHILA_SUZUKII_DRYAD_POPULATION_VARIANTS_SOURCE_ID
 from .sources.drosophila_suzukii_pubmed_literature import DROSOPHILA_SUZUKII_PUBMED_LITERATURE_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.expression_omics import EXPRESSION_OMICS_SOURCE_ID
@@ -1817,6 +1818,29 @@ def _wants_swd_population_genomics(question: str) -> bool:
     )
 
 
+def _wants_swd_dryad_population_variants(question: str) -> bool:
+    q = question.lower()
+    explicit_dbsnp = ("dbsnp" in q or "db snp" in q) and "non-dbsnp" not in q and "non dbsnp" not in q
+    if explicit_dbsnp:
+        return False
+    return any(
+        term in q
+        for term in (
+            "dryad",
+            "vcf",
+            "variant table",
+            "variant file",
+            "variant rows",
+            "non-dbsnp",
+            "non dbsnp",
+            "whole-genome variant",
+            "population variant",
+            "population variants",
+            "snps-q30-original-swd",
+        )
+    ) or ("variant" in q and _requested_species(question) == "Drosophila suzukii")
+
+
 def _record_payload_reason(record: EvidenceRecord) -> str:
     if record.payload:
         return str(record.payload.get("reason") or "")
@@ -2218,6 +2242,18 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
                 key=lambda record: (
                     0 if record.source == DROSOPHILA_SUZUKII_POPULATION_GENOMICS_SOURCE_ID else 1,
                     0 if record.lane == "genome_features" else 1,
+                ),
+            )
+        if _wants_swd_dryad_population_variants(question):
+            return sorted(
+                records,
+                key=lambda record: (
+                    0 if record.source == DROSOPHILA_SUZUKII_DRYAD_POPULATION_VARIANTS_SOURCE_ID else 1,
+                    0 if record.lane == "genome_features" else 1,
+                    0 if (record.payload or {}).get("is_vcf") else 1,
+                    0 if str((record.payload or {}).get("file", {}).get("path") or "").lower().endswith(".vcf.gz") else 1,
+                    0 if "file:" in record.record_id else 1,
+                    0 if "gap:" in record.record_id else 1,
                 ),
             )
         if _wants_snp_variation(question):
@@ -5072,7 +5108,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                         continue
                     all_records.append(record)
                     seen_record_ids.add(record.record_id)
-            if _wants_snp_variation(plan.question):
+            if _wants_snp_variation(plan.question) and not _wants_swd_dryad_population_variants(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID, ["genome_features"], limit=limit):
                     if record.record_id in seen_record_ids:
                         continue
@@ -5080,6 +5116,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
             if _wants_swd_population_genomics(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_POPULATION_GENOMICS_SOURCE_ID, ["genome_features"], limit=max(limit * 5, 25)):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+            if _wants_swd_dryad_population_variants(plan.question):
+                for record in _source_records_with_payload(index, DROSOPHILA_SUZUKII_DRYAD_POPULATION_VARIANTS_SOURCE_ID, ["genome_features"], limit=max(limit * 10, 25)):
                     if record.record_id in seen_record_ids:
                         continue
                     all_records.append(record)
@@ -5125,7 +5167,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
             swd_genome_lanes = ["genes", "transcripts", "genome_features", "proteins", "genome_assemblies"]
             swd_records: list[EvidenceRecord] = []
-            if not _wants_swd_gene_orthologs(plan.question) and not _wants_swd_marker_review(plan.question) and not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question) and not _wants_swd_population_genomics(plan.question):
+            if not _wants_swd_gene_orthologs(plan.question) and not _wants_swd_marker_review(plan.question) and not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question) and not _wants_swd_population_genomics(plan.question) and not _wants_swd_dryad_population_variants(plan.question):
                 for lane in swd_genome_lanes:
                     for search_query in _search_queries(plan.question):
                         for record in index.search(search_query, lane=lane, limit=max(limit * 5, 25)):
@@ -5145,7 +5187,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         if _wants_swd_population_genomics(plan.question) and requested_species and requested_species.lower() == "drosophila suzukii":
             if _source_count(index, DROSOPHILA_SUZUKII_POPULATION_GENOMICS_SOURCE_ID) == 0:
                 return source_gap(plan, "The Ask Insects Drosophila suzukii population-genomics BioProject lane is not installed in this source index.")
-        if _wants_snp_variation(plan.question):
+        if _wants_swd_dryad_population_variants(plan.question) and requested_species and requested_species.lower() == "drosophila suzukii":
+            if _source_count(index, DROSOPHILA_SUZUKII_DRYAD_POPULATION_VARIANTS_SOURCE_ID) == 0:
+                return source_gap(plan, "The Ask Insects Drosophila suzukii Dryad population-variant lane is not installed in this source index.")
+        if _wants_snp_variation(plan.question) and not _wants_swd_dryad_population_variants(plan.question):
             if requested_species and requested_species.lower() == "drosophila suzukii":
                 if _source_count(index, DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID) == 0:
                     return source_gap(plan, "The Ask Insects Drosophila suzukii NCBI dbSNP variation audit lane is not installed in this source index.")

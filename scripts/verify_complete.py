@@ -161,6 +161,7 @@ REQUIRED_FILES = (
     "askinsects/sources/drosophila_suzukii_ncbi_snp_variation.py",
     "askinsects/sources/drosophila_suzukii_figshare_mk_selection.py",
     "askinsects/sources/drosophila_suzukii_population_genomics.py",
+    "askinsects/sources/drosophila_suzukii_dryad_population_variants.py",
     "askinsects/sources/drosophila_suzukii_ncbi_gene_orthologs.py",
     "askinsects/sources/drosophila_suzukii_ensembl_metazoa_orthology.py",
     "askinsects/sources/drosophila_suzukii_geo_expression_matrices.py",
@@ -229,6 +230,7 @@ REQUIRED_FILES = (
     "scripts/ingest_drosophila_suzukii_ncbi_snp_variation.py",
     "scripts/ingest_drosophila_suzukii_figshare_mk_selection.py",
     "scripts/ingest_drosophila_suzukii_population_genomics.py",
+    "scripts/ingest_drosophila_suzukii_dryad_population_variants.py",
     "scripts/ingest_drosophila_suzukii_ncbi_gene_orthologs.py",
     "scripts/ingest_drosophila_suzukii_ensembl_metazoa_orthology.py",
     "scripts/ingest_drosophila_suzukii_geo_expression_matrices.py",
@@ -484,6 +486,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_drosophila_suzukii_figshare_mk_selection",
     "tests.test_drosophila_suzukii_population_genomics_source",
     "tests.test_ingest_drosophila_suzukii_population_genomics",
+    "tests.test_drosophila_suzukii_dryad_population_variants_source",
+    "tests.test_ingest_drosophila_suzukii_dryad_population_variants",
     "tests.test_drosophila_suzukii_ncbi_gene_orthologs_source",
     "tests.test_ingest_drosophila_suzukii_ncbi_gene_orthologs",
     "tests.test_drosophila_suzukii_ensembl_metazoa_orthology_source",
@@ -1125,6 +1129,18 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii population genomics term: {term}")
+    for term in (
+        "drosophila_suzukii_dryad_population_variants",
+        "scripts/ingest_drosophila_suzukii_dryad_population_variants.py",
+        "dryad_dataset_version_files_api_to_sqlite_variant_manifest_and_gap_records",
+        "10.25338/B89P86",
+        "10.1093/g3journal/jkab343",
+        "PRJNA705744",
+        "dryad_variant_file_too_large",
+        "dryad_variant_rows_not_mirrored",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii Dryad population variant term: {term}")
     for term in (
         "drosophila_suzukii_occurrence_ecology",
         "scripts/ingest_drosophila_suzukii_occurrence_ecology.py",
