@@ -120,7 +120,11 @@ def ingest_drosophila_suzukii_video_atoms(
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
     old_source_count, old_lane_counts = _source_stats(index, DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID)
-    index.replace_source_records(DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID, result.records)
+    index.replace_source_records(
+        DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+        result.records,
+        delete_existing_fts=False,
+    )
     gaps = _replace_source_gaps(artifact_dir / "gaps.json", result.gaps)
     atoms = _atom_counts(index)
     counts, lanes, record_count, species_count = _fast_metadata_counts(
