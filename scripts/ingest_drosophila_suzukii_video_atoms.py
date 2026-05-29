@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import json
 import sys
 from pathlib import Path
@@ -42,6 +43,53 @@ def _atom_counts(index: SourceIndex) -> dict[str, int]:
     return {str(row["atom_type"]): int(row["n"]) for row in rows if row["atom_type"]}
 
 
+def _source_stats(index: SourceIndex, source: str) -> tuple[int, dict[str, int]]:
+    with index.connect() as conn:
+        count = int(conn.execute("select count(*) from records where source=?", (source,)).fetchone()[0])
+        rows = conn.execute(
+            "select lane, count(*) as n from records where source=? group by lane",
+            (source,),
+        ).fetchall()
+    return count, {str(row["lane"]): int(row["n"]) for row in rows}
+
+
+def _fast_metadata_counts(
+    artifact_dir: Path,
+    index: SourceIndex,
+    *,
+    old_source_count: int,
+    old_lane_counts: dict[str, int],
+    records: list[object],
+) -> tuple[dict[str, int], dict[str, int], int, int]:
+    status = read_json(artifact_dir / "source_status.json", {})
+    if not isinstance(status, dict):
+        status = {}
+    source_counts_payload = status.get("source_counts")
+    lanes_payload = status.get("lanes")
+    record_count = status.get("record_count")
+    species_count = status.get("species_count")
+    if (
+        not isinstance(source_counts_payload, dict)
+        or not isinstance(lanes_payload, dict)
+        or not isinstance(record_count, int)
+        or not isinstance(species_count, int)
+    ):
+        summary = index.summary()
+        return source_counts(index), summary["lanes"], summary["record_count"], summary["species_count"]
+
+    counts = {str(source): int(count) for source, count in source_counts_payload.items()}
+    lane_counts = {str(lane): int(count) for lane, count in lanes_payload.items()}
+    new_lane_counts = Counter(str(getattr(record, "lane")) for record in records)
+    counts[DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID] = len(records)
+    for lane, old_count in old_lane_counts.items():
+        lane_counts[lane] = max(0, int(lane_counts.get(lane, 0)) - old_count)
+    for lane, new_count in new_lane_counts.items():
+        lane_counts[lane] = int(lane_counts.get(lane, 0)) + new_count
+    lane_counts = {lane: count for lane, count in lane_counts.items() if count > 0}
+    total = max(0, int(record_count) - old_source_count + len(records))
+    return counts, lane_counts, total, int(species_count)
+
+
 def ingest_drosophila_suzukii_video_atoms(
     *,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
@@ -71,11 +119,17 @@ def ingest_drosophila_suzukii_video_atoms(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
+    old_source_count, old_lane_counts = _source_stats(index, DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID)
     index.replace_source_records(DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID, result.records)
     gaps = _replace_source_gaps(artifact_dir / "gaps.json", result.gaps)
-    summary = index.summary()
-    counts = source_counts(index)
     atoms = _atom_counts(index)
+    counts, lanes, record_count, species_count = _fast_metadata_counts(
+        artifact_dir,
+        index,
+        old_source_count=old_source_count,
+        old_lane_counts=old_lane_counts,
+        records=result.records,
+    )
     source_payload = {
         "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
         "record_count": counts.get(DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID, 0),
@@ -106,9 +160,9 @@ def ingest_drosophila_suzukii_video_atoms(
                 sources.append(DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID)
         payload["sources"] = sources
         payload["source_counts"] = counts
-        payload["record_count"] = summary["record_count"]
-        payload["species_count"] = summary["species_count"]
-        payload["lanes"] = summary["lanes"]
+        payload["record_count"] = record_count
+        payload["species_count"] = species_count
+        payload["lanes"] = lanes
         payload["gap_count"] = len(gaps)
         payload[DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID] = source_payload
         write_json(path, payload)
@@ -119,7 +173,7 @@ def ingest_drosophila_suzukii_video_atoms(
         "artifact_dir": artifact_dir.as_posix(),
         **source_payload,
         "source_counts": counts,
-        "lanes": summary["lanes"],
+        "lanes": lanes,
     }
 
 
