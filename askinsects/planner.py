@@ -14,6 +14,11 @@ class QueryPlan:
 
 def plan_question(question: str) -> QueryPlan:
     q = question.lower()
+    if (
+        any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila"))
+        and any(term in q for term in ("pubmed", "pmid", "reconciliation"))
+    ):
+        return QueryPlan(question, "literature", ("literature",), question)
     source_coverage_terms = (
         "what are we missing",
         "what is missing",

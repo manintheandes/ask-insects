@@ -187,6 +187,13 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_fulltext.add_argument("--unpaywall", action="store_true")
     ingest_drosophila_suzukii_fulltext.add_argument("--no-resume", dest="resume", action="store_false", default=True)
 
+    ingest_drosophila_suzukii_pubmed = sub.add_parser("ingest-drosophila-suzukii-pubmed-literature")
+    ingest_drosophila_suzukii_pubmed.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_pubmed.add_argument("--max-results", type=int, default=1000)
+    ingest_drosophila_suzukii_pubmed.add_argument("--page-size", type=int, default=100)
+    ingest_drosophila_suzukii_pubmed.add_argument("--delay-seconds", type=float, default=0.34)
+    ingest_drosophila_suzukii_pubmed.add_argument("--retrieved-at")
+
     ingest_gbif = sub.add_parser("ingest-gbif")
     ingest_gbif.add_argument("--hosted", action="store_true")
     ingest_gbif.add_argument("--species", action="append", default=[])
@@ -679,6 +686,24 @@ def main(argv: list[str] | None = None) -> int:
         from scripts.ingest_drosophila_suzukii_literature_fulltext import ingest_drosophila_suzukii_literature_fulltext
 
         payload = ingest_drosophila_suzukii_literature_fulltext(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-pubmed-literature":
+        request_payload = {
+            "max_results": args.max_results,
+            "page_size": args.page_size,
+            "delay_seconds": args.delay_seconds,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-pubmed-literature", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_pubmed_literature import ingest_drosophila_suzukii_pubmed_literature
+
+        payload = ingest_drosophila_suzukii_pubmed_literature(
             artifact_dir=artifact_dir,
             **request_payload,
         )

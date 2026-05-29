@@ -83,6 +83,14 @@ python3 -m askinsects search fulltext "Drosophila suzukii oviposition"
 python3 -m askinsects sql "select source, count(*) as n from literature_fulltext_units where source='drosophila_suzukii_literature_fulltext' group by source"
 ```
 
+The `drosophila_suzukii_pubmed_literature` lane reconciles SWD literature with PubMed. It fetches bounded PubMed ESearch/ESummary metadata for `Drosophila suzukii` and spotted wing drosophila papers since 2020, stores one literature audit row per PMID, and marks whether that PubMed paper is already covered by the canonical OpenAlex SWD lane or is currently PubMed-metadata-only.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-pubmed-literature --max-results 1000 --page-size 100
+python3 -m askinsects search literature "Drosophila suzukii PubMed coverage_status"
+python3 -m askinsects sql "select json_extract(payload_json, '$.coverage_status') as status, count(*) as n from record_payloads where source='drosophila_suzukii_pubmed_literature' group by status"
+```
+
 The first Aedes-depth literature gate for spotted wing drosophila is `drosophila_suzukii_extracted_facts`. It audits every indexed SWD paper for supplements, preserves supplement manifests, parses supported public supplement tables when opted in, and emits source-backed candidate rows for behavior, crop damage, management, resistance, biocontrol, ecology, and genomics.
 
 ```bash

@@ -766,6 +766,44 @@ class ServerTests(unittest.TestCase):
             self.assertGreaterEqual(counts[("drosophila_suzukii_dryad_table_rows", "behavior")], 3)
             self.assertFalse((artifact_dir.parent / ".mosquito-v1.drosophila-suzukii-dryad-table-rows-staging").exists())
 
+    def test_ingest_drosophila_suzukii_pubmed_literature_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch(
+                "scripts.ingest_drosophila_suzukii_pubmed_literature.ingest_drosophila_suzukii_pubmed_literature"
+            ) as ingest:
+                ingest.return_value = {
+                    "ok": True,
+                    "source": "drosophila_suzukii_pubmed_literature",
+                    "record_count": 2,
+                }
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/drosophila-suzukii-pubmed-literature",
+                    {
+                        "max_results": 250,
+                        "page_size": 50,
+                        "delay_seconds": 0,
+                        "retrieved_at": "2026-05-29T00:00:00Z",
+                    },
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["source"], "drosophila_suzukii_pubmed_literature")
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                max_results=250,
+                page_size=50,
+                delay_seconds=0.0,
+                retrieved_at="2026-05-29T00:00:00Z",
+            )
+
     def test_ingest_aedes_olfaction_literature_route_passes_options(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

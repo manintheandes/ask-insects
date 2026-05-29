@@ -125,7 +125,8 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 f"Ask Insects boundary for {DROSOPHILA_SUZUKII_SPECIES} ({DROSOPHILA_SUZUKII_COMMON_NAME}). "
                 "This first source-grade pass maps taxonomy, public observations, licensed still images, literature metadata, "
                 "DNA barcodes, and per-domain coverage status. Follow-on lanes now promote genome files, supplement audits, "
-                "literature-derived crop damage, management, resistance, biocontrol, behavior, ecology, and the first inspectable video atoms."
+                "PubMed literature reconciliation, literature-derived crop damage, management, resistance, biocontrol, "
+                "behavior, ecology, and the first inspectable video atoms."
             ),
             species=DROSOPHILA_SUZUKII_SPECIES,
             url=None,
@@ -160,8 +161,13 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
         (
             "literature",
             "mapped_queryable_bounded",
-            ["OpenAlex title/abstract metadata since 2020"],
-            ["PubMed reconciliation", "supplement discovery", "legal full-text extraction"],
+            [
+                "OpenAlex title/abstract metadata since 2020",
+                "legal direct full-text units",
+                "per-paper supplement audits and parsed public supplement rows",
+                "PubMed reconciliation metadata",
+            ],
+            ["human-reviewed literature claim extraction", "broader OpenAlex/PubMed mismatch review"],
         ),
         (
             "dna_barcodes",

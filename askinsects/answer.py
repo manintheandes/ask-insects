@@ -24,6 +24,7 @@ from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYA
 from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.drosophila_suzukii_video_atoms import DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID
 from .sources.drosophila_suzukii import DROSOPHILA_SUZUKII_SOURCE_ID
+from .sources.drosophila_suzukii_pubmed_literature import DROSOPHILA_SUZUKII_PUBMED_LITERATURE_SOURCE_ID
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.expression_omics import EXPRESSION_OMICS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
@@ -3337,6 +3338,14 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
             records,
             key=lambda record: (
                 0 if record.source == AEDES_OLFACTION_LITERATURE_SOURCE_ID else 1,
+                0 if record.lane == "literature" else 1,
+            ),
+        )
+    if _requested_species(question) == "Drosophila suzukii" and any(term in q for term in ("pubmed", "pmid", "reconciliation", "coverage status", "metadata-only", "metadata only")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == DROSOPHILA_SUZUKII_PUBMED_LITERATURE_SOURCE_ID else 1,
                 0 if record.lane == "literature" else 1,
             ),
         )

@@ -939,6 +939,56 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "aedes_olfaction_literature")
             self.assertEqual(answer["evidence"][0]["record_id"], "aedes_olfaction_literature:pubmed:37874813")
 
+    def test_swd_pubmed_questions_prefer_pubmed_reconciliation_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:literature:openalex:W123456789",
+                        lane="literature",
+                        source="drosophila_suzukii_core",
+                        title="Drosophila suzukii crop damage paper",
+                        text="OpenAlex paper about Drosophila suzukii crop damage.",
+                        species="Drosophila suzukii",
+                        url="https://openalex.org/W123456789",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="raw/drosophila_suzukii/openalex_0001.json#results/0",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:pubmed:42000001",
+                        lane="literature",
+                        source="drosophila_suzukii_pubmed_literature",
+                        title="Drosophila suzukii PubMed audit candidate",
+                        text="Drosophila suzukii PubMed literature reconciliation candidate since 2020. coverage_status=already_indexed pmid=42000001",
+                        species="Drosophila suzukii",
+                        url="https://pubmed.ncbi.nlm.nih.gov/42000001/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_pubmed_literature",
+                            locator="raw/drosophila_suzukii_pubmed_literature/pubmed_esummary_0001.json#result/42000001",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"pmid": "42000001", "coverage_status": "already_indexed"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii PubMed coverage status",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_pubmed_literature")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd:pubmed:42000001")
+
     def test_olfaction_figure_questions_prefer_fulltext_caption_units(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

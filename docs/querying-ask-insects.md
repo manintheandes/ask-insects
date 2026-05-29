@@ -91,6 +91,18 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is Drosophi
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select lane, count(*) as n from records where source='drosophila_suzukii_extracted_facts' group by lane"
 ```
 
+To reconcile spotted wing drosophila literature against PubMed:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-pubmed-literature \
+  --max-results 1000 \
+  --page-size 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search literature "Drosophila suzukii PubMed coverage_status"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.coverage_status') as status, count(*) as n from record_payloads where source='drosophila_suzukii_pubmed_literature' group by status"
+```
+
+This lane treats PubMed as an enrichment and reconciliation source, not as the canonical paper identity. `drosophila_suzukii_core` remains the canonical OpenAlex metadata lane; PubMed rows say whether a PMID matches an indexed paper by DOI or title, or whether it is currently PubMed-metadata-only.
+
 To make spotted wing drosophila video evidence inspectable:
 
 ```bash

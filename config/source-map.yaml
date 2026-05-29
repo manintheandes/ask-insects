@@ -114,6 +114,7 @@ sources:
         - drosophila_suzukii_dryad_table_rows
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_literature_fulltext
+        - drosophila_suzukii_pubmed_literature
   - id: drosophila_suzukii_dryad_table_rows
     name: Drosophila suzukii Dryad preview table rows
     source_type: derived_sqlite_source
@@ -166,6 +167,32 @@ sources:
         - paywalled_pdfs
         - institutional_proxy_access
         - publisher_landing_pages_without_direct_open_files
+        - human_validated_scientific_claim_extraction
+  - id: drosophila_suzukii_pubmed_literature
+    name: Drosophila suzukii PubMed literature reconciliation
+    source_type: public_api_metadata_audit
+    boundary: Bounded PubMed ESearch and ESummary metadata for Drosophila suzukii and spotted wing drosophila papers from 2020 onward, reconciled against the canonical drosophila_suzukii_core OpenAlex literature rows by DOI and normalized title
+    query_plane: pubmed_esearch_esummary_to_sqlite_literature_audit_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_pubmed_literature
+    ingest_script: scripts/ingest_drosophila_suzukii_pubmed_literature.py
+    input_sources:
+      - pubmed_eutilities
+      - drosophila_suzukii_core
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: bounded_opt_in
+    source_contract:
+      source_grade_now:
+        - one_pubmed_candidate_per_pmid
+        - raw_pubmed_esearch_and_esummary_locators
+        - coverage_status_already_indexed_or_pubmed_metadata_ingested
+        - matched_openalex_record_ids_when_doi_or_title_matches
+        - explicit_result_limit_and_fetch_failure_gaps
+      not_claimed:
+        - pubmed_as_canonical_paper_identity
+        - paywalled_full_text
         - human_validated_scientific_claim_extraction
   - id: drosophila_suzukii_extracted_facts
     name: Drosophila suzukii extracted literature facts, supplement manifests, and per-paper supplement audits
