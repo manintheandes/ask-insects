@@ -8,7 +8,7 @@ The comprehensive-source push is Aedes-first: Ask Insects is building toward the
 
 `drosophila_suzukii_core` is the first non-mosquito expansion boundary. It targets spotted wing drosophila, `Drosophila suzukii`, and keeps the source contract explicit: GBIF taxonomy/occurrences, iNaturalist licensed still-image observations, OpenAlex literature metadata since 2020, BOLD DNA barcodes when public rows are available, and source-coverage rows for what is still missing. Follow-on lanes now promote SWD genomics, legal direct full-text units, supplement audits, first video atoms, occurrence ecology, crop damage, management, resistance, and biocontrol, while still leaving larger full-text coverage, motion-table, and human-validated assay work as gaps.
 
-`drosophila_suzukii_deep_sources` is the first depth expansion for the same species. It adds bounded NCBI assembly, BioProject, BioSample, and SRA metadata, UniProt protein and proteome metadata, and Zenodo/Figshare/Dryad repository candidates. Later SWD lanes now promote full genome-file parsing, legal direct full-text units, per-paper supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, management, resistance, and biocontrol candidate rows.
+`drosophila_suzukii_deep_sources` is the first depth expansion for the same species. It adds bounded NCBI assembly, BioProject, BioSample, and SRA metadata, UniProt protein and proteome metadata, Zenodo/Figshare video candidates, and Dryad dataset plus file-manifest records with file size, checksum, download URL, MIME type, and raw API locator. Later SWD lanes now promote full genome-file parsing, legal direct full-text units, per-paper supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, management, resistance, and biocontrol candidate rows.
 
 `drosophila_suzukii_genome_files` promotes the genome-file parsing gap for spotted wing drosophila. It reads selected assembly metadata from `drosophila_suzukii_deep_sources`, downloads bounded public NCBI GFF and protein FASTA files, and indexes assembly, gene, transcript, functional genome-feature, and protein rows with raw-file locators.
 
@@ -59,7 +59,7 @@ Sources:
 
 - `inaturalist_api`: still-image media URLs from iNaturalist observation photos.
 - `drosophila_suzukii_core`: still-image media URLs from bounded iNaturalist `Drosophila suzukii` licensed-photo observations.
-- `drosophila_suzukii_deep_sources`: bounded Zenodo and Figshare repository searches for source-material `Drosophila suzukii` video files, plus Dryad dataset candidates in the behavior lane.
+- `drosophila_suzukii_deep_sources`: bounded Zenodo and Figshare repository searches for source-material `Drosophila suzukii` video files, plus Dryad dataset and file-manifest records in the behavior/media lanes.
 - `drosophila_suzukii_extracted_facts`: paper-supplement manifests and parsed supplement rows that may expose behavior or video-adjacent source tables for `Drosophila suzukii`.
 - `drosophila_suzukii_video_atoms`: derived video-asset, thumbnail, keyframe, preview-clip, frame-manifest, full-video motion-interval, and video-gap records from indexed spotted wing drosophila media and supplement video locators.
 - `pmc_open_access_videos`: curated public PMC article supplementary videos for Aedes behavior, biting, host-seeking, threat avoidance, and photopreference studies.
@@ -110,7 +110,7 @@ Genome assembly metadata, GFF annotation features, gene rows, transcript rows, a
 Sources:
 
 - `ncbi_datasets_genome`: parsed NCBI Datasets package for `Aedes aegypti` assembly `GCF_002204515.2`.
-- `drosophila_suzukii_deep_sources`: NCBI Assembly, BioProject, BioSample, and SRA metadata for `Drosophila suzukii`, plus UniProt protein/proteome metadata. This is metadata depth, not yet full genome GFF/FASTA parsing.
+- `drosophila_suzukii_deep_sources`: NCBI Assembly, BioProject, BioSample, and SRA metadata for `Drosophila suzukii`, plus UniProt protein/proteome metadata and Dryad file manifests. This is metadata depth, not yet full genome GFF/FASTA parsing.
 - `drosophila_suzukii_genome_files`: parsed NCBI GFF and protein FASTA rows for a selected `Drosophila suzukii` assembly, including genes, transcripts, functional genome features, and proteins.
 - `ncbi_biosamples`: NCBI BioSample metadata for `Aedes aegypti` samples, strains, isolates, collection dates, geographies, tissues, isolation sources, organizations, and linked SRA identifiers when present, currently complete for the hosted NCBI count of 20,656 fetched and reported records.
 - `aedes_ncbi_snp_variation`: NCBI dbSNP organism-query audit for `Aedes aegypti` variation records, indexed as returned `genome_features` records or as an explicit source-gap record when dbSNP returns zero records.

@@ -9,7 +9,7 @@ from pathlib import Path
 import re
 import time
 from typing import Callable
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urljoin
 from urllib.request import Request, urlopen
 
 from askinsects.records import EvidenceRecord, Provenance
@@ -24,8 +24,11 @@ UNIPROT_PROTEOME_BASE = "https://rest.uniprot.org/proteomes/search"
 ZENODO_API_BASE = "https://zenodo.org/api/records"
 FIGSHARE_API_BASE = "https://api.figshare.com/v2"
 DRYAD_API_BASE = "https://datadryad.org/api/v2/search"
+DRYAD_SITE_BASE = "https://datadryad.org"
 USER_AGENT = "AskInsects/0.1 source-plane"
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
+ARCHIVE_EXTENSIONS = (".zip", ".tar", ".tar.gz", ".tgz", ".7z")
+TABLE_EXTENSIONS = (".csv", ".tsv", ".xls", ".xlsx", ".json", ".txt")
 SPECIES_PATTERN = re.compile(r"\bDrosophila\s+suzukii\b|spotted[-\s]+wing\s+drosophila|\bSWD\b", re.I)
 REPOSITORY_VIDEO_QUERIES = (
     "Drosophila suzukii video",
@@ -518,6 +521,25 @@ def _is_video_file(filename: str, content_type: str = "") -> bool:
     return lower.endswith(VIDEO_EXTENSIONS) or content_type.lower().startswith("video/")
 
 
+def _is_archive_file(filename: str, content_type: str = "") -> bool:
+    lower = filename.lower()
+    return lower.endswith(ARCHIVE_EXTENSIONS) or "zip" in content_type.lower() or "compressed" in content_type.lower()
+
+
+def _is_table_file(filename: str, content_type: str = "") -> bool:
+    lower = filename.lower()
+    return lower.endswith(TABLE_EXTENSIONS) or any(term in content_type.lower() for term in ("csv", "excel", "spreadsheet", "json", "text/plain"))
+
+
+def _link(payload: dict[str, object], rel: str) -> str | None:
+    links = payload.get("_links") if isinstance(payload.get("_links"), dict) else {}
+    item = links.get(rel) if isinstance(links, dict) else None
+    if not isinstance(item, dict):
+        return None
+    href = str(item.get("href") or "")
+    return urljoin(DRYAD_SITE_BASE, href) if href else None
+
+
 def _zenodo_records(
     *,
     raw_dir: Path,
@@ -665,6 +687,7 @@ def _dryad_records(
         return [], []
     raw_path = _write_raw(raw_dir, f"dryad_{_safe_id(query)}_search.json", payload)
     records: list[EvidenceRecord] = []
+    raw_paths = [raw_path.as_posix()]
     embedded = payload.get("_embedded") if isinstance(payload, dict) else {}
     stash = embedded.get("stash:datasets", []) if isinstance(embedded, dict) else []
     for index, dataset in enumerate(stash if isinstance(stash, list) else [], start=1):
@@ -674,9 +697,10 @@ def _dryad_records(
         if not SPECIES_PATTERN.search(text):
             continue
         doi = _clean(dataset.get("identifier")) or _clean(dataset.get("doi"))
+        dataset_record_id = f"swd:dryad:dataset:{_safe_id(doi or index)}"
         records.append(
             _record(
-                record_id=f"swd:dryad:dataset:{_safe_id(doi or index)}",
+                record_id=dataset_record_id,
                 lane="behavior",
                 title=f"Drosophila suzukii Dryad dataset {doi or index}",
                 text=f"Dryad dataset candidate for {SPECIES}. Title: {_clean(dataset.get('title'))}. DOI: {doi or 'not supplied'}.",
@@ -688,9 +712,84 @@ def _dryad_records(
                 payload={"record_type": "dryad_dataset_candidate", "raw_dataset": dataset},
             )
         )
+        version_url = _link(dataset, "stash:version")
+        if not version_url:
+            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_version_link_missing", "dataset_record_id": dataset_record_id, "doi": doi, "query": query, "retrieved_at": retrieved_at})
+            continue
+        requested_urls.append(version_url)
+        try:
+            version_payload = fetch_json(version_url)
+        except Exception as exc:
+            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_version_fetch_failed", "dataset_record_id": dataset_record_id, "doi": doi, "query": query, "error": str(exc), "retrieved_at": retrieved_at})
+            continue
+        version_raw = _write_raw(raw_dir, f"dryad_version_{_safe_id(doi or index)}.json", version_payload)
+        raw_paths.append(version_raw.as_posix())
+        files_url = _link(version_payload, "stash:files") if isinstance(version_payload, dict) else None
+        if not files_url:
+            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_files_link_missing", "dataset_record_id": dataset_record_id, "doi": doi, "query": query, "retrieved_at": retrieved_at})
+            continue
+        requested_urls.append(files_url)
+        try:
+            files_payload = fetch_json(files_url)
+        except Exception as exc:
+            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_files_fetch_failed", "dataset_record_id": dataset_record_id, "doi": doi, "query": query, "error": str(exc), "retrieved_at": retrieved_at})
+            continue
+        files_raw = _write_raw(raw_dir, f"dryad_files_{_safe_id(doi or index)}.json", files_payload)
+        raw_paths.append(files_raw.as_posix())
+        embedded_files = files_payload.get("_embedded", {}).get("stash:files", []) if isinstance(files_payload, dict) else []
+        if not embedded_files:
+            gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_file_manifest_empty", "dataset_record_id": dataset_record_id, "doi": doi, "query": query, "retrieved_at": retrieved_at})
+            continue
+        for file_index, file_payload in enumerate(embedded_files if isinstance(embedded_files, list) else [], start=1):
+            if not isinstance(file_payload, dict):
+                continue
+            file_path = _clean(file_payload.get("path")) or f"file-{file_index}"
+            mime_type = _clean(file_payload.get("mimeType"))
+            media = _is_video_file(file_path, mime_type) or _is_archive_file(file_path, mime_type)
+            table = _is_table_file(file_path, mime_type)
+            download_url = _link(file_payload, "stash:download")
+            description = _clean(file_payload.get("description"))
+            lane = "media" if media else "behavior"
+            kind = "video/archive" if media else "table/data" if table else "data"
+            records.append(
+                _record(
+                    record_id=f"swd:dryad:file:{_safe_id(doi or index)}:{_safe_id(file_path)}",
+                    lane=lane,
+                    title=f"Drosophila suzukii Dryad {kind} file {file_path}",
+                    text=(
+                        f"Dryad file manifest for {SPECIES} dataset {doi or index}. "
+                        f"File: {file_path}. MIME type: {mime_type or 'not supplied'}. "
+                        f"Size: {file_payload.get('size') or 'not supplied'}. Description: {description or 'not supplied'}."
+                    ),
+                    url=str(dataset.get("sharingLink") or dataset.get("url") or "") or None,
+                    media_url=download_url if media else None,
+                    raw_path=files_raw,
+                    locator_suffix=f"files/{file_index}",
+                    retrieved_at=retrieved_at,
+                    license_text=str(dataset.get("license") or "Dryad metadata license not supplied"),
+                    source_url=download_url or str(dataset.get("sharingLink") or dataset.get("url") or "") or None,
+                    payload={
+                        "record_type": "dryad_file_manifest",
+                        "source_dataset_record_id": dataset_record_id,
+                        "dataset_doi": doi,
+                        "file_path": file_path,
+                        "mime_type": mime_type,
+                        "byte_size": file_payload.get("size"),
+                        "digest": file_payload.get("digest"),
+                        "digest_type": file_payload.get("digestType"),
+                        "download_url": download_url,
+                        "is_video_or_archive": media,
+                        "is_table_or_data_file": table,
+                        "raw_dataset": dataset,
+                        "raw_version": version_payload,
+                        "raw_file": file_payload,
+                        "version_raw_path": version_raw.as_posix(),
+                    },
+                )
+            )
     if not records:
         gaps.append({"source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, "lane": "behavior", "reason": "dryad_no_material_dataset_candidates", "query": query, "retrieved_at": retrieved_at})
-    return records, [raw_path.as_posix()]
+    return records, raw_paths
 
 
 def fetch_drosophila_suzukii_deep_records(

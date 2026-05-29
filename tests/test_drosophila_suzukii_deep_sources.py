@@ -77,7 +77,47 @@ def fake_fetch_json(url: str):
             "files": [{"id": 21, "name": "swd.mov", "download_url": "https://figshare.com/ndownloader/files/21", "size": 20}],
         }
     if "datadryad.org/api/v2/search" in url:
-        return {"_embedded": {"stash:datasets": [{"identifier": "doi:10.5061/test", "title": "Drosophila suzukii behavior data", "abstract": "Drosophila suzukii", "sharingLink": "https://datadryad.org/stash/dataset/doi:10.5061/test"}]}}
+        return {
+            "_embedded": {
+                "stash:datasets": [
+                    {
+                        "identifier": "doi:10.5061/test",
+                        "title": "Drosophila suzukii behavior data",
+                        "abstract": "Drosophila suzukii",
+                        "sharingLink": "https://datadryad.org/stash/dataset/doi:10.5061/test",
+                        "license": "CC0",
+                        "_links": {"stash:version": {"href": "/api/v2/versions/123"}},
+                    }
+                ]
+            }
+        }
+    if "datadryad.org/api/v2/versions/123/files" in url:
+        return {
+            "_embedded": {
+                "stash:files": [
+                    {
+                        "path": "FLYPOSITION.csv",
+                        "size": 12671,
+                        "mimeType": "text/csv",
+                        "digest": "abc123",
+                        "digestType": "md5",
+                        "description": "Drosophila suzukii position counts in an assay chamber.",
+                        "_links": {"stash:download": {"href": "/api/v2/files/1/download"}},
+                    },
+                    {
+                        "path": "adult_behavior.mp4",
+                        "size": 1000,
+                        "mimeType": "video/mp4",
+                        "digest": "def456",
+                        "digestType": "md5",
+                        "description": "Drosophila suzukii behavior video.",
+                        "_links": {"stash:download": {"href": "/api/v2/files/2/download"}},
+                    },
+                ]
+            }
+        }
+    if "datadryad.org/api/v2/versions/123" in url:
+        return {"title": "Drosophila suzukii Dryad version", "_links": {"stash:files": {"href": "/api/v2/versions/123/files"}}}
     raise AssertionError(f"unexpected URL: {url}")
 
 
@@ -112,11 +152,16 @@ class DrosophilaSuzukiiDeepSourceTests(unittest.TestCase):
             self.assertIn("media", lanes)
             self.assertIn("behavior", lanes)
             self.assertIn("resistance", lanes)
+            dryad_files = [record for record in result.records if record.payload and record.payload.get("record_type") == "dryad_file_manifest"]
+            self.assertEqual(len(dryad_files), 2)
+            self.assertTrue(any(record.lane == "media" and record.payload.get("is_video_or_archive") for record in dryad_files))
+            self.assertTrue(any(record.lane == "behavior" and record.payload.get("is_table_or_data_file") for record in dryad_files))
             self.assertTrue(all(record.source == DROSOPHILA_SUZUKII_DEEP_SOURCE_ID for record in result.records))
             self.assertTrue(result.raw_artifacts)
             requested = "\n".join(unquote(url).replace("+", " ") for url in result.requested_urls)
             self.assertIn("Drosophila suzukii oviposition", requested)
             self.assertIn("spotted wing drosophila video", requested)
+            self.assertIn("/api/v2/versions/123/files", requested)
 
     def test_deep_records_are_queryable_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -36,7 +36,10 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suz
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search genome_assemblies "Drosophila suzukii"
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search expression "Drosophila suzukii SRA"
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search proteins "Drosophila suzukii UniProt"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search behavior "Drosophila suzukii Dryad file"
 ```
+
+The SWD deep-source Dryad sweep indexes both dataset records and file-manifest records. File rows preserve dataset DOI, file path, MIME type, byte size, checksum, download URL, and raw Dryad API locator; video or archive files use `media`, while table and other data files use `behavior`.
 
 To parse public NCBI genome files for the main SWD assembly:
 

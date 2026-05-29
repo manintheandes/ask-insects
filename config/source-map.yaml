@@ -83,6 +83,7 @@ sources:
       - zenodo_records
       - figshare_articles
       - dryad_search
+      - dryad_version_file_manifests
     lanes:
       - genome_assemblies
       - genome_features
@@ -104,6 +105,7 @@ sources:
         - ncbi_sra_run_metadata
         - uniprot_protein_and_proteome_metadata
         - repository_video_or_dataset_candidates
+        - dryad_file_manifest_records_with_size_checksum_download_url
         - explicit_gap_records_for_missing_deeper_lanes
       promoted_follow_on_lanes:
         - drosophila_suzukii_genome_files
