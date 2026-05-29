@@ -188,6 +188,16 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane preserves the data.europa/OpenAgrar registry record, file manifests, article DOI, license, and reported dataset scale. It also records the current OpenAgrar security-check blockage as a queryable gap, so Ask Insects can distinguish dataset-level monitoring evidence from individual trap-deployment rows that are not parsed yet.
 
+To ingest University of Minnesota SWD flight-assay rows:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-umn-flight-assay-rows
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii flight behavior in the free-flight chamber" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.assay') as assay, count(*) as n from record_payloads where source='drosophila_suzukii_umn_flight_assay_rows' and json_extract(payload_json, '$.atom_type')='umn_flight_assay_row' group by assay"
+```
+
+This lane saves the DRUM item JSON, bitstream JSON, and archival CSV under `raw/drosophila_suzukii_umn_flight_assay_rows/`, checks MD5 and byte size, computes SHA-256, and indexes 401 row-level adult flight observations. It preserves missing table values as nulls and keeps assay labels source-shaped: `chamber` becomes free-flight chamber and `mill` becomes tethered flight mill.
+
 To make spotted wing drosophila video evidence inspectable:
 
 ```bash

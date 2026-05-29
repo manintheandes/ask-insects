@@ -24,6 +24,7 @@ from .sources.drosophila_suzukii_geo_expression_matrices import DROSOPHILA_SUZUK
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
 from .sources.drosophila_suzukii_jki_drosomon_trap_captures import DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID
+from .sources.drosophila_suzukii_umn_flight_assay_rows import DROSOPHILA_SUZUKII_UMN_FLIGHT_ASSAY_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_figshare_mk_selection import DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_gene_orthologs import DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID
 from .sources.drosophila_suzukii_ensembl_metazoa_orthology import DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID
@@ -190,6 +191,25 @@ def _public_health_focus_terms(question: str) -> list[str]:
 
 def _wants_video_atoms(question: str) -> bool:
     q = question.lower()
+    if _is_spotted_wing_question(question) and any(
+        term in q
+        for term in (
+            "flight",
+            "free-flight",
+            "free flight",
+            "flight mill",
+            "tethered",
+            "chamber",
+            "phototactic",
+            "phototaxis",
+            "propensity",
+            "duration",
+            "bouts",
+            "velocity",
+            "distance",
+        )
+    ) and not any(term in q for term in ("video", "videos", "movie", "keyframe", "thumbnail", "preview", "frame manifest", "motion", "trajectory", "tracking", "coordinates")):
+        return False
     if any(
         term in q
         for term in (
@@ -771,6 +791,11 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
     return f"I found {len(records)} indexed Ask Insects record(s)."
 
 
+def _is_spotted_wing_question(question: str) -> bool:
+    q = question.lower()
+    return any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"))
+
+
 def _search_queries(question: str) -> list[str]:
     q = question.lower()
     if (
@@ -1267,6 +1292,44 @@ def _search_queries(question: str) -> list[str]:
             "OSF FlightTrackAI video file",
             question,
         ]
+    if _is_spotted_wing_question(question) and any(
+        term in q
+        for term in (
+            "flight",
+            "free-flight",
+            "free flight",
+            "flight mill",
+            "tethered",
+            "chamber",
+            "phototactic",
+            "phototaxis",
+            "propensity",
+            "duration",
+            "bouts",
+            "velocity",
+            "distance",
+            "winter morph",
+            "summer morph",
+        )
+    ):
+        queries = []
+        if any(term in q for term in ("free-flight", "free flight", "chamber", "phototactic", "phototaxis")):
+            if any(term in q for term in ("phototactic", "phototaxis")):
+                queries.append("Drosophila suzukii free-flight chamber phototactic response")
+            queries.append("Drosophila suzukii free-flight chamber flight assay row")
+        if any(term in q for term in ("flight mill", "tethered", "mill", "distance", "velocity")):
+            if any(term in q for term in ("distance", "velocity")):
+                queries.append("Drosophila suzukii tethered flight mill distance average velocity")
+            queries.append("Drosophila suzukii tethered flight mill flight assay row")
+        queries.extend(
+            [
+                question,
+                "Drosophila suzukii UMN flight assay row",
+                "spotted wing drosophila free-flight chamber tethered flight mill",
+                "Drosophila suzukii flight propensity phototactic duration bouts distance velocity",
+            ]
+        )
+        return list(dict.fromkeys(queries))
     if "mendeley" in q:
         if any(term in q for term in ("table", "tables", "row", "rows", "xlsx", "csv", "temperature", "gradient", "gradients")):
             queries = [question]
@@ -3542,6 +3605,56 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
 
 def _prioritize_behavior_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
+    if _is_spotted_wing_question(question) and any(
+        term in q
+        for term in (
+            "flight",
+            "free-flight",
+            "free flight",
+            "flight mill",
+            "tethered",
+            "chamber",
+            "phototactic",
+            "phototaxis",
+            "propensity",
+            "duration",
+            "bouts",
+            "velocity",
+            "distance",
+            "winter morph",
+            "summer morph",
+        )
+    ):
+        desired_assay = None
+        if any(term in q for term in ("free-flight", "free flight", "chamber", "phototactic", "phototaxis")):
+            desired_assay = "free-flight chamber"
+        if any(term in q for term in ("flight mill", "tethered", "mill", "distance", "velocity")):
+            desired_assay = "tethered flight mill"
+        desired_metrics = []
+        if "distance" in q:
+            desired_metrics.append("distance cm")
+        if "velocity" in q:
+            desired_metrics.append("average velocity")
+        if "duration" in q:
+            desired_metrics.append("duration")
+        if "bouts" in q:
+            desired_metrics.append("bouts")
+        if any(term in q for term in ("phototactic", "phototaxis")):
+            desired_metrics.append("phototactic response")
+        if "propensity" in q:
+            desired_metrics.append("flight propensity")
+
+        def score_swd_flight(record: EvidenceRecord) -> tuple[int, ...]:
+            haystack = f"{record.record_id} {record.title} {record.text}".lower()
+            return (
+                0 if record.source == DROSOPHILA_SUZUKII_UMN_FLIGHT_ASSAY_ROWS_SOURCE_ID else 1,
+                0 if desired_assay and desired_assay in haystack else 1 if desired_assay else 0,
+                sum(1 for metric in desired_metrics if metric not in haystack),
+                0 if ":row:" in record.record_id or "flight assay row" in haystack else 1,
+                0 if record.lane == "behavior" else 1,
+            )
+
+        return sorted(records, key=score_swd_flight)
     if _wants_video_motion(question):
         preferred_video_source = _video_atom_source_for_question(question)
         return sorted(
@@ -3874,6 +3987,56 @@ def _prioritize_named_source_records(question: str, records: list[EvidenceRecord
                 0 if record.lane in {"media", "behavior"} else 1,
             ),
         )
+    if _is_spotted_wing_question(question) and any(
+        term in q
+        for term in (
+            "flight",
+            "free-flight",
+            "free flight",
+            "flight mill",
+            "tethered",
+            "chamber",
+            "phototactic",
+            "phototaxis",
+            "propensity",
+            "duration",
+            "bouts",
+            "velocity",
+            "distance",
+            "winter morph",
+            "summer morph",
+        )
+    ):
+        desired_assay = None
+        if any(term in q for term in ("free-flight", "free flight", "chamber", "phototactic", "phototaxis")):
+            desired_assay = "free-flight chamber"
+        if any(term in q for term in ("flight mill", "tethered", "mill", "distance", "velocity")):
+            desired_assay = "tethered flight mill"
+        desired_metrics = []
+        if "distance" in q:
+            desired_metrics.append("distance cm")
+        if "velocity" in q:
+            desired_metrics.append("average velocity")
+        if "duration" in q:
+            desired_metrics.append("duration")
+        if "bouts" in q:
+            desired_metrics.append("bouts")
+        if any(term in q for term in ("phototactic", "phototaxis")):
+            desired_metrics.append("phototactic response")
+        if "propensity" in q:
+            desired_metrics.append("flight propensity")
+
+        def score_swd_flight(record: EvidenceRecord) -> tuple[int, ...]:
+            haystack = f"{record.record_id} {record.title} {record.text}".lower()
+            return (
+                0 if record.source == DROSOPHILA_SUZUKII_UMN_FLIGHT_ASSAY_ROWS_SOURCE_ID else 1,
+                0 if desired_assay and desired_assay in haystack else 1 if desired_assay else 0,
+                sum(1 for metric in desired_metrics if metric not in haystack),
+                0 if ":row:" in record.record_id or "flight assay row" in haystack else 1,
+                0 if record.lane == "behavior" else 1,
+            )
+
+        return sorted(records, key=score_swd_flight)
     if "figshare" in q:
         return sorted(
             records,
@@ -5594,6 +5757,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             )
             for search_query in search_queries:
                 query_limit = max(limit * 20, 50) if plan.answer_shape == "public_health" else limit
+                if plan.answer_shape == "behavior" and _is_spotted_wing_question(plan.question) and "flight" in plan.question.lower():
+                    query_limit = max(limit * 100, 100)
                 query_records = index.search(search_query, lane=lane, limit=query_limit)
                 for record in query_records:
                     if record.record_id in seen_record_ids:

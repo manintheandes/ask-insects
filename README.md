@@ -144,6 +144,13 @@ python3 -m askinsects ingest-drosophila-suzukii-jki-drosomon-trap-captures
 python3 -m askinsects ask "show Drosophila suzukii trap capture monitoring evidence" --json
 ```
 
+The `drosophila_suzukii_umn_flight_assay_rows` lane adds row-level behavior evidence from the University of Minnesota DRUM dataset `10.13020/4nsz-x660`. It saves item metadata, the archival CSV bitstream manifest, MD5/SHA-256/byte-size proof, CC BY-NC 3.0 US license, and 401 individual adult SWD flight-assay rows covering free-flight chamber and tethered flight mill observations with morph, sex, age, propensity, phototactic response, duration, bouts, distance, and average velocity fields.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-umn-flight-assay-rows
+python3 -m askinsects ask "show Drosophila suzukii flight behavior in the free-flight chamber" --json
+```
+
 The first Aedes-depth literature gate for spotted wing drosophila is `drosophila_suzukii_extracted_facts`. It audits every indexed SWD paper for supplements, preserves supplement manifests, parses supported public supplement tables when opted in, and emits source-backed candidate rows for behavior, crop damage, management, resistance, biocontrol, ecology, and genomics.
 
 ```bash

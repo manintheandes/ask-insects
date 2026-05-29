@@ -167,6 +167,7 @@ REQUIRED_FILES = (
     "askinsects/sources/drosophila_suzukii_geo_expression_matrices.py",
     "askinsects/sources/drosophila_suzukii_extension_guidance.py",
     "askinsects/sources/drosophila_suzukii_jki_drosomon_trap_captures.py",
+    "askinsects/sources/drosophila_suzukii_umn_flight_assay_rows.py",
     "askinsects/sources/drosophila_suzukii_video_atoms.py",
     "askinsects/sources/drosophila_suzukii_dryad_table_rows.py",
     "askinsects/sources/drosophila_suzukii_occurrence_ecology.py",
@@ -237,6 +238,7 @@ REQUIRED_FILES = (
     "scripts/ingest_drosophila_suzukii_geo_expression_matrices.py",
     "scripts/ingest_drosophila_suzukii_extension_guidance.py",
     "scripts/ingest_drosophila_suzukii_jki_drosomon_trap_captures.py",
+    "scripts/ingest_drosophila_suzukii_umn_flight_assay_rows.py",
     "scripts/ingest_drosophila_suzukii_video_atoms.py",
     "scripts/ingest_drosophila_suzukii_dryad_table_rows.py",
     "scripts/ingest_drosophila_suzukii_occurrence_ecology.py",
@@ -367,6 +369,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_drosophila_suzukii_extension_guidance.py",
     "tests/test_drosophila_suzukii_jki_drosomon_trap_captures_source.py",
     "tests/test_ingest_drosophila_suzukii_jki_drosomon_trap_captures.py",
+    "tests/test_drosophila_suzukii_umn_flight_assay_rows_source.py",
+    "tests/test_ingest_drosophila_suzukii_umn_flight_assay_rows.py",
     "tests/test_drosophila_suzukii_video_atoms.py",
     "tests/test_ingest_drosophila_suzukii_video_atoms.py",
     "tests/test_drosophila_suzukii_dryad_table_rows.py",
@@ -502,6 +506,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_drosophila_suzukii_extension_guidance",
     "tests.test_drosophila_suzukii_jki_drosomon_trap_captures_source",
     "tests.test_ingest_drosophila_suzukii_jki_drosomon_trap_captures",
+    "tests.test_drosophila_suzukii_umn_flight_assay_rows_source",
+    "tests.test_ingest_drosophila_suzukii_umn_flight_assay_rows",
     "tests.test_drosophila_suzukii_video_atoms",
     "tests.test_ingest_drosophila_suzukii_video_atoms",
     "tests.test_drosophila_suzukii_dryad_table_rows",
@@ -1171,6 +1177,20 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii JKI DrosoMon trap-capture term: {term}")
+    for term in (
+        "drosophila_suzukii_umn_flight_assay_rows",
+        "scripts/ingest_drosophila_suzukii_umn_flight_assay_rows.py",
+        "umn_dspace_csv_to_sqlite_behavior_assay_rows",
+        "umn_drum_item_11299_227164",
+        "10.13020/4nsz-x660",
+        "propensity",
+        "phototactic",
+        "avg_velocity_cm_s",
+        "umn_flight_assay_csv_fetch_or_parse_failed",
+        "umn_flight_assay_rows_not_queryable",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii UMN flight-assay term: {term}")
     for term in (
         "aedes_wolbachia_interventions",
         "scripts/ingest_wolbachia_interventions.py",

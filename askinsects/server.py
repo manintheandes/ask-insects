@@ -3782,6 +3782,26 @@ def ingest_drosophila_suzukii_jki_drosomon_trap_captures_hosted(
     return response
 
 
+def ingest_drosophila_suzukii_umn_flight_assay_rows_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_umn_flight_assay_rows import ingest_drosophila_suzukii_umn_flight_assay_rows
+
+    max_download_bytes = int(payload.get("max_download_bytes", 1_000_000))
+    max_rows = payload.get("max_rows")
+    response = ingest_drosophila_suzukii_umn_flight_assay_rows(
+        artifact_dir=artifact_dir,
+        max_download_bytes=max_download_bytes,
+        max_rows=int(max_rows) if max_rows is not None else None,
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_aedes_olfaction_literature_hosted(
     payload: dict[str, object],
     *,
@@ -4113,6 +4133,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-jki-drosomon-trap-captures":
             result = ingest_drosophila_suzukii_jki_drosomon_trap_captures_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-umn-flight-assay-rows":
+            result = ingest_drosophila_suzukii_umn_flight_assay_rows_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-extracted-facts":

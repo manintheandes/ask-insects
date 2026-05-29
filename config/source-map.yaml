@@ -76,6 +76,7 @@ sources:
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
         - drosophila_suzukii_jki_drosomon_trap_captures
+        - drosophila_suzukii_umn_flight_assay_rows
   - id: drosophila_suzukii_deep_sources
     name: Drosophila suzukii deep public source expansion
     source_type: public_api_composite
@@ -131,6 +132,7 @@ sources:
         - drosophila_suzukii_population_genomics
         - drosophila_suzukii_dryad_population_variants
         - drosophila_suzukii_extension_guidance
+        - drosophila_suzukii_umn_flight_assay_rows
   - id: drosophila_suzukii_dryad_table_rows
     name: Drosophila suzukii Dryad preview table rows
     source_type: derived_sqlite_source
@@ -709,6 +711,46 @@ sources:
         - jki_trap_deployment_rows_not_queryable
         - jki_drosomon_metadata_fetch_failed
         - jki_drosomon_csv_fetch_failed
+  - id: drosophila_suzukii_umn_flight_assay_rows
+    name: Drosophila suzukii UMN flight assay rows
+    source_type: public_dspace_csv
+    boundary: University of Minnesota DRUM dataset DOI 10.13020/4nsz-x660 for Drosophila suzukii flight behavior, preserving item metadata, CC BY-NC 3.0 US license, archival CSV bitstream checksum and byte size, and one row-level behavior record per CSV observation. The row lane covers free-flight chamber and tethered flight mill assay rows with morph, sex, age, propensity, phototactic response, duration, bouts, distance, and average velocity fields. It does not claim raw LabVIEW traces, tracking coordinates, videos, all DRUM SWD datasets, or human-validated biological interpretation.
+    query_plane: umn_dspace_csv_to_sqlite_behavior_assay_rows
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_umn_flight_assay_rows
+    ingest_script: scripts/ingest_drosophila_suzukii_umn_flight_assay_rows.py
+    input_sources:
+      - umn_drum_item_11299_227164
+      - umn_drum_bitstream_81028480_4f7d_4b2a_b648_403c683b7f26
+    lanes:
+      - behavior
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - dataset_doi
+        - item_uuid
+        - bitstream_uuid
+        - file_name
+        - byte_size
+        - md5
+        - sha256
+        - date
+        - treatment
+        - morph
+        - sex
+        - age_days
+        - propensity
+        - phototactic
+        - duration
+        - bouts
+        - distance_cm
+        - avg_velocity_cm_s
+      structured_gaps:
+        - umn_flight_assay_csv_fetch_or_parse_failed
+        - umn_flight_assay_rows_not_queryable
+        - umn_flight_assay_csv_byte_size_changed
+        - umn_flight_assay_csv_md5_changed
   - id: drosophila_suzukii_extension_guidance
     name: Drosophila suzukii extension and IPM guidance
     source_type: public_web_guidance

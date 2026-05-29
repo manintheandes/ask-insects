@@ -1804,6 +1804,70 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "ecology")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_jki_drosomon_trap_captures")
 
+    def test_spotted_wing_flight_questions_prefer_umn_assay_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_umn_flight_assay:row:2",
+                        lane="behavior",
+                        source="drosophila_suzukii_umn_flight_assay_rows",
+                        title="Drosophila suzukii UMN flight assay row 2: free-flight chamber",
+                        text="UMN Drosophila suzukii flight behavior row 2: free-flight chamber. Sex: F. Flight propensity: 1. Phototactic response: 1. Duration: 21.84.",
+                        species="Drosophila suzukii",
+                        url="https://hdl.handle.net/11299/227164",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_umn_flight_assay_rows",
+                            locator="raw/drosophila_suzukii_umn_flight_assay_rows/data_archival.csv#row/2",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "umn_flight_assay_row", "assay": "free-flight chamber", "duration": 21.84},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_umn_flight_assay:row:4",
+                        lane="behavior",
+                        source="drosophila_suzukii_umn_flight_assay_rows",
+                        title="Drosophila suzukii UMN flight assay row 4: tethered flight mill",
+                        text="UMN Drosophila suzukii flight behavior row 4: tethered flight mill. Sex: F. Flight propensity: 0.",
+                        species="Drosophila suzukii",
+                        url="https://hdl.handle.net/11299/227164",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_umn_flight_assay_rows",
+                            locator="raw/drosophila_suzukii_umn_flight_assay_rows/data_archival.csv#row/4",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "umn_flight_assay_row", "assay": "tethered flight mill"},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_core:literature:flight-paper",
+                        lane="literature",
+                        source="drosophila_suzukii_core",
+                        title="Drosophila suzukii flight paper",
+                        text="Generic literature record about Drosophila suzukii flight.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-flight-paper",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="source_index.sqlite#literature/flight-paper",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii flight behavior in the free-flight chamber", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_umn_flight_assay_rows")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_umn_flight_assay:row:2")
+
     def test_dryad_video_questions_prefer_dryad_behavior_video_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

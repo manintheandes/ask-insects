@@ -258,6 +258,12 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_jki_traps.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_jki_traps.add_argument("--retrieved-at")
 
+    ingest_drosophila_suzukii_umn_flight = sub.add_parser("ingest-drosophila-suzukii-umn-flight-assay-rows")
+    ingest_drosophila_suzukii_umn_flight.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_umn_flight.add_argument("--max-download-bytes", type=int, default=1_000_000)
+    ingest_drosophila_suzukii_umn_flight.add_argument("--max-rows", type=int)
+    ingest_drosophila_suzukii_umn_flight.add_argument("--retrieved-at")
+
     ingest_gbif = sub.add_parser("ingest-gbif")
     ingest_gbif.add_argument("--hosted", action="store_true")
     ingest_gbif.add_argument("--species", action="append", default=[])
@@ -953,6 +959,23 @@ def main(argv: list[str] | None = None) -> int:
         from scripts.ingest_drosophila_suzukii_jki_drosomon_trap_captures import ingest_drosophila_suzukii_jki_drosomon_trap_captures
 
         payload = ingest_drosophila_suzukii_jki_drosomon_trap_captures(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-umn-flight-assay-rows":
+        request_payload = {
+            "max_download_bytes": args.max_download_bytes,
+            "max_rows": args.max_rows,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-umn-flight-assay-rows", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_umn_flight_assay_rows import ingest_drosophila_suzukii_umn_flight_assay_rows
+
+        payload = ingest_drosophila_suzukii_umn_flight_assay_rows(
             artifact_dir=artifact_dir,
             **request_payload,
         )
