@@ -449,6 +449,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show Drosophila suzukii pest management evidence").answer_shape, "management")
         self.assertEqual(plan_question("show Drosophila suzukii extension IPM guidance").answer_shape, "management")
         self.assertEqual(plan_question("show Drosophila suzukii biocontrol parasitoid evidence").answer_shape, "biocontrol")
+        self.assertEqual(plan_question("show Drosophila suzukii nuclear marker review").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show Aedes aegypti BioSamples from China").lanes[0], "biosamples")
         self.assertEqual(plan_question("what papers discuss mosquito host seeking?").lanes[0], "literature")
@@ -4625,6 +4626,73 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_snp_variation")
+
+    def test_swd_marker_review_questions_prefer_marker_review_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:genome:gff:gene:orco",
+                        lane="genes",
+                        source="drosophila_suzukii_genome_files",
+                        title="Drosophila suzukii gene Orco",
+                        text="Drosophila suzukii genome GFF gene row.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/gff",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_genome_files",
+                            locator="raw/gff#gene/orco",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_ncbi_marker_review:nuccore:PV000002.1",
+                        lane="dna_barcodes",
+                        source="drosophila_suzukii_ncbi_marker_review",
+                        title="Drosophila suzukii internal transcribed spacer 2",
+                        text="Drosophila suzukii NCBI broader marker-review record. accession=PV000002.1 marker_group=nuclear_ribosomal_or_its sequence_length=420 bp",
+                        species="Drosophila suzukii",
+                        url="https://www.ncbi.nlm.nih.gov/nuccore/PV000002.1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ncbi_marker_review",
+                            locator="raw/drosophila_suzukii_ncbi_marker_review/Drosophila_suzukii_marker_review_esummary_000000.json#result/2",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "ncbi_marker_review", "marker_group": "nuclear_ribosomal_or_its"},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_ncbi_marker_review:nuccore:PV000003.1",
+                        lane="dna_barcodes",
+                        source="drosophila_suzukii_ncbi_marker_review",
+                        title="Drosophila suzukii cytochrome oxidase subunit I",
+                        text="Drosophila suzukii NCBI broader marker-review record. accession=PV000003.1 marker_group=mitochondrial_coi_barcode sequence_length=658 bp",
+                        species="Drosophila suzukii",
+                        url="https://www.ncbi.nlm.nih.gov/nuccore/PV000003.1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ncbi_marker_review",
+                            locator="raw/drosophila_suzukii_ncbi_marker_review/Drosophila_suzukii_marker_review_esummary_000000.json#result/3",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "ncbi_marker_review", "marker_group": "mitochondrial_coi_barcode"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii nuclear marker review",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_marker_review")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_ncbi_marker_review:nuccore:PV000002.1")
 
     def test_biosample_questions_prefer_ncbi_biosamples(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -65,6 +65,8 @@ sources:
         - drosophila_suzukii_extracted_facts
         - drosophila_suzukii_genome_files
         - drosophila_suzukii_ncbi_nucleotide
+        - drosophila_suzukii_ncbi_marker_review
+        - drosophila_suzukii_ncbi_snp_variation
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
@@ -377,6 +379,40 @@ sources:
         - swd_ncbi_nucleotide_limit_applied
         - swd_ncbi_nucleotide_search_failed
         - swd_ncbi_nucleotide_summary_failed
+  - id: drosophila_suzukii_ncbi_marker_review
+    name: Drosophila suzukii NCBI mitochondrial and nuclear marker review
+    source_type: public_ncbi_eutils
+    boundary: Bounded NCBI nuccore/GenBank metadata review for Drosophila suzukii mitochondrial and nuclear marker accessions, including COI/COX1, COII/COX2, NADH/ND loci, cytochrome b, ribosomal 18S/28S, ITS, elongation-factor, and other marker-like records. This is accession metadata evidence and source discovery, not proof of sequence equivalence, variant interpretation, or canonical taxonomy.
+    query_plane: ncbi_nuccore_esearch_esummary_to_sqlite_marker_review_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_ncbi_marker_review
+    ingest_script: scripts/ingest_drosophila_suzukii_ncbi_marker_review.py
+    input_sources:
+      - ncbi_eutilities_nuccore
+      - drosophila_suzukii_ncbi_nucleotide
+      - drosophila_suzukii_core
+    lanes:
+      - dna_barcodes
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - uid
+        - accession_version
+        - title
+        - marker_group
+        - sequence_length
+        - biomol
+        - moltype
+        - genome
+        - taxid
+        - createdate
+        - updatedate
+        - query
+      structured_gaps:
+        - swd_ncbi_marker_review_limit_applied
+        - swd_ncbi_marker_review_search_failed
+        - swd_ncbi_marker_review_summary_failed
   - id: drosophila_suzukii_ncbi_snp_variation
     name: Drosophila suzukii NCBI dbSNP variation audit
     source_type: public_ncbi_eutils

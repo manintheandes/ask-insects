@@ -880,6 +880,44 @@ class ServerTests(unittest.TestCase):
                 retrieved_at="2026-05-29T00:00:00Z",
             )
 
+    def test_ingest_drosophila_suzukii_ncbi_marker_review_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch(
+                "scripts.ingest_drosophila_suzukii_ncbi_marker_review.ingest_drosophila_suzukii_ncbi_marker_review"
+            ) as ingest:
+                ingest.return_value = {
+                    "ok": True,
+                    "source": "drosophila_suzukii_ncbi_marker_review",
+                    "record_count": 3,
+                }
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/drosophila-suzukii-ncbi-marker-review",
+                    {
+                        "max_results": 250,
+                        "page_size": 50,
+                        "delay_seconds": 0,
+                        "retrieved_at": "2026-05-29T00:00:00Z",
+                    },
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["source"], "drosophila_suzukii_ncbi_marker_review")
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                max_results=250,
+                page_size=50,
+                delay_seconds=0.0,
+                retrieved_at="2026-05-29T00:00:00Z",
+            )
+
     def test_ingest_drosophila_suzukii_extension_guidance_route_passes_options(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

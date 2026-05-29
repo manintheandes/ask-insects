@@ -115,6 +115,18 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane treats NCBI nuccore as a bounded metadata cross-check for COI/barcode-like accessions. It says whether an accession matched an indexed BOLD row or is currently GenBank-only metadata; it does not claim sequence equivalence beyond accession matching.
 
+To broaden spotted wing drosophila sequence coverage across mitochondrial and nuclear marker accessions:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-ncbi-marker-review \
+  --max-results 2000 \
+  --page-size 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii nuclear marker review" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.marker_group') as marker_group, count(*) as n from record_payloads where source='drosophila_suzukii_ncbi_marker_review' group by marker_group"
+```
+
+This lane treats NCBI nuccore as bounded accession metadata for marker discovery. It includes COI-like records but is mainly meant to expose non-COI mitochondrial and nuclear marker records, not to prove sequence equivalence or interpret variants.
+
 To audit whether NCBI dbSNP exposes spotted wing drosophila variant records:
 
 ```bash

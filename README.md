@@ -47,7 +47,7 @@ python3 -m askinsects ask "what do we know about spotted wing drosophila?" --jso
 python3 -m askinsects search source_coverage "Drosophila suzukii missing"
 ```
 
-This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, dbSNP availability audits, extension/IPM guidance, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are motion-table rows, broader marker and variant-table review, structured susceptibility assay tables, and human-validated pest-science tables.
+This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, broader mitochondrial/nuclear marker reviews, dbSNP availability audits, extension/IPM guidance, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are motion-table rows, broader non-dbSNP variant-table review, structured susceptibility assay tables, and human-validated pest-science tables.
 
 The next depth layer is `drosophila_suzukii_deep_sources`. It adds bounded NCBI assembly, BioProject, BioSample, and SRA metadata, UniProt protein and proteome metadata, and repository candidate sweeps across Zenodo, Figshare, and Dryad:
 
@@ -97,6 +97,14 @@ The `drosophila_suzukii_ncbi_nucleotide` lane cross-checks SWD barcode coverage 
 python3 -m askinsects ingest-drosophila-suzukii-ncbi-nucleotide --max-results 1000 --page-size 100
 python3 -m askinsects ask "show Drosophila suzukii GenBank COI nucleotide cross-check" --json
 python3 -m askinsects sql "select json_extract(payload_json, '$.bold_match_status') as status, count(*) as n from record_payloads where source='drosophila_suzukii_ncbi_nucleotide' group by status"
+```
+
+The `drosophila_suzukii_ncbi_marker_review` lane broadens sequence coverage beyond COI/barcode-like records. It fetches bounded NCBI nuccore/GenBank metadata for SWD mitochondrial and nuclear marker accessions, including COII/COX2, NADH/ND loci, cytochrome b, ribosomal 18S/28S, ITS, elongation-factor, and related marker-like records. It is accession metadata evidence, not proof of sequence equivalence or variant interpretation.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-ncbi-marker-review --max-results 2000 --page-size 100
+python3 -m askinsects ask "show Drosophila suzukii nuclear marker review" --json
+python3 -m askinsects sql "select json_extract(payload_json, '$.marker_group') as marker_group, count(*) as n from record_payloads where source='drosophila_suzukii_ncbi_marker_review' group by marker_group"
 ```
 
 The `drosophila_suzukii_ncbi_snp_variation` lane audits NCBI dbSNP for SWD organism records. Current public dbSNP ESearch returns zero `Drosophila suzukii` records, so Ask Insects stores a queryable source-gap record instead of claiming variant coverage.

@@ -22,6 +22,7 @@ from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURC
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
+from .sources.drosophila_suzukii_ncbi_marker_review import DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_nucleotide import DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_snp_variation import DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID
 from .sources.drosophila_suzukii_occurrence_ecology import DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID
@@ -1905,6 +1906,75 @@ def _wants_swd_ncbi_nucleotide(question: str) -> bool:
     )
 
 
+def _wants_swd_marker_review(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "marker review",
+            "marker reviews",
+            "mitochondrial marker",
+            "mitochondrial markers",
+            "nuclear marker",
+            "nuclear markers",
+            "non-coi",
+            "non coi",
+            "coii",
+            "cox2",
+            "cytb",
+            "cytochrome b",
+            "nadh",
+            "nd1",
+            "nd2",
+            "nd3",
+            "nd4",
+            "nd5",
+            "nd6",
+            "ribosomal",
+            "18s",
+            "28s",
+            "its",
+            "internal transcribed spacer",
+            "elongation factor",
+            "ef1",
+            "ef-1",
+        )
+    )
+
+
+def _swd_marker_review_rank(question: str, record: EvidenceRecord) -> int:
+    if record.source != DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID:
+        return 10
+    q = question.lower()
+    marker_group = str((record.payload or {}).get("marker_group") or "")
+    if not marker_group:
+        match = re.search(r"\bmarker_group=([A-Za-z0-9_:-]+)", f"{record.title} {record.text}")
+        marker_group = match.group(1) if match else ""
+    if any(term in q for term in ("nuclear", "ribosomal", "18s", "28s", "its", "internal transcribed spacer", "elongation factor", "ef1", "ef-1")):
+        if marker_group in {"nuclear_ribosomal_or_its", "nuclear_protein_coding_or_other"}:
+            return 0
+        if marker_group == "marker_review_other":
+            return 1
+        return 2
+    if any(term in q for term in ("non-coi", "non coi")):
+        if marker_group in {"mitochondrial_other", "nuclear_ribosomal_or_its", "nuclear_protein_coding_or_other"}:
+            return 0
+        if marker_group == "marker_review_other":
+            return 1
+        return 2
+    if any(term in q for term in ("coii", "cox2", "cytb", "cytochrome b", "nadh", "nd1", "nd2", "nd3", "nd4", "nd5", "nd6")):
+        if marker_group == "mitochondrial_other":
+            return 0
+        if marker_group == "mitochondrial_coi_barcode":
+            return 2
+        return 1
+    if any(term in q for term in ("mitochondrial", "coi", "cox1", "barcode")):
+        if marker_group in {"mitochondrial_coi_barcode", "mitochondrial_other"}:
+            return 0
+        return 1
+    return 0
+
+
 def _wants_orthomcl_relationship(question: str, relationship_type: str) -> bool:
     q = question.lower()
     if relationship_type == "coortholog":
@@ -1932,6 +2002,15 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
                 key=lambda record: (
                     0 if record.source == DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID else 1,
                     0 if record.lane == "genome_features" else 1,
+                ),
+            )
+        if _wants_swd_marker_review(question):
+            return sorted(
+                records,
+                key=lambda record: (
+                    0 if record.source == DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID else 1,
+                    _swd_marker_review_rank(question, record),
+                    0 if record.lane == "dna_barcodes" else 1,
                 ),
             )
         if _wants_swd_ncbi_nucleotide(question):
@@ -4640,6 +4719,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                         continue
                     all_records.append(record)
                     seen_record_ids.add(record.record_id)
+            if _wants_swd_marker_review(plan.question):
+                for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID, ["dna_barcodes"], limit=max(limit * 1000, 5000)):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
             if _wants_swd_ncbi_nucleotide(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID, ["dna_barcodes"], limit=max(limit * 5, 25)):
                     if record.record_id in seen_record_ids:
@@ -4648,7 +4733,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
             swd_genome_lanes = ["genes", "transcripts", "genome_features", "proteins", "genome_assemblies"]
             swd_records: list[EvidenceRecord] = []
-            if not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question):
+            if not _wants_swd_marker_review(plan.question) and not _wants_swd_ncbi_nucleotide(plan.question) and not _wants_snp_variation(plan.question):
                 for lane in swd_genome_lanes:
                     for search_query in _search_queries(plan.question):
                         for record in index.search(search_query, lane=lane, limit=max(limit * 5, 25)):
