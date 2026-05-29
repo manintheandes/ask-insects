@@ -5854,6 +5854,76 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["supplement_audit"]["parsed_supplement_row_count"], 0)
             self.assertEqual(answer["evidence"][0]["record_id"], "swd_extracted_fact:supplement_audit:paper1")
 
+    def test_swd_dryad_table_row_questions_use_swd_table_source(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:dryad:dataset:doi:10.5061_dryad.example",
+                        lane="behavior",
+                        source="drosophila_suzukii_deep_sources",
+                        title="Drosophila suzukii Dryad dataset doi:10.5061/dryad.example",
+                        text="Dryad dataset candidate for Drosophila suzukii with broad behavior metadata.",
+                        species="Drosophila suzukii",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/dryad.example",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_deep_sources",
+                            locator="raw/drosophila_suzukii_deep_sources/dryad/search.json#datasets/1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                            license="CC0",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:dryad_table:row:swd:dryad:file:doi:10.5061_dryad.example:mean_distance_dryad.csv:11",
+                        lane="behavior",
+                        source="drosophila_suzukii_dryad_table_rows",
+                        title="Drosophila suzukii Dryad table row mean_distance_dryad.csv row 11",
+                        text=(
+                            "Parsed Drosophila suzukii Dryad table row. File: mean_distance_dryad.csv. "
+                            "Row: 11. Values: treatment=forest; distance=<200; pesticide=no; total=7943."
+                        ),
+                        species="Drosophila suzukii",
+                        url="https://datadryad.org/stash/dataset/doi:10.5061/dryad.example",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_dryad_table_rows",
+                            locator="raw/drosophila_suzukii_dryad_table_rows/previews/1.js#sheet/1/row/11",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                            license="CC0",
+                        ),
+                        payload={
+                            "atom_type": "dryad_table_row",
+                            "file_path": "mean_distance_dryad.csv",
+                            "row_number": 11,
+                            "values": {
+                                "treatment": "forest",
+                                "distance": "<200",
+                                "pesticide": "no",
+                                "total": "7943",
+                            },
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "what Dryad table rows mention spotted wing drosophila distance?",
+                artifact_dir=artifact_dir,
+                limit=1,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_dryad_table_rows")
+            self.assertEqual(
+                answer["evidence"][0]["record_id"],
+                "swd:dryad_table:row:swd:dryad:file:doi:10.5061_dryad.example:mean_distance_dryad.csv:11",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
