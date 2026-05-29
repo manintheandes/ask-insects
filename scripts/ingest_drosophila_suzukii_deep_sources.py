@@ -20,13 +20,35 @@ from askinsects.sources.drosophila_suzukii_deep_sources import (
 )
 
 
+def _gap_key(gap: dict[str, object]) -> tuple[object, ...]:
+    return (
+        gap.get("source"),
+        gap.get("lane"),
+        gap.get("reason"),
+        gap.get("record_id") or gap.get("dataset_record_id") or gap.get("source_record_id") or gap.get("article_id"),
+        gap.get("locator"),
+    )
+
+
+def _dedupe_gaps(gaps: list[dict[str, object]]) -> list[dict[str, object]]:
+    deduped: list[dict[str, object]] = []
+    seen: set[tuple[object, ...]] = set()
+    for gap in gaps:
+        key = _gap_key(gap)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(gap)
+    return deduped
+
+
 def _replace_source_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> list[dict[str, object]]:
     old_gaps = read_json(gaps_path, [])
     if not isinstance(old_gaps, list):
         old_gaps = []
     kept = [gap for gap in old_gaps if not (isinstance(gap, dict) and gap.get("source") == DROSOPHILA_SUZUKII_DEEP_SOURCE_ID)]
-    kept.extend(gaps)
-    return kept
+    kept.extend(_dedupe_gaps(gaps))
+    return _dedupe_gaps([gap for gap in kept if isinstance(gap, dict)])
 
 
 def ingest_drosophila_suzukii_deep_sources(

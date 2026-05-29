@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+import json
 from pathlib import Path
 
 from askinsects.builder import build_fixture_index
@@ -42,6 +43,25 @@ def fake_fetch_records(**kwargs) -> DrosophilaSuzukiiDeepResult:
     )
 
 
+def fake_fetch_records_with_duplicate_gaps(**kwargs) -> DrosophilaSuzukiiDeepResult:
+    result = fake_fetch_records(**kwargs)
+    gap = {
+        "source": DROSOPHILA_SUZUKII_DEEP_SOURCE_ID,
+        "lane": "media",
+        "reason": "figshare_material_record_no_video_files",
+        "article_id": 123,
+        "query": "Drosophila suzukii video",
+    }
+    return DrosophilaSuzukiiDeepResult(
+        source_id=result.source_id,
+        records=result.records,
+        gaps=[gap, dict(gap)],
+        raw_artifacts=result.raw_artifacts,
+        requested_urls=result.requested_urls,
+        source_counts=result.source_counts,
+    )
+
+
 class IngestDrosophilaSuzukiiDeepSourcesTests(unittest.TestCase):
     def test_ingest_deep_sources_preserves_existing_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -63,6 +83,25 @@ class IngestDrosophilaSuzukiiDeepSourcesTests(unittest.TestCase):
             self.assertEqual(sources[DROSOPHILA_SUZUKII_DEEP_SOURCE_ID], 1)
             receipt = (artifact_dir / "source_receipt.json").read_text(encoding="utf-8")
             self.assertIn(DROSOPHILA_SUZUKII_DEEP_SOURCE_ID, receipt)
+
+    def test_duplicate_gaps_are_deduped(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            ingest_drosophila_suzukii_deep_sources(
+                artifact_dir=artifact_dir,
+                fetch_records_fn=fake_fetch_records_with_duplicate_gaps,
+            )
+
+            gaps = json.loads((artifact_dir / "gaps.json").read_text(encoding="utf-8"))
+            matching = [
+                gap
+                for gap in gaps
+                if gap.get("source") == DROSOPHILA_SUZUKII_DEEP_SOURCE_ID
+                and gap.get("reason") == "figshare_material_record_no_video_files"
+            ]
+            self.assertEqual(len(matching), 1)
 
 
 if __name__ == "__main__":
