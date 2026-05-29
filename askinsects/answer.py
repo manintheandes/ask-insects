@@ -21,6 +21,7 @@ from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_A
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
 from .sources.drosophila_suzukii_geo_expression_matrices import DROSOPHILA_SUZUKII_GEO_EXPRESSION_MATRICES_SOURCE_ID
+from .sources.drosophila_suzukii_susceptibility_assay_rows import DROSOPHILA_SUZUKII_SUSCEPTIBILITY_ASSAY_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
 from .sources.drosophila_suzukii_jki_drosomon_trap_captures import DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID
@@ -1641,6 +1642,26 @@ def _search_queries(question: str) -> list[str]:
             "who",
         )
     ):
+        if _requested_species(question) == "Drosophila suzukii" and any(
+            term in q
+            for term in (
+                "insecticide resistance",
+                "pyrethroid resistance",
+                "susceptibility",
+                "bioassay",
+                "mortality",
+                "lc50",
+                "lc90",
+                "spinosad",
+                "malathion",
+            )
+        ):
+            return [
+                "Drosophila suzukii susceptibility assay insecticide mortality",
+                "spotted wing drosophila insecticide bioassay",
+                "Drosophila suzukii spinosad malathion pyrethroid susceptibility",
+                question,
+            ]
         if any(term in q for term in ("insecticide resistance", "pyrethroid resistance", "kdr", "knockdown resistance", "susceptibility", "bioassay", "resistance mutation")):
             return ["IR Mapper Aedes insecticide resistance", "insecticide resistance", "resistance", question]
         if any(term in q for term in ("cdc", "guidance", "paho", "recommendation", "recommendations", "who")):
@@ -1770,6 +1791,20 @@ def _supplement_audit_source_for_question(question: str) -> tuple[str, str]:
     if species and species.lower() == "drosophila suzukii":
         return DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID, "Drosophila suzukii"
     return EXTRACTED_FACTS_SOURCE_ID, "Aedes aegypti"
+
+
+def _resistance_table_source_for_question(question: str) -> str:
+    species = _requested_species(question)
+    if species and species.lower() == "drosophila suzukii":
+        return DROSOPHILA_SUZUKII_SUSCEPTIBILITY_ASSAY_ROWS_SOURCE_ID
+    return RESISTANCE_TABLE_ROW_SOURCE_ID
+
+
+def _extracted_facts_source_for_question(question: str) -> str:
+    species = _requested_species(question)
+    if species and species.lower() == "drosophila suzukii":
+        return DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
+    return EXTRACTED_FACTS_SOURCE_ID
 
 
 def _literature_topical_tokens(question: str, species: str | None) -> set[str]:
@@ -2974,6 +3009,7 @@ def _resistance_marker_terms(question: str) -> list[str]:
 def _prioritize_resistance_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     wants_marker = bool(_resistance_marker_terms(question))
     wants_extracted = _wants_extracted_facts(question)
+    wants_swd = _requested_species(question) == "Drosophila suzukii"
     q = question.lower()
     locator_terms = [match.lower() for match in re.findall(r"\bW\d{6,}\b", question, flags=re.IGNORECASE)]
     wants_table = wants_extracted or _wants_source_locator_evidence(question) or any(
@@ -3007,6 +3043,8 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
     def score(record: EvidenceRecord) -> tuple[object, ...]:
         who_database_rank = 0 if wants_who_database and record.source == WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID else 1
         who_guidance_rank = 0 if wants_who_guidance and record.source == AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID else 1
+        swd_assay_rank = 0 if wants_swd and record.source == DROSOPHILA_SUZUKII_SUSCEPTIBILITY_ASSAY_ROWS_SOURCE_ID else 1
+        swd_extracted_rank = 0 if wants_swd and record.source == DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID else 1
         table_rank = 0 if wants_table and record.source == RESISTANCE_TABLE_ROW_SOURCE_ID else 1
         extracted_rank = 0 if wants_extracted and record.source == EXTRACTED_FACTS_SOURCE_ID else 1
         marker_rank = 0 if wants_marker and not wants_table and record.source == RESISTANCE_MARKER_SOURCE_ID else 1
@@ -3015,6 +3053,8 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
             locator_rank(record),
             who_database_rank,
             who_guidance_rank,
+            swd_assay_rank,
+            swd_extracted_rank,
             table_rank,
             extracted_rank,
             marker_rank,
@@ -3028,6 +3068,7 @@ def _prioritize_resistance_records(question: str, records: list[EvidenceRecord])
 
 def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
     q = question.lower()
+    source_id = _resistance_table_source_for_question(question)
     if not (
         _wants_extracted_facts(question)
         or _wants_source_locator_evidence(question)
@@ -3051,6 +3092,12 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
                 "amplification",
                 "carboxylesterase",
                 "cceae",
+                "susceptibility",
+                "bioassay",
+                "insecticide",
+                "spinosad",
+                "malathion",
+                "pyrethroid",
             )
         )
     ):
@@ -3091,11 +3138,11 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
             JOIN record_payloads p ON p.record_id = r.record_id
             WHERE r.source = ?
               AND r.lane = 'resistance'
-              AND json_extract(p.payload_json, '$.confidence') = 'parsed_table_schema_validated'
+              AND json_extract(p.payload_json, '$.confidence') IN ('parsed_table_schema_validated', 'candidate_literature_evidence')
             ORDER BY r.record_id
             LIMIT ?
             """,
-            (RESISTANCE_TABLE_ROW_SOURCE_ID, max(limit * 50, 250)),
+            (source_id, max(limit * 50, 250)),
         ).fetchall()
     records = [EvidenceRecord.from_row(dict(row)) for row in rows]
     if records:
@@ -3107,14 +3154,14 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
         )[:limit]
     records = _source_search_records(
         index,
-        RESISTANCE_TABLE_ROW_SOURCE_ID,
+        source_id,
         "resistance",
         question,
         limit=max(limit * 20, 50),
     )
     if records:
         return _prioritize_named_source_records(question, records)[:limit]
-    return _source_records(index, RESISTANCE_TABLE_ROW_SOURCE_ID, ["resistance"], limit=limit)
+    return _source_records(index, source_id, ["resistance"], limit=limit)
 
 
 def _supplement_audit_summary_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object]:
@@ -4428,7 +4475,7 @@ def _exact_extracted_fact_identifier_records(index: SourceIndex, question: str, 
     return records
 
 
-def _extracted_fact_records(index: SourceIndex, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
+def _extracted_fact_records(index: SourceIndex, lanes: list[str], *, limit: int, source_id: str = EXTRACTED_FACTS_SOURCE_ID) -> list[EvidenceRecord]:
     if not lanes:
         return []
     lane_placeholders = ",".join("?" for _ in lanes)
@@ -4453,7 +4500,7 @@ def _extracted_fact_records(index: SourceIndex, lanes: list[str], *, limit: int)
               r.record_id
             LIMIT ?
             """,
-            [EXTRACTED_FACTS_SOURCE_ID, *params],
+            [source_id, *params],
         ).fetchall()
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
@@ -5562,6 +5609,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 continue
             all_records.append(record)
             seen_record_ids.add(record.record_id)
+        if _requested_species(plan.question) == "Drosophila suzukii":
+            for record in _source_records(index, DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID, ["resistance"], limit=limit):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "resistance" and any(
         term in plan.question.lower()
@@ -5787,7 +5840,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     break
 
     if _wants_extracted_facts(plan.question):
-        for record in _extracted_fact_records(index, list(plan.lanes), limit=max(limit * 50, 250)):
+        extracted_source_id = _extracted_facts_source_for_question(plan.question)
+        for record in _extracted_fact_records(index, list(plan.lanes), limit=max(limit * 50, 250), source_id=extracted_source_id):
             if record.record_id in seen_record_ids:
                 continue
             all_records.append(record)

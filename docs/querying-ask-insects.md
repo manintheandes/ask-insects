@@ -176,7 +176,15 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila 
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.organization') as organization, count(*) as n from record_payloads where source='drosophila_suzukii_extension_guidance' group by organization"
 ```
 
-This lane treats extension guidance as page-grain management evidence. It keeps the raw HTML locator and source URL for each page, but does not claim structured susceptibility assay rows or human-validated biocontrol outcomes.
+This lane treats extension guidance as page-grain management evidence. It keeps the raw HTML locator and source URL for each page, but does not claim susceptibility assay rows or human-validated biocontrol outcomes. Use `drosophila_suzukii_susceptibility_assay_rows` for SWD insecticide susceptibility/resistance evidence rows.
+
+To ingest SWD susceptibility/resistance evidence rows:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-susceptibility-assay-rows
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what insecticide susceptibility data exists for Drosophila suzukii?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.confidence') as confidence, count(*) as n from record_payloads where source='drosophila_suzukii_susceptibility_assay_rows' group by confidence"
+```
 
 To ingest JKI DrosoMon trap-capture monitoring evidence for spotted wing drosophila:
 

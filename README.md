@@ -47,7 +47,7 @@ python3 -m askinsects ask "what do we know about spotted wing drosophila?" --jso
 python3 -m askinsects search source_coverage "Drosophila suzukii missing"
 ```
 
-This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, broader mitochondrial/nuclear marker reviews, NCBI Gene orthology plus GeneID-to-GFF mapping, dbSNP availability audits, Dryad population-variant VCF manifests and gaps, extension/IPM guidance, supplement audit, first video atoms, occurrence ecology, and literature-derived crop-damage, pest-management, resistance, and biocontrol records. The remaining gaps are motion-table rows, Ensembl stable-ID history/current-ID mapping, VCF row mirroring/parsing and broader non-dbSNP variant-table review, structured susceptibility assay tables, and human-validated pest-science tables.
+This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, broader mitochondrial/nuclear marker reviews, NCBI Gene orthology plus GeneID-to-GFF mapping, dbSNP availability audits, Dryad population-variant VCF manifests and gaps, extension/IPM guidance, supplement audit, first video atoms, occurrence ecology, literature-derived crop-damage, pest-management, resistance, and biocontrol records, and a dedicated susceptibility/resistance evidence lane. The remaining gaps are motion-table rows, Ensembl stable-ID history/current-ID mapping, VCF row mirroring/parsing and broader non-dbSNP variant-table review, broader parsed susceptibility assay table coverage, and human-validated pest-science tables.
 
 The next depth layer is `drosophila_suzukii_deep_sources`. It adds bounded NCBI assembly, BioProject, BioSample, and SRA metadata, UniProt protein and proteome metadata, and repository candidate sweeps across Zenodo, Figshare, and Dryad:
 
@@ -57,7 +57,7 @@ python3 -m askinsects ask "show Drosophila suzukii SRA and genome evidence" --js
 python3 -m askinsects search media "Drosophila suzukii video"
 ```
 
-Genome-file parsing, legal direct full-text enrichment, per-paper supplement audit, first video atoms, occurrence ecology, extension/IPM guidance, and literature-derived crop-damage, management, resistance, and biocontrol are now promoted through follow-on SWD lanes. Larger full-text coverage, motion-table rows, structured susceptibility assay tables, and human-validated pest-science tables remain follow-on work.
+Genome-file parsing, legal direct full-text enrichment, per-paper supplement audit, first video atoms, occurrence ecology, extension/IPM guidance, literature-derived crop-damage, management, resistance, biocontrol, and susceptibility/resistance evidence rows are now promoted through follow-on SWD lanes. Larger full-text coverage, motion-table rows, broader parsed susceptibility table coverage, and human-validated pest-science tables remain follow-on work.
 
 The `drosophila_suzukii_genome_files` lane promotes the genome-file gap into parsed rows for a selected NCBI assembly. It downloads bounded public NCBI GFF and protein FASTA files, then indexes assembly, gene, transcript, functional genome-feature, and protein rows with locators back to the mirrored files.
 
@@ -157,6 +157,14 @@ The first Aedes-depth literature gate for spotted wing drosophila is `drosophila
 python3 -m askinsects ingest-drosophila-suzukii-extracted-facts --discover-supplements --download-supplements --max-supplement-discovery-records 500 --max-supplement-files 100
 python3 -m askinsects ask "what is Drosophila suzukii supplement audit coverage?" --json
 python3 -m askinsects sql "select lane, count(*) as n from records where source='drosophila_suzukii_extracted_facts' group by lane"
+```
+
+The `drosophila_suzukii_susceptibility_assay_rows` lane makes broad SWD insecticide susceptibility questions use pest-control evidence before generic genome-gene records. It promotes parsed susceptibility/resistance supplement table rows when schema fields exist, promotes bounded candidate literature evidence when records contain insecticide plus assay or response metrics, and stores a queryable gap when no parsed susceptibility table rows pass validation. These records are not human-validated biological interpretations.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-susceptibility-assay-rows
+python3 -m askinsects ask "what insecticide susceptibility data exists for Drosophila suzukii?" --json
+python3 -m askinsects sql "select json_extract(payload_json, '$.confidence') as confidence, count(*) as n from record_payloads where source='drosophila_suzukii_susceptibility_assay_rows' group by confidence"
 ```
 
 The first moving-image depth layer is `drosophila_suzukii_video_atoms`. It turns indexed SWD repository videos and supplement video locators into queryable video assets, bounded mirrors when license and size allow, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, and explicit gaps when motion rows or binary verification are not available yet. It also directly maps Dryad dataset `10.5061/dryad.8vd762q` as SWD-involved copulation TIFF frame-archive evidence, with five queryable frame-archive manifests and structured gaps for blocked preview/download routes, unmirrored archives, TIFF sequence decoding, inner spreadsheet parsing, and missing motion rows.

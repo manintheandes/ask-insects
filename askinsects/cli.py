@@ -470,6 +470,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_dryad_table_rows.add_argument("--max-table-files", type=int, default=50)
     ingest_drosophila_suzukii_dryad_table_rows.add_argument("--max-table-rows-per-file", type=int, default=500)
 
+    ingest_drosophila_suzukii_susceptibility_assay_rows = sub.add_parser("ingest-drosophila-suzukii-susceptibility-assay-rows")
+    ingest_drosophila_suzukii_susceptibility_assay_rows.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_susceptibility_assay_rows.add_argument("--retrieved-at")
+
     ingest_image_atoms = sub.add_parser("ingest-image-atoms")
     ingest_image_atoms.add_argument("--hosted", action="store_true")
     ingest_image_atoms.add_argument("--mirror-images", action="store_true")
@@ -1701,6 +1705,25 @@ def main(argv: list[str] | None = None) -> int:
                 "max_table_files": args.max_table_files,
                 "max_table_rows_per_file": args.max_table_rows_per_file,
             },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-susceptibility-assay-rows":
+        if not args.hosted:
+            from scripts.ingest_drosophila_suzukii_susceptibility_assay_rows import (
+                ingest_drosophila_suzukii_susceptibility_assay_rows,
+            )
+
+            payload = ingest_drosophila_suzukii_susceptibility_assay_rows(
+                artifact_dir=artifact_dir,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/drosophila-suzukii-susceptibility-assay-rows",
+            {"retrieved_at": args.retrieved_at},
             timeout=7200,
         )
         return 0 if payload.get("ok") else 2

@@ -246,6 +246,75 @@ def resistance_table_row_record(record_id):
     )
 
 
+def swd_susceptibility_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="resistance",
+        source="drosophila_suzukii_susceptibility_assay_rows",
+        title="Drosophila suzukii susceptibility evidence: spinosad",
+        text=(
+            "Candidate literature evidence for Drosophila suzukii insecticide susceptibility or resistance. "
+            "Insecticide terms: spinosad. Assay terms: bioassay. Metric fields: mortality. "
+            "Evidence: spinosad caused greater than 90% adult mortality in a bioassay."
+        ),
+        species="Drosophila suzukii",
+        url="https://example.org/swd-susceptibility",
+        media_url=None,
+        provenance=Provenance(
+            source_id="drosophila_suzukii_susceptibility_assay_rows",
+            locator="drosophila_suzukii_extracted_facts#swd_extracted_fact:resistance:W1",
+            retrieved_at="2026-05-29T00:00:00Z",
+            license="OpenAlex metadata",
+        ),
+        payload={
+            "confidence": "candidate_literature_evidence",
+            "validation_status": "candidate_not_table_validated",
+            "insecticide_terms": ["spinosad"],
+            "assay_terms": ["bioassay"],
+            "metric_fields": ["mortality"],
+        },
+    )
+
+
+def swd_extracted_resistance_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="resistance",
+        source="drosophila_suzukii_extracted_facts",
+        title="Drosophila suzukii extracted resistance fact",
+        text="Drosophila suzukii extracted resistance fact. Spinosad bioassay mortality evidence.",
+        species="Drosophila suzukii",
+        url="https://example.org/swd-extracted",
+        media_url=None,
+        provenance=Provenance(
+            source_id="drosophila_suzukii_extracted_facts",
+            locator="records#swd:openalex_literature:openalex:W2",
+            retrieved_at="2026-05-29T00:00:00Z",
+            license="OpenAlex metadata",
+        ),
+        payload={"confidence": "candidate", "fact_type": "resistance"},
+    )
+
+
+def swd_resistance_gene_record(record_id):
+    return EvidenceRecord(
+        record_id=record_id,
+        lane="genes",
+        source="drosophila_suzukii_genome_files",
+        title="Drosophila suzukii gene Mdr49",
+        text="NCBI genome gene Mdr49 for Drosophila suzukii, annotated as Multi drug resistance 49.",
+        species="Drosophila suzukii",
+        url="https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_043229965.1/",
+        media_url=None,
+        provenance=Provenance(
+            source_id="drosophila_suzukii_genome_files",
+            locator="raw/drosophila_suzukii_genome_files/GCF_043229965.1/genomic.gff#line/79569",
+            retrieved_at="2026-05-29T00:00:00Z",
+            license="NCBI public data metadata",
+        ),
+    )
+
+
 def public_health_record(record_id, source, text):
     return EvidenceRecord(
         record_id=record_id,
@@ -5386,6 +5455,44 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "resistance")
             self.assertEqual(answer["evidence"][0]["source"], "irmapper_aedes")
+
+    def test_spotted_wing_susceptibility_questions_prefer_susceptibility_lane_over_genes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    swd_resistance_gene_record("swd:genome_files:gene:Mdr49"),
+                    swd_susceptibility_record("swd_susceptibility_candidate:W1"),
+                ]
+            )
+
+            answer = answer_question("what insecticide susceptibility data exists for Drosophila suzukii?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_susceptibility_assay_rows")
+            self.assertIn("spinosad", answer["evidence"][0]["text"])
+
+    def test_spotted_wing_susceptibility_questions_fallback_to_extracted_facts_before_genes(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    swd_resistance_gene_record("swd:genome_files:gene:Mdr49"),
+                    swd_extracted_resistance_record("swd_extracted_fact:resistance:W2"),
+                ]
+            )
+
+            answer = answer_question("what insecticide susceptibility data exists for Drosophila suzukii?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "resistance")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_extracted_facts")
+            self.assertIn("Spinosad", answer["evidence"][0]["text"])
 
     def test_who_database_resistance_questions_prefer_malaria_threats_audit(self):
         with tempfile.TemporaryDirectory() as tmpdir:

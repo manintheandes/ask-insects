@@ -218,9 +218,10 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
             [
                 "extension/IPM guidance pages",
                 "literature-derived management, resistance, and biocontrol candidate rows",
+                "dedicated susceptibility/resistance evidence rows from extracted facts",
                 "supplement manifests and parsed rows when available",
             ],
-            ["structured susceptibility assay tables", "human-validated biocontrol tables"],
+            ["broader parsed susceptibility assay table coverage", "human-validated biocontrol tables"],
         ),
     ]
     for index, (domain, status, current_sources, missing_sources) in enumerate(specs, start=1):
