@@ -269,14 +269,15 @@ sources:
   - id: drosophila_suzukii_video_atoms
     name: Drosophila suzukii verified video atoms, motion intervals, and trajectory gaps
     source_type: derived_sqlite_source
-    boundary: Derived spotted wing drosophila video intelligence records from indexed Drosophila suzukii repository media, paper-supplement manifests, bounded mirrors, ffprobe metadata, inspectable thumbnails, sampled keyframes, preview clips, frame manifests, cautious derived full-video motion intervals for verified clips, and explicit structured gaps for huge files, unclear licenses, missing downloads, failed downloads, failed probes, failed artifact generation, or missing source trajectory tables
-    query_plane: drosophila_suzukii_indexed_video_records_to_sqlite_video_atoms
+    boundary: Derived spotted wing drosophila video intelligence records from indexed Drosophila suzukii repository media, paper-supplement manifests, bounded mirrors, ffprobe metadata, inspectable thumbnails, sampled keyframes, preview clips, frame manifests, cautious derived full-video motion intervals for verified clips, direct Dryad 10.5061/dryad.8vd762q TIFF frame-archive manifests for SWD-involved copulation videos, and explicit structured gaps for huge files, unclear licenses, missing downloads, blocked Dryad previews, unmirrored frame archives, TIFF sequence decoding, failed artifact generation, or missing source trajectory tables
+    query_plane: drosophila_suzukii_indexed_video_records_and_dryad_frame_archives_to_sqlite_video_atoms
     artifact_dir: artifacts/mosquito-v1
     raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_video_atoms
     ingest_script: scripts/ingest_drosophila_suzukii_video_atoms.py
     input_sources:
       - drosophila_suzukii_deep_sources
       - drosophila_suzukii_extracted_facts
+      - dryad_10_5061_dryad_8vd762q
     lanes:
       - media
       - behavior
@@ -293,6 +294,11 @@ sources:
       - video_artifact_generation_failed
       - video_artifact_tool_missing
       - source_trajectory_tables_not_available_for_swd
+      - dryad_frame_archive_preview_fetch_failed
+      - dryad_frame_archive_binary_not_mirrored
+      - dryad_tiff_frame_sequence_not_decoded_to_video
+      - dryad_frame_archive_motion_rows_not_available
+      - dryad_inner_spreadsheet_not_parsed
     source_contract:
       mirror_or_gap:
         - checksum
@@ -325,6 +331,11 @@ sources:
         - video_license_unclear
         - video_too_large
         - video_download_failed
+        - dryad_frame_archive_preview_fetch_failed
+        - dryad_frame_archive_binary_not_mirrored
+        - dryad_tiff_frame_sequence_not_decoded_to_video
+        - dryad_frame_archive_motion_rows_not_available
+        - dryad_inner_spreadsheet_not_parsed
   - id: drosophila_suzukii_genome_files
     name: Drosophila suzukii NCBI genome GFF and protein files
     source_type: public_ncbi_genome_files

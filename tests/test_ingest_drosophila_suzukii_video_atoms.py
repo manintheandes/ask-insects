@@ -40,6 +40,7 @@ class IngestDrosophilaSuzukiiVideoAtomsTests(unittest.TestCase):
             result = ingest_drosophila_suzukii_video_atoms(
                 artifact_dir=artifact_dir,
                 retrieved_at=RETRIEVED_AT,
+                include_dryad_frame_archives=False,
             )
 
             self.assertTrue(result["ok"])

@@ -159,7 +159,7 @@ python3 -m askinsects ask "what is Drosophila suzukii supplement audit coverage?
 python3 -m askinsects sql "select lane, count(*) as n from records where source='drosophila_suzukii_extracted_facts' group by lane"
 ```
 
-The first moving-image depth layer is `drosophila_suzukii_video_atoms`. It turns indexed SWD repository videos and supplement video locators into queryable video assets, bounded mirrors when license and size allow, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, and explicit gaps when motion rows or binary verification are not available yet.
+The first moving-image depth layer is `drosophila_suzukii_video_atoms`. It turns indexed SWD repository videos and supplement video locators into queryable video assets, bounded mirrors when license and size allow, checksums, byte sizes, ffprobe duration/fps/resolution/codec metadata, thumbnails, keyframes, preview clips, frame manifests, and explicit gaps when motion rows or binary verification are not available yet. It also directly maps Dryad dataset `10.5061/dryad.8vd762q` as SWD-involved copulation TIFF frame-archive evidence, with five queryable frame-archive manifests and structured gaps for blocked preview/download routes, unmirrored archives, TIFF sequence decoding, inner spreadsheet parsing, and missing motion rows.
 
 ```bash
 python3 -m askinsects ingest-drosophila-suzukii-video-atoms --mirror-videos --generate-artifacts --max-video-bytes 750000000

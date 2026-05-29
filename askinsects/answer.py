@@ -1260,6 +1260,15 @@ def _search_queries(question: str) -> list[str]:
             queries.append(f"{' '.join(salient)} GBIF")
         queries.extend(["Aedes aegypti GBIF occurrence", "GBIF occurrence", question])
         return list(dict.fromkeys(queries))
+    if _is_spotted_wing_question(question) and "dryad" in q and any(term in q for term in ("frame", "archive", "copulat", "video", "movie")):
+        return sorted(
+            records,
+            key=lambda record: (
+                0 if record.source == DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID else 1,
+                0 if "video_frame_archive" in f"{record.record_id} {record.title} {record.text}".lower() else 1,
+                0 if record.lane == "media" else 1,
+            ),
+        )
     if "dryad" in q:
         salient = [
             token
@@ -5246,6 +5255,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             continue
         all_records.append(record)
         seen_record_ids.add(record.record_id)
+    if (
+        plan.answer_shape == "media"
+        and _is_spotted_wing_question(plan.question)
+        and "dryad" in plan.question.lower()
+        and any(term in plan.question.lower() for term in ("frame", "archive", "copulat", "video", "movie"))
+    ):
+        for record in _source_records(index, DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID, ["media"], limit=max(limit * 50, 100)):
+            if record.record_id in seen_record_ids:
+                continue
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
 
     named_video_repository = _video_discovery_repository(plan.question) if plan.answer_shape == "media" else None
     if named_video_repository:

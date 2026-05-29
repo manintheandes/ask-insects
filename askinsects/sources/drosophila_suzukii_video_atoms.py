@@ -21,6 +21,13 @@ COMMON_NAME = "spotted wing drosophila"
 INPUT_SOURCES = ("drosophila_suzukii_deep_sources", "drosophila_suzukii_extracted_facts")
 VIDEO_EXTENSIONS = (".mp4", ".mov", ".avi", ".m4v", ".webm", ".mpg", ".mpeg")
 UNCLEAR_LICENSE_MARKERS = ("not supplied", "unknown", "unclear", "not parsed", "missing")
+DRYAD_FRAME_ARCHIVE_DOI = "10.5061/dryad.8vd762q"
+DRYAD_FRAME_ARCHIVE_DATASET_URL = "https://datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.8vd762q"
+DRYAD_FRAME_ARCHIVE_VERSION_URL = "https://datadryad.org/api/v2/versions/9818"
+DRYAD_FRAME_ARCHIVE_FILES_URL = "https://datadryad.org/api/v2/versions/9818/files"
+DRYAD_FRAME_ARCHIVE_LANDING_URL = "https://datadryad.org/dataset/doi:10.5061/dryad.8vd762q"
+DRYAD_FRAME_ARCHIVE_LICENSE = "CC0-1.0"
+DRYAD_SWD_FRAME_ARCHIVE_FILE_IDS = {"41802", "41804", "41799", "41800", "41801"}
 
 
 @dataclass(frozen=True)
@@ -184,6 +191,33 @@ def _default_fetch_video_bytes(url: str, max_bytes: int) -> bytes:
     if len(payload) > max_bytes:
         raise ValueError(f"video_too_large:{len(payload)}")
     return payload
+
+
+def _default_fetch_json(url: str) -> dict[str, object]:
+    request = Request(url, headers={"User-Agent": "AskInsects/0.1 source-plane", "Accept": "application/json"})
+    with urlopen(request, timeout=90) as response:
+        payload = json.loads(response.read().decode("utf-8", "replace"))
+    return payload if isinstance(payload, dict) else {}
+
+
+def _default_fetch_text(url: str) -> str:
+    request = Request(url, headers={"User-Agent": "AskInsects/0.1 source-plane", "Accept": "*/*"})
+    with urlopen(request, timeout=60) as response:
+        return response.read().decode("utf-8", "replace")
+
+
+def _write_json(raw_dir: Path, filename: str, payload: object) -> Path:
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    path = raw_dir / filename
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path
+
+
+def _write_text(raw_dir: Path, filename: str, payload: str) -> Path:
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    path = raw_dir / filename
+    path.write_text(payload, encoding="utf-8")
+    return path
 
 
 def _source_candidates(index: SourceIndex) -> list[DrosophilaSuzukiiVideoCandidate]:
@@ -527,6 +561,229 @@ def _record_for_motion_interval(
     )
 
 
+def _dryad_links(file_payload: dict[str, object], file_id: str) -> tuple[str, str, str]:
+    links = file_payload.get("_links") if isinstance(file_payload.get("_links"), dict) else {}
+    download = links.get("stash:download") if isinstance(links.get("stash:download"), dict) else {}
+    api_download_url = str(download.get("href") or f"/api/v2/files/{file_id}/download")
+    if api_download_url.startswith("/"):
+        api_download_url = f"https://datadryad.org{api_download_url}"
+    file_stream_url = f"https://datadryad.org/downloads/file_stream/{file_id}"
+    preview_url = f"https://datadryad.org/data_file/preview/{file_id}.js"
+    return api_download_url, file_stream_url, preview_url
+
+
+def _dryad_frame_archive_record(
+    file_payload: dict[str, object],
+    *,
+    file_id: str,
+    raw_path: Path,
+    retrieved_at: str,
+    preview_status: str,
+    preview_member_count: int,
+) -> EvidenceRecord:
+    path = str(file_payload.get("path") or f"Dryad file {file_id}")
+    size = int(file_payload.get("size") or 0)
+    digest = str(file_payload.get("digest") or "")
+    description = str(file_payload.get("description") or "")
+    api_download_url, file_stream_url, preview_url = _dryad_links(file_payload, file_id)
+    heterospecific = "Dsub_H243xDsuz" in path
+    text = (
+        f"Dryad SWD-involved TIFF frame archive for {COMMON_NAME}: {path}. "
+        "The source describes video images as 5 frames per second TIFF sequences of copulating individuals. "
+        f"Bytes: {size}. MD5: {digest or 'not supplied'}. Preview status: {preview_status}. "
+        f"Preview member count: {preview_member_count}. "
+        f"Scope: {'heterospecific archive with D. suzukii male' if heterospecific else 'D. suzukii frame archive'}."
+    )
+    return EvidenceRecord(
+        record_id=f"swd:dryad_8vd762q:frame_archive:{file_id}",
+        lane="media",
+        source=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+        title=f"Drosophila suzukii Dryad frame archive {path}",
+        text=text,
+        species=SPECIES,
+        url=DRYAD_FRAME_ARCHIVE_LANDING_URL,
+        media_url=file_stream_url,
+        provenance=Provenance(
+            source_id=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+            locator=f"{raw_path.as_posix()}#files/{file_id}",
+            retrieved_at=retrieved_at,
+            license=DRYAD_FRAME_ARCHIVE_LICENSE,
+            source_url=api_download_url,
+        ),
+        payload={
+            "atom_type": "video_frame_archive",
+            "repository": "Dryad",
+            "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+            "dataset_id": 9777,
+            "version_id": 9818,
+            "file_id": file_id,
+            "file_path": path,
+            "byte_size": size,
+            "md5": digest,
+            "mime_type": file_payload.get("mimeType"),
+            "description": description,
+            "license": DRYAD_FRAME_ARCHIVE_LICENSE,
+            "api_download_url": api_download_url,
+            "file_stream_url": file_stream_url,
+            "preview_url": preview_url,
+            "preview_status": preview_status,
+            "preview_member_count": preview_member_count,
+            "fps_from_description": 5,
+            "behavior_type": "copulation",
+            "life_stage": "adult",
+            "archive_format": "zip",
+            "frame_format": "TIFF",
+            "scope": "heterospecific_d_suzukii_male" if heterospecific else "d_suzukii",
+        },
+    )
+
+
+def _dryad_preview_member_records(
+    *,
+    file_payload: dict[str, object],
+    file_id: str,
+    preview_path: Path,
+    preview_text: str,
+    retrieved_at: str,
+    max_members: int = 25,
+) -> list[EvidenceRecord]:
+    path = str(file_payload.get("path") or f"Dryad file {file_id}")
+    api_download_url, file_stream_url, preview_url = _dryad_links(file_payload, file_id)
+    member_names = list(dict.fromkeys(re.findall(r"[^\"'<>]+?\.(?:tif|tiff|xlsx|txt)", preview_text, flags=re.IGNORECASE)))
+    records: list[EvidenceRecord] = []
+    for ordinal, member_name in enumerate(member_names[:max_members], start=1):
+        atom_type = "video_frame_archive_member"
+        lower = member_name.lower()
+        is_table = lower.endswith(".xlsx")
+        records.append(
+            EvidenceRecord(
+                record_id=f"swd:dryad_8vd762q:frame_archive_member:{file_id}:{ordinal}",
+                lane="media",
+                source=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                title=f"Drosophila suzukii Dryad archive member {member_name}",
+                text=(
+                    f"Preview-listed member of Dryad frame archive {path}: {member_name}. "
+                    f"This is {'an inner spreadsheet candidate' if is_table else 'a TIFF frame/image member'} exposed by the Dryad preview, not a mirrored binary."
+                ),
+                species=SPECIES,
+                url=DRYAD_FRAME_ARCHIVE_LANDING_URL,
+                media_url=file_stream_url,
+                provenance=Provenance(
+                    source_id=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                    locator=f"{preview_path.as_posix()}#member/{ordinal}",
+                    retrieved_at=retrieved_at,
+                    license=DRYAD_FRAME_ARCHIVE_LICENSE,
+                    source_url=preview_url,
+                ),
+                payload={
+                    "atom_type": atom_type,
+                    "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+                    "file_id": file_id,
+                    "archive_file_path": path,
+                    "member_name": member_name,
+                    "member_type": "inner_spreadsheet" if is_table else "tiff_frame",
+                    "api_download_url": api_download_url,
+                    "file_stream_url": file_stream_url,
+                    "preview_url": preview_url,
+                },
+            )
+        )
+    return records
+
+
+def _dryad_frame_archive_records(
+    artifact_dir: Path,
+    *,
+    retrieved_at: str,
+    fetch_json_fn: Callable[[str], dict[str, object]],
+    fetch_text_fn: Callable[[str], str],
+) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
+    raw_dir = artifact_dir / "raw" / "drosophila_suzukii_video_atoms" / "dryad_8vd762q"
+    records: list[EvidenceRecord] = []
+    gaps: list[dict[str, object]] = []
+    try:
+        dataset = fetch_json_fn(DRYAD_FRAME_ARCHIVE_DATASET_URL)
+        _write_json(raw_dir, "dataset.json", dataset)
+        version = fetch_json_fn(DRYAD_FRAME_ARCHIVE_VERSION_URL)
+        _write_json(raw_dir, "version_9818.json", version)
+        files_payload = fetch_json_fn(DRYAD_FRAME_ARCHIVE_FILES_URL)
+        files_path = _write_json(raw_dir, "files_9818.json", files_payload)
+    except Exception as exc:
+        gap = {"source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID, "reason": "dryad_8vd762q_manifest_fetch_failed", "error": str(exc)}
+        gaps.append(gap)
+        records.append(_record_for_gap("dryad_8vd762q_manifest_fetch_failed", retrieved_at=retrieved_at, payload=gap, ordinal=1))
+        return records, gaps
+
+    embedded = files_payload.get("_embedded") if isinstance(files_payload.get("_embedded"), dict) else {}
+    files = embedded.get("stash:files") if isinstance(embedded.get("stash:files"), list) else []
+    for ordinal, file_payload in enumerate(files, start=1):
+        if not isinstance(file_payload, dict):
+            continue
+        links = file_payload.get("_links") if isinstance(file_payload.get("_links"), dict) else {}
+        self_link = links.get("self") if isinstance(links.get("self"), dict) else {}
+        file_id = str(self_link.get("href") or "").rsplit("/", 1)[-1]
+        if not file_id:
+            file_id = str(file_payload.get("id") or ordinal)
+        if file_id not in DRYAD_SWD_FRAME_ARCHIVE_FILE_IDS:
+            continue
+        _, _, preview_url = _dryad_links(file_payload, file_id)
+        preview_status = "not_fetched"
+        preview_member_count = 0
+        preview_path = raw_dir / f"preview_{file_id}.js"
+        try:
+            preview_text = fetch_text_fn(preview_url)
+            preview_path = _write_text(raw_dir, f"preview_{file_id}.js", preview_text)
+            member_records = _dryad_preview_member_records(
+                file_payload=file_payload,
+                file_id=file_id,
+                preview_path=preview_path,
+                preview_text=preview_text,
+                retrieved_at=retrieved_at,
+            )
+            preview_member_count = len(member_records)
+            preview_status = "preview_parsed" if member_records else "preview_fetched_no_members"
+        except Exception as exc:
+            member_records = []
+            preview_status = "preview_fetch_failed"
+            gap = {
+                "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                "reason": "dryad_frame_archive_preview_fetch_failed",
+                "file_id": file_id,
+                "preview_url": preview_url,
+                "error": str(exc),
+            }
+            gaps.append(gap)
+            records.append(_record_for_gap("dryad_frame_archive_preview_fetch_failed", retrieved_at=retrieved_at, payload=gap, ordinal=ordinal))
+        records.append(
+            _dryad_frame_archive_record(
+                file_payload,
+                file_id=file_id,
+                raw_path=files_path,
+                retrieved_at=retrieved_at,
+                preview_status=preview_status,
+                preview_member_count=preview_member_count,
+            )
+        )
+        records.extend(member_records)
+        for reason in (
+            "dryad_frame_archive_binary_not_mirrored",
+            "dryad_tiff_frame_sequence_not_decoded_to_video",
+            "dryad_frame_archive_motion_rows_not_available",
+            "dryad_inner_spreadsheet_not_parsed",
+        ):
+            gap = {
+                "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                "reason": reason,
+                "file_id": file_id,
+                "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+                "file_path": file_payload.get("path"),
+                "byte_size": file_payload.get("size"),
+            }
+            gaps.append(gap)
+            records.append(_record_for_gap(reason, retrieved_at=retrieved_at, payload=gap, ordinal=ordinal))
+    return records, gaps
+
+
 def build_drosophila_suzukii_video_atom_records(
     artifact_dir: Path,
     *,
@@ -539,6 +796,9 @@ def build_drosophila_suzukii_video_atom_records(
     fetch_video_bytes_fn: Callable[[str, int], bytes] | None = None,
     probe_video_file_fn: Callable[[Path], dict[str, object]] | None = None,
     artifact_generator_fn: Callable[[Path, Path, dict[str, object]], dict[str, object]] | None = None,
+    fetch_dryad_json_fn: Callable[[str], dict[str, object]] | None = None,
+    fetch_dryad_text_fn: Callable[[str], str] | None = None,
+    include_dryad_frame_archives: bool = True,
 ) -> DrosophilaSuzukiiVideoAtomsResult:
     artifact_dir = Path(artifact_dir)
     retrieved_at = retrieved_at or utc_now()
@@ -553,8 +813,19 @@ def build_drosophila_suzukii_video_atom_records(
     artifact_count = 0
     motion_row_count = 0
     fetcher = fetch_video_bytes_fn or _default_fetch_video_bytes
+    dryad_json_fetcher = fetch_dryad_json_fn or _default_fetch_json
+    dryad_text_fetcher = fetch_dryad_text_fn or _default_fetch_text
     probe_fn = probe_video_file_fn or probe_video_file
     artifact_fn = artifact_generator_fn or generate_video_artifacts
+    if include_dryad_frame_archives:
+        dryad_records, dryad_gaps = _dryad_frame_archive_records(
+            artifact_dir,
+            retrieved_at=retrieved_at,
+            fetch_json_fn=dryad_json_fetcher,
+            fetch_text_fn=dryad_text_fetcher,
+        )
+        records.extend(dryad_records)
+        gaps.extend(dryad_gaps)
     if not candidates:
         gap = {"source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID, "reason": "swd_video_candidates_not_found"}
         gaps.append(gap)

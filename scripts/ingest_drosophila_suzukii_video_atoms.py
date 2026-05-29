@@ -54,6 +54,7 @@ def ingest_drosophila_suzukii_video_atoms(
     fetch_video_bytes_fn: Callable[[str, int], bytes] | None = None,
     probe_video_file_fn: Callable[[Path], dict[str, object]] | None = None,
     artifact_generator_fn: Callable[[Path, Path, dict[str, object]], dict[str, object]] | None = None,
+    include_dryad_frame_archives: bool = True,
 ) -> dict[str, object]:
     result = build_drosophila_suzukii_video_atom_records(
         artifact_dir,
@@ -66,6 +67,7 @@ def ingest_drosophila_suzukii_video_atoms(
         fetch_video_bytes_fn=fetch_video_bytes_fn,
         probe_video_file_fn=probe_video_file_fn,
         artifact_generator_fn=artifact_generator_fn,
+        include_dryad_frame_archives=include_dryad_frame_archives,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()

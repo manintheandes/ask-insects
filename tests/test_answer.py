@@ -1515,6 +1515,55 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["species"], "Drosophila suzukii")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_video_atoms")
 
+    def test_spotted_wing_dryad_frame_archive_questions_prefer_video_atom_archives(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:video_atom:asset:figshare",
+                        lane="media",
+                        source="drosophila_suzukii_video_atoms",
+                        title="Drosophila suzukii Figshare video atom",
+                        text="Figshare video asset for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-video",
+                        media_url="https://example.org/swd-video.mp4",
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_video_atoms",
+                            locator="raw/drosophila_suzukii_video_atoms/figshare.json#file",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_asset"},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:dryad_8vd762q:frame_archive:41799",
+                        lane="media",
+                        source="drosophila_suzukii_video_atoms",
+                        title="Drosophila suzukii Dryad frame archive Video images of copulating Dsuz_TMUS8-1.zip",
+                        text="Dryad SWD-involved TIFF frame archive for spotted wing drosophila. The source describes video images as 5 frames per second TIFF sequences of copulating individuals.",
+                        species="Drosophila suzukii",
+                        url="https://datadryad.org/dataset/doi:10.5061/dryad.8vd762q",
+                        media_url="https://datadryad.org/downloads/file_stream/41799",
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_video_atoms",
+                            locator="raw/drosophila_suzukii_video_atoms/dryad_8vd762q/files_9818.json#files/41799",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                            license="CC0-1.0",
+                        ),
+                        payload={"atom_type": "video_frame_archive", "file_id": "41799"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii Dryad frame archive copulation video evidence", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd:dryad_8vd762q:frame_archive:41799")
+
     def test_spotted_wing_genomics_questions_use_swd_deep_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

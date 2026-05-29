@@ -211,6 +211,13 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show spotted win
 
 The SWD motion rows are cautious full-video interval rows for verified clips. They make behavior, time range, fps-derived frame range, assay context, stimulus, and confidence queryable, but they still mark `coordinates_available=false` until a real source trajectory table is found and parsed.
 
+The same SWD video-atoms lane also maps Dryad `10.5061/dryad.8vd762q`, which is not ordinary MP4 video. It is SWD-involved copulation evidence stored as large ZIP archives of 5 fps TIFF frame sequences. The default ingest records the five SWD-involved frame archives as queryable media atoms and keeps explicit gaps when Dryad preview/download routes are blocked, the archive is not mirrored, TIFF frames are not decoded to video, inner spreadsheets are not parsed, or motion rows are not available.
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii Dryad frame archive copulation video evidence" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n from record_payloads where source='drosophila_suzukii_video_atoms' group by atom_type order by atom_type"
+```
+
 To add a bounded live GBIF pull:
 
 ```bash
