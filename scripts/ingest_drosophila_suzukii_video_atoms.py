@@ -123,6 +123,7 @@ def ingest_drosophila_suzukii_video_atoms(
     index.replace_source_records(
         DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
         result.records,
+        update_fts=False,
         delete_existing_fts=False,
     )
     gaps = _replace_source_gaps(artifact_dir / "gaps.json", result.gaps)
