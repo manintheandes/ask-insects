@@ -4744,6 +4744,56 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "genomics")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ncbi_gene_orthologs")
 
+    def test_swd_ensembl_questions_prefer_ensembl_metazoa_orthology(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_ncbi_gene_ortholog:108018010:7227:40650:2",
+                        lane="genome_features",
+                        source="drosophila_suzukii_ncbi_gene_orthologs",
+                        title="Drosophila suzukii NCBI Gene ortholog: Dpit47 to Drosophila melanogaster GeneID 40650",
+                        text="NCBI Gene ortholog row for Dpit47.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ncbi_gene_orthologs",
+                            locator="raw/ncbi#line/2",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_ensembl_dmel_homolog:2:FBgn0266518:1",
+                        lane="genome_features",
+                        source="drosophila_suzukii_ensembl_metazoa_orthology",
+                        title="Drosophila suzukii Ensembl Metazoa homolog: Dpit47 to Dmel FBgn0266518",
+                        text="Ensembl Metazoa homolog row links Drosophila suzukii Dpit47 to Drosophila melanogaster gene FBgn0266518 with relationship ortholog_one2one.",
+                        species="Drosophila suzukii",
+                        url="https://metazoa.ensembl.org/Drosophila_melanogaster/Gene/Summary?g=FBgn0266518",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_ensembl_metazoa_orthology",
+                            locator="raw/ensembl/homolog.txt.gz#line/1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "ensembl_metazoa_dmel_homolog", "relationship": "ortholog_one2one"},
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "show Drosophila suzukii Ensembl Dmel homologs for Dpit47",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_ensembl_metazoa_orthology")
+
     def test_biosample_questions_prefer_ncbi_biosamples(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

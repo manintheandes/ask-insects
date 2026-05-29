@@ -122,6 +122,14 @@ python3 -m askinsects ask "show Drosophila suzukii Orco orthologs" --json
 python3 -m askinsects sql "select json_extract(payload_json, '$.partner_tax_id') as partner_tax_id, count(*) as n from record_payloads where source='drosophila_suzukii_ncbi_gene_orthologs' group by partner_tax_id order by n desc limit 10"
 ```
 
+The `drosophila_suzukii_ensembl_metazoa_orthology` lane adds release-pinned Ensembl Metazoa current gene IDs, NCBI GeneID xrefs, and Drosophila melanogaster homolog rows. It also audits Ensembl's stable-ID history tables. In release 62 those history tables exist but are empty, so Ask Insects stores explicit history-empty gaps instead of pretending historical ID mappings are covered.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-ensembl-metazoa-orthology
+python3 -m askinsects ask "show Drosophila suzukii Ensembl Dmel homologs for Dpit47" --json
+python3 -m askinsects sql "select json_extract(payload_json, '$.relationship') as relationship, count(*) as n from record_payloads where source='drosophila_suzukii_ensembl_metazoa_orthology' and json_extract(payload_json, '$.atom_type')='ensembl_metazoa_dmel_homolog' group by relationship order by n desc"
+```
+
 The `drosophila_suzukii_extension_guidance` lane promotes the dedicated extension-guidance gap into page-grain management records. It fetches public university extension/IPM and SWD-management guidance pages, saves raw HTML, and indexes organization, region, topic terms, guidance type, source URL, and raw locator.
 
 ```bash

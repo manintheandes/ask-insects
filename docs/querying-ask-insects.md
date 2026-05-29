@@ -148,6 +148,16 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane uses NCBI Gene's public FTP ortholog table. It is source-grade orthology metadata and GeneID mapping, not Ensembl stable-ID history or a new comparative-genomics computation.
 
+To add Ensembl Metazoa release 62 current IDs, NCBI GeneID xrefs, and Drosophila melanogaster homolog rows:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-ensembl-metazoa-orthology
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii Ensembl Dmel homologs for Dpit47" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.relationship') as relationship, count(*) as n from record_payloads where source='drosophila_suzukii_ensembl_metazoa_orthology' and json_extract(payload_json, '$.atom_type')='ensembl_metazoa_dmel_homolog' group by relationship order by n desc"
+```
+
+This lane also audits the release 62 `stable_id_event` and `gene_archive` tables. For this species those tables are present but empty, so stable-ID history is represented as an explicit source gap rather than as covered data.
+
 To ingest dedicated spotted wing drosophila extension/IPM guidance:
 
 ```bash

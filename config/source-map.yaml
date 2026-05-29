@@ -68,6 +68,7 @@ sources:
         - drosophila_suzukii_ncbi_marker_review
         - drosophila_suzukii_ncbi_snp_variation
         - drosophila_suzukii_ncbi_gene_orthologs
+        - drosophila_suzukii_ensembl_metazoa_orthology
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
@@ -463,6 +464,40 @@ sources:
         - swd_ncbi_gene_orthologs_download_failed
         - swd_ncbi_gene_orthologs_limit_applied
         - swd_ncbi_gene_orthologs_no_swd_rows
+  - id: drosophila_suzukii_ensembl_metazoa_orthology
+    name: Drosophila suzukii Ensembl Metazoa current IDs and Dmel homologs
+    source_type: public_ensembl_genomes_ftp
+    boundary: Ensembl Metazoa release 62 current gene identity, NCBI GeneID xrefs, Drosophila melanogaster homolog rows, and stable-ID history table audit for Drosophila suzukii assembly GCA_037355615.1. This is release-pinned Ensembl/BioMart evidence, not NCBI Gene orthology, a full compara database parser, a synteny reanalysis, or computed expression evidence.
+    query_plane: ensembl_metazoa_release_62_biomart_and_core_mysql_to_sqlite_genome_feature_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_ensembl_metazoa_orthology
+    ingest_script: scripts/ingest_drosophila_suzukii_ensembl_metazoa_orthology.py
+    input_sources:
+      - ensembl_metazoa_release_62_species_page
+      - ensembl_metazoa_release_62_biomart_gene_main
+      - ensembl_metazoa_release_62_biomart_dmel_homolog
+      - ensembl_metazoa_release_62_biomart_geneid_xref
+      - ensembl_metazoa_release_62_core_stable_id_history_tables
+    lanes:
+      - genome_features
+    provenance_required: true
+    live_fetch: opt_in_bounded_release_pinned
+    source_contract:
+      parsed_fields:
+        - ensembl_release
+        - gene_key
+        - stable_id
+        - display_label
+        - geneid
+        - dmel_gene_stable_id
+        - dmel_protein_stable_id
+        - relationship
+        - is_high_confidence
+        - line_number
+      structured_gaps:
+        - swd_ensembl_metazoa_download_failed
+        - swd_ensembl_metazoa_stable_id_event_empty
+        - swd_ensembl_metazoa_gene_archive_empty
   - id: drosophila_suzukii_occurrence_ecology
     name: Drosophila suzukii occurrence ecology from indexed observations
     source_type: derived_sqlite_source

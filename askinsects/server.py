@@ -3658,6 +3658,24 @@ def ingest_drosophila_suzukii_ncbi_gene_orthologs_hosted(
     return response
 
 
+def ingest_drosophila_suzukii_ensembl_metazoa_orthology_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_ensembl_metazoa_orthology import ingest_drosophila_suzukii_ensembl_metazoa_orthology
+
+    response = ingest_drosophila_suzukii_ensembl_metazoa_orthology(
+        artifact_dir=artifact_dir,
+        max_download_bytes=int(payload.get("max_download_bytes", 50_000_000)),
+        max_rows_per_file=int(payload["max_rows_per_file"]) if payload.get("max_rows_per_file") else None,
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_drosophila_suzukii_extension_guidance_hosted(
     payload: dict[str, object],
     *,
@@ -3979,6 +3997,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-ncbi-gene-orthologs":
             result = ingest_drosophila_suzukii_ncbi_gene_orthologs_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-ensembl-metazoa-orthology":
+            result = ingest_drosophila_suzukii_ensembl_metazoa_orthology_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-extension-guidance":

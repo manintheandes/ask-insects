@@ -23,6 +23,7 @@ from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRA
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_gene_orthologs import DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID
+from .sources.drosophila_suzukii_ensembl_metazoa_orthology import DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_marker_review import DROSOPHILA_SUZUKII_NCBI_MARKER_REVIEW_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_nucleotide import DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_snp_variation import DROSOPHILA_SUZUKII_NCBI_SNP_VARIATION_SOURCE_ID
@@ -1955,12 +1956,38 @@ def _wants_swd_gene_orthologs(question: str) -> bool:
             "homologs",
             "current id",
             "current-id",
+            "stable id",
+            "stable-id",
             "geneid",
             "gene id",
+            "ensembl",
+            "metazoa",
+            "biomart",
+            "fbgn",
+            "fbpp",
             "drosophila melanogaster",
             "melanogaster",
         )
     )
+
+
+def _wants_swd_ensembl_metazoa(question: str) -> bool:
+    q = question.lower()
+    return any(term in q for term in ("ensembl", "metazoa", "fbgn", "fbpp", "stable id", "stable-id", "biomart"))
+
+
+def _swd_ensembl_atom_type(record: EvidenceRecord) -> str:
+    atom_type = str((record.payload or {}).get("atom_type") or "")
+    if atom_type:
+        return atom_type
+    text = f"{record.record_id} {record.title} {record.text}".lower()
+    if "history_gap" in text or "history table" in text or "stable-id event table is empty" in text or "gene archive table is empty" in text:
+        return "ensembl_metazoa_stable_id_history_gap"
+    if "dmel_homolog" in text or "homolog row" in text or "ortholog_one" in text or "ortholog_many" in text or "fbgn" in text:
+        return "ensembl_metazoa_dmel_homolog"
+    if "geneid xref" in text:
+        return "ensembl_metazoa_geneid_xref"
+    return "ensembl_metazoa_current_gene" if record.source == DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID else ""
 
 
 def _swd_gene_ortholog_search_terms(question: str) -> list[str]:
@@ -1983,6 +2010,13 @@ def _swd_gene_ortholog_search_terms(question: str) -> list[str]:
         "geneids",
         "current",
         "mapping",
+        "ensembl",
+        "metazoa",
+        "biomart",
+        "dmel",
+        "stable",
+        "history",
+        "historical",
         "id",
         "ids",
         "to",
@@ -2069,12 +2103,28 @@ def _prioritize_genomics_records(question: str, records: list[EvidenceRecord]) -
                 ),
             )
         if _wants_swd_gene_orthologs(question):
+            query_terms = {term.lower() for term in _swd_gene_ortholog_search_terms(question)}
             return sorted(
                 records,
                 key=lambda record: (
-                    0 if record.source == DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID else 1,
+                    0
+                    if _wants_swd_ensembl_metazoa(question)
+                    and record.source == DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID
+                    else 1
+                    if record.source == DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID
+                    else 2,
                     0 if record.lane == "genome_features" else 1,
-                    0 if _record_matches_any_token(record, {"orco", "odorant", "receptor"}) else 1,
+                    0
+                    if _wants_swd_ensembl_metazoa(question)
+                    and any(term in q for term in ("stable id", "stable-id", "history", "historical"))
+                    and _swd_ensembl_atom_type(record) == "ensembl_metazoa_stable_id_history_gap"
+                    else 1,
+                    0
+                    if _wants_swd_ensembl_metazoa(question)
+                    and any(term in q for term in ("homolog", "homologs", "ortholog", "orthology", "dmel", "drosophila melanogaster"))
+                    and _swd_ensembl_atom_type(record) == "ensembl_metazoa_dmel_homolog"
+                    else 1,
+                    0 if query_terms and _record_matches_any_token(record, query_terms) else 1,
                 ),
             )
         if _wants_swd_ncbi_nucleotide(question):
@@ -4790,17 +4840,25 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     all_records.append(record)
                     seen_record_ids.add(record.record_id)
             if _wants_swd_gene_orthologs(plan.question):
+                wanted_sources = (
+                    [DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID]
+                    if _wants_swd_ensembl_metazoa(plan.question)
+                    else [DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID]
+                )
                 for search_query in _swd_gene_ortholog_search_terms(plan.question):
                     for record in index.search(search_query, lane="genome_features", limit=max(limit * 20, 100)):
-                        if record.source != DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID or record.record_id in seen_record_ids:
+                        if record.source not in wanted_sources or record.record_id in seen_record_ids:
                             continue
                         all_records.append(record)
                         seen_record_ids.add(record.record_id)
-                for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID, ["genome_features"], limit=max(limit * 1000, 5000)):
-                    if record.record_id in seen_record_ids:
-                        continue
-                    all_records.append(record)
-                    seen_record_ids.add(record.record_id)
+                fallback_limit = max(limit * 20000, 50000) if _wants_swd_ensembl_metazoa(plan.question) else max(limit * 1000, 5000)
+                for source_id in wanted_sources:
+                    source_fetcher = _source_records_with_payload if source_id == DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID else _source_records
+                    for record in source_fetcher(index, source_id, ["genome_features"], limit=fallback_limit):
+                        if record.record_id in seen_record_ids:
+                            continue
+                        all_records.append(record)
+                        seen_record_ids.add(record.record_id)
             if _wants_swd_ncbi_nucleotide(plan.question):
                 for record in _source_records(index, DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID, ["dna_barcodes"], limit=max(limit * 5, 25)):
                     if record.record_id in seen_record_ids:
