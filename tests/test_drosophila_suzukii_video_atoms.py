@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from io import BytesIO
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
+from zipfile import ZipFile
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
@@ -13,6 +16,25 @@ from askinsects.sources.drosophila_suzukii_video_atoms import (
 
 
 RETRIEVED_AT = "2026-05-28T00:00:00Z"
+
+
+def make_test_tiff_bytes(color: tuple[int, int, int]) -> bytes:
+    try:
+        from PIL import Image
+    except ImportError as exc:
+        raise unittest.SkipTest("Pillow is required for TIFF keyframe fixture") from exc
+    payload = BytesIO()
+    Image.new("RGB", (8, 8), color).save(payload, format="TIFF")
+    return payload.getvalue()
+
+
+def make_dryad_frame_archive_zip() -> bytes:
+    payload = BytesIO()
+    with ZipFile(payload, "w") as archive:
+        archive.writestr("movie0001.tiff", make_test_tiff_bytes((255, 0, 0)))
+        archive.writestr("movie0002.tiff", make_test_tiff_bytes((0, 255, 0)))
+        archive.writestr("Descriptions of video image files.xlsx", b"fake spreadsheet bytes")
+    return payload.getvalue()
 
 
 def write_swd_video_fixture(artifact_dir: Path, *, license_text: str = "CC BY 4.0") -> None:
@@ -192,6 +214,184 @@ class DrosophilaSuzukiiVideoAtomsTests(unittest.TestCase):
         self.assertEqual(archive.payload["file_id"], "41799")
         self.assertEqual(archive.payload["fps_from_description"], 5)
         self.assertEqual(archive.payload["preview_status"], "preview_parsed")
+
+    def test_dryad_frame_archive_can_be_mirrored_and_artifacted(self):
+        archive_zip = make_dryad_frame_archive_zip()
+        dataset_payload = {"id": 9777, "identifier": "doi:10.5061/dryad.8vd762q"}
+        version_payload = {"id": 9818}
+        files_payload = {
+            "_embedded": {
+                "stash:files": [
+                    {
+                        "_links": {
+                            "self": {"href": "/api/v2/files/41801"},
+                            "stash:download": {"href": "/api/v2/files/41801/download"},
+                        },
+                        "path": "Video images of copulating Dsuz_TMUS8-3.zip",
+                        "size": len(archive_zip),
+                        "mimeType": "application/zip",
+                        "digest": hashlib.md5(archive_zip).hexdigest(),
+                        "digestType": "md5",
+                        "description": "Contains video images (5 frames per second TIFF images) of copulating individuals.",
+                    }
+                ]
+            }
+        }
+
+        def fake_json(url: str) -> dict[str, object]:
+            if url.endswith("dryad.8vd762q"):
+                return dataset_payload
+            if url.endswith("versions/9818"):
+                return version_payload
+            if url.endswith("versions/9818/files"):
+                return files_payload
+            raise AssertionError(url)
+
+        def fake_text(url: str) -> str:
+            raise ValueError("preview unavailable in test")
+
+        def fake_fetch(url: str, max_bytes: int) -> bytes:
+            self.assertIn("/downloads/file_stream/41801", url)
+            self.assertGreaterEqual(max_bytes, len(archive_zip))
+            return archive_zip
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            SourceIndex(artifact_dir / "source_index.sqlite").initialize()
+            result = build_drosophila_suzukii_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                generate_artifacts=True,
+                fetch_video_bytes_fn=fake_fetch,
+                fetch_dryad_json_fn=fake_json,
+                fetch_dryad_text_fn=fake_text,
+            )
+
+            atom_types = [record.payload.get("atom_type") for record in result.records if record.payload]
+            self.assertIn("video_frame_archive", atom_types)
+            self.assertIn("video_frame_manifest", atom_types)
+            self.assertIn("video_keyframe", atom_types)
+            self.assertIn("video_thumbnail", atom_types)
+            self.assertGreaterEqual(atom_types.count("video_frame_archive_member"), 3)
+            archive = [record for record in result.records if record.payload and record.payload.get("atom_type") == "video_frame_archive"][0]
+            self.assertEqual(archive.payload["file_id"], "41801")
+            self.assertEqual(archive.payload["verification_status"], "verified_frame_archive")
+            self.assertEqual(archive.payload["sha256"], hashlib.sha256(archive_zip).hexdigest())
+            self.assertEqual(archive.payload["checksum_status"], "source_md5_match")
+            self.assertEqual(archive.payload["tiff_frame_count"], 2)
+            self.assertEqual(archive.payload["inner_spreadsheet_count"], 1)
+            self.assertTrue(str(archive.payload["mirror_path"]).startswith("raw/drosophila_suzukii_video_atoms/mirrors/"))
+            manifest_path = artifact_dir / str(archive.payload["frame_manifest_path"])
+            self.assertTrue(manifest_path.exists())
+            keyframe = [record for record in result.records if record.payload and record.payload.get("atom_type") == "video_keyframe"][0]
+            self.assertTrue((artifact_dir / str(keyframe.payload["artifact_path"])).exists())
+            reasons = [gap["reason"] for gap in result.gaps]
+            self.assertNotIn("dryad_frame_archive_binary_not_mirrored", reasons)
+            self.assertIn("dryad_tiff_frame_sequence_not_decoded_to_video", reasons)
+            self.assertIn("dryad_frame_archive_motion_rows_not_available", reasons)
+
+    def test_dryad_frame_archive_download_gap_preserves_attempted_urls(self):
+        dataset_payload = {"id": 9777, "identifier": "doi:10.5061/dryad.8vd762q"}
+        version_payload = {"id": 9818}
+        files_payload = {
+            "_embedded": {
+                "stash:files": [
+                    {
+                        "_links": {
+                            "self": {"href": "/api/v2/files/41801"},
+                            "stash:download": {"href": "/api/v2/files/41801/download"},
+                        },
+                        "path": "Video images of copulating Dsuz_TMUS8-3.zip",
+                        "size": 100,
+                        "mimeType": "application/zip",
+                        "digest": "test-md5",
+                    }
+                ]
+            }
+        }
+
+        def fake_json(url: str) -> dict[str, object]:
+            if url.endswith("dryad.8vd762q"):
+                return dataset_payload
+            if url.endswith("versions/9818"):
+                return version_payload
+            if url.endswith("versions/9818/files"):
+                return files_payload
+            raise AssertionError(url)
+
+        def fail_fetch(url: str, max_bytes: int) -> bytes:
+            raise ValueError("blocked")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            SourceIndex(artifact_dir / "source_index.sqlite").initialize()
+            result = build_drosophila_suzukii_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                fetch_video_bytes_fn=fail_fetch,
+                fetch_dryad_json_fn=fake_json,
+                fetch_dryad_text_fn=lambda url: "",
+            )
+
+        gap = [gap for gap in result.gaps if gap["reason"] == "dryad_frame_archive_download_failed"][0]
+        self.assertEqual(gap["file_id"], "41801")
+        self.assertIn("/downloads/file_stream/41801", gap["file_stream_url"])
+        self.assertIn("/api/v2/files/41801/download", gap["api_download_url"])
+        self.assertIn("blocked", gap["error"])
+
+    def test_dryad_frame_archive_too_large_keeps_structured_gap(self):
+        dataset_payload = {"id": 9777, "identifier": "doi:10.5061/dryad.8vd762q"}
+        version_payload = {"id": 9818}
+        files_payload = {
+            "_embedded": {
+                "stash:files": [
+                    {
+                        "_links": {
+                            "self": {"href": "/api/v2/files/41799"},
+                            "stash:download": {"href": "/api/v2/files/41799/download"},
+                        },
+                        "path": "Video images of copulating Dsuz_TMUS8-1.zip",
+                        "size": 3284572313,
+                        "mimeType": "application/zip",
+                        "digest": "c55a904f9cad48bd3ed1a73f675c3faf",
+                        "description": "Contains video images (5 frames per second TIFF images) of copulating individuals.",
+                    }
+                ]
+            }
+        }
+
+        def fake_json(url: str) -> dict[str, object]:
+            if url.endswith("dryad.8vd762q"):
+                return dataset_payload
+            if url.endswith("versions/9818"):
+                return version_payload
+            if url.endswith("versions/9818/files"):
+                return files_payload
+            raise AssertionError(url)
+
+        def fake_fetch(url: str, max_bytes: int) -> bytes:
+            raise AssertionError("too-large archive should not be downloaded")
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            SourceIndex(artifact_dir / "source_index.sqlite").initialize()
+            result = build_drosophila_suzukii_video_atom_records(
+                artifact_dir,
+                retrieved_at=RETRIEVED_AT,
+                mirror_videos=True,
+                max_video_bytes=750_000_000,
+                fetch_video_bytes_fn=fake_fetch,
+                fetch_dryad_json_fn=fake_json,
+                fetch_dryad_text_fn=lambda url: "",
+            )
+
+        reasons = [gap["reason"] for gap in result.gaps]
+        self.assertIn("dryad_frame_archive_too_large_to_mirror", reasons)
+        self.assertIn("dryad_frame_archive_binary_not_mirrored", reasons)
+        archive = [record for record in result.records if record.payload and record.payload.get("atom_type") == "video_frame_archive"][0]
+        self.assertEqual(archive.payload["verification_status"], "manifest_only_too_large")
 
     def test_mirror_probe_and_artifact_rows_are_queryable(self):
         with tempfile.TemporaryDirectory() as tmpdir:

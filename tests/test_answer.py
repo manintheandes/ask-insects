@@ -1634,6 +1634,56 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["species"], "Drosophila suzukii")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_video_atoms")
 
+    def test_swd_abbreviation_video_gap_questions_use_swd_video_atoms(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:video_atom:gap:dryad:1",
+                        lane="media",
+                        source="drosophila_suzukii_video_atoms",
+                        title="Drosophila suzukii video source gap: dryad_frame_archive_download_failed",
+                        text="Ask Insects video gap for SWD: Dryad archive download failed with HTTP 403 and 401 route attempts.",
+                        species="Drosophila suzukii",
+                        url="https://datadryad.org/dataset/doi:10.5061/dryad.8vd762q",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_video_atoms",
+                            locator="raw/drosophila_suzukii_video_atoms/dryad_8vd762q/files_9818.json#files/41801",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                            license="CC0-1.0",
+                        ),
+                        payload={"atom_type": "video_gap", "reason": "dryad_frame_archive_download_failed", "file_id": "41801"},
+                    ),
+                    EvidenceRecord(
+                        record_id="video_atom:gap:aedes:1",
+                        lane="media",
+                        source="aedes_video_atoms",
+                        title="Aedes aegypti video source gap",
+                        text="Aedes video gap.",
+                        species="Aedes aegypti",
+                        url="https://example.org/aedes",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_video_atoms",
+                            locator="raw/video_atoms/gap.json#1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "video_gap", "reason": "video_download_failed"},
+                    ),
+                ]
+            )
+
+            answer = answer_question("what SWD video sources are still missing or blocked?", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "media")
+            self.assertEqual(answer["evidence"][0]["species"], "Drosophila suzukii")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_video_atoms")
+
     def test_spotted_wing_dryad_frame_archive_questions_prefer_video_atom_archives(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

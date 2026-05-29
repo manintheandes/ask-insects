@@ -344,6 +344,10 @@ sources:
       - source_trajectory_tables_not_available_for_swd
       - dryad_frame_archive_preview_fetch_failed
       - dryad_frame_archive_binary_not_mirrored
+      - dryad_frame_archive_too_large_to_mirror
+      - dryad_frame_archive_download_failed
+      - dryad_frame_archive_zip_parse_failed
+      - dryad_frame_archive_keyframe_generation_failed
       - dryad_tiff_frame_sequence_not_decoded_to_video
       - dryad_frame_archive_motion_rows_not_available
       - dryad_inner_spreadsheet_not_parsed
@@ -381,6 +385,10 @@ sources:
         - video_download_failed
         - dryad_frame_archive_preview_fetch_failed
         - dryad_frame_archive_binary_not_mirrored
+        - dryad_frame_archive_too_large_to_mirror
+        - dryad_frame_archive_download_failed
+        - dryad_frame_archive_zip_parse_failed
+        - dryad_frame_archive_keyframe_generation_failed
         - dryad_tiff_frame_sequence_not_decoded_to_video
         - dryad_frame_archive_motion_rows_not_available
         - dryad_inner_spreadsheet_not_parsed

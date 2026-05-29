@@ -308,7 +308,7 @@ def _wants_video_atoms(question: str) -> bool:
 
 def _wants_video_gaps(question: str) -> bool:
     q = question.lower()
-    return _wants_video_atoms(question) and any(term in q for term in ("gap", "gaps", "failed", "failure", "license", "too large"))
+    return _wants_video_atoms(question) and any(term in q for term in ("gap", "gaps", "failed", "failure", "license", "too large", "missing", "blocked"))
 
 
 def _video_focus_tokens(question: str) -> set[str]:
@@ -1772,7 +1772,7 @@ def _asks_for_still_images(question: str) -> bool:
 
 
 def _requested_species(question: str) -> str | None:
-    if any(term in question.lower() for term in ("spotted wing drosophila", "spotted-wing drosophila", "drosophila suzukii")):
+    if any(term in question.lower() for term in ("spotted wing drosophila", "spotted-wing drosophila", "drosophila suzukii", "swd")):
         return "Drosophila suzukii"
     species_match = re.search(r"\b(Aedes|Culex|Anopheles|Drosophila)\s+[a-z]+\b", question, flags=re.IGNORECASE)
     if not species_match:

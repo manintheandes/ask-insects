@@ -3,12 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import hashlib
+from io import BytesIO
 import json
 from pathlib import Path
 import re
 from typing import Callable, Iterable
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+from zipfile import BadZipFile, ZipFile
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
@@ -90,6 +92,10 @@ def _sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _sha256_bytes(payload: bytes) -> str:
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _looks_like_video(*values: object) -> bool:
@@ -580,6 +586,7 @@ def _dryad_frame_archive_record(
     retrieved_at: str,
     preview_status: str,
     preview_member_count: int,
+    mirror_payload: dict[str, object] | None = None,
 ) -> EvidenceRecord:
     path = str(file_payload.get("path") or f"Dryad file {file_id}")
     size = int(file_payload.get("size") or 0)
@@ -587,11 +594,14 @@ def _dryad_frame_archive_record(
     description = str(file_payload.get("description") or "")
     api_download_url, file_stream_url, preview_url = _dryad_links(file_payload, file_id)
     heterospecific = "Dsub_H243xDsuz" in path
+    mirror_payload = mirror_payload or {}
+    verification_status = str(mirror_payload.get("verification_status") or "manifest_only")
     text = (
         f"Dryad SWD-involved TIFF frame archive for {COMMON_NAME}: {path}. "
         "The source describes video images as 5 frames per second TIFF sequences of copulating individuals. "
         f"Bytes: {size}. MD5: {digest or 'not supplied'}. Preview status: {preview_status}. "
         f"Preview member count: {preview_member_count}. "
+        f"Verification status: {verification_status}. "
         f"Scope: {'heterospecific archive with D. suzukii male' if heterospecific else 'D. suzukii frame archive'}."
     )
     return EvidenceRecord(
@@ -628,12 +638,14 @@ def _dryad_frame_archive_record(
             "preview_url": preview_url,
             "preview_status": preview_status,
             "preview_member_count": preview_member_count,
+            "verification_status": verification_status,
             "fps_from_description": 5,
             "behavior_type": "copulation",
             "life_stage": "adult",
             "archive_format": "zip",
             "frame_format": "TIFF",
             "scope": "heterospecific_d_suzukii_male" if heterospecific else "d_suzukii",
+            **mirror_payload,
         },
     )
 
@@ -691,12 +703,364 @@ def _dryad_preview_member_records(
     return records
 
 
+def _archive_member_type(member_name: str) -> str | None:
+    lower = member_name.lower()
+    if lower.endswith((".tif", ".tiff")):
+        return "tiff_frame"
+    if lower.endswith((".xlsx", ".xls", ".csv", ".tsv")):
+        return "inner_spreadsheet"
+    if lower.endswith(".txt"):
+        return "text_metadata"
+    return None
+
+
+def _dryad_zip_member_records(
+    *,
+    file_payload: dict[str, object],
+    file_id: str,
+    manifest_path: Path,
+    members: list[dict[str, object]],
+    retrieved_at: str,
+    max_members: int = 50,
+) -> list[EvidenceRecord]:
+    path = str(file_payload.get("path") or f"Dryad file {file_id}")
+    api_download_url, file_stream_url, _ = _dryad_links(file_payload, file_id)
+    records: list[EvidenceRecord] = []
+    for ordinal, member in enumerate(members[:max_members], start=1):
+        member_name = str(member.get("name") or f"member/{ordinal}")
+        member_type = str(member.get("member_type") or "archive_member")
+        records.append(
+            EvidenceRecord(
+                record_id=f"swd:dryad_8vd762q:frame_archive_member_zip:{file_id}:{ordinal}",
+                lane="media",
+                source=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                title=f"Drosophila suzukii mirrored Dryad archive member {member_name}",
+                text=(
+                    f"ZIP-listed member of mirrored Dryad frame archive {path}: {member_name}. "
+                    f"Member type: {member_type}. Bytes: {member.get('file_size', 'not supplied')}."
+                ),
+                species=SPECIES,
+                url=DRYAD_FRAME_ARCHIVE_LANDING_URL,
+                media_url=file_stream_url,
+                provenance=Provenance(
+                    source_id=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                    locator=f"{manifest_path.as_posix()}#members/{ordinal}",
+                    retrieved_at=retrieved_at,
+                    license=DRYAD_FRAME_ARCHIVE_LICENSE,
+                    source_url=api_download_url,
+                ),
+                payload={
+                    "atom_type": "video_frame_archive_member",
+                    "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+                    "file_id": file_id,
+                    "archive_file_path": path,
+                    "member_name": member_name,
+                    "member_type": member_type,
+                    "file_size": member.get("file_size"),
+                    "compress_size": member.get("compress_size"),
+                    "crc": member.get("crc"),
+                    "source_manifest_path": manifest_path.as_posix(),
+                    "api_download_url": api_download_url,
+                    "file_stream_url": file_stream_url,
+                },
+            )
+        )
+    return records
+
+
+def _try_write_frame_jpeg(frame_bytes: bytes, output_path: Path) -> bool:
+    try:
+        from PIL import Image
+    except ImportError:
+        return False
+    try:
+        with Image.open(BytesIO(frame_bytes)) as image:
+            image.convert("RGB").save(output_path, format="JPEG", quality=88)
+        return True
+    except Exception:
+        return False
+
+
+def _dryad_archive_artifact_records(
+    archive_record: EvidenceRecord,
+    artifact_payload: dict[str, object],
+    *,
+    retrieved_at: str,
+) -> list[EvidenceRecord]:
+    records: list[EvidenceRecord] = []
+    specs: list[tuple[str, str, object]] = [
+        ("video_thumbnail", "thumbnail_path", artifact_payload.get("thumbnail_path")),
+        ("video_frame_manifest", "frame_manifest_path", artifact_payload.get("frame_manifest_path")),
+    ]
+    for index, path in enumerate(artifact_payload.get("keyframe_paths") or [], start=1):
+        specs.append(("video_keyframe", f"keyframe_paths/{index}", path))
+    for atom_type, payload_key, path_value in specs:
+        if not path_value:
+            continue
+        rel_path = str(path_value)
+        records.append(
+            EvidenceRecord(
+                record_id=f"swd:dryad_8vd762q:{atom_type}:{_safe_id(archive_record.record_id)}:{_digest(payload_key, rel_path)}",
+                lane="media",
+                source=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                title=f"Drosophila suzukii Dryad archive {atom_type.replace('_', ' ')}",
+                text=f"Inspectable {COMMON_NAME} frame-archive artifact derived from {archive_record.record_id}: {rel_path}.",
+                species=SPECIES,
+                url=archive_record.url,
+                media_url=rel_path,
+                provenance=Provenance(
+                    source_id=DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                    locator=rel_path,
+                    retrieved_at=retrieved_at,
+                    license=archive_record.provenance.license,
+                    source_url=archive_record.media_url,
+                ),
+                payload={
+                    "atom_type": atom_type,
+                    "source_video_asset_id": archive_record.record_id,
+                    "source_frame_archive_id": archive_record.record_id,
+                    "artifact_path": rel_path,
+                    "artifact_payload_key": payload_key,
+                    "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+                },
+            )
+        )
+    return records
+
+
+def _inspect_dryad_frame_archive_zip(
+    file_payload: dict[str, object],
+    *,
+    file_id: str,
+    artifact_dir: Path,
+    raw_dir: Path,
+    retrieved_at: str,
+    max_video_bytes: int,
+    mirror_videos: bool,
+    generate_artifacts: bool,
+    fetch_video_bytes_fn: Callable[[str, int], bytes],
+) -> tuple[dict[str, object], list[EvidenceRecord], list[dict[str, object]]]:
+    path = str(file_payload.get("path") or f"Dryad file {file_id}")
+    size = int(file_payload.get("size") or 0)
+    api_download_url, file_stream_url, _ = _dryad_links(file_payload, file_id)
+    mirror_payload: dict[str, object] = {}
+    records: list[EvidenceRecord] = []
+    gaps: list[dict[str, object]] = []
+    if not mirror_videos:
+        return mirror_payload, records, gaps
+    if size > max_video_bytes:
+        gap = {
+            "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+            "reason": "dryad_frame_archive_too_large_to_mirror",
+            "file_id": file_id,
+            "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+            "file_path": path,
+            "byte_size": size,
+            "max_video_bytes": max_video_bytes,
+        }
+        gaps.append(gap)
+        records.append(_record_for_gap("dryad_frame_archive_too_large_to_mirror", retrieved_at=retrieved_at, payload=gap, ordinal=int(file_id) if file_id.isdigit() else 1))
+        mirror_payload["verification_status"] = "manifest_only_too_large"
+        return mirror_payload, records, gaps
+
+    mirror_dir = artifact_dir / "raw" / "drosophila_suzukii_video_atoms" / "mirrors"
+    mirror_dir.mkdir(parents=True, exist_ok=True)
+    mirror_path = mirror_dir / f"swd:dryad_8vd762q:frame_archive:{file_id}_{_digest(file_stream_url)}.zip"
+    try:
+        if mirror_path.exists() and mirror_path.stat().st_size > 0:
+            archive_bytes = mirror_path.read_bytes()
+        else:
+            errors: list[str] = []
+            archive_bytes: bytes | None = None
+            for download_url in (file_stream_url, api_download_url):
+                try:
+                    archive_bytes = fetch_video_bytes_fn(download_url, max_video_bytes)
+                    break
+                except Exception as exc:
+                    errors.append(f"{download_url}: {exc}")
+            if archive_bytes is None:
+                raise ValueError("; ".join(errors) or "download_failed")
+            if len(archive_bytes) > max_video_bytes:
+                raise ValueError(f"video_too_large:{len(archive_bytes)}")
+            mirror_path.write_bytes(archive_bytes)
+    except Exception as exc:
+        reason = "dryad_frame_archive_download_failed"
+        if str(exc).startswith("video_too_large:"):
+            reason = "dryad_frame_archive_too_large_to_mirror"
+        gap = {
+            "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+            "reason": reason,
+            "file_id": file_id,
+            "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+            "file_path": path,
+            "byte_size": size,
+            "file_stream_url": file_stream_url,
+            "api_download_url": api_download_url,
+            "error": str(exc),
+        }
+        gaps.append(gap)
+        records.append(_record_for_gap(reason, retrieved_at=retrieved_at, payload=gap, ordinal=int(file_id) if file_id.isdigit() else 1))
+        mirror_payload["verification_status"] = f"gapped_{reason}"
+        return mirror_payload, records, gaps
+
+    sha256 = _sha256_bytes(archive_bytes)
+    md5 = hashlib.md5(archive_bytes).hexdigest()
+    source_md5 = str(file_payload.get("digest") or "")
+    checksum_status = "source_md5_not_supplied"
+    if source_md5:
+        checksum_status = "source_md5_match" if md5.lower() == source_md5.lower() else "source_md5_mismatch"
+    mirror_rel_path = _normalize_artifact_path(mirror_path.as_posix(), artifact_dir)
+    try:
+        with ZipFile(BytesIO(archive_bytes)) as archive:
+            members: list[dict[str, object]] = []
+            tiff_names: list[str] = []
+            spreadsheet_count = 0
+            for info in archive.infolist():
+                if info.is_dir():
+                    continue
+                member_type = _archive_member_type(info.filename)
+                if not member_type:
+                    continue
+                if member_type == "tiff_frame":
+                    tiff_names.append(info.filename)
+                if member_type == "inner_spreadsheet":
+                    spreadsheet_count += 1
+                members.append(
+                    {
+                        "name": info.filename,
+                        "member_type": member_type,
+                        "file_size": info.file_size,
+                        "compress_size": info.compress_size,
+                        "crc": info.CRC,
+                    }
+                )
+            manifest_dir = raw_dir / "frame_manifests"
+            manifest_dir.mkdir(parents=True, exist_ok=True)
+            keyframe_dir = raw_dir / "keyframes" / _safe_id(file_id)
+            keyframe_dir.mkdir(parents=True, exist_ok=True)
+            keyframe_paths: list[str] = []
+            sample_names = tiff_names[:3] if tiff_names else []
+            if generate_artifacts:
+                for sample_index, member_name in enumerate(sample_names, start=1):
+                    frame_bytes = archive.read(member_name)
+                    jpeg_path = keyframe_dir / f"keyframe_{sample_index:06d}.jpg"
+                    if _try_write_frame_jpeg(frame_bytes, jpeg_path):
+                        keyframe_paths.append(_normalize_artifact_path(jpeg_path.as_posix(), artifact_dir))
+            thumbnail_path = keyframe_paths[0] if keyframe_paths else None
+            manifest_payload = {
+                "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+                "file_id": file_id,
+                "file_path": path,
+                "download_url": file_stream_url,
+                "api_download_url": api_download_url,
+                "license": DRYAD_FRAME_ARCHIVE_LICENSE,
+                "mirror_path": mirror_rel_path,
+                "sha256": sha256,
+                "md5": md5,
+                "source_md5": source_md5,
+                "checksum_status": checksum_status,
+                "byte_size": len(archive_bytes),
+                "source_byte_size": size,
+                "member_count": len(members),
+                "tiff_frame_count": len(tiff_names),
+                "inner_spreadsheet_count": spreadsheet_count,
+                "sampled_tiff_members": sample_names,
+                "keyframes": keyframe_paths,
+                "members": members[:500],
+            }
+            manifest_path = _write_json(manifest_dir, f"dryad_8vd762q_{file_id}_frames.json", manifest_payload)
+            manifest_rel_path = _normalize_artifact_path(manifest_path.as_posix(), artifact_dir)
+            mirror_payload.update(
+                {
+                    "verification_status": "verified_frame_archive",
+                    "mirror_path": mirror_rel_path,
+                    "sha256": sha256,
+                    "md5": md5,
+                    "source_md5": source_md5,
+                    "checksum_status": checksum_status,
+                    "mirrored_byte_size": len(archive_bytes),
+                    "zip_member_count": len(members),
+                    "tiff_frame_count": len(tiff_names),
+                    "inner_spreadsheet_count": spreadsheet_count,
+                    "frame_manifest_path": manifest_rel_path,
+                    "sample_keyframe_count": len(keyframe_paths),
+                }
+            )
+            records.extend(
+                _dryad_zip_member_records(
+                    file_payload=file_payload,
+                    file_id=file_id,
+                    manifest_path=manifest_path,
+                    members=members,
+                    retrieved_at=retrieved_at,
+                )
+            )
+            archive_record = _dryad_frame_archive_record(
+                file_payload,
+                file_id=file_id,
+                raw_path=manifest_path,
+                retrieved_at=retrieved_at,
+                preview_status="zip_manifest_parsed",
+                preview_member_count=len(members),
+                mirror_payload=mirror_payload,
+            )
+            records.extend(
+                _dryad_archive_artifact_records(
+                    archive_record,
+                    {
+                        "thumbnail_path": thumbnail_path,
+                        "keyframe_paths": keyframe_paths,
+                        "frame_manifest_path": manifest_rel_path,
+                    },
+                    retrieved_at=retrieved_at,
+                )
+            )
+            if generate_artifacts and sample_names and not keyframe_paths:
+                gap = {
+                    "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+                    "reason": "dryad_frame_archive_keyframe_generation_failed",
+                    "file_id": file_id,
+                    "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+                    "file_path": path,
+                }
+                gaps.append(gap)
+                records.append(_record_for_gap("dryad_frame_archive_keyframe_generation_failed", retrieved_at=retrieved_at, payload=gap, ordinal=int(file_id) if file_id.isdigit() else 1))
+    except BadZipFile as exc:
+        gap = {
+            "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
+            "reason": "dryad_frame_archive_zip_parse_failed",
+            "file_id": file_id,
+            "dataset_doi": DRYAD_FRAME_ARCHIVE_DOI,
+            "file_path": path,
+            "mirror_path": mirror_rel_path,
+            "error": str(exc),
+        }
+        gaps.append(gap)
+        records.append(_record_for_gap("dryad_frame_archive_zip_parse_failed", retrieved_at=retrieved_at, payload=gap, ordinal=int(file_id) if file_id.isdigit() else 1))
+        mirror_payload.update(
+            {
+                "verification_status": "mirrored_zip_parse_failed",
+                "mirror_path": mirror_rel_path,
+                "sha256": sha256,
+                "md5": md5,
+                "source_md5": source_md5,
+                "checksum_status": checksum_status,
+                "mirrored_byte_size": len(archive_bytes),
+            }
+        )
+    return mirror_payload, records, gaps
+
+
 def _dryad_frame_archive_records(
     artifact_dir: Path,
     *,
     retrieved_at: str,
     fetch_json_fn: Callable[[str], dict[str, object]],
     fetch_text_fn: Callable[[str], str],
+    fetch_video_bytes_fn: Callable[[str, int], bytes],
+    max_video_bytes: int,
+    mirror_videos: bool,
+    generate_artifacts: bool,
 ) -> tuple[list[EvidenceRecord], list[dict[str, object]]]:
     raw_dir = artifact_dir / "raw" / "drosophila_suzukii_video_atoms" / "dryad_8vd762q"
     records: list[EvidenceRecord] = []
@@ -754,6 +1118,19 @@ def _dryad_frame_archive_records(
             }
             gaps.append(gap)
             records.append(_record_for_gap("dryad_frame_archive_preview_fetch_failed", retrieved_at=retrieved_at, payload=gap, ordinal=ordinal))
+        mirror_payload, mirror_records, mirror_gaps = _inspect_dryad_frame_archive_zip(
+            file_payload,
+            file_id=file_id,
+            artifact_dir=artifact_dir,
+            raw_dir=raw_dir,
+            retrieved_at=retrieved_at,
+            max_video_bytes=max_video_bytes,
+            mirror_videos=mirror_videos,
+            generate_artifacts=generate_artifacts,
+            fetch_video_bytes_fn=fetch_video_bytes_fn,
+        )
+        records.extend(mirror_records)
+        gaps.extend(mirror_gaps)
         records.append(
             _dryad_frame_archive_record(
                 file_payload,
@@ -762,15 +1139,18 @@ def _dryad_frame_archive_records(
                 retrieved_at=retrieved_at,
                 preview_status=preview_status,
                 preview_member_count=preview_member_count,
+                mirror_payload=mirror_payload,
             )
         )
         records.extend(member_records)
-        for reason in (
-            "dryad_frame_archive_binary_not_mirrored",
+        reasons = [
             "dryad_tiff_frame_sequence_not_decoded_to_video",
             "dryad_frame_archive_motion_rows_not_available",
             "dryad_inner_spreadsheet_not_parsed",
-        ):
+        ]
+        if mirror_payload.get("verification_status") != "verified_frame_archive":
+            reasons.insert(0, "dryad_frame_archive_binary_not_mirrored")
+        for reason in reasons:
             gap = {
                 "source": DROSOPHILA_SUZUKII_VIDEO_ATOMS_SOURCE_ID,
                 "reason": reason,
@@ -823,6 +1203,10 @@ def build_drosophila_suzukii_video_atom_records(
             retrieved_at=retrieved_at,
             fetch_json_fn=dryad_json_fetcher,
             fetch_text_fn=dryad_text_fetcher,
+            fetch_video_bytes_fn=fetcher,
+            max_video_bytes=max_video_bytes,
+            mirror_videos=mirror_videos,
+            generate_artifacts=generate_artifacts,
         )
         records.extend(dryad_records)
         gaps.extend(dryad_gaps)
