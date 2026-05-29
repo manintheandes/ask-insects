@@ -55,11 +55,62 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
+def _int_or_none(value: object) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _source_count_from_payload(payload: object) -> int:
+    if not isinstance(payload, dict):
+        return 0
+    source_counts = payload.get("source_counts")
+    if isinstance(source_counts, dict):
+        count = _int_or_none(source_counts.get(DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID))
+        if count is not None:
+            return count
+    source_payload = payload.get(DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID)
+    if isinstance(source_payload, dict):
+        count = _int_or_none(source_payload.get("record_count"))
+        if count is not None:
+            return count
+    return 0
+
+
+def _metadata_counts(artifact_dir: Path, installed_record_count: int) -> tuple[dict[str, int], dict[str, int], int, int]:
+    status_payload = _read_json(artifact_dir / "source_status.json", {})
+    if not isinstance(status_payload, dict):
+        status_payload = {}
+    previous_source_count = _source_count_from_payload(status_payload)
+    existing_source_counts = status_payload.get("source_counts")
+    existing_lanes = status_payload.get("lanes")
+    previous_record_count = _int_or_none(status_payload.get("record_count"))
+    previous_species_count = _int_or_none(status_payload.get("species_count"))
+    if not isinstance(existing_source_counts, dict) or previous_record_count is None or previous_species_count is None:
+        index = SourceIndex(artifact_dir / "source_index.sqlite")
+        summary = index.summary()
+        source_counts = _source_counts(index)
+        return source_counts, summary["lanes"], summary["record_count"], summary["species_count"]
+
+    source_counts = {str(source): int(count) for source, count in existing_source_counts.items()}
+    source_counts[DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID] = installed_record_count
+
+    lanes: dict[str, int]
+    if isinstance(existing_lanes, dict):
+        lanes = {str(lane): int(count) for lane, count in existing_lanes.items()}
+        lanes["ecology"] = max(0, int(lanes.get("ecology", 0)) - previous_source_count + installed_record_count)
+    else:
+        lanes = SourceIndex(artifact_dir / "source_index.sqlite").summary()["lanes"]
+
+    record_count = max(0, previous_record_count - previous_source_count + installed_record_count)
+    return source_counts, lanes, record_count, previous_species_count
+
+
 def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
-    summary = index.summary()
     installed_record_count = _source_count(index)
-    source_counts = _source_counts(index)
+    source_counts, lanes, record_count, species_count = _metadata_counts(artifact_dir, installed_record_count)
     source_payload = {
         "source": DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID,
         "record_count": installed_record_count,
@@ -89,9 +140,9 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool 
                 sources.append(DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID)
         payload["sources"] = sources
         payload["source_counts"] = source_counts
-        payload["record_count"] = summary["record_count"]
-        payload["species_count"] = summary["species_count"]
-        payload["lanes"] = summary["lanes"]
+        payload["record_count"] = record_count
+        payload["species_count"] = species_count
+        payload["lanes"] = lanes
         payload["gap_count"] = gap_count
         payload[DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID] = source_payload
         write_json(path, payload)
@@ -106,7 +157,7 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool 
         "preserved_existing": preserved_existing,
         "source_counts": source_counts,
         "artifact_dir": artifact_dir.as_posix(),
-        "lanes": summary["lanes"],
+        "lanes": lanes,
     }
 
 
