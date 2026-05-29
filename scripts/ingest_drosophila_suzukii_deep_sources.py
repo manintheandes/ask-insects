@@ -25,7 +25,7 @@ def _gap_key(gap: dict[str, object]) -> tuple[object, ...]:
         gap.get("source"),
         gap.get("lane"),
         gap.get("reason"),
-        gap.get("record_id") or gap.get("dataset_record_id") or gap.get("source_record_id") or gap.get("article_id"),
+        gap.get("record_id"),
         gap.get("locator"),
     )
 
