@@ -349,6 +349,22 @@ def plan_question(question: str) -> QueryPlan:
         )
     ) or re.search(r"\b[A-Z][0-9]{2,4}[A-Z]\b", question):
         return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
+    if is_spotted_wing and any(
+        term in q
+        for term in (
+            "drosomon",
+            "trap capture",
+            "trap captures",
+            "trap-capture",
+            "trap deployment",
+            "trap deployments",
+            "trap-deployment",
+            "field monitoring",
+            "monitoring dataset",
+            "monitoring evidence",
+        )
+    ):
+        return QueryPlan(question, "ecology", ("ecology", "observations", "literature", "taxonomy"), question)
     if is_spotted_wing and not any(
         term in q
         for term in (

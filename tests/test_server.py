@@ -952,6 +952,38 @@ class ServerTests(unittest.TestCase):
                 retrieved_at="2026-05-29T00:00:00Z",
             )
 
+    def test_ingest_drosophila_suzukii_jki_drosomon_trap_captures_route_passes_options(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch(
+                "scripts.ingest_drosophila_suzukii_jki_drosomon_trap_captures.ingest_drosophila_suzukii_jki_drosomon_trap_captures"
+            ) as ingest:
+                ingest.return_value = {
+                    "ok": True,
+                    "source": "drosophila_suzukii_jki_drosomon_trap_captures",
+                    "record_count": 5,
+                }
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/drosophila-suzukii-jki-drosomon-trap-captures",
+                    {
+                        "retrieved_at": "2026-05-29T00:00:00Z",
+                    },
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertEqual(response.payload["source"], "drosophila_suzukii_jki_drosomon_trap_captures")
+            self.assertEqual(response.payload["activated_artifact_dir"], str(artifact_dir))
+            ingest.assert_called_once_with(
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-05-29T00:00:00Z",
+            )
+
     def test_ingest_drosophila_suzukii_ncbi_gene_orthologs_route_passes_options(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

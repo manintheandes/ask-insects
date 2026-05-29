@@ -75,6 +75,7 @@ sources:
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
+        - drosophila_suzukii_jki_drosomon_trap_captures
   - id: drosophila_suzukii_deep_sources
     name: Drosophila suzukii deep public source expansion
     source_type: public_api_composite
@@ -122,6 +123,7 @@ sources:
         - drosophila_suzukii_video_atoms
         - drosophila_suzukii_dryad_table_rows
         - drosophila_suzukii_occurrence_ecology
+        - drosophila_suzukii_jki_drosomon_trap_captures
         - drosophila_suzukii_literature_fulltext
         - drosophila_suzukii_pubmed_literature
         - drosophila_suzukii_ncbi_snp_variation
@@ -671,6 +673,42 @@ sources:
         - decimalLongitude
         - place_guess
         - ofvs
+  - id: drosophila_suzukii_jki_drosomon_trap_captures
+    name: Drosophila suzukii JKI DrosoMon trap-capture manifests
+    source_type: public_registry_with_blocked_file
+    boundary: JKI DrosoMon 7-year Drosophila suzukii monitoring dataset in southwest Germany, preserving the data.europa/OpenAgrar registry record, captures_data.csv and parameter-description file manifests, article DOI 10.3390/insects9040125, reported trap/deployment/trap-day/adult-capture counts, and explicit gaps while the OpenAgrar CSV URL returns an HTML security check instead of row data. This is source-grade dataset and file-manifest evidence, not individual trap/date row coverage until captures_data.csv is fetched and parsed.
+    query_plane: data_europa_openagrar_registry_to_sqlite_ecology_manifest_and_gap_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_jki_drosomon_trap_captures
+    ingest_script: scripts/ingest_drosophila_suzukii_jki_drosomon_trap_captures.py
+    input_sources:
+      - data_europa_openagrar_mods_00041381
+      - openagrar_derivate_00016480_captures_data_csv
+    lanes:
+      - ecology
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - dataset_id
+        - article_doi
+        - title
+        - geography
+        - monitoring_start_year
+        - monitoring_end
+        - trap_count_reported
+        - deployment_count_reported
+        - trap_days_reported
+        - adult_captures_reported
+        - distribution_id
+        - access_url
+        - media_type
+        - license
+      structured_gaps:
+        - openagrar_security_check_blocks_csv_download
+        - jki_trap_deployment_rows_not_queryable
+        - jki_drosomon_metadata_fetch_failed
+        - jki_drosomon_csv_fetch_failed
   - id: drosophila_suzukii_extension_guidance
     name: Drosophila suzukii extension and IPM guidance
     source_type: public_web_guidance

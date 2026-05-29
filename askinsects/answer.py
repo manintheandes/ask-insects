@@ -23,6 +23,7 @@ from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRA
 from .sources.drosophila_suzukii_geo_expression_matrices import DROSOPHILA_SUZUKII_GEO_EXPRESSION_MATRICES_SOURCE_ID
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
+from .sources.drosophila_suzukii_jki_drosomon_trap_captures import DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID
 from .sources.drosophila_suzukii_figshare_mk_selection import DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID
 from .sources.drosophila_suzukii_ncbi_gene_orthologs import DROSOPHILA_SUZUKII_NCBI_GENE_ORTHOLOGS_SOURCE_ID
 from .sources.drosophila_suzukii_ensembl_metazoa_orthology import DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID
@@ -3424,14 +3425,18 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
         def swd_score(record: EvidenceRecord) -> tuple[object, ...]:
             payload = record.payload or {}
             aggregation_type = str(payload.get("aggregation_type") or "")
+            atom_type = str(payload.get("atom_type") or "")
             observation_count = int(payload.get("observation_count") or 0)
             if wants_month:
                 aggregation_rank = 0 if aggregation_type == "country_month_summary" else 1
             elif wants_country:
                 aggregation_rank = 0 if aggregation_type == "country_summary" else 1
+            elif any(term in q for term in ("trap", "traps", "capture", "captures", "drosomon", "jki", "monitoring")):
+                aggregation_rank = 0 if atom_type in {"jki_drosomon_trap_dataset", "jki_drosomon_file_manifest", "source_gap"} else 1
             else:
                 aggregation_rank = 0 if aggregation_type in {"country_summary", "country_month_summary", "habitat_summary"} else 1
             return (
+                0 if record.source == DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID and "trap" in q else 1,
                 0 if record.source == "drosophila_suzukii_occurrence_ecology" else 1,
                 aggregation_rank,
                 -observation_count,
@@ -5434,6 +5439,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     if plan.answer_shape == "ecology":
         q = plan.question.lower()
         if requested_species and requested_species.lower() == "drosophila suzukii":
+            if any(term in q for term in ("trap", "traps", "capture", "captures", "drosomon", "jki", "monitoring")):
+                for record in _source_records_with_payload(
+                    index,
+                    DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID,
+                    ["ecology"],
+                    limit=limit,
+                ):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
             for record in _source_records_with_payload(
                 index,
                 DROSOPHILA_SUZUKII_OCCURRENCE_ECOLOGY_SOURCE_ID,

@@ -178,6 +178,16 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane treats extension guidance as page-grain management evidence. It keeps the raw HTML locator and source URL for each page, but does not claim structured susceptibility assay rows or human-validated biocontrol outcomes.
 
+To ingest JKI DrosoMon trap-capture monitoring evidence for spotted wing drosophila:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-jki-drosomon-trap-captures
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii trap capture monitoring evidence" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n from record_payloads where source='drosophila_suzukii_jki_drosomon_trap_captures' group by atom_type"
+```
+
+This lane preserves the data.europa/OpenAgrar registry record, file manifests, article DOI, license, and reported dataset scale. It also records the current OpenAgrar security-check blockage as a queryable gap, so Ask Insects can distinguish dataset-level monitoring evidence from individual trap-deployment rows that are not parsed yet.
+
 To make spotted wing drosophila video evidence inspectable:
 
 ```bash

@@ -137,6 +137,13 @@ python3 -m askinsects ingest-drosophila-suzukii-extension-guidance
 python3 -m askinsects ask "show Drosophila suzukii extension IPM guidance" --json
 ```
 
+The `drosophila_suzukii_jki_drosomon_trap_captures` lane adds source-grade field-monitoring evidence for SWD. It indexes the data.europa/OpenAgrar record for the 7-year JKI DrosoMon trap-capture dataset in southwest Germany, including reported scale (100 traps, 9,967 trap deployments, 116,602 trap-days, and 756,717 adult captures), file manifests, article DOI, license, and explicit gaps while the OpenAgrar CSV URL returns a security-check page instead of row data.
+
+```bash
+python3 -m askinsects ingest-drosophila-suzukii-jki-drosomon-trap-captures
+python3 -m askinsects ask "show Drosophila suzukii trap capture monitoring evidence" --json
+```
+
 The first Aedes-depth literature gate for spotted wing drosophila is `drosophila_suzukii_extracted_facts`. It audits every indexed SWD paper for supplements, preserves supplement manifests, parses supported public supplement tables when opted in, and emits source-backed candidate rows for behavior, crop damage, management, resistance, biocontrol, ecology, and genomics.
 
 ```bash

@@ -448,6 +448,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("what crop damage evidence exists for spotted wing drosophila?").answer_shape, "crop_damage")
         self.assertEqual(plan_question("show Drosophila suzukii pest management evidence").answer_shape, "management")
         self.assertEqual(plan_question("show Drosophila suzukii extension IPM guidance").answer_shape, "management")
+        self.assertEqual(plan_question("show Drosophila suzukii trap capture monitoring evidence").answer_shape, "ecology")
         self.assertEqual(plan_question("show Drosophila suzukii biocontrol parasitoid evidence").answer_shape, "biocontrol")
         self.assertEqual(plan_question("show Drosophila suzukii nuclear marker review").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
@@ -1750,6 +1751,58 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "ecology")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_occurrence_ecology")
             self.assertEqual(answer["evidence"][0]["record_id"], "swd_occurrence_ecology:country_month:United_States_of_America:09")
+
+    def test_spotted_wing_trap_questions_prefer_jki_drosomon_monitoring_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_jki_drosomon_trap_captures:dataset:openagrar_mods_00041381",
+                        lane="ecology",
+                        source="drosophila_suzukii_jki_drosomon_trap_captures",
+                        title="JKI DrosoMon SWD trap-capture dataset",
+                        text="JKI DrosoMon trap-capture monitoring dataset for Drosophila suzukii. Reported 9967 trap-deployment records and 756717 captured adults.",
+                        species="Drosophila suzukii",
+                        url="https://www.openagrar.de/receive/openagrar_mods_00041381",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_jki_drosomon_trap_captures",
+                            locator="raw/drosophila_suzukii_jki_drosomon_trap_captures/data_europa_dataset.json#result",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "jki_drosomon_trap_dataset",
+                            "deployment_count_reported": 9967,
+                            "adult_captures_reported": 756717,
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_occurrence_ecology:country:Germany",
+                        lane="ecology",
+                        source="drosophila_suzukii_occurrence_ecology",
+                        title="Drosophila suzukii occurrence ecology in Germany",
+                        text="Drosophila suzukii occurrence ecology country summary for Germany.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-germany",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_occurrence_ecology",
+                            locator="source_index.sqlite#swd-observation-ecology/country/Germany",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={"aggregation_type": "country_summary", "observation_count": 200},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii trap capture monitoring evidence", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "ecology")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_jki_drosomon_trap_captures")
 
     def test_dryad_video_questions_prefer_dryad_behavior_video_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
