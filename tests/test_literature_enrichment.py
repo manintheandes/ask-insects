@@ -3,6 +3,7 @@ import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
@@ -62,6 +63,17 @@ def seed_record(
 
 
 class LiteratureEnrichmentTests(unittest.TestCase):
+    def test_pdftotext_uses_path_executable(self) -> None:
+        from scripts.enrich_literature_index import pdftotext
+
+        with patch("scripts.enrich_literature_index.shutil.which", return_value="/usr/bin/pdftotext"):
+            completed = MagicMock(stdout="converted pdf text")
+            with patch("scripts.enrich_literature_index.subprocess.run", return_value=completed) as run:
+                self.assertEqual(pdftotext(Path("/tmp/paper.pdf")), "converted pdf text")
+
+        run.assert_called_once()
+        self.assertEqual(run.call_args.args[0][0], "/usr/bin/pdftotext")
+
     def read_payload(self, artifact_dir: Path, record_id: str) -> dict[str, object]:
         conn = sqlite3.connect(artifact_dir / "source_index.sqlite")
         try:

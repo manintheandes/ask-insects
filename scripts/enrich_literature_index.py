@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -101,8 +102,11 @@ def fetch_url_bytes(url: str, timeout: float = 10.0, max_bytes: int = 60_000_000
 
 
 def pdftotext(pdf_path: Path, timeout: float = 20.0) -> str:
+    executable = shutil.which("pdftotext")
+    if executable is None:
+        raise RuntimeError("pdftotext is not installed or not on PATH")
     result = subprocess.run(
-        ["/opt/homebrew/bin/pdftotext", "-layout", pdf_path.as_posix(), "-"],
+        [executable, "-layout", pdf_path.as_posix(), "-"],
         capture_output=True,
         text=True,
         check=True,
