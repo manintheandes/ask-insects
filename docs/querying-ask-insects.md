@@ -41,6 +41,18 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search behavior "Dros
 
 The SWD deep-source Dryad sweep indexes both dataset records and file-manifest records. File rows preserve dataset DOI, file path, MIME type, byte size, checksum, download URL, and raw Dryad API locator; video or archive files use `media`, while table and other data files use `behavior`.
 
+To parse public Dryad preview tables from those SWD file manifests:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-dryad-table-rows \
+  --max-table-files 50 \
+  --max-table-rows-per-file 500
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search behavior "Drosophila suzukii Dryad table row"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n from record_payloads where source='drosophila_suzukii_dryad_table_rows' group by atom_type"
+```
+
+This lane uses Dryad's public preview tables when direct file downloads require a bearer token. Parsed rows are queryable, and each preview-used case keeps a structured gap so the provenance is honest.
+
 To parse public NCBI genome files for the main SWD assembly:
 
 ```bash

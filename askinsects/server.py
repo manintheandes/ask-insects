@@ -3167,6 +3167,46 @@ def ingest_drosophila_suzukii_video_atoms_staged(
     return response
 
 
+def ingest_drosophila_suzukii_dryad_table_rows_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_dryad_table_rows import ingest_drosophila_suzukii_dryad_table_rows
+
+    retrieved_at = payload.get("retrieved_at")
+    if retrieved_at is not None and not isinstance(retrieved_at, str):
+        raise ValueError("retrieved_at must be a string")
+    max_table_files = int(payload.get("max_table_files") or 50)
+    max_table_rows_per_file = int(payload.get("max_table_rows_per_file") or 500)
+    if max_table_files < 1:
+        raise ValueError("max_table_files must be positive")
+    if max_table_rows_per_file < 1:
+        raise ValueError("max_table_rows_per_file must be positive")
+    staging = artifact_dir.parent / f".{artifact_dir.name}.drosophila-suzukii-dryad-table-rows-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_drosophila_suzukii_dryad_table_rows(
+            artifact_dir=staging,
+            retrieved_at=retrieved_at,
+            max_table_files=max_table_files,
+            max_table_rows_per_file=max_table_rows_per_file,
+        )
+        response = rewrite_artifact_references(staging, artifact_dir, result, source="drosophila_suzukii_dryad_table_rows")
+        activate_source_staging(staging, artifact_dir, Path("raw") / "drosophila_suzukii_dryad_table_rows")
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
 def _payload_bool(payload: dict[str, object], key: str, default: bool = False) -> bool:
     value = payload.get(key)
     if value is None:
@@ -3815,6 +3855,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-video-atoms":
             result = ingest_drosophila_suzukii_video_atoms_staged(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-dryad-table-rows":
+            result = ingest_drosophila_suzukii_dryad_table_rows_staged(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/aedes-olfaction-literature":

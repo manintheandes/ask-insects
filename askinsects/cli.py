@@ -388,6 +388,11 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_video_atoms.add_argument("--allow-unclear-license", action="store_true")
     ingest_drosophila_suzukii_video_atoms.add_argument("--allowed-licenses")
 
+    ingest_drosophila_suzukii_dryad_table_rows = sub.add_parser("ingest-drosophila-suzukii-dryad-table-rows")
+    ingest_drosophila_suzukii_dryad_table_rows.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_dryad_table_rows.add_argument("--max-table-files", type=int, default=50)
+    ingest_drosophila_suzukii_dryad_table_rows.add_argument("--max-table-rows-per-file", type=int, default=500)
+
     ingest_image_atoms = sub.add_parser("ingest-image-atoms")
     ingest_image_atoms.add_argument("--hosted", action="store_true")
     ingest_image_atoms.add_argument("--mirror-images", action="store_true")
@@ -1377,6 +1382,27 @@ def main(argv: list[str] | None = None) -> int:
                 "generate_artifacts": args.generate_artifacts,
                 "allow_unclear_license": args.allow_unclear_license,
                 "allowed_licenses": allowed_licenses,
+            },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-dryad-table-rows":
+        if not args.hosted:
+            from scripts.ingest_drosophila_suzukii_dryad_table_rows import ingest_drosophila_suzukii_dryad_table_rows
+
+            payload = ingest_drosophila_suzukii_dryad_table_rows(
+                artifact_dir=artifact_dir,
+                max_table_files=args.max_table_files,
+                max_table_rows_per_file=args.max_table_rows_per_file,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/drosophila-suzukii-dryad-table-rows",
+            {
+                "max_table_files": args.max_table_files,
+                "max_table_rows_per_file": args.max_table_rows_per_file,
             },
             timeout=7200,
         )

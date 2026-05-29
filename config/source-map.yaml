@@ -111,8 +111,34 @@ sources:
         - drosophila_suzukii_genome_files
         - drosophila_suzukii_extracted_facts
         - drosophila_suzukii_video_atoms
+        - drosophila_suzukii_dryad_table_rows
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_literature_fulltext
+  - id: drosophila_suzukii_dryad_table_rows
+    name: Drosophila suzukii Dryad preview table rows
+    source_type: derived_sqlite_source
+    boundary: Row-level spotted wing drosophila Dryad table evidence parsed from public Dryad preview tables exposed by indexed drosophila_suzukii_deep_sources file manifests, with explicit gaps when preview IDs are missing, previews cannot be parsed, direct downloads are blocked, or table-file limits apply
+    query_plane: drosophila_suzukii_deep_sources_dryad_file_manifests_to_preview_table_sheet_and_row_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_dryad_table_rows
+    ingest_script: scripts/ingest_drosophila_suzukii_dryad_table_rows.py
+    input_sources:
+      - drosophila_suzukii_deep_sources
+      - dryad_file_manifest
+      - dryad_public_preview
+    lanes:
+      - behavior
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      source_grade_now:
+        - dryad_public_preview_table_sheet_records
+        - dryad_public_preview_table_row_records
+        - direct_download_blocked_preview_used_gap_records
+        - preview_fetch_or_parse_gap_records
+      not_claimed:
+        - full_private_or_token_required_dryad_downloads
+        - row-level parsing for non-tabular previews
   - id: drosophila_suzukii_literature_fulltext
     name: Drosophila suzukii legal literature full-text units
     source_type: derived_sqlite_fulltext_source

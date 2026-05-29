@@ -733,6 +733,39 @@ class ServerTests(unittest.TestCase):
             self.assertGreaterEqual(counts[("drosophila_suzukii_video_atoms", "media")], 2)
             self.assertFalse((artifact_dir.parent / ".mosquito-v1.drosophila-suzukii-video-atoms-staging").exists())
 
+    def test_ingest_drosophila_suzukii_dryad_table_rows_route_installs_rows(self):
+        from tests.test_drosophila_suzukii_dryad_table_rows import PREVIEW, write_dryad_manifest_fixture
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            write_dryad_manifest_fixture(artifact_dir)
+
+            with mock.patch(
+                "askinsects.sources.drosophila_suzukii_dryad_table_rows._default_fetch_preview_text",
+                return_value=PREVIEW,
+            ):
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/drosophila-suzukii-dryad-table-rows",
+                    {"max_table_files": 1, "max_table_rows_per_file": 10},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            self.assertEqual(response.status, 200)
+            self.assertTrue(response.payload["ok"])
+            self.assertTrue(response.payload["staged"])
+            self.assertEqual(response.payload["table_row_count"], 2)
+            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
+                "select source, lane, count(*) as n from records where source='drosophila_suzukii_dryad_table_rows' group by source, lane",
+                limit=20,
+            )
+            counts = {(row["source"], row["lane"]): int(row["n"]) for row in rows}
+            self.assertGreaterEqual(counts[("drosophila_suzukii_dryad_table_rows", "behavior")], 3)
+            self.assertFalse((artifact_dir.parent / ".mosquito-v1.drosophila-suzukii-dryad-table-rows-staging").exists())
+
     def test_ingest_aedes_olfaction_literature_route_passes_options(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
