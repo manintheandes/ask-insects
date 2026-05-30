@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.mendeley_behavior_media import (
     DEFAULT_MENDELEY_DATASETS,
@@ -43,12 +44,14 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
     source_payload = {
         "source": MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "requested_datasets": result.requested_datasets,
         "dataset_count": result.dataset_count,
         "folder_count": result.folder_count,
@@ -92,7 +95,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload["mendeley_behavior_media"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
+        "preserved_existing": preserved_existing,
         "source": MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID,
         "record_count": len(result.records),
         "dataset_count": result.dataset_count,
@@ -146,8 +150,12 @@ def ingest_mendeley_behavior_media(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, result.records)
+    persist_source_gaps(index, MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    preserved_existing = refresh_failed and _source_counts(index).get(MENDELEY_BEHAVIOR_MEDIA_SOURCE_ID, 0) > 0
+    return _update_metadata(artifact_dir, result, retrieved, ok=not refresh_failed, preserved_existing=preserved_existing)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -52,6 +52,13 @@ class IngestWhoDengueSurveillanceTests(unittest.TestCase):
             self.assertIn('"fully_parsed": false', status)
             gaps = (artifact_dir / "gaps.json").read_text(encoding="utf-8")
             self.assertIn("who_dengue_dashboard_export_not_machine_readable", gaps)
+            # Gaps are also persisted as queryable source_gap records, not just gaps.json.
+            gap_records = index.sql(
+                "select count(*) as n from record_payloads "
+                "where source='aedes_who_dengue_surveillance' "
+                "and json_extract(payload_json, '$.atom_type')='source_gap'"
+            )
+            self.assertGreaterEqual(gap_records[0]["n"], 1)
 
 
 if __name__ == "__main__":

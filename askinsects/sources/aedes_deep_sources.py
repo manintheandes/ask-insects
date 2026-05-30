@@ -320,21 +320,26 @@ def _compendium_records(csv_bytes: bytes, raw_path: Path, retrieved_at: str, sou
         lon = _row_get(row, "longitude", "lon", "Long", "X")
         year = _row_get(row, "year", "YEAR", "Year")
         status = _row_get(row, "status", "presence", "Occurrence")
-        species = _row_get(row, "species", "SPECIES", "ScientificName", "VECTOR") or "Aedes aegypti"
+        # Mixed-species source: the Kraemer compendium covers BOTH Ae. aegypti and
+        # Ae. albopictus. Do NOT fabricate a species default — keep the row's own
+        # species column when present, otherwise leave it unknown (None). Row text
+        # passing _is_aegypti_row is search-term evidence, not a species label.
+        species = _row_get(row, "species", "SPECIES", "ScientificName", "VECTOR") or None
+        species_label = species or "an unspecified Aedes species"
         text = (
-            f"Global Aedes occurrence compendium row for {species}. "
+            f"Global Aedes occurrence compendium row for {species_label}. "
             f"Country: {country or 'unknown'}. Coordinates: {lat or 'unknown'}, {lon or 'unknown'}. "
             f"Year: {year or 'unknown'}. Status: {status or 'occurrence record'}. "
             "Source is the Kraemer et al. global compendium of Aedes aegypti and Ae. albopictus occurrence."
         )
         records.append(
             EvidenceRecord(
-                record_id=f"occurrence:global_compendium:aedes_aegypti:{index}",
+                record_id=f"occurrence:global_compendium:{index}",
                 lane="observations",
                 source=AEDES_GLOBAL_COMPENDIUM_SOURCE_ID,
-                title=f"Global compendium Aedes aegypti occurrence row {index}",
+                title=f"Global compendium Aedes occurrence row {index}",
                 text=text,
-                species="Aedes aegypti",
+                species=species,
                 url=source_url,
                 media_url=None,
                 provenance=Provenance(

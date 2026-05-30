@@ -10,7 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
+from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.vector_competence_assays import (
     VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
@@ -34,6 +35,16 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     return len(combined)
 
 
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (VECTOR_COMPETENCE_ASSAY_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
 def _source_counts(index: SourceIndex) -> dict[str, int]:
     return {
         row["source"]: int(row["n"])
@@ -41,18 +52,22 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
+    installed_record_count = _source_count(index)
     source_payload = {
         "source": VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
-        "record_count": len(result.records),
+        "record_count": installed_record_count,
+        "refresh_record_count": len(result.records),
         "candidate_count": result.candidate_count,
         "parsed_table_row_count": result.parsed_table_row_count,
         "source_record_count": result.source_record_count,
         "fulltext_unit_count": result.fulltext_unit_count,
         "gap_count": len(result.gaps),
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "method": "deterministic assay-candidate extraction from Aedes literature records, legal full-text units, and schema-validated parsed supplement table rows from aedes_extracted_facts",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
@@ -78,14 +93,16 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         payload["aedes_vector_competence_assays"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
-        "record_count": len(result.records),
+        "record_count": installed_record_count,
+        "refresh_record_count": len(result.records),
         "candidate_count": result.candidate_count,
         "parsed_table_row_count": result.parsed_table_row_count,
         "source_record_count": result.source_record_count,
         "fulltext_unit_count": result.fulltext_unit_count,
         "gap_count": len(result.gaps),
+        "preserved_existing": preserved_existing,
         "source_counts": source_counts,
         "artifact_dir": artifact_dir.as_posix(),
         "lanes": summary["lanes"],
@@ -97,11 +114,20 @@ def ingest_vector_competence_assays(
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     retrieved_at: str | None = None,
 ) -> dict[str, object]:
-    result = build_vector_competence_assay_records(artifact_dir, retrieved_at=retrieved_at)
+    retrieved = retrieved_at or utc_now()
+    result = build_vector_competence_assay_records(artifact_dir, retrieved_at=retrieved)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(VECTOR_COMPETENCE_ASSAY_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(VECTOR_COMPETENCE_ASSAY_SOURCE_ID, result.records)
+    persist_source_gaps(index, VECTOR_COMPETENCE_ASSAY_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

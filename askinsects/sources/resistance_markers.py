@@ -327,7 +327,9 @@ def _record_for_marker(
         source=RESISTANCE_MARKER_SOURCE_ID,
         title=title,
         text=text,
-        species=candidate.species or "Aedes aegypti",
+        # Mixed-species source: markers are extracted from a literature corpus that can
+        # cover other species. Keep the source record's own species; do not fabricate.
+        species=candidate.species,
         url=source_url,
         media_url=None,
         provenance=Provenance(

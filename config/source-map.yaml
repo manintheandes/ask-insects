@@ -384,9 +384,15 @@ sources:
         - confidence
       structured_gaps:
         - source_trajectory_tables_not_available_for_swd
+        - swd_video_candidates_not_found
         - video_license_unclear
         - video_too_large
         - video_download_failed
+        - video_probe_failed
+        - video_probe_tool_missing
+        - video_artifact_generation_failed
+        - video_artifact_tool_missing
+        - dryad_8vd762q_manifest_fetch_failed
         - dryad_frame_archive_preview_fetch_failed
         - dryad_frame_archive_binary_not_mirrored
         - dryad_frame_archive_too_large_to_mirror
@@ -649,6 +655,7 @@ sources:
       structured_gaps:
         - swd_ncbi_gene_orthologs_download_failed
         - swd_ncbi_gene_orthologs_limit_applied
+        - swd_ncbi_gene_orthologs_malformed_rows
         - swd_ncbi_gene_orthologs_no_swd_rows
   - id: drosophila_suzukii_ensembl_metazoa_orthology
     name: Drosophila suzukii Ensembl Metazoa current IDs and Dmel homologs
@@ -960,10 +967,15 @@ sources:
         - distance_cm
         - avg_velocity_cm_s
       structured_gaps:
-        - umn_flight_assay_csv_fetch_or_parse_failed
-        - umn_flight_assay_rows_not_queryable
+        - umn_flight_assay_bitstream_metadata_fetch_failed
         - umn_flight_assay_csv_byte_size_changed
+        - umn_flight_assay_csv_fetch_or_parse_failed
         - umn_flight_assay_csv_md5_changed
+        - umn_flight_assay_csv_too_large
+        - umn_flight_assay_item_metadata_fetch_failed
+        - umn_flight_assay_row_count_changed
+        - umn_flight_assay_row_limit_applied
+        - umn_flight_assay_rows_not_queryable
   - id: drosophila_suzukii_extension_guidance
     name: Drosophila suzukii extension and IPM guidance
     source_type: public_web_guidance
@@ -1115,6 +1127,7 @@ sources:
         - observation_climate_no_coordinate_observations
         - observation_climate_limit_applied
         - observation_climate_raster_sampling_failed
+        - observation_climate_no_raster_values_sampled
   - id: aedes_image_atoms
     name: Aedes aegypti still-image assets, labels, and gaps
     source_type: derived_sqlite_source
@@ -1349,12 +1362,20 @@ sources:
         - matched_terms
         - raw_external_locator
       structured_gaps:
+        - crossref_preprint_fetch_failed
+        - datacite_fetch_failed
+        - europepmc_agricola_fetch_failed
+        - europepmc_fetch_failed
+        - figshare_fetch_failed
+        - openalex_fetch_failed
         - semantic_scholar_fetch_failed
+        - zenodo_fetch_failed
         - biorxiv_medrxiv_no_text_search_api
         - patentsview_migrated_or_unavailable_json_api
         - uspto_open_data_portal_requires_api_access
         - cabi_no_public_metadata_api_configured
         - google_scholar_no_public_api
+        - mosquito_repellent_external_no_candidates
   - id: ncbi_datasets_genome
     name: NCBI Datasets Aedes aegypti genome package
     source_type: local_or_hosted_dataset_package
@@ -1448,8 +1469,14 @@ sources:
         - total_spots_and_bases_when_supplied
         - raw_esummary_batch_locator
       structured_gaps:
-        - raw_sra_reanalysis_not_performed
         - differential_expression_outputs_not_indexed
+        - expression_omics_limit_applied
+        - expression_omics_no_geo_results
+        - expression_omics_no_sra_results
+        - expression_omics_search_failed
+        - expression_omics_sra_runs_missing
+        - expression_omics_summary_failed
+        - raw_sra_reanalysis_not_performed
   - id: vectorbase_aedes_genomics
     name: VectorBase/VEuPathDB Aedes aegypti genomics downloads
     source_type: public_bulk_download
@@ -1743,13 +1770,37 @@ sources:
         - coordinates
         - confidence
       structured_gaps:
+        - video_download_url_missing
+        - video_download_not_video
+        - video_download_access_restricted
+        - video_download_failed
         - video_license_unclear
         - video_too_large
-        - video_download_url_missing
-        - video_download_access_restricted
+        - video_archive_not_expanded
+        - video_archive_too_large
+        - video_archive_unsupported_format
+        - video_archive_member_too_large
+        - video_archive_read_failed
+        - video_archive_no_video_members
+        - video_existing_probe_tool_missing
+        - video_existing_probe_failed
+        - video_probe_tool_missing
         - video_probe_failed
-        - video_artifact_generation_failed
+        - video_archive_member_probe_tool_missing
+        - video_archive_member_probe_failed
+        - video_manifest_gap
+        - video_motion_unmatched_source_video
+        - video_motion_table_parse_failed
+        - video_discovery_client_missing
+        - video_discovery_fetch_failed
+        - video_discovery_no_candidates
+        - video_discovery_limit_applied
         - video_discovery_not_aedes_scope
+        - video_discovery_no_download_url
+        - video_discovery_not_video_media
+        - video_discovery_license_unclear
+        - video_artifact_tool_missing
+        - video_artifact_generation_failed
   - id: irmapper_aedes
     name: IR Mapper Aedes aegypti resistance records
     source_type: public_api
@@ -2345,10 +2396,11 @@ sources:
         - raw_search_locator
         - raw_dataset_detail_path
       structured_gaps:
-        - dataverse_file_download_not_public
-        - dataverse_suitability_search_failed
         - dataverse_dataset_detail_fetch_failed
+        - dataverse_dataset_limit_applied
+        - dataverse_file_download_not_public
         - dataverse_suitability_no_aedes_raster_files
+        - dataverse_suitability_search_failed
   - id: aedes_global_compendium_occurrence
     name: Global Aedes aegypti occurrence compendium rows
     source_type: public_dataset

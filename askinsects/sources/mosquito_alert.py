@@ -95,6 +95,8 @@ def _country(occurrence: dict[str, object]) -> str:
 
 
 def _scientific_name(occurrence: dict[str, object]) -> str:
+    # Species-scoped by the query: GBIF occurrence search is filtered to
+    # AEDES_AEGYPTI_TAXON_KEY (taxonKey), so this default is legitimate query scope.
     return str(occurrence.get("species") or occurrence.get("scientificName") or "Aedes aegypti")
 
 

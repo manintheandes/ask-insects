@@ -151,6 +151,8 @@ def _protein_record(entry: dict[str, object], *, raw_path: Path, index: int, ret
         source=UNIPROT_PROTEIN_SOURCE_ID,
         title=f"UniProt protein {accession}: {protein_name}",
         text=text,
+        # Species-scoped by the query: UniProtKB request is pinned to organism_id:7159
+        # (Aedes aegypti), so this default is legitimate query scope, not row fabrication.
         species=species or "Aedes aegypti",
         url=url,
         media_url=None,

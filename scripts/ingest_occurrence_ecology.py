@@ -10,7 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
+from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.occurrence_ecology import (
     OCCURRENCE_ECOLOGY_SOURCE_ID,
@@ -41,12 +42,14 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
     source_payload = {
         "source": OCCURRENCE_ECOLOGY_SOURCE_ID,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "record_count": len(result.records),
         "observation_count": result.observation_count,
         "country_count": result.country_count,
@@ -79,7 +82,8 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         payload["aedes_occurrence_ecology"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
+        "preserved_existing": preserved_existing,
         "source": OCCURRENCE_ECOLOGY_SOURCE_ID,
         "record_count": len(result.records),
         "observation_count": result.observation_count,
@@ -99,11 +103,16 @@ def ingest_occurrence_ecology(
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     retrieved_at: str | None = None,
 ) -> dict[str, object]:
-    result = build_occurrence_ecology_records(artifact_dir, retrieved_at=retrieved_at)
+    retrieved = retrieved_at or utc_now()
+    result = build_occurrence_ecology_records(artifact_dir, retrieved_at=retrieved)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(OCCURRENCE_ECOLOGY_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(OCCURRENCE_ECOLOGY_SOURCE_ID, result.records)
+    persist_source_gaps(index, OCCURRENCE_ECOLOGY_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    preserved_existing = refresh_failed and _source_counts(index).get(OCCURRENCE_ECOLOGY_SOURCE_ID, 0) > 0
+    return _update_metadata(artifact_dir, result, ok=not refresh_failed, preserved_existing=preserved_existing)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -41,16 +41,33 @@ class IngestPathogenTaxonomyTests(unittest.TestCase):
             )
 
             self.assertTrue(result["ok"])
-            rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
-                "select source, lane, count(*) as n from records group by source, lane"
+            queried = SourceIndex(artifact_dir / "source_index.sqlite")
+            # Source gaps are now persisted as queryable source_gap records, so
+            # exclude them when counting the substantive (non-gap) records.
+            non_gap_filter = (
+                "record_id not in (select record_id from record_payloads "
+                "where json_extract(payload_json, '$.atom_type') = 'source_gap')"
+            )
+            rows = queried.sql(
+                "select source, lane, count(*) as n from records "
+                f"where {non_gap_filter} group by source, lane"
             )
             counts = {(row["source"], row["lane"]): row["n"] for row in rows}
             self.assertEqual(counts[("mosquito_v1_fixtures", "taxonomy")], 1)
             self.assertEqual(counts[("aedes_pathogen_taxonomy", "vector_competence")], 2)
-            payload_rows = SourceIndex(artifact_dir / "source_index.sqlite").sql(
-                "select count(*) as n from record_payloads where source='aedes_pathogen_taxonomy'"
+            payload_rows = queried.sql(
+                "select count(*) as n from record_payloads "
+                "where source='aedes_pathogen_taxonomy' "
+                "and coalesce(json_extract(payload_json, '$.atom_type'), '') != 'source_gap'"
             )
             self.assertEqual(payload_rows[0]["n"], 2)
+            # Gaps are now queryable as source_gap records in the index.
+            gap_rows = queried.sql(
+                "select count(*) as n from record_payloads "
+                "where source='aedes_pathogen_taxonomy' "
+                "and json_extract(payload_json, '$.atom_type') = 'source_gap'"
+            )
+            self.assertEqual(gap_rows[0]["n"], result["gap_count"])
 
 
 if __name__ == "__main__":

@@ -189,16 +189,25 @@ def fetch_drosophila_suzukii_figshare_mk_selection_records(
         data = fetch(FIGSHARE_DOWNLOAD_URL)
         digest = hashlib.md5(data).hexdigest()
         if digest != FIGSHARE_FILE_MD5:
-            gaps.append(
-                {
-                    "source": DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID,
-                    "lane": "genome_features",
-                    "reason": "figshare_mk_selection_checksum_mismatch",
-                    "url": FIGSHARE_DOWNLOAD_URL,
-                    "expected_md5": FIGSHARE_FILE_MD5,
-                    "actual_md5": digest,
-                    "retrieved_at": retrieved_at,
-                }
+            # Checksum mismatch: do NOT index unverified bytes. Return the gap
+            # only, mirroring the file_too_large early return below.
+            return DrosophilaSuzukiiFigshareMkSelectionResult(
+                source_id=DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID,
+                records=[],
+                gaps=[
+                    {
+                        "source": DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID,
+                        "lane": "genome_features",
+                        "reason": "figshare_mk_selection_checksum_mismatch",
+                        "url": FIGSHARE_DOWNLOAD_URL,
+                        "expected_md5": FIGSHARE_FILE_MD5,
+                        "actual_md5": digest,
+                        "retrieved_at": retrieved_at,
+                    }
+                ],
+                raw_artifacts=[],
+                requested_urls=[FIGSHARE_DOWNLOAD_URL],
+                parsed_row_count=0,
             )
         if len(data) > max_download_bytes:
             return DrosophilaSuzukiiFigshareMkSelectionResult(

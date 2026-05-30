@@ -10,7 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
+from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.resistance_markers import (
     RESISTANCE_MARKER_SOURCE_ID,
@@ -41,7 +42,17 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (RESISTANCE_MARKER_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
+def _update_metadata(artifact_dir: Path, result, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -53,6 +64,8 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "fulltext_unit_count": result.fulltext_unit_count,
         "marker_counts": result.marker_counts,
         "gap_count": len(result.gaps),
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "method": "deterministic kdr and metabolic-resistance marker extraction from Aedes literature records and legal full-text units",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
@@ -78,9 +91,10 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         payload["aedes_resistance_markers"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": RESISTANCE_MARKER_SOURCE_ID,
         "record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "candidate_count": result.candidate_count,
         "source_record_count": result.source_record_count,
         "fulltext_unit_count": result.fulltext_unit_count,
@@ -97,11 +111,20 @@ def ingest_resistance_markers(
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     retrieved_at: str | None = None,
 ) -> dict[str, object]:
-    result = build_resistance_marker_records(artifact_dir, retrieved_at=retrieved_at)
+    retrieved = retrieved_at or utc_now()
+    result = build_resistance_marker_records(artifact_dir, retrieved_at=retrieved)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(RESISTANCE_MARKER_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(RESISTANCE_MARKER_SOURCE_ID, result.records)
+    persist_source_gaps(index, RESISTANCE_MARKER_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

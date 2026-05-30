@@ -84,7 +84,7 @@ def _refresh_swd_coverage_records(artifact_dir: Path, *, retrieved_at: str | Non
     index.upsert_records(records)
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, *, ok: bool = True) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -121,7 +121,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         payload[DROSOPHILA_SUZUKII_BIOCONTROL_OUTCOME_ROWS_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": DROSOPHILA_SUZUKII_BIOCONTROL_OUTCOME_ROWS_SOURCE_ID,
         "record_count": len(result.records),
         "parsed_table_row_count": result.parsed_table_row_count,
@@ -143,10 +143,12 @@ def ingest_drosophila_suzukii_biocontrol_outcome_rows(
     result = build_drosophila_suzukii_biocontrol_outcome_records(artifact_dir, retrieved_at=retrieved_at)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(DROSOPHILA_SUZUKII_BIOCONTROL_OUTCOME_ROWS_SOURCE_ID, result.records)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(DROSOPHILA_SUZUKII_BIOCONTROL_OUTCOME_ROWS_SOURCE_ID, result.records)
     coverage_retrieved_at = retrieved_at or (result.records[0].provenance.retrieved_at if result.records else None)
     _refresh_swd_coverage_records(artifact_dir, retrieved_at=coverage_retrieved_at)
-    return _update_metadata(artifact_dir, result)
+    return _update_metadata(artifact_dir, result, ok=not refresh_failed)
 
 
 def main(argv: list[str] | None = None) -> int:

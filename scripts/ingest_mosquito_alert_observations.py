@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.mosquito_alert import MOSQUITO_ALERT_SOURCE_ID, fetch_mosquito_alert_records
 
@@ -31,7 +32,12 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     return len(combined)
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _existing_source_count(index: SourceIndex, source_id: str) -> int:
+    with index.connect() as conn:
+        return int(conn.execute("select count(*) as n from records where source=?", (source_id,)).fetchone()["n"])
+
+
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = {
@@ -40,6 +46,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
     }
     source_payload = {
         "source": MOSQUITO_ALERT_SOURCE_ID,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "dataset_key": result.dataset_key,
         "dataset_doi": result.dataset_doi,
         "taxon_key": result.taxon_key,
@@ -75,7 +83,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload["mosquito_alert"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
+        "preserved_existing": preserved_existing,
         "source": MOSQUITO_ALERT_SOURCE_ID,
         "record_count": len(result.records),
         "total_results": result.total_results,
@@ -104,8 +113,12 @@ def ingest_mosquito_alert_observations(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(MOSQUITO_ALERT_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(MOSQUITO_ALERT_SOURCE_ID, result.records)
+    persist_source_gaps(index, MOSQUITO_ALERT_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    preserved_existing = refresh_failed and _existing_source_count(index, MOSQUITO_ALERT_SOURCE_ID) > 0
+    return _update_metadata(artifact_dir, result, retrieved, ok=not refresh_failed, preserved_existing=preserved_existing)
 
 
 def main(argv: list[str] | None = None) -> int:

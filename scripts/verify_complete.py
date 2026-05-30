@@ -545,6 +545,22 @@ UNIT_TEST_MODULES = (
     "tests.test_harvard_dataverse_suitability_source",
     "tests.test_ingest_harvard_dataverse_suitability",
     "tests.test_refresh_artifact_receipts",
+    "tests.test_gaps",
+    "tests.test_planner_routing",
+    "tests.test_aedes_crossref_literature_audit_source",
+    "tests.test_ingest_aedes_crossref_literature_audit",
+    "tests.test_drosophila_suzukii_biocontrol_outcome_rows",
+    "tests.test_ingest_drosophila_suzukii_biocontrol_outcome_rows",
+    "tests.test_drosophila_suzukii_susceptibility_assay_rows",
+    "tests.test_ingest_drosophila_suzukii_susceptibility_assay_rows",
+    "tests.test_vectorbyte_abundance_source",
+    "tests.test_ingest_vectorbyte_abundance",
+    "tests.test_vectorbyte_traits_source",
+    "tests.test_ingest_vectorbyte_traits",
+    "tests.test_source_coverage",
+    "tests.test_prune_literature_gaps",
+    "tests.test_merge_literature_artifact",
+    "tests.test_relocate_artifact_paths",
 )
 
 

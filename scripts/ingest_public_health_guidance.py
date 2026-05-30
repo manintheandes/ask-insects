@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.public_health import (
     DEFAULT_PUBLIC_HEALTH_SOURCES,
@@ -35,7 +36,17 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     return len(combined)
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (PUBLIC_HEALTH_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = {
@@ -49,6 +60,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         "raw_artifacts": result.raw_artifacts,
         "gap_count": len(result.gaps),
         "retrieved_at": retrieved_at,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -73,9 +86,10 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload["public_health_guidance"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": PUBLIC_HEALTH_SOURCE_ID,
         "record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "gap_count": len(result.gaps),
         "artifact_dir": artifact_dir.as_posix(),
         "lanes": summary["lanes"],
@@ -101,8 +115,17 @@ def ingest_public_health_guidance(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(PUBLIC_HEALTH_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(PUBLIC_HEALTH_SOURCE_ID, result.records)
+    persist_source_gaps(index, PUBLIC_HEALTH_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        retrieved,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

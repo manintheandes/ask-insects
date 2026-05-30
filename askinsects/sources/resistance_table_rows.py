@@ -216,7 +216,9 @@ def _records_from_parsed_rows(conn: sqlite3.Connection, *, retrieved_at: str) ->
                 source=RESISTANCE_TABLE_ROW_SOURCE_ID,
                 title=title,
                 text=text,
-                species=row["species"] or "Aedes aegypti",
+                # Mixed-species source: parsed supplement tables can describe other
+                # species. Keep the row's own species; do not fabricate a default.
+                species=row["species"] or None,
                 url=source_url,
                 media_url=None,
                 provenance=Provenance(

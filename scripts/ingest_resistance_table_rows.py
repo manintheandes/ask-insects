@@ -41,7 +41,17 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (RESISTANCE_TABLE_ROW_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
+def _update_metadata(artifact_dir: Path, result, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -52,6 +62,8 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "skipped_table_row_count": result.skipped_table_row_count,
         "extracted_fact_record_count": result.extracted_fact_record_count,
         "gap_count": len(result.gaps),
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "method": "schema-validated resistance table-row promotion from parsed aedes_extracted_facts supplement rows",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
@@ -77,9 +89,10 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         payload[RESISTANCE_TABLE_ROW_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": RESISTANCE_TABLE_ROW_SOURCE_ID,
         "record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "parsed_table_row_count": result.parsed_table_row_count,
         "skipped_table_row_count": result.skipped_table_row_count,
         "extracted_fact_record_count": result.extracted_fact_record_count,
@@ -98,8 +111,15 @@ def ingest_resistance_table_rows(
     result = build_resistance_table_row_records(artifact_dir, retrieved_at=retrieved_at)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(RESISTANCE_TABLE_ROW_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(RESISTANCE_TABLE_ROW_SOURCE_ID, result.records)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

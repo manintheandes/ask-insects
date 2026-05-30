@@ -49,6 +49,8 @@ def build_source_coverage_records(
     ledger = load_coverage_ledger(coverage_path)
     domains = [domain for domain in ledger["domains"] if isinstance(domain, dict)]
     scope = ledger.get("scope") if isinstance(ledger.get("scope"), dict) else {}
+    # Project-scope descriptor, not a per-row species label: this is the coverage
+    # ledger's declared primary taxon for the whole intelligence project (Aedes aegypti).
     primary_taxon = str(scope.get("primary_taxon") or "Aedes aegypti")
     strategy = str(scope.get("strategy") or "Build comprehensive Aedes aegypti mosquito intelligence.")
     status_counts: dict[str, int] = {}

@@ -10,7 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
+from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.extracted_facts import (
     DEFAULT_MAX_SUPPLEMENT_BYTES,
@@ -164,6 +165,8 @@ def _update_metadata(
     *,
     merge_existing: bool = False,
     source_record_ids: list[str] | None = None,
+    ok: bool = True,
+    preserved_existing: bool = False,
 ) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
@@ -202,6 +205,8 @@ def _update_metadata(
         "supplement_discovery_route_counts": global_metrics["supplement_discovery_route_counts"],
         "gap_count": len(result.gaps),
         "method": "deterministic supplement manifest discovery, supported supplement table parsing, and cross-lane Aedes fact extraction from literature records and bounded legal full-text units",
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps, replace_source_gaps=not merge_existing)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -226,12 +231,13 @@ def _update_metadata(
         payload["aedes_extracted_facts"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": EXTRACTED_FACTS_SOURCE_ID,
         "record_count": installed_record_count,
         "last_build_record_count": len(result.records),
         "merge_existing": merge_existing,
         "source_record_ids": source_record_ids or None,
+        "preserved_existing": preserved_existing,
         "candidate_count": result.candidate_count,
         "source_record_count": global_metrics["source_record_count"],
         "fulltext_unit_count": result.fulltext_unit_count,
@@ -335,6 +341,8 @@ def ingest_extracted_facts(
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
     deleted_existing_record_count = 0
+    refresh_failed = False
+    preserved_existing = False
     if merge_existing:
         if not source_record_ids:
             raise ValueError("merge_existing requires at least one source_record_id")
@@ -345,27 +353,37 @@ def ingest_extracted_facts(
         )
         index.upsert_records(result.records, update_fts=update_fts)
     else:
-        index.replace_source_records(
-            EXTRACTED_FACTS_SOURCE_ID,
-            result.records,
-            update_fts=update_fts,
-            delete_existing_fts=update_fts,
-        )
+        refresh_failed = not result.records and bool(result.gaps)
+        if not refresh_failed:
+            index.replace_source_records(
+                EXTRACTED_FACTS_SOURCE_ID,
+                result.records,
+                update_fts=update_fts,
+                delete_existing_fts=update_fts,
+            )
+        else:
+            preserved_existing = int(_source_counts(index).get(EXTRACTED_FACTS_SOURCE_ID, 0)) > 0
+    persist_source_gaps(
+        index, EXTRACTED_FACTS_SOURCE_ID, result.gaps, retrieved_at=retrieved_at or utc_now()
+    )
     if update_metadata:
         payload = _update_metadata(
             artifact_dir,
             result,
             merge_existing=merge_existing,
             source_record_ids=source_record_ids,
+            ok=not refresh_failed,
+            preserved_existing=preserved_existing,
         )
     else:
         payload = {
-            "ok": True,
+            "ok": not refresh_failed,
             "source": EXTRACTED_FACTS_SOURCE_ID,
             "record_count": len(result.records),
             "last_build_record_count": len(result.records),
             "merge_existing": merge_existing,
             "source_record_ids": source_record_ids or None,
+            "preserved_existing": preserved_existing,
             "metadata_update_skipped": True,
         }
     payload["deleted_existing_record_count"] = deleted_existing_record_count

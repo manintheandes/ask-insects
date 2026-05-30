@@ -570,8 +570,9 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if payload.get("ok") else 2
         db_exists = db_path.exists()
         status_exists = (artifact_dir / "source_status.json").exists()
-        emit({"ok": db_exists and status_exists, "db_exists": db_exists, "status_exists": status_exists})
-        return 0
+        ok = db_exists and status_exists
+        emit({"ok": ok, "db_exists": db_exists, "status_exists": status_exists})
+        return 0 if ok else 2
     if args.command == "summary":
         if args.hosted:
             payload = emit_hosted("GET", "/summary")

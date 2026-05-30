@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.who_dengue_surveillance import (
     DEFAULT_WHO_DENGUE_SURVEILLANCE_PAGES,
@@ -40,6 +41,16 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     return len(combined)
 
 
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (WHO_DENGUE_SURVEILLANCE_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
 def _source_counts(index: SourceIndex) -> dict[str, int]:
     return {
         row["source"]: int(row["n"])
@@ -47,14 +58,18 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
+    installed_record_count = _source_count(index)
     source_payload = {
         "source": WHO_DENGUE_SURVEILLANCE_SOURCE_ID,
         "requested_urls": result.requested_urls,
-        "record_count": len(result.records),
+        "record_count": installed_record_count,
+        "refresh_record_count": len(result.records),
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "raw_artifacts": result.raw_artifacts,
         "gap_count": len(result.gaps),
         "page_count": result.page_count,
@@ -91,9 +106,11 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload[WHO_DENGUE_SURVEILLANCE_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": WHO_DENGUE_SURVEILLANCE_SOURCE_ID,
-        "record_count": len(result.records),
+        "record_count": installed_record_count,
+        "refresh_record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "gap_count": len(result.gaps),
         "page_count": result.page_count,
         "situation_report_count": result.situation_report_count,
@@ -126,8 +143,17 @@ def ingest_who_dengue_surveillance(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(WHO_DENGUE_SURVEILLANCE_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(WHO_DENGUE_SURVEILLANCE_SOURCE_ID, result.records)
+    persist_source_gaps(index, WHO_DENGUE_SURVEILLANCE_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        retrieved,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

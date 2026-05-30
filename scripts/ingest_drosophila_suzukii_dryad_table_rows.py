@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.server import read_json, source_counts, write_json
 from askinsects.sources.drosophila_suzukii_dryad_table_rows import (
@@ -77,7 +78,18 @@ def ingest_drosophila_suzukii_dryad_table_rows(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID, result.records)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID, result.records)
+    gap_retrieved_at = retrieved_at or (
+        result.records[0].provenance.retrieved_at if result.records else None
+    )
+    persist_source_gaps(
+        index,
+        DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID,
+        result.gaps,
+        retrieved_at=gap_retrieved_at,
+    )
     gaps = _replace_source_gaps(artifact_dir / "gaps.json", result.gaps)
     summary = index.summary()
     counts = source_counts(index)
@@ -119,7 +131,7 @@ def ingest_drosophila_suzukii_dryad_table_rows(
         write_json(path, payload)
     write_json(artifact_dir / "gaps.json", gaps)
     return {
-        "ok": True,
+        "ok": not refresh_failed,
         "source": DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID,
         "artifact_dir": artifact_dir.as_posix(),
         **source_payload,

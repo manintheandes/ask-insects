@@ -107,7 +107,10 @@ def _metadata_from_dataset_payload(dataset_id: str, payload: dict[str, object]) 
     rows = payload.get("results")
     count = _num(payload.get("count"))
     title = _clean(consistent.get("title")) or f"VectorByte VecDyn dataset {dataset_id}"
-    species = _clean(consistent.get("species")) or "Aedes aegypti"
+    # Mixed-species source: VecDyn datasets can contain non-aegypti species, and a
+    # dataset qualifies as Aedes via SpeciesName/title material rather than this field.
+    # Do not fabricate: leave the dataset-level species empty when consistent_data omits it.
+    species = _clean(consistent.get("species"))
     sampling_method = _clean(consistent.get("sampling_method"))
     methods = [sampling_method] if sampling_method else []
     return {
@@ -219,7 +222,9 @@ def _abundance_record(
     start_date = _clean(row.get("sample_start_date"))
     start_time = _clean(row.get("sample_start_time"))
     end_date = _clean(row.get("sample_end_date"))
-    species = _row_species(row, consistent) or "Aedes aegypti"
+    # Mixed-species source: rows are already filtered by _row_is_aedes before reaching
+    # here, so _row_species is the row's own (aegypti) value. Keep it; do not fabricate.
+    species = _row_species(row, consistent)
     stage = _clean(row.get("sample_stage")) or _clean(consistent.get("sample_stage"))
     sex = _clean(row.get("sample_sex")) or _clean(consistent.get("sample_sex"))
     method = _clean(row.get("sampling_method")) or _clean(consistent.get("sampling_method"))
