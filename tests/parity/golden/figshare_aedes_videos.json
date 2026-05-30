@@ -1,0 +1,104 @@
+{
+  "gaps": [
+    {
+      "article_id": 202,
+      "locator": "<raw_dir>/article_202.json#article",
+      "query": "Aedes aegypti video",
+      "reason": "figshare_article_not_aedes_scope",
+      "source": "figshare_aedes_videos",
+      "source_url": "https://figshare.com/articles/dataset/culex_video/202"
+    }
+  ],
+  "records": [
+    {
+      "lane": "media",
+      "media_url": null,
+      "payload": {
+        "article_id": 202,
+        "atom_type": "video_gap",
+        "gap_type": "figshare_manifest_gap",
+        "locator": "<raw_dir>/article_202.json#article",
+        "query": "Aedes aegypti video",
+        "reason": "figshare_article_not_aedes_scope",
+        "source": "figshare_aedes_videos",
+        "source_url": "https://figshare.com/articles/dataset/culex_video/202"
+      },
+      "provenance": {
+        "license": null,
+        "locator": "<raw_dir>/article_202.json#article",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "figshare_aedes_videos",
+        "source_url": "https://figshare.com/articles/dataset/culex_video/202"
+      },
+      "record_id": "figshare:aedes-video-gap:202:84c000a9148e",
+      "source": "figshare_aedes_videos",
+      "species": "Aedes aegypti",
+      "text": "Figshare Aedes aegypti video source gap: figshare_article_not_aedes_scope. Source record: 202. Query: Aedes aegypti video. Source URL: https://figshare.com/articles/dataset/culex_video/202.",
+      "title": "Aedes aegypti Figshare video gap figshare_article_not_aedes_scope",
+      "url": "https://figshare.com/articles/dataset/culex_video/202"
+    },
+    {
+      "lane": "media",
+      "media_url": "https://figshare.com/ndownloader/files/501",
+      "payload": {
+        "doi": "10.6084/m9.figshare.201",
+        "download_url": "https://figshare.com/ndownloader/files/501",
+        "figshare_article_id": "201",
+        "figshare_file_id": 501,
+        "filename": "oviposition.mp4",
+        "raw_article": {
+          "description": "Aedes aegypti females were recorded during oviposition assays.",
+          "doi": "10.6084/m9.figshare.201",
+          "files": [
+            {
+              "computed_md5": "0123456789abcdef0123456789abcdef",
+              "download_url": "https://figshare.com/ndownloader/files/501",
+              "id": 501,
+              "mimetype": "video/mp4",
+              "name": "oviposition.mp4",
+              "size": 123456
+            }
+          ],
+          "id": 201,
+          "license": {
+            "name": "CC BY 4.0",
+            "url": "https://creativecommons.org/licenses/by/4.0/"
+          },
+          "tags": [
+            "Aedes aegypti",
+            "oviposition",
+            "video"
+          ],
+          "title": "Aedes aegypti oviposition video dataset",
+          "url_public_html": "https://figshare.com/articles/dataset/aedes_video/201"
+        },
+        "raw_file": {
+          "computed_md5": "0123456789abcdef0123456789abcdef",
+          "download_url": "https://figshare.com/ndownloader/files/501",
+          "id": 501,
+          "mimetype": "video/mp4",
+          "name": "oviposition.mp4",
+          "size": 123456
+        },
+        "source_byte_size": 123456,
+        "source_hashes": {
+          "md5": "0123456789abcdef0123456789abcdef"
+        },
+        "source_url": "https://figshare.com/articles/dataset/aedes_video/201"
+      },
+      "provenance": {
+        "license": "CC BY 4.0",
+        "locator": "<raw_dir>/article_201.json#files/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "figshare_aedes_videos",
+        "source_url": "https://figshare.com/ndownloader/files/501"
+      },
+      "record_id": "figshare:aedes-video:201:oviposition.mp4",
+      "source": "figshare_aedes_videos",
+      "species": "Aedes aegypti",
+      "text": "Figshare Aedes aegypti video file oviposition.mp4 from Aedes aegypti oviposition video dataset. Description: Aedes aegypti females were recorded during oviposition assays.",
+      "title": "Aedes aegypti Figshare video file oviposition.mp4",
+      "url": "https://figshare.com/articles/dataset/aedes_video/201"
+    }
+  ]
+}

@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from ..records import EvidenceRecord, Provenance
+from ..species import resolve_species
 
 
 EXPRESSION_OMICS_SOURCE_ID = "aedes_expression_omics"
@@ -221,9 +222,9 @@ def _geo_record(uid: str, item: dict[str, object], *, raw_path: Path, retrieved_
     accession = _clean(_field(item, "accession")) or uid
     title = _clean(item.get("title")) or f"GEO expression dataset {accession}"
     summary = _clean(item.get("summary"))
-    # Species-scoped by the query: GEO_TERM pins '"Aedes aegypti"[Organism]', so this
-    # default reflects the search scope rather than fabricating a row's species.
-    taxon = _clean(item.get("taxon")) or "Aedes aegypti"
+    # Species-scoped by the query: GEO_TERM pins '"Aedes aegypti"[Organism]'. The scope
+    # argument is warranted because the search is genuinely pinned to this organism.
+    taxon = resolve_species(_clean(item.get("taxon")), scope="Aedes aegypti")
     sample_count = _clean(_field(item, "n_samples"))
     platform = _clean(_field(item, "gpl"))
     gds_type = _clean(_field(item, "gdsType", "gdstype", "entryType"))

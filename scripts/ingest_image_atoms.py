@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.image_atoms import IMAGE_ATOMS_SOURCE_ID, build_image_atom_records
 
 
@@ -134,14 +135,23 @@ def ingest_image_atoms(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        index.replace_source_records(IMAGE_ATOMS_SOURCE_ID, result.records)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=IMAGE_ATOMS_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved_at or "",
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=False,  # adapter builds gap EvidenceRecords (image_gap) into result.records
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and _source_count(index) > 0,
+        preserved_existing=preserved_existing,
     )
 
 

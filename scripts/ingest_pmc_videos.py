@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.pmc_videos import DEFAULT_PMC_VIDEO_ARTICLES, PMC_VIDEO_SOURCE_ID, fetch_pmc_video_records
 
 
@@ -152,7 +153,17 @@ def ingest_pmc_videos(
     existing_count = _existing_source_record_count(index)
     if not result.records and existing_count:
         return _preserve_existing_metadata(artifact_dir, result, existing_count)
-    index.replace_source_records(PMC_VIDEO_SOURCE_ID, result.records)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=PMC_VIDEO_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,  # adapter produces only plain gap dicts (no gap EvidenceRecords)
+    )
+    # Note: preserved_existing is the real guard; refresh_record_count reflects the live fetch.
     return _update_metadata(artifact_dir, result)
 
 

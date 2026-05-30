@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.video_atoms import (
     DISCOVERY_REPOSITORIES,
     DiscoverySweepResult,
@@ -395,11 +396,18 @@ def ingest_video_atoms(
             _delete_video_atom_repository_records(index, discovery_repositories)
         index.upsert_records(records)
     else:
-        refresh_failed = not result.records and bool(result.gaps)
-        if not refresh_failed:
-            index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, records)
-        else:
-            preserved_existing = _source_counts(index).get(VIDEO_ATOMS_SOURCE_ID, 0) > 0
+        outcome = run_source_ingest(
+            index=index,
+            artifact_dir=artifact_dir,
+            source_id=VIDEO_ATOMS_SOURCE_ID,
+            records=records,
+            gaps=result.gaps,
+            retrieved_at=retrieved_at or "",
+            raw_artifacts=getattr(result, "raw_artifacts", None),
+            persist_gap_records=False,  # adapter builds gap EvidenceRecords (video_gap) into result.records
+        )
+        refresh_failed = outcome["refresh_failed"]
+        preserved_existing = outcome["preserved_existing"]
     _delete_duplicate_video_gap_records(index)
     payload = _update_metadata(
         artifact_dir,
