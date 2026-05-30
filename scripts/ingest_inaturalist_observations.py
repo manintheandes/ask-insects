@@ -10,8 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.server import read_json, source_counts, write_json
 from askinsects.sources.inaturalist import DEFAULT_INATURALIST_SPECIES, INATURALIST_SOURCE_ID, fetch_inaturalist_records
 from askinsects.sources.gbif import utc_now
@@ -39,10 +39,18 @@ def ingest_inaturalist_observations(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        index.replace_source_records(INATURALIST_SOURCE_ID, result.records)
-    persist_source_gaps(index, INATURALIST_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=INATURALIST_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
 
     old_gaps = read_json(artifact_dir / "gaps.json", [])
     if not isinstance(old_gaps, list):
@@ -54,7 +62,6 @@ def ingest_inaturalist_observations(
     sources = [source for source in counts if source != INATURALIST_SOURCE_ID]
     if counts.get(INATURALIST_SOURCE_ID):
         sources.append(INATURALIST_SOURCE_ID)
-    preserved_existing = refresh_failed and bool(counts.get(INATURALIST_SOURCE_ID))
 
     inaturalist_payload = {
         "requested_species": result.requested_species,

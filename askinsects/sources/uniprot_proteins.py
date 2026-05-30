@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from ..records import EvidenceRecord, Provenance
+from ..species import resolve_species
 
 
 UNIPROT_PROTEIN_SOURCE_ID = "aedes_uniprot_proteins"
@@ -123,7 +124,10 @@ def _protein_record(entry: dict[str, object], *, raw_path: Path, index: int, ret
         return None
     protein_name = _recommended_name(entry) or _clean(entry.get("uniProtkbId")) or accession
     organism = entry.get("organism")
-    species = _clean(organism.get("scientificName")) if isinstance(organism, dict) else "Aedes aegypti"
+    species = resolve_species(
+        _clean(organism.get("scientificName")) if isinstance(organism, dict) else None,
+        scope="Aedes aegypti",  # UniProtKB request is pinned to organism_id:7159 (Aedes aegypti)
+    )
     genes = _gene_names(entry)
     function = _function_text(entry)
     refs = _cross_refs(entry)
@@ -151,9 +155,7 @@ def _protein_record(entry: dict[str, object], *, raw_path: Path, index: int, ret
         source=UNIPROT_PROTEIN_SOURCE_ID,
         title=f"UniProt protein {accession}: {protein_name}",
         text=text,
-        # Species-scoped by the query: UniProtKB request is pinned to organism_id:7159
-        # (Aedes aegypti), so this default is legitimate query scope, not row fabrication.
-        species=species or "Aedes aegypti",
+        species=species,
         url=url,
         media_url=None,
         provenance=Provenance(
