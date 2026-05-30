@@ -143,6 +143,12 @@ def ingest_drosophila_suzukii_ensembl_metazoa_orthology(
         raw_artifacts=getattr(result, "raw_artifacts", None),
         persist_gap_records=False,  # adapter already emits stable_id_history_gap EvidenceRecords (atom_type ends in "gap")
     )
+    # Edge case (known/accepted): a successful run normally yields thousands of non-gap
+    # gene records, so the history-empty gap records install alongside them. Only a
+    # degenerate upstream state (gene file downloads but parses to zero rows) would make
+    # the result gap-only; the runner then treats it as refresh_failed and preserves
+    # existing rows (ok=False) rather than installing the history gaps. That is correct
+    # for what is effectively a corrupt/empty upstream file, so this lane stays migrated.
     refresh_failed = outcome["refresh_failed"]
     preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
