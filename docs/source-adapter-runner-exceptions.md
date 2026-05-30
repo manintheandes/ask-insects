@@ -17,3 +17,9 @@ These lanes intentionally do NOT use `run_source_ingest`. They maintain bespoke 
 **video_atoms** (source_id: aedes_video_atoms) — Atom-level video records are derived from upstream video lanes; a gap-only run correctly records that no atoms could be derived from available deposits.
 
 **drosophila_suzukii_video_atoms** — Same as video_atoms; gap-only is the expected result when no source videos are available for atomization.
+
+**drosophila_suzukii_biocontrol_outcome_rows** — Derived lane that emits a source_gap EvidenceRecord when no extracted biocontrol fact records pass agent/outcome-context validation; gap-only is a valid scientific finding (no qualifying biocontrol evidence in the indexed literature), not an ingest failure.
+
+**drosophila_suzukii_susceptibility_assay_rows** — Derived lane that emits a source_gap EvidenceRecord when no extracted resistance fact records pass insecticide/metric validation; gap-only is a valid scientific finding (no qualifying susceptibility assay data in the indexed literature), not an ingest failure.
+
+**drosophila_suzukii_literature_fulltext** — Delegates entirely to run_enrichment (scripts/enrich_literature_index.py); does not use the fetch-records/EvidenceRecord/gaps pattern and has no result.records or result.gaps to pass to run_source_ingest.

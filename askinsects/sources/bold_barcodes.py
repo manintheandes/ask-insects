@@ -8,6 +8,7 @@ import urllib.parse
 import urllib.request
 
 from ..records import EvidenceRecord, Provenance
+from ..species import resolve_species
 
 
 BOLD_SOURCE_ID = "bold_api"
@@ -71,7 +72,8 @@ def _barcode_record(
     record_id = f"bold:barcode:{process_id}"
     if process_id in duplicate_process_ids:
         record_id = f"{record_id}:row:{row_number}"
-    species = row.get("species_name") or DEFAULT_BOLD_SPECIES
+    species = resolve_species(row.get("species_name"))  # row carries its own species; no fabricated default
+    species_label = species or "unidentified"
     marker = row.get("markercode") or "unknown marker"
     country = row.get("country") or "unknown country"
     province = row.get("province") or ""
@@ -81,9 +83,9 @@ def _barcode_record(
     bin_uri = row.get("bin_uri") or ""
     genbank = row.get("genbank_accession") or ""
     location = ", ".join(part for part in (country, province) if part)
-    title = f"BOLD DNA barcode {process_id} for {species}"
+    title = f"BOLD DNA barcode {process_id} for {species_label}"
     text = (
-        f"BOLD barcode specimen {process_id} identifies {species}. "
+        f"BOLD barcode specimen {process_id} identifies {species_label}. "
         f"Marker: {marker}. Country/province: {location}. Collection date: {collection_date}. "
         f"Sequence length: {sequence_length if sequence_length else 'not provided'} bp."
     )
@@ -105,7 +107,7 @@ def _barcode_record(
             locator=f"{raw_path.as_posix()}#row/{row_number}",
             retrieved_at=retrieved_at,
             license="BOLD public data",
-            source_url=_bold_url(species),
+            source_url=_bold_url(species_label),
         ),
         payload={
             "bold_row": row,
