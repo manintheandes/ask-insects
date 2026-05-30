@@ -1,0 +1,285 @@
+{
+  "gaps": [
+    {
+      "actual_byte_size": 212,
+      "expected_byte_size": 15543,
+      "lane": "behavior",
+      "locator": "<raw_dir>/data_archival.csv#file",
+      "reason": "umn_flight_assay_csv_byte_size_changed",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "drosophila_suzukii_umn_flight_assay_rows",
+      "source_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26/content",
+      "species": "Drosophila suzukii"
+    },
+    {
+      "actual_md5": "e3f617497ea5d62b00a7c0dcc8bc5794",
+      "expected_md5": "57f90c4209fe9c677f40d90a60935360",
+      "lane": "behavior",
+      "locator": "<raw_dir>/data_archival.csv#file",
+      "reason": "umn_flight_assay_csv_md5_changed",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "drosophila_suzukii_umn_flight_assay_rows",
+      "source_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26/content",
+      "species": "Drosophila suzukii"
+    },
+    {
+      "actual_row_count": 3,
+      "expected_row_count": 401,
+      "lane": "behavior",
+      "locator": "<raw_dir>/data_archival.csv#rows",
+      "reason": "umn_flight_assay_row_count_changed",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "drosophila_suzukii_umn_flight_assay_rows",
+      "source_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26/content",
+      "species": "Drosophila suzukii"
+    }
+  ],
+  "records": [
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "abstract": "Winter and summer morph Drosophila suzukii flight behavior on a tethered flight mill and free flight chamber was documented.",
+        "assay_types": [
+          "free-flight chamber",
+          "tethered flight mill"
+        ],
+        "atom_type": "umn_flight_assay_dataset",
+        "authors": [
+          "Kees, Aubree M",
+          "Tran, Anh K"
+        ],
+        "dataset_doi": "10.13020/4nsz-x660",
+        "expected_row_count": 401,
+        "handle": "11299/227164",
+        "issued": "2022-05-02",
+        "item_uuid": "3c514fff-5e6e-4847-a083-3700326e8ad1",
+        "license": "Attribution-NonCommercial 3.0 United States",
+        "license_url": "http://creativecommons.org/licenses/by-nc/3.0/us/",
+        "rights": "Attribution-NonCommercial 3.0 United States",
+        "rights_uri": "http://creativecommons.org/licenses/by-nc/3.0/us/",
+        "row_fields": [
+          "date",
+          "treatment",
+          "morph",
+          "sex",
+          "age",
+          "propensity",
+          "phototactic",
+          "duration",
+          "bouts",
+          "distancecm",
+          "avgvelcm/s"
+        ],
+        "title": "Data supporting: Comparing Drosophila suzukii flight behavior using free-flight and tethered flight assays"
+      },
+      "provenance": {
+        "license": "Attribution-NonCommercial 3.0 United States",
+        "locator": "<raw_dir>/item.json#item",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_umn_flight_assay_rows",
+        "source_url": "https://conservancy.umn.edu/server/api/core/items/3c514fff-5e6e-4847-a083-3700326e8ad1"
+      },
+      "record_id": "swd_umn_flight_assay:dataset:11299_227164",
+      "source": "drosophila_suzukii_umn_flight_assay_rows",
+      "species": "Drosophila suzukii",
+      "text": "University of Minnesota dataset for Drosophila suzukii (spotted wing drosophila) flight behavior. The dataset documents winter and summer morph flight behavior on two assay types: a free-flight chamber and a tethered flight mill. It includes 401 row-level observations with treatment, morph, sex, age, flight propensity, phototactic response, duration, bouts, distance, and average velocity fields. Issued: 2022-05-02. DOI: 10.13020/4nsz-x660. License: Attribution-NonCommercial 3.0 United States.",
+      "title": "Drosophila suzukii UMN flight behavior assay dataset",
+      "url": "https://hdl.handle.net/11299/227164"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "api_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26",
+        "atom_type": "umn_flight_assay_file_manifest",
+        "bitstream_uuid": "81028480-4f7d-4b2a-b648-403c683b7f26",
+        "byte_size": 212,
+        "content_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26/content",
+        "dataset_doi": "10.13020/4nsz-x660",
+        "description": "flight data (archival copy)",
+        "file_name": "data_archival.csv",
+        "item_uuid": "3c514fff-5e6e-4847-a083-3700326e8ad1",
+        "landing_url": "https://hdl.handle.net/11299/227164",
+        "license": "Attribution-NonCommercial 3.0 United States",
+        "license_url": "http://creativecommons.org/licenses/by-nc/3.0/us/",
+        "md5": "e3f617497ea5d62b00a7c0dcc8bc5794",
+        "reported_checksum": {
+          "checkSumAlgorithm": "MD5",
+          "value": "57f90c4209fe9c677f40d90a60935360"
+        },
+        "reported_size_bytes": 15543,
+        "sha256": "74061707d93422d962022c8c0895fa214a7602f894a60a37d976398dfdc8651f"
+      },
+      "provenance": {
+        "license": "Attribution-NonCommercial 3.0 United States",
+        "locator": "<raw_dir>/bitstream.json#bitstream",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_umn_flight_assay_rows",
+        "source_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26"
+      },
+      "record_id": "swd_umn_flight_assay:file:81028480-4f7d-4b2a-b648-403c683b7f26",
+      "source": "drosophila_suzukii_umn_flight_assay_rows",
+      "species": "Drosophila suzukii",
+      "text": "File manifest for the UMN Drosophila suzukii flight behavior CSV data_archival.csv. Description: flight data (archival copy). Byte size: 212. MD5: e3f617497ea5d62b00a7c0dcc8bc5794. SHA-256: 74061707d93422d962022c8c0895fa214a7602f894a60a37d976398dfdc8651f.",
+      "title": "Drosophila suzukii UMN flight behavior CSV file manifest",
+      "url": "https://hdl.handle.net/11299/227164"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "age_days": 2,
+        "assay": "free-flight chamber",
+        "atom_type": "umn_flight_assay_row",
+        "avg_velocity_cm_s": null,
+        "behavior_type": "flight",
+        "bitstream_uuid": "81028480-4f7d-4b2a-b648-403c683b7f26",
+        "bouts": null,
+        "confidence": "source_table_row",
+        "dataset_doi": "10.13020/4nsz-x660",
+        "date": "2021-01-22",
+        "distance_cm": null,
+        "duration": null,
+        "item_uuid": "3c514fff-5e6e-4847-a083-3700326e8ad1",
+        "life_stage": "adult",
+        "morph": "S",
+        "phototactic": 0,
+        "propensity": 0,
+        "row_number": 1,
+        "sex": "M",
+        "table_row": {
+          "age": "2",
+          "avgvelcm/s": "",
+          "bouts": "",
+          "date": "2021-01-22",
+          "distancecm": "",
+          "duration": "",
+          "morph": "S",
+          "phototactic": "0",
+          "propensity": "0",
+          "sex": "M",
+          "treatment": "chamber"
+        },
+        "treatment": "chamber"
+      },
+      "provenance": {
+        "license": "Attribution-NonCommercial 3.0 United States",
+        "locator": "<raw_dir>/data_archival.csv#row/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_umn_flight_assay_rows",
+        "source_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26/content"
+      },
+      "record_id": "swd_umn_flight_assay:row:1",
+      "source": "drosophila_suzukii_umn_flight_assay_rows",
+      "species": "Drosophila suzukii",
+      "text": "UMN Drosophila suzukii flight behavior row 1: free-flight chamber. Date: 2021-01-22. Morph code: S. Sex: M. Age: 2. Flight propensity: 0. Phototactic response: 0.",
+      "title": "Drosophila suzukii UMN flight assay row 1: free-flight chamber",
+      "url": "https://hdl.handle.net/11299/227164"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "age_days": 2,
+        "assay": "free-flight chamber",
+        "atom_type": "umn_flight_assay_row",
+        "avg_velocity_cm_s": null,
+        "behavior_type": "flight",
+        "bitstream_uuid": "81028480-4f7d-4b2a-b648-403c683b7f26",
+        "bouts": 1,
+        "confidence": "source_table_row",
+        "dataset_doi": "10.13020/4nsz-x660",
+        "date": "2021-01-28",
+        "distance_cm": null,
+        "duration": 21.84,
+        "item_uuid": "3c514fff-5e6e-4847-a083-3700326e8ad1",
+        "life_stage": "adult",
+        "morph": "W",
+        "phototactic": 1,
+        "propensity": 1,
+        "row_number": 2,
+        "sex": "F",
+        "table_row": {
+          "age": "2",
+          "avgvelcm/s": "",
+          "bouts": "1",
+          "date": "2021-01-28",
+          "distancecm": "",
+          "duration": "21.84",
+          "morph": "W",
+          "phototactic": "1",
+          "propensity": "1",
+          "sex": "F",
+          "treatment": "chamber"
+        },
+        "treatment": "chamber"
+      },
+      "provenance": {
+        "license": "Attribution-NonCommercial 3.0 United States",
+        "locator": "<raw_dir>/data_archival.csv#row/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_umn_flight_assay_rows",
+        "source_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26/content"
+      },
+      "record_id": "swd_umn_flight_assay:row:2",
+      "source": "drosophila_suzukii_umn_flight_assay_rows",
+      "species": "Drosophila suzukii",
+      "text": "UMN Drosophila suzukii flight behavior row 2: free-flight chamber. Date: 2021-01-28. Morph code: W. Sex: F. Age: 2. Flight propensity: 1. Phototactic response: 1. Duration: 21.84. Bouts: 1.",
+      "title": "Drosophila suzukii UMN flight assay row 2: free-flight chamber",
+      "url": "https://hdl.handle.net/11299/227164"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "age_days": 3,
+        "assay": "tethered flight mill",
+        "atom_type": "umn_flight_assay_row",
+        "avg_velocity_cm_s": 2.75,
+        "behavior_type": "flight",
+        "bitstream_uuid": "81028480-4f7d-4b2a-b648-403c683b7f26",
+        "bouts": 2,
+        "confidence": "source_table_row",
+        "dataset_doi": "10.13020/4nsz-x660",
+        "date": "2021-02-01",
+        "distance_cm": 12.4,
+        "duration": 4.5,
+        "item_uuid": "3c514fff-5e6e-4847-a083-3700326e8ad1",
+        "life_stage": "adult",
+        "morph": "W",
+        "phototactic": null,
+        "propensity": 1,
+        "row_number": 3,
+        "sex": "F",
+        "table_row": {
+          "age": "3",
+          "avgvelcm/s": "2.75",
+          "bouts": "2",
+          "date": "2021-02-01",
+          "distancecm": "12.4",
+          "duration": "4.5",
+          "morph": "W",
+          "phototactic": "",
+          "propensity": "1",
+          "sex": "F",
+          "treatment": "mill"
+        },
+        "treatment": "mill"
+      },
+      "provenance": {
+        "license": "Attribution-NonCommercial 3.0 United States",
+        "locator": "<raw_dir>/data_archival.csv#row/3",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_umn_flight_assay_rows",
+        "source_url": "https://conservancy.umn.edu/server/api/core/bitstreams/81028480-4f7d-4b2a-b648-403c683b7f26/content"
+      },
+      "record_id": "swd_umn_flight_assay:row:3",
+      "source": "drosophila_suzukii_umn_flight_assay_rows",
+      "species": "Drosophila suzukii",
+      "text": "UMN Drosophila suzukii flight behavior row 3: tethered flight mill. Date: 2021-02-01. Morph code: W. Sex: F. Age: 3. Flight propensity: 1. Duration: 4.5. Bouts: 2. Distance cm: 12.4. Average velocity cm/s: 2.75.",
+      "title": "Drosophila suzukii UMN flight assay row 3: tethered flight mill",
+      "url": "https://hdl.handle.net/11299/227164"
+    }
+  ]
+}
