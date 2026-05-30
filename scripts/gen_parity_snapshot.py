@@ -20,9 +20,8 @@ def main(argv=None):
     for case in LANE_CASES:
         if targets and case.source_id not in targets:
             continue
-        records, gaps = case.run()
         (GOLDEN / f"{case.source_id}.json").write_text(
-            json.dumps(_serialize(records, gaps), indent=2, sort_keys=True) + "\n"
+            json.dumps(_serialize(*case.run(), raw_dir=case.raw_dir), indent=2, sort_keys=True) + "\n"
         )
         print(f"wrote golden for {case.source_id}")
     return 0
