@@ -11,8 +11,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
-from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.cdc_dengue_surveillance import (
     CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
     DEFAULT_CDC_DENGUE_PAGES,
@@ -43,7 +43,7 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -59,6 +59,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool 
         "dataset_row_count": result.dataset_row_count,
         "limitation_count": result.limitation_count,
         "retrieved_at": retrieved_at,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "method": "official CDC dengue current/historic ArboNET HTML pages, CDC WCMS visualization JSON configs, and linked CDC CSV datasets parsed into Aedes aegypti-relevant public-health surveillance records",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
@@ -89,6 +91,7 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool 
         "ok": ok,
         "source": CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
         "record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "gap_count": len(result.gaps),
         "page_count": result.page_count,
         "config_count": result.config_count,
@@ -128,11 +131,19 @@ def ingest_cdc_dengue_surveillance(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        index.replace_source_records(CDC_DENGUE_SURVEILLANCE_SOURCE_ID, result.records)
-    persist_source_gaps(index, CDC_DENGUE_SURVEILLANCE_SOURCE_ID, result.gaps, retrieved_at=retrieved)
-    return _update_metadata(artifact_dir, result, retrieved, ok=not refresh_failed)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
+    return _update_metadata(artifact_dir, result, retrieved, ok=not refresh_failed, preserved_existing=preserved_existing)
 
 
 def main(argv: list[str] | None = None) -> int:

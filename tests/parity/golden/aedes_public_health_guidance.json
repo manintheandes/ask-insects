@@ -1,0 +1,41 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "declared_topic": "integrated mosquito management",
+        "description": "Guidance for vector control programs working on Aedes aegypti, dengue, and Zika.",
+        "organization": "CDC",
+        "raw_html_path": "<raw_dir>/CDC_988309f155a1.html",
+        "title": "Integrated mosquito management",
+        "topics": [
+          "integrated mosquito management",
+          "Aedes aegypti",
+          "dengue",
+          "Zika",
+          "chikungunya",
+          "yellow fever",
+          "vector control",
+          "surveillance",
+          "source reduction"
+        ],
+        "url": "https://www.cdc.gov/example"
+      },
+      "provenance": {
+        "license": "Public health web guidance; source page terms apply",
+        "locator": "<raw_dir>/CDC_988309f155a1.html#page",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_public_health_guidance",
+        "source_url": "https://www.cdc.gov/example"
+      },
+      "record_id": "public_health:guidance:988309f155a1",
+      "source": "aedes_public_health_guidance",
+      "species": "Aedes aegypti",
+      "text": "Official CDC operational public-health guidance relevant to Aedes aegypti. Topic: integrated mosquito management, Aedes aegypti, dengue, Zika, chikungunya, yellow fever, vector control, surveillance, source reduction. Summary: Guidance for vector control programs working on Aedes aegypti, dengue, and Zika.. Page excerpt: Integrated mosquito management Integrated mosquito management Aedes aegypti mosquitoes can transmit dengue, Zika, chikungunya, and yellow fever. Vector control programs use surveillance, source reduction, larvicides, adulticides, and community action.",
+      "title": "CDC guidance: Integrated mosquito management",
+      "url": "https://www.cdc.gov/example"
+    }
+  ]
+}

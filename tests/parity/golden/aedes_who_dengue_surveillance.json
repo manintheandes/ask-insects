@@ -1,0 +1,228 @@
+{
+  "gaps": [
+    {
+      "lane": "public_health",
+      "note": "Dashboard or data-platform page fetched, but no stable direct CSV, ZIP, XLSX, or JSON export link was exposed in saved HTML.",
+      "reason": "who_dengue_dashboard_export_not_machine_readable",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "aedes_who_dengue_surveillance",
+      "url": "https://data.wpro.who.int/dashboard"
+    }
+  ],
+  "records": [
+    {
+      "lane": "public_health",
+      "media_url": "https://iris.who.int/handle/10665/2026",
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "who_dengue_archive_locator",
+        "label": "Dengue Situation Updates 2026",
+        "linked_url": "https://iris.who.int/handle/10665/2026",
+        "raw_html_path": "<raw_dir>/wpro_situation_updates_https_www.who.int_westernpacific_wpro-emergencies_surveillance_dengue.html",
+        "source_page_url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+      },
+      "provenance": {
+        "license": "WHO linked public surveillance artifact; source page terms apply",
+        "locator": "<raw_dir>/wpro_situation_updates_https_www.who.int_westernpacific_wpro-emergencies_surveillance_dengue.html#link-Dengue_Situation_Updates_2026",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_who_dengue_surveillance",
+        "source_url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+      },
+      "record_id": "public_health:surveillance:who_dengue:archive:311c132c717f",
+      "source": "aedes_who_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official WHO dengue surveillance linked artifact: Dengue Situation Updates 2026. This is indexed as Aedes aegypti-relevant dengue public-health surveillance evidence. Source page: https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue.",
+      "title": "WHO dengue situation update archive: Dengue Situation Updates 2026",
+      "url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+    },
+    {
+      "lane": "public_health",
+      "media_url": "https://data.wpro.who.int/dashboard",
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "who_dengue_dashboard_locator",
+        "dashboard_url": "https://data.wpro.who.int/dashboard",
+        "machine_readable_cell_status": "not_proven",
+        "organization": "WHO Western Pacific Health Data Platform",
+        "page_kind": "wpro_dashboard_locator",
+        "raw_html_path": "<raw_dir>/wpro_dashboard_locator_https_data.wpro.who.int_dashboard.html"
+      },
+      "provenance": {
+        "license": "WHO Western Pacific Health Data Platform public page; source page terms apply",
+        "locator": "<raw_dir>/wpro_dashboard_locator_https_data.wpro.who.int_dashboard.html#dashboard-locator",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_who_dengue_surveillance",
+        "source_url": "https://data.wpro.who.int/dashboard"
+      },
+      "record_id": "public_health:surveillance:who_dengue:dashboard_locator:6609f1af5a89",
+      "source": "aedes_who_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official WHO Western Pacific dengue dashboard or health data platform locator. Ask Insects stores this page and any direct export links it exposes. Country/time dashboard cells are not claimed until a stable machine-readable export or API is proven.",
+      "title": "WHO dengue dashboard locator: Dengue surveillance 2021",
+      "url": "https://data.wpro.who.int/dashboard"
+    },
+    {
+      "lane": "public_health",
+      "media_url": "https://iris.who.int/bitstream/handle/10665/382381/WER10052-eng-fre.pdf",
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "who_dengue_publication_download_locator",
+        "label": "Download (230.5 kB)",
+        "linked_url": "https://iris.who.int/bitstream/handle/10665/382381/WER10052-eng-fre.pdf",
+        "raw_html_path": "<raw_dir>/wer_global_update_https_www.who.int_publications_i_item_who-wer10052-665-678.html",
+        "source_page_url": "https://www.who.int/publications/i/item/who-wer10052-665-678"
+      },
+      "provenance": {
+        "license": "WHO linked public surveillance artifact; source page terms apply",
+        "locator": "<raw_dir>/wer_global_update_https_www.who.int_publications_i_item_who-wer10052-665-678.html#link-Download_230.5_kB",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_who_dengue_surveillance",
+        "source_url": "https://www.who.int/publications/i/item/who-wer10052-665-678"
+      },
+      "record_id": "public_health:surveillance:who_dengue:publication_download:0d3877fc9b87",
+      "source": "aedes_who_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official WHO dengue surveillance linked artifact: Download (230.5 kB). This is indexed as Aedes aegypti-relevant dengue public-health surveillance evidence. Source page: https://www.who.int/publications/i/item/who-wer10052-665-678.",
+      "title": "WHO WER dengue publication download: Download (230.5 kB)",
+      "url": "https://www.who.int/publications/i/item/who-wer10052-665-678"
+    },
+    {
+      "lane": "public_health",
+      "media_url": "https://cdn.who.int/media/docs/default-source/wpro---documents/emergency/surveillance/dengue/dengue_biweekly_744_20260430.pdf?sfvrsn=29f63a6a_1",
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "who_dengue_situation_report_locator",
+        "label": "Dengue Situation Update 744",
+        "linked_url": "https://cdn.who.int/media/docs/default-source/wpro---documents/emergency/surveillance/dengue/dengue_biweekly_744_20260430.pdf?sfvrsn=29f63a6a_1",
+        "raw_html_path": "<raw_dir>/wpro_situation_updates_https_www.who.int_westernpacific_wpro-emergencies_surveillance_dengue.html",
+        "source_page_url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+      },
+      "provenance": {
+        "license": "WHO linked public surveillance artifact; source page terms apply",
+        "locator": "<raw_dir>/wpro_situation_updates_https_www.who.int_westernpacific_wpro-emergencies_surveillance_dengue.html#link-Dengue_Situation_Update_744",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_who_dengue_surveillance",
+        "source_url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+      },
+      "record_id": "public_health:surveillance:who_dengue:situation_report:0c49b59ecf1d",
+      "source": "aedes_who_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official WHO dengue surveillance linked artifact: Dengue Situation Update 744. This is indexed as Aedes aegypti-relevant dengue public-health surveillance evidence. Source page: https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue.",
+      "title": "WHO dengue situation report: Dengue Situation Update 744",
+      "url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+    },
+    {
+      "lane": "public_health",
+      "media_url": "https://www.who.int/westernpacific/publications/m/item/dengue-situation-update---745--14-may-2026",
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "who_dengue_situation_report_locator",
+        "label": "17 May 2026 Dengue Situation Update # 745: 14 May 2026",
+        "linked_url": "https://www.who.int/westernpacific/publications/m/item/dengue-situation-update---745--14-may-2026",
+        "raw_html_path": "<raw_dir>/wpro_situation_updates_https_www.who.int_westernpacific_wpro-emergencies_surveillance_dengue.html",
+        "source_page_url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+      },
+      "provenance": {
+        "license": "WHO linked public surveillance artifact; source page terms apply",
+        "locator": "<raw_dir>/wpro_situation_updates_https_www.who.int_westernpacific_wpro-emergencies_surveillance_dengue.html#link-17_May_2026_Dengue_Situation_Update_745:_14_May_2026",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_who_dengue_surveillance",
+        "source_url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+      },
+      "record_id": "public_health:surveillance:who_dengue:situation_report:b21182c9d731",
+      "source": "aedes_who_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official WHO dengue surveillance linked artifact: 17 May 2026 Dengue Situation Update # 745: 14 May 2026. This is indexed as Aedes aegypti-relevant dengue public-health surveillance evidence. Source page: https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue.",
+      "title": "WHO dengue situation report: 17 May 2026 Dengue Situation Update # 745: 14 May 2026",
+      "url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "description": "Dengue: global situation, surveillance and progress - 2024 update",
+        "metrics": {
+          "brazil_cases": 10000000.0,
+          "brazil_deaths": 6321.0,
+          "deaths": 11201.0,
+          "laboratory_confirmed_cases": 7718585.0,
+          "reported_cases": 14434584.0,
+          "severe_cases": 52738.0
+        },
+        "organization": "WHO",
+        "page_kind": "wer_global_update",
+        "raw_html_path": "<raw_dir>/wer_global_update_https_www.who.int_publications_i_item_who-wer10052-665-678.html",
+        "title": "Dengue: global situation, surveillance and progress - 2024 update",
+        "topic": "global dengue situation surveillance progress update"
+      },
+      "provenance": {
+        "license": "WHO public web page; source page terms apply",
+        "locator": "<raw_dir>/wer_global_update_https_www.who.int_publications_i_item_who-wer10052-665-678.html#page",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_who_dengue_surveillance",
+        "source_url": "https://www.who.int/publications/i/item/who-wer10052-665-678"
+      },
+      "record_id": "public_health:surveillance:who_dengue:wer_global_update:d79dc815cb88",
+      "source": "aedes_who_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official WHO dengue surveillance page for Aedes aegypti public-health intelligence. Organization: WHO. Topic: global dengue situation surveillance progress update. Summary: Dengue: global situation, surveillance and progress - 2024 update. Parsed metrics: reported_cases=1.44346e+07, laboratory_confirmed_cases=7.71858e+06, severe_cases=52738, deaths=11201, brazil_cases=1e+07, brazil_deaths=6321. Page excerpt: Dengue: global situation, surveillance and progress - 2024 update. Weekly epidemiological record. 26 December 2025 | Publication. Download (230.5 kB) WHO received reports of 14 434 584 cases, including 7 718 585 laboratory-confirmed, 52 738 severe and 11 201 deaths in all 6 regions.. Brazil alone reported over 10 000 000 cases and 6321 deaths...",
+      "title": "WHO dengue surveillance: Dengue: global situation, surveillance and progress - 2024 update",
+      "url": "https://www.who.int/publications/i/item/who-wer10052-665-678"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "description": "",
+        "metrics": {},
+        "organization": "WHO Western Pacific Health Data Platform",
+        "page_kind": "wpro_dashboard_locator",
+        "raw_html_path": "<raw_dir>/wpro_dashboard_locator_https_data.wpro.who.int_dashboard.html",
+        "title": "Dengue surveillance 2021",
+        "topic": "Western Pacific dengue surveillance dashboard locator"
+      },
+      "provenance": {
+        "license": "WHO public web page; source page terms apply",
+        "locator": "<raw_dir>/wpro_dashboard_locator_https_data.wpro.who.int_dashboard.html#page",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_who_dengue_surveillance",
+        "source_url": "https://data.wpro.who.int/dashboard"
+      },
+      "record_id": "public_health:surveillance:who_dengue:wpro_dashboard_locator:6609f1af5a89",
+      "source": "aedes_who_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official WHO dengue surveillance page for Aedes aegypti public-health intelligence. Organization: WHO Western Pacific Health Data Platform. Topic: Western Pacific dengue surveillance dashboard locator. Page excerpt: Dengue surveillance 2021. WHO's Health Emergencies Programme therefore monitors and assesses the spread of dengue on an ongoing basis.. Enter dashboard.",
+      "title": "WHO dengue surveillance: Dengue surveillance 2021",
+      "url": "https://data.wpro.who.int/dashboard"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "description": "",
+        "metrics": {},
+        "organization": "WHO Western Pacific",
+        "page_kind": "wpro_situation_updates",
+        "raw_html_path": "<raw_dir>/wpro_situation_updates_https_www.who.int_westernpacific_wpro-emergencies_surveillance_dengue.html",
+        "title": "Dengue",
+        "topic": "Western Pacific dengue situation updates"
+      },
+      "provenance": {
+        "license": "WHO public web page; source page terms apply",
+        "locator": "<raw_dir>/wpro_situation_updates_https_www.who.int_westernpacific_wpro-emergencies_surveillance_dengue.html#page",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_who_dengue_surveillance",
+        "source_url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+      },
+      "record_id": "public_health:surveillance:who_dengue:wpro_situation_updates:b1e98cc4efdb",
+      "source": "aedes_who_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official WHO dengue surveillance page for Aedes aegypti public-health intelligence. Organization: WHO Western Pacific. Topic: Western Pacific dengue situation updates. Page excerpt: Dengue. WHO's Western Pacific Regional Office conducts both indicator-based and event-based surveillance for dengue.. A summary of the situation in the region is published bi-weekly.. 17 May 2026 Dengue Situation Update # 745: 14 May 2026 Dengue Situation Update 744 Dengue Situation Updates 2026.",
+      "title": "WHO dengue surveillance: Dengue",
+      "url": "https://www.who.int/westernpacific/wpro-emergencies/surveillance/dengue"
+    }
+  ]
+}

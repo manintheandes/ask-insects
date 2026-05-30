@@ -1,0 +1,79 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "resistance",
+      "media_url": null,
+      "payload": {
+        "raw_row": {
+          "chemical_Class": "DDT",
+          "chemical_Type": "DDT",
+          "collection_Year_End": 1965,
+          "collection_Year_Start": 1965,
+          "country": "Thailand",
+          "iR_Mechanism_Name": "NA",
+          "iR_Mechanism_Status": "NA",
+          "iR_Test_Method": "WHO tube assay",
+          "iR_Test_mortality": "undefined",
+          "id": 101,
+          "insecticide_Dosage": "2.5ppm",
+          "iraC_MoA": "Sodium channel modulators",
+          "latitude": 13.81666667,
+          "locality": "Bangkok",
+          "longitude": 100.65,
+          "mutation_frequency": "NA",
+          "reference_Name": "Neely et al. 1966",
+          "reference_Type": "Published article",
+          "resistance_Status": "Confirmed resistance",
+          "url": "http://europepmc.org/articles/pmc2476190",
+          "vector_Developmental_Stage": "Adult",
+          "vector_Species": "Aedes aegypti"
+        },
+        "raw_row_index": 1,
+        "requested_species": "Aedes aegypti"
+      },
+      "provenance": {
+        "license": "IR Mapper public API",
+        "locator": "<raw_dir>/Aedes_aegypti.json#row/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "irmapper_aedes",
+        "source_url": "https://api.irmapper.com/api/aedes"
+      },
+      "record_id": "irmapper:aedes:101",
+      "source": "irmapper_aedes",
+      "species": "Aedes aegypti",
+      "text": "IR Mapper Aedes insecticide resistance record. species: Aedes aegypti; country: Thailand; locality: Bangkok; year: 1965; life stage: Adult; assay: WHO tube assay; insecticide class: DDT; insecticide: DDT; dose: 2.5ppm; mode of action: Sodium channel modulators; resistance status: Confirmed resistance; reference: Neely et al. 1966.",
+      "title": "Aedes aegypti - IR Mapper resistance - DDT - Thailand - Confirmed resistance",
+      "url": "http://europepmc.org/articles/pmc2476190"
+    },
+    {
+      "lane": "resistance",
+      "media_url": null,
+      "payload": {
+        "raw_row": {
+          "chemical_Type": "deltamethrin",
+          "country": "Brazil",
+          "id": 103,
+          "locality": "Sao Paulo",
+          "resistance_Status": "Susceptibility",
+          "vector_Species": "Ae. aegypti"
+        },
+        "raw_row_index": 3,
+        "requested_species": "Aedes aegypti"
+      },
+      "provenance": {
+        "license": "IR Mapper public API",
+        "locator": "<raw_dir>/Aedes_aegypti.json#row/3",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "irmapper_aedes",
+        "source_url": "https://api.irmapper.com/api/aedes"
+      },
+      "record_id": "irmapper:aedes:103",
+      "source": "irmapper_aedes",
+      "species": "Aedes aegypti",
+      "text": "IR Mapper Aedes insecticide resistance record. species: Aedes aegypti; country: Brazil; locality: Sao Paulo; insecticide: deltamethrin; resistance status: Susceptibility.",
+      "title": "Aedes aegypti - IR Mapper resistance - deltamethrin - Brazil - Susceptibility",
+      "url": null
+    }
+  ]
+}
