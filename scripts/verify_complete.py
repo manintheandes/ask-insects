@@ -561,6 +561,9 @@ UNIT_TEST_MODULES = (
     "tests.test_prune_literature_gaps",
     "tests.test_merge_literature_artifact",
     "tests.test_relocate_artifact_paths",
+    "tests.test_species",
+    "tests.test_ingest_runner",
+    "tests.test_ingest_parity",
 )
 
 
