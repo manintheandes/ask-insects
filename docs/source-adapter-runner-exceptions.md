@@ -25,3 +25,5 @@ These lanes intentionally do NOT use `run_source_ingest`. They maintain bespoke 
 **drosophila_suzukii_literature_fulltext** — Delegates entirely to run_enrichment (scripts/enrich_literature_index.py); does not use the fetch-records/EvidenceRecord/gaps pattern and has no result.records or result.gaps to pass to run_source_ingest.
 
 **observation_climate** (source_id: aedes_observation_climate_join) — Adapter folds gap EvidenceRecords (record_id contains `:gap:`) directly into result.records; a run where all indexed observations lack coordinates emits only a gap record as the valid scientific finding (no coordinate data available for climate join), which the generic runner would treat as refresh failure and discard.
+
+**harvard_dataverse_aedes_suitability** — search-finds-no-rasters emits only a gap EvidenceRecord (valid finding); generic runner would drop it.
