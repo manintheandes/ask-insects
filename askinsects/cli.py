@@ -262,6 +262,10 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_plos_climate.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_plos_climate.add_argument("--retrieved-at")
 
+    ingest_drosophila_suzukii_osu_traps = sub.add_parser("ingest-drosophila-suzukii-osu-trap-reports")
+    ingest_drosophila_suzukii_osu_traps.add_argument("--hosted", action="store_true")
+    ingest_drosophila_suzukii_osu_traps.add_argument("--retrieved-at")
+
     ingest_drosophila_suzukii_umn_flight = sub.add_parser("ingest-drosophila-suzukii-umn-flight-assay-rows")
     ingest_drosophila_suzukii_umn_flight.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_umn_flight.add_argument("--max-download-bytes", type=int, default=1_000_000)
@@ -986,6 +990,21 @@ def main(argv: list[str] | None = None) -> int:
         from scripts.ingest_drosophila_suzukii_plos_climate_suitability import ingest_drosophila_suzukii_plos_climate_suitability
 
         payload = ingest_drosophila_suzukii_plos_climate_suitability(
+            artifact_dir=artifact_dir,
+            **request_payload,
+        )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-osu-trap-reports":
+        request_payload = {
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-osu-trap-reports", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_osu_trap_reports import ingest_drosophila_suzukii_osu_trap_reports
+
+        payload = ingest_drosophila_suzukii_osu_trap_reports(
             artifact_dir=artifact_dir,
             **request_payload,
         )

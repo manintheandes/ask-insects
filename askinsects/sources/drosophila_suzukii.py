@@ -156,8 +156,8 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
         (
             "observations_and_images",
             "mapped_queryable",
-            ["GBIF occurrence records", "iNaturalist licensed photo observations"],
-            ["deeper regional monitoring networks", "crop scout trap datasets"],
+            ["GBIF occurrence records", "iNaturalist licensed photo observations", "Ohio State crop scout trap-report rows"],
+            ["deeper non-Ohio regional monitoring networks", "additional crop scout trap datasets"],
         ),
         (
             "literature",
@@ -216,8 +216,9 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "JKI DrosoMon trap-deployment capture rows",
                 "JKI DrosoMon trap-coordinate and habitat rows",
                 "PLOS global climate-suitability model supplement manifests and table rows",
+                "Ohio State weekly crop scout trap-report rows",
             ],
-            ["raw climate suitability raster grids", "additional regional/crop scout phenology feeds", "human-validated crop damage tables"],
+            ["raw climate suitability raster grids", "additional non-Ohio regional/crop scout phenology feeds", "human-validated crop damage tables"],
         ),
         (
             "management_resistance_biocontrol",

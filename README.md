@@ -139,11 +139,15 @@ python3 -m askinsects ask "show Drosophila suzukii extension IPM guidance" --jso
 
 The `drosophila_suzukii_jki_drosomon_trap_captures` lane adds source-grade field-monitoring evidence for SWD. It indexes the data.europa/OpenAgrar record for the 7-year JKI DrosoMon trap-capture dataset in southwest Germany, including reported scale (100 traps, 9,967 trap deployments, 116,602 trap-days, and 756,717 adult captures), file manifests, article DOI, license, parsed `captures_data.csv` trap-deployment rows, and parsed `trap_description.csv` trap-location rows from the OpenAgrar data ZIP. The current ZIP has 10,042 parsed deployment rows and 100 parsed trap-location rows with coordinates, altitude, operator, host plant, habitat, row locator, and CC-BY-4.0 provenance.
 
+The `drosophila_suzukii_osu_trap_reports` lane adds public Ohio crop-scout monitoring evidence for SWD. It mirrors or verifies Ohio State University Extension trap-report spreadsheets for 2016-2021, preserves file checksums and byte sizes, parses trap sites and weekly trap-period observation rows with county, cooperator or farm, crop, trap ID, lure, count or status, and row/column locators, and stores an explicit source gap for the unavailable 2015 Google Sheet.
+
 The `drosophila_suzukii_plos_climate_suitability` lane adds source-grade climate-suitability model evidence from PLOS ONE DOI `10.1371/journal.pone.0174318`. It indexes the article model summary, four supplementary files, row-level PCA/correlation/Moran's I XLSX tables, checksums, byte sizes, exact locators, and a queryable gap for unavailable raw MaxEnt/GARP raster suitability grids.
 
 ```bash
 python3 -m askinsects ingest-drosophila-suzukii-jki-drosomon-trap-captures
 python3 -m askinsects ask "show Drosophila suzukii trap capture monitoring evidence" --json
+python3 -m askinsects ingest-drosophila-suzukii-osu-trap-reports
+python3 -m askinsects ask "show Drosophila suzukii Ohio trap reports" --json
 ```
 
 The `drosophila_suzukii_umn_flight_assay_rows` lane adds row-level behavior evidence from the University of Minnesota DRUM dataset `10.13020/4nsz-x660`. It saves item metadata, the archival CSV bitstream manifest, MD5/SHA-256/byte-size proof, CC BY-NC 3.0 US license, and 401 individual adult SWD flight-assay rows covering free-flight chamber and tethered flight mill observations with morph, sex, age, propensity, phototactic response, duration, bouts, distance, and average velocity fields.

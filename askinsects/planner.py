@@ -377,6 +377,12 @@ def plan_question(question: str) -> QueryPlan:
     if is_spotted_wing and any(
         term in q
         for term in (
+            "ohio",
+            "ohio state",
+            "osu",
+            "crop scout",
+            "trap report",
+            "trap reports",
             "drosomon",
             "trap capture",
             "trap captures",

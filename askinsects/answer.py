@@ -26,6 +26,7 @@ from .sources.drosophila_suzukii_biocontrol_outcome_rows import DROSOPHILA_SUZUK
 from .sources.drosophila_suzukii_dryad_table_rows import DROSOPHILA_SUZUKII_DRYAD_TABLE_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_extension_guidance import DROSOPHILA_SUZUKII_EXTENSION_GUIDANCE_SOURCE_ID
 from .sources.drosophila_suzukii_jki_drosomon_trap_captures import DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID
+from .sources.drosophila_suzukii_osu_trap_reports import DROSOPHILA_SUZUKII_OSU_TRAP_REPORTS_SOURCE_ID
 from .sources.drosophila_suzukii_plos_climate_suitability import DROSOPHILA_SUZUKII_PLOS_CLIMATE_SUITABILITY_SOURCE_ID
 from .sources.drosophila_suzukii_umn_flight_assay_rows import DROSOPHILA_SUZUKII_UMN_FLIGHT_ASSAY_ROWS_SOURCE_ID
 from .sources.drosophila_suzukii_figshare_mk_selection import DROSOPHILA_SUZUKII_FIGSHARE_MK_SELECTION_SOURCE_ID
@@ -3554,6 +3555,7 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
         wants_country = any(term in q for term in ("where", "range", "distribution", "country", "countries"))
         wants_trap_location = any(term in q for term in ("coordinate", "coordinates", "latitude", "longitude", "habitat", "location", "locations"))
         wants_climate_suitability = any(term in q for term in ("climate", "suitability", "maxent", "garp", "moran", "principal component", "pca"))
+        wants_osu_traps = any(term in q for term in ("ohio", "ohio state", "osu", "crop scout", "trap report", "trap reports"))
 
         def swd_score(record: EvidenceRecord) -> tuple[object, ...]:
             payload = record.payload or {}
@@ -3565,7 +3567,9 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
             elif wants_country:
                 aggregation_rank = 0 if aggregation_type == "country_summary" else 1
             elif any(term in q for term in ("trap", "traps", "capture", "captures", "drosomon", "jki", "monitoring")):
-                if wants_trap_location:
+                if wants_osu_traps:
+                    aggregation_rank = 0 if atom_type == "osu_swd_trap_observation" else 1
+                elif wants_trap_location:
                     aggregation_rank = 0 if atom_type == "jki_drosomon_trap_location_row" else 1
                 else:
                     aggregation_rank = 0 if atom_type in {"jki_drosomon_trap_dataset", "jki_drosomon_file_manifest", "source_gap"} else 1
@@ -3574,6 +3578,7 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
             else:
                 aggregation_rank = 0 if aggregation_type in {"country_summary", "country_month_summary", "habitat_summary"} else 1
             return (
+                0 if wants_osu_traps and record.source == DROSOPHILA_SUZUKII_OSU_TRAP_REPORTS_SOURCE_ID else 1,
                 0 if wants_climate_suitability and record.source == DROSOPHILA_SUZUKII_PLOS_CLIMATE_SUITABILITY_SOURCE_ID else 1,
                 0 if record.source == DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID and "trap" in q else 1,
                 0 if record.source == "drosophila_suzukii_occurrence_ecology" else 1,
@@ -5717,6 +5722,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 for record in _source_records_with_payload(
                     index,
                     DROSOPHILA_SUZUKII_PLOS_CLIMATE_SUITABILITY_SOURCE_ID,
+                    ["ecology"],
+                    limit=max(limit * 10, 50),
+                ):
+                    if record.record_id in seen_record_ids:
+                        continue
+                    all_records.append(record)
+                    seen_record_ids.add(record.record_id)
+            if any(term in q for term in ("ohio", "ohio state", "osu", "crop scout", "trap report", "trap reports")):
+                for record in _source_records_with_payload(
+                    index,
+                    DROSOPHILA_SUZUKII_OSU_TRAP_REPORTS_SOURCE_ID,
                     ["ecology"],
                     limit=max(limit * 10, 50),
                 ):

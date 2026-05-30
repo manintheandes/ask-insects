@@ -76,6 +76,7 @@ sources:
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_extension_guidance
         - drosophila_suzukii_jki_drosomon_trap_captures
+        - drosophila_suzukii_osu_trap_reports
         - drosophila_suzukii_umn_flight_assay_rows
   - id: drosophila_suzukii_deep_sources
     name: Drosophila suzukii deep public source expansion
@@ -125,6 +126,7 @@ sources:
         - drosophila_suzukii_dryad_table_rows
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_jki_drosomon_trap_captures
+        - drosophila_suzukii_osu_trap_reports
         - drosophila_suzukii_literature_fulltext
         - drosophila_suzukii_pubmed_literature
         - drosophila_suzukii_ncbi_snp_variation
@@ -836,6 +838,47 @@ sources:
         - jki_captures_table_missing_from_zip
         - jki_drosomon_metadata_fetch_failed
         - jki_drosomon_csv_fetch_failed
+  - id: drosophila_suzukii_osu_trap_reports
+    name: Drosophila suzukii Ohio State crop scout trap reports
+    source_type: public_extension_spreadsheets
+    boundary: Public Ohio State University Extension spotted-wing drosophila trap-report spreadsheets for 2016-2021, preserving the landing page, Google Sheet CSV export, XLSX files, file checksums, byte sizes, trap site rows, weekly trap-period observation rows, raw count/status values, county, cooperator/farm, crop, trap id, lure, row/column locators, and an explicit source gap for the unavailable 2015 Google Sheet. This lane is Ohio public crop-scout monitoring evidence, not a complete United States SWD monitoring network or fruit-infestation assay interpretation.
+    query_plane: osu_public_swd_trap_report_spreadsheets_to_sqlite_ecology_rows
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_osu_trap_reports
+    ingest_script: scripts/ingest_drosophila_suzukii_osu_trap_reports.py
+    input_sources:
+      - osu_pestmanagement_swd_trap_reports_landing_page
+      - osu_google_sheet_2021_swd_trap_reports
+      - osu_xlsx_2020_swd_trap_reports
+      - osu_xlsx_2019_swd_trap_reports
+      - osu_xlsx_2018_swd_trap_reports
+      - osu_xlsx_2017_swd_trap_reports
+      - osu_google_sheet_2016_swd_trap_reports
+      - osu_google_sheet_2015_swd_trap_reports_unavailable_gap
+    lanes:
+      - ecology
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - year
+        - county
+        - cooperator
+        - farm
+        - crop
+        - trap_id
+        - lure
+        - period
+        - count
+        - status
+        - raw_value
+        - row_number
+        - column_number
+        - sha256
+        - byte_size
+      structured_gaps:
+        - osu_swd_trap_report_unavailable
+        - osu_swd_trap_report_fetch_or_parse_failed
   - id: drosophila_suzukii_umn_flight_assay_rows
     name: Drosophila suzukii UMN flight assay rows
     source_type: public_dspace_csv

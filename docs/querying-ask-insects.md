@@ -204,6 +204,16 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane preserves the data.europa/OpenAgrar registry record, file manifests, article DOI, license, and reported dataset scale. It also parses the current OpenAgrar data ZIP into `captures_data.csv` trap-deployment rows and `trap_description.csv` trap-location rows, so Ask Insects can answer from individual trap/date/capture evidence and from trap coordinates, altitude, operator, host plant, and habitat. The registry-reported deployment count and the parsed CSV row count may differ because they come from different source surfaces; both are preserved in receipts.
 
+To ingest Ohio State public crop-scout trap reports for spotted wing drosophila:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-osu-trap-reports
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii Ohio trap reports" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n from record_payloads where source='drosophila_suzukii_osu_trap_reports' group by atom_type"
+```
+
+This lane preserves the Ohio State landing page boundary, public Google Sheet CSV exports, XLSX reports, file checksums and byte sizes, trap-site rows, and weekly trap-period observation rows. Each observation keeps county, cooperator or farm, crop, trap ID, lure, count or status, raw value, and row/column locator. The unavailable 2015 Google Sheet remains a structured source gap rather than being hidden.
+
 To ingest PLOS climate-suitability model supplements for spotted wing drosophila:
 
 ```bash

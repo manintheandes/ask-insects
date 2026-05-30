@@ -568,6 +568,7 @@ class AnswerTests(unittest.TestCase):
         self.assertEqual(plan_question("show Drosophila suzukii pest management evidence").answer_shape, "management")
         self.assertEqual(plan_question("show Drosophila suzukii extension IPM guidance").answer_shape, "management")
         self.assertEqual(plan_question("show Drosophila suzukii trap capture monitoring evidence").answer_shape, "ecology")
+        self.assertEqual(plan_question("show Drosophila suzukii Ohio trap reports").answer_shape, "ecology")
         self.assertEqual(plan_question("show Drosophila suzukii biocontrol parasitoid evidence").answer_shape, "biocontrol")
         self.assertEqual(plan_question("show Drosophila suzukii nuclear marker review").lanes[0], "dna_barcodes")
         self.assertEqual(plan_question("show BOLD COI barcode records for Aedes aegypti").lanes[0], "dna_barcodes")
@@ -2063,6 +2064,79 @@ class AnswerTests(unittest.TestCase):
             self.assertTrue(location_answer["ok"])
             self.assertEqual(location_answer["answer_shape"], "ecology")
             self.assertEqual(location_answer["evidence"][0]["record_id"], "swd_jki_drosomon_trap_captures:trap_location:DA_BE1")
+
+    def test_spotted_wing_ohio_trap_report_questions_prefer_osu_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_osu_trap_reports:observation:2021:0001:june_13_-_19",
+                        lane="ecology",
+                        source="drosophila_suzukii_osu_trap_reports",
+                        title="Ohio State SWD trap observation 2021 June 13 - 19: Athens Blackberry",
+                        text="Ohio State spotted-wing drosophila trap observation for June 13 - 19 2021: count 8. County: Athens. Crop: Blackberry. Trap: 1.",
+                        species="Drosophila suzukii",
+                        url="https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_osu_trap_reports",
+                            locator="raw/drosophila_suzukii_osu_trap_reports/osu_swd_trap_report_2021_spotted_wing_drosophila.csv#row/4/column/2",
+                            retrieved_at="2026-05-30T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "osu_swd_trap_observation",
+                            "year": 2021,
+                            "county": "Athens",
+                            "crop": "Blackberry",
+                            "trap_id": "1",
+                            "period": "June 13 - 19",
+                            "count": 8,
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_jki_drosomon_trap_captures:dataset:openagrar_mods_00041381",
+                        lane="ecology",
+                        source="drosophila_suzukii_jki_drosomon_trap_captures",
+                        title="JKI DrosoMon SWD trap-capture dataset",
+                        text="JKI DrosoMon trap-capture monitoring dataset for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://www.openagrar.de/receive/openagrar_mods_00041381",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_jki_drosomon_trap_captures",
+                            locator="raw/drosophila_suzukii_jki_drosomon_trap_captures/data_europa_dataset.json#result",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={"atom_type": "jki_drosomon_trap_dataset"},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_occurrence_ecology:country:United_States",
+                        lane="ecology",
+                        source="drosophila_suzukii_occurrence_ecology",
+                        title="Drosophila suzukii occurrence ecology in the United States",
+                        text="Drosophila suzukii occurrence ecology country summary for the United States.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-us",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_occurrence_ecology",
+                            locator="source_index.sqlite#swd-observation-ecology/country/United_States",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={"aggregation_type": "country_summary", "observation_count": 200},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii Ohio trap reports", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "ecology")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_osu_trap_reports")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_osu_trap_reports:observation:2021:0001:june_13_-_19")
 
     def test_spotted_wing_climate_suitability_questions_prefer_plos_model_lane(self):
         with tempfile.TemporaryDirectory() as tmpdir:
