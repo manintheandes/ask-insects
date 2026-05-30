@@ -3566,7 +3566,6 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
                 "south-east",
                 "natural enemy",
                 "natural enemies",
-                "dryad",
                 "52c2k52",
             )
         )
@@ -5757,7 +5756,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                         continue
                     all_records.append(record)
                     seen_record_ids.add(record.record_id)
-            if any(term in q for term in ("landscape", "blueberry", "southeast", "south-east", "natural enemy", "natural enemies", "dryad", "52c2k52")):
+            if any(term in q for term in ("landscape", "blueberry", "southeast", "south-east", "natural enemy", "natural enemies", "52c2k52")):
                 for record in _source_records_with_payload(
                     index,
                     DROSOPHILA_SUZUKII_DRYAD_LANDSCAPE_MONITORING_SOURCE_ID,

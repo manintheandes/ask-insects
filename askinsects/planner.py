@@ -396,7 +396,6 @@ def plan_question(question: str) -> QueryPlan:
             "south-east",
             "natural enemy",
             "natural enemies",
-            "dryad",
             "52c2k52",
             "field monitoring",
             "monitoring dataset",

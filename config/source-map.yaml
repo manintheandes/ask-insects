@@ -922,6 +922,8 @@ sources:
         - dryad_landscape_full_csv_download_blocked_preview_used
         - dryad_landscape_preview_fetch_or_parse_failed
         - dryad_landscape_dataset_metadata_fetch_failed
+        - dryad_landscape_file_manifest_fetch_failed
+        - dryad_landscape_csv_file_not_found
   - id: drosophila_suzukii_umn_flight_assay_rows
     name: Drosophila suzukii UMN flight assay rows
     source_type: public_dspace_csv

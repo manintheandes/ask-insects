@@ -23,6 +23,7 @@ VERSION_API_URL = f"{DRYAD_BASE}/api/v2/versions/13824/files"
 PRIMARY_ARTICLE_DOI = "10.1016/j.agee.2018.11.014"
 LICENSE = "CC0-1.0"
 USER_AGENT = "AskInsects/0.1 source-plane"
+KNOWN_CSV_NAME = "schmidtetalaee_dyrad.csv"
 
 
 @dataclass(frozen=True)
@@ -161,6 +162,20 @@ def _preview_url(file_payload: dict[str, object]) -> str:
     return f"{DRYAD_BASE}/data_file/preview/{_file_id(file_payload)}.js"
 
 
+def _is_csv_file(file_payload: dict[str, object]) -> bool:
+    return _clean(file_payload.get("path")).lower().endswith(".csv") or "csv" in _clean(file_payload.get("mimeType")).lower()
+
+
+def _select_target_csv(files: list[dict[str, object]]) -> dict[str, object] | None:
+    """Pick the data CSV. Prefer the known filename, but fall back to any CSV so
+    an upstream rename does not silently leave the lane empty."""
+    csv_files = [file for file in files if _is_csv_file(file)]
+    for file in csv_files:
+        if _clean(file.get("path")).lower() == KNOWN_CSV_NAME:
+            return file
+    return csv_files[0] if csv_files else None
+
+
 def _parse_preview_rows(preview_js: str) -> tuple[list[str], list[tuple[int, dict[str, str]]]]:
     parser = _PreviewTableParser()
     parser.feed(preview_js)
@@ -181,26 +196,51 @@ def _parse_preview_rows(preview_js: str) -> tuple[list[str], list[tuple[int, dic
     return headers, parsed
 
 
+_METADATA_HEADERS = (
+    "Week",
+    "Gdate",
+    "fieldcd",
+    "Field ID",
+    "Treatment",
+    "Transect",
+    "veg",
+    "PropNoncrop",
+    "PropBBtot",
+    "FRAGEdge",
+    "FRAGSHDI",
+    "chgNP",
+    "chgF",
+    "SWD",
+)
+
+
+def _norm_header(key: object) -> str:
+    """Normalize a header for matching: lowercase, strip non-alphanumerics.
+
+    Upstream preview headers can drift in case, spacing, or punctuation
+    ("Field ID" vs "Field_ID"). Matching on the normalized form keeps metadata
+    columns out of the predator counts and keeps field parsing from silently
+    losing values.
+    """
+    return re.sub(r"[^a-z0-9]+", "", str(key or "").lower())
+
+
+_METADATA_NORM = {_norm_header(header) for header in _METADATA_HEADERS}
+
+
+def _field(values: dict[str, str], *names: str) -> str:
+    norm_map = {_norm_header(key): value for key, value in values.items()}
+    for name in names:
+        value = norm_map.get(_norm_header(name))
+        if value not in (None, ""):
+            return value
+    return ""
+
+
 def _predator_counts(values: dict[str, str]) -> dict[str, int]:
-    metadata_fields = {
-        "Week",
-        "Gdate",
-        "fieldcd",
-        "Field ID",
-        "Treatment",
-        "Transect",
-        "veg",
-        "PropNoncrop",
-        "PropBBtot",
-        "FRAGEdge",
-        "FRAGSHDI",
-        "chgNP",
-        "chgF",
-        "SWD",
-    }
     counts: dict[str, int] = {}
     for key, value in values.items():
-        if key in metadata_fields:
+        if _norm_header(key) in _METADATA_NORM:
             continue
         count = _int(value)
         if count is not None:
@@ -285,12 +325,12 @@ def _file_manifest_record(file_payload: dict[str, object], raw_path: Path, retri
 
 
 def _row_record(file_payload: dict[str, object], row_number: int, values: dict[str, str], preview_path: Path, retrieved_at: str) -> EvidenceRecord:
-    week = _clean(values.get("Week"))
-    date = _clean(values.get("Gdate"))
-    field_id = _clean(values.get("Field ID") or values.get("fieldcd"))
-    treatment = _clean(values.get("Treatment"))
-    transect = _clean(values.get("Transect"))
-    swd_count = _int(values.get("SWD"))
+    week = _clean(_field(values, "Week"))
+    date = _clean(_field(values, "Gdate"))
+    field_id = _clean(_field(values, "Field ID", "fieldcd"))
+    treatment = _clean(_field(values, "Treatment"))
+    transect = _clean(_field(values, "Transect"))
+    swd_count = _int(_field(values, "SWD"))
     predator_counts = _predator_counts(values)
     payload = {
         "atom_type": "dryad_landscape_monitoring_row",
@@ -300,17 +340,17 @@ def _row_record(file_payload: dict[str, object], row_number: int, values: dict[s
         "row_number": row_number,
         "week": week,
         "date": date,
-        "field_code": _clean(values.get("fieldcd")),
+        "field_code": _clean(_field(values, "fieldcd")),
         "field_id": field_id,
         "treatment": treatment,
         "transect": transect,
-        "vegetation_between_rows": _clean(values.get("veg")),
-        "proportion_noncrop_1km": _float(values.get("PropNoncrop")),
-        "proportion_blueberry_1km": _float(values.get("PropBBtot")),
-        "edge_density": _float(values.get("FRAGEdge")),
-        "landscape_composition_shannon": _float(values.get("FRAGSHDI")),
-        "change_noncrop": _float(values.get("chgNP")),
-        "change_forest": _float(values.get("chgF")),
+        "vegetation_between_rows": _clean(_field(values, "veg")),
+        "proportion_noncrop_1km": _float(_field(values, "PropNoncrop")),
+        "proportion_blueberry_1km": _float(_field(values, "PropBBtot")),
+        "edge_density": _float(_field(values, "FRAGEdge")),
+        "landscape_composition_shannon": _float(_field(values, "FRAGSHDI")),
+        "change_noncrop": _float(_field(values, "chgNP")),
+        "change_forest": _float(_field(values, "chgF")),
         "swd_trap_count": swd_count,
         "predator_counts": predator_counts,
         "row_values": values,
@@ -422,12 +462,14 @@ def fetch_drosophila_suzukii_dryad_landscape_monitoring_records(
             gap_count=len(gaps),
         )
 
+    manifest_ok = True
     try:
         files_payload = json_fetcher(VERSION_API_URL)
         files_path = _write_json(raw_dir, "dryad_52c2k52_files.json", files_payload)
         raw_artifacts.append(files_path.as_posix())
         files = _files_from_version_payload(files_payload)
     except Exception as exc:
+        manifest_ok = False
         gap = _gap_record(
             "dryad_landscape_file_manifest_fetch_failed",
             retrieved,
@@ -439,15 +481,19 @@ def fetch_drosophila_suzukii_dryad_landscape_monitoring_records(
         gaps.append(_gap_payload(gap))
         files = []
 
-    for file_payload in files:
-        if _clean(file_payload.get("path")).lower() != "schmidtetalaee_dyrad.csv":
-            continue
+    target = _select_target_csv(files)
+    if target is not None:
+        file_payload = target
         file_count += 1
         records.append(_file_manifest_record(file_payload, files_path, retrieved))
         preview_url = _preview_url(file_payload)
         try:
             preview = text_fetcher(preview_url)
-            preview_path = _write_text(raw_dir, "dryad_52c2k52_schmidtetalAEE_dyrad_preview.js", preview)
+            preview_path = _write_text(
+                raw_dir,
+                f"dryad_52c2k52_{_safe_id(file_payload.get('path'))}_preview.js",
+                preview,
+            )
             raw_artifacts.append(preview_path.as_posix())
             headers, rows = _parse_preview_rows(preview)
             if not headers or not rows:
@@ -474,7 +520,9 @@ def fetch_drosophila_suzukii_dryad_landscape_monitoring_records(
             records.append(gap)
             gaps.append(_gap_payload(gap))
 
-    if file_count == 0:
+    # Only report "CSV not found" when the manifest was actually fetched; a
+    # manifest-fetch failure already has its own gap and must not double-report.
+    if file_count == 0 and manifest_ok:
         gap = _gap_record(
             "dryad_landscape_csv_file_not_found",
             retrieved,

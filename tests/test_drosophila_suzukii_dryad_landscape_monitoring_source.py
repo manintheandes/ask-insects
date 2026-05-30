@@ -60,6 +60,58 @@ def landscape_fetch_text(url: str) -> str:
     raise AssertionError(f"unexpected URL: {url}")
 
 
+# Same table, but headers drift in case/punctuation ("Field_ID", "swd").
+DRIFTED_PREVIEW_JS = """
+$("#preview").html("<table><tr><th>Week</th><th>Gdate</th><th>fieldcd</th><th>Field_ID</th><th>Treatment</th><th>Transect</th><th>veg</th><th>PropNoncrop</th><th>PropBBtot</th><th>FRAGEdge</th><th>FRAGSHDI</th><th>chgNP</th><th>chgF</th><th>swd</th><th>Araneae</th></tr><tr><td>1</td><td>2016-05-19</td><td>AL-01</td><td>Field A</td><td>wooded</td><td>edge</td><td>grass</td><td>0.42</td><td>0.15</td><td>12.3</td><td>1.9</td><td>0.02</td><td>-0.01</td><td>9</td><td>4</td></tr></table>");
+"""
+
+
+def drifted_fetch_text(url: str) -> str:
+    return DRIFTED_PREVIEW_JS
+
+
+# Upstream renamed the CSV; file id differs too.
+RENAMED_FILES_FIXTURE = {
+    "_embedded": {
+        "stash:files": [
+            {
+                "path": "SchmidtEtAl_AEE_renamed.csv",
+                "mimeType": "text/csv",
+                "size": 51470,
+                "digest": "2583ef17da0b77c1b4e8139a190d34da",
+                "digestType": "md5",
+                "_links": {
+                    "self": {"href": "https://datadryad.org/api/v2/files/99999"},
+                    "stash:download": {"href": "https://datadryad.org/api/v2/files/99999/download"},
+                },
+            }
+        ]
+    }
+}
+
+
+def renamed_fetch_json(url: str):
+    if url == DATASET_API_URL:
+        return DATASET_FIXTURE
+    if url == VERSION_API_URL:
+        return RENAMED_FILES_FIXTURE
+    raise AssertionError(f"unexpected URL: {url}")
+
+
+def renamed_fetch_text(url: str) -> str:
+    if url == "https://datadryad.org/data_file/preview/99999.js":
+        return PREVIEW_JS
+    raise AssertionError(f"unexpected URL: {url}")
+
+
+def manifest_failing_fetch_json(url: str):
+    if url == DATASET_API_URL:
+        return DATASET_FIXTURE
+    if url == VERSION_API_URL:
+        raise RuntimeError("file manifest blocked")
+    raise AssertionError(f"unexpected URL: {url}")
+
+
 class DrosophilaSuzukiiDryadLandscapeMonitoringSourceTests(unittest.TestCase):
     def test_fetch_parses_preview_rows_and_records_full_csv_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -85,6 +137,56 @@ class DrosophilaSuzukiiDryadLandscapeMonitoringSourceTests(unittest.TestCase):
         self.assertTrue(
             any(gap["reason"] == "dryad_landscape_full_csv_download_blocked_preview_used" for gap in result.gaps)
         )
+
+    def test_drifted_headers_still_parse_fields_and_exclude_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_drosophila_suzukii_dryad_landscape_monitoring_records(
+                raw_dir=Path(tmpdir),
+                fetch_json=landscape_fetch_json,
+                fetch_text=drifted_fetch_text,
+                retrieved_at=RETRIEVED_AT,
+            )
+
+        rows = [
+            record.payload
+            for record in result.records
+            if record.payload and record.payload.get("atom_type") == "dryad_landscape_monitoring_row"
+        ]
+        self.assertEqual(len(rows), 1)
+        # 'swd' and 'Field_ID' resolve despite case/punctuation drift.
+        self.assertEqual(rows[0]["swd_trap_count"], 9)
+        self.assertEqual(rows[0]["field_id"], "Field A")
+        # The drifted SWD column must not be miscounted as a predator taxon.
+        self.assertEqual(rows[0]["predator_counts"], {"Araneae": 4})
+
+    def test_renamed_csv_is_still_processed(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_drosophila_suzukii_dryad_landscape_monitoring_records(
+                raw_dir=Path(tmpdir),
+                fetch_json=renamed_fetch_json,
+                fetch_text=renamed_fetch_text,
+                retrieved_at=RETRIEVED_AT,
+            )
+
+        self.assertEqual(result.file_count, 1)
+        self.assertEqual(result.row_count, 2)
+        self.assertFalse(
+            any(gap["reason"] == "dryad_landscape_csv_file_not_found" for gap in result.gaps)
+        )
+
+    def test_manifest_failure_emits_single_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_drosophila_suzukii_dryad_landscape_monitoring_records(
+                raw_dir=Path(tmpdir),
+                fetch_json=manifest_failing_fetch_json,
+                fetch_text=landscape_fetch_text,
+                retrieved_at=RETRIEVED_AT,
+            )
+
+        reasons = [gap["reason"] for gap in result.gaps]
+        self.assertIn("dryad_landscape_file_manifest_fetch_failed", reasons)
+        # One root cause must not also report csv_file_not_found.
+        self.assertNotIn("dryad_landscape_csv_file_not_found", reasons)
 
 
 if __name__ == "__main__":
