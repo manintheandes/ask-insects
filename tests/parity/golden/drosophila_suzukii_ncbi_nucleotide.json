@@ -1,0 +1,107 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "dna_barcodes",
+      "media_url": null,
+      "payload": {
+        "accession": "PV080705",
+        "accession_version": "PV080705.1",
+        "atom_type": "ncbi_nucleotide_crosscheck",
+        "biomol": "genomic",
+        "bold_match_status": "genbank_only",
+        "candidate_source": "ncbi_nuccore_esearch_esummary",
+        "collection_date": "21-Jun-2018",
+        "common_name": "spotted wing drosophila",
+        "country": "USA: Hawaii",
+        "createdate": null,
+        "genome": "mitochondrion",
+        "marker": "COI/COX1",
+        "matched_bold_record_ids": [],
+        "moltype": "dna",
+        "primary_taxon": "Drosophila suzukii",
+        "query": "Drosophila suzukii[Organism] AND (COI OR COX1 OR \"cytochrome oxidase\" OR barcode)",
+        "scope": "Drosophila suzukii GenBank COI/barcode nucleotide cross-check",
+        "sequence_length": 658,
+        "source_db": "insd",
+        "source_modifiers": {
+          "collection_date": "21-Jun-2018",
+          "country": "USA: Hawaii",
+          "specimen_voucher": "UHIM.BRU_00989"
+        },
+        "specimen_voucher": "UHIM.BRU_00989",
+        "taxid": 28584,
+        "tech": "barcode",
+        "title": "Drosophila suzukii voucher UHIM.BRU_00989 cytochrome oxidase subunit 1 (COI) gene, partial cds; mitochondrial",
+        "topology": "linear",
+        "uid": "3040293126",
+        "updatedate": null
+      },
+      "provenance": {
+        "license": "NCBI GenBank nucleotide metadata; source terms apply",
+        "locator": "<raw_dir>/nuccore_esummary_0001.json#result/3040293126",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ncbi_nucleotide",
+        "source_url": "https://www.ncbi.nlm.nih.gov/nuccore/PV080705.1"
+      },
+      "record_id": "swd_ncbi_nucleotide:nuccore:PV080705.1",
+      "source": "drosophila_suzukii_ncbi_nucleotide",
+      "species": "Drosophila suzukii",
+      "text": "Drosophila suzukii voucher UHIM.BRU_00989 cytochrome oxidase subunit 1 (COI) gene, partial cds; mitochondrial Drosophila suzukii (spotted wing drosophila) NCBI GenBank nucleotide cross-check. accession=PV080705.1 marker=COI/COX1 bold_match_status=genbank_only sequence_length=658 bp country=USA: Hawaii collection_date=21-Jun-2018 voucher=UHIM.BRU_00989",
+      "title": "Drosophila suzukii voucher UHIM.BRU_00989 cytochrome oxidase subunit 1 (COI) gene, partial cds; mitochondrial",
+      "url": "https://www.ncbi.nlm.nih.gov/nuccore/PV080705.1"
+    },
+    {
+      "lane": "dna_barcodes",
+      "media_url": null,
+      "payload": {
+        "accession": "PV080836",
+        "accession_version": "PV080836.1",
+        "atom_type": "ncbi_nucleotide_crosscheck",
+        "biomol": "genomic",
+        "bold_match_status": "bold_accession_matched",
+        "candidate_source": "ncbi_nuccore_esearch_esummary",
+        "collection_date": "12-Aug-2021",
+        "common_name": "spotted wing drosophila",
+        "country": "USA: Hawaii",
+        "createdate": null,
+        "genome": "mitochondrion",
+        "marker": "COI/COX1",
+        "matched_bold_record_ids": [
+          "swd:bold:barcode:SWD1"
+        ],
+        "moltype": "dna",
+        "primary_taxon": "Drosophila suzukii",
+        "query": "Drosophila suzukii[Organism] AND (COI OR COX1 OR \"cytochrome oxidase\" OR barcode)",
+        "scope": "Drosophila suzukii GenBank COI/barcode nucleotide cross-check",
+        "sequence_length": 659,
+        "source_db": "insd",
+        "source_modifiers": {
+          "collection_date": "12-Aug-2021",
+          "country": "USA: Hawaii",
+          "specimen_voucher": "UHIM.BRU_04107"
+        },
+        "specimen_voucher": "UHIM.BRU_04107",
+        "taxid": 28584,
+        "tech": "barcode",
+        "title": "Drosophila suzukii voucher UHIM.BRU_04107 cytochrome oxidase subunit 1 (COI) gene, partial cds; mitochondrial",
+        "topology": "linear",
+        "uid": "3040293388",
+        "updatedate": null
+      },
+      "provenance": {
+        "license": "NCBI GenBank nucleotide metadata; source terms apply",
+        "locator": "<raw_dir>/nuccore_esummary_0001.json#result/3040293388",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ncbi_nucleotide",
+        "source_url": "https://www.ncbi.nlm.nih.gov/nuccore/PV080836.1"
+      },
+      "record_id": "swd_ncbi_nucleotide:nuccore:PV080836.1",
+      "source": "drosophila_suzukii_ncbi_nucleotide",
+      "species": "Drosophila suzukii",
+      "text": "Drosophila suzukii voucher UHIM.BRU_04107 cytochrome oxidase subunit 1 (COI) gene, partial cds; mitochondrial Drosophila suzukii (spotted wing drosophila) NCBI GenBank nucleotide cross-check. accession=PV080836.1 marker=COI/COX1 bold_match_status=bold_accession_matched sequence_length=659 bp country=USA: Hawaii collection_date=12-Aug-2021 voucher=UHIM.BRU_04107 matched_bold_record_ids=swd:bold:barcode:SWD1",
+      "title": "Drosophila suzukii voucher UHIM.BRU_04107 cytochrome oxidase subunit 1 (COI) gene, partial cds; mitochondrial",
+      "url": "https://www.ncbi.nlm.nih.gov/nuccore/PV080836.1"
+    }
+  ]
+}

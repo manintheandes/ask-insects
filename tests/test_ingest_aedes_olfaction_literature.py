@@ -54,6 +54,9 @@ class IngestAedesOlfactionLiteratureTests(unittest.TestCase):
 
             self.assertTrue(result["ok"])
             self.assertEqual(result["source"], "aedes_olfaction_literature")
+            # Exact record_count == 2 is only safe because this fixture emits zero
+            # gaps; persist_gap_records=True would otherwise add source_gap rows.
+            self.assertEqual(result["gap_count"], 0)
             self.assertEqual(result["record_count"], 2)
             self.assertEqual(result["canonical_literature_row_count"], 1)
             self.assertEqual(result["already_indexed_count"], 1)
@@ -96,7 +99,9 @@ class IngestAedesOlfactionLiteratureTests(unittest.TestCase):
 
             self.assertFalse(failed["ok"])
             self.assertTrue(failed["preserved_existing"])
-            self.assertEqual(failed["record_count"], 2)
+            # preserved_existing is True is the real guard against record loss here;
+            # the loosened count only tolerates added source_gap EvidenceRecords.
+            self.assertGreaterEqual(failed["record_count"], 2)
 
     def test_ingest_writes_legal_olfaction_fulltext_units(self):
         with tempfile.TemporaryDirectory() as tmpdir:

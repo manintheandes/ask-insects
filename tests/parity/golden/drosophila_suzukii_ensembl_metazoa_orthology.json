@@ -1,0 +1,165 @@
+{
+  "gaps": [
+    {
+      "filename": "gene_archive.txt.gz",
+      "lane": "genome_features",
+      "reason": "swd_ensembl_metazoa_gene_archive_empty",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "drosophila_suzukii_ensembl_metazoa_orthology",
+      "species": "Drosophila suzukii",
+      "url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/drosophila_suzukii_gca037355615v1rs_core_62_115_1/gene_archive.txt.gz"
+    },
+    {
+      "filename": "stable_id_event.txt.gz",
+      "lane": "genome_features",
+      "reason": "swd_ensembl_metazoa_stable_id_event_empty",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "drosophila_suzukii_ensembl_metazoa_orthology",
+      "species": "Drosophila suzukii",
+      "url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/drosophila_suzukii_gca037355615v1rs_core_62_115_1/stable_id_event.txt.gz"
+    }
+  ],
+  "records": [
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "atom_type": "ensembl_metazoa_current_gene",
+        "biotype": "protein_coding",
+        "description": "DNA polymerase interacting tpr containing protein of 47kD",
+        "display_label": "Dpit47",
+        "end": 16534757,
+        "ensembl_release": "Ensembl Metazoa release 62",
+        "gene_key": "2",
+        "line_number": 1,
+        "seq_region": "NC_089020.1",
+        "source": "RefSeq",
+        "source_file": "dsgca037355615v1rs_eg_gene__gene__main.txt.gz",
+        "stable_id": "GeneID_108018010",
+        "start": 16533445,
+        "strand": -1
+      },
+      "provenance": {
+        "license": "Ensembl Genomes FTP public data; EMBL-EBI terms apply",
+        "locator": "<raw_dir>/raw/drosophila_suzukii_ensembl_metazoa_orthology/dsgca037355615v1rs_eg_gene__gene__main.txt.gz#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ensembl_metazoa_orthology",
+        "source_url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/metazoa_mart_62/dsgca037355615v1rs_eg_gene__gene__main.txt.gz"
+      },
+      "record_id": "swd_ensembl_current_gene:2",
+      "source": "drosophila_suzukii_ensembl_metazoa_orthology",
+      "species": "Drosophila suzukii",
+      "text": "Ensembl Metazoa current gene row for Drosophila suzukii Dpit47. Stable ID GeneID_108018010, biotype protein_coding, source RefSeq, location NC_089020.1:16533445-16534757 strand -1. Description: DNA polymerase interacting tpr containing protein of 47kD.",
+      "title": "Drosophila suzukii Ensembl Metazoa current gene: Dpit47",
+      "url": "https://metazoa.ensembl.org/Drosophila_suzukii_gca037355615v1rs/Gene/Summary?g=GeneID_108018010"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "atom_type": "ensembl_metazoa_dmel_homolog",
+        "dmel_display_label": "Dpit47",
+        "dmel_gene_stable_id": "FBgn0266518",
+        "dmel_protein_stable_id": "FBpp0085479",
+        "ensembl_release": "Ensembl Metazoa release 62",
+        "gene_key": "2",
+        "is_high_confidence": true,
+        "line_number": 1,
+        "percent_identity": 91.1616,
+        "relationship": "ortholog_one2one",
+        "source_file": "dsgca037355615v1rs_eg_gene__homolog_dmelanogaster_eg__dm.txt.gz",
+        "swd_display_label": "Dpit47",
+        "swd_protein_stable_id": "XP_016940857.2",
+        "swd_stable_id": "GeneID_108018010"
+      },
+      "provenance": {
+        "license": "Ensembl Genomes FTP public data; EMBL-EBI terms apply",
+        "locator": "<raw_dir>/raw/drosophila_suzukii_ensembl_metazoa_orthology/dsgca037355615v1rs_eg_gene__homolog_dmelanogaster_eg__dm.txt.gz#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ensembl_metazoa_orthology",
+        "source_url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/metazoa_mart_62/dsgca037355615v1rs_eg_gene__homolog_dmelanogaster_eg__dm.txt.gz"
+      },
+      "record_id": "swd_ensembl_dmel_homolog:2:FBgn0266518:1",
+      "source": "drosophila_suzukii_ensembl_metazoa_orthology",
+      "species": "Drosophila suzukii",
+      "text": "Ensembl Metazoa homolog row links Drosophila suzukii Dpit47 (stable ID GeneID_108018010) to Drosophila melanogaster gene FBgn0266518 (Dpit47) with relationship ortholog_one2one. Percent identity is 91.1616.",
+      "title": "Drosophila suzukii Ensembl Metazoa homolog: Dpit47 to Dmel FBgn0266518",
+      "url": "https://metazoa.ensembl.org/Drosophila_melanogaster/Gene/Summary?g=FBgn0266518"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "atom_type": "ensembl_metazoa_geneid_xref",
+        "display_label": "Dpit47",
+        "ensembl_release": "Ensembl Metazoa release 62",
+        "gene_key": "2",
+        "geneid": "108018010",
+        "line_number": 1,
+        "source_file": "dsgca037355615v1rs_eg_gene__ox_geneid__dm.txt.gz",
+        "stable_id": "GeneID_108018010"
+      },
+      "provenance": {
+        "license": "Ensembl Genomes FTP public data; EMBL-EBI terms apply",
+        "locator": "<raw_dir>/raw/drosophila_suzukii_ensembl_metazoa_orthology/dsgca037355615v1rs_eg_gene__ox_geneid__dm.txt.gz#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ensembl_metazoa_orthology",
+        "source_url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/metazoa_mart_62/dsgca037355615v1rs_eg_gene__ox_geneid__dm.txt.gz"
+      },
+      "record_id": "swd_ensembl_geneid_xref:2:108018010",
+      "source": "drosophila_suzukii_ensembl_metazoa_orthology",
+      "species": "Drosophila suzukii",
+      "text": "Ensembl Metazoa maps Drosophila suzukii Dpit47 (stable ID GeneID_108018010) to NCBI GeneID 108018010.",
+      "title": "Drosophila suzukii Ensembl Metazoa GeneID xref: Dpit47 to GeneID 108018010",
+      "url": "https://www.ncbi.nlm.nih.gov/gene/108018010"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "atom_type": "ensembl_metazoa_stable_id_history_gap",
+        "ensembl_release": "Ensembl Metazoa release 62",
+        "reason": "swd_ensembl_metazoa_gene_archive_empty",
+        "row_count": 0,
+        "source_file": "gene_archive.txt.gz"
+      },
+      "provenance": {
+        "license": "Ensembl Genomes FTP public data; EMBL-EBI terms apply",
+        "locator": "<raw_dir>/raw/drosophila_suzukii_ensembl_metazoa_orthology/gene_archive.txt.gz#empty",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ensembl_metazoa_orthology",
+        "source_url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/drosophila_suzukii_gca037355615v1rs_core_62_115_1/gene_archive.txt.gz"
+      },
+      "record_id": "swd_ensembl_history_gap:swd_ensembl_metazoa_gene_archive_empty",
+      "source": "drosophila_suzukii_ensembl_metazoa_orthology",
+      "species": "Drosophila suzukii",
+      "text": "Ensembl Metazoa release 62 provides gene_archive.txt.gz for Drosophila suzukii, but the table has zero rows. Ask Insects therefore keeps historical gene archive mappings as an explicit source gap.",
+      "title": "Drosophila suzukii Ensembl Metazoa gene archive table is empty",
+      "url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/drosophila_suzukii_gca037355615v1rs_core_62_115_1/gene_archive.txt.gz"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "atom_type": "ensembl_metazoa_stable_id_history_gap",
+        "ensembl_release": "Ensembl Metazoa release 62",
+        "reason": "swd_ensembl_metazoa_stable_id_event_empty",
+        "row_count": 0,
+        "source_file": "stable_id_event.txt.gz"
+      },
+      "provenance": {
+        "license": "Ensembl Genomes FTP public data; EMBL-EBI terms apply",
+        "locator": "<raw_dir>/raw/drosophila_suzukii_ensembl_metazoa_orthology/stable_id_event.txt.gz#empty",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ensembl_metazoa_orthology",
+        "source_url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/drosophila_suzukii_gca037355615v1rs_core_62_115_1/stable_id_event.txt.gz"
+      },
+      "record_id": "swd_ensembl_history_gap:swd_ensembl_metazoa_stable_id_event_empty",
+      "source": "drosophila_suzukii_ensembl_metazoa_orthology",
+      "species": "Drosophila suzukii",
+      "text": "Ensembl Metazoa release 62 provides stable_id_event.txt.gz for Drosophila suzukii, but the table has zero rows. Ask Insects can show current IDs and homologs, but not historical stable-ID change events from this release.",
+      "title": "Drosophila suzukii Ensembl Metazoa stable-ID event table is empty",
+      "url": "https://ftp.ensemblgenomes.ebi.ac.uk/pub/release-62/metazoa/mysql/drosophila_suzukii_gca037355615v1rs_core_62_115_1/stable_id_event.txt.gz"
+    }
+  ]
+}

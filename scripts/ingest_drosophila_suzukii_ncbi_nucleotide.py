@@ -12,16 +12,12 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.drosophila_suzukii_ncbi_nucleotide import (
     DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID,
     fetch_drosophila_suzukii_ncbi_nucleotide_records,
 )
 
-
-FATAL_REFRESH_GAP_REASONS = {
-    "swd_ncbi_nucleotide_search_failed",
-    "swd_ncbi_nucleotide_summary_failed",
-}
 
 
 def _read_json(path: Path, default: object) -> object:
@@ -181,16 +177,24 @@ def ingest_drosophila_suzukii_ncbi_nucleotide(
         page_size=page_size,
         delay_seconds=delay_seconds,
     )
-    fatal_gap = any(isinstance(gap, dict) and gap.get("reason") in FATAL_REFRESH_GAP_REASONS for gap in result.gaps)
-    refresh_failed = fatal_gap or (not result.records and bool(result.gaps))
-    if not refresh_failed:
-        index.replace_source_records(DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID, result.records)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=DROSOPHILA_SUZUKII_NCBI_NUCLEOTIDE_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and _source_record_count(index) > 0,
+        preserved_existing=preserved_existing,
     )
 
 
