@@ -7,8 +7,8 @@ import json
 from pathlib import Path
 from typing import Callable
 from urllib.request import Request, urlopen
-
-from openpyxl import load_workbook
+from xml.etree import ElementTree as ET
+from zipfile import ZipFile
 
 from askinsects.records import EvidenceRecord, Provenance
 
@@ -106,13 +106,119 @@ def _cell_value(value: object) -> object:
     return value
 
 
+def _xlsx_namespaces() -> dict[str, str]:
+    return {
+        "main": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+        "rel": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+        "pkgrel": "http://schemas.openxmlformats.org/package/2006/relationships",
+    }
+
+
+def _xlsx_column_index(cell_ref: str) -> int:
+    letters = "".join(ch for ch in cell_ref if ch.isalpha()).upper()
+    index = 0
+    for ch in letters:
+        index = index * 26 + (ord(ch) - ord("A") + 1)
+    return max(index - 1, 0)
+
+
+def _coerce_xlsx_scalar(text: str | None) -> object:
+    if text is None:
+        return None
+    value = text.strip()
+    if not value:
+        return ""
+    try:
+        number = float(value)
+    except ValueError:
+        return value
+    if number.is_integer():
+        return int(number)
+    return round(number, 8)
+
+
+def _read_xlsx_shared_strings(zip_file: ZipFile) -> list[str]:
+    try:
+        xml = zip_file.read("xl/sharedStrings.xml")
+    except KeyError:
+        return []
+    root = ET.fromstring(xml)
+    ns = _xlsx_namespaces()
+    strings: list[str] = []
+    for item in root.findall("main:si", ns):
+        pieces = [node.text or "" for node in item.findall(".//main:t", ns)]
+        strings.append("".join(pieces))
+    return strings
+
+
+def _read_xlsx_sheet_paths(zip_file: ZipFile) -> list[tuple[str, str]]:
+    ns = _xlsx_namespaces()
+    workbook = ET.fromstring(zip_file.read("xl/workbook.xml"))
+    relationships = ET.fromstring(zip_file.read("xl/_rels/workbook.xml.rels"))
+    rel_targets = {
+        rel.attrib.get("Id"): rel.attrib.get("Target", "")
+        for rel in relationships.findall("pkgrel:Relationship", ns)
+    }
+    sheets: list[tuple[str, str]] = []
+    for sheet in workbook.findall("main:sheets/main:sheet", ns):
+        sheet_name = sheet.attrib.get("name", "Sheet")
+        rel_id = sheet.attrib.get(f"{{{ns['rel']}}}id")
+        target = rel_targets.get(rel_id, "")
+        if not target:
+            continue
+        path = target.lstrip("/")
+        if not path.startswith("xl/"):
+            path = f"xl/{path}"
+        sheets.append((sheet_name, path))
+    return sheets
+
+
+def _xlsx_cell_value(cell: ET.Element, shared_strings: list[str]) -> object:
+    ns = _xlsx_namespaces()
+    cell_type = cell.attrib.get("t")
+    if cell_type == "s":
+        raw_index = cell.findtext("main:v", default="", namespaces=ns)
+        try:
+            return shared_strings[int(raw_index)]
+        except (ValueError, IndexError):
+            return raw_index
+    if cell_type == "inlineStr":
+        pieces = [node.text or "" for node in cell.findall(".//main:t", ns)]
+        return "".join(pieces)
+    if cell_type == "b":
+        return cell.findtext("main:v", default="", namespaces=ns) == "1"
+    return _coerce_xlsx_scalar(cell.findtext("main:v", default="", namespaces=ns))
+
+
+def _worksheet_rows(zip_file: ZipFile, sheet_path: str, shared_strings: list[str]) -> list[tuple[object, ...]]:
+    ns = _xlsx_namespaces()
+    root = ET.fromstring(zip_file.read(sheet_path))
+    rows: list[tuple[object, ...]] = []
+    for row in root.findall(".//main:sheetData/main:row", ns):
+        values: list[object] = []
+        for cell in row.findall("main:c", ns):
+            cell_ref = cell.attrib.get("r", "")
+            column_index = _xlsx_column_index(cell_ref)
+            while len(values) <= column_index:
+                values.append(None)
+            values[column_index] = _xlsx_cell_value(cell, shared_strings)
+        rows.append(tuple(values))
+    return rows
+
+
 def _rows_from_xlsx(path: Path) -> list[dict[str, object]]:
-    workbook = load_workbook(path, data_only=True, read_only=True)
     rows: list[dict[str, object]] = []
-    for sheet in workbook.worksheets:
+    with ZipFile(path) as zip_file:
+        shared_strings = _read_xlsx_shared_strings(zip_file)
+        sheets = _read_xlsx_sheet_paths(zip_file)
+        worksheets = [
+            (sheet_name, _worksheet_rows(zip_file, sheet_path, shared_strings))
+            for sheet_name, sheet_path in sheets
+        ]
+    for sheet_name, worksheet_rows in worksheets:
         material_rows = [
             tuple(_cell_value(value) for value in row)
-            for row in sheet.iter_rows(values_only=True)
+            for row in worksheet_rows
             if any(value is not None and str(value).strip() for value in row)
         ]
         if len(material_rows) < 2:
@@ -131,7 +237,7 @@ def _rows_from_xlsx(path: Path) -> list[dict[str, object]]:
                 continue
             rows.append(
                 {
-                    "sheet": sheet.title,
+                    "sheet": sheet_name,
                     "table_title": table_title,
                     "row_number": row_number,
                     "fields": row_payload,
