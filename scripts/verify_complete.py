@@ -170,6 +170,7 @@ REQUIRED_FILES = (
     "askinsects/sources/drosophila_suzukii_extension_guidance.py",
     "askinsects/sources/drosophila_suzukii_jki_drosomon_trap_captures.py",
     "askinsects/sources/drosophila_suzukii_osu_trap_reports.py",
+    "askinsects/sources/drosophila_suzukii_dryad_landscape_monitoring.py",
     "askinsects/sources/drosophila_suzukii_umn_flight_assay_rows.py",
     "askinsects/sources/drosophila_suzukii_susceptibility_assay_rows.py",
     "askinsects/sources/drosophila_suzukii_biocontrol_outcome_rows.py",
@@ -245,6 +246,7 @@ REQUIRED_FILES = (
     "scripts/ingest_drosophila_suzukii_extension_guidance.py",
     "scripts/ingest_drosophila_suzukii_jki_drosomon_trap_captures.py",
     "scripts/ingest_drosophila_suzukii_osu_trap_reports.py",
+    "scripts/ingest_drosophila_suzukii_dryad_landscape_monitoring.py",
     "scripts/ingest_drosophila_suzukii_umn_flight_assay_rows.py",
     "scripts/ingest_drosophila_suzukii_susceptibility_assay_rows.py",
     "scripts/ingest_drosophila_suzukii_biocontrol_outcome_rows.py",
@@ -381,6 +383,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_drosophila_suzukii_jki_drosomon_trap_captures.py",
     "tests/test_drosophila_suzukii_osu_trap_reports_source.py",
     "tests/test_ingest_drosophila_suzukii_osu_trap_reports.py",
+    "tests/test_drosophila_suzukii_dryad_landscape_monitoring_source.py",
+    "tests/test_ingest_drosophila_suzukii_dryad_landscape_monitoring.py",
     "tests/test_drosophila_suzukii_umn_flight_assay_rows_source.py",
     "tests/test_ingest_drosophila_suzukii_umn_flight_assay_rows.py",
     "tests/test_drosophila_suzukii_susceptibility_assay_rows.py",
@@ -526,6 +530,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_drosophila_suzukii_jki_drosomon_trap_captures",
     "tests.test_drosophila_suzukii_osu_trap_reports_source",
     "tests.test_ingest_drosophila_suzukii_osu_trap_reports",
+    "tests.test_drosophila_suzukii_dryad_landscape_monitoring_source",
+    "tests.test_ingest_drosophila_suzukii_dryad_landscape_monitoring",
     "tests.test_drosophila_suzukii_umn_flight_assay_rows_source",
     "tests.test_ingest_drosophila_suzukii_umn_flight_assay_rows",
     "tests.test_drosophila_suzukii_video_atoms",
@@ -1265,6 +1271,20 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii OSU trap-report term: {term}")
+    for term in (
+        "drosophila_suzukii_dryad_landscape_monitoring",
+        "scripts/ingest_drosophila_suzukii_dryad_landscape_monitoring.py",
+        "dryad_public_preview_table_to_sqlite_ecology_landscape_monitoring_rows",
+        "10.5061/dryad.52c2k52",
+        "10.1016/j.agee.2018.11.014",
+        "dryad_file_52071_public_preview_js",
+        "swd_trap_count",
+        "predator_counts",
+        "landscape_composition_shannon",
+        "dryad_landscape_full_csv_download_blocked_preview_used",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii Dryad landscape-monitoring term: {term}")
     for term in (
         "drosophila_suzukii_umn_flight_assay_rows",
         "scripts/ingest_drosophila_suzukii_umn_flight_assay_rows.py",

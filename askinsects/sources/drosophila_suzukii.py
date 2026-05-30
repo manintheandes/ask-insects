@@ -156,8 +156,13 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
         (
             "observations_and_images",
             "mapped_queryable",
-            ["GBIF occurrence records", "iNaturalist licensed photo observations", "Ohio State crop scout trap-report rows"],
-            ["deeper non-Ohio regional monitoring networks", "additional crop scout trap datasets"],
+            [
+                "GBIF occurrence records",
+                "iNaturalist licensed photo observations",
+                "Ohio State crop scout trap-report rows",
+                "Dryad southeast U.S. blueberry landscape monitoring rows",
+            ],
+            ["additional regional monitoring networks beyond Ohio and southeast U.S. blueberry Dryad", "additional crop scout trap datasets"],
         ),
         (
             "literature",
@@ -217,8 +222,9 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "JKI DrosoMon trap-coordinate and habitat rows",
                 "PLOS global climate-suitability model supplement manifests and table rows",
                 "Ohio State weekly crop scout trap-report rows",
+                "Dryad southeast U.S. blueberry SWD trap-count and landscape-metric rows",
             ],
-            ["raw climate suitability raster grids", "additional non-Ohio regional/crop scout phenology feeds", "human-validated crop damage tables"],
+            ["raw climate suitability raster grids", "additional regional/crop scout phenology feeds beyond Ohio and southeast U.S. blueberry Dryad", "human-validated crop damage tables"],
         ),
         (
             "management_resistance_biocontrol",

@@ -141,6 +141,8 @@ The `drosophila_suzukii_jki_drosomon_trap_captures` lane adds source-grade field
 
 The `drosophila_suzukii_osu_trap_reports` lane adds public Ohio crop-scout monitoring evidence for SWD. It mirrors or verifies Ohio State University Extension trap-report spreadsheets for 2016-2021, preserves file checksums and byte sizes, parses trap sites and weekly trap-period observation rows with county, cooperator or farm, crop, trap ID, lure, count or status, and row/column locators, and stores an explicit source gap for the unavailable 2015 Google Sheet.
 
+The `drosophila_suzukii_dryad_landscape_monitoring` lane adds row-level southeast U.S. blueberry monitoring evidence from Dryad DOI `10.5061/dryad.52c2k52`, linked to primary paper DOI `10.1016/j.agee.2018.11.014`. It preserves the Dryad dataset and file manifest, byte size, MD5 checksum, license, and the public preview table for file `52071`, then parses each row into ecology records with SWD trap count, field, treatment, transect, vegetation, landscape metrics, and predator or natural-enemy counts. Dryad's direct full CSV download currently returns an unauthenticated 401 in this environment, so Ask Insects keeps a structured `dryad_landscape_full_csv_download_blocked_preview_used` gap while still making the public preview rows queryable.
+
 The `drosophila_suzukii_plos_climate_suitability` lane adds source-grade climate-suitability model evidence from PLOS ONE DOI `10.1371/journal.pone.0174318`. It indexes the article model summary, four supplementary files, row-level PCA/correlation/Moran's I XLSX tables, checksums, byte sizes, exact locators, and a queryable gap for unavailable raw MaxEnt/GARP raster suitability grids.
 
 ```bash
@@ -148,6 +150,8 @@ python3 -m askinsects ingest-drosophila-suzukii-jki-drosomon-trap-captures
 python3 -m askinsects ask "show Drosophila suzukii trap capture monitoring evidence" --json
 python3 -m askinsects ingest-drosophila-suzukii-osu-trap-reports
 python3 -m askinsects ask "show Drosophila suzukii Ohio trap reports" --json
+python3 -m askinsects ingest-drosophila-suzukii-dryad-landscape-monitoring
+python3 -m askinsects ask "show Drosophila suzukii southeast blueberry landscape monitoring" --json
 ```
 
 The `drosophila_suzukii_umn_flight_assay_rows` lane adds row-level behavior evidence from the University of Minnesota DRUM dataset `10.13020/4nsz-x660`. It saves item metadata, the archival CSV bitstream manifest, MD5/SHA-256/byte-size proof, CC BY-NC 3.0 US license, and 401 individual adult SWD flight-assay rows covering free-flight chamber and tethered flight mill observations with morph, sex, age, propensity, phototactic response, duration, bouts, distance, and average velocity fields.

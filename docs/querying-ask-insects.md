@@ -214,6 +214,16 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extr
 
 This lane preserves the Ohio State landing page boundary, public Google Sheet CSV exports, XLSX reports, file checksums and byte sizes, trap-site rows, and weekly trap-period observation rows. Each observation keeps county, cooperator or farm, crop, trap ID, lure, count or status, raw value, and row/column locator. The unavailable 2015 Google Sheet remains a structured source gap rather than being hidden.
 
+To ingest southeast U.S. blueberry landscape-monitoring rows from Dryad for spotted wing drosophila:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii-dryad-landscape-monitoring
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Drosophila suzukii southeast blueberry landscape monitoring" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 sql "select json_extract(payload_json, '$.atom_type') as atom_type, count(*) as n from record_payloads where source='drosophila_suzukii_dryad_landscape_monitoring' group by atom_type"
+```
+
+This lane uses Dryad DOI `10.5061/dryad.52c2k52` and primary paper DOI `10.1016/j.agee.2018.11.014`. It parses public preview table rows for file `52071` into ecology records with SWD trap counts, field/treatment/transect context, landscape metrics, and predator or natural-enemy counts. The direct full CSV download currently returns 401 without authentication, so Ask Insects stores that as a structured gap while using the public preview rows.
+
 To ingest PLOS climate-suitability model supplements for spotted wing drosophila:
 
 ```bash

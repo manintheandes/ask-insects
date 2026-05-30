@@ -3816,6 +3816,24 @@ def ingest_drosophila_suzukii_osu_trap_reports_hosted(
     return response
 
 
+def ingest_drosophila_suzukii_dryad_landscape_monitoring_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_dryad_landscape_monitoring import (
+        ingest_drosophila_suzukii_dryad_landscape_monitoring,
+    )
+
+    response = ingest_drosophila_suzukii_dryad_landscape_monitoring(
+        artifact_dir=artifact_dir,
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_drosophila_suzukii_umn_flight_assay_rows_hosted(
     payload: dict[str, object],
     *,
@@ -4211,6 +4229,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-osu-trap-reports":
             result = ingest_drosophila_suzukii_osu_trap_reports_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-dryad-landscape-monitoring":
+            result = ingest_drosophila_suzukii_dryad_landscape_monitoring_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-umn-flight-assay-rows":

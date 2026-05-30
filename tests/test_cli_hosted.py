@@ -1598,6 +1598,29 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][3], 3600)
         self.assertTrue(json.loads(output)["ok"])
 
+    def test_hosted_drosophila_suzukii_dryad_landscape_monitoring_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = object()
+            code, output = self.run_cli(
+                "ingest-drosophila-suzukii-dryad-landscape-monitoring",
+                "--hosted",
+                "--retrieved-at",
+                "2026-05-30T00:00:00Z",
+            )
+
+        self.assertEqual(code, 0, output)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/drosophila-suzukii-dryad-landscape-monitoring")
+        self.assertEqual(calls[0][2]["retrieved_at"], "2026-05-30T00:00:00Z")
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_drosophila_suzukii_plos_climate_suitability_ingest_sends_options(self):
         calls = []
 

@@ -77,6 +77,7 @@ sources:
         - drosophila_suzukii_extension_guidance
         - drosophila_suzukii_jki_drosomon_trap_captures
         - drosophila_suzukii_osu_trap_reports
+        - drosophila_suzukii_dryad_landscape_monitoring
         - drosophila_suzukii_umn_flight_assay_rows
   - id: drosophila_suzukii_deep_sources
     name: Drosophila suzukii deep public source expansion
@@ -127,6 +128,7 @@ sources:
         - drosophila_suzukii_occurrence_ecology
         - drosophila_suzukii_jki_drosomon_trap_captures
         - drosophila_suzukii_osu_trap_reports
+        - drosophila_suzukii_dryad_landscape_monitoring
         - drosophila_suzukii_literature_fulltext
         - drosophila_suzukii_pubmed_literature
         - drosophila_suzukii_ncbi_snp_variation
@@ -879,6 +881,47 @@ sources:
       structured_gaps:
         - osu_swd_trap_report_unavailable
         - osu_swd_trap_report_fetch_or_parse_failed
+  - id: drosophila_suzukii_dryad_landscape_monitoring
+    name: Drosophila suzukii Dryad southeast U.S. blueberry landscape monitoring rows
+    source_type: public_dryad_preview_table
+    boundary: Dryad dataset DOI 10.5061/dryad.52c2k52 for Drosophila suzukii activity and natural enemy abundance in southeast U.S. blueberry systems, preserving dataset metadata, primary article DOI 10.1016/j.agee.2018.11.014, CC0 license, public file manifest, file byte size, MD5 digest, public preview table JavaScript, row-level SWD trap counts, field, treatment, transect, vegetation, noncrop/blueberry/edge/landscape composition metrics, predator taxon count columns, exact preview row locators, and a structured gap because the full CSV download endpoint is blocked while the public preview is used.
+    query_plane: dryad_public_preview_table_to_sqlite_ecology_landscape_monitoring_rows
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_dryad_landscape_monitoring
+    ingest_script: scripts/ingest_drosophila_suzukii_dryad_landscape_monitoring.py
+    input_sources:
+      - dryad_dataset_10_5061_dryad_52c2k52
+      - dryad_version_13824_files_api
+      - dryad_file_52071_public_preview_js
+      - dryad_file_52071_download_blocked_gap
+    lanes:
+      - ecology
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - week
+        - date
+        - field_code
+        - field_id
+        - treatment
+        - transect
+        - vegetation_between_rows
+        - proportion_noncrop_1km
+        - proportion_blueberry_1km
+        - edge_density
+        - landscape_composition_shannon
+        - change_noncrop
+        - change_forest
+        - swd_trap_count
+        - predator_counts
+        - row_number
+        - byte_size
+        - md5
+      structured_gaps:
+        - dryad_landscape_full_csv_download_blocked_preview_used
+        - dryad_landscape_preview_fetch_or_parse_failed
+        - dryad_landscape_dataset_metadata_fetch_failed
   - id: drosophila_suzukii_umn_flight_assay_rows
     name: Drosophila suzukii UMN flight assay rows
     source_type: public_dspace_csv

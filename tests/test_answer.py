@@ -2138,6 +2138,81 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_osu_trap_reports")
             self.assertEqual(answer["evidence"][0]["record_id"], "swd_osu_trap_reports:observation:2021:0001:june_13_-_19")
 
+    def test_spotted_wing_landscape_monitoring_questions_prefer_dryad_landscape_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_dryad_landscape_monitoring:row:0002:Field_A:edge",
+                        lane="ecology",
+                        source="drosophila_suzukii_dryad_landscape_monitoring",
+                        title="Southeast U.S. blueberry SWD monitoring row 2: field Field A, week 1",
+                        text=(
+                            "Dryad southeast U.S. blueberry monitoring row for Drosophila suzukii. "
+                            "SWD trap count: 7. Natural enemy taxa counted: 2."
+                        ),
+                        species="Drosophila suzukii",
+                        url="https://datadryad.org/dataset/doi%3A10.5061/dryad.52c2k52",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_dryad_landscape_monitoring",
+                            locator="raw/drosophila_suzukii_dryad_landscape_monitoring/dryad_52c2k52_schmidtetalAEE_dyrad_preview.js#row/2",
+                            retrieved_at="2026-05-30T00:00:00Z",
+                            license="CC0-1.0",
+                            source_url="https://datadryad.org/data_file/preview/52071.js",
+                        ),
+                        payload={
+                            "atom_type": "dryad_landscape_monitoring_row",
+                            "swd_trap_count": 7,
+                            "predator_counts": {"Araneae": 3, "Coccinellidae": 1},
+                            "landscape_composition_shannon": 1.9,
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_osu_trap_reports:observation:2021:0001:june_13_-_19",
+                        lane="ecology",
+                        source="drosophila_suzukii_osu_trap_reports",
+                        title="Ohio State SWD trap observation 2021 June 13 - 19: Athens Blackberry",
+                        text="Ohio State spotted-wing drosophila trap observation for June 13 - 19 2021: count 8.",
+                        species="Drosophila suzukii",
+                        url="https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_osu_trap_reports",
+                            locator="raw/drosophila_suzukii_osu_trap_reports/osu_swd_trap_report_2021_spotted_wing_drosophila.csv#row/4/column/2",
+                            retrieved_at="2026-05-30T00:00:00Z",
+                        ),
+                        payload={"atom_type": "osu_swd_trap_observation", "count": 8},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_occurrence_ecology:country:United_States",
+                        lane="ecology",
+                        source="drosophila_suzukii_occurrence_ecology",
+                        title="Drosophila suzukii occurrence ecology in the United States",
+                        text="Drosophila suzukii occurrence ecology country summary for the United States.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-us",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_occurrence_ecology",
+                            locator="source_index.sqlite#swd-observation-ecology/country/United_States",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={"aggregation_type": "country_summary", "observation_count": 200},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii southeast blueberry landscape monitoring", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "ecology")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_dryad_landscape_monitoring")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_dryad_landscape_monitoring:row:0002:Field_A:edge")
+
     def test_spotted_wing_climate_suitability_questions_prefer_plos_model_lane(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
