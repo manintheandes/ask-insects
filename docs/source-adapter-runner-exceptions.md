@@ -27,3 +27,11 @@ These lanes intentionally do NOT use `run_source_ingest`. They maintain bespoke 
 **observation_climate** (source_id: aedes_observation_climate_join) — Adapter folds gap EvidenceRecords (record_id contains `:gap:`) directly into result.records; a run where all indexed observations lack coordinates emits only a gap record as the valid scientific finding (no coordinate data available for climate join), which the generic runner would treat as refresh failure and discard.
 
 **harvard_dataverse_aedes_suitability** — search-finds-no-rasters emits only a gap EvidenceRecord (valid finding); generic runner would drop it.
+
+**mosquito_repellent_external_discovery** — Adapter unconditionally folds gap EvidenceRecords (record_id contains `:gap:`) for persistent access gaps (patents/CABI/bioRxiv) into result.records on every run. A run where no external candidates are discovered produces only gap EvidenceRecords; the generic runner would treat that as refresh failure and discard them.
+
+**resistance_table_rows** (source_id: aedes_resistance_table_rows) — Derived lane that emits a source_gap EvidenceRecord with `record_id` containing `:gap:` into result.records when no extracted resistance fact records pass insecticide/metric/assay schema validation. Gap-only is a valid scientific finding (no qualifying resistance table data in the indexed literature), not an ingest failure; the generic runner would treat it as refresh failure and drop the gap.
+
+**source_coverage** (source_id: aedes_source_coverage) — Derived lane that reads the coverage ledger and always produces records; it has no fetch step, no fetch-failure mode, and no gaps list. There is nothing for the runner's gap-guard to protect. The lane uses `index.replace_source_records` directly and requires no migration.
+
+**neurobiology_sources** — Standalone binary-download script; does not use the EvidenceRecord / SourceIndex / result.records / result.gaps pattern at all. There is no fetch-records / gaps structure to pass to run_source_ingest.

@@ -1,0 +1,34 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "description": "World Mosquito Program Wolbachia method with Aedes aegypti.",
+        "intervention_type": "wMel Wolbachia replacement",
+        "metrics": [
+          "77%"
+        ],
+        "organization": "World Mosquito Program",
+        "raw_html_path": "<raw_dir>/World_Mosquito_Program_32d6b8756230.html",
+        "title": "Wolbachia dramatically reduces dengue cases",
+        "topic": "Yogyakarta Wolbachia randomized controlled trial",
+        "url": "https://www.worldmosquitoprogram.org/example-yogyakarta"
+      },
+      "provenance": {
+        "license": "World Mosquito Program public web evidence; source page terms apply",
+        "locator": "<raw_dir>/World_Mosquito_Program_32d6b8756230.html#page",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_wolbachia_interventions",
+        "source_url": "https://www.worldmosquitoprogram.org/example-yogyakarta"
+      },
+      "record_id": "wolbachia:intervention:32d6b8756230",
+      "source": "aedes_wolbachia_interventions",
+      "species": "Aedes aegypti",
+      "text": "World Mosquito Program Wolbachia intervention evidence for Aedes aegypti. Topic: Yogyakarta Wolbachia randomized controlled trial. Intervention type: wMel Wolbachia replacement. Metrics mentioned: 77%. Summary: World Mosquito Program Wolbachia method with Aedes aegypti.. Page excerpt: Wolbachia reduces dengue in Yogyakarta Wolbachia dramatically reduces dengue cases The randomized controlled trial in Yogyakarta, Indonesia showed a 77% reduction in dengue incidence. Wolbachia was introduced into local Aedes aegypti mosquitoes to reduce transmission of dengue, Zika, chikungunya, and yellow fever.",
+      "title": "Wolbachia intervention evidence: Wolbachia dramatically reduces dengue cases",
+      "url": "https://www.worldmosquitoprogram.org/example-yogyakarta"
+    }
+  ]
+}

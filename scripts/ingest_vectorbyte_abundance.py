@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.vectorbyte_abundance import (
     DEFAULT_QUERY,
     VECTORBYTE_ABUNDANCE_SOURCE_ID,
@@ -191,19 +192,33 @@ def ingest_vectorbyte_abundance(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        if merge_existing:
+    if merge_existing:
+        # Merge path: selectively delete then upsert per-dataset records rather than
+        # replacing the whole source; replicate the gap-guard check inline.
+        refresh_failed = not result.records and bool(result.gaps)
+        if not refresh_failed:
             _delete_vectorbyte_dataset_records(index, _record_dataset_ids(result.records))
             index.upsert_records(result.records)
-        else:
-            index.replace_source_records(VECTORBYTE_ABUNDANCE_SOURCE_ID, result.records)
+        preserved_existing = refresh_failed and _source_record_count(index) > 0
+    else:
+        outcome = run_source_ingest(
+            index=index,
+            artifact_dir=artifact_dir,
+            source_id=VECTORBYTE_ABUNDANCE_SOURCE_ID,
+            records=result.records,
+            gaps=result.gaps,
+            retrieved_at=retrieved,
+            raw_artifacts=getattr(result, "raw_artifacts", None),
+            persist_gap_records=False,  # gaps are plain dicts; non-gap abundance records always present on success
+        )
+        refresh_failed = outcome["refresh_failed"]
+        preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed,
+        preserved_existing=preserved_existing,
         merged_existing=merge_existing and not refresh_failed,
     )
 
