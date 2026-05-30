@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.drosophila_suzukii_extracted_facts import (
     DROSOPHILA_SUZUKII_EXTRACTED_FACTS_PROFILE,
@@ -196,6 +197,7 @@ def _update_metadata(
     *,
     merge_existing: bool = False,
     source_record_ids: list[str] | None = None,
+    ok: bool = True,
 ) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
@@ -258,7 +260,7 @@ def _update_metadata(
         payload[DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID,
         "record_count": installed_record_count,
         "last_build_record_count": len(result.records),
@@ -317,28 +319,31 @@ def ingest_drosophila_suzukii_extracted_facts(
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
     deleted_existing_record_count = 0
+    refresh_failed = not merge_existing and not result.records and bool(result.gaps)
     if merge_existing:
         if not source_record_ids:
             raise ValueError("merge_existing requires at least one source_record_id")
         deleted_existing_record_count = _delete_records_for_source_records(index, source_record_ids, delete_fts=update_fts)
         index.upsert_records(result.records, update_fts=update_fts)
-    else:
+    elif not refresh_failed:
         index.replace_source_records(
             DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID,
             result.records,
             update_fts=update_fts,
             delete_existing_fts=update_fts,
         )
+    persist_source_gaps(index, DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID, result.gaps, retrieved_at=retrieved_at)
     if update_metadata:
         payload = _update_metadata(
             artifact_dir,
             result,
             merge_existing=merge_existing,
             source_record_ids=source_record_ids,
+            ok=not refresh_failed,
         )
     else:
         payload = {
-            "ok": True,
+            "ok": not refresh_failed,
             "source": DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID,
             "record_count": len(result.records),
             "last_build_record_count": len(result.records),

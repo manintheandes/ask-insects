@@ -130,6 +130,12 @@ class SourceIndex:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(self.path, timeout=30)
         conn.row_factory = sqlite3.Row
+        # WAL lets readers and a writer proceed concurrently instead of a writer
+        # blocking all readers (the cause of intermittent "database is locked").
+        # busy_timeout makes contending connections wait rather than fail fast.
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=30000")
+        conn.execute("PRAGMA synchronous=NORMAL")
         try:
             yield conn
             conn.commit()

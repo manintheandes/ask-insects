@@ -273,7 +273,10 @@ def _record_for_candidate(candidate: AssayCandidate, pathogen: str, pathogen_ter
         source=VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
         title=title,
         text=text,
-        species=candidate.species or "Aedes aegypti",
+        # Mixed-species source: candidates come from a literature corpus (lane='literature',
+        # not species-filtered) that can cover other species. Keep the source record's own
+        # species; do not fabricate.
+        species=candidate.species,
         url=source_url,
         media_url=None,
         provenance=Provenance(
@@ -430,7 +433,10 @@ def _records_from_parsed_extracted_fact_rows(
                     source=VECTOR_COMPETENCE_ASSAY_SOURCE_ID,
                     title=title,
                     text=text,
-                    species=row["species"] or "Aedes aegypti",
+                    # Mixed-species source: parsed supplement tables (source filter only,
+                    # not species filter) can describe other species. Keep the row's own
+                    # species; do not fabricate a default.
+                    species=row["species"] or None,
                     url=source_url,
                     media_url=None,
                     provenance=Provenance(

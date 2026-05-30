@@ -631,7 +631,10 @@ def _record_for_asset(
         source=VIDEO_ATOMS_SOURCE_ID,
         title=f"Aedes aegypti video asset {candidate.title}",
         text=" ".join(text_parts),
-        species=candidate.species or "Aedes aegypti",
+        # Mixed-source: candidates pass an aedes-scope gate on title/description/filename
+        # material (search-term evidence, not a species label), so candidate.species may be
+        # legitimately unknown. Keep the row's own species; do not fabricate a default.
+        species=candidate.species,
         url=candidate.url,
         media_url=candidate.media_url,
         provenance=Provenance(
@@ -1463,7 +1466,10 @@ def _archive_manifest_record(
             f"Archive members: {len(members)}. Video members: {video_member_count}. "
             f"Archive SHA-256: {archive_sha256}."
         ),
-        species=candidate.species or "Aedes aegypti",
+        # Mixed-source: candidates pass an aedes-scope gate on title/description/filename
+        # material (search-term evidence, not a species label), so candidate.species may be
+        # legitimately unknown. Keep the row's own species; do not fabricate a default.
+        species=candidate.species,
         url=candidate.url,
         media_url=raw_archive_path,
         provenance=Provenance(
@@ -1499,7 +1505,10 @@ def _archive_member_record(
             f"Aedes aegypti video archive member {member_name} extracted from {candidate.title}. "
             f"Member byte size: {member_byte_size}. Member SHA-256: {member_sha256}."
         ),
-        species=candidate.species or "Aedes aegypti",
+        # Mixed-source: candidates pass an aedes-scope gate on title/description/filename
+        # material (search-term evidence, not a species label), so candidate.species may be
+        # legitimately unknown. Keep the row's own species; do not fabricate a default.
+        species=candidate.species,
         url=candidate.url,
         media_url=raw_asset_path,
         provenance=Provenance(

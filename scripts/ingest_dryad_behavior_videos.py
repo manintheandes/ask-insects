@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.dryad_behavior_videos import (
     DEFAULT_DRYAD_DATASETS,
@@ -43,7 +44,17 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -64,6 +75,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         "raw_artifacts": result.raw_artifacts,
         "gap_count": len(result.gaps),
         "retrieved_at": retrieved_at,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -88,9 +101,10 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload["dryad_behavior_videos"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": DRYAD_BEHAVIOR_VIDEO_SOURCE_ID,
         "record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "dataset_count": result.dataset_count,
         "file_count": result.file_count,
         "media_file_count": result.media_file_count,
@@ -131,8 +145,17 @@ def ingest_dryad_behavior_videos(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, result.records)
+    persist_source_gaps(index, DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        retrieved,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

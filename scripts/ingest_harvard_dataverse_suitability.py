@@ -46,7 +46,17 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -61,6 +71,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         "gap_count": len(result.gaps),
         "retrieved_at": retrieved_at,
         "method": "bounded Harvard Dataverse file search and dataset-detail manifests for Aedes aegypti suitability rasters",
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -85,9 +97,10 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload[HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID,
         "record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "file_record_count": result.file_record_count,
         "gap_count": len(result.gaps),
         "query_count": result.query_count,
@@ -120,8 +133,16 @@ def ingest_harvard_dataverse_suitability(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID, result.records)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        retrieved,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

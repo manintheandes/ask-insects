@@ -65,7 +65,19 @@ class IngestDrosophilaSuzukiiTests(unittest.TestCase):
                 for row in index.sql("select source, count(*) as n from records group by source", limit=100)
             }
             self.assertIn("mosquito_v1_fixtures", sources)
-            self.assertEqual(sources[DROSOPHILA_SUZUKII_SOURCE_ID], 1)
+            # One taxonomy record plus one now-queryable source_gap record.
+            self.assertEqual(sources[DROSOPHILA_SUZUKII_SOURCE_ID], 2)
+            gap_rows = index.sql(
+                f"""
+                select r.record_id
+                from records r
+                join record_payloads p on p.record_id = r.record_id
+                where r.source='{DROSOPHILA_SUZUKII_SOURCE_ID}'
+                  and json_extract(p.payload_json, '$.atom_type')='source_gap'
+                """,
+                limit=10,
+            )
+            self.assertEqual(len(gap_rows), 1)
             status = (artifact_dir / "source_status.json").read_text(encoding="utf-8")
             self.assertIn(DROSOPHILA_SUZUKII_SOURCE_ID, status)
 

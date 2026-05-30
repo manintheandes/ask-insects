@@ -265,7 +265,7 @@ def _installed_video_gaps(index: SourceIndex) -> list[dict[str, object]]:
     return gaps
 
 
-def _update_metadata(artifact_dir: Path, result, *, merge_existing: bool = False) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, *, merge_existing: bool = False, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -292,6 +292,9 @@ def _update_metadata(artifact_dir: Path, result, *, merge_existing: bool = False
         "discovery_candidate_count": result.discovery_candidate_count,
         "discovery_sweep_receipts": discovery_sweep_receipts,
         "gap_count": atom_counts.get("video_gap", 0),
+        "refresh_record_count": len(result.records),
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "method": "derived Aedes aegypti video atoms from indexed video manifests, bounded mirrors, ffprobe metadata, inspectable artifacts, motion tables, and repository discovery gaps",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", installed_gaps)
@@ -317,8 +320,10 @@ def _update_metadata(artifact_dir: Path, result, *, merge_existing: bool = False
         payload["aedes_video_atoms"] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": VIDEO_ATOMS_SOURCE_ID,
+        "preserved_existing": preserved_existing,
+        "refresh_record_count": len(result.records),
         "record_count": source_payload["record_count"],
         "video_asset_count": source_payload["video_asset_count"],
         "mirrored_video_count": source_payload["mirrored_video_count"],
@@ -383,14 +388,26 @@ def ingest_video_atoms(
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
     records = _dedupe_records(result.records)
+    refresh_failed = False
+    preserved_existing = False
     if merge_existing:
         if discovery_repositories:
             _delete_video_atom_repository_records(index, discovery_repositories)
         index.upsert_records(records)
     else:
-        index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, records)
+        refresh_failed = not result.records and bool(result.gaps)
+        if not refresh_failed:
+            index.replace_source_records(VIDEO_ATOMS_SOURCE_ID, records)
+        else:
+            preserved_existing = _source_counts(index).get(VIDEO_ATOMS_SOURCE_ID, 0) > 0
     _delete_duplicate_video_gap_records(index)
-    payload = _update_metadata(artifact_dir, result, merge_existing=merge_existing)
+    payload = _update_metadata(
+        artifact_dir,
+        result,
+        merge_existing=merge_existing,
+        ok=not refresh_failed,
+        preserved_existing=preserved_existing,
+    )
     payload["merge_existing"] = merge_existing
     if discovery_repositories:
         payload["discovery_repositories"] = list(discovery_repositories)

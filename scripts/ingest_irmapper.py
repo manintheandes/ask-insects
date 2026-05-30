@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.irmapper import DEFAULT_IRMAPPER_SPECIES, IRMAPPER_SOURCE_ID, fetch_irmapper_records
 
@@ -31,7 +32,17 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     return len(combined)
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (IRMAPPER_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
+def _update_metadata(artifact_dir: Path, result, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = {
@@ -45,6 +56,8 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         "record_count": len(result.records),
         "raw_artifacts": result.raw_artifacts,
         "gap_count": len(result.gaps),
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
     for filename in ("source_status.json", "source_receipt.json"):
@@ -66,10 +79,11 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         doc["irmapper"] = payload
         write_json(path, doc)
     return {
-        "ok": True,
+        "ok": ok,
         "source": IRMAPPER_SOURCE_ID,
         "species": result.requested_species,
         "record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "fetched_row_count": result.fetched_row_count,
         "gap_count": len(result.gaps),
         "artifact_dir": artifact_dir.as_posix(),
@@ -93,8 +107,16 @@ def ingest_irmapper(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(IRMAPPER_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(IRMAPPER_SOURCE_ID, result.records)
+    persist_source_gaps(index, IRMAPPER_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

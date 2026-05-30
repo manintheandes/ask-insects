@@ -287,9 +287,18 @@ def activate_staging_artifact(staging: Path, artifact_dir: Path) -> None:
     backup = artifact_dir.parent / f".{artifact_dir.name}.previous"
     if backup.exists():
         shutil.rmtree(backup)
+    moved_to_backup = False
     if artifact_dir.exists():
         artifact_dir.replace(backup)
-    staging.replace(artifact_dir)
+        moved_to_backup = True
+    try:
+        staging.replace(artifact_dir)
+    except Exception:
+        # Roll back: if the swap-in failed, restore the live directory we moved
+        # aside so a failed activation never strands the live index in .previous.
+        if moved_to_backup and not artifact_dir.exists():
+            backup.replace(artifact_dir)
+        raise
     if backup.exists():
         shutil.rmtree(backup)
 
@@ -4462,6 +4471,11 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
             )
         except (json.JSONDecodeError, ValueError) as exc:
             response = json_response(400, {"ok": False, "error": str(exc)})
+        except Exception as exc:
+            # Any other error (e.g. a SQLite lock or upstream failure inside an
+            # ingest) must still return a response, not kill the worker thread
+            # and leave the client hanging with no reply.
+            response = json_response(500, {"ok": False, "error": str(exc)})
         self._send(response)
 
 

@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.opendatasus_dengue_surveillance import (
     OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,
@@ -47,7 +48,17 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _source_count(index: SourceIndex) -> int:
+    with index.connect() as conn:
+        return int(
+            conn.execute(
+                "select count(*) as n from records where source=?",
+                (OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,),
+            ).fetchone()["n"]
+        )
+
+
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -66,6 +77,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         "input_csv_row_count": result.row_count,
         "years": result.years,
         "retrieved_at": retrieved_at,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "method": "official Brazil OpenDataSUS SINAN dengue CSV ZIP files parsed into source-file, country-year, state-year, country-week, and residence-state-week public-health aggregate records for Aedes aegypti intelligence",
     }
     gap_count = _append_dedup_gaps(artifact_dir / "gaps.json", result.gaps)
@@ -93,9 +106,10 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload[OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,
         "record_count": len(result.records),
+        "preserved_existing": preserved_existing,
         "gap_count": len(result.gaps),
         "file_count": result.file_count,
         "source_file_record_count": result.source_file_record_count,
@@ -138,8 +152,17 @@ def ingest_opendatasus_dengue_surveillance(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID, result.records)
+    persist_source_gaps(index, OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(
+        artifact_dir,
+        result,
+        retrieved,
+        ok=not refresh_failed,
+        preserved_existing=refresh_failed and _source_count(index) > 0,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:

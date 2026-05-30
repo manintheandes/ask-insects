@@ -3161,7 +3161,7 @@ def _resistance_table_row_records(index: SourceIndex, question: str, *, limit: i
             JOIN record_payloads p ON p.record_id = r.record_id
             WHERE r.source = ?
               AND r.lane = 'resistance'
-              AND json_extract(p.payload_json, '$.confidence') IN ('parsed_table_schema_validated', 'candidate_literature_evidence')
+              AND json_extract(p.payload_json, '$.confidence') IN ('parsed_table_schema_validated', 'candidate_literature_evidence', 'source_gap')
             ORDER BY r.record_id
             LIMIT ?
             """,
@@ -5699,8 +5699,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         for record in _source_records(index, AEDES_WHO_RESISTANCE_GUIDANCE_SOURCE_ID, ["resistance"], limit=limit):
             if record.record_id in seen_record_ids:
                 continue
-                all_records.append(record)
-                seen_record_ids.add(record.record_id)
+            all_records.append(record)
+            seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "biocontrol" and requested_species and requested_species.lower() == "drosophila suzukii":
         for source_id in (

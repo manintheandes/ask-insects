@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.aedes_deep_sources import AEDES_DEEP_SOURCE_IDS, fetch_aedes_deep_source_records
 
@@ -39,7 +40,7 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -80,7 +81,7 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
             payload[source_id] = {**source_payload, "source": source_id, "record_count": result.source_record_counts.get(source_id, 0)}
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "sources": list(result.source_ids),
         "record_count": len(result.records),
         "source_record_counts": result.source_record_counts,
@@ -116,10 +117,18 @@ def ingest_aedes_deep_sources(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    for source_id in result.source_ids:
-        records = [record for record in result.records if record.source == source_id]
-        index.replace_source_records(source_id, records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        for source_id in result.source_ids:
+            records = [record for record in result.records if record.source == source_id]
+            index.replace_source_records(source_id, records)
+    gaps_by_source: dict[str, list[object]] = {}
+    for gap in result.gaps:
+        source_id = str(gap.get("source")) if isinstance(gap, dict) and gap.get("source") else "aedes_deep_sources"
+        gaps_by_source.setdefault(source_id, []).append(gap)
+    for source_id, source_gaps in gaps_by_source.items():
+        persist_source_gaps(index, source_id, source_gaps, retrieved_at=retrieved)
+    return _update_metadata(artifact_dir, result, retrieved, ok=not refresh_failed)
 
 
 def main(argv: list[str] | None = None) -> int:

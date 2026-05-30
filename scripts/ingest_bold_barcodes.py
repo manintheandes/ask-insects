@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.bold_barcodes import BOLD_SOURCE_ID, DEFAULT_BOLD_SPECIES, fetch_bold_barcode_records
 
@@ -31,7 +32,7 @@ def _append_dedup_gaps(gaps_path: Path, gaps: list[dict[str, object]]) -> int:
     return len(combined)
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, *, ok: bool = True) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = {
@@ -67,7 +68,7 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         payload["bold_barcodes"] = bold_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": BOLD_SOURCE_ID,
         "record_count": len(result.records),
         "fetched_row_count": result.fetched_row_count,
@@ -97,8 +98,11 @@ def ingest_bold_barcodes(
         retrieved_at=retrieved,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
-    index.replace_source_records(BOLD_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(BOLD_SOURCE_ID, result.records)
+    persist_source_gaps(index, BOLD_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(artifact_dir, result, ok=not refresh_failed)
 
 
 def main(argv: list[str] | None = None) -> int:

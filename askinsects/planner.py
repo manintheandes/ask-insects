@@ -14,7 +14,9 @@ class QueryPlan:
 
 def plan_question(question: str) -> QueryPlan:
     q = question.lower()
-    is_spotted_wing = any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"))
+    is_spotted_wing = any(
+        term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila")
+    ) or bool(re.search(r"\bswd\b", q))
     if (
         any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila"))
         and any(term in q for term in ("pubmed", "pmid", "reconciliation"))
@@ -189,7 +191,6 @@ def plan_question(question: str) -> QueryPlan:
     if any(
         term in q
         for term in (
-            "geo",
             "gene expression",
             "expression data",
             "expression omics",
@@ -207,7 +208,7 @@ def plan_question(question: str) -> QueryPlan:
             "sra run",
             "sra runs",
         )
-    ):
+    ) or re.search(r"\bgeo\b", q):
         return QueryPlan(question, "expression", ("expression", "transcripts", "genes", "proteins", "literature"), question)
     if "drosophila suzukii" in q and "sra" in q:
         return QueryPlan(question, "expression", ("expression", "biosamples", "genome_assemblies", "proteins", "literature", "taxonomy"), question)
@@ -336,7 +337,17 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
-    if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")):
+    if any(term in q for term in ("paper", "papers", "literature", "study", "studies", "research")) and not any(
+        term in q
+        for term in (
+            "resistance", "kdr", "susceptibility", "insecticide", "vgsc",
+            "vector competence", "competence", "transmission", "infection", "dissemination",
+            "biocontrol", "biological control", "parasitoid", "natural enem",
+            "crop damage", "crop loss", "yield",
+            "genome", "assembly", "transcript", "expression", "protein",
+            "management", "ipm",
+        )
+    ):
         return QueryPlan(question, "literature", ("literature", "taxonomy", "observations"), question)
     if any(
         term in q
@@ -372,7 +383,10 @@ def plan_question(question: str) -> QueryPlan:
             "lc50",
             "lc90",
         )
-    ) or re.search(r"\b[A-Z][0-9]{2,4}[A-Z]\b", question):
+    ) or (
+        re.search(r"\b[A-Z][0-9]{2,4}[A-Z]\b", question)
+        and not any(term in q for term in ("table", "figure", "fig.", "supplement", "supplementary"))
+    ):
         return QueryPlan(question, "resistance", ("resistance", "genes", "proteins", "literature", "taxonomy"), question)
     if is_spotted_wing and any(
         term in q

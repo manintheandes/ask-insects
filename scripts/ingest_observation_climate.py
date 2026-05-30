@@ -42,12 +42,18 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
+def _non_gap_records(result) -> list:
+    return [record for record in result.records if not record.record_id.startswith("ecology:observation_climate:gap:")]
+
+
+def _update_metadata(artifact_dir: Path, result, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
     source_payload = {
         "source": OBSERVATION_CLIMATE_SOURCE_ID,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "record_count": len(result.records),
         "sampled_count": result.sampled_count,
         "observation_count": result.observation_count,
@@ -81,7 +87,8 @@ def _update_metadata(artifact_dir: Path, result) -> dict[str, object]:
         payload[OBSERVATION_CLIMATE_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
+        "preserved_existing": preserved_existing,
         "source": OBSERVATION_CLIMATE_SOURCE_ID,
         "record_count": len(result.records),
         "sampled_count": result.sampled_count,
@@ -114,8 +121,13 @@ def ingest_observation_climate(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(OBSERVATION_CLIMATE_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result)
+    refresh_failed = not _non_gap_records(result) and any(
+        str(gap.get("reason", "")).endswith("_failed") for gap in result.gaps
+    )
+    if not refresh_failed:
+        index.replace_source_records(OBSERVATION_CLIMATE_SOURCE_ID, result.records)
+    preserved_existing = refresh_failed and _source_counts(index).get(OBSERVATION_CLIMATE_SOURCE_ID, 0) > 0
+    return _update_metadata(artifact_dir, result, ok=not refresh_failed, preserved_existing=preserved_existing)
 
 
 def main(argv: list[str] | None = None) -> int:

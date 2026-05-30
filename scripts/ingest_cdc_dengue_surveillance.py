@@ -11,6 +11,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.sources.cdc_dengue_surveillance import (
     CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
@@ -42,7 +43,7 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
@@ -85,7 +86,7 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload[CDC_DENGUE_SURVEILLANCE_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
         "source": CDC_DENGUE_SURVEILLANCE_SOURCE_ID,
         "record_count": len(result.records),
         "gap_count": len(result.gaps),
@@ -127,8 +128,11 @@ def ingest_cdc_dengue_surveillance(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(CDC_DENGUE_SURVEILLANCE_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(CDC_DENGUE_SURVEILLANCE_SOURCE_ID, result.records)
+    persist_source_gaps(index, CDC_DENGUE_SURVEILLANCE_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    return _update_metadata(artifact_dir, result, retrieved, ok=not refresh_failed)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -10,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
+from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
 from askinsects.server import read_json, source_counts, write_json
 from askinsects.sources.inaturalist import DEFAULT_INATURALIST_SPECIES, INATURALIST_SOURCE_ID, fetch_inaturalist_records
@@ -38,7 +39,10 @@ def ingest_inaturalist_observations(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(INATURALIST_SOURCE_ID, result.records)
+    refresh_failed = not result.records and bool(result.gaps)
+    if not refresh_failed:
+        index.replace_source_records(INATURALIST_SOURCE_ID, result.records)
+    persist_source_gaps(index, INATURALIST_SOURCE_ID, result.gaps, retrieved_at=retrieved)
 
     old_gaps = read_json(artifact_dir / "gaps.json", [])
     if not isinstance(old_gaps, list):
@@ -50,6 +54,7 @@ def ingest_inaturalist_observations(
     sources = [source for source in counts if source != INATURALIST_SOURCE_ID]
     if counts.get(INATURALIST_SOURCE_ID):
         sources.append(INATURALIST_SOURCE_ID)
+    preserved_existing = refresh_failed and bool(counts.get(INATURALIST_SOURCE_ID))
 
     inaturalist_payload = {
         "requested_species": result.requested_species,
@@ -62,6 +67,8 @@ def ingest_inaturalist_observations(
         "record_count": len(result.records),
         "gap_count": len(result.gaps),
         "retrieved_at": retrieved,
+        "refresh_failed": refresh_failed,
+        "preserved_existing": preserved_existing,
     }
 
     status = read_json(artifact_dir / "source_status.json", {})
@@ -69,7 +76,7 @@ def ingest_inaturalist_observations(
         status = {}
     status.update(
         {
-            "ok": True,
+            "ok": not refresh_failed,
             "source_id": sources[0] if sources else INATURALIST_SOURCE_ID,
             "sources": sources,
             "source_counts": counts,
@@ -105,7 +112,7 @@ def ingest_inaturalist_observations(
     write_json(artifact_dir / "gaps.json", gaps)
     write_json(artifact_dir / "source_status.json", status)
     write_json(artifact_dir / "source_receipt.json", receipt)
-    return {"ok": True, "artifact_dir": artifact_dir.as_posix(), **status, "inaturalist": inaturalist_payload}
+    return {"ok": not refresh_failed, "artifact_dir": artifact_dir.as_posix(), **status, "inaturalist": inaturalist_payload}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -128,7 +135,7 @@ def main(argv: list[str] | None = None) -> int:
         retrieved_at=args.retrieved_at,
     )
     print(json.dumps(result, sort_keys=True))
-    return 0
+    return 0 if result.get("ok") else 2
 
 
 if __name__ == "__main__":

@@ -42,13 +42,19 @@ def _source_counts(index: SourceIndex) -> dict[str, int]:
     }
 
 
-def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str, object]:
+def _variant_records(result) -> list:
+    return [record for record in result.records if not record.record_id.startswith("ncbi_snp_variation:gap:")]
+
+
+def _update_metadata(artifact_dir: Path, result, retrieved_at: str, *, ok: bool = True, preserved_existing: bool = False) -> dict[str, object]:
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
-    variant_record_count = len([record for record in result.records if not record.record_id.startswith("ncbi_snp_variation:gap:")])
+    variant_record_count = len(_variant_records(result))
     source_payload = {
         "source": NCBI_SNP_VARIATION_SOURCE_ID,
+        "refresh_failed": not ok,
+        "preserved_existing": preserved_existing,
         "species": result.species,
         "reported_total_count": result.total_count,
         "requested_limit": result.requested_limit,
@@ -83,7 +89,8 @@ def _update_metadata(artifact_dir: Path, result, retrieved_at: str) -> dict[str,
         payload[NCBI_SNP_VARIATION_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": True,
+        "ok": ok,
+        "preserved_existing": preserved_existing,
         "source": NCBI_SNP_VARIATION_SOURCE_ID,
         "species": result.species,
         "record_count": len(result.records),
@@ -121,8 +128,13 @@ def ingest_ncbi_snp_variation(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(NCBI_SNP_VARIATION_SOURCE_ID, result.records)
-    return _update_metadata(artifact_dir, result, retrieved)
+    refresh_failed = not _variant_records(result) and any(
+        str(gap.get("reason", "")).endswith("_failed") for gap in result.gaps
+    )
+    if not refresh_failed:
+        index.replace_source_records(NCBI_SNP_VARIATION_SOURCE_ID, result.records)
+    preserved_existing = refresh_failed and _source_counts(index).get(NCBI_SNP_VARIATION_SOURCE_ID, 0) > 0
+    return _update_metadata(artifact_dir, result, retrieved, ok=not refresh_failed, preserved_existing=preserved_existing)
 
 
 def main(argv: list[str] | None = None) -> int:
