@@ -2064,6 +2064,54 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(location_answer["answer_shape"], "ecology")
             self.assertEqual(location_answer["evidence"][0]["record_id"], "swd_jki_drosomon_trap_captures:trap_location:DA_BE1")
 
+    def test_spotted_wing_climate_suitability_questions_prefer_plos_model_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_plos_climate_suitability:000_summary",
+                        lane="ecology",
+                        source="drosophila_suzukii_plos_climate_suitability",
+                        title="Drosophila suzukii global climate-suitability model summary",
+                        text="PLOS climate-suitability model for Drosophila suzukii. MaxEnt AUC 0.97 and GARP AUC 0.87.",
+                        species="Drosophila suzukii",
+                        url="https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0174318",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_plos_climate_suitability",
+                            locator="plos#abstract",
+                            retrieved_at="2026-05-30T00:00:00Z",
+                        ),
+                        payload={"atom_type": "plos_climate_model_summary"},
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_occurrence_ecology:country:Germany",
+                        lane="ecology",
+                        source="drosophila_suzukii_occurrence_ecology",
+                        title="Drosophila suzukii occurrence ecology in Germany",
+                        text="Drosophila suzukii occurrence ecology country summary for Germany.",
+                        species="Drosophila suzukii",
+                        url="https://example.org/swd-germany",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_occurrence_ecology",
+                            locator="source_index.sqlite#swd-observation-ecology/country/Germany",
+                            retrieved_at="2026-05-28T00:00:00Z",
+                        ),
+                        payload={"aggregation_type": "country_summary", "observation_count": 200},
+                    ),
+                ]
+            )
+
+            answer = answer_question("show Drosophila suzukii climate suitability evidence", artifact_dir=artifact_dir)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "ecology")
+            self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_plos_climate_suitability")
+
     def test_spotted_wing_flight_questions_prefer_umn_assay_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

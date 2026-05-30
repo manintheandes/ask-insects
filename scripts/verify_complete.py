@@ -175,6 +175,7 @@ REQUIRED_FILES = (
     "askinsects/sources/drosophila_suzukii_video_atoms.py",
     "askinsects/sources/drosophila_suzukii_dryad_table_rows.py",
     "askinsects/sources/drosophila_suzukii_occurrence_ecology.py",
+    "askinsects/sources/drosophila_suzukii_plos_climate_suitability.py",
     "askinsects/sources/ncbi_snp_variation.py",
     "askinsects/sources/harvard_dataverse_suitability.py",
     "scripts/build_source_index.py",
@@ -248,6 +249,7 @@ REQUIRED_FILES = (
     "scripts/ingest_drosophila_suzukii_video_atoms.py",
     "scripts/ingest_drosophila_suzukii_dryad_table_rows.py",
     "scripts/ingest_drosophila_suzukii_occurrence_ecology.py",
+    "scripts/ingest_drosophila_suzukii_plos_climate_suitability.py",
     "scripts/ingest_harvard_dataverse_suitability.py",
     "scripts/refresh_artifact_receipts.py",
     "deploy/systemd/ask-insects.service",
@@ -387,6 +389,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_drosophila_suzukii_dryad_table_rows.py",
     "tests/test_drosophila_suzukii_occurrence_ecology.py",
     "tests/test_ingest_drosophila_suzukii_occurrence_ecology.py",
+    "tests/test_drosophila_suzukii_plos_climate_suitability_source.py",
+    "tests/test_ingest_drosophila_suzukii_plos_climate_suitability.py",
     "tests/test_harvard_dataverse_suitability_source.py",
     "tests/test_ingest_harvard_dataverse_suitability.py",
     "tests/test_refresh_artifact_receipts.py",
@@ -524,6 +528,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_drosophila_suzukii_dryad_table_rows",
     "tests.test_drosophila_suzukii_occurrence_ecology",
     "tests.test_ingest_drosophila_suzukii_occurrence_ecology",
+    "tests.test_drosophila_suzukii_plos_climate_suitability_source",
+    "tests.test_ingest_drosophila_suzukii_plos_climate_suitability",
     "tests.test_harvard_dataverse_suitability_source",
     "tests.test_ingest_harvard_dataverse_suitability",
     "tests.test_refresh_artifact_receipts",
@@ -1224,6 +1230,20 @@ def check_mosquito_intelligence_coverage() -> None:
     ):
         if term not in source_map:
             raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii JKI DrosoMon trap-capture term: {term}")
+    for term in (
+        "drosophila_suzukii_plos_climate_suitability",
+        "scripts/ingest_drosophila_suzukii_plos_climate_suitability.py",
+        "plos_article_supplements_to_sqlite_climate_suitability_rows",
+        "10.1371/journal.pone.0174318",
+        "plos_supplement_s002_xlsx",
+        "occurrence_site_count",
+        "model_algorithms",
+        "bootstrap_replicates",
+        "auc",
+        "plos_suitability_raster_files_not_downloadable",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Drosophila suzukii PLOS climate-suitability term: {term}")
     for term in (
         "drosophila_suzukii_umn_flight_assay_rows",
         "scripts/ingest_drosophila_suzukii_umn_flight_assay_rows.py",

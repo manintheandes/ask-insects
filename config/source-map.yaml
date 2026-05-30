@@ -742,6 +742,43 @@ sources:
         - decimalLongitude
         - place_guess
         - ofvs
+  - id: drosophila_suzukii_plos_climate_suitability
+    name: Drosophila suzukii PLOS climate-suitability model supplements
+    source_type: public_article_supplements
+    boundary: PLOS ONE 2017 global potential distribution model for Drosophila suzukii, preserving article-level model metadata, supplementary DOCX/XLSX file manifests, row-level principal-component, environmental-variable correlation, and Moran's I spatial-autocorrelation table rows, plus an explicit source gap for unavailable raw MaxEnt/GARP raster suitability grids. Figure-map images are not treated as queryable raster files.
+    query_plane: plos_article_supplements_to_sqlite_climate_suitability_rows
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_plos_climate_suitability
+    ingest_script: scripts/ingest_drosophila_suzukii_plos_climate_suitability.py
+    article_doi: 10.1371/journal.pone.0174318
+    input_sources:
+      - plos_article_10_1371_journal_pone_0174318
+      - plos_supplement_s001_docx
+      - plos_supplement_s002_xlsx
+      - plos_supplement_s003_xlsx
+      - plos_supplement_s004_xlsx
+    lanes:
+      - ecology
+    provenance_required: true
+    live_fetch: opt_in_bounded
+    source_contract:
+      parsed_fields:
+        - doi
+        - occurrence_site_count
+        - model_algorithms
+        - bootstrap_replicates
+        - auc
+        - influential_variables
+        - supplement_id
+        - filename
+        - byte_size
+        - sha256
+        - table_title
+        - row_number
+        - fields
+      structured_gaps:
+        - plos_suitability_raster_files_not_downloadable
+        - plos_climate_supplement_fetch_or_parse_failed
   - id: drosophila_suzukii_jki_drosomon_trap_captures
     name: Drosophila suzukii JKI DrosoMon trap-capture rows
     source_type: public_registry_with_bounded_file_fetch

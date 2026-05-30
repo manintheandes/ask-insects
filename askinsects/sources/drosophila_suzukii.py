@@ -215,8 +215,9 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
                 "parsed supplement rows when available",
                 "JKI DrosoMon trap-deployment capture rows",
                 "JKI DrosoMon trap-coordinate and habitat rows",
+                "PLOS global climate-suitability model supplement manifests and table rows",
             ],
-            ["climate suitability files", "additional regional/crop scout phenology feeds", "human-validated crop damage tables"],
+            ["raw climate suitability raster grids", "additional regional/crop scout phenology feeds", "human-validated crop damage tables"],
         ),
         (
             "management_resistance_biocontrol",
