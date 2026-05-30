@@ -77,6 +77,10 @@ def plan_question(question: str) -> QueryPlan:
         )
     ):
         return QueryPlan(question, "behavior", ("behavior", "literature", "taxonomy"), question)
+    if is_spotted_wing and any(term in q for term in ("trap", "traps", "drosomon", "jki")) and any(
+        term in q for term in ("coordinate", "coordinates", "latitude", "longitude", "habitat", "location", "locations")
+    ):
+        return QueryPlan(question, "ecology", ("ecology", "observations", "taxonomy"), question)
     vectorbase_orthology_terms = (
         "orthogroup",
         "orthogroups",

@@ -3551,6 +3551,7 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
     if _requested_species(question) == "Drosophila suzukii":
         wants_month = any(term in q for term in ("month", "monthly", "seasonality", "seasonal"))
         wants_country = any(term in q for term in ("where", "range", "distribution", "country", "countries"))
+        wants_trap_location = any(term in q for term in ("coordinate", "coordinates", "latitude", "longitude", "habitat", "location", "locations"))
 
         def swd_score(record: EvidenceRecord) -> tuple[object, ...]:
             payload = record.payload or {}
@@ -3562,7 +3563,10 @@ def _prioritize_ecology_records(question: str, records: list[EvidenceRecord]) ->
             elif wants_country:
                 aggregation_rank = 0 if aggregation_type == "country_summary" else 1
             elif any(term in q for term in ("trap", "traps", "capture", "captures", "drosomon", "jki", "monitoring")):
-                aggregation_rank = 0 if atom_type in {"jki_drosomon_trap_dataset", "jki_drosomon_file_manifest", "source_gap"} else 1
+                if wants_trap_location:
+                    aggregation_rank = 0 if atom_type == "jki_drosomon_trap_location_row" else 1
+                else:
+                    aggregation_rank = 0 if atom_type in {"jki_drosomon_trap_dataset", "jki_drosomon_file_manifest", "source_gap"} else 1
             else:
                 aggregation_rank = 0 if aggregation_type in {"country_summary", "country_month_summary", "habitat_summary"} else 1
             return (

@@ -14,6 +14,7 @@ import re
 import time
 import urllib.parse
 from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
+from zipfile import BadZipFile, ZipFile
 
 from askinsects.records import EvidenceRecord, Provenance
 
@@ -25,6 +26,7 @@ DATASET_ID = "openagrar_mods_00041381"
 DATA_EUROPA_URL = "https://data.europa.eu/api/hub/search/datasets/openagrar_mods_00041381"
 OPENAGRAR_LANDING_URL = "https://www.openagrar.de/receive/openagrar_mods_00041381"
 CAPTURES_CSV_URL = "https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016480/captures_data.csv"
+DATA_DERIVATE_ZIP_URL = "https://www.openagrar.de/servlets/MCRZipServlet/openagrar_derivate_00016480"
 PARAMETER_DESCRIPTION_URL = "https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016482/parameter_description.pdf"
 ARTICLE_DOI = "10.3390/insects9040125"
 LICENSE = "CC-BY-4.0"
@@ -51,6 +53,7 @@ class DrosophilaSuzukiiJkiDrosomonTrapCapturesResult:
     requested_urls: list[str]
     file_count: int
     parsed_trap_row_count: int
+    parsed_trap_location_count: int = 0
 
 
 def _default_fetch_json(url: str) -> dict[str, object]:
@@ -122,7 +125,7 @@ def _default_fetch_body(url: str) -> FetchBody:
 
 
 def _open_url(opener, url: str) -> FetchBody:
-    request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "text/csv,application/pdf,*/*"})
+    request = Request(url, headers={"User-Agent": USER_AGENT, "Accept": "text/csv,application/zip,application/pdf,*/*"})
     with opener.open(request, timeout=90) as response:
         return FetchBody(
             body=response.read(),
@@ -483,6 +486,16 @@ def _parse_int(value: object) -> int | None:
         return None
 
 
+def _parse_float(value: object) -> float | None:
+    text = _clean(value)
+    if text == "":
+        return None
+    try:
+        return float(text.replace(",", "."))
+    except ValueError:
+        return None
+
+
 def _parse_german_date(value: object) -> str | None:
     text = _clean(value)
     if not text:
@@ -507,10 +520,90 @@ def _trap_days(start_iso: str | None, stop_iso: str | None) -> int | None:
     return days if days >= 0 else None
 
 
-def _parse_captures_csv_records(body: bytes, *, raw_path: Path, retrieved_at: str) -> list[EvidenceRecord]:
+def _find_zip_member(zip_file: ZipFile, suffix: str) -> str | None:
+    suffix = suffix.lower()
+    for name in zip_file.namelist():
+        if name.lower().endswith(suffix):
+            return name
+    return None
+
+
+def _parse_trap_description_csv_records(body: bytes, *, raw_path: Path, retrieved_at: str) -> tuple[list[EvidenceRecord], dict[str, dict[str, object]]]:
     text = body.decode("utf-8-sig", "replace")
     reader = csv.DictReader(io.StringIO(text), delimiter=";")
     records: list[EvidenceRecord] = []
+    lookup: dict[str, dict[str, object]] = {}
+    for row_index, row in enumerate(reader, start=2):
+        trap_name = _clean(row.get("trap_name"))
+        if not trap_name:
+            continue
+        longitude = _parse_float(row.get("lon"))
+        latitude = _parse_float(row.get("lat"))
+        altitude_m = _parse_int(row.get("alt"))
+        operator = _clean(row.get("operator"))
+        host_english = _clean(row.get("located_on (english)"))
+        host_scientific = _clean(row.get("located_on (scientific)"))
+        habitat = _clean(row.get("immediate_habitat_english"))
+        location = {
+            "trap_name": trap_name,
+            "longitude": longitude,
+            "latitude": latitude,
+            "altitude_m": altitude_m,
+            "operator": operator,
+            "located_on_english": host_english,
+            "located_on_scientific": host_scientific,
+            "immediate_habitat_english": habitat,
+            "coordinates_available": latitude is not None and longitude is not None,
+        }
+        lookup[trap_name] = location
+        title = f"JKI DrosoMon SWD trap location {trap_name}"
+        text_parts = [
+            f"JKI DrosoMon trap-location row for {SPECIES} at trap {trap_name}.",
+            f"Operator: {operator or 'unknown'}.",
+        ]
+        if latitude is not None and longitude is not None:
+            text_parts.append(f"Coordinates: {latitude}, {longitude}.")
+        if altitude_m is not None:
+            text_parts.append(f"Altitude: {altitude_m} m.")
+        if host_english or host_scientific:
+            text_parts.append(f"Located on: {host_english or 'unknown'} ({host_scientific or 'scientific name not supplied'}).")
+        if habitat:
+            text_parts.append(f"Immediate habitat: {habitat}.")
+        records.append(
+            _record(
+                record_id=f"swd_jki_drosomon_trap_captures:trap_location:{_safe_id(trap_name)}",
+                title=title,
+                text=" ".join(text_parts),
+                raw_path=raw_path,
+                locator_suffix=f"row/{row_index - 1}",
+                retrieved_at=retrieved_at,
+                url=OPENAGRAR_LANDING_URL,
+                source_url=DATA_DERIVATE_ZIP_URL,
+                payload={
+                    "atom_type": "jki_drosomon_trap_location_row",
+                    "dataset_id": DATASET_ID,
+                    "article_doi": ARTICLE_DOI,
+                    "row_number": row_index - 1,
+                    **location,
+                    "raw_row": {str(key): value for key, value in row.items()},
+                },
+            )
+        )
+    return records, lookup
+
+
+def _parse_captures_csv_records(
+    body: bytes,
+    *,
+    raw_path: Path,
+    retrieved_at: str,
+    trap_lookup: dict[str, dict[str, object]] | None = None,
+    source_url: str = CAPTURES_CSV_URL,
+) -> list[EvidenceRecord]:
+    text = body.decode("utf-8-sig", "replace")
+    reader = csv.DictReader(io.StringIO(text), delimiter=";")
+    records: list[EvidenceRecord] = []
+    trap_lookup = trap_lookup or {}
     for row_index, row in enumerate(reader, start=2):
         trap_name = _clean(row.get("trap_name"))
         date_start = _parse_german_date(row.get("date_start"))
@@ -521,6 +614,10 @@ def _parse_captures_csv_records(body: bytes, *, raw_path: Path, retrieved_at: st
         trap_days = _trap_days(date_start, date_stop)
         if not trap_name or date_start is None or date_stop is None:
             continue
+        location = trap_lookup.get(trap_name, {})
+        latitude = location.get("latitude")
+        longitude = location.get("longitude")
+        coordinates_available = isinstance(latitude, float) and isinstance(longitude, float)
         row_number = row_index - 1
         title = f"JKI DrosoMon SWD trap deployment {trap_name}, {date_start} to {date_stop}"
         text_parts = [
@@ -530,9 +627,12 @@ def _parse_captures_csv_records(body: bytes, *, raw_path: Path, retrieved_at: st
         ]
         if trap_days is not None:
             text_parts.append(f"Trap-days in this deployment: {trap_days}.")
-        text_parts.append(
-            "The captures_data.csv table gives trap name and capture counts; coordinates are described by the dataset but are not present in this CSV row."
-        )
+        if coordinates_available:
+            text_parts.append(f"Trap coordinates from trap_description.csv: {latitude}, {longitude}.")
+        else:
+            text_parts.append("The captures_data.csv table gives trap name and capture counts; matching trap coordinates were not available for this row.")
+        if location.get("immediate_habitat_english"):
+            text_parts.append(f"Immediate habitat: {location['immediate_habitat_english']}.")
         records.append(
             _record(
                 record_id=f"swd_jki_drosomon_trap_captures:trap_row:{row_number}",
@@ -542,7 +642,7 @@ def _parse_captures_csv_records(body: bytes, *, raw_path: Path, retrieved_at: st
                 locator_suffix=f"row/{row_number}",
                 retrieved_at=retrieved_at,
                 url=OPENAGRAR_LANDING_URL,
-                source_url=CAPTURES_CSV_URL,
+                source_url=source_url,
                 payload={
                     "atom_type": "jki_drosomon_trap_deployment_row",
                     "dataset_id": DATASET_ID,
@@ -555,7 +655,14 @@ def _parse_captures_csv_records(body: bytes, *, raw_path: Path, retrieved_at: st
                     "males": males,
                     "females": females,
                     "adult_captures": total,
-                    "coordinates_available": False,
+                    "coordinates_available": coordinates_available,
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "altitude_m": location.get("altitude_m"),
+                    "operator": location.get("operator"),
+                    "located_on_english": location.get("located_on_english"),
+                    "located_on_scientific": location.get("located_on_scientific"),
+                    "immediate_habitat_english": location.get("immediate_habitat_english"),
                     "raw_row": {str(key): value for key, value in row.items()},
                 },
             )
@@ -616,98 +723,147 @@ def fetch_drosophila_suzukii_jki_drosomon_trap_capture_records(
             file_count += 1
             records.append(_parameter_manifest_record(page, raw_path=metadata_path, retrieved_at=retrieved_at, index=index))
 
+    requested_urls.append(DATA_DERIVATE_ZIP_URL)
     requested_urls.append(CAPTURES_CSV_URL)
     parsed_trap_row_count = 0
+    parsed_trap_location_count = 0
+    trap_lookup: dict[str, dict[str, object]] = {}
+
     try:
-        response = fetch_body(CAPTURES_CSV_URL)
-        if _is_security_check(response):
-            security_path = _write_bytes(raw_dir, "captures_data_security_check.html", response.body[:200_000])
-            raw_artifacts.append(security_path.as_posix())
-            reason = "openagrar_security_check_blocks_csv_download"
-            details = {
-                "status": response.status,
-                "content_type": response.content_type,
-                "access_url": CAPTURES_CSV_URL,
-                "pow_challenge": response.pow_challenge,
-            }
+        zip_response = fetch_body(DATA_DERIVATE_ZIP_URL)
+        if _is_security_check(zip_response) or not zip_response.body.startswith(b"PK"):
+            reason = "jki_drosomon_zip_fetch_unavailable"
             records.append(
                 _gap_record(
                     reason=reason,
-                    title="JKI DrosoMon SWD trap-capture gap: CSV blocked by OpenAgrar security check",
+                    title="JKI DrosoMon SWD trap-capture gap: data ZIP unavailable",
                     text=(
-                        "The public data.europa registry exposes captures_data.csv for the 7-year JKI DrosoMon SWD trap-capture dataset, "
-                        "but the current direct OpenAgrar file URL returns an HTML security-check page instead of CSV. "
-                        "Ask Insects keeps the dataset summary and file manifest, but individual trap-deployment rows are not queryable in this pass."
+                        "The OpenAgrar data derivate ZIP for the JKI DrosoMon dataset was not available as a ZIP in this pass. "
+                        "Ask Insects can still try the direct captures_data.csv URL, but trap_description.csv coordinates may remain unavailable."
                     ),
-                    raw_path=security_path,
-                    locator_suffix="html",
+                    raw_path=metadata_path,
+                    locator_suffix="result/distributions/1#gap/zip_fetch_unavailable",
                     retrieved_at=retrieved_at,
-                    source_url=CAPTURES_CSV_URL,
-                    extra=details,
+                    source_url=DATA_DERIVATE_ZIP_URL,
+                    extra={"status": zip_response.status, "content_type": zip_response.content_type, "pow_challenge": zip_response.pow_challenge},
                 )
             )
             gaps.append(
                 _gap_dict(
                     reason,
-                    locator=f"{security_path.as_posix()}#html",
+                    locator=f"{metadata_path.as_posix()}#result/distributions/1",
                     retrieved_at=retrieved_at,
-                    source_url=CAPTURES_CSV_URL,
-                    details=details,
+                    source_url=DATA_DERIVATE_ZIP_URL,
+                    details={"status": zip_response.status, "content_type": zip_response.content_type, "pow_challenge": zip_response.pow_challenge},
                 )
             )
         else:
-            csv_path = _write_bytes(raw_dir, "captures_data.csv", response.body)
-            raw_artifacts.append(csv_path.as_posix())
-            trap_records = _parse_captures_csv_records(response.body, raw_path=csv_path, retrieved_at=retrieved_at)
-            records.extend(trap_records)
-            parsed_trap_row_count = len(trap_records)
-            if parsed_trap_row_count == 0:
-                reason = "jki_trap_rows_parse_empty"
+            zip_path = _write_bytes(raw_dir, "openagrar_derivate_00016480.zip", zip_response.body)
+            raw_artifacts.append(zip_path.as_posix())
+            try:
+                with ZipFile(io.BytesIO(zip_response.body)) as zip_file:
+                    trap_member = _find_zip_member(zip_file, "trap_description.csv")
+                    if trap_member:
+                        trap_description_body = zip_file.read(trap_member)
+                        trap_description_path = _write_bytes(raw_dir, "trap_description.csv", trap_description_body)
+                        raw_artifacts.append(trap_description_path.as_posix())
+                        trap_location_records, trap_lookup = _parse_trap_description_csv_records(
+                            trap_description_body,
+                            raw_path=trap_description_path,
+                            retrieved_at=retrieved_at,
+                        )
+                        records.extend(trap_location_records)
+                        parsed_trap_location_count = len(trap_location_records)
+                    else:
+                        reason = "jki_trap_description_table_not_queryable"
+                        records.append(
+                            _gap_record(
+                                reason=reason,
+                                title="JKI DrosoMon SWD trap-capture gap: trap_description.csv missing from data ZIP",
+                                text="The OpenAgrar data derivate ZIP was fetched, but trap_description.csv was not present, so trap coordinates are not queryable.",
+                                raw_path=zip_path,
+                                locator_suffix="zip#gap/trap_description_missing",
+                                retrieved_at=retrieved_at,
+                                source_url=DATA_DERIVATE_ZIP_URL,
+                            )
+                        )
+                        gaps.append(
+                            _gap_dict(
+                                reason,
+                                locator=f"{zip_path.as_posix()}#zip",
+                                retrieved_at=retrieved_at,
+                                source_url=DATA_DERIVATE_ZIP_URL,
+                            )
+                        )
+                    captures_member = _find_zip_member(zip_file, "captures_data.csv")
+                    if captures_member:
+                        captures_body = zip_file.read(captures_member)
+                        csv_path = _write_bytes(raw_dir, "captures_data.csv", captures_body)
+                        raw_artifacts.append(csv_path.as_posix())
+                        trap_records = _parse_captures_csv_records(
+                            captures_body,
+                            raw_path=csv_path,
+                            retrieved_at=retrieved_at,
+                            trap_lookup=trap_lookup,
+                            source_url=DATA_DERIVATE_ZIP_URL,
+                        )
+                        records.extend(trap_records)
+                        parsed_trap_row_count = len(trap_records)
+                    else:
+                        reason = "jki_captures_table_missing_from_zip"
+                        records.append(
+                            _gap_record(
+                                reason=reason,
+                                title="JKI DrosoMon SWD trap-capture gap: captures_data.csv missing from data ZIP",
+                                text="The OpenAgrar data derivate ZIP was fetched, but captures_data.csv was not present, so trap deployment rows are not queryable from the ZIP.",
+                                raw_path=zip_path,
+                                locator_suffix="zip#gap/captures_data_missing",
+                                retrieved_at=retrieved_at,
+                                source_url=DATA_DERIVATE_ZIP_URL,
+                            )
+                        )
+                        gaps.append(
+                            _gap_dict(
+                                reason,
+                                locator=f"{zip_path.as_posix()}#zip",
+                                retrieved_at=retrieved_at,
+                                source_url=DATA_DERIVATE_ZIP_URL,
+                            )
+                        )
+            except BadZipFile as exc:
+                reason = "jki_drosomon_zip_parse_failed"
                 records.append(
                     _gap_record(
                         reason=reason,
-                        title="JKI DrosoMon SWD trap-capture gap: CSV parser found no rows",
-                        text=(
-                            "The captures_data.csv file was fetched, but the schema-checked parser did not produce trap-deployment rows. "
-                            "Ask Insects keeps the source file and records this as a parsing gap."
-                        ),
-                        raw_path=csv_path,
-                        locator_suffix="file",
+                        title="JKI DrosoMon SWD trap-capture gap: data ZIP parse failed",
+                        text=f"The OpenAgrar data derivate ZIP could not be parsed in this pass. Error: {exc}.",
+                        raw_path=zip_path,
+                        locator_suffix="zip#gap/parse_failed",
                         retrieved_at=retrieved_at,
-                        source_url=CAPTURES_CSV_URL,
-                        extra={
-                            "status": response.status,
-                            "content_type": response.content_type,
-                            "byte_size": len(response.body),
-                            "pow_challenge": response.pow_challenge,
-                        },
+                        source_url=DATA_DERIVATE_ZIP_URL,
+                        extra={"error": str(exc)},
                     )
                 )
                 gaps.append(
                     _gap_dict(
                         reason,
-                        locator=f"{csv_path.as_posix()}#file",
+                        locator=f"{zip_path.as_posix()}#zip",
                         retrieved_at=retrieved_at,
-                        source_url=CAPTURES_CSV_URL,
-                        details={
-                            "status": response.status,
-                            "content_type": response.content_type,
-                            "byte_size": len(response.body),
-                            "pow_challenge": response.pow_challenge,
-                        },
+                        source_url=DATA_DERIVATE_ZIP_URL,
+                        details={"error": str(exc)},
                     )
                 )
     except Exception as exc:
-        reason = "jki_drosomon_csv_fetch_failed"
+        reason = "jki_drosomon_zip_fetch_failed"
         records.append(
             _gap_record(
                 reason=reason,
-                title="JKI DrosoMon SWD trap-capture gap: CSV fetch failed",
-                text=f"The captures_data.csv file could not be fetched from OpenAgrar in this pass. Error: {exc}.",
+                title="JKI DrosoMon SWD trap-capture gap: data ZIP fetch failed",
+                text=f"The OpenAgrar data derivate ZIP could not be fetched in this pass. Error: {exc}.",
                 raw_path=metadata_path,
-                locator_suffix="result/distributions/1#gap/csv_fetch_failed",
+                locator_suffix="result/distributions/1#gap/zip_fetch_failed",
                 retrieved_at=retrieved_at,
-                source_url=CAPTURES_CSV_URL,
+                source_url=DATA_DERIVATE_ZIP_URL,
                 extra={"error": str(exc)},
             )
         )
@@ -716,10 +872,119 @@ def fetch_drosophila_suzukii_jki_drosomon_trap_capture_records(
                 reason,
                 locator=f"{metadata_path.as_posix()}#result/distributions/1",
                 retrieved_at=retrieved_at,
-                source_url=CAPTURES_CSV_URL,
+                source_url=DATA_DERIVATE_ZIP_URL,
                 details={"error": str(exc)},
             )
         )
+
+    if parsed_trap_row_count == 0:
+        try:
+            response = fetch_body(CAPTURES_CSV_URL)
+            if _is_security_check(response):
+                security_path = _write_bytes(raw_dir, "captures_data_security_check.html", response.body[:200_000])
+                raw_artifacts.append(security_path.as_posix())
+                reason = "openagrar_security_check_blocks_csv_download"
+                details = {
+                    "status": response.status,
+                    "content_type": response.content_type,
+                    "access_url": CAPTURES_CSV_URL,
+                    "pow_challenge": response.pow_challenge,
+                }
+                records.append(
+                    _gap_record(
+                        reason=reason,
+                        title="JKI DrosoMon SWD trap-capture gap: CSV blocked by OpenAgrar security check",
+                        text=(
+                            "The public data.europa registry exposes captures_data.csv for the 7-year JKI DrosoMon SWD trap-capture dataset, "
+                            "but the current direct OpenAgrar file URL returns an HTML security-check page instead of CSV. "
+                            "Ask Insects keeps the dataset summary and file manifest, but individual trap-deployment rows are not queryable in this pass."
+                        ),
+                        raw_path=security_path,
+                        locator_suffix="html",
+                        retrieved_at=retrieved_at,
+                        source_url=CAPTURES_CSV_URL,
+                        extra=details,
+                    )
+                )
+                gaps.append(
+                    _gap_dict(
+                        reason,
+                        locator=f"{security_path.as_posix()}#html",
+                        retrieved_at=retrieved_at,
+                        source_url=CAPTURES_CSV_URL,
+                        details=details,
+                    )
+                )
+            else:
+                csv_path = _write_bytes(raw_dir, "captures_data.csv", response.body)
+                raw_artifacts.append(csv_path.as_posix())
+                trap_records = _parse_captures_csv_records(
+                    response.body,
+                    raw_path=csv_path,
+                    retrieved_at=retrieved_at,
+                    trap_lookup=trap_lookup,
+                )
+                records.extend(trap_records)
+                parsed_trap_row_count = len(trap_records)
+                if parsed_trap_row_count == 0:
+                    reason = "jki_trap_rows_parse_empty"
+                    records.append(
+                        _gap_record(
+                            reason=reason,
+                            title="JKI DrosoMon SWD trap-capture gap: CSV parser found no rows",
+                            text=(
+                                "The captures_data.csv file was fetched, but the schema-checked parser did not produce trap-deployment rows. "
+                                "Ask Insects keeps the source file and records this as a parsing gap."
+                            ),
+                            raw_path=csv_path,
+                            locator_suffix="file",
+                            retrieved_at=retrieved_at,
+                            source_url=CAPTURES_CSV_URL,
+                            extra={
+                                "status": response.status,
+                                "content_type": response.content_type,
+                                "byte_size": len(response.body),
+                                "pow_challenge": response.pow_challenge,
+                            },
+                        )
+                    )
+                    gaps.append(
+                        _gap_dict(
+                            reason,
+                            locator=f"{csv_path.as_posix()}#file",
+                            retrieved_at=retrieved_at,
+                            source_url=CAPTURES_CSV_URL,
+                            details={
+                                "status": response.status,
+                                "content_type": response.content_type,
+                                "byte_size": len(response.body),
+                                "pow_challenge": response.pow_challenge,
+                            },
+                        )
+                    )
+        except Exception as exc:
+            reason = "jki_drosomon_csv_fetch_failed"
+            records.append(
+                _gap_record(
+                    reason=reason,
+                    title="JKI DrosoMon SWD trap-capture gap: CSV fetch failed",
+                    text=f"The captures_data.csv file could not be fetched from OpenAgrar in this pass. Error: {exc}.",
+                    raw_path=metadata_path,
+                    locator_suffix="result/distributions/1#gap/csv_fetch_failed",
+                    retrieved_at=retrieved_at,
+                    source_url=CAPTURES_CSV_URL,
+                    extra={"error": str(exc)},
+                )
+            )
+            gaps.append(
+                _gap_dict(
+                    reason,
+                    locator=f"{metadata_path.as_posix()}#result/distributions/1",
+                    retrieved_at=retrieved_at,
+                    source_url=CAPTURES_CSV_URL,
+                    details={"error": str(exc)},
+                )
+            )
 
     if parsed_trap_row_count == 0:
         reason = "jki_trap_deployment_rows_not_queryable"
@@ -756,4 +1021,5 @@ def fetch_drosophila_suzukii_jki_drosomon_trap_capture_records(
         requested_urls=requested_urls,
         file_count=file_count,
         parsed_trap_row_count=parsed_trap_row_count,
+        parsed_trap_location_count=parsed_trap_location_count,
     )

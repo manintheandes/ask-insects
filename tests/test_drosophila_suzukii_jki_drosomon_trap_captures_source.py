@@ -1,6 +1,8 @@
+import io
 import tempfile
 import unittest
 from pathlib import Path
+from zipfile import ZipFile
 
 from askinsects.sources.drosophila_suzukii_jki_drosomon_trap_captures import (
     DROSOPHILA_SUZUKII_JKI_DROSOMON_TRAP_CAPTURES_SOURCE_ID,
@@ -40,6 +42,19 @@ CAPTURES_CSV_FIXTURE = (
     "DA_BE1;09.04.2015;16.04.2015;0;2\r\n"
     "DA_BE1;16.04.2015;23.04.2015;3;4\r\n"
 ).encode("utf-8")
+
+TRAP_DESCRIPTION_CSV_FIXTURE = (
+    "trap_name;lon;lat;alt;operator;located_on (english);located_on (scientific);immediate_habitat_english\r\n"
+    "DA_BE1;8.648321;49.800277;151;JKI Darmstadt;Beech;Fagus sp.;Mixed forest with blackberry\r\n"
+).encode("utf-8")
+
+
+def zipped_jki_fixture() -> bytes:
+    buffer = io.BytesIO()
+    with ZipFile(buffer, "w") as zip_file:
+        zip_file.writestr("openagrar_derivate_00016480/captures_data.csv", CAPTURES_CSV_FIXTURE)
+        zip_file.writestr("openagrar_derivate_00016480/trap_description.csv", TRAP_DESCRIPTION_CSV_FIXTURE)
+    return buffer.getvalue()
 
 
 class DrosophilaSuzukiiJkiDrosomonTrapCapturesSourceTests(unittest.TestCase):
@@ -110,6 +125,36 @@ class DrosophilaSuzukiiJkiDrosomonTrapCapturesSourceTests(unittest.TestCase):
         self.assertEqual(trap_rows[0].payload["adult_captures"], 2)
         self.assertEqual(trap_rows[0].payload["trap_days"], 7)
         self.assertEqual(trap_rows[1].payload["adult_captures"], 7)
+
+    def test_data_zip_adds_trap_location_rows_and_coordinates_to_deployments(self):
+        def fetch_body(url):
+            return FetchBody(
+                body=zipped_jki_fixture(),
+                content_type="application/zip",
+                status=200,
+                pow_challenge={"attempted": True, "solved": True, "difficulty": 16},
+            )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_drosophila_suzukii_jki_drosomon_trap_capture_records(
+                raw_dir=Path(tmpdir),
+                fetch_json=lambda url: DATASET_FIXTURE,
+                fetch_body=fetch_body,
+                retrieved_at="2026-05-29T00:00:00Z",
+            )
+
+        self.assertEqual(result.parsed_trap_row_count, 2)
+        self.assertEqual(result.parsed_trap_location_count, 1)
+        reasons = {gap["reason"] for gap in result.gaps}
+        self.assertNotIn("jki_trap_deployment_rows_not_queryable", reasons)
+        self.assertTrue(any(path.endswith("trap_description.csv") for path in result.raw_artifacts))
+        location_rows = [record for record in result.records if record.payload.get("atom_type") == "jki_drosomon_trap_location_row"]
+        self.assertEqual(len(location_rows), 1)
+        self.assertEqual(location_rows[0].payload["latitude"], 49.800277)
+        self.assertEqual(location_rows[0].payload["longitude"], 8.648321)
+        trap_rows = [record for record in result.records if record.payload.get("atom_type") == "jki_drosomon_trap_deployment_row"]
+        self.assertTrue(all(record.payload["coordinates_available"] for record in trap_rows))
+        self.assertEqual(trap_rows[0].payload["immediate_habitat_english"], "Mixed forest with blackberry")
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from scripts.ingest_drosophila_suzukii_jki_drosomon_trap_captures import (
 )
 from tests.test_drosophila_suzukii_jki_drosomon_trap_captures_source import DATASET_FIXTURE
 from tests.test_drosophila_suzukii_jki_drosomon_trap_captures_source import CAPTURES_CSV_FIXTURE
+from tests.test_drosophila_suzukii_jki_drosomon_trap_captures_source import zipped_jki_fixture
 
 
 class IngestDrosophilaSuzukiiJkiDrosomonTrapCapturesTests(unittest.TestCase):
@@ -73,6 +74,32 @@ class IngestDrosophilaSuzukiiJkiDrosomonTrapCapturesTests(unittest.TestCase):
             )
             self.assertEqual(len(rows), 2)
             self.assertTrue(any('"adult_captures": 7' in row["payload_json"] for row in rows))
+
+    def test_ingest_installs_trap_location_rows_from_data_zip(self):
+        def fetch_body(url):
+            return FetchBody(body=zipped_jki_fixture(), content_type="application/zip", status=200)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+
+            result = ingest_drosophila_suzukii_jki_drosomon_trap_captures(
+                artifact_dir=artifact_dir,
+                fetch_json=lambda url: DATASET_FIXTURE,
+                fetch_body=fetch_body,
+                retrieved_at="2026-05-29T00:00:00Z",
+            )
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(result["parsed_trap_row_count"], 2)
+            self.assertEqual(result["parsed_trap_location_count"], 1)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            rows = index.sql(
+                "select payload_json from record_payloads where source='drosophila_suzukii_jki_drosomon_trap_captures' and payload_json like '%jki_drosomon_trap_location_row%'",
+                limit=10,
+            )
+            self.assertEqual(len(rows), 1)
+            self.assertTrue(any('"latitude": 49.800277' in row["payload_json"] for row in rows))
 
 
 if __name__ == "__main__":

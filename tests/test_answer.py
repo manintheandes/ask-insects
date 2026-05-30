@@ -2014,6 +2014,28 @@ class AnswerTests(unittest.TestCase):
                         },
                     ),
                     EvidenceRecord(
+                        record_id="swd_jki_drosomon_trap_captures:trap_location:DA_BE1",
+                        lane="ecology",
+                        source="drosophila_suzukii_jki_drosomon_trap_captures",
+                        title="JKI DrosoMon SWD trap location DA_BE1",
+                        text="JKI DrosoMon trap DA_BE1 for Drosophila suzukii. Coordinates: 49.800277, 8.648321. Immediate habitat: mixed forest with blackberry.",
+                        species="Drosophila suzukii",
+                        url="https://www.openagrar.de/receive/openagrar_mods_00041381",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_jki_drosomon_trap_captures",
+                            locator="raw/drosophila_suzukii_jki_drosomon_trap_captures/trap_description.csv#row/1",
+                            retrieved_at="2026-05-29T00:00:00Z",
+                        ),
+                        payload={
+                            "atom_type": "jki_drosomon_trap_location_row",
+                            "trap_name": "DA_BE1",
+                            "latitude": 49.800277,
+                            "longitude": 8.648321,
+                            "immediate_habitat_english": "mixed forest with blackberry",
+                        },
+                    ),
+                    EvidenceRecord(
                         record_id="swd_occurrence_ecology:country:Germany",
                         lane="ecology",
                         source="drosophila_suzukii_occurrence_ecology",
@@ -2033,10 +2055,14 @@ class AnswerTests(unittest.TestCase):
             )
 
             answer = answer_question("show Drosophila suzukii trap capture monitoring evidence", artifact_dir=artifact_dir)
+            location_answer = answer_question("show Drosophila suzukii JKI trap coordinates and habitat", artifact_dir=artifact_dir)
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "ecology")
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_jki_drosomon_trap_captures")
+            self.assertTrue(location_answer["ok"])
+            self.assertEqual(location_answer["answer_shape"], "ecology")
+            self.assertEqual(location_answer["evidence"][0]["record_id"], "swd_jki_drosomon_trap_captures:trap_location:DA_BE1")
 
     def test_spotted_wing_flight_questions_prefer_umn_assay_rows(self):
         with tempfile.TemporaryDirectory() as tmpdir:

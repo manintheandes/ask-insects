@@ -745,13 +745,14 @@ sources:
   - id: drosophila_suzukii_jki_drosomon_trap_captures
     name: Drosophila suzukii JKI DrosoMon trap-capture rows
     source_type: public_registry_with_bounded_file_fetch
-    boundary: JKI DrosoMon 7-year Drosophila suzukii monitoring dataset in southwest Germany, preserving the data.europa/OpenAgrar registry record, captures_data.csv and parameter-description file manifests, article DOI 10.3390/insects9040125, reported trap/deployment/trap-day/adult-capture counts, and parsed captures_data.csv trap-deployment rows with trap name, date window, male/female adult captures, total adult captures, trap-days, and row locators. OpenAgrar proof-of-work challenge handling is bounded; failed or overlarge challenge cases remain explicit gaps. The separate trap-coordinate table described by the dataset is not yet atomically queryable unless an accessible machine-readable file is identified.
-    query_plane: data_europa_openagrar_registry_and_captures_csv_to_sqlite_ecology_rows
+    boundary: JKI DrosoMon 7-year Drosophila suzukii monitoring dataset in southwest Germany, preserving the data.europa/OpenAgrar registry record, OpenAgrar data ZIP, captures_data.csv and trap_description.csv tables, parameter-description file manifests, article DOI 10.3390/insects9040125, reported trap/deployment/trap-day/adult-capture counts, parsed trap-deployment rows, parsed trap-location rows, coordinates, altitude, operator, host plant, habitat, and row locators. OpenAgrar proof-of-work challenge handling is bounded; failed or overlarge challenge cases remain explicit gaps.
+    query_plane: data_europa_openagrar_zip_to_sqlite_ecology_capture_and_location_rows
     artifact_dir: artifacts/mosquito-v1
     raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_jki_drosomon_trap_captures
     ingest_script: scripts/ingest_drosophila_suzukii_jki_drosomon_trap_captures.py
     input_sources:
       - data_europa_openagrar_mods_00041381
+      - openagrar_derivate_00016480_zip
       - openagrar_derivate_00016480_captures_data_csv
     lanes:
       - ecology
@@ -781,12 +782,23 @@ sources:
         - females
         - adult_captures
         - row_number
+        - latitude
+        - longitude
+        - altitude_m
+        - operator
+        - located_on_english
+        - located_on_scientific
+        - immediate_habitat_english
       structured_gaps:
         - openagrar_security_check_blocks_csv_download
         - jki_trap_rows_parse_empty
+        - jki_drosomon_zip_fetch_unavailable
+        - jki_drosomon_zip_fetch_failed
+        - jki_drosomon_zip_parse_failed
+        - jki_trap_description_table_not_queryable
+        - jki_captures_table_missing_from_zip
         - jki_drosomon_metadata_fetch_failed
         - jki_drosomon_csv_fetch_failed
-        - trap_coordinate_table_not_queryable
   - id: drosophila_suzukii_umn_flight_assay_rows
     name: Drosophila suzukii UMN flight assay rows
     source_type: public_dspace_csv
