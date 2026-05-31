@@ -11,8 +11,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
-from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.aedes_deep_sources import AEDES_DEEP_SOURCE_IDS, fetch_aedes_deep_source_records
 
 
@@ -117,17 +117,44 @@ def ingest_aedes_deep_sources(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        for source_id in result.source_ids:
-            records = [record for record in result.records if record.source == source_id]
-            index.replace_source_records(source_id, records)
-    gaps_by_source: dict[str, list[object]] = {}
+    # Split records and gaps per source_id, then run_source_ingest once per source.
+    records_by_source: dict[str, list] = {sid: [] for sid in result.source_ids}
+    for record in result.records:
+        if record.source in records_by_source:
+            records_by_source[record.source].append(record)
+    gaps_by_source: dict[str, list] = {}
     for gap in result.gaps:
-        source_id = str(gap.get("source")) if isinstance(gap, dict) and gap.get("source") else "aedes_deep_sources"
-        gaps_by_source.setdefault(source_id, []).append(gap)
-    for source_id, source_gaps in gaps_by_source.items():
-        persist_source_gaps(index, source_id, source_gaps, retrieved_at=retrieved)
+        sid = str(gap.get("source")) if isinstance(gap, dict) and gap.get("source") else "aedes_deep_sources"
+        gaps_by_source.setdefault(sid, []).append(gap)
+    any_ok = False
+    for source_id in result.source_ids:
+        source_records = records_by_source.get(source_id, [])
+        source_gaps = gaps_by_source.get(source_id, [])
+        outcome = run_source_ingest(
+            index=index,
+            artifact_dir=artifact_dir,
+            source_id=source_id,
+            records=source_records,
+            gaps=source_gaps,
+            retrieved_at=retrieved,
+            raw_artifacts=getattr(result, "raw_artifacts", None),
+            persist_gap_records=True,  # aedes gaps are plain dicts; runner persists them
+        )
+        if not outcome["refresh_failed"]:
+            any_ok = True
+    # Persist any gaps attributed to unlisted source IDs (e.g. "aedes_deep_sources").
+    for sid, source_gaps in gaps_by_source.items():
+        if sid not in set(result.source_ids):
+            run_source_ingest(
+                index=index,
+                artifact_dir=artifact_dir,
+                source_id=sid,
+                records=[],
+                gaps=source_gaps,
+                retrieved_at=retrieved,
+                persist_gap_records=True,
+            )
+    refresh_failed = not any_ok and bool(result.gaps)
     return _update_metadata(artifact_dir, result, retrieved, ok=not refresh_failed)
 
 

@@ -1,0 +1,45 @@
+{
+  "gaps": [
+    {
+      "lane": "genome_features",
+      "locator": "<raw_dir>/Drosophila_suzukii_snp_esearch_000000.json",
+      "reason": "ncbi_snp_no_swd_records",
+      "reported_total_count": 0,
+      "requested_limit": 10,
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "drosophila_suzukii_ncbi_snp_variation",
+      "species": "Drosophila suzukii"
+    }
+  ],
+  "records": [
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "gap": {
+          "lane": "genome_features",
+          "locator": "<raw_dir>/Drosophila_suzukii_snp_esearch_000000.json",
+          "reason": "ncbi_snp_no_swd_records",
+          "reported_total_count": 0,
+          "requested_limit": 10,
+          "retrieved_at": "2026-05-29T00:00:00Z",
+          "source": "drosophila_suzukii_ncbi_snp_variation",
+          "species": "Drosophila suzukii"
+        }
+      },
+      "provenance": {
+        "license": "NCBI dbSNP public metadata; NCBI terms apply",
+        "locator": "<raw_dir>/Drosophila_suzukii_snp_esearch_000000.json#gap/ncbi_snp_no_swd_records",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ncbi_snp_variation",
+        "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=snp&term=%22Drosophila+suzukii%22%5BOrganism%5D&retmode=json&retstart=0&retmax=10&sort=snp_id&tool=ask-insects"
+      },
+      "record_id": "swd_ncbi_snp_variation:gap:drosophila_suzukii:ncbi_snp_no_swd_records",
+      "source": "drosophila_suzukii_ncbi_snp_variation",
+      "species": "Drosophila suzukii",
+      "text": "NCBI dbSNP returned zero records for Drosophila suzukii using the bounded organism query. Ask Insects records this as an explicit variant-source gap instead of implying dbSNP variants are indexed.",
+      "title": "Drosophila suzukii NCBI dbSNP variation source gap: ncbi_snp_no_swd_records",
+      "url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=snp&term=%22Drosophila+suzukii%22%5BOrganism%5D&retmode=json&retstart=0&retmax=10&sort=snp_id&tool=ask-insects"
+    }
+  ]
+}

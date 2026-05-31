@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.uniprot_proteins import UNIPROT_PROTEIN_SOURCE_ID, fetch_uniprot_protein_records
 
 
@@ -112,15 +113,24 @@ def ingest_uniprot_proteins(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        index.replace_source_records(UNIPROT_PROTEIN_SOURCE_ID, result.records)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=UNIPROT_PROTEIN_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed,
+        preserved_existing=preserved_existing,
     )
 
 

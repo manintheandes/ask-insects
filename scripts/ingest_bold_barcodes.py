@@ -11,8 +11,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import utc_now, write_json
-from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.bold_barcodes import BOLD_SOURCE_ID, DEFAULT_BOLD_SPECIES, fetch_bold_barcode_records
 
 
@@ -98,10 +98,19 @@ def ingest_bold_barcodes(
         retrieved_at=retrieved,
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        index.replace_source_records(BOLD_SOURCE_ID, result.records)
-    persist_source_gaps(index, BOLD_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    index.initialize()
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=BOLD_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,  # gaps are plain dicts; runner persists them
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(artifact_dir, result, ok=not refresh_failed)
 
 

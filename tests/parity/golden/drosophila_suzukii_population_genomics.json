@@ -1,0 +1,75 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "accession": "PRJNA1081763",
+        "atom_type": "swd_population_genomics_bioproject",
+        "data_type": "",
+        "description": "Genomic signatures of invasion.",
+        "raw_summary": {
+          "project_acc": "PRJNA1081763",
+          "project_description": "Genomic signatures of invasion.",
+          "project_title": "Pool-seq data from 3 Drosophila suzukii populations from North Portugal"
+        },
+        "registration_date": "",
+        "submitter": "",
+        "target_scope": "",
+        "title": "Pool-seq data from 3 Drosophila suzukii populations from North Portugal",
+        "uid": "1081763"
+      },
+      "provenance": {
+        "license": "NCBI E-utilities public metadata; source terms apply",
+        "locator": "<raw_dir>/ncbi_bioproject_population_genomics_summary.json#result/1081763",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_population_genomics",
+        "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=bioproject&id=1289399%2C1081763&retmode=json&tool=ask-insects"
+      },
+      "record_id": "swd_population_genomics:bioproject:PRJNA1081763",
+      "source": "drosophila_suzukii_population_genomics",
+      "species": "Drosophila suzukii",
+      "text": "NCBI BioProject population-genomics record PRJNA1081763 for Drosophila suzukii (spotted wing drosophila). Title: Pool-seq data from 3 Drosophila suzukii populations from North Portugal. Data type: not supplied. Target scope: not supplied. Submitter: not supplied. Registration date: not supplied. Description: Genomic signatures of invasion..",
+      "title": "Drosophila suzukii population genomics BioProject PRJNA1081763: Pool-seq data from 3 Drosophila suzukii populations from North Portugal",
+      "url": "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1081763"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "accession": "PRJNA1289399",
+        "atom_type": "swd_population_genomics_bioproject",
+        "data_type": "Genome sequencing",
+        "description": "Population genomic pool-seq data for invasive Drosophila suzukii.",
+        "raw_summary": {
+          "project_acc": "PRJNA1289399",
+          "project_data_type": "Genome sequencing",
+          "project_description": "Population genomic pool-seq data for invasive Drosophila suzukii.",
+          "project_target_scope": "Multiisolate",
+          "project_title": "Pool-seq data from 3 Drosophila suzukii populations collected in Northern Portugal",
+          "registration_date": "2025-01-01",
+          "submitter_organization": "Test submitter"
+        },
+        "registration_date": "2025-01-01",
+        "submitter": "Test submitter",
+        "target_scope": "Multiisolate",
+        "title": "Pool-seq data from 3 Drosophila suzukii populations collected in Northern Portugal",
+        "uid": "1289399"
+      },
+      "provenance": {
+        "license": "NCBI E-utilities public metadata; source terms apply",
+        "locator": "<raw_dir>/ncbi_bioproject_population_genomics_summary.json#result/1289399",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_population_genomics",
+        "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=bioproject&id=1289399%2C1081763&retmode=json&tool=ask-insects"
+      },
+      "record_id": "swd_population_genomics:bioproject:PRJNA1289399",
+      "source": "drosophila_suzukii_population_genomics",
+      "species": "Drosophila suzukii",
+      "text": "NCBI BioProject population-genomics record PRJNA1289399 for Drosophila suzukii (spotted wing drosophila). Title: Pool-seq data from 3 Drosophila suzukii populations collected in Northern Portugal. Data type: Genome sequencing. Target scope: Multiisolate. Submitter: Test submitter. Registration date: 2025-01-01. Description: Population genomic pool-seq data for invasive Drosophila suzukii..",
+      "title": "Drosophila suzukii population genomics BioProject PRJNA1289399: Pool-seq data from 3 Drosophila suzukii populations collected in Northern Portugal",
+      "url": "https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1289399"
+    }
+  ]
+}

@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.expression_omics import EXPRESSION_OMICS_SOURCE_ID, fetch_expression_omics_records
 
 
@@ -119,15 +120,29 @@ def ingest_expression_omics(
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
     fatal_gap = any(isinstance(gap, dict) and gap.get("reason") in FATAL_REFRESH_GAP_REASONS for gap in result.gaps)
-    refresh_failed = fatal_gap or (not result.records and bool(result.gaps))
-    if not refresh_failed:
-        index.replace_source_records(EXPRESSION_OMICS_SOURCE_ID, result.records)
+    # Override: treat fatal API errors as refresh_failed even when records were produced
+    if fatal_gap:
+        refresh_failed = True
+        preserved_existing = _source_record_count(index) > 0
+    else:
+        outcome = run_source_ingest(
+            index=index,
+            artifact_dir=artifact_dir,
+            source_id=EXPRESSION_OMICS_SOURCE_ID,
+            records=result.records,
+            gaps=result.gaps,
+            retrieved_at=retrieved,
+            raw_artifacts=getattr(result, "raw_artifacts", None),
+            persist_gap_records=False,  # adapter builds gap EvidenceRecords (source_gap) into result.records
+        )
+        refresh_failed = outcome["refresh_failed"]
+        preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and _source_record_count(index) > 0,
+        preserved_existing=preserved_existing,
     )
 
 

@@ -12,13 +12,12 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.drosophila_suzukii_ensembl_metazoa_orthology import (
     DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID,
     fetch_drosophila_suzukii_ensembl_metazoa_orthology_records,
 )
 
-
-FATAL_REFRESH_GAP_REASONS = {"swd_ensembl_metazoa_download_failed"}
 
 
 def _read_json(path: Path, default: object) -> object:
@@ -134,16 +133,30 @@ def ingest_drosophila_suzukii_ensembl_metazoa_orthology(
         max_download_bytes=max_download_bytes,
         max_rows_per_file=max_rows_per_file,
     )
-    fatal_gap = any(isinstance(gap, dict) and gap.get("reason") in FATAL_REFRESH_GAP_REASONS for gap in result.gaps)
-    refresh_failed = fatal_gap or (not result.records and bool(result.gaps))
-    if not refresh_failed:
-        index.replace_source_records(DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID, result.records)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=DROSOPHILA_SUZUKII_ENSEMBL_METAZOA_ORTHOLOGY_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=False,  # adapter already emits stable_id_history_gap EvidenceRecords (atom_type ends in "gap")
+    )
+    # Edge case (known/accepted): a successful run normally yields thousands of non-gap
+    # gene records, so the history-empty gap records install alongside them. Only a
+    # degenerate upstream state (gene file downloads but parses to zero rows) would make
+    # the result gap-only; the runner then treats it as refresh_failed and preserves
+    # existing rows (ok=False) rather than installing the history gaps. That is correct
+    # for what is effectively a corrupt/empty upstream file, so this lane stays migrated.
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and _source_record_count(index) > 0,
+        preserved_existing=preserved_existing,
     )
 
 

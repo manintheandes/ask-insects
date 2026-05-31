@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.drosophila_suzukii_dryad_landscape_monitoring import (
     DROSOPHILA_SUZUKII_DRYAD_LANDSCAPE_MONITORING_SOURCE_ID,
     fetch_drosophila_suzukii_dryad_landscape_monitoring_records,
@@ -74,25 +75,23 @@ def ingest_drosophila_suzukii_dryad_landscape_monitoring(
         fetch_text=fetch_text,
         retrieved_at=retrieved,
     )
-    # Persist whenever the fetch produced any records (dataset/file manifests or
-    # honest gap records), so a blocked preview is still queryable in the index.
-    # Only a total fetch failure (no records at all) preserves prior data instead.
-    # Mirrors the jki/umn sibling lanes; row_count alone dropped gap records.
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        index.replace_source_records(DROSOPHILA_SUZUKII_DRYAD_LANDSCAPE_MONITORING_SOURCE_ID, result.records)
-    with index.connect() as conn:
-        preserved_existing = bool(
-            conn.execute(
-                "select 1 from records where source=? limit 1",
-                (DROSOPHILA_SUZUKII_DRYAD_LANDSCAPE_MONITORING_SOURCE_ID,),
-            ).fetchone()
-        )
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=DROSOPHILA_SUZUKII_DRYAD_LANDSCAPE_MONITORING_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=False,  # adapter already emits source_gap records
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
+    installed_record_count = outcome["record_count"]
     summary = index.summary()
     counts = _source_counts(index)
     atoms = _atom_counts(index)
     gap_count = _replace_source_gaps(artifact_dir / "gaps.json", result.gaps)
-    installed_record_count = int(counts.get(DROSOPHILA_SUZUKII_DRYAD_LANDSCAPE_MONITORING_SOURCE_ID, 0))
     source_payload = {
         "source": DROSOPHILA_SUZUKII_DRYAD_LANDSCAPE_MONITORING_SOURCE_ID,
         "record_count": installed_record_count,
@@ -104,7 +103,7 @@ def ingest_drosophila_suzukii_dryad_landscape_monitoring(
         "raw_artifacts": result.raw_artifacts,
         "retrieved_at": retrieved,
         "refresh_failed": refresh_failed,
-        "preserved_existing": refresh_failed and preserved_existing,
+        "preserved_existing": preserved_existing,
         "method": "parsed Dryad public preview table for southeast U.S. blueberry SWD landscape monitoring rows",
     }
     for filename in ("source_status.json", "source_receipt.json"):
@@ -129,7 +128,7 @@ def ingest_drosophila_suzukii_dryad_landscape_monitoring(
         payload[DROSOPHILA_SUZUKII_DRYAD_LANDSCAPE_MONITORING_SOURCE_ID] = source_payload
         write_json(path, payload)
     return {
-        "ok": not refresh_failed,
+        "ok": outcome["ok"],
         "artifact_dir": artifact_dir.as_posix(),
         **source_payload,
         "source_counts": counts,

@@ -1,0 +1,32 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "media",
+      "media_url": "https://pmc.ncbi.nlm.nih.gov/articles/instance/7535929/bin/elife-56829-video1.mp4",
+      "payload": {
+        "article_title": "BiteOscope, an open platform to study mosquito biting behavior",
+        "caption": "video1.mp4\">Download video file Video 1. Aedes aegypti mosquito biting assay.",
+        "doi": "10.7554/eLife.56829",
+        "filename": "elife-56829-video1.mp4",
+        "pmcid": "PMC7535929",
+        "raw_html": "<raw_dir>/PMC7535929.html",
+        "raw_html_path": "<raw_dir>/PMC7535929.html",
+        "video_url": "https://pmc.ncbi.nlm.nih.gov/articles/instance/7535929/bin/elife-56829-video1.mp4"
+      },
+      "provenance": {
+        "license": "CC BY 4.0",
+        "locator": "<raw_dir>/PMC7535929.html#video/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "pmc_open_access_videos",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7535929/"
+      },
+      "record_id": "pmc:video:PMC7535929:elife-56829-video1.mp4",
+      "source": "pmc_open_access_videos",
+      "species": "Aedes aegypti",
+      "text": "PMC open-access supplementary video for Aedes aegypti from BiteOscope, an open platform to study mosquito biting behavior. Video file: elife-56829-video1.mp4. Caption context: video1.mp4\">Download video file Video 1. Aedes aegypti mosquito biting assay. DOI: 10.7554/eLife.56829.",
+      "title": "Aedes aegypti PMC supplementary video elife-56829-video1.mp4",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7535929/"
+    }
+  ]
+}

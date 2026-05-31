@@ -11,8 +11,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
-from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.opendatasus_dengue_surveillance import (
     OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,
     OpenDataSusDengueFileSpec,
@@ -152,16 +152,24 @@ def ingest_opendatasus_dengue_surveillance(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        index.replace_source_records(OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID, result.records)
-    persist_source_gaps(index, OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=OPENDATASUS_DENGUE_SURVEILLANCE_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and _source_count(index) > 0,
+        preserved_existing=preserved_existing,
     )
 
 

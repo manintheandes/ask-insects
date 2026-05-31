@@ -13,16 +13,12 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.aedes_olfaction_literature import (
     AEDES_OLFACTION_LITERATURE_SOURCE_ID,
     fetch_aedes_olfaction_literature_records,
 )
 
-
-FATAL_REFRESH_GAP_REASONS = {
-    "aedes_olfaction_pubmed_search_failed",
-    "aedes_olfaction_pubmed_summary_failed",
-}
 
 
 def _read_json(path: Path, default: object) -> object:
@@ -203,17 +199,26 @@ def ingest_aedes_olfaction_literature(
         delay_seconds=delay_seconds,
         max_fulltext_bytes=max_fulltext_bytes,
     )
-    fatal_gap = any(isinstance(gap, dict) and gap.get("reason") in FATAL_REFRESH_GAP_REASONS for gap in result.gaps)
-    refresh_failed = fatal_gap or (not result.records and bool(result.gaps))
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=AEDES_OLFACTION_LITERATURE_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     if not refresh_failed:
-        index.replace_source_records(AEDES_OLFACTION_LITERATURE_SOURCE_ID, result.records)
         index.upsert_fulltext_units(result.fulltext_units)
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and _source_record_count(index) > 0,
+        preserved_existing=preserved_existing,
     )
 
 

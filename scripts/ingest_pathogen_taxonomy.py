@@ -11,8 +11,8 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
-from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.pathogen_taxonomy import PATHOGEN_TAXONOMY_SOURCE_ID, fetch_pathogen_taxonomy_records
 
 
@@ -113,16 +113,24 @@ def ingest_pathogen_taxonomy(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    refresh_failed = not result.records and bool(result.gaps)
-    if not refresh_failed:
-        index.replace_source_records(PATHOGEN_TAXONOMY_SOURCE_ID, result.records)
-    persist_source_gaps(index, PATHOGEN_TAXONOMY_SOURCE_ID, result.gaps, retrieved_at=retrieved)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=PATHOGEN_TAXONOMY_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and _source_count(index) > 0,
+        preserved_existing=preserved_existing,
     )
 
 

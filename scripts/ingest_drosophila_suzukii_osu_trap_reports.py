@@ -12,6 +12,7 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.drosophila_suzukii_osu_trap_reports import (
     DROSOPHILA_SUZUKII_OSU_TRAP_REPORTS_SOURCE_ID,
     fetch_drosophila_suzukii_osu_trap_report_records,
@@ -116,22 +117,24 @@ def ingest_drosophila_suzukii_osu_trap_reports(
         fetch_body=fetch_body,
         retrieved_at=retrieved,
     )
-    refresh_failed = not any(record.payload and record.payload.get("atom_type") == "osu_swd_trap_observation" for record in result.records)
-    if not refresh_failed:
-        index.replace_source_records(DROSOPHILA_SUZUKII_OSU_TRAP_REPORTS_SOURCE_ID, result.records)
-    with index.connect() as conn:
-        preserved_existing = bool(
-            conn.execute(
-                "select 1 from records where source=? limit 1",
-                (DROSOPHILA_SUZUKII_OSU_TRAP_REPORTS_SOURCE_ID,),
-            ).fetchone()
-        )
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=DROSOPHILA_SUZUKII_OSU_TRAP_REPORTS_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=False,  # adapter already emits source_gap records
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and preserved_existing,
+        preserved_existing=preserved_existing,
     )
 
 

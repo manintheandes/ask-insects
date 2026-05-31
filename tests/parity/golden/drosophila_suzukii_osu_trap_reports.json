@@ -1,0 +1,493 @@
+{
+  "gaps": [
+    {
+      "lane": "ecology",
+      "locator": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/#report/2015",
+      "reason": "osu_swd_trap_report_unavailable",
+      "record_id": "swd_osu_trap_reports:gap:2015:osu_swd_trap_report_unavailable",
+      "retrieved_at": "2026-05-30T00:00:00Z",
+      "source": "drosophila_suzukii_osu_trap_reports"
+    }
+  ],
+  "records": [
+    {
+      "lane": "ecology",
+      "media_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv",
+      "payload": {
+        "atom_type": "osu_swd_trap_report_file_manifest",
+        "byte_size": 259,
+        "content_type": "text/csv",
+        "file_kind": "csv",
+        "filename": "osu_swd_trap_report_2016.csv",
+        "final_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv",
+        "raw_path": "<raw_dir>/osu_swd_trap_report_2016.csv",
+        "sha256": "e10c82d1a500e3e17da9204f214ba3b15c272ee81ba218630150b3a4c0903bc5",
+        "source_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv",
+        "trap_observation_count": 4,
+        "trap_site_count": 2,
+        "year": 2016
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2016.csv",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv"
+      },
+      "record_id": "swd_osu_trap_reports:file:2016",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State public spotted-wing drosophila trap report for 2016. Parsed 2 trap sites and 4 trap-period observations.",
+      "title": "Ohio State spotted-wing drosophila trap report file, 2016",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila",
+      "payload": {
+        "atom_type": "osu_swd_trap_report_file_manifest",
+        "byte_size": 259,
+        "content_type": "text/csv",
+        "file_kind": "csv",
+        "filename": "osu_swd_trap_report_2021_spotted_wing_drosophila.csv",
+        "final_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila",
+        "raw_path": "<raw_dir>/osu_swd_trap_report_2021_spotted_wing_drosophila.csv",
+        "sha256": "e10c82d1a500e3e17da9204f214ba3b15c272ee81ba218630150b3a4c0903bc5",
+        "source_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila",
+        "trap_observation_count": 4,
+        "trap_site_count": 2,
+        "year": 2021
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2021_spotted_wing_drosophila.csv",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila"
+      },
+      "record_id": "swd_osu_trap_reports:file:2021",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State public spotted-wing drosophila trap report for 2021. Parsed 2 trap sites and 4 trap-period observations.",
+      "title": "Ohio State spotted-wing drosophila trap report file, 2021",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "source_gap",
+        "error": "HTTP 410",
+        "filename": "osu_swd_trap_report_2015.csv",
+        "reason": "osu_swd_trap_report_unavailable",
+        "source_url": "https://docs.google.com/spreadsheets/d/1g2sFMxG-EKJdBXdXyF1fFLUfCGp6piwwWvjv-IQEoWw/pub?output=csv",
+        "year": 2015
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/#report/2015",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1g2sFMxG-EKJdBXdXyF1fFLUfCGp6piwwWvjv-IQEoWw/pub?output=csv"
+      },
+      "record_id": "swd_osu_trap_reports:gap:2015:osu_swd_trap_report_unavailable",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap report gap for 2015: osu_swd_trap_report_unavailable.",
+      "title": "Ohio State SWD trap report gap 2015: osu_swd_trap_report_unavailable",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_observation",
+        "column_number": 2,
+        "cooperator": "Brown",
+        "count": 8,
+        "county": "Athens",
+        "crop": "Blackberry",
+        "farm": "Brown",
+        "layout": "wide",
+        "lure": "Scentry",
+        "period": "June 13 - 19",
+        "raw_value": "8",
+        "row_number": 4,
+        "status": null,
+        "trap_id": "1",
+        "trap_index": 1,
+        "year": 2016
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2016.csv#row/4/column/2",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv"
+      },
+      "record_id": "swd_osu_trap_reports:observation:2016:0001:june_13_-_19",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap observation for June 13 - 19 2016: count 8. County: Athens. Crop: Blackberry. Trap: 1.",
+      "title": "Ohio State SWD trap observation 2016 June 13 - 19: Athens Blackberry",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_observation",
+        "column_number": 2,
+        "cooperator": "Brown",
+        "count": 40,
+        "county": "Athens",
+        "crop": "Blackberry",
+        "farm": "Brown",
+        "layout": "wide",
+        "lure": "Scentry",
+        "period": "June 20 - 26",
+        "raw_value": "40",
+        "row_number": 5,
+        "status": null,
+        "trap_id": "1",
+        "trap_index": 1,
+        "year": 2016
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2016.csv#row/5/column/2",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv"
+      },
+      "record_id": "swd_osu_trap_reports:observation:2016:0001:june_20_-_26",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap observation for June 20 - 26 2016: count 40. County: Athens. Crop: Blackberry. Trap: 1.",
+      "title": "Ohio State SWD trap observation 2016 June 20 - 26: Athens Blackberry",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_observation",
+        "column_number": 3,
+        "cooperator": "B and D Berry Purdin",
+        "count": 0,
+        "county": "Adams",
+        "crop": "Blackberry",
+        "farm": "B and D Berry Purdin",
+        "layout": "wide",
+        "lure": "ACV",
+        "period": "June 13 - 19",
+        "raw_value": "0",
+        "row_number": 4,
+        "status": null,
+        "trap_id": "2",
+        "trap_index": 2,
+        "year": 2016
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2016.csv#row/4/column/3",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv"
+      },
+      "record_id": "swd_osu_trap_reports:observation:2016:0002:june_13_-_19",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap observation for June 13 - 19 2016: count 0. County: Adams. Crop: Blackberry. Trap: 2.",
+      "title": "Ohio State SWD trap observation 2016 June 13 - 19: Adams Blackberry",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_observation",
+        "column_number": 3,
+        "cooperator": "B and D Berry Purdin",
+        "count": null,
+        "county": "Adams",
+        "crop": "Blackberry",
+        "farm": "B and D Berry Purdin",
+        "layout": "wide",
+        "lure": "ACV",
+        "period": "June 20 - 26",
+        "raw_value": "set 6/20",
+        "row_number": 5,
+        "status": "set 6/20",
+        "trap_id": "2",
+        "trap_index": 2,
+        "year": 2016
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2016.csv#row/5/column/3",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv"
+      },
+      "record_id": "swd_osu_trap_reports:observation:2016:0002:june_20_-_26",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap observation for June 20 - 26 2016: status set 6/20. County: Adams. Crop: Blackberry. Trap: 2.",
+      "title": "Ohio State SWD trap observation 2016 June 20 - 26: Adams Blackberry",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_observation",
+        "column_number": 2,
+        "cooperator": "Brown",
+        "count": 8,
+        "county": "Athens",
+        "crop": "Blackberry",
+        "farm": "Brown",
+        "layout": "wide",
+        "lure": "Scentry",
+        "period": "June 13 - 19",
+        "raw_value": "8",
+        "row_number": 4,
+        "status": null,
+        "trap_id": "1",
+        "trap_index": 1,
+        "year": 2021
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2021_spotted_wing_drosophila.csv#row/4/column/2",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila"
+      },
+      "record_id": "swd_osu_trap_reports:observation:2021:0001:june_13_-_19",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap observation for June 13 - 19 2021: count 8. County: Athens. Crop: Blackberry. Trap: 1.",
+      "title": "Ohio State SWD trap observation 2021 June 13 - 19: Athens Blackberry",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_observation",
+        "column_number": 2,
+        "cooperator": "Brown",
+        "count": 40,
+        "county": "Athens",
+        "crop": "Blackberry",
+        "farm": "Brown",
+        "layout": "wide",
+        "lure": "Scentry",
+        "period": "June 20 - 26",
+        "raw_value": "40",
+        "row_number": 5,
+        "status": null,
+        "trap_id": "1",
+        "trap_index": 1,
+        "year": 2021
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2021_spotted_wing_drosophila.csv#row/5/column/2",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila"
+      },
+      "record_id": "swd_osu_trap_reports:observation:2021:0001:june_20_-_26",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap observation for June 20 - 26 2021: count 40. County: Athens. Crop: Blackberry. Trap: 1.",
+      "title": "Ohio State SWD trap observation 2021 June 20 - 26: Athens Blackberry",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_observation",
+        "column_number": 3,
+        "cooperator": "B and D Berry Purdin",
+        "count": 0,
+        "county": "Adams",
+        "crop": "Blackberry",
+        "farm": "B and D Berry Purdin",
+        "layout": "wide",
+        "lure": "ACV",
+        "period": "June 13 - 19",
+        "raw_value": "0",
+        "row_number": 4,
+        "status": null,
+        "trap_id": "2",
+        "trap_index": 2,
+        "year": 2021
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2021_spotted_wing_drosophila.csv#row/4/column/3",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila"
+      },
+      "record_id": "swd_osu_trap_reports:observation:2021:0002:june_13_-_19",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap observation for June 13 - 19 2021: count 0. County: Adams. Crop: Blackberry. Trap: 2.",
+      "title": "Ohio State SWD trap observation 2021 June 13 - 19: Adams Blackberry",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_observation",
+        "column_number": 3,
+        "cooperator": "B and D Berry Purdin",
+        "count": null,
+        "county": "Adams",
+        "crop": "Blackberry",
+        "farm": "B and D Berry Purdin",
+        "layout": "wide",
+        "lure": "ACV",
+        "period": "June 20 - 26",
+        "raw_value": "set 6/20",
+        "row_number": 5,
+        "status": "set 6/20",
+        "trap_id": "2",
+        "trap_index": 2,
+        "year": 2021
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2021_spotted_wing_drosophila.csv#row/5/column/3",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila"
+      },
+      "record_id": "swd_osu_trap_reports:observation:2021:0002:june_20_-_26",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap observation for June 20 - 26 2021: status set 6/20. County: Adams. Crop: Blackberry. Trap: 2.",
+      "title": "Ohio State SWD trap observation 2021 June 20 - 26: Adams Blackberry",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_site",
+        "cooperator": "Brown",
+        "county": "Athens",
+        "crop": "Blackberry",
+        "farm": "Brown",
+        "lure": "Scentry",
+        "trap_id": "1",
+        "trap_index": 1,
+        "year": 2016
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2016.csv#trap/1",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv"
+      },
+      "record_id": "swd_osu_trap_reports:site:2016:0001:athens:1",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap site for 2016. County: Athens. Crop: Blackberry. Trap: 1. Lure: Scentry.",
+      "title": "Ohio State SWD trap site 2016: Athens Blackberry trap 1",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_site",
+        "cooperator": "B and D Berry Purdin",
+        "county": "Adams",
+        "crop": "Blackberry",
+        "farm": "B and D Berry Purdin",
+        "lure": "ACV",
+        "trap_id": "2",
+        "trap_index": 2,
+        "year": 2016
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2016.csv#trap/2",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1qNQEBjIwxSTA3JYi00CuhzkkLAJtnkdczdfqeQD2IbQ/pub?output=csv"
+      },
+      "record_id": "swd_osu_trap_reports:site:2016:0002:adams:2",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap site for 2016. County: Adams. Crop: Blackberry. Trap: 2. Lure: ACV.",
+      "title": "Ohio State SWD trap site 2016: Adams Blackberry trap 2",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_site",
+        "cooperator": "Brown",
+        "county": "Athens",
+        "crop": "Blackberry",
+        "farm": "Brown",
+        "lure": "Scentry",
+        "trap_id": "1",
+        "trap_index": 1,
+        "year": 2021
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2021_spotted_wing_drosophila.csv#trap/1",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila"
+      },
+      "record_id": "swd_osu_trap_reports:site:2021:0001:athens:1",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap site for 2021. County: Athens. Crop: Blackberry. Trap: 1. Lure: Scentry.",
+      "title": "Ohio State SWD trap site 2021: Athens Blackberry trap 1",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "osu_swd_trap_site",
+        "cooperator": "B and D Berry Purdin",
+        "county": "Adams",
+        "crop": "Blackberry",
+        "farm": "B and D Berry Purdin",
+        "lure": "ACV",
+        "trap_id": "2",
+        "trap_index": 2,
+        "year": 2021
+      },
+      "provenance": {
+        "license": "Ohio State public extension trap report",
+        "locator": "<raw_dir>/osu_swd_trap_report_2021_spotted_wing_drosophila.csv#trap/2",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_osu_trap_reports",
+        "source_url": "https://docs.google.com/spreadsheets/d/1KLU8rEoaz1Cnt9ILbUf77tSxOIriwZR0Xtj-wwNZgDA/gviz/tq?tqx=out:csv&sheet=Spotted-wing%20drosophila"
+      },
+      "record_id": "swd_osu_trap_reports:site:2021:0002:adams:2",
+      "source": "drosophila_suzukii_osu_trap_reports",
+      "species": "Drosophila suzukii",
+      "text": "Ohio State spotted-wing drosophila trap site for 2021. County: Adams. Crop: Blackberry. Trap: 2. Lure: ACV.",
+      "title": "Ohio State SWD trap site 2021: Adams Blackberry trap 2",
+      "url": "https://u.osu.edu/pestmanagement/trap-reports/spotted-wing-drosophila-trap-reports/"
+    }
+  ]
+}

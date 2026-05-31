@@ -1,0 +1,69 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "proteins",
+      "media_url": null,
+      "payload": {
+        "accession": "A0A6I8TCE0",
+        "cross_references": {
+          "GO": [
+            "GO:0005576"
+          ],
+          "VectorBase": [
+            "AAEL012345"
+          ]
+        },
+        "entry_type": "UniProtKB reviewed (Swiss-Prot)",
+        "function": "May function during blood feeding.",
+        "gene_names": [
+          "ptp1"
+        ],
+        "keywords": [
+          "Secreted"
+        ],
+        "protein_name": "Putative salivary protein 1",
+        "raw_json_path": "<raw_dir>/uniprotkb_aedes_aegypti.json",
+        "record_type": "uniprotkb_protein",
+        "uniprot_id": "PTP1_AEDAE"
+      },
+      "provenance": {
+        "license": "UniProt public data; CC BY 4.0",
+        "locator": "<raw_dir>/uniprotkb_aedes_aegypti.json#results/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_uniprot_proteins",
+        "source_url": "https://www.uniprot.org/uniprotkb/A0A6I8TCE0/entry"
+      },
+      "record_id": "uniprot:protein:A0A6I8TCE0",
+      "source": "aedes_uniprot_proteins",
+      "species": "Aedes aegypti",
+      "text": "UniProt reviewed Aedes aegypti protein record A0A6I8TCE0. Protein: Putative salivary protein 1. Gene names: ptp1. Function: May function during blood feeding. VectorBase cross-references: AAEL012345. GO terms: GO:0005576. Keywords: Secreted.",
+      "title": "UniProt protein A0A6I8TCE0: Putative salivary protein 1",
+      "url": "https://www.uniprot.org/uniprotkb/A0A6I8TCE0/entry"
+    },
+    {
+      "lane": "proteins",
+      "media_url": null,
+      "payload": {
+        "description": "Aedes aegypti reference proteome",
+        "protein_count": "28317",
+        "proteome_id": "UP000008820",
+        "raw_json_path": "<raw_dir>/uniprot_proteomes_aedes_aegypti.json",
+        "record_type": "uniprot_proteome"
+      },
+      "provenance": {
+        "license": "UniProt public data; CC BY 4.0",
+        "locator": "<raw_dir>/uniprot_proteomes_aedes_aegypti.json#results/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_uniprot_proteins",
+        "source_url": "https://www.uniprot.org/proteomes/UP000008820"
+      },
+      "record_id": "uniprot:proteome:UP000008820",
+      "source": "aedes_uniprot_proteins",
+      "species": "Aedes aegypti",
+      "text": "UniProt proteome record UP000008820 for Aedes aegypti. Description: Aedes aegypti reference proteome. Protein count: 28317.",
+      "title": "UniProt proteome UP000008820: Aedes aegypti",
+      "url": "https://www.uniprot.org/proteomes/UP000008820"
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "traits",
+      "media_url": null,
+      "payload": {
+        "citation": "Goindin et al. 2015. Parity and longevity of Aedes aegypti according to temperatures.",
+        "dataset_id": "126",
+        "doi": "10.1371/journal.pone.0135489",
+        "figure_table": "",
+        "habitat": "terrestrial",
+        "lab_field": "laboratory",
+        "latitude": 16.25,
+        "location": "Guadeloupe French West Indies",
+        "longitude": -61.58,
+        "raw_json_path": "<raw_dir>/vectraits_dataset_126.json",
+        "row_id": "82835",
+        "sex": "female",
+        "stage": "adult",
+        "temperature": 24.0,
+        "temperature_unit": "Celsius",
+        "trait_definition": "percent of individuals with transmission potential",
+        "trait_name": "transmission potential",
+        "trait_unit": "percent",
+        "trait_value": 28.0
+      },
+      "provenance": {
+        "license": "VectorByte/VBD Hub public data; source terms apply",
+        "locator": "<raw_dir>/vectraits_dataset_126.json#results/82835",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_vectorbyte_traits",
+        "source_url": "https://vectorbyte.crc.nd.edu/portal/api/vectraits-dataset/126/?format=json"
+      },
+      "record_id": "vectorbyte:trait:126:82835",
+      "source": "aedes_vectorbyte_traits",
+      "species": "Aedes aegypti",
+      "text": "VectorByte VecTraits Aedes aegypti observation for transmission potential. Definition: percent of individuals with transmission potential. Value: 28.0 percent. Temperature: 24.0 Celsius. Life stage: adult. Sex: female. Habitat: terrestrial. Environment: laboratory. Location: Guadeloupe French West Indies. Coordinates: 16.25, -61.58. Citation: Goindin et al. 2015. Parity and longevity of Aedes aegypti according to temperatures.. DOI: 10.1371/journal.pone.0135489.",
+      "title": "VectorByte trait transmission potential: dataset 126 row 82835",
+      "url": "https://doi.org/10.1371/journal.pone.0135489"
+    },
+    {
+      "lane": "traits",
+      "media_url": null,
+      "payload": {
+        "citation": "Yang et al. 2009. Assessing the effects of temperature on the population of Aedes aegypti.",
+        "dataset_id": "474",
+        "doi": "10.1017/S0950268809002040",
+        "figure_table": "table 5",
+        "habitat": "terrestrial",
+        "lab_field": "laboratory",
+        "latitude": -22.213889,
+        "location": "Marilia Brazil",
+        "longitude": -49.945833,
+        "raw_json_path": "<raw_dir>/vectraits_dataset_474.json",
+        "row_id": "89092",
+        "sex": "female",
+        "stage": "adult",
+        "temperature": 10.54,
+        "temperature_unit": "Celsius",
+        "trait_definition": "mean eggs per unit time",
+        "trait_name": "fecundity rate",
+        "trait_unit": "eggs individual-1 day-1",
+        "trait_value": 0.0
+      },
+      "provenance": {
+        "license": "VectorByte/VBD Hub public data; source terms apply",
+        "locator": "<raw_dir>/vectraits_dataset_474.json#results/89092",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_vectorbyte_traits",
+        "source_url": "https://vectorbyte.crc.nd.edu/portal/api/vectraits-dataset/474/?format=json"
+      },
+      "record_id": "vectorbyte:trait:474:89092",
+      "source": "aedes_vectorbyte_traits",
+      "species": "Aedes aegypti",
+      "text": "VectorByte VecTraits Aedes aegypti observation for fecundity rate. Definition: mean eggs per unit time. Value: 0.0 eggs individual-1 day-1. Temperature: 10.54 Celsius. Life stage: adult. Sex: female. Habitat: terrestrial. Environment: laboratory. Location: Marilia Brazil. Coordinates: -22.213889, -49.945833. Figure or table: table 5. Citation: Yang et al. 2009. Assessing the effects of temperature on the population of Aedes aegypti.. DOI: 10.1017/S0950268809002040.",
+      "title": "VectorByte trait fecundity rate: dataset 474 row 89092",
+      "url": "https://doi.org/10.1017/S0950268809002040"
+    }
+  ]
+}

@@ -12,15 +12,12 @@ if str(REPO_ROOT) not in sys.path:
 
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.aedes_crossref_literature_audit import (
     AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID,
     fetch_aedes_crossref_literature_audit_records,
 )
 
-
-FATAL_REFRESH_GAP_REASONS = {
-    "aedes_crossref_fetch_failed",
-}
 
 
 def _read_json(path: Path, default: object) -> object:
@@ -178,16 +175,24 @@ def ingest_aedes_crossref_literature_audit(
         max_results=max_results,
         page_size=page_size,
     )
-    fatal_gap = any(isinstance(gap, dict) and gap.get("reason") in FATAL_REFRESH_GAP_REASONS for gap in result.gaps)
-    refresh_failed = fatal_gap or (not result.records and bool(result.gaps))
-    if not refresh_failed:
-        index.replace_source_records(AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID, result.records)
+    outcome = run_source_ingest(
+        index=index,
+        artifact_dir=artifact_dir,
+        source_id=AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID,
+        records=result.records,
+        gaps=result.gaps,
+        retrieved_at=retrieved,
+        raw_artifacts=getattr(result, "raw_artifacts", None),
+        persist_gap_records=True,
+    )
+    refresh_failed = outcome["refresh_failed"]
+    preserved_existing = outcome["preserved_existing"]
     return _update_metadata(
         artifact_dir,
         result,
         retrieved,
         ok=not refresh_failed,
-        preserved_existing=refresh_failed and _source_record_count(index) > 0,
+        preserved_existing=preserved_existing,
     )
 
 

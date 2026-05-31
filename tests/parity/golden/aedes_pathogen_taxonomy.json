@@ -1,0 +1,96 @@
+{
+  "gaps": [
+    {
+      "lane": "vector_competence",
+      "reason": "ncbi_taxonomy_taxid_missing",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "aedes_pathogen_taxonomy",
+      "taxid": 11082
+    },
+    {
+      "lane": "vector_competence",
+      "reason": "ncbi_taxonomy_taxid_missing",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "aedes_pathogen_taxonomy",
+      "taxid": 11089
+    },
+    {
+      "lane": "vector_competence",
+      "reason": "ncbi_taxonomy_taxid_missing",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "aedes_pathogen_taxonomy",
+      "taxid": 37124
+    },
+    {
+      "lane": "vector_competence",
+      "reason": "ncbi_taxonomy_taxid_missing",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "aedes_pathogen_taxonomy",
+      "taxid": 59301
+    }
+  ],
+  "records": [
+    {
+      "lane": "vector_competence",
+      "media_url": null,
+      "payload": {
+        "aedes_context": "core Aedes aegypti arbovirus",
+        "display_name": "Dengue virus",
+        "pathogen_group": "flavivirus",
+        "raw_summary": {
+          "division": "viruses",
+          "genbankdivision": "Viruses",
+          "rank": "isolate",
+          "scientificname": "Dengue virus",
+          "taxid": 12637,
+          "uid": "12637"
+        },
+        "taxid": 12637
+      },
+      "provenance": {
+        "license": "NCBI Taxonomy public data; NCBI terms apply",
+        "locator": "<raw_dir>/aedes_pathogen_taxonomy_esummary.json#taxonomy/12637",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_pathogen_taxonomy",
+        "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=taxonomy&id=12637%2C64320%2C37124%2C11089%2C11082%2C59301&retmode=json&tool=ask-insects"
+      },
+      "record_id": "pathogen:ncbi_taxonomy:12637",
+      "source": "aedes_pathogen_taxonomy",
+      "species": "Aedes aegypti",
+      "text": "NCBI Taxonomy pathogen record for Dengue virus (taxid 12637), isolate, viruses. Pathogen group: flavivirus. Aedes context: core Aedes aegypti arbovirus. Use this record as the pathogen identity anchor for Aedes aegypti vector-competence and public-health evidence.",
+      "title": "Aedes aegypti pathogen taxonomy Dengue virus",
+      "url": "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=12637"
+    },
+    {
+      "lane": "vector_competence",
+      "media_url": null,
+      "payload": {
+        "aedes_context": "core Aedes aegypti arbovirus",
+        "display_name": "Zika virus",
+        "pathogen_group": "flavivirus",
+        "raw_summary": {
+          "division": "viruses",
+          "genbankdivision": "Viruses",
+          "rank": "isolate",
+          "scientificname": "Zika virus",
+          "taxid": 64320,
+          "uid": "64320"
+        },
+        "taxid": 64320
+      },
+      "provenance": {
+        "license": "NCBI Taxonomy public data; NCBI terms apply",
+        "locator": "<raw_dir>/aedes_pathogen_taxonomy_esummary.json#taxonomy/64320",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_pathogen_taxonomy",
+        "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=taxonomy&id=12637%2C64320%2C37124%2C11089%2C11082%2C59301&retmode=json&tool=ask-insects"
+      },
+      "record_id": "pathogen:ncbi_taxonomy:64320",
+      "source": "aedes_pathogen_taxonomy",
+      "species": "Aedes aegypti",
+      "text": "NCBI Taxonomy pathogen record for Zika virus (taxid 64320), isolate, viruses. Pathogen group: flavivirus. Aedes context: core Aedes aegypti arbovirus. Use this record as the pathogen identity anchor for Aedes aegypti vector-competence and public-health evidence.",
+      "title": "Aedes aegypti pathogen taxonomy Zika virus",
+      "url": "https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?id=64320"
+    }
+  ]
+}

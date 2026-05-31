@@ -1,0 +1,49 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "management",
+      "media_url": null,
+      "payload": {
+        "atom_type": "extension_guidance_page",
+        "common_name": "spotted wing drosophila",
+        "declared_topic": "spotted wing drosophila management",
+        "description": "Monitor traps, harvest fruit, use sanitation, and manage spotted wing drosophila.",
+        "guidance_type": "chemical_management",
+        "organization": "Test Extension",
+        "primary_taxon": "Drosophila suzukii",
+        "raw_html_path": "<raw_dir>/Test_Extension_test_region_9afa3adc9df3.html",
+        "region": "test region",
+        "title": "Spotted wing drosophila management",
+        "topics": [
+          "spotted wing drosophila management",
+          "Drosophila suzukii",
+          "spotted wing drosophila",
+          "integrated pest management",
+          "monitoring",
+          "trapping",
+          "sanitation",
+          "harvest",
+          "exclusion",
+          "netting",
+          "insecticide",
+          "fruit damage"
+        ],
+        "url": "https://extension.example/swd"
+      },
+      "provenance": {
+        "license": "Public extension/IPM web guidance; source page terms apply",
+        "locator": "<raw_dir>/Test_Extension_test_region_9afa3adc9df3.html#page",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_extension_guidance",
+        "source_url": "https://extension.example/swd"
+      },
+      "record_id": "swd_extension_guidance:9afa3adc9df3",
+      "source": "drosophila_suzukii_extension_guidance",
+      "species": "Drosophila suzukii",
+      "text": "Extension/IPM guidance for Drosophila suzukii (spotted wing drosophila) from Test Extension. Region: test region. Topic: spotted wing drosophila management, Drosophila suzukii, spotted wing drosophila, integrated pest management, monitoring, trapping, sanitation, harvest, exclusion, netting, insecticide, fruit damage. Summary: Monitor traps, harvest fruit, use sanitation, and manage spotted wing drosophila.. Page excerpt: Spotted wing drosophila management Spotted wing drosophila management Drosophila suzukii integrated pest management includes monitoring, trapping, sanitation, exclusion netting, insecticide rotation, and fruit damage prevention.",
+      "title": "Test Extension SWD guidance: Spotted wing drosophila management",
+      "url": "https://extension.example/swd"
+    }
+  ]
+}

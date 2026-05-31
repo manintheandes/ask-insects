@@ -1,0 +1,184 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "behavior_labels": [
+          "host seeking",
+          "thermal infrared",
+          "human odor",
+          "CO2",
+          "navigation"
+        ],
+        "dataset_api_url": "https://datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.example",
+        "doi": "10.5061/dryad.example",
+        "files_api_url": "https://datadryad.org/api/v2/versions/123/files",
+        "raw_dataset": {
+          "_links": {
+            "stash:version": {
+              "href": "/api/v2/versions/123"
+            }
+          },
+          "abstract": "<p>Aedes aegypti females were recorded during host seeking.</p>",
+          "authors": [
+            {
+              "firstName": "Ada",
+              "lastName": "Lovelace"
+            }
+          ],
+          "identifier": "doi:10.5061/dryad.example",
+          "license": "https://spdx.org/licenses/CC0-1.0.html",
+          "title": "Data for: Aedes aegypti host seeking videos"
+        },
+        "version_api_url": "https://datadryad.org/api/v2/versions/123"
+      },
+      "provenance": {
+        "license": "https://spdx.org/licenses/CC0-1.0.html",
+        "locator": "<raw_dir>/10_5061_dryad_example_dataset.json#dataset",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "dryad_aedes_behavior_videos",
+        "source_url": "https://datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.example"
+      },
+      "record_id": "dryad:dataset:10_5061_dryad_example",
+      "source": "dryad_aedes_behavior_videos",
+      "species": "Aedes aegypti",
+      "text": "Dryad dataset for Aedes aegypti behavior/video evidence: Data for: Aedes aegypti host seeking videos. Behavior labels: host seeking, thermal infrared, human odor, CO2, navigation. File manifest: 2 file(s), including 1 media/archive file(s). Authors: Ada Lovelace. Abstract: Aedes aegypti females were recorded during host seeking.",
+      "title": "Aedes aegypti Dryad behavior dataset Data for: Aedes aegypti host seeking videos",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061%2Fdryad.example"
+    },
+    {
+      "lane": "media",
+      "media_url": "https://datadryad.org/api/v2/files/10/download",
+      "payload": {
+        "api_download_url": "https://datadryad.org/api/v2/files/10/download",
+        "behavior_labels": [
+          "host seeking",
+          "thermal infrared",
+          "human odor",
+          "CO2",
+          "navigation"
+        ],
+        "dataset_title": "Data for: Aedes aegypti host seeking videos",
+        "doi": "10.5061/dryad.example",
+        "download_url": "https://datadryad.org/api/v2/files/10/download",
+        "file_stream_url": "https://datadryad.org/downloads/file_stream/10",
+        "raw_file": {
+          "_links": {
+            "stash:download": {
+              "href": "/api/v2/files/10/download"
+            }
+          },
+          "digest": "abc",
+          "digestType": "sha-256",
+          "mimeType": "application/x-zip-compressed",
+          "path": "host_seeking_videos.zip",
+          "size": 1234
+        }
+      },
+      "provenance": {
+        "license": "https://spdx.org/licenses/CC0-1.0.html",
+        "locator": "<raw_dir>/10_5061_dryad_example_files.json#file/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "dryad_aedes_behavior_videos",
+        "source_url": "https://datadryad.org/downloads/file_stream/10"
+      },
+      "record_id": "dryad:file:10_5061_dryad_example:host_seeking_videos_zip",
+      "source": "dryad_aedes_behavior_videos",
+      "species": "Aedes aegypti",
+      "text": "Dryad video/archive file for Aedes aegypti behavior dataset Data for: Aedes aegypti host seeking videos. File path: host_seeking_videos.zip. Behavior labels: host seeking, thermal infrared, human odor, CO2, navigation. Size bytes: 1234. MIME type: application/x-zip-compressed. Checksum: sha-256 abc.",
+      "title": "Aedes aegypti Dryad video/archive file host_seeking_videos.zip",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061%2Fdryad.example"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "api_download_url": "https://datadryad.org/api/v2/files/11/download",
+        "behavior_labels": [
+          "host seeking",
+          "thermal infrared",
+          "human odor",
+          "CO2",
+          "navigation"
+        ],
+        "dataset_title": "Data for: Aedes aegypti host seeking videos",
+        "doi": "10.5061/dryad.example",
+        "download_url": "https://datadryad.org/api/v2/files/11/download",
+        "file_stream_url": "https://datadryad.org/downloads/file_stream/11",
+        "raw_file": {
+          "_links": {
+            "stash:download": {
+              "href": "/api/v2/files/11/download"
+            }
+          },
+          "digest": "def",
+          "digestType": "sha-256",
+          "mimeType": "text/markdown",
+          "path": "README.md",
+          "size": 234
+        }
+      },
+      "provenance": {
+        "license": "https://spdx.org/licenses/CC0-1.0.html",
+        "locator": "<raw_dir>/10_5061_dryad_example_files.json#file/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "dryad_aedes_behavior_videos",
+        "source_url": "https://datadryad.org/downloads/file_stream/11"
+      },
+      "record_id": "dryad:file:10_5061_dryad_example:readme_md",
+      "source": "dryad_aedes_behavior_videos",
+      "species": "Aedes aegypti",
+      "text": "Dryad behavior data file for Aedes aegypti behavior dataset Data for: Aedes aegypti host seeking videos. File path: README.md. Behavior labels: host seeking, thermal infrared, human odor, CO2, navigation. Size bytes: 234. MIME type: text/markdown. Checksum: sha-256 def.",
+      "title": "Aedes aegypti Dryad behavior data file README.md",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061%2Fdryad.example"
+    },
+    {
+      "lane": "media",
+      "media_url": null,
+      "payload": {
+        "atom_type": "video_gap",
+        "behavior_labels": [
+          "host seeking",
+          "thermal infrared",
+          "human odor",
+          "CO2",
+          "navigation"
+        ],
+        "byte_size": 1234,
+        "dataset_title": "Data for: Aedes aegypti host seeking videos",
+        "doi": "10.5061/dryad.example",
+        "download_url": "https://datadryad.org/api/v2/files/10/download",
+        "file_path": "host_seeking_videos.zip",
+        "file_stream_url": "https://datadryad.org/downloads/file_stream/10",
+        "mime_type": "application/x-zip-compressed",
+        "reason": "dryad_archive_contents_not_decoded",
+        "repository": "dryad",
+        "required_next_artifacts": [
+          "archive_member_manifest",
+          "per_video_asset_rows",
+          "duration_fps_resolution_codec_probe_rows",
+          "thumbnail_keyframe_preview_frame_manifest_rows",
+          "source_table_or_motion_tracking_rows_when_available"
+        ],
+        "source_hash": "abc",
+        "source_hash_type": "sha-256",
+        "source_video_record_id": "dryad:file:10_5061_dryad_example:host_seeking_videos_zip"
+      },
+      "provenance": {
+        "license": "https://spdx.org/licenses/CC0-1.0.html",
+        "locator": "<raw_dir>/10_5061_dryad_example_files.json#file/1/gap/archive_contents_not_decoded",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "dryad_aedes_behavior_videos",
+        "source_url": "https://datadryad.org/api/v2/files/10/download"
+      },
+      "record_id": "dryad:gap:10_5061_dryad_example:host_seeking_videos_zip:archive_contents_not_decoded",
+      "source": "dryad_aedes_behavior_videos",
+      "species": "Aedes aegypti",
+      "text": "Aedes aegypti Dryad video source gap: dryad_archive_contents_not_decoded. Source dataset: Data for: Aedes aegypti host seeking videos. Source file: host_seeking_videos.zip. Behavior labels: host seeking, thermal infrared, human odor, CO2, navigation. The downloadable file is manifest-indexed, but its archive contents are not yet expanded into per-video assets, keyframes, previews, frame manifests, or motion rows. Size bytes: 1234. MIME type: application/x-zip-compressed. Checksum: sha-256 abc.",
+      "title": "Aedes aegypti Dryad video gap archive contents not decoded host_seeking_videos.zip",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061%2Fdryad.example"
+    }
+  ]
+}

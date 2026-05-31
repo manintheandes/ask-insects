@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
 from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.extracted_facts import (
     DEFAULT_MAX_SUPPLEMENT_BYTES,
     EXTRACTED_FACTS_SOURCE_ID,
@@ -352,20 +353,21 @@ def ingest_extracted_facts(
             delete_fts=update_fts,
         )
         index.upsert_records(result.records, update_fts=update_fts)
+        persist_source_gaps(
+            index, EXTRACTED_FACTS_SOURCE_ID, result.gaps, retrieved_at=retrieved_at or utc_now()
+        )
     else:
-        refresh_failed = not result.records and bool(result.gaps)
-        if not refresh_failed:
-            index.replace_source_records(
-                EXTRACTED_FACTS_SOURCE_ID,
-                result.records,
-                update_fts=update_fts,
-                delete_existing_fts=update_fts,
-            )
-        else:
-            preserved_existing = int(_source_counts(index).get(EXTRACTED_FACTS_SOURCE_ID, 0)) > 0
-    persist_source_gaps(
-        index, EXTRACTED_FACTS_SOURCE_ID, result.gaps, retrieved_at=retrieved_at or utc_now()
-    )
+        outcome = run_source_ingest(
+            index=index,
+            artifact_dir=artifact_dir,
+            source_id=EXTRACTED_FACTS_SOURCE_ID,
+            records=result.records,
+            gaps=result.gaps,
+            retrieved_at=retrieved_at or utc_now(),
+            persist_gap_records=True,
+        )
+        refresh_failed = outcome["refresh_failed"]
+        preserved_existing = outcome["preserved_existing"]
     if update_metadata:
         payload = _update_metadata(
             artifact_dir,

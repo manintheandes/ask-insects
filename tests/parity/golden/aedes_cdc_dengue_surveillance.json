@@ -1,0 +1,337 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aggregation_type": "cdc_visualization_config",
+        "config_url": "https://www.cdc.gov/dengue/statistics-maps/final-pages/data-visuals/current-year-tabs-updated.json",
+        "dataset_labels": [
+          "Data Table - Dengue cases by jurisdiction based on travel status selected above, 2026",
+          "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv",
+          "Data Table - Dengue cases by week based on travel status selected above, 2026"
+        ],
+        "dataset_urls": [
+          "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv",
+          "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Epi_Curve_Current.csv"
+        ],
+        "disease": "dengue",
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_config_path": "<raw_dir>/current_year_current-year-tabs-updated.json"
+      },
+      "provenance": {
+        "license": "CDC public visualization config; source page terms apply",
+        "locator": "<raw_dir>/current_year_current-year-tabs-updated.json#config",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/dengue/statistics-maps/final-pages/data-visuals/current-year-tabs-updated.json"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:config:current_year:58dd29684f57",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC dengue surveillance visualization config for current_year. Discovered 2 CSV dataset locator(s). Dataset labels: Data Table - Dengue cases by jurisdiction based on travel status selected above, 2026; https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv; Data Table - Dengue cases by week based on travel status selected above, 2026.",
+      "title": "CDC dengue visualization config",
+      "url": "https://www.cdc.gov/dengue/statistics-maps/final-pages/data-visuals/current-year-tabs-updated.json"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aggregation_type": "cdc_dengue_csv_row",
+        "config_url": "https://www.cdc.gov/dengue/statistics-maps/final-pages/data-visuals/current-year-tabs-updated.json",
+        "dataset_labels": [
+          "Data Table - Dengue cases by jurisdiction based on travel status selected above, 2026",
+          "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv"
+        ],
+        "dataset_name": "Cases_by_Jurisdiction_Current.csv",
+        "dataset_url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv",
+        "dimensions": {
+          "Jurisdiction": "FL",
+          "Legend": "5 to 49",
+          "Travel status": "All",
+          "Year": "2026"
+        },
+        "disease": "dengue",
+        "measures": {
+          "Count": 14.0
+        },
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_csv_path": "<raw_dir>/Cases_by_Jurisdiction_Current.csv",
+        "row": {
+          "Count": "14",
+          "Jurisdiction": "FL",
+          "Legend": "5 to 49",
+          "Notes": "",
+          "Travel status": "All",
+          "Year": "2026"
+        },
+        "row_number": 1
+      },
+      "provenance": {
+        "license": "CDC public CSV data; source page terms apply",
+        "locator": "<raw_dir>/Cases_by_Jurisdiction_Current.csv#row/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:csv:Cases_by_Jurisdiction_Current.csv:row:000001:ec6f1840a73a",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC ArboNET dengue surveillance CSV row from Cases_by_Jurisdiction_Current.csv. Dataset label: Data Table - Dengue cases by jurisdiction based on travel status selected above, 2026. Page kind: current_year. Dimensions: Year: 2026; Travel status: All; Jurisdiction: FL; Legend: 5 to 49. Measures: Count: 14.0. Aedes aegypti relevance: dengue surveillance is indexed as public-health intelligence for the primary dengue vector.",
+      "title": "CDC dengue surveillance CSV row: Cases_by_Jurisdiction_Current.csv (Year: 2026; Travel status: All; Jurisdiction: FL)",
+      "url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aggregation_type": "cdc_dengue_csv_row",
+        "config_url": "https://www.cdc.gov/dengue/statistics-maps/final-pages/data-visuals/current-year-tabs-updated.json",
+        "dataset_labels": [
+          "Data Table - Dengue cases by jurisdiction based on travel status selected above, 2026",
+          "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv"
+        ],
+        "dataset_name": "Cases_by_Jurisdiction_Current.csv",
+        "dataset_url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv",
+        "dimensions": {
+          "Jurisdiction": "NY",
+          "Legend": "1 to 4",
+          "Travel status": "Travel associated",
+          "Year": "2026"
+        },
+        "disease": "dengue",
+        "measures": {
+          "Count": 3.0
+        },
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_csv_path": "<raw_dir>/Cases_by_Jurisdiction_Current.csv",
+        "row": {
+          "Count": "3",
+          "Jurisdiction": "NY",
+          "Legend": "1 to 4",
+          "Notes": "",
+          "Travel status": "Travel associated",
+          "Year": "2026"
+        },
+        "row_number": 2
+      },
+      "provenance": {
+        "license": "CDC public CSV data; source page terms apply",
+        "locator": "<raw_dir>/Cases_by_Jurisdiction_Current.csv#row/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:csv:Cases_by_Jurisdiction_Current.csv:row:000002:e2cabecb7f7c",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC ArboNET dengue surveillance CSV row from Cases_by_Jurisdiction_Current.csv. Dataset label: Data Table - Dengue cases by jurisdiction based on travel status selected above, 2026. Page kind: current_year. Dimensions: Year: 2026; Travel status: Travel associated; Jurisdiction: NY; Legend: 1 to 4. Measures: Count: 3.0. Aedes aegypti relevance: dengue surveillance is indexed as public-health intelligence for the primary dengue vector.",
+      "title": "CDC dengue surveillance CSV row: Cases_by_Jurisdiction_Current.csv (Year: 2026; Travel status: Travel associated; Jurisdiction: NY)",
+      "url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Cases_by_Jurisdiction_Current.csv"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aggregation_type": "cdc_dengue_csv_row",
+        "config_url": "https://www.cdc.gov/dengue/statistics-maps/final-pages/data-visuals/current-year-tabs-updated.json",
+        "dataset_labels": [
+          "Data Table - Dengue cases by week based on travel status selected above, 2026"
+        ],
+        "dataset_name": "Epi_Curve_Current.csv",
+        "dataset_url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Epi_Curve_Current.csv",
+        "dimensions": {
+          "Travel status": "All",
+          "Week": "01",
+          "Year": "2026"
+        },
+        "disease": "dengue",
+        "measures": {
+          "Reported cases": 50.0
+        },
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_csv_path": "<raw_dir>/Epi_Curve_Current.csv",
+        "row": {
+          "Reported cases": "50",
+          "Travel status": "All",
+          "Week": "01",
+          "Year": "2026"
+        },
+        "row_number": 1
+      },
+      "provenance": {
+        "license": "CDC public CSV data; source page terms apply",
+        "locator": "<raw_dir>/Epi_Curve_Current.csv#row/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Epi_Curve_Current.csv"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:csv:Epi_Curve_Current.csv:row:000001:2828b7807dc3",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC ArboNET dengue surveillance CSV row from Epi_Curve_Current.csv. Dataset label: Data Table - Dengue cases by week based on travel status selected above, 2026. Page kind: current_year. Dimensions: Year: 2026; Travel status: All; Week: 01. Measures: Reported cases: 50.0. Aedes aegypti relevance: dengue surveillance is indexed as public-health intelligence for the primary dengue vector.",
+      "title": "CDC dengue surveillance CSV row: Epi_Curve_Current.csv (Year: 2026; Travel status: All; Week: 01)",
+      "url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Epi_Curve_Current.csv"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aggregation_type": "cdc_dengue_csv_row",
+        "config_url": "https://www.cdc.gov/dengue/statistics-maps/final-pages/data-visuals/current-year-tabs-updated.json",
+        "dataset_labels": [
+          "Data Table - Dengue cases by week based on travel status selected above, 2026"
+        ],
+        "dataset_name": "Epi_Curve_Current.csv",
+        "dataset_url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Epi_Curve_Current.csv",
+        "dimensions": {
+          "Travel status": "All",
+          "Week": "02",
+          "Year": "2026"
+        },
+        "disease": "dengue",
+        "measures": {
+          "Reported cases": 124.0
+        },
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_csv_path": "<raw_dir>/Epi_Curve_Current.csv",
+        "row": {
+          "Reported cases": "124",
+          "Travel status": "All",
+          "Week": "02",
+          "Year": "2026"
+        },
+        "row_number": 2
+      },
+      "provenance": {
+        "license": "CDC public CSV data; source page terms apply",
+        "locator": "<raw_dir>/Epi_Curve_Current.csv#row/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Epi_Curve_Current.csv"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:csv:Epi_Curve_Current.csv:row:000002:7d19d27c1dad",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC ArboNET dengue surveillance CSV row from Epi_Curve_Current.csv. Dataset label: Data Table - Dengue cases by week based on travel status selected above, 2026. Page kind: current_year. Dimensions: Year: 2026; Travel status: All; Week: 02. Measures: Reported cases: 124.0. Aedes aegypti relevance: dengue surveillance is indexed as public-health intelligence for the primary dengue vector.",
+      "title": "CDC dengue surveillance CSV row: Epi_Curve_Current.csv (Year: 2026; Travel status: All; Week: 02)",
+      "url": "https://www.cdc.gov/wcms/vizdata/live/ncezid_dvbd/DEN/Epi_Curve_Current.csv"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aggregation_type": "arbonet_limitation",
+        "disease": "dengue",
+        "limitation_index": 1,
+        "limitation_text": "Surveillance data have several limitations that should be considered when using and interpreting the data.",
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_html_path": "<raw_dir>/current_year_current-data.html"
+      },
+      "provenance": {
+        "license": "CDC public web data; source page terms apply",
+        "locator": "<raw_dir>/current_year_current-data.html#limitations/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:limitation:current_year:01",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC ArboNET dengue surveillance limitation for Aedes aegypti-relevant public-health intelligence. Limitation: Surveillance data have several limitations that should be considered when using and interpreting the data.",
+      "title": "CDC ArboNET dengue surveillance limitation 1: current_year",
+      "url": "https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aggregation_type": "arbonet_limitation",
+        "disease": "dengue",
+        "limitation_index": 2,
+        "limitation_text": "1. Under-reporting is a limitation common to all surveillance systems.",
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_html_path": "<raw_dir>/current_year_current-data.html"
+      },
+      "provenance": {
+        "license": "CDC public web data; source page terms apply",
+        "locator": "<raw_dir>/current_year_current-data.html#limitations/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:limitation:current_year:02",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC ArboNET dengue surveillance limitation for Aedes aegypti-relevant public-health intelligence. Limitation: 1. Under-reporting is a limitation common to all surveillance systems.",
+      "title": "CDC ArboNET dengue surveillance limitation 2: current_year",
+      "url": "https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aggregation_type": "arbonet_limitation",
+        "disease": "dengue",
+        "limitation_index": 3,
+        "limitation_text": "2. Surveillance data are reported by county of residence, not the location of exposure.",
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_html_path": "<raw_dir>/current_year_current-data.html"
+      },
+      "provenance": {
+        "license": "CDC public web data; source page terms apply",
+        "locator": "<raw_dir>/current_year_current-data.html#limitations/3",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:limitation:current_year:03",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC ArboNET dengue surveillance limitation for Aedes aegypti-relevant public-health intelligence. Limitation: 2. Surveillance data are reported by county of residence, not the location of exposure.",
+      "title": "CDC ArboNET dengue surveillance limitation 3: current_year",
+      "url": "https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue surveillance is indexed as Aedes aegypti-relevant public-health intelligence",
+        "aggregation_type": "cdc_surveillance_page",
+        "config_urls": [
+          "https://www.cdc.gov/dengue/statistics-maps/final-pages/data-visuals/current-year-tabs-updated.json"
+        ],
+        "description": "Current dengue data reported to CDC.",
+        "disease": "dengue",
+        "organization": "CDC",
+        "page_kind": "current_year",
+        "raw_html_path": "<raw_dir>/current_year_current-data.html",
+        "summary": "These data are provisional and subject to change. This page displays human cases only.",
+        "title": "Current Year Data (2026)",
+        "topic": "current dengue surveillance"
+      },
+      "provenance": {
+        "license": "CDC public web data; source page terms apply",
+        "locator": "<raw_dir>/current_year_current-data.html#page",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_cdc_dengue_surveillance",
+        "source_url": "https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"
+      },
+      "record_id": "public_health:surveillance:cdc_dengue:page:current_year",
+      "source": "aedes_cdc_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "CDC dengue ArboNET surveillance page relevant to Aedes aegypti public-health intelligence. Topic: current dengue surveillance. Title: Current Year Data (2026). Summary: These data are provisional and subject to change. This page displays human cases only.. Visualization config URLs discovered: 1.",
+      "title": "CDC dengue surveillance page: Current Year Data (2026)",
+      "url": "https://www.cdc.gov/dengue/data-research/facts-stats/current-data.html"
+    }
+  ]
+}

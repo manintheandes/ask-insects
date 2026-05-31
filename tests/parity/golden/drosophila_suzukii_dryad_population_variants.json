@@ -1,0 +1,284 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "article_doi": "10.1093/g3journal/jkab343",
+        "atom_type": "dryad_variant_dataset",
+        "bioproject": "PRJNA705744",
+        "dataset_doi": "10.25338/B89P86",
+        "download_url": null,
+        "license": "https://spdx.org/licenses/CC0-1.0.html",
+        "raw_dataset": {
+          "_links": {
+            "stash:version": {
+              "href": "/api/v2/versions/110476"
+            }
+          },
+          "abstract": "We sequenced whole genomes of 237 individual flies.",
+          "id": 64736,
+          "identifier": "doi:10.25338/B89P86",
+          "license": "https://spdx.org/licenses/CC0-1.0.html",
+          "methods": "Illumina sequencing libraries were prepared.",
+          "storageSize": 18752579970,
+          "title": "Population structure of Drosophila suzukii and signals of multiple invasions"
+        },
+        "storage_size": 18752579970,
+        "title": "Population structure of Drosophila suzukii and signals of multiple invasions",
+        "version_url": "https://datadryad.org/api/v2/versions/110476"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_dataset_10.25338_B89P86.json#dataset",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_population_variants",
+        "source_url": "https://datadryad.org/api/v2/datasets/doi%3A10.25338%2FB89P86"
+      },
+      "record_id": "swd_dryad_population_variants:dataset:10.25338_B89P86",
+      "source": "drosophila_suzukii_dryad_population_variants",
+      "species": "Drosophila suzukii",
+      "text": "Dryad population-variant dataset for Drosophila suzukii (spotted wing drosophila). DOI: 10.25338/B89P86. Related article DOI: 10.1093/g3journal/jkab343. BioProject: PRJNA705744. Storage size: 18752579970 bytes. Title: Population structure of Drosophila suzukii and signals of multiple invasions. Evidence scope: whole genomes of 237 individual flies and genetic markers for population structure, migration, diversity, and differentiation. Abstract excerpt: We sequenced whole genomes of 237 individual flies.. Methods excerpt: Illumina sequencing libraries were prepared..",
+      "title": "Drosophila suzukii Dryad population variant dataset 10.25338/B89P86",
+      "url": "https://doi.org/10.25338/B89P86"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "article_doi": "10.1093/g3journal/jkab343",
+        "atom_type": "dryad_variant_file_manifest",
+        "bioproject": "PRJNA705744",
+        "byte_size": 18752495016,
+        "dataset_doi": "10.25338/B89P86",
+        "digest": "2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2",
+        "digest_type": "sha-256",
+        "download_url": "https://datadryad.org/api/v2/files/620083/download",
+        "file_id": "620083",
+        "is_vcf": true,
+        "mime_type": "text/vcard",
+        "path": "SNPs-q30-original-SWD.vcf.gz",
+        "raw_file": {
+          "_links": {
+            "stash:download": {
+              "href": "/api/v2/files/620083/download"
+            }
+          },
+          "digest": "2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2",
+          "digestType": "sha-256",
+          "id": 620083,
+          "mimeType": "text/vcard",
+          "path": "SNPs-q30-original-SWD.vcf.gz",
+          "size": 18752495016
+        }
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_files_110476.json#files/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_population_variants",
+        "source_url": "https://datadryad.org/api/v2/files/620083/download"
+      },
+      "record_id": "swd_dryad_population_variants:file:620083",
+      "source": "drosophila_suzukii_dryad_population_variants",
+      "species": "Drosophila suzukii",
+      "text": "Dryad file manifest for Drosophila suzukii population variants. File: SNPs-q30-original-SWD.vcf.gz. File id: 620083. Size: 18752495016 bytes. Digest: sha-256 2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2. Download locator: https://datadryad.org/api/v2/files/620083/download.",
+      "title": "Drosophila suzukii Dryad population variant file SNPs-q30-original-SWD.vcf.gz",
+      "url": "https://doi.org/10.25338/B89P86"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "article_doi": "10.1093/g3journal/jkab343",
+        "atom_type": "dryad_variant_file_manifest",
+        "bioproject": "PRJNA705744",
+        "byte_size": 95,
+        "dataset_doi": "10.25338/B89P86",
+        "digest": "readme-sha",
+        "digest_type": "sha-256",
+        "download_url": "https://datadryad.org/api/v2/files/620084/download",
+        "file_id": "620084",
+        "is_vcf": false,
+        "mime_type": null,
+        "path": "README",
+        "raw_file": {
+          "_links": {
+            "stash:download": {
+              "href": "/api/v2/files/620084/download"
+            }
+          },
+          "digest": "readme-sha",
+          "digestType": "sha-256",
+          "id": 620084,
+          "path": "README",
+          "size": 95
+        }
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_files_110476.json#files/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_population_variants",
+        "source_url": "https://datadryad.org/api/v2/files/620084/download"
+      },
+      "record_id": "swd_dryad_population_variants:file:620084",
+      "source": "drosophila_suzukii_dryad_population_variants",
+      "species": "Drosophila suzukii",
+      "text": "Dryad file manifest for Drosophila suzukii population variants. File: README. File id: 620084. Size: 95 bytes. Digest: sha-256 readme-sha. Download locator: https://datadryad.org/api/v2/files/620084/download.",
+      "title": "Drosophila suzukii Dryad population variant file README",
+      "url": "https://doi.org/10.25338/B89P86"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "article_doi": "10.1093/g3journal/jkab343",
+        "atom_type": "source_gap",
+        "bioproject": "PRJNA705744",
+        "dataset_doi": "10.25338/B89P86",
+        "file": {
+          "_links": {
+            "stash:download": {
+              "href": "/api/v2/files/620083/download"
+            }
+          },
+          "digest": "2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2",
+          "digestType": "sha-256",
+          "id": 620083,
+          "mimeType": "text/vcard",
+          "path": "SNPs-q30-original-SWD.vcf.gz",
+          "size": 18752495016
+        },
+        "reason": "dryad_variant_checksum_unverified"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_files_110476.json#files/2#gap/dryad_variant_checksum_unverified",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_population_variants",
+        "source_url": "https://datadryad.org/api/v2/files/620083/download"
+      },
+      "record_id": "swd_dryad_population_variants:gap:dryad_variant_checksum_unverified:620083",
+      "source": "drosophila_suzukii_dryad_population_variants",
+      "species": "Drosophila suzukii",
+      "text": "Dryad reports sha-256 checksum 2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2 for SNPs-q30-original-SWD.vcf.gz, but Ask Insects has not downloaded the 18.7 GB file to verify the checksum locally.",
+      "title": "Drosophila suzukii Dryad VCF source gap: checksum unverified locally",
+      "url": "https://doi.org/10.25338/B89P86"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "article_doi": "10.1093/g3journal/jkab343",
+        "atom_type": "source_gap",
+        "bioproject": "PRJNA705744",
+        "byte_size": 18752495016,
+        "dataset_doi": "10.25338/B89P86",
+        "file": {
+          "_links": {
+            "stash:download": {
+              "href": "/api/v2/files/620083/download"
+            }
+          },
+          "digest": "2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2",
+          "digestType": "sha-256",
+          "id": 620083,
+          "mimeType": "text/vcard",
+          "path": "SNPs-q30-original-SWD.vcf.gz",
+          "size": 18752495016
+        },
+        "max_mirror_bytes": 1000000000,
+        "reason": "dryad_variant_file_too_large"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_files_110476.json#files/2#gap/dryad_variant_file_too_large",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_population_variants",
+        "source_url": "https://datadryad.org/api/v2/files/620083/download"
+      },
+      "record_id": "swd_dryad_population_variants:gap:dryad_variant_file_too_large:620083",
+      "source": "drosophila_suzukii_dryad_population_variants",
+      "species": "Drosophila suzukii",
+      "text": "The SNPs-q30-original-SWD.vcf.gz whole-genome VCF is 18752495016 bytes, above the current mirror limit of 1000000000 bytes. Ask Insects keeps the manifest and checksum but does not mirror the file in this pass.",
+      "title": "Drosophila suzukii Dryad VCF source gap: file too large",
+      "url": "https://doi.org/10.25338/B89P86"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "article_doi": "10.1093/g3journal/jkab343",
+        "atom_type": "source_gap",
+        "bioproject": "PRJNA705744",
+        "dataset_doi": "10.25338/B89P86",
+        "file": {
+          "_links": {
+            "stash:download": {
+              "href": "/api/v2/files/620083/download"
+            }
+          },
+          "digest": "2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2",
+          "digestType": "sha-256",
+          "id": 620083,
+          "mimeType": "text/vcard",
+          "path": "SNPs-q30-original-SWD.vcf.gz",
+          "size": 18752495016
+        },
+        "reason": "dryad_variant_header_not_indexed"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_files_110476.json#files/2#gap/dryad_variant_header_not_indexed",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_population_variants",
+        "source_url": "https://datadryad.org/api/v2/files/620083/download"
+      },
+      "record_id": "swd_dryad_population_variants:gap:dryad_variant_header_not_indexed:620083",
+      "source": "drosophila_suzukii_dryad_population_variants",
+      "species": "Drosophila suzukii",
+      "text": "The SNPs-q30-original-SWD.vcf.gz VCF header, contig metadata, and sample list are not indexed yet because the file was not mirrored.",
+      "title": "Drosophila suzukii Dryad VCF source gap: header not indexed",
+      "url": "https://doi.org/10.25338/B89P86"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "article_doi": "10.1093/g3journal/jkab343",
+        "atom_type": "source_gap",
+        "bioproject": "PRJNA705744",
+        "dataset_doi": "10.25338/B89P86",
+        "file": {
+          "_links": {
+            "stash:download": {
+              "href": "/api/v2/files/620083/download"
+            }
+          },
+          "digest": "2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2",
+          "digestType": "sha-256",
+          "id": 620083,
+          "mimeType": "text/vcard",
+          "path": "SNPs-q30-original-SWD.vcf.gz",
+          "size": 18752495016
+        },
+        "reason": "dryad_variant_rows_not_mirrored"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_files_110476.json#files/2#gap/dryad_variant_rows_not_mirrored",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_population_variants",
+        "source_url": "https://datadryad.org/api/v2/files/620083/download"
+      },
+      "record_id": "swd_dryad_population_variants:gap:dryad_variant_rows_not_mirrored:620083",
+      "source": "drosophila_suzukii_dryad_population_variants",
+      "species": "Drosophila suzukii",
+      "text": "The SNPs-q30-original-SWD.vcf.gz whole-genome VCF exists in Dryad with checksum sha-256 2b8328db94a71e66b89e67e62a9d9b88407e0d4f705e87ff26be05c6379675a2, but individual variant rows are not mirrored or queryable yet.",
+      "title": "Drosophila suzukii Dryad VCF source gap: variant rows not mirrored",
+      "url": "https://doi.org/10.25338/B89P86"
+    }
+  ]
+}

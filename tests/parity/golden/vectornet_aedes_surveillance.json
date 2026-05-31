@@ -1,0 +1,289 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "absence_surveillance_count": 1,
+        "atom_type": "vectornet_surveillance_ecology_summary",
+        "dataset_key": "7a5757c3-58f8-4ff6-9662-32296965a2f3",
+        "dataset_title": "VectorNet",
+        "first_event_date": "2018-02-08",
+        "higher_geographies": [
+          "Austria | Wiener Umland/Nordteil"
+        ],
+        "last_event_date": "2018-02-08",
+        "life_stages": [
+          "egg"
+        ],
+        "presence_evidence_count": 0,
+        "row_count": 1,
+        "sample_occurrence_ids": [
+          "D17F3699-4877-4304-92BC-01375A1BD7A2"
+        ],
+        "sampling_protocols": [
+          "Ovitrap"
+        ],
+        "species": "Aedes aegypti",
+        "summary_key": "country:Austria",
+        "unclear_status_count": 0
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/vectornet_aedes_aegypti_occurrence_rows.tsv#summary/country_Austria",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectornet_aedes_surveillance",
+        "source_url": "https://ipt.gbif.org/resource?r=vndatabase"
+      },
+      "record_id": "vectornet:ecology:country_Austria",
+      "source": "vectornet_aedes_surveillance",
+      "species": "Aedes aegypti",
+      "text": "VectorNet ECDC/EFSA has 1 Aedes aegypti surveillance row(s) for country:Austria. Presence-evidence rows: 0; absence-surveillance rows: 1; unclear status rows: 0. Date range: 2018-02-08 to 2018-02-08. Sample protocols: Ovitrap. Life stages: egg.",
+      "title": "VectorNet Aedes aegypti regional surveillance summary: country:Austria",
+      "url": "https://ipt.gbif.org/resource?r=vndatabase"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "absence_surveillance_count": 0,
+        "atom_type": "vectornet_surveillance_ecology_summary",
+        "dataset_key": "7a5757c3-58f8-4ff6-9662-32296965a2f3",
+        "dataset_title": "VectorNet",
+        "first_event_date": "2017-06-01",
+        "higher_geographies": [
+          "Georgia | Zygdidi"
+        ],
+        "last_event_date": "2017-06-01",
+        "life_stages": [
+          "adult"
+        ],
+        "presence_evidence_count": 1,
+        "row_count": 1,
+        "sample_occurrence_ids": [
+          "032E6FBB-9ABF-4CF8-8AA4-0076FC80F726"
+        ],
+        "sampling_protocols": [
+          "Ovitrap"
+        ],
+        "species": "Aedes aegypti",
+        "summary_key": "country:Georgia",
+        "unclear_status_count": 0
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/vectornet_aedes_aegypti_occurrence_rows.tsv#summary/country_Georgia",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectornet_aedes_surveillance",
+        "source_url": "https://ipt.gbif.org/resource?r=vndatabase"
+      },
+      "record_id": "vectornet:ecology:country_Georgia",
+      "source": "vectornet_aedes_surveillance",
+      "species": "Aedes aegypti",
+      "text": "VectorNet ECDC/EFSA has 1 Aedes aegypti surveillance row(s) for country:Georgia. Presence-evidence rows: 1; absence-surveillance rows: 0; unclear status rows: 0. Date range: 2017-06-01 to 2017-06-01. Sample protocols: Ovitrap. Life stages: adult.",
+      "title": "VectorNet Aedes aegypti regional surveillance summary: country:Georgia",
+      "url": "https://ipt.gbif.org/resource?r=vndatabase"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "absence_surveillance_count": 1,
+        "atom_type": "vectornet_surveillance_ecology_summary",
+        "dataset_key": "7a5757c3-58f8-4ff6-9662-32296965a2f3",
+        "dataset_title": "VectorNet",
+        "first_event_date": "2018-02-08",
+        "higher_geographies": [
+          "Austria | Wiener Umland/Nordteil"
+        ],
+        "last_event_date": "2018-02-08",
+        "life_stages": [
+          "egg"
+        ],
+        "presence_evidence_count": 0,
+        "row_count": 1,
+        "sample_occurrence_ids": [
+          "D17F3699-4877-4304-92BC-01375A1BD7A2"
+        ],
+        "sampling_protocols": [
+          "Ovitrap"
+        ],
+        "species": "Aedes aegypti",
+        "summary_key": "establishment:Invasive - Absent",
+        "unclear_status_count": 0
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/vectornet_aedes_aegypti_occurrence_rows.tsv#summary/establishment_Invasive_Absent",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectornet_aedes_surveillance",
+        "source_url": "https://ipt.gbif.org/resource?r=vndatabase"
+      },
+      "record_id": "vectornet:ecology:establishment_Invasive_Absent",
+      "source": "vectornet_aedes_surveillance",
+      "species": "Aedes aegypti",
+      "text": "VectorNet ECDC/EFSA has 1 Aedes aegypti surveillance row(s) for establishment:Invasive - Absent. Presence-evidence rows: 0; absence-surveillance rows: 1; unclear status rows: 0. Date range: 2018-02-08 to 2018-02-08. Sample protocols: Ovitrap. Life stages: egg.",
+      "title": "VectorNet Aedes aegypti regional surveillance summary: establishment:Invasive - Absent",
+      "url": "https://ipt.gbif.org/resource?r=vndatabase"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "absence_surveillance_count": 0,
+        "atom_type": "vectornet_surveillance_ecology_summary",
+        "dataset_key": "7a5757c3-58f8-4ff6-9662-32296965a2f3",
+        "dataset_title": "VectorNet",
+        "first_event_date": "2017-06-01",
+        "higher_geographies": [
+          "Georgia | Zygdidi"
+        ],
+        "last_event_date": "2017-06-01",
+        "life_stages": [
+          "adult"
+        ],
+        "presence_evidence_count": 1,
+        "row_count": 1,
+        "sample_occurrence_ids": [
+          "032E6FBB-9ABF-4CF8-8AA4-0076FC80F726"
+        ],
+        "sampling_protocols": [
+          "Ovitrap"
+        ],
+        "species": "Aedes aegypti",
+        "summary_key": "establishment:Invasive - Established",
+        "unclear_status_count": 0
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/vectornet_aedes_aegypti_occurrence_rows.tsv#summary/establishment_Invasive_Established",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectornet_aedes_surveillance",
+        "source_url": "https://ipt.gbif.org/resource?r=vndatabase"
+      },
+      "record_id": "vectornet:ecology:establishment_Invasive_Established",
+      "source": "vectornet_aedes_surveillance",
+      "species": "Aedes aegypti",
+      "text": "VectorNet ECDC/EFSA has 1 Aedes aegypti surveillance row(s) for establishment:Invasive - Established. Presence-evidence rows: 1; absence-surveillance rows: 0; unclear status rows: 0. Date range: 2017-06-01 to 2017-06-01. Sample protocols: Ovitrap. Life stages: adult.",
+      "title": "VectorNet Aedes aegypti regional surveillance summary: establishment:Invasive - Established",
+      "url": "https://ipt.gbif.org/resource?r=vndatabase"
+    },
+    {
+      "lane": "observations",
+      "media_url": null,
+      "payload": {
+        "archive_url": "https://ipt.gbif.org/archive.do?r=vndatabase",
+        "atom_type": "vectornet_surveillance_observation",
+        "dataset_citation": null,
+        "dataset_key": "7a5757c3-58f8-4ff6-9662-32296965a2f3",
+        "dataset_pub_date": "2025-02-05",
+        "dataset_title": "VectorNet",
+        "event_start_date": "2017-06-01",
+        "filtered_row_number": 2,
+        "presence_bucket": "detection_or_presence_evidence",
+        "raw_occurrence": {
+          "associatedTaxa": "NA",
+          "basisOfRecord": "NA",
+          "bibliographicCitation": "NA",
+          "countryCode": "GE",
+          "decimalLatitude": "42.514",
+          "decimalLongitude": "41.8736",
+          "degreeOfEstablishment": "Invasive - Established",
+          "dynamicProperties": "NA",
+          "eventDate": "2017-06-01/2017-09-30",
+          "eventID": "NA",
+          "eventRemarks": "NA",
+          "higherGeography": "Georgia | Zygdidi",
+          "higherGeographyID": "NA",
+          "id": "032E6FBB-9ABF-4CF8-8AA4-0076FC80F726",
+          "identificationRemarks": "morphological",
+          "individualCount": "4",
+          "lifeStage": "adult",
+          "locationID": "NA",
+          "locationRemarks": "NA",
+          "occurrenceID": "032E6FBB-9ABF-4CF8-8AA4-0076FC80F726",
+          "sampleSizeUnit": "NA",
+          "sampleSizeValue": "NA",
+          "samplingProtocol": "Ovitrap",
+          "scientificName": "Aedes aegypti",
+          "sex": "female",
+          "verbatimIdentification": "Aedes aegypti"
+        },
+        "resource_url": "https://ipt.gbif.org/resource?r=vndatabase",
+        "row_number": 2
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/dwca-vndatabase-v1.3.zip#occurrence.txt/row/2;<raw_dir>/vectornet_aedes_aegypti_occurrence_rows.tsv#row/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectornet_aedes_surveillance",
+        "source_url": "https://ipt.gbif.org/archive.do?r=vndatabase"
+      },
+      "record_id": "vectornet:observation:032E6FBB_9ABF_4CF8_8AA4_0076FC80F726",
+      "source": "vectornet_aedes_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official VectorNet ECDC/EFSA surveillance occurrence row for Aedes aegypti in Georgia | Zygdidi, event date 2017-06-01/2017-09-30, sampling protocol Ovitrap, reported individual count 4, life stage adult, sex female, degree of establishment Invasive - Established, presence bucket detection_or_presence_evidence, identification morphological.",
+      "title": "VectorNet Aedes aegypti surveillance row 032E6FBB-9ABF-4CF8-8AA4-0076FC80F726",
+      "url": "https://ipt.gbif.org/resource?r=vndatabase#occurrence/032E6FBB-9ABF-4CF8-8AA4-0076FC80F726"
+    },
+    {
+      "lane": "observations",
+      "media_url": null,
+      "payload": {
+        "archive_url": "https://ipt.gbif.org/archive.do?r=vndatabase",
+        "atom_type": "vectornet_surveillance_observation",
+        "dataset_citation": null,
+        "dataset_key": "7a5757c3-58f8-4ff6-9662-32296965a2f3",
+        "dataset_pub_date": "2025-02-05",
+        "dataset_title": "VectorNet",
+        "event_start_date": "2018-02-08",
+        "filtered_row_number": 3,
+        "presence_bucket": "absence_surveillance",
+        "raw_occurrence": {
+          "associatedTaxa": "NA",
+          "basisOfRecord": "NA",
+          "bibliographicCitation": "NA",
+          "countryCode": "AT",
+          "decimalLatitude": "NA",
+          "decimalLongitude": "NA",
+          "degreeOfEstablishment": "Invasive - Absent",
+          "dynamicProperties": "NA",
+          "eventDate": "2018-02-08/2018-09-08",
+          "eventID": "NA",
+          "eventRemarks": "NA",
+          "higherGeography": "Austria | Wiener Umland/Nordteil",
+          "higherGeographyID": "NA",
+          "id": "D17F3699-4877-4304-92BC-01375A1BD7A2",
+          "identificationRemarks": "PCR_DNA_Barcoding",
+          "individualCount": "0",
+          "lifeStage": "egg",
+          "locationID": "NA",
+          "locationRemarks": "NA",
+          "occurrenceID": "D17F3699-4877-4304-92BC-01375A1BD7A2",
+          "sampleSizeUnit": "NA",
+          "sampleSizeValue": "NA",
+          "samplingProtocol": "Ovitrap",
+          "scientificName": "Aedes aegypti",
+          "sex": "NA",
+          "verbatimIdentification": "Aedes aegypti"
+        },
+        "resource_url": "https://ipt.gbif.org/resource?r=vndatabase",
+        "row_number": 3
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/dwca-vndatabase-v1.3.zip#occurrence.txt/row/3;<raw_dir>/vectornet_aedes_aegypti_occurrence_rows.tsv#row/3",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectornet_aedes_surveillance",
+        "source_url": "https://ipt.gbif.org/archive.do?r=vndatabase"
+      },
+      "record_id": "vectornet:observation:D17F3699_4877_4304_92BC_01375A1BD7A2",
+      "source": "vectornet_aedes_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official VectorNet ECDC/EFSA surveillance occurrence row for Aedes aegypti in Austria | Wiener Umland/Nordteil, event date 2018-02-08/2018-09-08, sampling protocol Ovitrap, reported individual count 0, life stage egg, sex sex not supplied, degree of establishment Invasive - Absent, presence bucket absence_surveillance, identification PCR_DNA_Barcoding.",
+      "title": "VectorNet Aedes aegypti surveillance row D17F3699-4877-4304-92BC-01375A1BD7A2",
+      "url": "https://ipt.gbif.org/resource?r=vndatabase#occurrence/D17F3699-4877-4304-92BC-01375A1BD7A2"
+    }
+  ]
+}

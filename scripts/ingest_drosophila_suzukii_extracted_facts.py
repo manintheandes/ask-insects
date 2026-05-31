@@ -13,6 +13,7 @@ if str(REPO_ROOT) not in sys.path:
 from askinsects.builder import DEFAULT_ARTIFACT_DIR, write_json
 from askinsects.gaps import persist_source_gaps
 from askinsects.index import SourceIndex
+from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.drosophila_suzukii_extracted_facts import (
     DROSOPHILA_SUZUKII_EXTRACTED_FACTS_PROFILE,
     DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID,
@@ -321,18 +322,31 @@ def ingest_drosophila_suzukii_extracted_facts(
     deleted_existing_record_count = 0
     refresh_failed = not merge_existing and not result.records and bool(result.gaps)
     if merge_existing:
+        # Incremental merge: bespoke upsert path, not run_source_ingest.
         if not source_record_ids:
             raise ValueError("merge_existing requires at least one source_record_id")
         deleted_existing_record_count = _delete_records_for_source_records(index, source_record_ids, delete_fts=update_fts)
         index.upsert_records(result.records, update_fts=update_fts)
+        persist_source_gaps(index, DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID, result.gaps, retrieved_at=retrieved_at)
     elif not refresh_failed:
-        index.replace_source_records(
-            DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID,
-            result.records,
-            update_fts=update_fts,
-            delete_existing_fts=update_fts,
+        outcome = run_source_ingest(
+            index=index,
+            artifact_dir=artifact_dir,
+            source_id=DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID,
+            records=result.records,
+            gaps=result.gaps,
+            retrieved_at=retrieved_at or "",
+            persist_gap_records=True,  # gaps are plain dicts; runner persists them
         )
-    persist_source_gaps(index, DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID, result.gaps, retrieved_at=retrieved_at)
+        refresh_failed = outcome["refresh_failed"]
+        # When caller requests FTS skip, re-replace without FTS (runner used defaults).
+        if not update_fts:
+            index.replace_source_records(
+                DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID,
+                result.records,
+                update_fts=False,
+                delete_existing_fts=False,
+            )
     if update_metadata:
         payload = _update_metadata(
             artifact_dir,
