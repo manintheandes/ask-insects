@@ -26,11 +26,16 @@ GEO_LICENSE = "NCBI GEO metadata; source terms apply"
 USER_AGENT = "ask-insects/0.1 (+https://openinsects.org)"
 
 # Brain/chemosensory domains Aedes covers; absence for SWD is recorded as a gap.
+# A domain counts as "present" only when one of its DISTINCTIVE phrases appears in
+# the raw GEO dataset text (title/summary/type). Distinctive phrases avoid false
+# "present" matches: e.g. an antennal transcriptome must NOT satisfy the antennal-
+# lobe-MAP domain, and a brain-query boilerplate word must NOT satisfy connectome.
 EXPECTED_DOMAINS = (
-    ("whole_brain_atlas", "whole-brain atlas"),
-    ("connectome", "brain connectome"),
-    ("single_nucleus_brain_rnaseq", "single-nucleus brain RNA-seq"),
-    ("antennal_lobe_map", "antennal lobe map"),
+    ("whole_brain_atlas", "whole-brain atlas", ("whole brain", "whole-brain", "brain atlas")),
+    ("connectome", "brain connectome", ("connectome", "connectomic")),
+    ("single_nucleus_brain_rnaseq", "single-nucleus brain RNA-seq",
+     ("single-nucleus", "single nucleus", "snrna", "single-cell brain")),
+    ("antennal_lobe_map", "antennal lobe map", ("antennal lobe", "antennal-lobe", "glomerul")),
 )
 
 
@@ -115,7 +120,7 @@ def _record_for_dataset(docsum: dict[str, object], *, raw_path: Path, retrieved_
     text = " ".join(
         part for part in [
             title,
-            f"{SPECIES} ({COMMON_NAME}) brain/chemosensory GEO dataset.",
+            f"{SPECIES} ({COMMON_NAME}) GEO dataset from the brain/chemosensory query.",
             f"accession={accession}",
             summary,
         ] if part
@@ -155,6 +160,7 @@ def fetch_drosophila_suzukii_neurobiology_records(
     raw_artifacts: list[str] = []
     gaps: list[dict[str, object]] = []
     records: list[EvidenceRecord] = []
+    domain_corpus: list[str] = []  # raw GEO title/summary/type text, for absence detection
     reported_total = 0
     ids: list[str] = []
     bounded_page = max(1, min(page_size, 100))
@@ -194,6 +200,13 @@ def fetch_drosophila_suzukii_neurobiology_records(
                 docsum = block.get(str(uid))
                 if isinstance(docsum, dict):
                     records.append(_record_for_dataset(docsum, raw_path=raw_path, retrieved_at=retrieved))
+                    domain_corpus.append(
+                        " ".join([
+                            _as_string(docsum.get("title")),
+                            _as_string(docsum.get("summary")),
+                            _as_string(docsum.get("gdstype")),
+                        ]).lower()
+                    )
         except Exception as exc:
             gaps.append({
                 "source": DROSOPHILA_SUZUKII_NEUROBIOLOGY_SOURCE_ID,
@@ -204,11 +217,13 @@ def fetch_drosophila_suzukii_neurobiology_records(
                 "error": str(exc),
             })
 
-    # Honest absence: any expected brain/chemosensory domain with no dataset becomes a queryable gap.
-    have_text = " ".join(r.text.lower() for r in records)
-    for key, label in EXPECTED_DOMAINS:
-        token = label.split()[0].lower()
-        if token not in have_text:
+    # Honest absence: any expected brain/chemosensory domain not evidenced by a
+    # DISTINCTIVE phrase in the raw GEO dataset text becomes a queryable gap.
+    # Detection reads the raw GEO corpus (not our record boilerplate), so an
+    # antennal transcriptome does not falsely satisfy the antennal-lobe-map domain.
+    corpus = " ".join(domain_corpus)
+    for key, label, phrases in EXPECTED_DOMAINS:
+        if not any(phrase in corpus for phrase in phrases):
             gaps.append({
                 "source": DROSOPHILA_SUZUKII_NEUROBIOLOGY_SOURCE_ID,
                 "lane": "neurobiology",
