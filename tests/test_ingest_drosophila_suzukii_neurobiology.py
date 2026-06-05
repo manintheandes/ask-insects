@@ -37,6 +37,31 @@ class IngestNeurobiologyTests(unittest.TestCase):
             lanes = {r["lane"]: r["n"] for r in rows}
             self.assertGreaterEqual(lanes.get("neurobiology", 0), 1)
 
+    def test_gap_only_run_is_success(self):
+        # GEO returns zero datasets -> only domain-absence gaps. That is a valid
+        # finding (SWD brain data is sparse), so ok must be True and the gap rows live.
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp) / "mosquito-v1"
+            result = ingest_drosophila_suzukii_neurobiology(
+                artifact_dir=artifact_dir,
+                fetch_json=lambda url: {"esearchresult": {"count": "0", "idlist": []}},
+                retrieved_at="2026-06-05T00:00:00Z", max_results=10, page_size=10, delay_seconds=0,
+            )
+            self.assertTrue(result["ok"])
+            self.assertGreaterEqual(result["gap_count"], 4)
+            self.assertEqual(result["dataset_count"], 0)
+
+    def test_fetch_error_is_failure(self):
+        # A real fetch error must report ok=False (not masked as a gap-only finding).
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp) / "mosquito-v1"
+            result = ingest_drosophila_suzukii_neurobiology(
+                artifact_dir=artifact_dir,
+                fetch_json=lambda url: (_ for _ in ()).throw(RuntimeError("offline")),
+                retrieved_at="2026-06-05T00:00:00Z", max_results=10, page_size=10, delay_seconds=0,
+            )
+            self.assertFalse(result["ok"])
+
     def test_failed_refresh_preserves_existing_rows(self):
         with tempfile.TemporaryDirectory() as tmp:
             artifact_dir = Path(tmp) / "mosquito-v1"

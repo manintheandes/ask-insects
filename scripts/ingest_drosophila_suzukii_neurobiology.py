@@ -133,9 +133,16 @@ def ingest_drosophila_suzukii_neurobiology(
         raw_artifacts=getattr(result, "raw_artifacts", None),
         persist_gap_records=True,
     )
+    # Gap-capable lane: SWD brain/chemosensory data is genuinely sparse, so a run that
+    # produces only domain-absence gaps is a VALID scientific finding, not a failure.
+    # Distinguish that from a real fetch error (a "*_failed" gap), which IS a failure.
+    # See docs/source-adapter-runner-exceptions.md.
+    refresh_failed = outcome["refresh_failed"]
+    fetch_failed = any("failed" in str(gap.get("reason", "")) for gap in result.gaps)
+    ok = (not refresh_failed) or (not fetch_failed)
     return _update_metadata(
         artifact_dir, result, retrieved,
-        ok=not outcome["refresh_failed"],
+        ok=ok,
         preserved_existing=outcome["preserved_existing"],
     )
 
