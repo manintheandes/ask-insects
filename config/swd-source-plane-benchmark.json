@@ -7,7 +7,7 @@
   "categories": [
     {"key": "neurobiology", "lane": "neurobiology", "source_ids": ["drosophila_suzukii_neurobiology_sources"], "status": "covered"},
     {"key": "olfaction_literature", "lane": "literature", "source_ids": ["drosophila_suzukii_olfaction_literature"], "status": "covered"},
-    {"key": "traits", "lane": "traits", "source_ids": ["drosophila_suzukii_traits"], "status": "in_progress"},
+    {"key": "traits", "lane": "traits", "source_ids": ["drosophila_suzukii_traits"], "status": "covered"},
     {"key": "literature", "lane": "literature", "source_ids": ["drosophila_suzukii_core", "drosophila_suzukii_pubmed_literature", "drosophila_suzukii_extracted_facts"], "status": "covered"},
     {"key": "expression", "lane": "expression", "source_ids": ["drosophila_suzukii_geo_expression_matrices"], "status": "covered"},
     {"key": "genome_features", "lane": "genome_features", "source_ids": ["drosophila_suzukii_genome_files"], "status": "covered"},
