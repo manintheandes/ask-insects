@@ -216,6 +216,54 @@ sources:
         - pubmed_as_canonical_paper_identity
         - paywalled_full_text
         - human_validated_scientific_claim_extraction
+  - id: drosophila_suzukii_neurobiology_sources
+    name: Drosophila suzukii neurobiology and chemosensory source metadata
+    source_type: public_api_metadata
+    boundary: Bounded NCBI GEO DataSets metadata for Drosophila suzukii brain, antennal, and chemosensory studies, with queryable source_gap records for absent whole-brain atlas, connectome, single-nucleus brain RNA-seq, and antennal-lobe-map domains
+    query_plane: ncbi_gds_esearch_esummary_to_sqlite_neurobiology_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_neurobiology
+    ingest_script: scripts/ingest_drosophila_suzukii_neurobiology.py
+    input_sources:
+      - ncbi_gds_eutilities
+    lanes:
+      - neurobiology
+    provenance_required: true
+    live_fetch: bounded_opt_in
+    source_contract:
+      source_grade_now:
+        - one_geo_dataset_record_per_accession
+        - raw_geo_esearch_and_esummary_locators
+        - queryable_domain_absence_gaps_for_missing_brain_chemosensory_domains
+      not_claimed:
+        - swd_whole_brain_atlas_or_connectome
+        - drosophila_melanogaster_resources_as_swd_coverage
+        - human_validated_circuit_annotation
+  - id: drosophila_suzukii_olfaction_literature
+    name: Drosophila suzukii olfaction and chemosensation literature
+    source_type: public_api_metadata_audit
+    boundary: Bounded PubMed ESearch and ESummary metadata for Drosophila suzukii olfaction, chemosensation, antennal, oviposition, and host-seeking papers from 2010 onward, reconciled against the canonical drosophila_suzukii_core OpenAlex literature rows by DOI and normalized title
+    query_plane: pubmed_esearch_esummary_to_sqlite_literature_audit_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_olfaction_literature
+    ingest_script: scripts/ingest_drosophila_suzukii_olfaction_literature.py
+    input_sources:
+      - pubmed_eutilities
+      - drosophila_suzukii_core
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: bounded_opt_in
+    source_contract:
+      source_grade_now:
+        - one_pubmed_candidate_per_pmid
+        - raw_pubmed_esearch_and_esummary_locators
+        - coverage_status_already_indexed_or_pubmed_metadata_ingested
+        - explicit_result_limit_and_fetch_failure_gaps
+      not_claimed:
+        - pubmed_as_canonical_paper_identity
+        - paywalled_full_text
+        - human_validated_scientific_claim_extraction
   - id: drosophila_suzukii_extracted_facts
     name: Drosophila suzukii extracted literature facts, supplement manifests, and per-paper supplement audits
     source_type: derived_sqlite_source
