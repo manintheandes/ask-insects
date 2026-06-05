@@ -63,6 +63,8 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-25-mosquito-repellent-external-discovery-design.md",
     "docs/superpowers/specs/2026-05-24-open-insects-public-identity-design.md",
     "docs/superpowers/specs/2026-05-28-drosophila-suzukii-source-plane-design.md",
+    "docs/superpowers/specs/2026-06-05-swd-aedes-parity-program-design.md",
+    "docs/superpowers/specs/2026-06-05-swd-neurobiology-olfaction-lane-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",

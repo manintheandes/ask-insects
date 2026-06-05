@@ -1,0 +1,9 @@
+{
+  "species": "Drosophila suzukii",
+  "parity_rule": "covered = at least one non-gap record OR at least one source_gap record per applicable category",
+  "skip_categories": ["vector_competence", "public_health", "wolbachia_interventions", "dengue_surveillance"],
+  "categories": [
+    {"key": "neurobiology", "source_ids": ["drosophila_suzukii_neurobiology_sources"], "status": "in_progress"},
+    {"key": "olfaction_literature", "source_ids": ["drosophila_suzukii_olfaction_literature"], "status": "in_progress"}
+  ]
+}
