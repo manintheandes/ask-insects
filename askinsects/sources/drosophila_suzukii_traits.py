@@ -221,6 +221,9 @@ def fetch_drosophila_suzukii_traits_records(
             })
 
     # Honest absence: a trait class with no distinctive phrase in the corpus is gapped.
+    # NB: the corpus is PubMed title + journal only (esummary returns no abstract), so a
+    # class evidenced only in abstracts could read as absent; the absence is still a real,
+    # queryable title-level signal, just weaker than a full-text corpus.
     corpus = " ".join(trait_corpus)
     for key, label, phrases in EXPECTED_TRAIT_CLASSES:
         if not any(phrase in corpus for phrase in phrases):
