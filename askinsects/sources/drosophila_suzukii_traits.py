@@ -190,14 +190,17 @@ def fetch_drosophila_suzukii_traits_records(
             time.sleep(delay_seconds)
 
     candidate_ids = candidate_ids[:limit]
-    if candidate_ids:
-        summary_url = _eutils_url("esummary", db="pubmed", id=",".join(candidate_ids))
+    # Batch esummary: a single GET with hundreds of ids exceeds the URI length limit (HTTP 414).
+    summary_batch_size = 150
+    for batch_index, start in enumerate(range(0, len(candidate_ids), summary_batch_size), start=1):
+        batch = candidate_ids[start:start + summary_batch_size]
+        summary_url = _eutils_url("esummary", db="pubmed", id=",".join(batch))
         requested_urls.append(summary_url)
         if delay_seconds:
             time.sleep(delay_seconds)
         try:
             summary_payload = fetch(summary_url)
-            raw_path = write_raw_json(raw_dir, "pubmed_esummary_0001.json", summary_payload)
+            raw_path = write_raw_json(raw_dir, f"pubmed_esummary_{batch_index:04d}.json", summary_payload)
             raw_artifacts.append(raw_path.as_posix())
             block = summary_payload.get("result", {}) if isinstance(summary_payload, dict) else {}
             uids = block.get("uids", []) if isinstance(block, dict) else []
