@@ -3630,6 +3630,25 @@ def ingest_drosophila_suzukii_olfaction_literature_hosted(
     return response
 
 
+def ingest_drosophila_suzukii_traits_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_drosophila_suzukii_traits import ingest_drosophila_suzukii_traits
+
+    response = ingest_drosophila_suzukii_traits(
+        artifact_dir=artifact_dir,
+        max_results=int(payload.get("max_results", 1000)),
+        page_size=int(payload.get("page_size", 100)),
+        delay_seconds=float(payload.get("delay_seconds", 0.34)),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_drosophila_suzukii_ncbi_nucleotide_hosted(
     payload: dict[str, object],
     *,
@@ -4232,6 +4251,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-olfaction-literature":
             result = ingest_drosophila_suzukii_olfaction_literature_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/drosophila-suzukii-traits":
+            result = ingest_drosophila_suzukii_traits_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/drosophila-suzukii-ncbi-nucleotide":

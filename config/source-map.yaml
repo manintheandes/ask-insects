@@ -264,6 +264,29 @@ sources:
         - pubmed_as_canonical_paper_identity
         - paywalled_full_text
         - human_validated_scientific_claim_extraction
+  - id: drosophila_suzukii_traits
+    name: Drosophila suzukii life-history and physiological traits
+    source_type: public_api_metadata
+    boundary: Bounded PubMed ESearch and ESummary metadata for Drosophila suzukii life-history and physiological trait papers (development, fecundity, longevity, thermal tolerance, diapause/overwintering, cold hardiness), with queryable source_gap records for trait classes absent from the corpus
+    query_plane: pubmed_esearch_esummary_to_sqlite_traits_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_traits
+    ingest_script: scripts/ingest_drosophila_suzukii_traits.py
+    input_sources:
+      - pubmed_eutilities
+    lanes:
+      - traits
+    provenance_required: true
+    live_fetch: bounded_opt_in
+    source_contract:
+      source_grade_now:
+        - one_trait_literature_candidate_per_pmid
+        - raw_pubmed_esearch_and_esummary_locators
+        - queryable_trait_class_absence_gaps
+      not_claimed:
+        - structured_validated_trait_value_tables
+        - vectorbyte_equivalent_curated_trait_database
+        - human_validated_trait_extraction
   - id: drosophila_suzukii_extracted_facts
     name: Drosophila suzukii extracted literature facts, supplement manifests, and per-paper supplement audits
     source_type: derived_sqlite_source
