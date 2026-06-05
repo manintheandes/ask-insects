@@ -194,6 +194,20 @@ def main(argv: list[str] | None = None) -> int:
     ingest_drosophila_suzukii_pubmed.add_argument("--delay-seconds", type=float, default=0.34)
     ingest_drosophila_suzukii_pubmed.add_argument("--retrieved-at")
 
+    ingest_swd_neuro = sub.add_parser("ingest-drosophila-suzukii-neurobiology")
+    ingest_swd_neuro.add_argument("--hosted", action="store_true")
+    ingest_swd_neuro.add_argument("--max-results", type=int, default=200)
+    ingest_swd_neuro.add_argument("--page-size", type=int, default=100)
+    ingest_swd_neuro.add_argument("--delay-seconds", type=float, default=0.34)
+    ingest_swd_neuro.add_argument("--retrieved-at")
+
+    ingest_swd_olf = sub.add_parser("ingest-drosophila-suzukii-olfaction-literature")
+    ingest_swd_olf.add_argument("--hosted", action="store_true")
+    ingest_swd_olf.add_argument("--max-results", type=int, default=1000)
+    ingest_swd_olf.add_argument("--page-size", type=int, default=100)
+    ingest_swd_olf.add_argument("--delay-seconds", type=float, default=0.34)
+    ingest_swd_olf.add_argument("--retrieved-at")
+
     ingest_drosophila_suzukii_ncbi_nucleotide = sub.add_parser("ingest-drosophila-suzukii-ncbi-nucleotide")
     ingest_drosophila_suzukii_ncbi_nucleotide.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_ncbi_nucleotide.add_argument("--max-results", type=int, default=1000)
@@ -798,6 +812,36 @@ def main(argv: list[str] | None = None) -> int:
             artifact_dir=artifact_dir,
             **request_payload,
         )
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-neurobiology":
+        request_payload = {
+            "max_results": args.max_results,
+            "page_size": args.page_size,
+            "delay_seconds": args.delay_seconds,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-neurobiology", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_neurobiology import ingest_drosophila_suzukii_neurobiology
+
+        payload = ingest_drosophila_suzukii_neurobiology(artifact_dir=artifact_dir, **request_payload)
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-olfaction-literature":
+        request_payload = {
+            "max_results": args.max_results,
+            "page_size": args.page_size,
+            "delay_seconds": args.delay_seconds,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-olfaction-literature", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_olfaction_literature import ingest_drosophila_suzukii_olfaction_literature
+
+        payload = ingest_drosophila_suzukii_olfaction_literature(artifact_dir=artifact_dir, **request_payload)
         emit(payload)
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-drosophila-suzukii-ncbi-nucleotide":
