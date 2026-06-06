@@ -19,11 +19,14 @@ To add the first source-grade spotted wing drosophila boundary:
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-drosophila-suzukii \
   --gbif-occurrence-limit 100 \
   --inaturalist-observation-limit 100 \
-  --literature-max-works 100 \
+  --literature-max-works 5000 \
   --bold-limit 100
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what do we know about spotted wing drosophila?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "how many total spotted wing drosophila paper records since 2020 are in Ask Insects?"
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search source_coverage "Drosophila suzukii missing"
 ```
+
+The SWD OpenAlex paper count reports exact title/abstract records separately from broader OpenAlex search-identified candidates. The broader candidates are for topic coverage across repellency, susceptibility/resistance, assay safety, biocontrol, behavior, omics, monitoring/IPM, crop context, and ecology/distribution, not a claim that every candidate has the same confidence as an exact title/abstract match.
 
 To add deeper public-source metadata for spotted wing drosophila:
 

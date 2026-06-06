@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 import json
 from pathlib import Path
@@ -47,6 +47,14 @@ class LiteratureBuildResult:
     unpaywall_queried_count: int
     open_fulltext_count: int
     pubmed_skipped_count: int
+
+
+@dataclass(frozen=True)
+class LiteratureSearchQuery:
+    term: str
+    mode: str = "title_and_abstract"
+    topic_group: str | None = None
+    confidence: str = "exact_title_abstract"
 
 
 def utc_now() -> str:
@@ -371,6 +379,8 @@ def _infer_inclusion_paths(
     accepted_topic_ids: list[str],
     *,
     search_term: str | None = None,
+    search_mode: str = "title_and_abstract",
+    candidate_status: str | None = None,
 ) -> list[str]:
     paths: list[str] = []
     title = str(work.get("display_name") or "")
@@ -387,6 +397,8 @@ def _infer_inclusion_paths(
         paths.append("abstract_alias")
     if set(accepted_topic_ids).intersection(_topic_ids(work)):
         paths.append("topic")
+    if not paths and search_mode == "search":
+        paths.append(candidate_status or "openalex_search_candidate")
     return paths or ["openalex_search"]
 
 
@@ -400,6 +412,9 @@ def literature_record(
     pubmed_payload: dict[str, object] | None = None,
     skip_pubmed: bool = False,
     search_term: str | None = None,
+    search_mode: str = "title_and_abstract",
+    topic_group: str | None = None,
+    candidate_status: str = "exact_title_abstract",
 ) -> EvidenceRecord:
     work_key = openalex_work_key(work)
     doi = _doi(work)
@@ -416,12 +431,19 @@ def literature_record(
     ]
     if search_term:
         parts.append(f"OpenAlex search term: {search_term}")
+        parts.append(f"OpenAlex search mode: {search_mode}")
+    if topic_group:
+        parts.append(f"OpenAlex topic group: {topic_group}")
+    parts.append(f"OpenAlex candidate status: {candidate_status}")
     payload: dict[str, object] = {
         "raw_openalex_work": work,
         "inclusion_paths": inclusion_paths,
         "unpaywall": unpaywall_payload,
         "pubmed": pubmed_payload,
         "openalex_search_term": search_term or species,
+        "openalex_search_mode": search_mode,
+        "openalex_topic_group": topic_group,
+        "openalex_candidate_status": candidate_status,
     }
     if skip_pubmed:
         payload["skip_pubmed"] = True
@@ -447,8 +469,7 @@ def literature_record(
 
 def _works_url(
     *,
-    species: str,
-    search_term: str,
+    search_query: LiteratureSearchQuery,
     from_date: str,
     to_date: str,
     work_type: str,
@@ -456,18 +477,49 @@ def _works_url(
     cursor: str,
 ) -> str:
     filters = [
-        ("title_and_abstract.search", f'"{search_term}"'),
         ("from_publication_date", from_date),
         ("to_publication_date", to_date),
         ("type", work_type),
     ]
+    if search_query.mode == "title_and_abstract":
+        filters.insert(0, ("title_and_abstract.search", f'"{search_query.term}"'))
     params = {
         "filter": ",".join(f"{key}:{value}" for key, value in filters if value),
         "sort": "publication_date:desc",
         "per-page": page_size,
         "cursor": cursor,
     }
+    if search_query.mode == "search":
+        params["search"] = search_query.term
     return f"{OPENALEX_API_BASE}/works?{urlencode(params)}"
+
+
+def _normalize_search_query(raw: object) -> LiteratureSearchQuery | None:
+    if isinstance(raw, LiteratureSearchQuery):
+        term = raw.term.strip().strip('"')
+        return replace(raw, term=term) if term else None
+    if isinstance(raw, dict):
+        term = str(raw.get("term") or "").strip().strip('"')
+        if not term:
+            return None
+        mode = str(raw.get("mode") or "title_and_abstract").strip() or "title_and_abstract"
+        if mode not in {"title_and_abstract", "search"}:
+            mode = "title_and_abstract"
+        confidence = str(
+            raw.get("confidence")
+            or ("openalex_search_candidate" if mode == "search" else "exact_title_abstract")
+        )
+        topic_group = raw.get("topic_group")
+        return LiteratureSearchQuery(
+            term=term,
+            mode=mode,
+            topic_group=str(topic_group) if topic_group else None,
+            confidence=confidence,
+        )
+    term = str(raw).strip().strip('"')
+    if not term:
+        return None
+    return LiteratureSearchQuery(term=term)
 
 
 def fetch_literature_records(
@@ -486,7 +538,7 @@ def fetch_literature_records(
     retrieved_at: str | None = None,
     max_works: int | None = None,
     skip_pubmed: bool = False,
-    search_terms: list[str] | None = None,
+    search_terms: list[object] | None = None,
 ) -> LiteratureBuildResult:
     retrieved = retrieved_at or utc_now()
     json_fetcher = fetch_json or fetch_json_url
@@ -508,13 +560,19 @@ def fetch_literature_records(
     seen_cursors: set[str] = set()
     page_size = max(1, min(int(page_size), 200))
     max_records = None if max_works is None else max(0, int(max_works))
-    active_search_terms: list[str] = []
-    for term in search_terms or [species]:
-        cleaned = str(term).strip().strip('"')
-        if cleaned and cleaned not in active_search_terms:
-            active_search_terms.append(cleaned)
-    if not active_search_terms:
-        active_search_terms = [species]
+    active_search_queries: list[LiteratureSearchQuery] = []
+    seen_search_queries: set[tuple[str, str]] = set()
+    for raw_query in search_terms or [species]:
+        search_query = _normalize_search_query(raw_query)
+        if search_query is None:
+            continue
+        key = (search_query.mode, search_query.term)
+        if key in seen_search_queries:
+            continue
+        seen_search_queries.add(key)
+        active_search_queries.append(search_query)
+    if not active_search_queries:
+        active_search_queries = [LiteratureSearchQuery(term=species)]
 
     if include_topic_discovery:
         accepted_topic_ids, topic_search_results, topic_gaps, topic_artifacts = discover_topic_ids(
@@ -526,7 +584,7 @@ def fetch_literature_records(
         gaps.extend(topic_gaps)
         raw_artifacts.extend(topic_artifacts)
 
-    for search_term in active_search_terms:
+    for search_query in active_search_queries:
         if max_records is not None and len(records) >= max_records:
             break
         cursor = "*"
@@ -536,8 +594,7 @@ def fetch_literature_records(
             if page_count > 0 and delay_seconds > 0:
                 time.sleep(delay_seconds)
             url = _works_url(
-                species=species,
-                search_term=search_term,
+                search_query=search_query,
                 from_date=from_date,
                 to_date=to_date,
                 work_type=work_type,
@@ -548,7 +605,7 @@ def fetch_literature_records(
             page_count += 1
             raw_path = write_raw_json(
                 raw_dir,
-                f"{safe_name(species)}_{safe_name(search_term)}_openalex_page_{page_count:03d}.json",
+                f"{safe_name(species)}_{safe_name(search_query.mode)}_{safe_name(search_query.term)}_openalex_page_{page_count:03d}.json",
                 payload,
             )
             raw_artifacts.append(raw_path.as_posix())
@@ -573,7 +630,9 @@ def fetch_literature_records(
                     work,
                     species,
                     accepted_topic_ids,
-                    search_term=search_term,
+                    search_term=search_query.term,
+                    search_mode=search_query.mode,
+                    candidate_status=search_query.confidence,
                 )
                 for path in inclusion_paths:
                     inclusion_path_counts[path] = inclusion_path_counts.get(path, 0) + 1
@@ -591,7 +650,10 @@ def fetch_literature_records(
                             "retrieved_at": retrieved,
                             "record_id": f"openalex:{work_key}",
                             "species": species,
-                            "openalex_search_term": search_term,
+                            "openalex_search_term": search_query.term,
+                            "openalex_search_mode": search_query.mode,
+                            "openalex_topic_group": search_query.topic_group,
+                            "openalex_candidate_status": search_query.confidence,
                         }
                     )
                 else:
@@ -612,7 +674,10 @@ def fetch_literature_records(
                                 "retrieved_at": retrieved,
                                 "record_id": f"openalex:{work_key}",
                                 "species": species,
-                                "openalex_search_term": search_term,
+                                "openalex_search_term": search_query.term,
+                                "openalex_search_mode": search_query.mode,
+                                "openalex_topic_group": search_query.topic_group,
+                                "openalex_candidate_status": search_query.confidence,
                                 "error": str(exc),
                             }
                         )
@@ -645,7 +710,10 @@ def fetch_literature_records(
                                         "record_id": f"openalex:{work_key}",
                                         "species": species,
                                         "external_id": fulltext_url,
-                                        "openalex_search_term": search_term,
+                                        "openalex_search_term": search_query.term,
+                                        "openalex_search_mode": search_query.mode,
+                                        "openalex_topic_group": search_query.topic_group,
+                                        "openalex_candidate_status": search_query.confidence,
                                         "error": str(exc),
                                     }
                                 )
@@ -671,7 +739,10 @@ def fetch_literature_records(
                                             "record_id": f"openalex:{work_key}",
                                             "species": species,
                                             "external_id": fulltext_url,
-                                            "openalex_search_term": search_term,
+                                            "openalex_search_term": search_query.term,
+                                            "openalex_search_mode": search_query.mode,
+                                            "openalex_topic_group": search_query.topic_group,
+                                            "openalex_candidate_status": search_query.confidence,
                                         }
                                     )
                         else:
@@ -696,7 +767,10 @@ def fetch_literature_records(
                                     "record_id": f"openalex:{work_key}",
                                     "species": species,
                                     "external_id": landing_page if isinstance(landing_page, str) else doi,
-                                    "openalex_search_term": search_term,
+                                    "openalex_search_term": search_query.term,
+                                    "openalex_search_mode": search_query.mode,
+                                    "openalex_topic_group": search_query.topic_group,
+                                    "openalex_candidate_status": search_query.confidence,
                                 }
                             )
                 else:
@@ -710,7 +784,10 @@ def fetch_literature_records(
                             "retrieved_at": retrieved,
                             "record_id": f"openalex:{work_key}",
                             "species": species,
-                            "openalex_search_term": search_term,
+                            "openalex_search_term": search_query.term,
+                            "openalex_search_mode": search_query.mode,
+                            "openalex_topic_group": search_query.topic_group,
+                            "openalex_candidate_status": search_query.confidence,
                         }
                     )
                 if not abstract_from_inverted_index(work.get("abstract_inverted_index")):  # type: ignore[arg-type]
@@ -724,7 +801,10 @@ def fetch_literature_records(
                             "retrieved_at": retrieved,
                             "record_id": f"openalex:{work_key}",
                             "species": species,
-                            "openalex_search_term": search_term,
+                            "openalex_search_term": search_query.term,
+                            "openalex_search_mode": search_query.mode,
+                            "openalex_topic_group": search_query.topic_group,
+                            "openalex_candidate_status": search_query.confidence,
                         }
                     )
                 records.append(
@@ -737,7 +817,10 @@ def fetch_literature_records(
                         unpaywall_payload=unpaywall_payload,
                         pubmed_payload=pubmed_payload,
                         skip_pubmed=skip_pubmed,
-                        search_term=search_term,
+                        search_term=search_query.term,
+                        search_mode=search_query.mode,
+                        topic_group=search_query.topic_group,
+                        candidate_status=search_query.confidence,
                     )
                 )
 
@@ -756,7 +839,10 @@ def fetch_literature_records(
                         "retrieved_at": retrieved,
                         "external_id": next_cursor_value,
                         "cursor": next_cursor_value,
-                        "openalex_search_term": search_term,
+                        "openalex_search_term": search_query.term,
+                        "openalex_search_mode": search_query.mode,
+                        "openalex_topic_group": search_query.topic_group,
+                        "openalex_candidate_status": search_query.confidence,
                     }
                 )
                 break

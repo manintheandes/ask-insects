@@ -16,10 +16,55 @@ from askinsects.sources.literature import fetch_literature_records
 DROSOPHILA_SUZUKII_SOURCE_ID = "drosophila_suzukii_core"
 DROSOPHILA_SUZUKII_SPECIES = "Drosophila suzukii"
 DROSOPHILA_SUZUKII_COMMON_NAME = "spotted wing drosophila"
-DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS = [
+DROSOPHILA_SUZUKII_EXACT_LITERATURE_SEARCH_TERMS = [
     DROSOPHILA_SUZUKII_SPECIES,
     DROSOPHILA_SUZUKII_COMMON_NAME,
     "spotted-wing drosophila",
+]
+DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS = [
+    {"term": "Drosophila suzukii repellent", "mode": "search", "topic_group": "repellency", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii repellency", "mode": "search", "topic_group": "repellency", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii oviposition deterrent", "mode": "search", "topic_group": "repellency", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii essential oil", "mode": "search", "topic_group": "repellency", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii insecticide", "mode": "search", "topic_group": "susceptibility_resistance", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii resistance", "mode": "search", "topic_group": "susceptibility_resistance", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii spinosad", "mode": "search", "topic_group": "susceptibility_resistance", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii pyrethroid", "mode": "search", "topic_group": "susceptibility_resistance", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii phytotoxicity", "mode": "search", "topic_group": "assay_safety", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii fumigation", "mode": "search", "topic_group": "assay_safety", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii biocontrol", "mode": "search", "topic_group": "biocontrol", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii parasitoid", "mode": "search", "topic_group": "biocontrol", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii entomopathogenic fungus", "mode": "search", "topic_group": "biocontrol", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii oviposition", "mode": "search", "topic_group": "behavior", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii behavior", "mode": "search", "topic_group": "behavior", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii olfaction", "mode": "search", "topic_group": "behavior", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii volatile", "mode": "search", "topic_group": "behavior", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii odor", "mode": "search", "topic_group": "behavior", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii genomics", "mode": "search", "topic_group": "omics", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii transcriptome", "mode": "search", "topic_group": "omics", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii proteomics", "mode": "search", "topic_group": "omics", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii microbiome", "mode": "search", "topic_group": "omics", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii chemoreceptor", "mode": "search", "topic_group": "omics", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii monitoring", "mode": "search", "topic_group": "monitoring_ipm", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii trap", "mode": "search", "topic_group": "monitoring_ipm", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii lure", "mode": "search", "topic_group": "monitoring_ipm", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii IPM", "mode": "search", "topic_group": "monitoring_ipm", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii management", "mode": "search", "topic_group": "monitoring_ipm", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii blueberry", "mode": "search", "topic_group": "crop_context", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii cherry", "mode": "search", "topic_group": "crop_context", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii raspberry", "mode": "search", "topic_group": "crop_context", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii strawberry", "mode": "search", "topic_group": "crop_context", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii grape", "mode": "search", "topic_group": "crop_context", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii climate", "mode": "search", "topic_group": "ecology_distribution", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii ecology", "mode": "search", "topic_group": "ecology_distribution", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii phenology", "mode": "search", "topic_group": "ecology_distribution", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii landscape", "mode": "search", "topic_group": "ecology_distribution", "confidence": "openalex_search_candidate"},
+    {"term": "Drosophila suzukii", "mode": "search", "topic_group": "broad_swd_search", "confidence": "openalex_search_candidate"},
+    {"term": "spotted wing drosophila", "mode": "search", "topic_group": "broad_swd_search", "confidence": "openalex_search_candidate"},
+]
+DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS: list[object] = [
+    *DROSOPHILA_SUZUKII_EXACT_LITERATURE_SEARCH_TERMS,
+    *DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS,
 ]
 
 
@@ -38,6 +83,46 @@ def utc_now() -> str:
 
 def _safe_id(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "_", value.lower()).strip("_") or "unknown"
+
+
+def _search_term_name(term: object) -> str:
+    if isinstance(term, dict):
+        return str(term.get("term") or "")
+    return str(term)
+
+
+def _search_term_mode(term: object) -> str:
+    if isinstance(term, dict):
+        return str(term.get("mode") or "title_and_abstract")
+    return "title_and_abstract"
+
+
+def _search_term_topic_group(term: object) -> str | None:
+    if isinstance(term, dict) and term.get("topic_group"):
+        return str(term["topic_group"])
+    return None
+
+
+def _literature_search_term_names() -> list[str]:
+    return [_search_term_name(term) for term in DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS if _search_term_name(term)]
+
+
+def _literature_search_modes() -> list[str]:
+    modes: list[str] = []
+    for term in DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS:
+        mode = _search_term_mode(term)
+        if mode not in modes:
+            modes.append(mode)
+    return modes
+
+
+def _literature_topic_groups() -> list[str]:
+    groups: list[str] = []
+    for term in DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS:
+        group = _search_term_topic_group(term)
+        if group and group not in groups:
+            groups.append(group)
+    return groups
 
 
 def _retarget_record(record: EvidenceRecord, *, upstream_source: str) -> EvidenceRecord:
@@ -392,7 +477,9 @@ def fetch_drosophila_suzukii_records(
                 "reported_total_count": literature_result.reported_total_count,
                 "from_date": literature_from_date,
                 "to_date": literature_to,
-                "search_terms": DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS,
+                "search_terms": _literature_search_term_names(),
+                "search_modes": _literature_search_modes(),
+                "topic_groups": _literature_topic_groups(),
                 "inclusion_path_counts": literature_result.inclusion_path_counts,
             }
 

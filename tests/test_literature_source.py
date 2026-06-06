@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import tempfile
 import unittest
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 from askinsects.sources.literature import (
     LITERATURE_SOURCE_ID,
@@ -153,6 +153,58 @@ class LiteratureSourceTests(unittest.TestCase):
         works_url = calls[0]
         self.assertIn("/works?", works_url)
         self.assertEqual(parse_qs(urlparse(works_url).query).get("sort"), ["publication_date:desc"])
+
+    def test_openalex_search_mode_uses_search_param_and_marks_candidate(self) -> None:
+        calls: list[str] = []
+
+        def fake_fetch_json(url: str) -> dict[str, object]:
+            calls.append(url)
+            if "/topics" in url:
+                return {"results": []}
+            query = parse_qs(urlparse(url).query)
+            self.assertEqual(query.get("search"), ["Drosophila suzukii management"])
+            filter_value = unquote(query.get("filter", [""])[0])
+            self.assertNotIn("title_and_abstract.search", filter_value)
+            return {
+                "meta": {"count": 1, "next_cursor": None},
+                "results": [
+                    openalex_work(
+                        "W10",
+                        title="Fruit pest management without visible species name",
+                        abstract_terms={"management": [0], "soft": [1], "fruit": [2]},
+                        doi="https://doi.org/10.1000/swd-candidate",
+                    )
+                ],
+            }
+
+        result = fetch_literature_records(
+            species="Drosophila suzukii",
+            from_date="2020-01-01",
+            to_date="2026-06-06",
+            work_type="article",
+            include_topic_discovery=True,
+            raw_dir=Path(self.create_tmpdir()) / "raw",
+            page_size=25,
+            delay_seconds=0,
+            fetch_json=fake_fetch_json,
+            retrieved_at="2026-06-06T00:00:00Z",
+            skip_pubmed=True,
+            search_terms=[
+                {
+                    "term": "Drosophila suzukii management",
+                    "mode": "search",
+                    "topic_group": "management",
+                    "confidence": "openalex_search_candidate",
+                }
+            ],
+        )
+
+        self.assertEqual([record.record_id for record in result.records], ["openalex:W10"])
+        record = result.records[0]
+        self.assertIn("openalex_search_candidate", record.payload["inclusion_paths"])
+        self.assertEqual(record.payload["openalex_search_mode"], "search")
+        self.assertEqual(record.payload["openalex_topic_group"], "management")
+        self.assertEqual(record.payload["openalex_candidate_status"], "openalex_search_candidate")
 
     def test_records_closed_full_text_gap(self) -> None:
         def fake_fetch_json(url: str) -> dict[str, object]:
