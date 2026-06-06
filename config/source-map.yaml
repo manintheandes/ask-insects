@@ -264,6 +264,28 @@ sources:
         - pubmed_as_canonical_paper_identity
         - paywalled_full_text
         - human_validated_scientific_claim_extraction
+  - id: drosophila_suzukii_ncbi_biosamples
+    name: Drosophila suzukii NCBI BioSamples
+    source_type: public_api_metadata
+    boundary: Bounded NCBI BioSample ESearch and ESummary metadata for Drosophila suzukii, normalized one biosamples record per accession, persisted under a dedicated SWD source id so it never overwrites the shared Aedes ncbi_biosamples rows
+    query_plane: ncbi_biosample_esearch_esummary_to_sqlite_biosamples_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_ncbi_biosamples
+    ingest_script: scripts/ingest_drosophila_suzukii_ncbi_biosamples.py
+    input_sources:
+      - ncbi_biosample_eutilities
+    lanes:
+      - biosamples
+    provenance_required: true
+    live_fetch: bounded_opt_in
+    source_contract:
+      source_grade_now:
+        - one_biosample_record_per_accession
+        - raw_ncbi_esearch_and_esummary_locators
+        - dedicated_swd_source_id_does_not_clobber_aedes
+      not_claimed:
+        - human_validated_sample_curation
+        - complete_mirror_beyond_bounded_limit
   - id: drosophila_suzukii_traits
     name: Drosophila suzukii life-history and physiological traits
     source_type: public_api_metadata

@@ -215,6 +215,13 @@ def main(argv: list[str] | None = None) -> int:
     ingest_swd_traits.add_argument("--delay-seconds", type=float, default=0.34)
     ingest_swd_traits.add_argument("--retrieved-at")
 
+    ingest_swd_biosamples = sub.add_parser("ingest-drosophila-suzukii-ncbi-biosamples")
+    ingest_swd_biosamples.add_argument("--hosted", action="store_true")
+    ingest_swd_biosamples.add_argument("--limit", type=int, default=1300)
+    ingest_swd_biosamples.add_argument("--page-size", type=int, default=200)
+    ingest_swd_biosamples.add_argument("--delay-seconds", type=float, default=0.34)
+    ingest_swd_biosamples.add_argument("--retrieved-at")
+
     ingest_drosophila_suzukii_ncbi_nucleotide = sub.add_parser("ingest-drosophila-suzukii-ncbi-nucleotide")
     ingest_drosophila_suzukii_ncbi_nucleotide.add_argument("--hosted", action="store_true")
     ingest_drosophila_suzukii_ncbi_nucleotide.add_argument("--max-results", type=int, default=1000)
@@ -864,6 +871,21 @@ def main(argv: list[str] | None = None) -> int:
         from scripts.ingest_drosophila_suzukii_traits import ingest_drosophila_suzukii_traits
 
         payload = ingest_drosophila_suzukii_traits(artifact_dir=artifact_dir, **request_payload)
+        emit(payload)
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-drosophila-suzukii-ncbi-biosamples":
+        request_payload = {
+            "limit": args.limit,
+            "page_size": args.page_size,
+            "delay_seconds": args.delay_seconds,
+            "retrieved_at": args.retrieved_at,
+        }
+        if args.hosted:
+            payload = emit_hosted("POST", "/ingest/drosophila-suzukii-ncbi-biosamples", request_payload, timeout=3600)
+            return 0 if payload.get("ok") else 2
+        from scripts.ingest_drosophila_suzukii_ncbi_biosamples import ingest_drosophila_suzukii_ncbi_biosamples
+
+        payload = ingest_drosophila_suzukii_ncbi_biosamples(artifact_dir=artifact_dir, **request_payload)
         emit(payload)
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-drosophila-suzukii-ncbi-nucleotide":
