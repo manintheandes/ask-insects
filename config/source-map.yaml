@@ -264,6 +264,29 @@ sources:
         - pubmed_as_canonical_paper_identity
         - paywalled_full_text
         - human_validated_scientific_claim_extraction
+  - id: drosophila_suzukii_chemoreceptors
+    name: Drosophila suzukii chemosensory receptor repertoire
+    source_type: public_api_metadata
+    boundary: Bounded NCBI Gene metadata for the Drosophila suzukii chemosensory receptor repertoire (odorant, ionotropic, gustatory receptors and odorant-binding proteins), classified by receptor family into the neurobiology lane as the sensory layer that joins to repellency hits; queryable source_gap records for absent receptor families
+    query_plane: ncbi_gene_esearch_esummary_to_sqlite_neurobiology_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_chemoreceptors
+    ingest_script: scripts/ingest_drosophila_suzukii_chemoreceptors.py
+    input_sources:
+      - ncbi_gene_eutilities
+    lanes:
+      - neurobiology
+    provenance_required: true
+    live_fetch: bounded_opt_in
+    source_contract:
+      source_grade_now:
+        - one_receptor_gene_record_per_gene_id
+        - receptor_family_classification
+        - raw_ncbi_gene_esearch_and_esummary_locators
+        - queryable_receptor_family_absence_gaps
+      not_claimed:
+        - receptor_to_compound_binding_predictions
+        - human_validated_deorphanization
   - id: drosophila_suzukii_ncbi_biosamples
     name: Drosophila suzukii NCBI BioSamples
     source_type: public_api_metadata
