@@ -1,0 +1,25 @@
+{
+  "answer": "From the local mosquito genomics index, Aedes aegypti VectorBase codon usage AUG: VectorBase codon usage for Aedes aegypti codon AUG: amino acid M, frequency 22.88, relative abundance 1.00.",
+  "answer_shape": "genomics",
+  "evidence": [
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/vectorbase_genomics/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt#line/34",
+        "retrieved_at": "2026-05-24T13:58:42Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/txt/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt"
+      },
+      "record_id": "vectorbase:codon_usage:AUG",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase codon usage for Aedes aegypti codon AUG: amino acid M, frequency 22.88, relative abundance 1.00.",
+      "title": "Aedes aegypti VectorBase codon usage AUG",
+      "url": "https://vectorbase.org/common/downloads/Current_Release/AaegyptiLVP_AGWG/txt/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt"
+    }
+  ],
+  "ok": true,
+  "source_gap": null
+}

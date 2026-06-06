@@ -1,0 +1,94 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "media",
+      "media_url": "https://static.inaturalist.org/photos/1/medium.jpg",
+      "payload": {
+        "raw_observation": {
+          "id": 12345,
+          "license_code": "cc-by",
+          "observed_on": "2021-02-03",
+          "photos": [
+            {
+              "attribution": "(c) Example Observer, some rights reserved",
+              "id": 99,
+              "license_code": "cc-by",
+              "url": "https://static.inaturalist.org/photos/1/medium.jpg"
+            }
+          ],
+          "place_guess": "Rio de Janeiro, Brazil",
+          "taxon": {
+            "name": "Aedes aegypti",
+            "preferred_common_name": "yellow fever mosquito"
+          },
+          "uri": "https://www.inaturalist.org/observations/12345"
+        },
+        "raw_photo": {
+          "attribution": "(c) Example Observer, some rights reserved",
+          "id": 99,
+          "license_code": "cc-by",
+          "url": "https://static.inaturalist.org/photos/1/medium.jpg"
+        }
+      },
+      "provenance": {
+        "license": "cc-by",
+        "locator": "<raw_dir>/Aedes_aegypti_anywhere_page_001.json#observations/12345/photos/99",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "inaturalist_api",
+        "source_url": "https://www.inaturalist.org/observations/12345"
+      },
+      "record_id": "inat:media:99",
+      "source": "inaturalist_api",
+      "species": "Aedes aegypti",
+      "text": "iNaturalist still image for Aedes aegypti at Rio de Janeiro, Brazil, from observation 12345. Attribution: (c) Example Observer, some rights reserved.",
+      "title": "Aedes aegypti iNaturalist still image 99",
+      "url": "https://www.inaturalist.org/observations/12345"
+    },
+    {
+      "lane": "observations",
+      "media_url": "https://static.inaturalist.org/photos/1/medium.jpg",
+      "payload": {
+        "query_url": "https://api.inaturalist.org/v1/observations?taxon_name=Aedes+aegypti&page=1&per_page=10&photos=true&photo_licensed=true&order=desc&order_by=observed_on",
+        "raw_observation": {
+          "id": 12345,
+          "license_code": "cc-by",
+          "observed_on": "2021-02-03",
+          "photos": [
+            {
+              "attribution": "(c) Example Observer, some rights reserved",
+              "id": 99,
+              "license_code": "cc-by",
+              "url": "https://static.inaturalist.org/photos/1/medium.jpg"
+            }
+          ],
+          "place_guess": "Rio de Janeiro, Brazil",
+          "taxon": {
+            "name": "Aedes aegypti",
+            "preferred_common_name": "yellow fever mosquito"
+          },
+          "uri": "https://www.inaturalist.org/observations/12345"
+        },
+        "raw_photo": {
+          "attribution": "(c) Example Observer, some rights reserved",
+          "id": 99,
+          "license_code": "cc-by",
+          "url": "https://static.inaturalist.org/photos/1/medium.jpg"
+        }
+      },
+      "provenance": {
+        "license": "cc-by",
+        "locator": "<raw_dir>/Aedes_aegypti_anywhere_page_001.json#observations/12345",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "inaturalist_api",
+        "source_url": "https://api.inaturalist.org/v1/observations?taxon_name=Aedes+aegypti&page=1&per_page=10&photos=true&photo_licensed=true&order=desc&order_by=observed_on"
+      },
+      "record_id": "inat:observation:12345",
+      "source": "inaturalist_api",
+      "species": "Aedes aegypti",
+      "text": "iNaturalist observation of Aedes aegypti at Rio de Janeiro, Brazil, observed on 2021-02-03, with a licensed photo.",
+      "title": "Aedes aegypti iNaturalist observation 12345",
+      "url": "https://www.inaturalist.org/observations/12345"
+    }
+  ]
+}

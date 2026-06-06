@@ -1,0 +1,65 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "lane": "behavior",
+      "n": 58027,
+      "source": "mendeley_aedes_behavior_media"
+    },
+    {
+      "lane": "behavior",
+      "n": 45574,
+      "source": "aedes_video_atoms"
+    },
+    {
+      "lane": "media",
+      "n": 19439,
+      "source": "aedes_image_atoms"
+    },
+    {
+      "lane": "media",
+      "n": 5758,
+      "source": "inaturalist_api"
+    },
+    {
+      "lane": "behavior",
+      "n": 2816,
+      "source": "aedes_literature_facets"
+    },
+    {
+      "lane": "behavior",
+      "n": 463,
+      "source": "aedes_extracted_facts"
+    },
+    {
+      "lane": "media",
+      "n": 158,
+      "source": "aedes_video_atoms"
+    },
+    {
+      "lane": "media",
+      "n": 70,
+      "source": "mosquito_alert_gbif"
+    },
+    {
+      "lane": "media",
+      "n": 37,
+      "source": "mendeley_aedes_behavior_media"
+    },
+    {
+      "lane": "behavior",
+      "n": 35,
+      "source": "dryad_aedes_behavior_videos"
+    },
+    {
+      "lane": "media",
+      "n": 28,
+      "source": "dryad_aedes_behavior_videos"
+    },
+    {
+      "lane": "media",
+      "n": 25,
+      "source": "pmc_open_access_videos"
+    }
+  ]
+}

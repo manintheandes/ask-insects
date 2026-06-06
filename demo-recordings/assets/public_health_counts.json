@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "n": 8261,
+      "source": "aedes_literature_facets"
+    },
+    {
+      "n": 2133,
+      "source": "aedes_extracted_facts"
+    },
+    {
+      "n": 538,
+      "source": "aedes_paho_dengue_surveillance"
+    },
+    {
+      "n": 14,
+      "source": "aedes_public_health_guidance"
+    }
+  ]
+}

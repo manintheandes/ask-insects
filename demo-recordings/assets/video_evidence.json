@@ -1,0 +1,42 @@
+{
+  "answer": "I found 2 indexed Ask Insects media record(s).",
+  "answer_shape": "media",
+  "evidence": [
+    {
+      "lane": "media",
+      "media_url": "raw/video_atoms/artifacts/video_atom:asset:mendeley:file:6gvs94p6r2:v1:20e2df6a_4a0e_4611_8146_83169961ae65:28720f3206bc/thumbnail.jpg",
+      "provenance": {
+        "license": "CC BY 4.0 http://creativecommons.org/licenses/by/4.0",
+        "locator": "records#mendeley:file:6gvs94p6r2:v1:20e2df6a_4a0e_4611_8146_83169961ae65;raw/video_atoms/artifacts/video_atom:asset:mendeley:file:6gvs94p6r2:v1:20e2df6a_4a0e_4611_8146_83169961ae65:28720f3206bc/thumbnail.jpg",
+        "retrieved_at": "2026-05-25T00:11:30Z",
+        "source_id": "aedes_video_atoms",
+        "source_url": "https://data.mendeley.com/public-files/datasets/6gvs94p6r2/files/20e2df6a-4a0e-4611-8146-83169961ae65/file_downloaded"
+      },
+      "record_id": "video_atom:video_keyframe:mendeley:file:6gvs94p6r2:v1:20e2df6a_4a0e_4611_8146_83169961ae65:14687a7cc477",
+      "source": "aedes_video_atoms",
+      "species": "Aedes aegypti",
+      "text": "Inspectable video keyframe derived from Aedes aegypti video R modeling code, high-speed video, sound files and other data from: Long- and short-range bimodal signals mediate mate location and recognition in yellow fever mosquitoes. Artifact path: raw/video_atoms/artifacts/video_atom:asset:mendeley:file:6gvs94p6r2:v1:20e2df6a_4a0e_4611_8146_83169961ae65:28720f3206bc/thumbnail.jpg.",
+      "title": "Aedes aegypti video keyframe for R modeling code, high-speed video, sound files and other data from: Long- and short-range bimodal signals mediate mate location and recognition in yellow fever mosquitoes",
+      "url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+    },
+    {
+      "lane": "media",
+      "media_url": "raw/video_atoms/artifacts/video_atom:asset:mendeley:file:6gvs94p6r2:v1:4aa60c23_7bd9_4f06_afc1_be366d4b27d8:2cef70052f85/thumbnail.jpg",
+      "provenance": {
+        "license": "CC BY 4.0 http://creativecommons.org/licenses/by/4.0",
+        "locator": "records#mendeley:file:6gvs94p6r2:v1:4aa60c23_7bd9_4f06_afc1_be366d4b27d8;raw/video_atoms/artifacts/video_atom:asset:mendeley:file:6gvs94p6r2:v1:4aa60c23_7bd9_4f06_afc1_be366d4b27d8:2cef70052f85/thumbnail.jpg",
+        "retrieved_at": "2026-05-25T00:11:30Z",
+        "source_id": "aedes_video_atoms",
+        "source_url": "https://data.mendeley.com/public-files/datasets/6gvs94p6r2/files/4aa60c23-7bd9-4f06-afc1-be366d4b27d8/file_downloaded"
+      },
+      "record_id": "video_atom:video_keyframe:mendeley:file:6gvs94p6r2:v1:4aa60c23_7bd9_4f06_afc1_be366d4b27d8:614cfa56159c",
+      "source": "aedes_video_atoms",
+      "species": "Aedes aegypti",
+      "text": "Inspectable video keyframe derived from Aedes aegypti video R modeling code, high-speed video, sound files and other data from: Long- and short-range bimodal signals mediate mate location and recognition in yellow fever mosquitoes. Artifact path: raw/video_atoms/artifacts/video_atom:asset:mendeley:file:6gvs94p6r2:v1:4aa60c23_7bd9_4f06_afc1_be366d4b27d8:2cef70052f85/thumbnail.jpg.",
+      "title": "Aedes aegypti video keyframe for R modeling code, high-speed video, sound files and other data from: Long- and short-range bimodal signals mediate mate location and recognition in yellow fever mosquitoes",
+      "url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+    }
+  ],
+  "ok": true,
+  "source_gap": null
+}

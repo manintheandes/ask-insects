@@ -1,0 +1,100 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "media",
+      "media_url": "http://webserver.mosquitoalert.com/media/tigapics/example.jpg",
+      "payload": {
+        "dataset_doi": "10.15470/t5a1os",
+        "dataset_key": "1fef1ead-3d02-495e-8ff1-6aeb01123408",
+        "raw_media": {
+          "creator": "Anonymous Mosquito Alert citizen scientist",
+          "format": "image/jpeg",
+          "identifier": "http://webserver.mosquitoalert.com/media/tigapics/example.jpg",
+          "license": "Anonymous, CC by Mosquito Alert",
+          "rightsHolder": "Mosquito Alert",
+          "type": "StillImage"
+        },
+        "raw_occurrence": {
+          "basisOfRecord": "HUMAN_OBSERVATION",
+          "country": "Brazil",
+          "datasetKey": "1fef1ead-3d02-495e-8ff1-6aeb01123408",
+          "datasetName": "Mosquito Alert Dataset",
+          "eventDate": "2023-01-24",
+          "identifiedBy": "Example expert",
+          "key": 4909387174,
+          "license": "http://creativecommons.org/publicdomain/zero/1.0/legalcode",
+          "media": [
+            {
+              "creator": "Anonymous Mosquito Alert citizen scientist",
+              "format": "image/jpeg",
+              "identifier": "http://webserver.mosquitoalert.com/media/tigapics/example.jpg",
+              "license": "Anonymous, CC by Mosquito Alert",
+              "rightsHolder": "Mosquito Alert",
+              "type": "StillImage"
+            }
+          ],
+          "scientificName": "Aedes aegypti (Linnaeus, 1762)",
+          "species": "Aedes aegypti"
+        }
+      },
+      "provenance": {
+        "license": "Anonymous, CC by Mosquito Alert",
+        "locator": "<raw_dir>/aedes_aegypti_occurrences_offset_000000.json#occurrence/4909387174/media/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "mosquito_alert_gbif",
+        "source_url": "http://webserver.mosquitoalert.com/media/tigapics/example.jpg"
+      },
+      "record_id": "mosquito_alert:media:4909387174:http_webserver_mosquitoalert_com_media_tigapics_example_jpg",
+      "source": "mosquito_alert_gbif",
+      "species": "Aedes aegypti",
+      "text": "Mosquito Alert still image for Aedes aegypti from citizen-science observation 4909387174 in Brazil. Attribution: Anonymous Mosquito Alert citizen scientist.",
+      "title": "Aedes aegypti Mosquito Alert still image 4909387174",
+      "url": "https://www.gbif.org/occurrence/4909387174"
+    },
+    {
+      "lane": "observations",
+      "media_url": "http://webserver.mosquitoalert.com/media/tigapics/example.jpg",
+      "payload": {
+        "dataset_doi": "10.15470/t5a1os",
+        "dataset_key": "1fef1ead-3d02-495e-8ff1-6aeb01123408",
+        "query_url": "https://api.gbif.org/v1/occurrence/search?datasetKey=1fef1ead-3d02-495e-8ff1-6aeb01123408&taxonKey=1651891&mediaType=StillImage&basisOfRecord=HUMAN_OBSERVATION&limit=1&offset=0",
+        "raw_occurrence": {
+          "basisOfRecord": "HUMAN_OBSERVATION",
+          "country": "Brazil",
+          "datasetKey": "1fef1ead-3d02-495e-8ff1-6aeb01123408",
+          "datasetName": "Mosquito Alert Dataset",
+          "eventDate": "2023-01-24",
+          "identifiedBy": "Example expert",
+          "key": 4909387174,
+          "license": "http://creativecommons.org/publicdomain/zero/1.0/legalcode",
+          "media": [
+            {
+              "creator": "Anonymous Mosquito Alert citizen scientist",
+              "format": "image/jpeg",
+              "identifier": "http://webserver.mosquitoalert.com/media/tigapics/example.jpg",
+              "license": "Anonymous, CC by Mosquito Alert",
+              "rightsHolder": "Mosquito Alert",
+              "type": "StillImage"
+            }
+          ],
+          "scientificName": "Aedes aegypti (Linnaeus, 1762)",
+          "species": "Aedes aegypti"
+        }
+      },
+      "provenance": {
+        "license": "http://creativecommons.org/publicdomain/zero/1.0/legalcode",
+        "locator": "<raw_dir>/aedes_aegypti_occurrences_offset_000000.json#occurrence/4909387174",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "mosquito_alert_gbif",
+        "source_url": "https://www.gbif.org/occurrence/4909387174"
+      },
+      "record_id": "mosquito_alert:observation:4909387174",
+      "source": "mosquito_alert_gbif",
+      "species": "Aedes aegypti",
+      "text": "Mosquito Alert citizen-science observation of Aedes aegypti in Brazil, event date 2023-01-24, basis HUMAN_OBSERVATION, with 1 still image(s). Identified by: Example expert.",
+      "title": "Aedes aegypti Mosquito Alert observation 4909387174",
+      "url": "https://www.gbif.org/occurrence/4909387174"
+    }
+  ]
+}

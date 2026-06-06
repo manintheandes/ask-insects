@@ -15,9 +15,16 @@ from askinsects.sources.literature import FullTextUnit
 
 
 class CliTests(unittest.TestCase):
+    # Read commands now default to the hosted plane; these tests exercise the LOCAL
+    # index code paths, so inject --local for read subcommands.
+    _READ_CMDS = {"health", "summary", "sources", "ask", "search", "sql"}
+
     def run_cli(self, *args):
+        argv = list(args)
+        if any(a in self._READ_CMDS for a in argv) and "--local" not in argv and "--hosted" not in argv:
+            argv.append("--local")
         return subprocess.run(
-            [sys.executable, "-m", "askinsects", *args],
+            [sys.executable, "-m", "askinsects", *argv],
             capture_output=True,
             text=True,
         )
@@ -29,13 +36,13 @@ class CliTests(unittest.TestCase):
                 check=True,
             )
 
-            health = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "health"], text=True)
+            health = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "health", "--local"], text=True)
             self.assertTrue(json.loads(health)["ok"])
 
-            summary = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "summary"], text=True)
+            summary = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "summary", "--local"], text=True)
             self.assertGreater(json.loads(summary)["record_count"], 0)
 
-            sources = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "sources"], text=True)
+            sources = subprocess.check_output([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir, "sources", "--local"], text=True)
             self.assertIn("mosquito_v1_fixtures", sources)
 
             answer = subprocess.check_output(
@@ -48,6 +55,7 @@ class CliTests(unittest.TestCase):
                     "ask",
                     "what do we know about Aedes aegypti?",
                     "--json",
+                    "--local",
                 ],
                 text=True,
             )

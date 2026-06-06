@@ -102,31 +102,39 @@ def main(argv: list[str] | None = None) -> int:
     setup.add_argument("--url", required=True)
     setup.add_argument("--token", required=True)
 
+    _LOCAL_HELP = "Dev-only escape: query the LOCAL index instead of the hosted plane (warns; results may be empty/stale)."
+
     health = sub.add_parser("health")
-    health.add_argument("--hosted", action="store_true")
+    health.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
+    health.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     summary = sub.add_parser("summary")
-    summary.add_argument("--hosted", action="store_true")
+    summary.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
+    summary.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     sources = sub.add_parser("sources")
-    sources.add_argument("--hosted", action="store_true")
+    sources.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
+    sources.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     ask = sub.add_parser("ask")
     ask.add_argument("question")
     ask.add_argument("--limit", type=int, default=5)
     ask.add_argument("--json", action="store_true")
-    ask.add_argument("--hosted", action="store_true")
+    ask.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
+    ask.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     search = sub.add_parser("search")
     search.add_argument("lane")
     search.add_argument("query")
     search.add_argument("--limit", type=int, default=10)
-    search.add_argument("--hosted", action="store_true")
+    search.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
+    search.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     sql = sub.add_parser("sql")
     sql.add_argument("sql")
     sql.add_argument("--limit", type=int, default=100)
-    sql.add_argument("--hosted", action="store_true")
+    sql.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
+    sql.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     voxel = sub.add_parser("voxel")
     voxel.add_argument("record_id")
@@ -578,6 +586,14 @@ def main(argv: list[str] | None = None) -> int:
     artifact_dir = Path(args.artifact_dir)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     db_path = artifact_dir / "source_index.sqlite"
+
+    # ask-insects answers ONLY from the hosted plane. The local index is never the
+    # default answer surface: read commands route to hosted by default so an agent can
+    # never silently query an empty/stale local index. `--local` is an explicit,
+    # deliberate dev escape hatch for inspecting a locally-built index.
+    HOSTED_DEFAULT_READ_COMMANDS = {"health", "summary", "sources", "ask", "search", "sql"}
+    if args.command in HOSTED_DEFAULT_READ_COMMANDS:
+        args.hosted = not getattr(args, "local", False)
 
     if args.command == "configure":
         save_config(HostedConfig(url=args.url, token=args.token), path=HOSTED_CONFIG_PATH)

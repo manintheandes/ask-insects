@@ -1,0 +1,586 @@
+{
+  "gaps": [
+    {
+      "file": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG.gff",
+      "lane": "genome_features",
+      "line_number": 4,
+      "reason": "malformed_gff_row",
+      "source": "vectorbase_aedes_genomics"
+    },
+    {
+      "file": "<raw_dir>/raw/groups_OrthoMCL-6.21.txt.gz",
+      "lane": "genome_features",
+      "line_number": 3,
+      "reason": "malformed_orthomcl_group_row",
+      "source": "vectorbase_aedes_genomics"
+    },
+    {
+      "file": "<raw_dir>/raw/orthologs.txt.gz",
+      "lane": "genome_features",
+      "line_number": 4,
+      "reason": "malformed_orthomcl_score",
+      "score": "not-a-score",
+      "source": "vectorbase_aedes_genomics"
+    },
+    {
+      "file": "<raw_dir>/raw/orthologs.txt.gz",
+      "lane": "genome_features",
+      "line_number": 5,
+      "reason": "malformed_orthomcl_pair_row",
+      "source": "vectorbase_aedes_genomics"
+    }
+  ],
+  "records": [
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "attributes": {
+          "SO": "protein_coding_gene",
+          "length": "9",
+          "location": "AaegL5_1:100-900(+)",
+          "organism": "Aedes_aegypti_LVP_AGWG",
+          "product": "odorant receptor coreceptor",
+          "sequence_SO": "chromosome"
+        },
+        "declared_length": 9,
+        "fasta_header": ">AAEL000001-RA | organism=Aedes_aegypti_LVP_AGWG | product=odorant receptor coreceptor | location=AaegL5_1:100-900(+) | length=9 | sequence_SO=chromosome | SO=protein_coding_gene",
+        "observed_sequence_length": 9,
+        "organism": "AaegyptiLVP_AGWG",
+        "release": "Current_Release",
+        "sequence_id": "AAEL000001-RA",
+        "sequence_kind": "cds"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta"
+      },
+      "record_id": "vectorbase:cds:AAEL000001-RA",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase CDS sequence AAEL000001-RA for Aedes aegypti, annotated as odorant receptor coreceptor. Location: AaegL5_1:100-900(+). Declared length: 9 nucleotides. Observed FASTA sequence length: 9 nucleotides.",
+      "title": "Aedes aegypti VectorBase CDS sequence AAEL000001-RA",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedCDSs.fasta"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "amino_acid": "M",
+        "codon": "AUG",
+        "frequency": "22.88",
+        "organism": "AaegyptiLVP_AGWG",
+        "relative_abundance": "1.00",
+        "release": "Current_Release"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt#line/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt"
+      },
+      "record_id": "vectorbase:codon_usage:AUG",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase codon usage for Aedes aegypti codon AUG: amino acid M, frequency 22.88, relative abundance 1.00.",
+      "title": "Aedes aegypti VectorBase codon usage AUG",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_CodonUsage.txt"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "aedes_gene_id": "AAEL000076",
+        "aedes_orthomcl_id": "aaeg-old|AAEL000076",
+        "line_number": 1,
+        "organism": "AaegyptiLVP_AGWG",
+        "orthomcl_release": "release-6.21",
+        "partner_id": "C076",
+        "partner_orthomcl_id": "aaec|C076",
+        "partner_species_code": "aaec",
+        "relationship_type": "coortholog",
+        "release": "Current_Release",
+        "score": 0.5,
+        "source_file": "coorthologs.txt.gz"
+      },
+      "provenance": {
+        "license": "OrthoMCL public download; source terms apply",
+        "locator": "<raw_dir>/raw/coorthologs.txt.gz#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/coorthologs.txt.gz"
+      },
+      "record_id": "vectorbase:coortholog:aaeg-old_AAEL000076:aaec_C076:1",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "OrthoMCL CURRENT coortholog pair for Aedes aegypti gene AAEL000076 (aaeg-old|AAEL000076) with partner aaec|C076, score 0.500.",
+      "title": "Aedes aegypti OrthoMCL coortholog AAEL000076 to aaec|C076",
+      "url": "file://<raw_dir>/files/coorthologs.txt.gz"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "atom_type": "current_id_resolution",
+        "current_id": "AAEL123456",
+        "event": "merge",
+        "event_date": "2026-05",
+        "event_release": "VB-2026-05",
+        "old_id": "AAEL000905",
+        "organism": "AaegyptiLVP_AGWG",
+        "release": "Current_Release",
+        "resolution_status": "successor"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab#line/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab"
+      },
+      "record_id": "vectorbase:current_id:AAEL000905",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "Aedes aegypti current VectorBase identifier resolution for AAEL000905: current ID AAEL123456, event merge, release VB-2026-05, date 2026-05.",
+      "title": "Aedes aegypti VectorBase current ID resolution AAEL000905 to AAEL123456",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab"
+    },
+    {
+      "lane": "genes",
+      "media_url": null,
+      "payload": {
+        "gff_attributes": {
+          "ID": "AAEL000001",
+          "Name": "AAEL000001",
+          "description": "odorant receptor coreceptor"
+        },
+        "gff_columns": {
+          "end": 900,
+          "phase": ".",
+          "score": ".",
+          "seqid": "AaegL5_1",
+          "source": "VectorBase",
+          "start": 100,
+          "strand": "+",
+          "type": "gene"
+        },
+        "organism": "AaegyptiLVP_AGWG",
+        "release": "Current_Release"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG.gff#line/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG.gff"
+      },
+      "record_id": "vectorbase:gene:AAEL000001",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase gene AAEL000001 for Aedes aegypti at AaegL5_1:100-900 (+), annotated as odorant receptor coreceptor.",
+      "title": "Aedes aegypti VectorBase gene AAEL000001",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG.gff"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "gaf": {
+          "annotation_extension": "",
+          "aspect": "F",
+          "assigned_by": "VectorBase",
+          "date": "20260524",
+          "db": "VectorBase",
+          "db_object_id": "AAEL000001",
+          "db_object_name": "odorant receptor activity",
+          "db_object_symbol": "orco",
+          "db_object_synonym": "Orco",
+          "db_object_type": "protein",
+          "db_reference": "PMID:1",
+          "evidence_code": "IEA",
+          "gene_product_form_id": "AAEL000001-PA",
+          "go_id": "GO:0004984",
+          "qualifier": "",
+          "taxon": "taxon:7159",
+          "with_or_from": ""
+        },
+        "gene_id": "AAEL000001",
+        "go_id": "GO:0004984",
+        "organism": "AaegyptiLVP_AGWG",
+        "release": "Current_Release"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz#line/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz"
+      },
+      "record_id": "vectorbase:go:AAEL000001:GO:0004984:2",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase GO annotation for Aedes aegypti gene AAEL000001: GO:0004984 (odorant receptor activity), aspect F, evidence IEA.",
+      "title": "Aedes aegypti VectorBase GO annotation AAEL000001 GO:0004984",
+      "url": "file://<raw_dir>/files/VectorBase-CURRENT_AaegyptiLVP_AGWG_GO.gaf.gz"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "event": "deletion",
+        "event_date": "2009-06",
+        "event_release": "pre-BRC4 52",
+        "new_id": null,
+        "old_id": "AAEL000355",
+        "organism": "AaegyptiLVP_AGWG",
+        "release": "Current_Release"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab"
+      },
+      "record_id": "vectorbase:id_event:AAEL000355:none:1",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase identifier event for Aedes aegypti AAEL000355: deletion to no successor, release pre-BRC4 52, date 2009-06.",
+      "title": "Aedes aegypti VectorBase ID event AAEL000355 deletion",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "event": "merge",
+        "event_date": "2026-05",
+        "event_release": "VB-2026-05",
+        "new_id": "AAEL123456",
+        "old_id": "AAEL000905",
+        "organism": "AaegyptiLVP_AGWG",
+        "release": "Current_Release"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab#line/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab"
+      },
+      "record_id": "vectorbase:id_event:AAEL000905:AAEL123456:2",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase identifier event for Aedes aegypti AAEL000905: merge to AAEL123456, release VB-2026-05, date 2026-05.",
+      "title": "Aedes aegypti VectorBase ID event AAEL000905 merge",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_ids_events.tab"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "aedes_gene_id": "AAEL000076",
+        "aedes_orthomcl_id": "aaeg-old|AAEL000076",
+        "line_number": 1,
+        "organism": "AaegyptiLVP_AGWG",
+        "orthomcl_release": "release-6.21",
+        "partner_id": "AAEL999999",
+        "partner_orthomcl_id": "aaeg-old|AAEL999999",
+        "partner_species_code": "aaeg-old",
+        "relationship_type": "inparalog",
+        "release": "Current_Release",
+        "score": 0.9,
+        "source_file": "inparalogs.txt.gz"
+      },
+      "provenance": {
+        "license": "OrthoMCL public download; source terms apply",
+        "locator": "<raw_dir>/raw/inparalogs.txt.gz#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/inparalogs.txt.gz"
+      },
+      "record_id": "vectorbase:inparalog:aaeg-old_AAEL000076:aaeg-old_AAEL999999:1",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "OrthoMCL CURRENT inparalog pair for Aedes aegypti gene AAEL000076 (aaeg-old|AAEL000076) with partner aaeg-old|AAEL999999, score 0.900.",
+      "title": "Aedes aegypti OrthoMCL inparalog AAEL000076 to aaeg-old|AAEL999999",
+      "url": "file://<raw_dir>/files/inparalogs.txt.gz"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "base_url": "https://vectorbase.org/a/app/record/genomic-sequence/",
+        "database": "Nucleotide",
+        "link_id": "1",
+        "organism": "AaegyptiLVP_AGWG",
+        "query": "AaegL5_1",
+        "release": "Current_Release",
+        "rule": ""
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml#link/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml"
+      },
+      "record_id": "vectorbase:ncbi_linkout:Nucleotide:AaegL5_1:1",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase NCBI LinkOut maps Aedes aegypti Nucleotide query AaegL5_1 to VectorBase base URL https://vectorbase.org/a/app/record/genomic-sequence/.",
+      "title": "Aedes aegypti VectorBase NCBI Nucleotide linkout AaegL5_1",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_NCBILinkout_Nucleotide.xml"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "aedes_gene_id": "AAEL000076",
+        "aedes_member_count": 2,
+        "aedes_orthomcl_id": "aaeg|AAEL000076",
+        "aedes_species_code": "aaeg",
+        "atom_type": "orthogroup_membership",
+        "group_member_count": 3,
+        "line_number": 1,
+        "organism": "AaegyptiLVP_AGWG",
+        "orthogroup_id": "OG6_100000",
+        "orthomcl_release": "release-6.21",
+        "release": "Current_Release",
+        "sample_aedes_members": [
+          "aaeg|AAEL023571",
+          "aaeg|AAEL000076"
+        ],
+        "sample_members": [
+          "aaeg|AAEL023571",
+          "aalb|AALFPA_041143",
+          "aaeg|AAEL000076"
+        ],
+        "source_file": "groups_OrthoMCL-6.21.txt.gz"
+      },
+      "provenance": {
+        "license": "OrthoMCL public download; source terms apply",
+        "locator": "<raw_dir>/raw/groups_OrthoMCL-6.21.txt.gz#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/groups_OrthoMCL-6.21.txt.gz"
+      },
+      "record_id": "vectorbase:orthogroup:OG6_100000:aaeg_AAEL000076",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "OrthoMCL orthogroup OG6_100000 contains Aedes aegypti member aaeg|AAEL000076; the group has 3 total members and 2 Aedes members.",
+      "title": "Aedes aegypti OrthoMCL orthogroup OG6_100000 member AAEL000076",
+      "url": "file://<raw_dir>/files/groups_OrthoMCL-6.21.txt.gz"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "aedes_gene_id": "AAEL023571",
+        "aedes_member_count": 2,
+        "aedes_orthomcl_id": "aaeg|AAEL023571",
+        "aedes_species_code": "aaeg",
+        "atom_type": "orthogroup_membership",
+        "group_member_count": 3,
+        "line_number": 1,
+        "organism": "AaegyptiLVP_AGWG",
+        "orthogroup_id": "OG6_100000",
+        "orthomcl_release": "release-6.21",
+        "release": "Current_Release",
+        "sample_aedes_members": [
+          "aaeg|AAEL023571",
+          "aaeg|AAEL000076"
+        ],
+        "sample_members": [
+          "aaeg|AAEL023571",
+          "aalb|AALFPA_041143",
+          "aaeg|AAEL000076"
+        ],
+        "source_file": "groups_OrthoMCL-6.21.txt.gz"
+      },
+      "provenance": {
+        "license": "OrthoMCL public download; source terms apply",
+        "locator": "<raw_dir>/raw/groups_OrthoMCL-6.21.txt.gz#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/groups_OrthoMCL-6.21.txt.gz"
+      },
+      "record_id": "vectorbase:orthogroup:OG6_100000:aaeg_AAEL023571",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "OrthoMCL orthogroup OG6_100000 contains Aedes aegypti member aaeg|AAEL023571; the group has 3 total members and 2 Aedes members.",
+      "title": "Aedes aegypti OrthoMCL orthogroup OG6_100000 member AAEL023571",
+      "url": "file://<raw_dir>/files/groups_OrthoMCL-6.21.txt.gz"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "aedes_gene_id": "AAEL000076",
+        "aedes_orthomcl_id": "aaeg-old|AAEL000076",
+        "line_number": 1,
+        "organism": "AaegyptiLVP_AGWG",
+        "orthomcl_release": "release-6.21",
+        "partner_id": "O67680",
+        "partner_orthomcl_id": "aaeo|O67680",
+        "partner_species_code": "aaeo",
+        "relationship_type": "ortholog",
+        "release": "Current_Release",
+        "score": 0.352,
+        "source_file": "orthologs.txt.gz"
+      },
+      "provenance": {
+        "license": "OrthoMCL public download; source terms apply",
+        "locator": "<raw_dir>/raw/orthologs.txt.gz#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/orthologs.txt.gz"
+      },
+      "record_id": "vectorbase:ortholog:aaeg-old_AAEL000076:aaeo_O67680:1",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "OrthoMCL CURRENT ortholog pair for Aedes aegypti gene AAEL000076 (aaeg-old|AAEL000076) with partner aaeo|O67680, score 0.352.",
+      "title": "Aedes aegypti OrthoMCL ortholog AAEL000076 to aaeo|O67680",
+      "url": "file://<raw_dir>/files/orthologs.txt.gz"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "aedes_gene_id": "AAEL000108",
+        "aedes_orthomcl_id": "aaeg-old|AAEL000108",
+        "line_number": 2,
+        "organism": "AaegyptiLVP_AGWG",
+        "orthomcl_release": "release-6.21",
+        "partner_id": "O67868",
+        "partner_orthomcl_id": "aaeo|O67868",
+        "partner_species_code": "aaeo",
+        "relationship_type": "ortholog",
+        "release": "Current_Release",
+        "score": 1.353,
+        "source_file": "orthologs.txt.gz"
+      },
+      "provenance": {
+        "license": "OrthoMCL public download; source terms apply",
+        "locator": "<raw_dir>/raw/orthologs.txt.gz#line/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/orthologs.txt.gz"
+      },
+      "record_id": "vectorbase:ortholog:aaeg-old_AAEL000108:aaeo_O67868:2",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "OrthoMCL CURRENT ortholog pair for Aedes aegypti gene AAEL000108 (aaeg-old|AAEL000108) with partner aaeo|O67868, score 1.353.",
+      "title": "Aedes aegypti OrthoMCL ortholog AAEL000108 to aaeo|O67868",
+      "url": "file://<raw_dir>/files/orthologs.txt.gz"
+    },
+    {
+      "lane": "proteins",
+      "media_url": null,
+      "payload": {
+        "attributes": {
+          "gene": "AAEL000001",
+          "gene_product": "odorant receptor coreceptor",
+          "length": "478",
+          "organism": "Aedes_aegypti_LVP_AGWG",
+          "transcript": "AAEL000001-RA"
+        },
+        "fasta_header": ">AAEL000001-PA | transcript=AAEL000001-RA | gene=AAEL000001 | organism=Aedes_aegypti_LVP_AGWG | gene_product=odorant receptor coreceptor | length=478",
+        "organism": "AaegyptiLVP_AGWG",
+        "protein_id": "AAEL000001-PA",
+        "release": "Current_Release"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta"
+      },
+      "record_id": "vectorbase:protein:AAEL000001-PA",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase protein AAEL000001-PA for Aedes aegypti, annotated as odorant receptor coreceptor. Gene: AAEL000001. Transcript: AAEL000001-RA. Length: 478 amino acids.",
+      "title": "Aedes aegypti VectorBase protein AAEL000001-PA",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedProteins.fasta"
+    },
+    {
+      "lane": "transcripts",
+      "media_url": null,
+      "payload": {
+        "gff_attributes": {
+          "ID": "AAEL000001-RA",
+          "Name": "AAEL000001-RA",
+          "Parent": "AAEL000001",
+          "product": "odorant receptor coreceptor transcript"
+        },
+        "gff_columns": {
+          "end": 900,
+          "phase": ".",
+          "score": ".",
+          "seqid": "AaegL5_1",
+          "source": "VectorBase",
+          "start": 100,
+          "strand": "+",
+          "type": "mRNA"
+        },
+        "organism": "AaegyptiLVP_AGWG",
+        "release": "Current_Release"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG.gff#line/3",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG.gff"
+      },
+      "record_id": "vectorbase:transcript:AAEL000001-RA",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase mRNA AAEL000001-RA for Aedes aegypti at AaegL5_1:100-900 (+), annotated as odorant receptor coreceptor transcript.",
+      "title": "Aedes aegypti VectorBase mRNA AAEL000001-RA",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG.gff"
+    },
+    {
+      "lane": "transcripts",
+      "media_url": null,
+      "payload": {
+        "attributes": {
+          "SO": "protein_coding_gene",
+          "gene": "AAEL000001",
+          "gene_product": "odorant receptor coreceptor",
+          "is_pseudo": "false",
+          "length": "12",
+          "location": "AaegL5_1:100-900(+)",
+          "organism": "Aedes_aegypti_LVP_AGWG",
+          "sequence_SO": "chromosome",
+          "transcript_product": "odorant receptor coreceptor transcript"
+        },
+        "declared_length": 12,
+        "fasta_header": ">AAEL000001-RA | gene=AAEL000001 | organism=Aedes_aegypti_LVP_AGWG | gene_product=odorant receptor coreceptor | transcript_product=odorant receptor coreceptor transcript | location=AaegL5_1:100-900(+) | length=12 | sequence_SO=chromosome | SO=protein_coding_gene | is_pseudo=false",
+        "observed_sequence_length": 12,
+        "organism": "AaegyptiLVP_AGWG",
+        "release": "Current_Release",
+        "sequence_id": "AAEL000001-RA",
+        "sequence_kind": "transcript_sequence"
+      },
+      "provenance": {
+        "license": "VectorBase/VEuPathDB public download; source terms apply",
+        "locator": "<raw_dir>/raw/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedTranscripts.fasta#line/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "vectorbase_aedes_genomics",
+        "source_url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedTranscripts.fasta"
+      },
+      "record_id": "vectorbase:transcript_sequence:AAEL000001-RA",
+      "source": "vectorbase_aedes_genomics",
+      "species": "Aedes aegypti",
+      "text": "VectorBase transcript sequence AAEL000001-RA for Aedes aegypti, annotated as odorant receptor coreceptor transcript. Gene: AAEL000001. Location: AaegL5_1:100-900(+). Declared length: 12 nucleotides. Observed FASTA sequence length: 12 nucleotides.",
+      "title": "Aedes aegypti VectorBase transcript sequence AAEL000001-RA",
+      "url": "file://<raw_dir>/files/VectorBase-68_AaegyptiLVP_AGWG_AnnotatedTranscripts.fasta"
+    }
+  ]
+}

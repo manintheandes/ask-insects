@@ -1,0 +1,167 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "download_url": "https://osf.io/download/yd5pt/",
+        "file_id": "instructions",
+        "info_url": "https://api.osf.io/v2/files/instructions/",
+        "is_media": false,
+        "is_software": true,
+        "materialized_path": "/FlightTrackAI Installation Instructions.pdf",
+        "name": "FlightTrackAI Installation Instructions.pdf",
+        "project_id": "cx762",
+        "raw_file": {
+          "attributes": {
+            "kind": "file",
+            "materialized_path": "/FlightTrackAI Installation Instructions.pdf",
+            "name": "FlightTrackAI Installation Instructions.pdf",
+            "size": 100538
+          },
+          "id": "instructions",
+          "links": {
+            "download": "https://osf.io/download/yd5pt/",
+            "info": "https://api.osf.io/v2/files/instructions/"
+          },
+          "type": "files"
+        },
+        "size": 100538
+      },
+      "provenance": {
+        "license": "OSF project license not supplied",
+        "locator": "<raw_dir>/cx762_osfstorage_root.json#files/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "osf_flighttrackai_aedes_videos",
+        "source_url": "https://api.osf.io/v2/files/instructions/"
+      },
+      "record_id": "osf:flighttrackai:file:instructions",
+      "source": "osf_flighttrackai_aedes_videos",
+      "species": "Aedes aegypti",
+      "text": "OSF FlightTrackAI software/model/instruction file for Aedes aegypti flight-behavior tracking. File: FlightTrackAI Installation Instructions.pdf. Path: /FlightTrackAI Installation Instructions.pdf. Size bytes: 100538. Download URL: https://osf.io/download/yd5pt/.",
+      "title": "Aedes aegypti OSF FlightTrackAI software/model/instruction file FlightTrackAI Installation Instructions.pdf",
+      "url": "https://osf.io/cx762/"
+    },
+    {
+      "lane": "media",
+      "media_url": "https://osf.io/download/pu8zf/",
+      "payload": {
+        "download_url": "https://osf.io/download/pu8zf/",
+        "file_id": "video-a",
+        "info_url": "https://api.osf.io/v2/files/video-a/",
+        "is_media": true,
+        "is_software": false,
+        "materialized_path": "/PROCESSED VIDEOS/Video A.mp4",
+        "name": "Video A.mp4",
+        "project_id": "cx762",
+        "raw_file": {
+          "attributes": {
+            "kind": "file",
+            "materialized_path": "/PROCESSED VIDEOS/Video A.mp4",
+            "name": "Video A.mp4",
+            "size": 74364708
+          },
+          "id": "video-a",
+          "links": {
+            "download": "https://osf.io/download/pu8zf/",
+            "info": "https://api.osf.io/v2/files/video-a/"
+          },
+          "type": "files"
+        },
+        "size": 74364708
+      },
+      "provenance": {
+        "license": "OSF project license not supplied",
+        "locator": "<raw_dir>/cx762_folder_folder_processed.json#files/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "osf_flighttrackai_aedes_videos",
+        "source_url": "https://api.osf.io/v2/files/video-a/"
+      },
+      "record_id": "osf:flighttrackai:file:video_a",
+      "source": "osf_flighttrackai_aedes_videos",
+      "species": "Aedes aegypti",
+      "text": "OSF FlightTrackAI video file for Aedes aegypti flight-behavior tracking. File: Video A.mp4. Path: /PROCESSED VIDEOS/Video A.mp4. Size bytes: 74364708. Download URL: https://osf.io/download/pu8zf/.",
+      "title": "Aedes aegypti OSF FlightTrackAI video file Video A.mp4",
+      "url": "https://osf.io/cx762/"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "files_api_url": "https://api.osf.io/v2/nodes/cx762/files/osfstorage/folder-processed/",
+        "folder_id": "folder-processed",
+        "materialized_path": "/PROCESSED VIDEOS/",
+        "name": "PROCESSED VIDEOS",
+        "project_id": "cx762",
+        "raw_folder": {
+          "attributes": {
+            "kind": "folder",
+            "materialized_path": "/PROCESSED VIDEOS/",
+            "name": "PROCESSED VIDEOS"
+          },
+          "id": "folder-processed",
+          "links": {
+            "self": "https://api.osf.io/v2/files/folder-processed/"
+          },
+          "relationships": {
+            "files": {
+              "links": {
+                "related": {
+                  "href": "https://api.osf.io/v2/nodes/cx762/files/osfstorage/folder-processed/"
+                }
+              }
+            }
+          },
+          "type": "files"
+        }
+      },
+      "provenance": {
+        "license": "OSF project license not supplied",
+        "locator": "<raw_dir>/cx762_osfstorage_root.json#folders/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "osf_flighttrackai_aedes_videos",
+        "source_url": "https://api.osf.io/v2/files/folder-processed/"
+      },
+      "record_id": "osf:flighttrackai:folder:folder_processed",
+      "source": "osf_flighttrackai_aedes_videos",
+      "species": "Aedes aegypti",
+      "text": "OSF folder in the FlightTrackAI Aedes aegypti behavior/video project. Folder: PROCESSED VIDEOS. Path: /PROCESSED VIDEOS/.",
+      "title": "Aedes aegypti OSF FlightTrackAI folder /PROCESSED VIDEOS/",
+      "url": "https://osf.io/cx762/"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "project_api_url": "https://api.osf.io/v2/nodes/cx762/",
+        "project_id": "cx762",
+        "providers_api_url": "https://api.osf.io/v2/nodes/cx762/files/",
+        "raw_project": {
+          "data": {
+            "attributes": {
+              "description": "FlightTrackAI tracks Aedes aegypti mosquito flight behaviour from videos.",
+              "public": true,
+              "title": "FlightTrackAI: a robust convolutional neural network-based tool for tracking the flight behaviour of Aedes aegypti mosquitoes"
+            },
+            "id": "cx762",
+            "type": "nodes"
+          }
+        }
+      },
+      "provenance": {
+        "license": "OSF project license not supplied",
+        "locator": "<raw_dir>/cx762_project.json#project",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "osf_flighttrackai_aedes_videos",
+        "source_url": "https://api.osf.io/v2/nodes/cx762/"
+      },
+      "record_id": "osf:flighttrackai:project:cx762",
+      "source": "osf_flighttrackai_aedes_videos",
+      "species": "Aedes aegypti",
+      "text": "OSF project for Aedes aegypti FlightTrackAI behavior/video evidence: FlightTrackAI: a robust convolutional neural network-based tool for tracking the flight behaviour of Aedes aegypti mosquitoes. File manifest: 1 folder(s), 2 file(s), including 1 video file(s). Description: FlightTrackAI tracks Aedes aegypti mosquito flight behaviour from videos.",
+      "title": "Aedes aegypti OSF FlightTrackAI project FlightTrackAI: a robust convolutional neural network-based tool for tracking the flight behaviour of Aedes aegypti mosquitoes",
+      "url": "https://osf.io/cx762/"
+    }
+  ]
+}

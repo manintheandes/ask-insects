@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100197344/square.jpeg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100197344\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62527342\"}",
+      "record_id": "image_atom:asset:inat:media:100197344",
+      "title": "Aedes aegypti image asset from inaturalist_api",
+      "url": "https://www.inaturalist.org/observations/62527342"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100197344/square.jpeg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100197344;label/quality_grade\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62527342\"}",
+      "record_id": "image_atom:label:inat:media:100197344:579ce2cf7be4",
+      "title": "Aedes aegypti image label quality_grade: research",
+      "url": "https://www.inaturalist.org/observations/62527342"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100222021/square.jpg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100222021\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62540639\"}",
+      "record_id": "image_atom:asset:inat:media:100222021",
+      "title": "Aedes aegypti image asset from inaturalist_api",
+      "url": "https://www.inaturalist.org/observations/62540639"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100222021/square.jpg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100222021;label/quality_grade\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62540639\"}",
+      "record_id": "image_atom:label:inat:media:100222021:918e9c361361",
+      "title": "Aedes aegypti image label quality_grade: research",
+      "url": "https://www.inaturalist.org/observations/62540639"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100281526/square.jpeg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100281526\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62574981\"}",
+      "record_id": "image_atom:asset:inat:media:100281526",
+      "title": "Aedes aegypti image asset from inaturalist_api",
+      "url": "https://www.inaturalist.org/observations/62574981"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100281526/square.jpeg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100281526;label/quality_grade\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62574981\"}",
+      "record_id": "image_atom:label:inat:media:100281526:e29a116e8ef6",
+      "title": "Aedes aegypti image label quality_grade: research",
+      "url": "https://www.inaturalist.org/observations/62574981"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100281526/square.jpeg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100281526;label/life_stage\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62574981\"}",
+      "record_id": "image_atom:label:inat:media:100281526:0689e8f967c7",
+      "title": "Aedes aegypti image label life_stage: adult",
+      "url": "https://www.inaturalist.org/observations/62574981"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100281526/square.jpeg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100281526;label/sex\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62574981\"}",
+      "record_id": "image_atom:label:inat:media:100281526:96746ff21667",
+      "title": "Aedes aegypti image label sex: female",
+      "url": "https://www.inaturalist.org/observations/62574981"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100281526/square.jpeg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100281526;label/inaturalist_annotation_17\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62574981\"}",
+      "record_id": "image_atom:label:inat:media:100281526:025d6645c54b",
+      "title": "Aedes aegypti image label inaturalist_annotation_17: 18",
+      "url": "https://www.inaturalist.org/observations/62574981"
+    },
+    {
+      "media_url": "https://inaturalist-open-data.s3.amazonaws.com/photos/100281526/square.jpeg",
+      "provenance_json": "{\"license\": \"cc-by-nc\", \"locator\": \"records#inat:media:100281526;label/inaturalist_annotation_22\", \"retrieved_at\": \"2026-05-25T02:31:43Z\", \"source_id\": \"aedes_image_atoms\", \"source_url\": \"https://www.inaturalist.org/observations/62574981\"}",
+      "record_id": "image_atom:label:inat:media:100281526:7b715c57f15f",
+      "title": "Aedes aegypti image label inaturalist_annotation_22: 24",
+      "url": "https://www.inaturalist.org/observations/62574981"
+    }
+  ]
+}

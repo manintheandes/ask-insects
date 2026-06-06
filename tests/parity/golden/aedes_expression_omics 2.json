@@ -1,0 +1,137 @@
+{
+  "gaps": [
+    {
+      "lane": "expression",
+      "reason": "differential_expression_outputs_not_indexed",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "scope": "Current expression omics coverage indexes NCBI GEO dataset metadata and SRA run metadata. It does not yet perform raw-read reanalysis, count-matrix construction, normalized expression matrices, or differential-expression output extraction.",
+      "source": "aedes_expression_omics"
+    },
+    {
+      "lane": "expression",
+      "reason": "raw_sra_reanalysis_not_performed",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "scope": "Current expression omics coverage indexes NCBI GEO dataset metadata and SRA run metadata. It does not yet perform raw-read reanalysis, count-matrix construction, normalized expression matrices, or differential-expression output extraction.",
+      "source": "aedes_expression_omics"
+    }
+  ],
+  "records": [
+    {
+      "lane": "expression",
+      "media_url": null,
+      "payload": {
+        "atom_type": "source_gap",
+        "gap": {
+          "lane": "expression",
+          "reason": "differential_expression_outputs_not_indexed",
+          "retrieved_at": "2026-05-29T00:00:00Z",
+          "scope": "Current expression omics coverage indexes NCBI GEO dataset metadata and SRA run metadata. It does not yet perform raw-read reanalysis, count-matrix construction, normalized expression matrices, or differential-expression output extraction.",
+          "source": "aedes_expression_omics"
+        },
+        "raw_json_path": "<raw_dir>/source_boundary.json",
+        "reason": "differential_expression_outputs_not_indexed"
+      },
+      "provenance": {
+        "license": "Ask Insects source boundary audit",
+        "locator": "<raw_dir>/source_boundary.json#gap/differential_expression_outputs_not_indexed",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_expression_omics",
+        "source_url": "https://www.ncbi.nlm.nih.gov/sra"
+      },
+      "record_id": "expression:gap:differential_expression_outputs_not_indexed",
+      "source": "aedes_expression_omics",
+      "species": "Aedes aegypti",
+      "text": "Aedes aegypti expression omics source gap: differential-expression outputs are not yet indexed as queryable source-grade rows.",
+      "title": "Aedes aegypti differential-expression output source gap",
+      "url": "https://www.ncbi.nlm.nih.gov/sra"
+    },
+    {
+      "lane": "expression",
+      "media_url": null,
+      "payload": {
+        "atom_type": "source_gap",
+        "gap": {
+          "lane": "expression",
+          "reason": "raw_sra_reanalysis_not_performed",
+          "retrieved_at": "2026-05-29T00:00:00Z",
+          "scope": "Current expression omics coverage indexes NCBI GEO dataset metadata and SRA run metadata. It does not yet perform raw-read reanalysis, count-matrix construction, normalized expression matrices, or differential-expression output extraction.",
+          "source": "aedes_expression_omics"
+        },
+        "raw_json_path": "<raw_dir>/source_boundary.json",
+        "reason": "raw_sra_reanalysis_not_performed"
+      },
+      "provenance": {
+        "license": "Ask Insects source boundary audit",
+        "locator": "<raw_dir>/source_boundary.json#gap/raw_sra_reanalysis_not_performed",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_expression_omics",
+        "source_url": "https://www.ncbi.nlm.nih.gov/sra"
+      },
+      "record_id": "expression:gap:raw_sra_reanalysis_not_performed",
+      "source": "aedes_expression_omics",
+      "species": "Aedes aegypti",
+      "text": "Aedes aegypti expression omics source gap: raw SRA reanalysis into count matrices and normalized expression matrices has not yet been performed as source-grade Ask Insects rows.",
+      "title": "Aedes aegypti raw SRA reanalysis source gap",
+      "url": "https://www.ncbi.nlm.nih.gov/sra"
+    },
+    {
+      "lane": "expression",
+      "media_url": null,
+      "payload": {
+        "accession": "GSE999999",
+        "db": "gds",
+        "platform": "GPL24265",
+        "raw_json_path": "<raw_dir>/gds_esummary.json",
+        "sample_count": "12",
+        "summary": "Expression profiling by high throughput sequencing in infected and control midguts.",
+        "taxon": "Aedes aegypti",
+        "title": "Aedes aegypti midgut RNA-seq after dengue exposure",
+        "type": "Expression profiling by high throughput sequencing",
+        "uid": "200000001"
+      },
+      "provenance": {
+        "license": "NCBI GEO public metadata",
+        "locator": "<raw_dir>/gds_esummary.json#result/200000001",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_expression_omics",
+        "source_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE999999"
+      },
+      "record_id": "expression:geo:GSE999999",
+      "source": "aedes_expression_omics",
+      "species": "Aedes aegypti",
+      "text": "GEO Aedes aegypti expression omics dataset GSE999999. Title: Aedes aegypti midgut RNA-seq after dengue exposure. Type: Expression profiling by high throughput sequencing. Samples: 12. Platform: GPL24265. Summary: Expression profiling by high throughput sequencing in infected and control midguts.",
+      "title": "GEO expression dataset GSE999999: Aedes aegypti midgut RNA-seq after dengue exposure",
+      "url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE999999"
+    },
+    {
+      "lane": "expression",
+      "media_url": null,
+      "payload": {
+        "bioproject": "PRJNA999999",
+        "biosample": "SAMN999999",
+        "db": "sra",
+        "experiment_accession": "44630001",
+        "platform": "Illumina NovaSeq 6000",
+        "raw_json_path": "<raw_dir>/sra_esummary.json",
+        "run_accession": "SRR999001",
+        "title": "Aedes aegypti ovary transcriptome RNA-Seq",
+        "total_bases": "150000",
+        "total_spots": "1000",
+        "uid": "44630001"
+      },
+      "provenance": {
+        "license": "NCBI SRA public metadata",
+        "locator": "<raw_dir>/sra_esummary.json#result/44630001/run/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_expression_omics",
+        "source_url": "https://www.ncbi.nlm.nih.gov/sra/SRR999001"
+      },
+      "record_id": "expression:sra_run:SRR999001",
+      "source": "aedes_expression_omics",
+      "species": "Aedes aegypti",
+      "text": "SRA Aedes aegypti RNA-seq run SRR999001. Experiment: 44630001. Title: Aedes aegypti ovary transcriptome RNA-Seq. BioProject: PRJNA999999. BioSample: SAMN999999. Platform: Illumina NovaSeq 6000. Spots: 1000. Bases: 150000.",
+      "title": "SRA RNA-seq run SRR999001: Aedes aegypti ovary transcriptome RNA-Seq",
+      "url": "https://www.ncbi.nlm.nih.gov/sra/SRR999001"
+    }
+  ]
+}
