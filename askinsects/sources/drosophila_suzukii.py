@@ -16,6 +16,11 @@ from askinsects.sources.literature import fetch_literature_records
 DROSOPHILA_SUZUKII_SOURCE_ID = "drosophila_suzukii_core"
 DROSOPHILA_SUZUKII_SPECIES = "Drosophila suzukii"
 DROSOPHILA_SUZUKII_COMMON_NAME = "spotted wing drosophila"
+DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS = [
+    DROSOPHILA_SUZUKII_SPECIES,
+    DROSOPHILA_SUZUKII_COMMON_NAME,
+    "spotted-wing drosophila",
+]
 
 
 @dataclass(frozen=True)
@@ -168,12 +173,12 @@ def _coverage_records(upstream_sources: dict[str, dict[str, object]], *, retriev
             "literature",
             "mapped_queryable_bounded",
             [
-                "OpenAlex title/abstract metadata since 2020",
+                "multi-term OpenAlex title/abstract metadata since 2020",
                 "legal direct full-text units",
                 "per-paper supplement audits and parsed public supplement rows",
                 "PubMed reconciliation metadata",
             ],
-            ["human-reviewed literature claim extraction", "broader OpenAlex/PubMed mismatch review"],
+            ["human-reviewed literature claim extraction", "Crossref/Europe PMC/Semantic Scholar breadth audit beyond OpenAlex and PubMed"],
         ),
         (
             "dna_barcodes",
@@ -374,6 +379,7 @@ def fetch_drosophila_suzukii_records(
                 retrieved_at=retrieved,
                 max_works=literature_max_works,
                 skip_pubmed=True,
+                search_terms=DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS,
             ),
         )
         if literature_result is not None:
@@ -386,6 +392,7 @@ def fetch_drosophila_suzukii_records(
                 "reported_total_count": literature_result.reported_total_count,
                 "from_date": literature_from_date,
                 "to_date": literature_to,
+                "search_terms": DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS,
                 "inclusion_path_counts": literature_result.inclusion_path_counts,
             }
 

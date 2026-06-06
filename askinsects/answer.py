@@ -4315,6 +4315,64 @@ def _source_count(index: SourceIndex, source: str) -> int:
         return int(conn.execute("SELECT COUNT(*) FROM records WHERE source=?", (source,)).fetchone()[0])
 
 
+def _wants_canonical_literature_count(question: str) -> bool:
+    q = question.lower()
+    count_terms = ("how many", "total", "count", "number of")
+    paper_terms = ("paper", "papers", "article", "articles", "literature records", "paper records")
+    return any(term in q for term in count_terms) and any(term in q for term in paper_terms)
+
+
+def _swd_canonical_literature_count_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    requested_species = _requested_species(plan.question)
+    if not requested_species or requested_species.lower() != "drosophila suzukii":
+        return None
+    if not _wants_canonical_literature_count(plan.question):
+        return None
+
+    with index.connect() as conn:
+        count = int(
+            conn.execute(
+                """
+                SELECT COUNT(*)
+                FROM records
+                WHERE source = ?
+                  AND lane = 'literature'
+                  AND record_id LIKE 'swd:openalex_literature:%'
+                """,
+                (DROSOPHILA_SUZUKII_SOURCE_ID,),
+            ).fetchone()[0]
+        )
+        rows = conn.execute(
+            """
+            SELECT r.*
+            FROM records r
+            WHERE r.source = ?
+              AND r.lane = 'literature'
+              AND r.record_id LIKE 'swd:openalex_literature:%'
+            ORDER BY r.record_id
+            LIMIT ?
+            """,
+            (DROSOPHILA_SUZUKII_SOURCE_ID, limit),
+        ).fetchall()
+
+    if count == 0:
+        return source_gap(plan, "The Ask Insects index has no canonical Drosophila suzukii OpenAlex paper records.")
+
+    records = [EvidenceRecord.from_row(dict(row)) for row in rows]
+    return {
+        "ok": True,
+        "answer_shape": "literature",
+        "answer": (
+            "Ask Insects has "
+            f"{count} canonical OpenAlex paper records for Drosophila suzukii "
+            "(spotted wing drosophila) since 2020 in "
+            f"{DROSOPHILA_SUZUKII_SOURCE_ID}. This excludes literature-lane source-gap records."
+        ),
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
 def _source_search_records(index: SourceIndex, source: str, lane: str, query: str, *, limit: int) -> list[EvidenceRecord]:
     terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]
     if not terms:
@@ -5277,6 +5335,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
         return _supplement_audit_summary_answer(index, plan, limit=limit)
     if _wants_supplement_audit_summary(plan.question) and "source_coverage" not in plan.lanes:
         return _supplement_audit_summary_answer(index, plan, limit=limit)
+    canonical_literature_count = _swd_canonical_literature_count_answer(index, plan, limit=limit)
+    if canonical_literature_count is not None:
+        return canonical_literature_count
     coverage_summary = _source_coverage_summary_answer(index, plan, limit=limit)
     if coverage_summary is not None:
         return coverage_summary

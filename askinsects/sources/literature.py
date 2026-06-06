@@ -365,14 +365,26 @@ def _topic_ids(work: dict[str, object]) -> set[str]:
     return topic_ids
 
 
-def _infer_inclusion_paths(work: dict[str, object], species: str, accepted_topic_ids: list[str]) -> list[str]:
+def _infer_inclusion_paths(
+    work: dict[str, object],
+    species: str,
+    accepted_topic_ids: list[str],
+    *,
+    search_term: str | None = None,
+) -> list[str]:
     paths: list[str] = []
     title = str(work.get("display_name") or "")
     abstract = abstract_from_inverted_index(work.get("abstract_inverted_index"))  # type: ignore[arg-type]
-    if species.lower() in title.lower():
+    species_lower = species.lower()
+    search_lower = (search_term or species).strip().strip('"').lower()
+    if species_lower in title.lower():
         paths.append("title")
-    if species.lower() in abstract.lower():
+    elif search_lower and search_lower in title.lower():
+        paths.append("title_alias")
+    if species_lower in abstract.lower():
         paths.append("abstract")
+    elif search_lower and search_lower in abstract.lower():
+        paths.append("abstract_alias")
     if set(accepted_topic_ids).intersection(_topic_ids(work)):
         paths.append("topic")
     return paths or ["openalex_search"]
@@ -387,6 +399,7 @@ def literature_record(
     unpaywall_payload: dict[str, object] | None = None,
     pubmed_payload: dict[str, object] | None = None,
     skip_pubmed: bool = False,
+    search_term: str | None = None,
 ) -> EvidenceRecord:
     work_key = openalex_work_key(work)
     doi = _doi(work)
@@ -401,11 +414,14 @@ def literature_record(
         f"Venue: {venue}",
         f"Inclusion paths: {', '.join(inclusion_paths)}",
     ]
+    if search_term:
+        parts.append(f"OpenAlex search term: {search_term}")
     payload: dict[str, object] = {
         "raw_openalex_work": work,
         "inclusion_paths": inclusion_paths,
         "unpaywall": unpaywall_payload,
         "pubmed": pubmed_payload,
+        "openalex_search_term": search_term or species,
     }
     if skip_pubmed:
         payload["skip_pubmed"] = True
@@ -432,6 +448,7 @@ def literature_record(
 def _works_url(
     *,
     species: str,
+    search_term: str,
     from_date: str,
     to_date: str,
     work_type: str,
@@ -439,7 +456,7 @@ def _works_url(
     cursor: str,
 ) -> str:
     filters = [
-        ("title_and_abstract.search", f'"{species}"'),
+        ("title_and_abstract.search", f'"{search_term}"'),
         ("from_publication_date", from_date),
         ("to_publication_date", to_date),
         ("type", work_type),
@@ -469,6 +486,7 @@ def fetch_literature_records(
     retrieved_at: str | None = None,
     max_works: int | None = None,
     skip_pubmed: bool = False,
+    search_terms: list[str] | None = None,
 ) -> LiteratureBuildResult:
     retrieved = retrieved_at or utc_now()
     json_fetcher = fetch_json or fetch_json_url
@@ -490,6 +508,13 @@ def fetch_literature_records(
     seen_cursors: set[str] = set()
     page_size = max(1, min(int(page_size), 200))
     max_records = None if max_works is None else max(0, int(max_works))
+    active_search_terms: list[str] = []
+    for term in search_terms or [species]:
+        cleaned = str(term).strip().strip('"')
+        if cleaned and cleaned not in active_search_terms:
+            active_search_terms.append(cleaned)
+    if not active_search_terms:
+        active_search_terms = [species]
 
     if include_topic_discovery:
         accepted_topic_ids, topic_search_results, topic_gaps, topic_artifacts = discover_topic_ids(
@@ -501,218 +526,241 @@ def fetch_literature_records(
         gaps.extend(topic_gaps)
         raw_artifacts.extend(topic_artifacts)
 
-    cursor = "*"
-    while cursor:
-        seen_cursors.add(cursor)
-        if page_count > 0 and delay_seconds > 0:
-            time.sleep(delay_seconds)
-        url = _works_url(
-            species=species,
-            from_date=from_date,
-            to_date=to_date,
-            work_type=work_type,
-            page_size=page_size,
-            cursor=cursor,
-        )
-        payload = json_fetcher(url)
-        page_count += 1
-        raw_path = write_raw_json(raw_dir, f"{safe_name(species)}_openalex_page_{page_count:03d}.json", payload)
-        raw_artifacts.append(raw_path.as_posix())
+    for search_term in active_search_terms:
+        if max_records is not None and len(records) >= max_records:
+            break
+        cursor = "*"
+        seen_cursors = set()
+        while cursor:
+            seen_cursors.add(cursor)
+            if page_count > 0 and delay_seconds > 0:
+                time.sleep(delay_seconds)
+            url = _works_url(
+                species=species,
+                search_term=search_term,
+                from_date=from_date,
+                to_date=to_date,
+                work_type=work_type,
+                page_size=page_size,
+                cursor=cursor,
+            )
+            payload = json_fetcher(url)
+            page_count += 1
+            raw_path = write_raw_json(
+                raw_dir,
+                f"{safe_name(species)}_{safe_name(search_term)}_openalex_page_{page_count:03d}.json",
+                payload,
+            )
+            raw_artifacts.append(raw_path.as_posix())
 
-        meta = payload.get("meta")
-        if isinstance(meta, dict):
-            reported_total_count = int(meta.get("count") or reported_total_count)
-            next_cursor = meta.get("next_cursor")
-        else:
-            next_cursor = None
-
-        results = payload.get("results")
-        works = [item for item in results if isinstance(item, dict)] if isinstance(results, list) else []
-        for work in works:
-            if max_records is not None and len(records) >= max_records:
-                break
-            work_key = openalex_work_key(work)
-            if work_key in seen_work_keys:
-                continue
-            seen_work_keys.add(work_key)
-            inclusion_paths = _infer_inclusion_paths(work, species, accepted_topic_ids)
-            for path in inclusion_paths:
-                inclusion_path_counts[path] = inclusion_path_counts.get(path, 0) + 1
-            doi = _doi(work)
-            unpaywall_payload: dict[str, object] | None = None
-            pubmed_payload: dict[str, object] | None = None
-            if skip_pubmed:
-                pubmed_skipped_count += 1
-                gaps.append(
-                    {
-                        "source": LITERATURE_SOURCE_ID,
-                        "lane": "literature",
-                        "reason": "pubmed_skipped",
-                        "locator": f"{raw_path.as_posix()}#works/{work_key}",
-                        "retrieved_at": retrieved,
-                        "record_id": f"openalex:{work_key}",
-                        "species": species,
-                    }
-                )
+            meta = payload.get("meta")
+            if isinstance(meta, dict):
+                reported_total_count += int(meta.get("count") or 0)
+                next_cursor = meta.get("next_cursor")
             else:
-                try:
-                    pubmed_payload, pubmed_artifacts = lookup_pubmed_summary(
-                        doi=doi,
-                        title=str(work.get("display_name") or ""),
-                        fetch_json=json_fetcher,
-                        raw_dir=raw_dir,
-                    )
-                except Exception as exc:
+                next_cursor = None
+
+            results = payload.get("results")
+            works = [item for item in results if isinstance(item, dict)] if isinstance(results, list) else []
+            for work in works:
+                if max_records is not None and len(records) >= max_records:
+                    break
+                work_key = openalex_work_key(work)
+                if work_key in seen_work_keys:
+                    continue
+                seen_work_keys.add(work_key)
+                inclusion_paths = _infer_inclusion_paths(
+                    work,
+                    species,
+                    accepted_topic_ids,
+                    search_term=search_term,
+                )
+                for path in inclusion_paths:
+                    inclusion_path_counts[path] = inclusion_path_counts.get(path, 0) + 1
+                doi = _doi(work)
+                unpaywall_payload: dict[str, object] | None = None
+                pubmed_payload: dict[str, object] | None = None
+                if skip_pubmed:
+                    pubmed_skipped_count += 1
                     gaps.append(
                         {
                             "source": LITERATURE_SOURCE_ID,
                             "lane": "literature",
-                            "reason": "pubmed_fetch_failed",
+                            "reason": "pubmed_skipped",
                             "locator": f"{raw_path.as_posix()}#works/{work_key}",
                             "retrieved_at": retrieved,
                             "record_id": f"openalex:{work_key}",
                             "species": species,
-                            "error": str(exc),
+                            "openalex_search_term": search_term,
                         }
                     )
                 else:
-                    raw_artifacts.extend(pubmed_artifacts)
-            if doi:
-                doi_count += 1
-                if unpaywall_email:
-                    unpaywall_payload = json_fetcher(unpaywall_url(doi, unpaywall_email))
-                    unpaywall_queried_count += 1
-                    unpaywall_path = write_raw_json(
-                        raw_dir / "unpaywall",
-                        f"{safe_name(doi)}.json",
-                        unpaywall_payload,
-                    )
-                    raw_artifacts.append(unpaywall_path.as_posix())
-                    fulltext_target = best_open_fulltext(unpaywall_payload)
-                    if fulltext_target:
-                        fulltext_url, fulltext_license = fulltext_target
-                        try:
-                            fulltext = text_fetcher(fulltext_url)
-                        except Exception as exc:
-                            gaps.append(
-                                {
-                                    "source": LITERATURE_SOURCE_ID,
-                                    "lane": "literature",
-                                    "reason": "fulltext_fetch_failed",
-                                    "locator": unpaywall_path.as_posix(),
-                                    "retrieved_at": retrieved,
-                                    "record_id": f"openalex:{work_key}",
-                                    "species": species,
-                                    "external_id": fulltext_url,
-                                    "error": str(exc),
-                                }
-                            )
-                        else:
-                            units = fulltext_units_for_record(
-                                record_id=f"openalex:{work_key}",
-                                text=fulltext,
-                                url=fulltext_url,
-                                license=fulltext_license,
-                                retrieved_at=retrieved,
-                            )
-                            if units:
-                                fulltext_units.extend(units)
-                                open_fulltext_count += 1
-                            else:
+                    try:
+                        pubmed_payload, pubmed_artifacts = lookup_pubmed_summary(
+                            doi=doi,
+                            title=str(work.get("display_name") or ""),
+                            fetch_json=json_fetcher,
+                            raw_dir=raw_dir,
+                        )
+                    except Exception as exc:
+                        gaps.append(
+                            {
+                                "source": LITERATURE_SOURCE_ID,
+                                "lane": "literature",
+                                "reason": "pubmed_fetch_failed",
+                                "locator": f"{raw_path.as_posix()}#works/{work_key}",
+                                "retrieved_at": retrieved,
+                                "record_id": f"openalex:{work_key}",
+                                "species": species,
+                                "openalex_search_term": search_term,
+                                "error": str(exc),
+                            }
+                        )
+                    else:
+                        raw_artifacts.extend(pubmed_artifacts)
+                if doi:
+                    doi_count += 1
+                    if unpaywall_email:
+                        unpaywall_payload = json_fetcher(unpaywall_url(doi, unpaywall_email))
+                        unpaywall_queried_count += 1
+                        unpaywall_path = write_raw_json(
+                            raw_dir / "unpaywall",
+                            f"{safe_name(doi)}.json",
+                            unpaywall_payload,
+                        )
+                        raw_artifacts.append(unpaywall_path.as_posix())
+                        fulltext_target = best_open_fulltext(unpaywall_payload)
+                        if fulltext_target:
+                            fulltext_url, fulltext_license = fulltext_target
+                            try:
+                                fulltext = text_fetcher(fulltext_url)
+                            except Exception as exc:
                                 gaps.append(
                                     {
                                         "source": LITERATURE_SOURCE_ID,
                                         "lane": "literature",
-                                        "reason": "fulltext_parse_failed",
+                                        "reason": "fulltext_fetch_failed",
                                         "locator": unpaywall_path.as_posix(),
                                         "retrieved_at": retrieved,
                                         "record_id": f"openalex:{work_key}",
                                         "species": species,
                                         "external_id": fulltext_url,
+                                        "openalex_search_term": search_term,
+                                        "error": str(exc),
                                     }
                                 )
-                    else:
-                        unpaywall_location = unpaywall_payload.get("best_oa_location")
-                        landing_page = (
-                            unpaywall_location.get("url_for_landing_page")
-                            if isinstance(unpaywall_location, dict)
-                            else None
-                        )
-                        reason = (
-                            "fulltext_landing_page_only"
-                            if isinstance(landing_page, str) and landing_page
-                            else "unpaywall_no_fulltext_url"
-                        )
-                        gaps.append(
-                            {
-                                "source": LITERATURE_SOURCE_ID,
-                                "lane": "literature",
-                                "reason": reason,
-                                "locator": unpaywall_path.as_posix(),
-                                "retrieved_at": retrieved,
-                                "record_id": f"openalex:{work_key}",
-                                "species": species,
-                                "external_id": landing_page if isinstance(landing_page, str) else doi,
-                            }
-                        )
-            else:
-                locator = f"{raw_path.as_posix()}#works/{work_key}"
-                gaps.append(
-                    {
-                        "source": LITERATURE_SOURCE_ID,
-                        "lane": "literature",
-                        "reason": "missing_doi",
-                        "locator": locator,
-                        "retrieved_at": retrieved,
-                        "record_id": f"openalex:{work_key}",
-                        "species": species,
-                    }
+                            else:
+                                units = fulltext_units_for_record(
+                                    record_id=f"openalex:{work_key}",
+                                    text=fulltext,
+                                    url=fulltext_url,
+                                    license=fulltext_license,
+                                    retrieved_at=retrieved,
+                                )
+                                if units:
+                                    fulltext_units.extend(units)
+                                    open_fulltext_count += 1
+                                else:
+                                    gaps.append(
+                                        {
+                                            "source": LITERATURE_SOURCE_ID,
+                                            "lane": "literature",
+                                            "reason": "fulltext_parse_failed",
+                                            "locator": unpaywall_path.as_posix(),
+                                            "retrieved_at": retrieved,
+                                            "record_id": f"openalex:{work_key}",
+                                            "species": species,
+                                            "external_id": fulltext_url,
+                                            "openalex_search_term": search_term,
+                                        }
+                                    )
+                        else:
+                            unpaywall_location = unpaywall_payload.get("best_oa_location")
+                            landing_page = (
+                                unpaywall_location.get("url_for_landing_page")
+                                if isinstance(unpaywall_location, dict)
+                                else None
+                            )
+                            reason = (
+                                "fulltext_landing_page_only"
+                                if isinstance(landing_page, str) and landing_page
+                                else "unpaywall_no_fulltext_url"
+                            )
+                            gaps.append(
+                                {
+                                    "source": LITERATURE_SOURCE_ID,
+                                    "lane": "literature",
+                                    "reason": reason,
+                                    "locator": unpaywall_path.as_posix(),
+                                    "retrieved_at": retrieved,
+                                    "record_id": f"openalex:{work_key}",
+                                    "species": species,
+                                    "external_id": landing_page if isinstance(landing_page, str) else doi,
+                                    "openalex_search_term": search_term,
+                                }
+                            )
+                else:
+                    locator = f"{raw_path.as_posix()}#works/{work_key}"
+                    gaps.append(
+                        {
+                            "source": LITERATURE_SOURCE_ID,
+                            "lane": "literature",
+                            "reason": "missing_doi",
+                            "locator": locator,
+                            "retrieved_at": retrieved,
+                            "record_id": f"openalex:{work_key}",
+                            "species": species,
+                            "openalex_search_term": search_term,
+                        }
+                    )
+                if not abstract_from_inverted_index(work.get("abstract_inverted_index")):  # type: ignore[arg-type]
+                    locator = f"{raw_path.as_posix()}#works/{work_key}"
+                    gaps.append(
+                        {
+                            "source": LITERATURE_SOURCE_ID,
+                            "lane": "literature",
+                            "reason": "openalex_missing_abstract",
+                            "locator": locator,
+                            "retrieved_at": retrieved,
+                            "record_id": f"openalex:{work_key}",
+                            "species": species,
+                            "openalex_search_term": search_term,
+                        }
+                    )
+                records.append(
+                    literature_record(
+                        work,
+                        raw_path,
+                        retrieved,
+                        inclusion_paths,
+                        species,
+                        unpaywall_payload=unpaywall_payload,
+                        pubmed_payload=pubmed_payload,
+                        skip_pubmed=skip_pubmed,
+                        search_term=search_term,
+                    )
                 )
-            if not abstract_from_inverted_index(work.get("abstract_inverted_index")):  # type: ignore[arg-type]
-                locator = f"{raw_path.as_posix()}#works/{work_key}"
-                gaps.append(
-                    {
-                        "source": LITERATURE_SOURCE_ID,
-                        "lane": "literature",
-                        "reason": "openalex_missing_abstract",
-                        "locator": locator,
-                        "retrieved_at": retrieved,
-                        "record_id": f"openalex:{work_key}",
-                        "species": species,
-                    }
-                )
-            records.append(
-                literature_record(
-                    work,
-                    raw_path,
-                    retrieved,
-                    inclusion_paths,
-                    species,
-                    unpaywall_payload=unpaywall_payload,
-                    pubmed_payload=pubmed_payload,
-                    skip_pubmed=skip_pubmed,
-                )
-            )
 
-        if max_records is not None and len(records) >= max_records:
-            break
-        if not next_cursor:
-            break
-        next_cursor_value = str(next_cursor)
-        if next_cursor_value in seen_cursors:
-            gaps.append(
-                {
-                    "source": LITERATURE_SOURCE_ID,
-                    "lane": "literature",
-                    "reason": "openalex_repeated_cursor",
-                    "locator": f"{raw_path.as_posix()}#meta/next_cursor",
-                    "retrieved_at": retrieved,
-                    "external_id": next_cursor_value,
-                    "cursor": next_cursor_value,
-                }
-            )
-            break
-        cursor = next_cursor_value
+            if max_records is not None and len(records) >= max_records:
+                break
+            if not next_cursor:
+                break
+            next_cursor_value = str(next_cursor)
+            if next_cursor_value in seen_cursors:
+                gaps.append(
+                    {
+                        "source": LITERATURE_SOURCE_ID,
+                        "lane": "literature",
+                        "reason": "openalex_repeated_cursor",
+                        "locator": f"{raw_path.as_posix()}#meta/next_cursor",
+                        "retrieved_at": retrieved,
+                        "external_id": next_cursor_value,
+                        "cursor": next_cursor_value,
+                        "openalex_search_term": search_term,
+                    }
+                )
+                break
+            cursor = next_cursor_value
 
     return LiteratureBuildResult(
         source_id=LITERATURE_SOURCE_ID,
