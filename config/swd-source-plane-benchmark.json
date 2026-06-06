@@ -1,0 +1,31 @@
+{
+  "species": "Drosophila suzukii",
+  "parity_rule": "covered = at least one non-gap record OR at least one source_gap record per applicable category",
+  "parity_definition": "coverage parity (every applicable Aedes category has a SWD source), not count parity; record counts are smaller where the underlying science is genuinely sparser and absences are recorded as queryable source_gap records, never padded",
+  "skip_categories": ["vector_competence", "public_health", "wolbachia_interventions", "dengue_surveillance"],
+  "skip_rationale": "human-disease-vector categories do not apply to a crop pest; SWD's crop_damage / management / biocontrol lanes are the crop-pest equivalents",
+  "categories": [
+    {"key": "neurobiology", "lane": "neurobiology", "source_ids": ["drosophila_suzukii_neurobiology_sources"], "status": "covered"},
+    {"key": "olfaction_literature", "lane": "literature", "source_ids": ["drosophila_suzukii_olfaction_literature"], "status": "covered"},
+    {"key": "traits", "lane": "traits", "source_ids": ["drosophila_suzukii_traits"], "status": "covered"},
+    {"key": "literature", "lane": "literature", "source_ids": ["drosophila_suzukii_core", "drosophila_suzukii_pubmed_literature", "drosophila_suzukii_extracted_facts"], "status": "covered"},
+    {"key": "expression", "lane": "expression", "source_ids": ["drosophila_suzukii_geo_expression_matrices"], "status": "covered"},
+    {"key": "genome_features", "lane": "genome_features", "source_ids": ["drosophila_suzukii_genome_files"], "status": "covered"},
+    {"key": "genes", "lane": "genes", "source_ids": ["drosophila_suzukii_ncbi_gene_orthologs", "drosophila_suzukii_ensembl_metazoa_orthology"], "status": "covered"},
+    {"key": "transcripts", "lane": "transcripts", "source_ids": ["drosophila_suzukii_geo_expression_matrices"], "status": "covered"},
+    {"key": "proteins", "lane": "proteins", "source_ids": ["drosophila_suzukii_genome_files"], "status": "covered"},
+    {"key": "ecology", "lane": "ecology", "source_ids": ["drosophila_suzukii_occurrence_ecology", "drosophila_suzukii_jki_drosomon_trap_captures"], "status": "covered"},
+    {"key": "observations", "lane": "observations", "source_ids": ["drosophila_suzukii_core"], "status": "covered"},
+    {"key": "media", "lane": "media", "source_ids": ["drosophila_suzukii_core", "drosophila_suzukii_video_atoms"], "status": "covered"},
+    {"key": "behavior", "lane": "behavior", "source_ids": ["drosophila_suzukii_video_atoms", "drosophila_suzukii_umn_flight_assay_rows"], "status": "covered"},
+    {"key": "dna_barcodes", "lane": "dna_barcodes", "source_ids": ["drosophila_suzukii_core"], "status": "covered"},
+    {"key": "resistance", "lane": "resistance", "source_ids": ["drosophila_suzukii_susceptibility_assay_rows", "drosophila_suzukii_ncbi_marker_review"], "status": "covered"},
+    {"key": "biocontrol", "lane": "biocontrol", "source_ids": ["drosophila_suzukii_biocontrol_outcome_rows"], "status": "covered"},
+    {"key": "crop_damage", "lane": "crop_damage", "source_ids": ["drosophila_suzukii_core"], "status": "covered"},
+    {"key": "management", "lane": "management", "source_ids": ["drosophila_suzukii_extension_guidance"], "status": "covered"},
+    {"key": "genomics", "lane": "genomics", "source_ids": ["drosophila_suzukii_population_genomics"], "status": "covered"},
+    {"key": "biosamples", "lane": "biosamples", "source_ids": ["ncbi_biosamples"], "status": "covered"},
+    {"key": "genome_assemblies", "lane": "genome_assemblies", "source_ids": ["drosophila_suzukii_genome_files"], "status": "covered"},
+    {"key": "taxonomy", "lane": "taxonomy", "source_ids": ["drosophila_suzukii_core"], "status": "covered"}
+  ]
+}
