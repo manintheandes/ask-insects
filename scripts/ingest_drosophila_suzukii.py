@@ -35,7 +35,7 @@ def ingest_drosophila_suzukii(
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     gbif_occurrence_limit: int = 100,
     inaturalist_observation_limit: int = 100,
-    literature_max_works: int = 100,
+    literature_max_works: int = 5000,
     bold_limit: int = 100,
     retrieved_at: str | None = None,
     fetch_records_fn: Callable[..., object] = fetch_drosophila_suzukii_records,
@@ -134,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--artifact-dir", default=str(DEFAULT_ARTIFACT_DIR))
     parser.add_argument("--gbif-occurrence-limit", type=int, default=100)
     parser.add_argument("--inaturalist-observation-limit", type=int, default=100)
-    parser.add_argument("--literature-max-works", type=int, default=100)
+    parser.add_argument("--literature-max-works", type=int, default=5000)
     parser.add_argument("--bold-limit", type=int, default=100)
     parser.add_argument("--retrieved-at")
     args = parser.parse_args(argv)

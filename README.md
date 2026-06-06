@@ -39,13 +39,15 @@ The machine-readable benchmark is `config/aedes-source-plane-benchmark.json`, wi
 
 ## Spotted Wing Drosophila Expansion
 
-Ask Insects now has an explicit expansion boundary for spotted wing drosophila, `Drosophila suzukii`. The first source-grade pass is `drosophila_suzukii_core`: a bounded composite source that can ingest GBIF taxonomy and occurrence rows, iNaturalist licensed still-image observations, OpenAlex literature metadata from 2020 onward, BOLD DNA barcode rows, and queryable coverage/gap records for the deeper lanes that still need work.
+Ask Insects now has an explicit expansion boundary for spotted wing drosophila, `Drosophila suzukii`. The first source-grade pass is `drosophila_suzukii_core`: a bounded composite source that can ingest GBIF taxonomy and occurrence rows, iNaturalist licensed still-image observations, multi-term OpenAlex literature metadata from 2020 onward, BOLD DNA barcode rows, and queryable coverage/gap records for the deeper lanes that still need work.
 
 ```bash
-python3 -m askinsects ingest-drosophila-suzukii --gbif-occurrence-limit 100 --inaturalist-observation-limit 100 --literature-max-works 100 --bold-limit 100
+python3 -m askinsects ingest-drosophila-suzukii --gbif-occurrence-limit 100 --inaturalist-observation-limit 100 --literature-max-works 5000 --bold-limit 100
 python3 -m askinsects ask "what do we know about spotted wing drosophila?" --json
 python3 -m askinsects search source_coverage "Drosophila suzukii missing"
 ```
+
+For SWD, increase canonical paper discovery first, then re-run the supplement audit over the expanded paper set. A low supplement count is not meaningful until the post-2020 paper corpus has been widened.
 
 This does not claim Aedes-level depth yet. It makes `Drosophila suzukii` source-grade at the core boundary. Follow-on lanes now promote SWD genomics, legal direct full-text units, PubMed literature reconciliation, GenBank nucleotide cross-checks, broader mitochondrial/nuclear marker reviews, NCBI Gene orthology plus GeneID-to-GFF mapping, dbSNP availability audits, Dryad population-variant VCF manifests and gaps, extension/IPM guidance, supplement audit, first video atoms, occurrence ecology, literature-derived crop-damage and pest-management records, dedicated susceptibility/resistance evidence rows, and dedicated candidate biocontrol outcome rows. The remaining gaps are motion-table rows, Ensembl stable-ID history/current-ID mapping, VCF row mirroring/parsing and broader non-dbSNP variant-table review, broader parsed susceptibility and biocontrol table coverage, and human-validated pest-science tables.
 

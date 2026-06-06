@@ -1112,6 +1112,71 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["evidence"][0]["source"], "drosophila_suzukii_pubmed_literature")
             self.assertEqual(answer["evidence"][0]["record_id"], "swd:pubmed:42000001")
 
+    def test_swd_paper_count_questions_count_canonical_openalex_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd:openalex_literature:openalex:W1",
+                        lane="literature",
+                        source="drosophila_suzukii_core",
+                        title="Drosophila suzukii paper one",
+                        text="OpenAlex paper about Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url="https://openalex.org/W1",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="raw/drosophila_suzukii/literature/page_001.json#works/W1",
+                            retrieved_at="2026-06-06T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd:openalex_literature:openalex:W2",
+                        lane="literature",
+                        source="drosophila_suzukii_core",
+                        title="Spotted wing drosophila paper two",
+                        text="OpenAlex paper about spotted wing drosophila.",
+                        species="Drosophila suzukii",
+                        url="https://openalex.org/W2",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="raw/drosophila_suzukii/literature/page_002.json#works/W2",
+                            retrieved_at="2026-06-06T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="drosophila_suzukii_core:gap:pubmed_skipped:W2",
+                        lane="literature",
+                        source="drosophila_suzukii_core",
+                        title="Drosophila suzukii source gap: pubmed_skipped",
+                        text="Structured literature source gap for Drosophila suzukii.",
+                        species="Drosophila suzukii",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_core",
+                            locator="raw/drosophila_suzukii/literature/page_002.json#works/W2",
+                            retrieved_at="2026-06-06T00:00:00Z",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "How many total canonical spotted wing drosophila paper records since 2020 are in Ask Insects?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "literature")
+            self.assertIn("2 canonical OpenAlex paper records", answer["answer"])
+            self.assertEqual(len(answer["evidence"]), 2)
+
     def test_olfaction_figure_questions_prefer_fulltext_caption_units(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

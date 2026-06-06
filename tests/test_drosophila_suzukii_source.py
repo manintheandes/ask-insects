@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 from askinsects.index import SourceIndex
 from askinsects.sources.drosophila_suzukii import (
@@ -92,6 +93,65 @@ def fake_literature_fetch(url: str) -> dict[str, object]:
     }
 
 
+def fake_alias_literature_fetch(url: str) -> dict[str, object]:
+    if "/topics" in url:
+        return {"results": []}
+    query = parse_qs(urlparse(url).query)
+    filter_value = unquote(query.get("filter", [""])[0])
+    if '"Drosophila suzukii"' in filter_value:
+        return {
+            "meta": {"count": 1, "next_cursor": None},
+            "results": [
+                {
+                    "id": "https://openalex.org/W123",
+                    "display_name": "Drosophila suzukii host fruit preference",
+                    "doi": "https://doi.org/10.1000/swd",
+                    "type": "article",
+                    "publication_date": "2024-05-01",
+                    "abstract_inverted_index": {
+                        "Drosophila": [0],
+                        "suzukii": [1],
+                        "damages": [2],
+                        "soft": [3],
+                        "fruit": [4],
+                    },
+                    "primary_location": {"source": {"display_name": "Test Journal"}},
+                }
+            ],
+        }
+    if '"spotted wing drosophila"' in filter_value:
+        return {
+            "meta": {"count": 2, "next_cursor": None},
+            "results": [
+                {
+                    "id": "https://openalex.org/W123",
+                    "display_name": "Drosophila suzukii host fruit preference",
+                    "doi": "https://doi.org/10.1000/swd",
+                    "type": "article",
+                    "publication_date": "2024-05-01",
+                    "abstract_inverted_index": {"Drosophila": [0], "suzukii": [1]},
+                    "primary_location": {"source": {"display_name": "Test Journal"}},
+                },
+                {
+                    "id": "https://openalex.org/W999",
+                    "display_name": "Organic management of spotted wing drosophila in blueberries",
+                    "doi": "https://doi.org/10.1000/swd-blueberry",
+                    "type": "article",
+                    "publication_date": "2025-07-01",
+                    "abstract_inverted_index": {
+                        "spotted": [0],
+                        "wing": [1],
+                        "drosophila": [2],
+                        "management": [3],
+                        "blueberries": [4],
+                    },
+                    "primary_location": {"source": {"display_name": "Fruit IPM"}},
+                },
+            ],
+        }
+    return {"meta": {"count": 0, "next_cursor": None}, "results": []}
+
+
 class DrosophilaSuzukiiSourceTests(unittest.TestCase):
     def test_fetch_builds_queryable_spotted_wing_drosophila_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -141,6 +201,36 @@ class DrosophilaSuzukiiSourceTests(unittest.TestCase):
 
             self.assertTrue(rows)
             self.assertTrue(all(row.source == DROSOPHILA_SUZUKII_SOURCE_ID for row in rows))
+
+    def test_literature_fetch_uses_swd_aliases_and_deduplicates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_drosophila_suzukii_records(
+                raw_dir=Path(tmpdir) / "raw" / "drosophila_suzukii",
+                retrieved_at="2026-06-06T00:00:00Z",
+                gbif_occurrence_limit=0,
+                inaturalist_observation_limit=0,
+                literature_max_works=10,
+                include_bold=False,
+                gbif_fetch_json=fake_gbif_fetch,
+                inaturalist_fetch_json=fake_inaturalist_fetch,
+                literature_fetch_json=fake_alias_literature_fetch,
+            )
+
+            literature_records = [record for record in result.records if record.lane == "literature"]
+            literature_ids = {record.record_id for record in literature_records}
+
+            self.assertEqual(len(literature_records), 2)
+            self.assertEqual(
+                literature_ids,
+                {
+                    "swd:openalex_literature:openalex:W123",
+                    "swd:openalex_literature:openalex:W999",
+                },
+            )
+            alias_record = next(record for record in literature_records if record.record_id.endswith("W999"))
+            self.assertIn("spotted wing drosophila", alias_record.text.lower())
+            self.assertIn("abstract_alias", alias_record.payload["inclusion_paths"])
+            self.assertIn("spotted wing drosophila", result.upstream_sources["openalex_literature"]["search_terms"])
 
 
 if __name__ == "__main__":

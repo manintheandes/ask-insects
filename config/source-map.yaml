@@ -33,7 +33,7 @@ sources:
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
     source_type: public_api_composite
-    boundary: Bounded spotted wing drosophila source-grade expansion for Drosophila suzukii, preserving GBIF taxonomy and occurrences, iNaturalist licensed-photo observations, OpenAlex literature metadata since 2020, BOLD DNA barcode rows, and source-coverage status for deeper behavior video, genomics, ecology, crop-damage, management, resistance, and biocontrol lanes
+    boundary: Bounded spotted wing drosophila source-grade expansion for Drosophila suzukii, preserving GBIF taxonomy and occurrences, iNaturalist licensed-photo observations, multi-term OpenAlex literature metadata since 2020 using scientific-name and spotted-wing-drosophila aliases, BOLD DNA barcode rows, and source-coverage status for deeper behavior video, genomics, ecology, crop-damage, management, resistance, and biocontrol lanes. Widen canonical paper discovery before judging supplement coverage, then audit supplements over the expanded paper set.
     query_plane: gbif_inaturalist_openalex_bold_to_sqlite_composite_source
     artifact_dir: artifacts/mosquito-v1
     raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii
