@@ -1174,7 +1174,9 @@ class AnswerTests(unittest.TestCase):
 
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "literature")
-            self.assertIn("2 canonical OpenAlex paper records", answer["answer"])
+            self.assertIn("2 OpenAlex paper records", answer["answer"])
+            self.assertIn("2 exact title/abstract canonical records", answer["answer"])
+            self.assertIn("0 broader OpenAlex search-identified candidate records", answer["answer"])
             self.assertEqual(len(answer["evidence"]), 2)
 
     def test_olfaction_figure_questions_prefer_fulltext_caption_units(self):

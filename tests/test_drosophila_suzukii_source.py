@@ -232,6 +232,62 @@ class DrosophilaSuzukiiSourceTests(unittest.TestCase):
             self.assertIn("abstract_alias", alias_record.payload["inclusion_paths"])
             self.assertIn("spotted wing drosophila", result.upstream_sources["openalex_literature"]["search_terms"])
 
+    def test_literature_fetch_includes_monarch_related_openalex_search_terms(self):
+        calls: list[str] = []
+
+        def fake_topic_literature_fetch(url: str) -> dict[str, object]:
+            calls.append(url)
+            if "/topics" in url:
+                return {"results": []}
+            query = parse_qs(urlparse(url).query)
+            if query.get("search") == ["Drosophila suzukii repellent"]:
+                return {
+                    "meta": {"count": 1, "next_cursor": None},
+                    "results": [
+                        {
+                            "id": "https://openalex.org/W777",
+                            "display_name": "Repellent discovery candidate from OpenAlex search",
+                            "doi": "https://doi.org/10.1000/swd-repellent-candidate",
+                            "type": "article",
+                            "publication_date": "2024-05-01",
+                            "abstract_inverted_index": {
+                                "repellent": [0],
+                                "assay": [1],
+                                "candidate": [2],
+                            },
+                            "primary_location": {"source": {"display_name": "Test Journal"}},
+                        }
+                    ],
+                }
+            return {"meta": {"count": 0, "next_cursor": None}, "results": []}
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_drosophila_suzukii_records(
+                raw_dir=Path(tmpdir) / "raw" / "drosophila_suzukii",
+                retrieved_at="2026-06-06T00:00:00Z",
+                gbif_occurrence_limit=0,
+                inaturalist_observation_limit=0,
+                literature_max_works=10,
+                include_bold=False,
+                gbif_fetch_json=fake_gbif_fetch,
+                inaturalist_fetch_json=fake_inaturalist_fetch,
+                literature_fetch_json=fake_topic_literature_fetch,
+            )
+
+            search_urls = [url for url in calls if "/works?" in url and "search=Drosophila+suzukii+repellent" in url]
+            self.assertTrue(search_urls)
+            terms = result.upstream_sources["openalex_literature"]["search_terms"]
+            self.assertIn("Drosophila suzukii repellent", terms)
+            modes = result.upstream_sources["openalex_literature"]["search_modes"]
+            self.assertIn("search", modes)
+            topic_groups = result.upstream_sources["openalex_literature"]["topic_groups"]
+            self.assertIn("repellency", topic_groups)
+
+            candidate = next(record for record in result.records if record.record_id.endswith("W777"))
+            self.assertEqual(candidate.payload["openalex_search_mode"], "search")
+            self.assertEqual(candidate.payload["openalex_topic_group"], "repellency")
+            self.assertIn("openalex_search_candidate", candidate.payload["inclusion_paths"])
+
 
 if __name__ == "__main__":
     unittest.main()

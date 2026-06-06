@@ -4330,18 +4330,27 @@ def _swd_canonical_literature_count_answer(index: SourceIndex, plan: QueryPlan, 
         return None
 
     with index.connect() as conn:
-        count = int(
-            conn.execute(
-                """
-                SELECT COUNT(*)
-                FROM records
-                WHERE source = ?
-                  AND lane = 'literature'
-                  AND record_id LIKE 'swd:openalex_literature:%'
-                """,
-                (DROSOPHILA_SUZUKII_SOURCE_ID,),
-            ).fetchone()[0]
-        )
+        counts_row = conn.execute(
+            """
+            SELECT
+              COUNT(*) AS total_count,
+              SUM(
+                CASE
+                  WHEN json_extract(p.payload_json, '$.openalex_search_mode') = 'search' THEN 1
+                  ELSE 0
+                END
+              ) AS search_candidate_count
+            FROM records r
+            LEFT JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ?
+              AND r.lane = 'literature'
+              AND r.record_id LIKE 'swd:openalex_literature:%'
+            """,
+            (DROSOPHILA_SUZUKII_SOURCE_ID,),
+        ).fetchone()
+        count = int(counts_row["total_count"] or 0)
+        search_candidate_count = int(counts_row["search_candidate_count"] or 0)
+        exact_count = count - search_candidate_count
         rows = conn.execute(
             """
             SELECT r.*
@@ -4364,9 +4373,11 @@ def _swd_canonical_literature_count_answer(index: SourceIndex, plan: QueryPlan, 
         "answer_shape": "literature",
         "answer": (
             "Ask Insects has "
-            f"{count} canonical OpenAlex paper records for Drosophila suzukii "
+            f"{count} OpenAlex paper records for Drosophila suzukii "
             "(spotted wing drosophila) since 2020 in "
-            f"{DROSOPHILA_SUZUKII_SOURCE_ID}. This excludes literature-lane source-gap records."
+            f"{DROSOPHILA_SUZUKII_SOURCE_ID}: {exact_count} exact title/abstract canonical records "
+            f"and {search_candidate_count} broader OpenAlex search-identified candidate records. "
+            "This excludes literature-lane source-gap records."
         ),
         "evidence": [record_to_evidence(record) for record in records],
         "source_gap": None,
