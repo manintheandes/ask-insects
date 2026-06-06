@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "n": 82237,
+      "source": "gbif_api"
+    },
+    {
+      "n": 5758,
+      "source": "inaturalist_api"
+    },
+    {
+      "n": 70,
+      "source": "mosquito_alert_gbif"
+    },
+    {
+      "n": 1,
+      "source": "mosquito_v1_fixtures"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/1\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:1a0bcb7362e8",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 0. Time seconds: 0. Coordinates: 365.017382729, 99.914934533."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/2\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:534b4ae39617",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 1. Time seconds: 1. Coordinates: 365.029062962, 99.413210686."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/3\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:453d9177b154",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 2. Time seconds: 2. Coordinates: 364.491008245, 99.293391479."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/4\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:73df3e8f050c",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 3. Time seconds: 3. Coordinates: 363.646251826, 99.027315959."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/5\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:9e09dc87be5f",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 4. Time seconds: 4. Coordinates: 363.093851525, 99.161075098."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/6\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:532ba68c92f4",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 5. Time seconds: 5. Coordinates: 362.638073974, 99.363428727."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/7\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:28a7b54a1a55",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 6. Time seconds: 6. Coordinates: 361.988550951, 98.38253655."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/8\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:b1d73a8e7ee9",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 7. Time seconds: 7. Coordinates: 361.064694889, 97.71436333."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/9\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:e19f6f6d1ce0",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 8. Time seconds: 8. Coordinates: 361.112579352, 98.673943924."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/10\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:974101ce95ba",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 9. Time seconds: 9. Coordinates: 360.750342936, 99.553499586."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/11\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:09b99736c2b4",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 10. Time seconds: 10. Coordinates: 360.786227302, 99.590472042."
+    },
+    {
+      "provenance_json": "{\"license\": null, \"locator\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv#row/12\", \"retrieved_at\": \"2026-05-25T00:11:30Z\", \"source_id\": \"aedes_video_atoms\", \"source_url\": \"raw/mendeley_behavior_media/table_files/6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b.csv\"}",
+      "record_id": "video_atom:motion:6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b:d09ecbe7b047",
+      "text": "Aedes aegypti video motion row for video motion. Video: 6gvs94p6r2_v1_417603b1_2836_4723_bd4d_8e7279359b8b. Track: 32. Frame: 11. Time seconds: 11. Coordinates: 360.31375, 99.449482542."
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "biosamples",
+      "media_url": null,
+      "payload": {
+        "accession": "SAMN59867395",
+        "organism": "Aedes aegypti",
+        "parsed_sampledata": {
+          "attributes": {
+            "collection_date": "2026-05",
+            "geo_loc_name": "China: Chongqing",
+            "isolate": "not collected",
+            "isolation_source": "laboratory reared",
+            "strain": "Rockefeller",
+            "tissue": "whole body"
+          },
+          "ids": {
+            "BioSample": "SAMN59867395",
+            "SRA": "SRS29208944",
+            "Sample name": "GNMa-Ae-3"
+          },
+          "owner": "Chongqing Medical University",
+          "package": "Invertebrate",
+          "status": {
+            "status": "live",
+            "when": "2026-05-01"
+          }
+        },
+        "summary": {
+          "accession": "SAMN59867395",
+          "identifiers": "BioSample: SAMN59867395; Sample name: GNMa-Ae-3; SRA: SRS29208944",
+          "organism": "Aedes aegypti",
+          "organization": "Chongqing Medical University",
+          "sampledata": "\n    <BioSample>\n      <Ids>\n        <Id db=\"BioSample\">SAMN59867395</Id>\n        <Id db_label=\"Sample name\">GNMa-Ae-3</Id>\n        <Id db=\"SRA\">SRS29208944</Id>\n      </Ids>\n      <Package display_name=\"Invertebrate\"/>\n      <Owner><Name>Chongqing Medical University</Name></Owner>\n      <Status status=\"live\" when=\"2026-05-01\"/>\n      <Attributes>\n        <Attribute attribute_name=\"isolate\">not collected</Attribute>\n        <Attribute attribute_name=\"strain\">Rockefeller</Attribute>\n        <Attribute harmonized_name=\"isolation_source\">laboratory reared</Attribute>\n        <Attribute harmonized_name=\"collection_date\">2026-05</Attribute>\n        <Attribute harmonized_name=\"geo_loc_name\">China: Chongqing</Attribute>\n        <Attribute harmonized_name=\"tissue\">whole body</Attribute>\n      </Attributes>\n    </BioSample>\n    ",
+          "taxonomy": "7159",
+          "title": "GNMa-Ae-3",
+          "uid": "59867395"
+        },
+        "title": "GNMa-Ae-3",
+        "uid": "59867395"
+      },
+      "provenance": {
+        "license": "NCBI BioSample public metadata; NCBI terms apply",
+        "locator": "<raw_dir>/Aedes_aegypti_esummary_000000.json#uid/59867395",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "ncbi_biosamples",
+        "source_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=biosample&id=59867395&retmode=json&tool=ask-insects"
+      },
+      "record_id": "ncbi:biosample:SAMN59867395",
+      "source": "ncbi_biosamples",
+      "species": "Aedes aegypti",
+      "text": "NCBI BioSample SAMN59867395 for Aedes aegypti. Sample name: GNMa-Ae-3. Organization: Chongqing Medical University. Geography: China: Chongqing. Collection date: 2026-05. Tissue: whole body. Isolation source: laboratory reared. Isolate: not collected. Strain or breed: Rockefeller. Linked SRA: SRS29208944. Search terms: GNMa-Ae-3 SAMN59867395 GNMa-Ae-3 China: Chongqing 2026-05 whole body laboratory reared not collected Rockefeller SRS29208944.",
+      "title": "Aedes aegypti BioSample SAMN59867395: GNMa-Ae-3",
+      "url": "https://www.ncbi.nlm.nih.gov/biosample/SAMN59867395"
+    }
+  ]
+}

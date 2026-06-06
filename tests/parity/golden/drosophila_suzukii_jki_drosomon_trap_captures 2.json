@@ -1,0 +1,244 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "adult_captures_reported": 756717,
+        "article_doi": "10.3390/insects9040125",
+        "atom_type": "jki_drosomon_trap_dataset",
+        "bait": "unfiltered apple cider vinegar diluted with water",
+        "data_europa_url": "https://data.europa.eu/api/hub/search/datasets/openagrar_mods_00041381",
+        "dataset_id": "openagrar_mods_00041381",
+        "deployment_count_reported": 9967,
+        "description": "The JKI monitoring program ran from 2011 to February 2018. The trap_description table lists 100 traps that were set during the monitoring period. The captures_data table contains 9967 records, each record representing a trap deployment. These deployments account for a total of 116,602 days and captured 756,717 adult D. suzukii individuals.",
+        "geography": "southwest Germany",
+        "habitat_context": "semi-natural habitats, mainly hedges with wild host plants near institutes",
+        "license": "CC-BY-4.0",
+        "monitoring_end": "2018-02",
+        "monitoring_start_year": 2011,
+        "openagrar_landing_url": "https://www.openagrar.de/receive/openagrar_mods_00041381",
+        "title": "Trap captures data from the 7-year Drosophila suzukii monitoring program in southwest Germany",
+        "trap_count_reported": 100,
+        "trap_days_reported": 116602
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/data_europa_dataset.json#result",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_jki_drosomon_trap_captures",
+        "source_url": "https://data.europa.eu/api/hub/search/datasets/openagrar_mods_00041381"
+      },
+      "record_id": "swd_jki_drosomon_trap_captures:dataset:openagrar_mods_00041381",
+      "source": "drosophila_suzukii_jki_drosomon_trap_captures",
+      "species": "Drosophila suzukii",
+      "text": "JKI DrosoMon trap-capture dataset for Drosophila suzukii (spotted wing drosophila) in southwest Germany. The registry description says the monitoring ran from 2011 to February 2018, used traps near JKI institutes, recorded trap coordinates with handheld GPS, and used apple-cider-vinegar bait. Reported scale: 100 traps, 9967 trap-deployment records, 116602 trap-days, and 756717 captured adult D. suzukii. Related article DOI: 10.3390/insects9040125. Title: Trap captures data from the 7-year Drosophila suzukii monitoring program in southwest Germany.",
+      "title": "JKI DrosoMon SWD trap-capture dataset openagrar_mods_00041381",
+      "url": "https://www.openagrar.de/receive/openagrar_mods_00041381"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "access_url": "https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016480/captures_data.csv",
+        "article_doi": "10.3390/insects9040125",
+        "atom_type": "jki_drosomon_file_manifest",
+        "dataset_id": "openagrar_mods_00041381",
+        "distribution_id": "d0b494c0-398d-4855-b489-1bcf802e9c26",
+        "format": "CSV",
+        "issued": "2026-01-21T01:25:23.399364",
+        "license": "http://dcat-ap.de/def/licenses/cc-by/4.0",
+        "media_type": "text/csv",
+        "modified": "2026-01-23T01:26:40.208115",
+        "raw_distribution": {
+          "access_url": [
+            "https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016480/captures_data.csv"
+          ],
+          "format": {
+            "label": "CSV"
+          },
+          "id": "d0b494c0-398d-4855-b489-1bcf802e9c26",
+          "issued": "2026-01-21T01:25:23.399364",
+          "license": {
+            "label": "http://dcat-ap.de/def/licenses/cc-by/4.0"
+          },
+          "media_type": "text/csv",
+          "modified": "2026-01-23T01:26:40.208115"
+        }
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/data_europa_dataset.json#result/distributions/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_jki_drosomon_trap_captures",
+        "source_url": "https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016480/captures_data.csv"
+      },
+      "record_id": "swd_jki_drosomon_trap_captures:file:d0b494c0-398d-4855-b489-1bcf802e9c26",
+      "source": "drosophila_suzukii_jki_drosomon_trap_captures",
+      "species": "Drosophila suzukii",
+      "text": "File manifest for the JKI DrosoMon Drosophila suzukii trap-capture table. Distribution id: d0b494c0-398d-4855-b489-1bcf802e9c26. Format: CSV. Access URL: https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016480/captures_data.csv. License: http://dcat-ap.de/def/licenses/cc-by/4.0.",
+      "title": "JKI DrosoMon SWD captures_data.csv file manifest",
+      "url": "https://www.openagrar.de/receive/openagrar_mods_00041381"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "access_url": "https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016482/parameter_description.pdf",
+        "article_doi": "10.3390/insects9040125",
+        "atom_type": "jki_drosomon_file_manifest",
+        "dataset_id": "openagrar_mods_00041381",
+        "distribution_id": "parameter_description_pdf",
+        "format": "PDF",
+        "license": "CC-BY-4.0",
+        "media_type": "application/pdf"
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/data_europa_dataset.json#result/page/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_jki_drosomon_trap_captures",
+        "source_url": "https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016482/parameter_description.pdf"
+      },
+      "record_id": "swd_jki_drosomon_trap_captures:file:parameter_description_pdf",
+      "source": "drosophila_suzukii_jki_drosomon_trap_captures",
+      "species": "Drosophila suzukii",
+      "text": "Parameter-description file manifest for the JKI DrosoMon Drosophila suzukii trap-capture dataset. Resource URL: https://www.openagrar.de/servlets/MCRFileNodeServlet/openagrar_derivate_00016482/parameter_description.pdf.",
+      "title": "JKI DrosoMon SWD parameter description file manifest",
+      "url": "https://www.openagrar.de/receive/openagrar_mods_00041381"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "altitude_m": 151,
+        "article_doi": "10.3390/insects9040125",
+        "atom_type": "jki_drosomon_trap_location_row",
+        "coordinates_available": true,
+        "dataset_id": "openagrar_mods_00041381",
+        "immediate_habitat_english": "Mixed forest with blackberry",
+        "latitude": 49.800277,
+        "located_on_english": "Beech",
+        "located_on_scientific": "Fagus sp.",
+        "longitude": 8.648321,
+        "operator": "JKI Darmstadt",
+        "raw_row": {
+          "alt": "151",
+          "immediate_habitat_english": "Mixed forest with blackberry",
+          "lat": "49.800277",
+          "located_on (english)": "Beech",
+          "located_on (scientific)": "Fagus sp.",
+          "lon": "8.648321",
+          "operator": "JKI Darmstadt",
+          "trap_name": "DA_BE1"
+        },
+        "row_number": 1,
+        "trap_name": "DA_BE1"
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/trap_description.csv#row/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_jki_drosomon_trap_captures",
+        "source_url": "https://www.openagrar.de/servlets/MCRZipServlet/openagrar_derivate_00016480"
+      },
+      "record_id": "swd_jki_drosomon_trap_captures:trap_location:DA_BE1",
+      "source": "drosophila_suzukii_jki_drosomon_trap_captures",
+      "species": "Drosophila suzukii",
+      "text": "JKI DrosoMon trap-location row for Drosophila suzukii at trap DA_BE1. Operator: JKI Darmstadt. Coordinates: 49.800277, 8.648321. Altitude: 151 m. Located on: Beech (Fagus sp.). Immediate habitat: Mixed forest with blackberry.",
+      "title": "JKI DrosoMon SWD trap location DA_BE1",
+      "url": "https://www.openagrar.de/receive/openagrar_mods_00041381"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "adult_captures": 2,
+        "altitude_m": 151,
+        "article_doi": "10.3390/insects9040125",
+        "atom_type": "jki_drosomon_trap_deployment_row",
+        "coordinates_available": true,
+        "dataset_id": "openagrar_mods_00041381",
+        "date_start": "2015-04-09",
+        "date_stop": "2015-04-16",
+        "females": 2,
+        "immediate_habitat_english": "Mixed forest with blackberry",
+        "latitude": 49.800277,
+        "located_on_english": "Beech",
+        "located_on_scientific": "Fagus sp.",
+        "longitude": 8.648321,
+        "males": 0,
+        "operator": "JKI Darmstadt",
+        "raw_row": {
+          "date_start": "09.04.2015",
+          "date_stop": "16.04.2015",
+          "females": "2",
+          "males": "0",
+          "trap_name": "DA_BE1"
+        },
+        "row_number": 1,
+        "trap_days": 7,
+        "trap_name": "DA_BE1"
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/captures_data.csv#row/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_jki_drosomon_trap_captures",
+        "source_url": "https://www.openagrar.de/servlets/MCRZipServlet/openagrar_derivate_00016480"
+      },
+      "record_id": "swd_jki_drosomon_trap_captures:trap_row:1",
+      "source": "drosophila_suzukii_jki_drosomon_trap_captures",
+      "species": "Drosophila suzukii",
+      "text": "JKI DrosoMon trap-deployment row for Drosophila suzukii at trap DA_BE1. Deployment window: 2015-04-09 to 2015-04-16. Adult captures: 2 total (0 males, 2 females). Trap-days in this deployment: 7. Trap coordinates from trap_description.csv: 49.800277, 8.648321. Immediate habitat: Mixed forest with blackberry.",
+      "title": "JKI DrosoMon SWD trap deployment DA_BE1, 2015-04-09 to 2015-04-16",
+      "url": "https://www.openagrar.de/receive/openagrar_mods_00041381"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "adult_captures": 7,
+        "altitude_m": 151,
+        "article_doi": "10.3390/insects9040125",
+        "atom_type": "jki_drosomon_trap_deployment_row",
+        "coordinates_available": true,
+        "dataset_id": "openagrar_mods_00041381",
+        "date_start": "2015-04-16",
+        "date_stop": "2015-04-23",
+        "females": 4,
+        "immediate_habitat_english": "Mixed forest with blackberry",
+        "latitude": 49.800277,
+        "located_on_english": "Beech",
+        "located_on_scientific": "Fagus sp.",
+        "longitude": 8.648321,
+        "males": 3,
+        "operator": "JKI Darmstadt",
+        "raw_row": {
+          "date_start": "16.04.2015",
+          "date_stop": "23.04.2015",
+          "females": "4",
+          "males": "3",
+          "trap_name": "DA_BE1"
+        },
+        "row_number": 2,
+        "trap_days": 7,
+        "trap_name": "DA_BE1"
+      },
+      "provenance": {
+        "license": "CC-BY-4.0",
+        "locator": "<raw_dir>/captures_data.csv#row/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_jki_drosomon_trap_captures",
+        "source_url": "https://www.openagrar.de/servlets/MCRZipServlet/openagrar_derivate_00016480"
+      },
+      "record_id": "swd_jki_drosomon_trap_captures:trap_row:2",
+      "source": "drosophila_suzukii_jki_drosomon_trap_captures",
+      "species": "Drosophila suzukii",
+      "text": "JKI DrosoMon trap-deployment row for Drosophila suzukii at trap DA_BE1. Deployment window: 2015-04-16 to 2015-04-23. Adult captures: 7 total (3 males, 4 females). Trap-days in this deployment: 7. Trap coordinates from trap_description.csv: 49.800277, 8.648321. Immediate habitat: Mixed forest with blackberry.",
+      "title": "JKI DrosoMon SWD trap deployment DA_BE1, 2015-04-16 to 2015-04-23",
+      "url": "https://www.openagrar.de/receive/openagrar_mods_00041381"
+    }
+  ]
+}

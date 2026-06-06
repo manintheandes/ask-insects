@@ -1,0 +1,219 @@
+{
+  "gaps": [
+    {
+      "lane": "ecology",
+      "locator": "<raw_dir>/dryad_52c2k52_schmidtetalAEE_dyrad.csv_preview.js#preview",
+      "reason": "dryad_landscape_full_csv_download_blocked_preview_used",
+      "record_id": "swd_dryad_landscape_monitoring:gap:dryad_landscape_full_csv_download_blocked_preview_used",
+      "retrieved_at": "2026-05-30T00:00:00Z",
+      "source": "drosophila_suzukii_dryad_landscape_monitoring"
+    }
+  ],
+  "records": [
+    {
+      "lane": "ecology",
+      "media_url": "https://datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.52c2k52",
+      "payload": {
+        "atom_type": "dryad_landscape_dataset_manifest",
+        "dataset_doi": "doi:10.5061/dryad.52c2k52",
+        "license": "CC0-1.0",
+        "locations": null,
+        "primary_article_doi": "10.1016/j.agee.2018.11.014",
+        "publication_date": "2019-02-01",
+        "raw_path": "<raw_dir>/dryad_52c2k52_dataset.json",
+        "storage_size": 51470,
+        "title": "Data from: Local and landscape-scale heterogeneity shape spotted wing drosophila activity",
+        "usage_notes": "SWD=trap counts for Drosophila suzukii."
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_52c2k52_dataset.json",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_landscape_monitoring",
+        "source_url": "https://datadryad.org/api/v2/datasets/doi%3A10.5061%2Fdryad.52c2k52"
+      },
+      "record_id": "swd_dryad_landscape_monitoring:dataset:52c2k52",
+      "source": "drosophila_suzukii_dryad_landscape_monitoring",
+      "species": "Drosophila suzukii",
+      "text": "Dryad dataset for Drosophila suzukii activity and natural enemy abundance in southeast U.S. blueberry systems. The file description states that SWD is trap counts for Drosophila suzukii.",
+      "title": "Dryad southeast U.S. blueberry landscape monitoring dataset for Drosophila suzukii",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061/dryad.52c2k52"
+    },
+    {
+      "lane": "ecology",
+      "media_url": "https://datadryad.org/api/v2/files/52071/download",
+      "payload": {
+        "atom_type": "dryad_landscape_file_manifest",
+        "byte_size": 51470,
+        "dataset_doi": "doi:10.5061/dryad.52c2k52",
+        "description": "SWD=trap counts for Drosophila suzukii; other columns are counts for predator taxa.",
+        "digest": "2583ef17da0b77c1b4e8139a190d34da",
+        "digest_type": "md5",
+        "download_url": "https://datadryad.org/api/v2/files/52071/download",
+        "file_id": "52071",
+        "file_path": "schmidtetalAEE_dyrad.csv",
+        "mime_type": "text/csv",
+        "preview_url": "https://datadryad.org/data_file/preview/52071.js",
+        "raw_path": "<raw_dir>/dryad_52c2k52_files.json"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_52c2k52_files.json",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_landscape_monitoring",
+        "source_url": "https://datadryad.org/api/v2/files/52071/download"
+      },
+      "record_id": "swd_dryad_landscape_monitoring:file:schmidtetalAEE_dyrad.csv",
+      "source": "drosophila_suzukii_dryad_landscape_monitoring",
+      "species": "Drosophila suzukii",
+      "text": "Dryad file manifest for schmidtetalAEE_dyrad.csv. The source description identifies SWD as trap counts for Drosophila suzukii.",
+      "title": "Dryad SWD landscape monitoring file schmidtetalAEE_dyrad.csv",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061/dryad.52c2k52"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "source_gap",
+        "dataset_doi": "doi:10.5061/dryad.52c2k52",
+        "error": null,
+        "primary_article_doi": "10.1016/j.agee.2018.11.014",
+        "reason": "dryad_landscape_full_csv_download_blocked_preview_used",
+        "source_url": "https://datadryad.org/data_file/preview/52071.js"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_52c2k52_schmidtetalAEE_dyrad.csv_preview.js#preview",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_landscape_monitoring",
+        "source_url": "https://datadryad.org/data_file/preview/52071.js"
+      },
+      "record_id": "swd_dryad_landscape_monitoring:gap:dryad_landscape_full_csv_download_blocked_preview_used",
+      "source": "drosophila_suzukii_dryad_landscape_monitoring",
+      "species": "Drosophila suzukii",
+      "text": "Dryad SWD landscape monitoring source gap: dryad_landscape_full_csv_download_blocked_preview_used.",
+      "title": "Dryad SWD landscape monitoring gap: dryad_landscape_full_csv_download_blocked_preview_used",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061/dryad.52c2k52"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "dryad_landscape_monitoring_row",
+        "change_forest": -0.01,
+        "change_noncrop": 0.02,
+        "dataset_doi": "doi:10.5061/dryad.52c2k52",
+        "date": "2016-05-19",
+        "edge_density": 12.3,
+        "field_code": "AL-01",
+        "field_id": "Field A",
+        "file_path": "schmidtetalAEE_dyrad.csv",
+        "landscape_composition_shannon": 1.9,
+        "predator_counts": {
+          "Araneae": 3,
+          "Coccinellidae": 1
+        },
+        "primary_article_doi": "10.1016/j.agee.2018.11.014",
+        "proportion_blueberry_1km": 0.15,
+        "proportion_noncrop_1km": 0.42,
+        "row_number": 2,
+        "row_values": {
+          "Araneae": "3",
+          "Coccinellidae": "1",
+          "FRAGEdge": "12.3",
+          "FRAGSHDI": "1.9",
+          "Field ID": "Field A",
+          "Gdate": "2016-05-19",
+          "PropBBtot": "0.15",
+          "PropNoncrop": "0.42",
+          "SWD": "7",
+          "Transect": "edge",
+          "Treatment": "wooded",
+          "Week": "1",
+          "chgF": "-0.01",
+          "chgNP": "0.02",
+          "fieldcd": "AL-01",
+          "veg": "grass"
+        },
+        "swd_trap_count": 7,
+        "transect": "edge",
+        "treatment": "wooded",
+        "vegetation_between_rows": "grass",
+        "week": "1"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_52c2k52_schmidtetalAEE_dyrad.csv_preview.js#row/2",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_landscape_monitoring",
+        "source_url": "https://datadryad.org/data_file/preview/52071.js"
+      },
+      "record_id": "swd_dryad_landscape_monitoring:row:0002:Field_A:edge",
+      "source": "drosophila_suzukii_dryad_landscape_monitoring",
+      "species": "Drosophila suzukii",
+      "text": "Dryad southeast U.S. blueberry monitoring row for Drosophila suzukii. Date: 2016-05-19. Week: 1. Field: Field A. Treatment: wooded. Transect: edge. SWD trap count: 7. Natural enemy taxa counted: 2.",
+      "title": "Southeast U.S. blueberry SWD monitoring row 2: field Field A, week 1",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061/dryad.52c2k52"
+    },
+    {
+      "lane": "ecology",
+      "media_url": null,
+      "payload": {
+        "atom_type": "dryad_landscape_monitoring_row",
+        "change_forest": -0.01,
+        "change_noncrop": 0.02,
+        "dataset_doi": "doi:10.5061/dryad.52c2k52",
+        "date": "2016-05-26",
+        "edge_density": 12.3,
+        "field_code": "AL-01",
+        "field_id": "Field A",
+        "file_path": "schmidtetalAEE_dyrad.csv",
+        "landscape_composition_shannon": 1.9,
+        "predator_counts": {
+          "Araneae": 5,
+          "Coccinellidae": 0
+        },
+        "primary_article_doi": "10.1016/j.agee.2018.11.014",
+        "proportion_blueberry_1km": 0.15,
+        "proportion_noncrop_1km": 0.42,
+        "row_number": 3,
+        "row_values": {
+          "Araneae": "5",
+          "Coccinellidae": "0",
+          "FRAGEdge": "12.3",
+          "FRAGSHDI": "1.9",
+          "Field ID": "Field A",
+          "Gdate": "2016-05-26",
+          "PropBBtot": "0.15",
+          "PropNoncrop": "0.42",
+          "SWD": "11",
+          "Transect": "interior",
+          "Treatment": "wooded",
+          "Week": "2",
+          "chgF": "-0.01",
+          "chgNP": "0.02",
+          "fieldcd": "AL-01",
+          "veg": "grass"
+        },
+        "swd_trap_count": 11,
+        "transect": "interior",
+        "treatment": "wooded",
+        "vegetation_between_rows": "grass",
+        "week": "2"
+      },
+      "provenance": {
+        "license": "CC0-1.0",
+        "locator": "<raw_dir>/dryad_52c2k52_schmidtetalAEE_dyrad.csv_preview.js#row/3",
+        "retrieved_at": "2026-05-30T00:00:00Z",
+        "source_id": "drosophila_suzukii_dryad_landscape_monitoring",
+        "source_url": "https://datadryad.org/data_file/preview/52071.js"
+      },
+      "record_id": "swd_dryad_landscape_monitoring:row:0003:Field_A:interior",
+      "source": "drosophila_suzukii_dryad_landscape_monitoring",
+      "species": "Drosophila suzukii",
+      "text": "Dryad southeast U.S. blueberry monitoring row for Drosophila suzukii. Date: 2016-05-26. Week: 2. Field: Field A. Treatment: wooded. Transect: interior. SWD trap count: 11. Natural enemy taxa counted: 2.",
+      "title": "Southeast U.S. blueberry SWD monitoring row 3: field Field A, week 2",
+      "url": "https://datadryad.org/dataset/doi%3A10.5061/dryad.52c2k52"
+    }
+  ]
+}

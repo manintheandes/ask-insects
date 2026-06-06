@@ -1,0 +1,252 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "behavior_labels": [
+          "mating",
+          "mate recognition",
+          "wing flash",
+          "wingbeat",
+          "acoustic signal",
+          "high-speed video"
+        ],
+        "dataset_id": "6gvs94p6r2",
+        "doi": "10.17632/6gvs94p6r2.1",
+        "folders_api_url": "https://data.mendeley.com/public-api/datasets/6gvs94p6r2/folders/1",
+        "raw_snapshot": {
+          "categories": [
+            {
+              "label": "Mosquito"
+            },
+            {
+              "label": "Behavioral Ecology"
+            }
+          ],
+          "contributors": [
+            {
+              "first_name": "Ada",
+              "last_name": "Lovelace"
+            }
+          ],
+          "description": "Aedes aegypti high-speed video demonstrates wing flash mate-recognition behavior.",
+          "doi": "10.17632/6gvs94p6r2.1",
+          "id": "6gvs94p6r2",
+          "licence": {
+            "short_name": "CC BY 4.0",
+            "url": "http://creativecommons.org/licenses/by/4.0"
+          },
+          "name": "R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes",
+          "related_links": [
+            {
+              "href": "https://doi.org/10.1098/example",
+              "relation_type": "is_supplement_to"
+            }
+          ],
+          "version": 1
+        },
+        "snapshot_api_url": "https://data.mendeley.com/public-api/datasets/6gvs94p6r2/snapshot/1",
+        "version": 1
+      },
+      "provenance": {
+        "license": "CC BY 4.0 http://creativecommons.org/licenses/by/4.0",
+        "locator": "<raw_dir>/6gvs94p6r2_v1_snapshot.json#snapshot",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "mendeley_aedes_behavior_media",
+        "source_url": "https://data.mendeley.com/public-api/datasets/6gvs94p6r2/snapshot/1"
+      },
+      "record_id": "mendeley:dataset:6gvs94p6r2:v1",
+      "source": "mendeley_aedes_behavior_media",
+      "species": "Aedes aegypti",
+      "text": "Mendeley Data dataset for Aedes aegypti behavior/media evidence: R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes. Behavior labels: mating, mate recognition, wing flash, wingbeat, acoustic signal, high-speed video. Manifest: 2 folder(s), 2 file(s), including 1 video/audio/archive file(s). Contributors: Ada Lovelace. Categories: Mosquito, Behavioral Ecology. Description: Aedes aegypti high-speed video demonstrates wing flash mate-recognition behavior.",
+      "title": "Aedes aegypti Mendeley behavior dataset R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes",
+      "url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "behavior_labels": [
+          "mating",
+          "mate recognition",
+          "wing flash",
+          "wingbeat",
+          "acoustic signal",
+          "high-speed video"
+        ],
+        "content_type": "text/plain",
+        "dataset_id": "6gvs94p6r2",
+        "dataset_title": "R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes",
+        "doi": "10.17632/6gvs94p6r2.1",
+        "download_url": "https://data.mendeley.com/public-files/readme/file_downloaded",
+        "file_id": "file-readme",
+        "filename": "read me.txt",
+        "folder_id": null,
+        "folder_path": "root",
+        "raw_file": {
+          "content_details": {
+            "content_type": "text/plain",
+            "download_url": "https://data.mendeley.com/public-files/readme/file_downloaded",
+            "sha256_hash": "readme-hash",
+            "size": 512,
+            "view_url": "https://data.mendeley.com/public-files/readme/file_viewed"
+          },
+          "filename": "read me.txt",
+          "folder_id": null,
+          "id": "file-readme",
+          "status": "COMPLETED"
+        },
+        "sha256_hash": "readme-hash",
+        "size": 512,
+        "version": 1,
+        "view_url": "https://data.mendeley.com/public-files/readme/file_viewed"
+      },
+      "provenance": {
+        "license": "CC BY 4.0 http://creativecommons.org/licenses/by/4.0",
+        "locator": "<raw_dir>/6gvs94p6r2_v1_files.json#files/root/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "mendeley_aedes_behavior_media",
+        "source_url": "https://data.mendeley.com/public-files/readme/file_downloaded"
+      },
+      "record_id": "mendeley:file:6gvs94p6r2:v1:file_readme",
+      "source": "mendeley_aedes_behavior_media",
+      "species": "Aedes aegypti",
+      "text": "Mendeley behavior data file for Aedes aegypti behavior/media dataset R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes. File: read me.txt. Folder path: root. Behavior labels: mating, mate recognition, wing flash, wingbeat, acoustic signal, high-speed video. Size bytes: 512. Content type: text/plain. SHA-256: readme-hash.",
+      "title": "Aedes aegypti Mendeley behavior data file read me.txt",
+      "url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+    },
+    {
+      "lane": "media",
+      "media_url": "https://data.mendeley.com/public-files/video/file_downloaded",
+      "payload": {
+        "behavior_labels": [
+          "mating",
+          "mate recognition",
+          "wing flash",
+          "wingbeat",
+          "acoustic signal",
+          "high-speed video"
+        ],
+        "content_type": "video/mp4",
+        "dataset_id": "6gvs94p6r2",
+        "dataset_title": "R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes",
+        "doi": "10.17632/6gvs94p6r2.1",
+        "download_url": "https://data.mendeley.com/public-files/video/file_downloaded",
+        "file_id": "file-video",
+        "filename": "wing-flash-video.mp4",
+        "folder_id": "folder-1",
+        "folder_path": "High-speed video",
+        "raw_file": {
+          "content_details": {
+            "content_type": "video/mp4",
+            "download_url": "https://data.mendeley.com/public-files/video/file_downloaded",
+            "sha256_hash": "video-hash",
+            "size": 4096,
+            "view_url": "https://data.mendeley.com/public-files/video/file_viewed"
+          },
+          "filename": "wing-flash-video.mp4",
+          "folder_id": "folder-1",
+          "id": "file-video",
+          "status": "COMPLETED"
+        },
+        "sha256_hash": "video-hash",
+        "size": 4096,
+        "version": 1,
+        "view_url": "https://data.mendeley.com/public-files/video/file_viewed"
+      },
+      "provenance": {
+        "license": "CC BY 4.0 http://creativecommons.org/licenses/by/4.0",
+        "locator": "<raw_dir>/6gvs94p6r2_v1_files.json#files/folder-1/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "mendeley_aedes_behavior_media",
+        "source_url": "https://data.mendeley.com/public-files/video/file_downloaded"
+      },
+      "record_id": "mendeley:file:6gvs94p6r2:v1:file_video",
+      "source": "mendeley_aedes_behavior_media",
+      "species": "Aedes aegypti",
+      "text": "Mendeley video/audio/archive file for Aedes aegypti behavior/media dataset R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes. File: wing-flash-video.mp4. Folder path: High-speed video. Behavior labels: mating, mate recognition, wing flash, wingbeat, acoustic signal, high-speed video. Size bytes: 4096. Content type: video/mp4. SHA-256: video-hash.",
+      "title": "Aedes aegypti Mendeley video/audio/archive file wing-flash-video.mp4",
+      "url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "behavior_labels": [
+          "mating",
+          "mate recognition",
+          "wing flash",
+          "wingbeat",
+          "acoustic signal",
+          "high-speed video"
+        ],
+        "dataset_id": "6gvs94p6r2",
+        "doi": "10.17632/6gvs94p6r2.1",
+        "folder_id": "folder-1",
+        "folder_path": "High-speed video",
+        "parent_id": null,
+        "raw_folder": {
+          "created_date": "2021-01-01T00:00:00Z",
+          "id": "folder-1",
+          "name": "High-speed video",
+          "parent_id": null
+        },
+        "version": 1
+      },
+      "provenance": {
+        "license": "CC BY 4.0 http://creativecommons.org/licenses/by/4.0",
+        "locator": "<raw_dir>/6gvs94p6r2_v1_folders.json#folders/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "mendeley_aedes_behavior_media",
+        "source_url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+      },
+      "record_id": "mendeley:folder:6gvs94p6r2:v1:folder_1",
+      "source": "mendeley_aedes_behavior_media",
+      "species": "Aedes aegypti",
+      "text": "Mendeley Data folder for Aedes aegypti behavior/media dataset R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes. Folder: High-speed video. Path: High-speed video. Behavior labels: mating, mate recognition, wing flash, wingbeat, acoustic signal, high-speed video.",
+      "title": "Aedes aegypti Mendeley dataset folder High-speed video",
+      "url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+    },
+    {
+      "lane": "behavior",
+      "media_url": null,
+      "payload": {
+        "behavior_labels": [
+          "mating",
+          "mate recognition",
+          "wing flash",
+          "wingbeat",
+          "acoustic signal",
+          "high-speed video"
+        ],
+        "dataset_id": "6gvs94p6r2",
+        "doi": "10.17632/6gvs94p6r2.1",
+        "folder_id": "folder-2",
+        "folder_path": "High-speed video/Analysis",
+        "parent_id": "folder-1",
+        "raw_folder": {
+          "created_date": "2021-01-01T00:00:00Z",
+          "id": "folder-2",
+          "name": "Analysis",
+          "parent_id": "folder-1"
+        },
+        "version": 1
+      },
+      "provenance": {
+        "license": "CC BY 4.0 http://creativecommons.org/licenses/by/4.0",
+        "locator": "<raw_dir>/6gvs94p6r2_v1_folders.json#folders/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "mendeley_aedes_behavior_media",
+        "source_url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+      },
+      "record_id": "mendeley:folder:6gvs94p6r2:v1:folder_2",
+      "source": "mendeley_aedes_behavior_media",
+      "species": "Aedes aegypti",
+      "text": "Mendeley Data folder for Aedes aegypti behavior/media dataset R modeling code, high-speed video, sound files and other data from yellow fever mosquitoes. Folder: Analysis. Path: High-speed video/Analysis. Behavior labels: mating, mate recognition, wing flash, wingbeat, acoustic signal, high-speed video.",
+      "title": "Aedes aegypti Mendeley dataset folder High-speed video/Analysis",
+      "url": "https://data.mendeley.com/datasets/6gvs94p6r2/1"
+    }
+  ]
+}

@@ -1431,15 +1431,15 @@ def check_aedes_source_plane_benchmark() -> None:
 
 
 def check_cli() -> None:
-    health = run_json([sys.executable, "-m", "askinsects", "health"])
+    health = run_json([sys.executable, "-m", "askinsects", "health", "--local"])
     if health.get("ok") is not True:
         raise RuntimeError("health did not report ok true")
 
-    summary = run_json([sys.executable, "-m", "askinsects", "summary"])
+    summary = run_json([sys.executable, "-m", "askinsects", "summary", "--local"])
     if int(summary.get("record_count", 0)) < 7:
         raise RuntimeError("summary reported fewer than 7 records")
 
-    sources = run_json([sys.executable, "-m", "askinsects", "sources"])
+    sources = run_json([sys.executable, "-m", "askinsects", "sources", "--local"])
     if "mosquito_v1_fixtures" not in sources.get("sources", []):
         raise RuntimeError("sources did not include mosquito_v1_fixtures")
 
@@ -1449,7 +1449,7 @@ def check_cli() -> None:
         "what should a scientist inspect next for Culex pipiens?",
     )
     for question in answer_cases:
-        payload = run_json([sys.executable, "-m", "askinsects", "ask", question, "--json"])
+        payload = run_json([sys.executable, "-m", "askinsects", "ask", question, "--json", "--local"])
         if payload.get("ok") is not True:
             raise RuntimeError(f"answer did not report ok true for: {question}")
         if not payload.get("evidence"):
@@ -1463,6 +1463,7 @@ def check_cli() -> None:
             "ask",
             "show mosquito videos from Brazil",
             "--json",
+            "--local",
         ],
         expected_returncode=2,
     )
@@ -2142,13 +2143,13 @@ def check_literature_artifact() -> None:
             if int(payload.get(key, -1)) != value:
                 raise RuntimeError(f"{payload_name} literature.{key} does not match SQLite")
 
-    sources = run_json([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "sources"])
+    sources = run_json([sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "sources", "--local"])
     if "aedes_literature_openalex" not in sources.get("sources", []):
         raise RuntimeError("Aedes artifact sources command does not include aedes_literature_openalex")
     if "aedes_literature_facets" not in sources.get("sources", []):
         raise RuntimeError("Aedes artifact sources command does not include aedes_literature_facets")
     search = run_json(
-        [sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "search", "literature", "Wolbachia", "--limit", "3"]
+        [sys.executable, "-m", "askinsects", "--artifact-dir", artifact_dir.as_posix(), "search", "literature", "Wolbachia", "--limit", "3", "--local"]
     )
     if not search.get("rows"):
         raise RuntimeError("Aedes artifact literature search returned no rows for Wolbachia")
@@ -2166,6 +2167,7 @@ def check_literature_artifact() -> None:
             "--limit",
             "3",
             "--json",
+            "--local",
         ]
     )
     if answer.get("ok") is not True or not answer.get("evidence"):

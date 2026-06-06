@@ -1,0 +1,77 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "lane": "genome_features",
+      "n": 178721
+    },
+    {
+      "lane": "behavior",
+      "n": 106930
+    },
+    {
+      "lane": "transcripts",
+      "n": 102915
+    },
+    {
+      "lane": "neurobiology",
+      "n": 100018
+    },
+    {
+      "lane": "observations",
+      "n": 88066
+    },
+    {
+      "lane": "proteins",
+      "n": 56708
+    },
+    {
+      "lane": "genes",
+      "n": 39045
+    },
+    {
+      "lane": "resistance",
+      "n": 28089
+    },
+    {
+      "lane": "media",
+      "n": 25522
+    },
+    {
+      "lane": "biosamples",
+      "n": 20656
+    },
+    {
+      "lane": "vector_competence",
+      "n": 11339
+    },
+    {
+      "lane": "public_health",
+      "n": 10946
+    },
+    {
+      "lane": "literature",
+      "n": 10735
+    },
+    {
+      "lane": "ecology",
+      "n": 9351
+    },
+    {
+      "lane": "dna_barcodes",
+      "n": 3561
+    },
+    {
+      "lane": "taxonomy",
+      "n": 5
+    },
+    {
+      "lane": "action_notes",
+      "n": 1
+    },
+    {
+      "lane": "genome_assemblies",
+      "n": 1
+    }
+  ]
+}

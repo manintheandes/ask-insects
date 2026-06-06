@@ -1,0 +1,69 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "atom_type": "ncbi_gene_ortholog_pair",
+        "current_id_mapping": true,
+        "line_number": 3,
+        "partner_gene_id": "999",
+        "partner_label": "taxon 7217 GeneID 999",
+        "partner_tax_id": "7217",
+        "relationship": "Ortholog",
+        "source_file": "gene_orthologs.gz",
+        "swd_gene_description": "odorant receptor co-receptor",
+        "swd_gene_id": "108011252",
+        "swd_gene_record_id": "swd:genome_files:gene:gene-Orco",
+        "swd_gene_symbol": "Orco",
+        "swd_tax_id": "28584"
+      },
+      "provenance": {
+        "license": "NCBI Gene ortholog FTP public data; source terms apply",
+        "locator": "<raw_dir>/raw/drosophila_suzukii_ncbi_gene_orthologs/gene_orthologs.gz#line/3",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ncbi_gene_orthologs",
+        "source_url": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_orthologs.gz"
+      },
+      "record_id": "swd_ncbi_gene_ortholog:108011252:7217:999:3",
+      "source": "drosophila_suzukii_ncbi_gene_orthologs",
+      "species": "Drosophila suzukii",
+      "text": "NCBI Gene ortholog row for Drosophila suzukii GeneID 108011252 (Orco, odorant receptor co-receptor) links by Ortholog to taxon 7217 GeneID 999. Local GFF gene record: swd:genome_files:gene:gene-Orco.",
+      "title": "Drosophila suzukii NCBI Gene ortholog: Orco to taxon 7217 GeneID 999",
+      "url": "https://www.ncbi.nlm.nih.gov/gene/108011252"
+    },
+    {
+      "lane": "genome_features",
+      "media_url": null,
+      "payload": {
+        "atom_type": "ncbi_gene_ortholog_pair",
+        "current_id_mapping": true,
+        "line_number": 2,
+        "partner_gene_id": "40650",
+        "partner_label": "Drosophila melanogaster GeneID 40650",
+        "partner_tax_id": "7227",
+        "relationship": "Ortholog",
+        "source_file": "gene_orthologs.gz",
+        "swd_gene_description": "odorant receptor co-receptor",
+        "swd_gene_id": "108011252",
+        "swd_gene_record_id": "swd:genome_files:gene:gene-Orco",
+        "swd_gene_symbol": "Orco",
+        "swd_tax_id": "28584"
+      },
+      "provenance": {
+        "license": "NCBI Gene ortholog FTP public data; source terms apply",
+        "locator": "<raw_dir>/raw/drosophila_suzukii_ncbi_gene_orthologs/gene_orthologs.gz#line/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ncbi_gene_orthologs",
+        "source_url": "https://ftp.ncbi.nlm.nih.gov/gene/DATA/gene_orthologs.gz"
+      },
+      "record_id": "swd_ncbi_gene_ortholog:108011252:7227:40650:2",
+      "source": "drosophila_suzukii_ncbi_gene_orthologs",
+      "species": "Drosophila suzukii",
+      "text": "NCBI Gene ortholog row for Drosophila suzukii GeneID 108011252 (Orco, odorant receptor co-receptor) links by Ortholog to Drosophila melanogaster GeneID 40650. Local GFF gene record: swd:genome_files:gene:gene-Orco.",
+      "title": "Drosophila suzukii NCBI Gene ortholog: Orco to Drosophila melanogaster GeneID 40650",
+      "url": "https://www.ncbi.nlm.nih.gov/gene/108011252"
+    }
+  ]
+}

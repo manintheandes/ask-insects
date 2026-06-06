@@ -1,0 +1,79 @@
+{
+  "gaps": [],
+  "records": [
+    {
+      "lane": "dna_barcodes",
+      "media_url": null,
+      "payload": {
+        "accession_version": "PV000001.1",
+        "atom_type": "ncbi_marker_review",
+        "biomol": null,
+        "candidate_source": "ncbi_nuccore_esearch_esummary",
+        "common_name": "spotted wing drosophila",
+        "createdate": null,
+        "genome": null,
+        "marker_group": "mitochondrial_coi_barcode",
+        "moltype": null,
+        "primary_taxon": "Drosophila suzukii",
+        "query": "Drosophila suzukii[Organism] AND (mitochondrion OR mitochondrial OR COI OR COX1 OR COII OR COX2 OR NADH OR ND1 OR ND2 OR ND3 OR ND4 OR ND5 OR ND6 OR cytochrome OR ribosomal OR \"18S\" OR \"28S\" OR ITS OR \"internal transcribed spacer\" OR \"elongation factor\" OR EF1 OR nuclear OR barcode)",
+        "scope": "Drosophila suzukii broader mitochondrial/nuclear marker review",
+        "sequence_length": 658,
+        "taxid": null,
+        "tech": null,
+        "title": "Drosophila suzukii cytochrome oxidase subunit I gene",
+        "uid": "1",
+        "updatedate": null
+      },
+      "provenance": {
+        "license": "NCBI GenBank nucleotide metadata; source terms apply",
+        "locator": "<raw_dir>/Drosophila_suzukii_marker_review_esummary_000000.json#result/1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ncbi_marker_review",
+        "source_url": "https://www.ncbi.nlm.nih.gov/nuccore/PV000001.1"
+      },
+      "record_id": "swd_ncbi_marker_review:nuccore:PV000001.1",
+      "source": "drosophila_suzukii_ncbi_marker_review",
+      "species": "Drosophila suzukii",
+      "text": "Drosophila suzukii cytochrome oxidase subunit I gene Drosophila suzukii (spotted wing drosophila) NCBI broader marker-review record. accession=PV000001.1 marker_group=mitochondrial_coi_barcode sequence_length=658 bp",
+      "title": "Drosophila suzukii cytochrome oxidase subunit I gene",
+      "url": "https://www.ncbi.nlm.nih.gov/nuccore/PV000001.1"
+    },
+    {
+      "lane": "dna_barcodes",
+      "media_url": null,
+      "payload": {
+        "accession_version": "PV000002.1",
+        "atom_type": "ncbi_marker_review",
+        "biomol": null,
+        "candidate_source": "ncbi_nuccore_esearch_esummary",
+        "common_name": "spotted wing drosophila",
+        "createdate": null,
+        "genome": null,
+        "marker_group": "nuclear_ribosomal_or_its",
+        "moltype": null,
+        "primary_taxon": "Drosophila suzukii",
+        "query": "Drosophila suzukii[Organism] AND (mitochondrion OR mitochondrial OR COI OR COX1 OR COII OR COX2 OR NADH OR ND1 OR ND2 OR ND3 OR ND4 OR ND5 OR ND6 OR cytochrome OR ribosomal OR \"18S\" OR \"28S\" OR ITS OR \"internal transcribed spacer\" OR \"elongation factor\" OR EF1 OR nuclear OR barcode)",
+        "scope": "Drosophila suzukii broader mitochondrial/nuclear marker review",
+        "sequence_length": 420,
+        "taxid": null,
+        "tech": null,
+        "title": "Drosophila suzukii internal transcribed spacer 2",
+        "uid": "2",
+        "updatedate": null
+      },
+      "provenance": {
+        "license": "NCBI GenBank nucleotide metadata; source terms apply",
+        "locator": "<raw_dir>/Drosophila_suzukii_marker_review_esummary_000000.json#result/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "drosophila_suzukii_ncbi_marker_review",
+        "source_url": "https://www.ncbi.nlm.nih.gov/nuccore/PV000002.1"
+      },
+      "record_id": "swd_ncbi_marker_review:nuccore:PV000002.1",
+      "source": "drosophila_suzukii_ncbi_marker_review",
+      "species": "Drosophila suzukii",
+      "text": "Drosophila suzukii internal transcribed spacer 2 Drosophila suzukii (spotted wing drosophila) NCBI broader marker-review record. accession=PV000002.1 marker_group=nuclear_ribosomal_or_its sequence_length=420 bp",
+      "title": "Drosophila suzukii internal transcribed spacer 2",
+      "url": "https://www.ncbi.nlm.nih.gov/nuccore/PV000002.1"
+    }
+  ]
+}

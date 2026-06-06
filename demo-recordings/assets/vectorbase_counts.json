@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "rows": [
+    {
+      "lane": "genome_features",
+      "n": 165850
+    },
+    {
+      "lane": "transcripts",
+      "n": 68954
+    },
+    {
+      "lane": "proteins",
+      "n": 28391
+    },
+    {
+      "lane": "genes",
+      "n": 19804
+    }
+  ]
+}

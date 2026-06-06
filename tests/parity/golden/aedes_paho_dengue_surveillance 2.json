@@ -1,0 +1,347 @@
+{
+  "gaps": [
+    {
+      "detail": "PAHO dengue dashboard page and iframe URLs are mapped, but embedded Tableau/PHIP cells need a stable unauthenticated CSV/JSON endpoint before Ask Insects can claim country-level dashboard records.",
+      "iframe_urls": [
+        "https://phip.paho.org/trusted/example/views/1001en/Numeralia"
+      ],
+      "lane": "public_health",
+      "raw_html_path": "<raw_dir>/dashboard_https_example.org_dashboard_a17acfc9.html",
+      "reason": "paho_dashboard_data_not_yet_cell_queryable",
+      "retrieved_at": "2026-05-29T00:00:00Z",
+      "source": "aedes_paho_dengue_surveillance",
+      "url": "https://example.org/dashboard"
+    }
+  ],
+  "records": [
+    {
+      "lane": "public_health",
+      "media_url": "https://opendata.paho.org/sites/default/files/data/2026-04/paho-core-indicators-2026-20260413.zip",
+      "payload": {
+        "accessed_at": "2025-09-20",
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "paho_core_indicator_dengue_cases",
+        "country_code": "BRA",
+        "country_name": "Brazil",
+        "country_name_es": "Brasil",
+        "csv_name": "PAHO-Core-Indicators-2026-20260413.csv",
+        "csv_row_number": 2,
+        "disease": "dengue",
+        "download_page_url": "https://opendata.paho.org/core-indicators",
+        "feed_status": "machine_readable_csv_proven",
+        "indicator_id": "24",
+        "indicator_name": "Dengue cases",
+        "numeric_value": 6010000.0,
+        "organization": "PAHO/WHO",
+        "published_at": "2025-09-29",
+        "raw_zip_path": "<raw_dir>/core_indicators_1f380531.zip",
+        "source_url": "https://www3.paho.org/data/index.php/en/mnu-topics/indicadores-dengue-en/dengue-nacional-en/252-dengue-pais-ano-en.html",
+        "spatial_dim_type": "Country",
+        "time_dim_type": "Year",
+        "value_as_string": "6010000",
+        "year": "2025",
+        "zip_url": "https://opendata.paho.org/sites/default/files/data/2026-04/paho-core-indicators-2026-20260413.zip"
+      },
+      "provenance": {
+        "license": "PAHO/EIH Open Data Core Indicators; source page terms and CC BY-NC 3.0 IGO apply unless otherwise indicated",
+        "locator": "<raw_dir>/core_indicators_1f380531.zip#csv/PAHO-Core-Indicators-2026-20260413.csv/row/2",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://opendata.paho.org/sites/default/files/data/2026-04/paho-core-indicators-2026-20260413.zip"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:core_indicator:dengue_cases:BRA:2025",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "PAHO/EIH Core Indicators annual dengue cases for Brazil (BRA) in 2025: 6010000 cases. This is a stable machine-readable PAHO Open Data CSV row, not a dashboard screenshot. Aedes aegypti relevance: dengue public-health surveillance is indexed as Aedes-relevant vector intelligence.",
+      "title": "PAHO Core Indicators dengue cases: Brazil 2025",
+      "url": "https://www3.paho.org/data/index.php/en/mnu-topics/indicadores-dengue-en/dengue-nacional-en/252-dengue-pais-ano-en.html"
+    },
+    {
+      "lane": "public_health",
+      "media_url": "https://opendata.paho.org/sites/default/files/data/2026-04/paho-core-indicators-2026-20260413.zip",
+      "payload": {
+        "accessed_at": "2025-09-20",
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "paho_core_indicator_dengue_cases",
+        "country_code": "COL",
+        "country_name": "Colombia",
+        "country_name_es": "Colombia",
+        "csv_name": "PAHO-Core-Indicators-2026-20260413.csv",
+        "csv_row_number": 3,
+        "disease": "dengue",
+        "download_page_url": "https://opendata.paho.org/core-indicators",
+        "feed_status": "machine_readable_csv_proven",
+        "indicator_id": "24",
+        "indicator_name": "Dengue cases",
+        "numeric_value": 330000.0,
+        "organization": "PAHO/WHO",
+        "published_at": "2025-09-29",
+        "raw_zip_path": "<raw_dir>/core_indicators_1f380531.zip",
+        "source_url": "https://www3.paho.org/data/index.php/en/mnu-topics/indicadores-dengue-en/dengue-nacional-en/252-dengue-pais-ano-en.html",
+        "spatial_dim_type": "Country",
+        "time_dim_type": "Year",
+        "value_as_string": "330000",
+        "year": "2025",
+        "zip_url": "https://opendata.paho.org/sites/default/files/data/2026-04/paho-core-indicators-2026-20260413.zip"
+      },
+      "provenance": {
+        "license": "PAHO/EIH Open Data Core Indicators; source page terms and CC BY-NC 3.0 IGO apply unless otherwise indicated",
+        "locator": "<raw_dir>/core_indicators_1f380531.zip#csv/PAHO-Core-Indicators-2026-20260413.csv/row/3",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://opendata.paho.org/sites/default/files/data/2026-04/paho-core-indicators-2026-20260413.zip"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:core_indicator:dengue_cases:COL:2025",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "PAHO/EIH Core Indicators annual dengue cases for Colombia (COL) in 2025: 330000 cases. This is a stable machine-readable PAHO Open Data CSV row, not a dashboard screenshot. Aedes aegypti relevance: dengue public-health surveillance is indexed as Aedes-relevant vector intelligence.",
+      "title": "PAHO Core Indicators dengue cases: Colombia 2025",
+      "url": "https://www3.paho.org/data/index.php/en/mnu-topics/indicadores-dengue-en/dengue-nacional-en/252-dengue-pais-ano-en.html"
+    },
+    {
+      "lane": "public_health",
+      "media_url": "https://phip.paho.org/trusted/example/views/1001en/Numeralia",
+      "payload": {
+        "aedes_relevance": "Dengue dashboard surface relevant to Aedes aegypti vector public-health intelligence",
+        "aggregation_type": "dashboard_locator",
+        "dashboard_page_url": "https://example.org/dashboard",
+        "dashboard_title": "PAHO dengue dashboard",
+        "disease": "dengue",
+        "iframe_url": "https://phip.paho.org/trusted/example/views/1001en/Numeralia",
+        "iframe_urls": [
+          "https://phip.paho.org/trusted/example/views/1001en/Numeralia"
+        ],
+        "machine_readable_cell_status": "not_proven",
+        "organization": "PAHO/WHO",
+        "raw_html_path": "<raw_dir>/dashboard_https_example.org_dashboard_a17acfc9.html",
+        "source_gap_reason": "paho_dashboard_data_not_yet_cell_queryable"
+      },
+      "provenance": {
+        "license": "PAHO/WHO public health surveillance page; source page terms apply",
+        "locator": "<raw_dir>/dashboard_https_example.org_dashboard_a17acfc9.html#dashboard-locator-1-https:_phip.paho.org_trusted_example_views_1001en_Numeralia",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://example.org/dashboard"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:dashboard_locator:acc51f78833d",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official PAHO dengue dashboard locator for Aedes-relevant public-health surveillance. Dashboard page: https://example.org/dashboard. Embedded iframe URLs: https://phip.paho.org/trusted/example/views/1001en/Numeralia. This record makes the official dashboard surface queryable, but it is not a country-week PAHO/PLISA cell row because no stable unauthenticated CSV, JSON, or API endpoint has been proven.",
+      "title": "PAHO dengue dashboard locator: PAHO dengue dashboard",
+      "url": "https://example.org/dashboard"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "regional_week_summary",
+        "disease": "dengue",
+        "epi_week": 50,
+        "landing_url": "https://example.org/report",
+        "metrics": {
+          "case_fatality_percent": 0.199,
+          "confirmed_cases": 23034,
+          "confirmed_percent": 36.7,
+          "deaths": 125,
+          "reporting_countries": 32,
+          "severe_cases": 219,
+          "suspected_cases": 62707
+        },
+        "organization": "PAHO/WHO",
+        "raw_html_path": "<raw_dir>/report_c52f0b37b3d3.html",
+        "region": "Region of the Americas",
+        "report_updated_at": null,
+        "report_url": "https://example.org/report",
+        "year": 2024
+      },
+      "provenance": {
+        "license": "PAHO/WHO public health surveillance page; source page terms apply",
+        "locator": "<raw_dir>/report_c52f0b37b3d3.html#regional_week_summary",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://example.org/report"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:regional_week_summary:2024:week50",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "PAHO dengue surveillance week summary for the Region of the Americas. Epidemiological week 50, 2024. Metrics: suspected cases: 62707, confirmed cases: 23034, confirmed percent: 36.7, severe cases: 219, deaths: 125, case fatality percent: 0.199, reporting countries: 32. Aedes aegypti relevance: dengue is indexed as Aedes-relevant public-health surveillance, not as mosquito abundance.",
+      "title": "PAHO dengue surveillance week summary week 50, 2024",
+      "url": "https://example.org/report"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "regional_year_to_date_summary",
+        "disease": "dengue",
+        "epi_week": 50,
+        "landing_url": "https://example.org/report",
+        "metrics": {
+          "case_fatality_percent": 0.064,
+          "confirmed_cases": 6963431,
+          "confirmed_percent": 53.7,
+          "cumulative_incidence_per_100k": 1286.22,
+          "deaths": 8340,
+          "increase_vs_five_year_average_percent": 366.0,
+          "increase_vs_prior_year_percent": 190.0,
+          "reporting_countries": 49,
+          "severe_cases": 22842,
+          "suspected_cases": 12970602
+        },
+        "organization": "PAHO/WHO",
+        "raw_html_path": "<raw_dir>/report_c52f0b37b3d3.html",
+        "region": "Region of the Americas",
+        "report_updated_at": null,
+        "report_url": "https://example.org/report",
+        "year": 2024
+      },
+      "provenance": {
+        "license": "PAHO/WHO public health surveillance page; source page terms apply",
+        "locator": "<raw_dir>/report_c52f0b37b3d3.html#regional_year_to_date_summary",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://example.org/report"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:regional_year_to_date_summary:2024:week50",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "PAHO dengue surveillance year to date summary for the Region of the Americas. Epidemiological week 50, 2024. Metrics: suspected cases: 12970602, confirmed cases: 6963431, confirmed percent: 53.7, severe cases: 22842, deaths: 8340, case fatality percent: 0.064, reporting countries: 49, cumulative incidence per 100k: 1286.22, increase vs prior year percent: 190.0, increase vs five year average percent: 366.0. Aedes aegypti relevance: dengue is indexed as Aedes-relevant public-health surveillance, not as mosquito abundance.",
+      "title": "PAHO dengue surveillance year to date summary week 50, 2024",
+      "url": "https://example.org/report"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "serotype_regional_summary",
+        "countries_with_all_four_serotypes": [
+          "Brasil",
+          "Colombia",
+          "Costa Rica",
+          "El Salvador"
+        ],
+        "disease": "dengue",
+        "epi_week": 50,
+        "organization": "PAHO/WHO",
+        "raw_html_path": "<raw_dir>/report_c52f0b37b3d3.html",
+        "region": "Region of the Americas",
+        "serotypes": [
+          "DENV-1",
+          "DENV-2",
+          "DENV-3",
+          "DENV-4"
+        ],
+        "year": 2024
+      },
+      "provenance": {
+        "license": "PAHO/WHO public health surveillance page; source page terms apply",
+        "locator": "<raw_dir>/report_c52f0b37b3d3.html#serotypes",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://example.org/report"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:serotypes:2024:week50",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "PAHO dengue surveillance reports DENV-1, DENV-2, DENV-3, and DENV-4 in the Region of the Americas. Countries or territories reporting simultaneous circulation of all four serotypes: Brasil, Colombia, Costa Rica, El Salvador. Aedes aegypti relevance: dengue serotype circulation is indexed as Aedes-relevant public-health surveillance.",
+      "title": "PAHO dengue serotype surveillance week 50, 2024",
+      "url": "https://example.org/report"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "subregion_week_summary",
+        "countries_with_increase": [],
+        "disease": "dengue",
+        "epi_week": 50,
+        "new_suspected_cases": 11946,
+        "organization": "PAHO/WHO",
+        "raw_html_path": "<raw_dir>/report_c52f0b37b3d3.html",
+        "subregion": "Centroam\u00e9rica y M\u00e9xico",
+        "year": 2024
+      },
+      "provenance": {
+        "license": "PAHO/WHO public health surveillance page; source page terms apply",
+        "locator": "<raw_dir>/report_c52f0b37b3d3.html#subregion-Centroam_rica_y_M_xico",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://example.org/report"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:subregion:centroam_rica_y_m_xico:2024:week50",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "PAHO dengue surveillance subregion summary for Centroam\u00e9rica y M\u00e9xico. Epidemiological week 50, 2024. New suspected dengue cases: 11946. No countries or territories with an increase were listed in this subregion section. Aedes aegypti relevance: dengue is indexed here as Aedes-relevant public-health surveillance, not as mosquito abundance.",
+      "title": "PAHO dengue surveillance subregion: Centroam\u00e9rica y M\u00e9xico week 50, 2024",
+      "url": "https://example.org/report"
+    },
+    {
+      "lane": "public_health",
+      "media_url": null,
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "subregion_week_summary",
+        "countries_with_increase": [
+          "Argentina",
+          "Brasil",
+          "Paraguay",
+          "Uruguay"
+        ],
+        "disease": "dengue",
+        "epi_week": 50,
+        "new_suspected_cases": 43864,
+        "organization": "PAHO/WHO",
+        "raw_html_path": "<raw_dir>/report_c52f0b37b3d3.html",
+        "subregion": "Cono Sur",
+        "year": 2024
+      },
+      "provenance": {
+        "license": "PAHO/WHO public health surveillance page; source page terms apply",
+        "locator": "<raw_dir>/report_c52f0b37b3d3.html#subregion-Cono_Sur",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://example.org/report"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:subregion:cono_sur:2024:week50",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "PAHO dengue surveillance subregion summary for Cono Sur. Epidemiological week 50, 2024. New suspected dengue cases: 43864. Countries or territories with increased cases versus the prior four epidemiological weeks: Argentina, Brasil, Paraguay, Uruguay. Aedes aegypti relevance: dengue is indexed here as Aedes-relevant public-health surveillance, not as mosquito abundance.",
+      "title": "PAHO dengue surveillance subregion: Cono Sur week 50, 2024",
+      "url": "https://example.org/report"
+    },
+    {
+      "lane": "public_health",
+      "media_url": "https://ais.paho.org/ArboPortal/img/2024/ComparativoDENGAME.png",
+      "payload": {
+        "aedes_relevance": "Dengue public-health surveillance relevant to Aedes aegypti vector intelligence",
+        "aggregation_type": "surveillance_visual",
+        "caption": "N\u00famero total de casos sospechosos de dengue a la SE 50 en 2024.",
+        "disease": "dengue",
+        "epi_week": 50,
+        "figure_label": "Gr\u00e1fico 1.",
+        "figure_number": "1",
+        "media_url": "https://ais.paho.org/ArboPortal/img/2024/ComparativoDENGAME.png",
+        "organization": "PAHO/WHO",
+        "raw_html_path": "<raw_dir>/report_c52f0b37b3d3.html",
+        "year": 2024
+      },
+      "provenance": {
+        "license": "PAHO/WHO public health surveillance page; source page terms apply",
+        "locator": "<raw_dir>/report_c52f0b37b3d3.html#visual-graph-1",
+        "retrieved_at": "2026-05-29T00:00:00Z",
+        "source_id": "aedes_paho_dengue_surveillance",
+        "source_url": "https://example.org/report"
+      },
+      "record_id": "public_health:surveillance:paho_dengue:visual:graph_1:2024:week50",
+      "source": "aedes_paho_dengue_surveillance",
+      "species": "Aedes aegypti",
+      "text": "Official PAHO dengue surveillance visual: Gr\u00e1fico 1. N\u00famero total de casos sospechosos de dengue a la SE 50 en 2024.. Aedes aegypti relevance: dengue public-health surveillance, with the source image preserved as media.",
+      "title": "PAHO dengue surveillance Gr\u00e1fico 1. 2024",
+      "url": "https://example.org/report"
+    }
+  ]
+}
