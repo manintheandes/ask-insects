@@ -2641,6 +2641,92 @@ sources:
       - genomics
     provenance_required: true
     live_fetch: opt_in_bounded
+  - id: mosquito_repellent_literature_extracted_facts
+    name: Mosquito repellent literature paper-depth extracted facts
+    source_type: extracted_facts_depth
+    boundary: Paper-depth mining of the mosquito_repellent_literature lane (Culicidae). Every paper gets a queryable depth outcome (extracted candidate facts plus a supplement audit atom with coverage_status). Mandatory-mining rule coverage.
+    query_plane: extracted_facts_engine_over_literature
+    input_literature_source_id: mosquito_repellent_literature
+    raw_artifact_dir: artifacts/mosquito-v1/raw/mosquito_repellent_literature_extracted_facts
+    ingest_script: scripts/ingest_literature_depth.py
+    lanes:
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+      - genomics
+    provenance_required: true
+    live_fetch: opt_in_bounded
+  - id: mosquito_repellent_external_discovery_extracted_facts
+    name: Mosquito repellent external discovery paper-depth extracted facts
+    source_type: extracted_facts_depth
+    boundary: Paper-depth mining of the mosquito_repellent_external_discovery lane (Culicidae). Every paper gets a queryable depth outcome. Mandatory-mining rule coverage.
+    query_plane: extracted_facts_engine_over_literature
+    input_literature_source_id: mosquito_repellent_external_discovery
+    raw_artifact_dir: artifacts/mosquito-v1/raw/mosquito_repellent_external_discovery_extracted_facts
+    ingest_script: scripts/ingest_literature_depth.py
+    lanes:
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+      - genomics
+    provenance_required: true
+    live_fetch: opt_in_bounded
+  - id: aedes_crossref_literature_audit_extracted_facts
+    name: Aedes crossref literature audit paper-depth extracted facts
+    source_type: extracted_facts_depth
+    boundary: Paper-depth mining of the aedes_crossref_literature_audit lane (Aedes aegypti). Every paper gets a queryable depth outcome. Mandatory-mining rule coverage.
+    query_plane: extracted_facts_engine_over_literature
+    input_literature_source_id: aedes_crossref_literature_audit
+    raw_artifact_dir: artifacts/mosquito-v1/raw/aedes_crossref_literature_audit_extracted_facts
+    ingest_script: scripts/ingest_literature_depth.py
+    lanes:
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+      - genomics
+    provenance_required: true
+    live_fetch: opt_in_bounded
+  - id: aedes_olfaction_literature_extracted_facts
+    name: Aedes olfaction literature paper-depth extracted facts
+    source_type: extracted_facts_depth
+    boundary: Paper-depth mining of the aedes_olfaction_literature lane (Aedes aegypti). Every paper gets a queryable depth outcome. Mandatory-mining rule coverage.
+    query_plane: extracted_facts_engine_over_literature
+    input_literature_source_id: aedes_olfaction_literature
+    raw_artifact_dir: artifacts/mosquito-v1/raw/aedes_olfaction_literature_extracted_facts
+    ingest_script: scripts/ingest_literature_depth.py
+    lanes:
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+      - genomics
+    provenance_required: true
+    live_fetch: opt_in_bounded
+  - id: drosophila_suzukii_pubmed_literature_extracted_facts
+    name: Drosophila suzukii PubMed literature paper-depth extracted facts
+    source_type: extracted_facts_depth
+    boundary: Paper-depth mining of the drosophila_suzukii_pubmed_literature lane (Drosophila suzukii). Every paper gets a queryable depth outcome. Mandatory-mining rule coverage.
+    query_plane: extracted_facts_engine_over_literature
+    input_literature_source_id: drosophila_suzukii_pubmed_literature
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_pubmed_literature_extracted_facts
+    ingest_script: scripts/ingest_literature_depth.py
+    lanes:
+      - behavior
+      - crop_damage
+      - management
+      - resistance
+      - biocontrol
+      - ecology
+      - genomics
+    provenance_required: true
+    live_fetch: opt_in_bounded
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects
