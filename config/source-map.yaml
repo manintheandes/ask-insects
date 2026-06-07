@@ -2606,6 +2606,41 @@ sources:
       - literature
     provenance_required: true
     live_fetch: opt_in_bounded_pro_api_key
+  - id: drosophila_suzukii_elicit_extracted_facts
+    name: Drosophila suzukii Elicit discovery paper-depth extracted facts
+    source_type: extracted_facts_depth
+    boundary: Paper-depth mining of the drosophila_suzukii_elicit_discovery lane. Runs the generic extracted-facts engine over every Elicit-discovered Drosophila suzukii paper so each carries a queryable depth outcome (extracted candidate facts from text plus a supplement audit atom with coverage_status). Satisfies the insectsource paper-completeness contract for the SWD Elicit lane.
+    query_plane: extracted_facts_engine_over_elicit_discovery_literature
+    input_literature_source_id: drosophila_suzukii_elicit_discovery
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_elicit_extracted_facts
+    ingest_script: scripts/ingest_elicit_extracted_facts.py
+    lanes:
+      - behavior
+      - crop_damage
+      - management
+      - resistance
+      - biocontrol
+      - ecology
+      - genomics
+    provenance_required: true
+    live_fetch: opt_in_bounded
+  - id: aedes_aegypti_elicit_extracted_facts
+    name: Aedes aegypti Elicit discovery paper-depth extracted facts
+    source_type: extracted_facts_depth
+    boundary: Paper-depth mining of the aedes_aegypti_elicit_discovery lane. Runs the generic extracted-facts engine over every Elicit-discovered Aedes aegypti paper so each carries a queryable depth outcome (extracted candidate facts from text plus a supplement audit atom with coverage_status). Satisfies the insectsource paper-completeness contract for the Aedes Elicit lane.
+    query_plane: extracted_facts_engine_over_elicit_discovery_literature
+    input_literature_source_id: aedes_aegypti_elicit_discovery
+    raw_artifact_dir: artifacts/mosquito-v1/raw/aedes_aegypti_elicit_extracted_facts
+    ingest_script: scripts/ingest_elicit_extracted_facts.py
+    lanes:
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+      - genomics
+    provenance_required: true
+    live_fetch: opt_in_bounded
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects
