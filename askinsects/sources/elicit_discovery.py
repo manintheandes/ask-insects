@@ -103,20 +103,27 @@ def default_fetch_json(query: str, *, max_results: int, min_year: int, api_key: 
     req = Request(ELICIT_SEARCH_URL, data=body, headers={
         "Authorization": f"Bearer {key}", "Content-Type": "application/json",
         "Accept": "application/json",
+        # Elicit's edge (Cloudflare) returns 403 to urllib's default Python-urllib UA.
+        "User-Agent": "ask-insects/0.1 (+https://openinsects.org)",
     })
     with urlopen(req, timeout=60) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
-def default_existing_doi_lookup(dois: set[str], *, cli: str = "ask-insects") -> set[str]:
-    """Batched exact-match lookup against the hosted plane. Full scans time out; exact IN is indexed."""
+def default_existing_doi_lookup(dois: set[str], *, cli: str = "ask-insects", batch_size: int = 25) -> set[str]:
+    """Batched exact-match lookup against the hosted plane.
+
+    Uses OR-of-equalities, NOT ``IN`` and NOT a ``LIKE`` scan: on the hosted SQL
+    endpoint ``url IN (...)`` and full scans time out, while ``url='a' OR url='b'``
+    unions index probes and stays fast. Batches keep each query small.
+    """
     found: set[str] = set()
     doi_list = sorted(dois)
-    for start in range(0, len(doi_list), 200):
-        chunk = doi_list[start:start + 200]
-        in_list = ",".join("'" + d.replace("'", "''") + "'" for d in chunk)
+    for start in range(0, len(doi_list), batch_size):
+        chunk = doi_list[start:start + batch_size]
+        clause = " or ".join("url='" + d.replace("'", "''") + "'" for d in chunk)
         out = subprocess.run(
-            [cli, "sql", f"select url from records where url in ({in_list})", "--limit", "100000"],
+            [cli, "sql", f"select url from records where {clause}", "--limit", "100000"],
             capture_output=True, text=True, timeout=120,
         )
         if out.returncode != 0:

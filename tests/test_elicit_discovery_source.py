@@ -84,6 +84,7 @@ def test_default_fetch_builds_request(monkeypatch):
     def fake_urlopen(req, timeout=0):
         captured["url"] = req.full_url
         captured["auth"] = req.headers.get("Authorization")
+        captured["ua"] = req.headers.get("User-agent")
         captured["body"] = req.data
         return FakeResp()
 
@@ -91,5 +92,30 @@ def test_default_fetch_builds_request(monkeypatch):
     out = ed.default_fetch_json("q", max_results=5, min_year=2020, api_key="elk_live_X")
     assert captured["url"] == ed.ELICIT_SEARCH_URL
     assert captured["auth"] == "Bearer elk_live_X"
+    # urllib's default Python-urllib UA is blocked (403) by Elicit's edge; require a real UA.
+    assert captured["ua"] and "python-urllib" not in captured["ua"].lower()
     assert b'"q"' in captured["body"]
     assert out == {"papers": []}
+
+
+def test_existing_lookup_uses_or_not_in(monkeypatch):
+    import askinsects.sources.elicit_discovery as ed
+    calls = []
+
+    class R:
+        returncode = 0
+        stdout = '{"rows":[{"url":"10.1/a"}]}'
+        stderr = ""
+
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        return R()
+
+    monkeypatch.setattr(ed.subprocess, "run", fake_run)
+    found = ed.default_existing_doi_lookup({"10.1/a", "10.1/b"})
+    sql = calls[0][2]
+    # OR-of-equalities stays on the index; IN(...) and LIKE full-scan and time out on hosted.
+    assert " or " in sql
+    assert " in (" not in sql.lower()
+    assert "like" not in sql.lower()
+    assert found == {"10.1/a"}
