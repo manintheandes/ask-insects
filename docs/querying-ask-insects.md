@@ -720,3 +720,19 @@ python3 -m askinsects sql --hosted "select lane, count(*) as n from records wher
 ```
 
 Those records cite the source paper or legal full-text unit and carry `confidence` as `candidate` or `manifest`. The ingest is bounded by a row-order `--max-fulltext-units` window for legal full-text units and matching record-level text candidates, plus a per-unit text window, and records a gap when any bound is hit. Treat them as source-backed extraction candidates until a later validation lane proves a row or table has been fully parsed and checked.
+
+## Elicit discovery lanes
+
+Count Elicit-discovered candidate papers per species:
+
+```bash
+python3 -m askinsects sql "select source, count(*) as n from records where source like '%elicit_discovery' group by source"
+```
+
+Inspect the originating Elicit query and confidence band for a discovered paper:
+
+```bash
+python3 -m askinsects sql "select r.title, json_extract(p.payload_json,'$.discovery.query') as elicit_query, json_extract(p.payload_json,'$.confidence_band') as band, json_extract(p.payload_json,'$.depth_outcome') as depth from records r join record_payloads p on p.record_id=r.record_id where r.source='drosophila_suzukii_elicit_discovery' limit 10"
+```
+
+These rows are `elicit_search_candidate` discovery hits with a `supplement_discovery_not_run` depth outcome; rerun the species extracted-facts/full-text lanes to give each a real depth outcome before treating paper coverage as complete.

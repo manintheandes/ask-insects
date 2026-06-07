@@ -2580,6 +2580,32 @@ sources:
         - method_terms
         - source_url
         - raw_html_locator
+  - id: drosophila_suzukii_elicit_discovery
+    name: Drosophila suzukii Elicit semantic-search discovery since 2020
+    source_type: elicit_api_discovery
+    boundary: Bounded Elicit semantic-search discovery of Drosophila suzukii candidate papers (repellency, behavior, olfaction focus, 2020 onward) that are not already in the hosted corpus, stored as elicit_search_candidate literature records with a supplement_discovery_not_run depth-outcome gap.
+    query_plane: elicit_search_to_sqlite_candidate_literature_records
+    api_base:
+      - https://elicit.com/api/v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/drosophila_suzukii_elicit_discovery
+    ingest_script: scripts/ingest_drosophila_suzukii_elicit_discovery.py
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: opt_in_bounded_pro_api_key
+  - id: aedes_aegypti_elicit_discovery
+    name: Aedes aegypti Elicit semantic-search discovery since 2020
+    source_type: elicit_api_discovery
+    boundary: Bounded Elicit semantic-search discovery of Aedes aegypti candidate papers (repellency, behavior, olfaction focus, 2020 onward) that are not already in the hosted corpus, stored as elicit_search_candidate literature records with a supplement_discovery_not_run depth-outcome gap.
+    query_plane: elicit_search_to_sqlite_candidate_literature_records
+    api_base:
+      - https://elicit.com/api/v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/aedes_aegypti_elicit_discovery
+    ingest_script: scripts/ingest_aedes_aegypti_elicit_discovery.py
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: opt_in_bounded_pro_api_key
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects

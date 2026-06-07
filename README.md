@@ -773,6 +773,8 @@ Structured repellent-literature gaps include `mosquito_repellent_pubmed_search_f
 
 `mosquito_repellent_external_discovery` is the external breadth lane for repellent discovery. It adds bounded, raw-receipted metadata candidates from OpenAlex, Europe PMC, AGRICOLA through Europe PMC, Semantic Scholar, Crossref posted-content preprints, DataCite dataset DOI metadata, Zenodo, and Figshare. It also writes queryable source-gap records for native bioRxiv/medRxiv text search, PatentsView/USPTO patent APIs, CABI, and Google Scholar when those surfaces are blocked, migrated, credentialed, or unsupported. Records use `literature`, `datasets`, and `patents` lanes so researchers can ask for papers, preprints, repository data, and patent-source status without leaving Ask Insects.
 
+`drosophila_suzukii_elicit_discovery` and `aedes_aegypti_elicit_discovery` are the Elicit semantic-search discovery lanes. Each uses the Elicit API (138M+ papers, Pro plan; key in `~/.config/elicit/api_key`, never committed) to find candidate papers for its species (repellency, behavior, olfaction focus, 2020 onward) that are not already in the hosted corpus, deduped against the hosted plane by exact DOI lookup. Records land in the `literature` lane as `elicit_search_candidate` entries with the originating Elicit query in provenance and a `supplement_discovery_not_run` depth outcome (discovery candidates, not canonical or paper-depth-complete). See `docs/elicit-discovery-source.md`.
+
 ```bash
 python3 -m askinsects ingest-mosquito-repellent-external-discovery --max-results-per-source 50
 python3 -m askinsects search datasets "mosquito repellent"
