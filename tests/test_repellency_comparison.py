@@ -370,6 +370,69 @@ class RepellencyComparisonTest(unittest.TestCase):
             "mosquito_repellent_literature", result["coverage"]["searched_sources"]
         )
 
+    def test_swd_comparison_rejects_query_metadata_as_subject_evidence(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            index = _build_index(Path(tmp) / "source_index.sqlite")
+            false_parent_id = "swd:openalex_literature:openalex:W2999977662"
+            index.upsert_records(
+                [
+                    _record(
+                        false_parent_id,
+                        source="drosophila_suzukii_core",
+                        title=(
+                            "Tracking Short-Range Attraction and Oviposition of European "
+                            "Grapevine Moths"
+                        ),
+                        species="Drosophila suzukii",
+                        text=(
+                            "Title: Tracking Short-Range Attraction and Oviposition of European "
+                            "Grapevine Moths\nAbstract: Female moths were tested in an "
+                            "olfactometer and some volatiles could repel egg deposition.\n"
+                            "Inclusion paths: openalex_search_candidate\n"
+                            "OpenAlex search term: Drosophila suzukii repellent\n"
+                            "OpenAlex candidate status: openalex_search_candidate "
+                            "Common name: spotted wing drosophila."
+                        ),
+                        payload={
+                            "openalex_search_term": "Drosophila suzukii repellent",
+                            "common_name": "spotted wing drosophila",
+                        },
+                    ),
+                    _record(
+                        "swd_extracted_fact:repellency_assay:false-positive",
+                        source="drosophila_suzukii_extracted_facts",
+                        title="Mislabeled SWD repellency assay",
+                        lane="behavior",
+                        species="Drosophila suzukii",
+                        text="Female grapevine moths were tested in an olfactometer.",
+                        payload={
+                            "fact_type": "repellency_assay",
+                            "source_record_id": false_parent_id,
+                            "fields": {
+                                "assay": ["olfactometer"],
+                                "endpoint": ["repellency"],
+                            },
+                            "evidence_text": (
+                                "Female grapevine moths were tested in an olfactometer."
+                            ),
+                            "confidence": "candidate",
+                        },
+                    ),
+                ]
+            )
+            result = build_repellency_comparison_answer(
+                index,
+                "Compare Drosophila suzukii repellency assays for oviposition deterrence.",
+                limit=10,
+            )
+
+        self.assertEqual(result["coverage"]["deduplicated_papers"], 1)
+        self.assertEqual(result["coverage"]["structured_assay_facts"], 1)
+        self.assertNotIn(
+            false_parent_id,
+            {row["paper_record_id"] for row in result["comparison"]["rows"]},
+        )
+
     def test_pairwise_status_requires_comparable_assays_not_just_both_compounds(self):
         with tempfile.TemporaryDirectory() as tmp:
             index = _build_index(Path(tmp) / "source_index.sqlite")

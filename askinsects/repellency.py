@@ -148,6 +148,14 @@ _FORMULATION_PATTERNS = {
     "solution": (r"\bsolution\b",),
 }
 
+_DISCOVERY_METADATA_MARKERS = (
+    "\nInclusion paths:",
+    "\nOpenAlex search term:",
+    "\nOpenAlex search mode:",
+    "\nOpenAlex topic group:",
+    "\nOpenAlex candidate status:",
+)
+
 
 def is_repellency_comparison_question(question: str) -> bool:
     normalized = question.lower()
@@ -342,9 +350,37 @@ def _paper_identities(record: EvidenceRecord) -> tuple[str | None, str | None, s
     )
 
 
+def _document_evidence_text(record: EvidenceRecord) -> str:
+    text = record.text
+    cutoffs = [
+        position
+        for marker in _DISCOVERY_METADATA_MARKERS
+        if (position := text.find(marker)) >= 0
+    ]
+    if cutoffs:
+        text = text[: min(cutoffs)]
+    text = re.sub(
+        r"\s+Common name:\s*spotted[- ]wing drosophila\.?\s*$",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    return re.sub(r"<[^>]+>", " ", f"{record.title}\n{text}")
+
+
+def _is_swd_subject_candidate(record: EvidenceRecord) -> bool:
+    document_text = _document_evidence_text(record)
+    return bool(
+        re.search(
+            r"\bsuzukii\b|\bspotted[- ]wing drosophil(?:a|id)\b",
+            document_text,
+            flags=re.IGNORECASE,
+        )
+    )
+
+
 def _is_repellency_candidate(record: EvidenceRecord) -> bool:
-    payload_text = json.dumps(record.payload or {}, sort_keys=True)
-    haystack = f"{record.title}\n{record.text}\n{payload_text}".lower()
+    haystack = _document_evidence_text(record).lower()
     return any(
         term in haystack
         for term in (
@@ -829,7 +865,10 @@ def build_repellency_comparison_answer(
         and record.lane in {"literature", "datasets", "patents"}
         and (
             bool(scope["metadata_is_repellency_bounded"])
-            or _is_repellency_candidate(record)
+            or (
+                _is_swd_subject_candidate(record)
+                and _is_repellency_candidate(record)
+            )
         )
     ]
     papers = _deduplicated_papers(discovered_records)
