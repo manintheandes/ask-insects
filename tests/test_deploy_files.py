@@ -37,6 +37,8 @@ class DeployFilesTests(unittest.TestCase):
         self.assertIn("ExitOnForwardFailure=yes", run)
         self.assertIn("ServerAliveInterval=30", run)
         self.assertIn("com.openinsects.ask-insects-tunnel", install)
+        self.assertIn("$HOME/.local/lib/ask-insects", install)
+        self.assertIn('install -m 700 "$SOURCE_RUN_SCRIPT" "$RUN_SCRIPT"', install)
         self.assertIn("launchctl bootstrap", install)
         self.assertIn("KeepAlive", install)
 

@@ -3,7 +3,9 @@ set -euo pipefail
 
 LABEL="com.openinsects.ask-insects-tunnel"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-RUN_SCRIPT="$SCRIPT_DIR/run_hosted_tunnel.sh"
+SOURCE_RUN_SCRIPT="$SCRIPT_DIR/run_hosted_tunnel.sh"
+INSTALL_DIR="${ASK_INSECTS_TUNNEL_INSTALL_DIR:-$HOME/.local/lib/ask-insects}"
+RUN_SCRIPT="$INSTALL_DIR/run_hosted_tunnel.sh"
 GCLOUD_BIN="${ASK_INSECTS_GCLOUD_BIN:-$(command -v gcloud || true)}"
 ZONE="${ASK_INSECTS_GCP_ZONE:-us-central1-a}"
 VM="${ASK_INSECTS_VM:-ask-insects}"
@@ -19,7 +21,8 @@ if [[ -z "$GCLOUD_BIN" || ! -x "$GCLOUD_BIN" ]]; then
 fi
 PROJECT="${ASK_INSECTS_GCP_PROJECT:-$($GCLOUD_BIN config get-value project 2>/dev/null)}"
 
-mkdir -p "$(dirname "$PLIST")" "$LOG_DIR"
+mkdir -p "$(dirname "$PLIST")" "$LOG_DIR" "$INSTALL_DIR"
+install -m 700 "$SOURCE_RUN_SCRIPT" "$RUN_SCRIPT"
 TEMP_PLIST="$(mktemp "${TMPDIR:-/tmp}/$LABEL.XXXXXX")"
 trap 'rm -f "$TEMP_PLIST"' EXIT
 
