@@ -268,15 +268,11 @@ def rewrite_artifact_references(
                     )
                     try:
                         conn.execute(
-                            f"UPDATE record_payloads SET provenance_json = replace(provenance_json, ?, ?) WHERE record_id IN ({placeholders})",
-                            (old, new, *chunk),
-                        )
-                    except sqlite3.OperationalError:
-                        pass
-                    try:
-                        conn.execute(
-                            f"UPDATE record_payloads SET payload_json = replace(payload_json, ?, ?) WHERE record_id IN ({placeholders})",
-                            (old, new, *chunk),
+                            "UPDATE record_payloads "
+                            "SET provenance_json = replace(provenance_json, ?, ?), "
+                            "payload_json = replace(payload_json, ?, ?) "
+                            f"WHERE record_id IN ({placeholders})",
+                            (old, new, old, new, *chunk),
                         )
                     except sqlite3.OperationalError:
                         pass
