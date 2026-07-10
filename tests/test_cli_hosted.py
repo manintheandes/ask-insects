@@ -65,6 +65,37 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0], ("https://ask-insects.example", "GET", "/health", None))
         self.assertTrue(json.loads(output)["hosted"])
 
+    def test_hosted_literature_depth_ingest_sends_profile_and_bounds(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "results": []}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-literature-depth",
+                "--hosted",
+                "--profile",
+                "mosquito_repellent_literature_extracted_facts",
+                "--max-fulltext-units",
+                "25",
+                "--discover-supplements",
+                "--max-supplement-files",
+                "7",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/literature-depth")
+        self.assertEqual(calls[0][2]["profile"], "mosquito_repellent_literature_extracted_facts")
+        self.assertEqual(calls[0][2]["max_fulltext_units"], 25)
+        self.assertTrue(calls[0][2]["discover_supplements"])
+        self.assertEqual(calls[0][2]["max_supplement_files"], 7)
+        self.assertEqual(calls[0][3], 3600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_ingest_sends_species_options(self):
         calls = []
 

@@ -1,0 +1,70 @@
+{
+  "contract_version": "repellency-comparison.v1",
+  "cases": [
+    {
+      "id": "unqualified-literature-superlative",
+      "question": "Does anything in the literature beat this spatial-repellency result?",
+      "comparison_route": true,
+      "claim_type": "literature_superlative",
+      "required_reason_codes": [
+        "missing_target_profile",
+        "incomplete_depth_coverage",
+        "no_directly_comparable_assays",
+        "unresolved_source_gaps",
+        "no_human_verified_decisive_evidence"
+      ],
+      "forbidden_phrases": [
+        "nothing beats it",
+        "best in the literature",
+        "strongest in the literature"
+      ]
+    },
+    {
+      "id": "missing-dose-and-duration",
+      "question": "Is this non-contact Aedes spatial repellent better than the literature?",
+      "comparison_route": true,
+      "claim_type": "literature_superlative",
+      "required_missing_target_fields": [
+        "assay",
+        "dose",
+        "duration",
+        "endpoint",
+        "outcome"
+      ]
+    },
+    {
+      "id": "contact-mode-mismatch",
+      "question": "Compare contact and non-contact mosquito repellency studies.",
+      "comparison_route": true,
+      "claim_type": "comparative_summary"
+    },
+    {
+      "id": "spatial-topical-mismatch",
+      "question": "Compare spatial repellent and topical DEET efficacy studies.",
+      "comparison_route": true,
+      "claim_type": "comparative_summary"
+    },
+    {
+      "id": "pairwise-deet-picaridin",
+      "question": "Does DEET beat picaridin in Aedes arm-in-cage assays?",
+      "comparison_route": true,
+      "claim_type": "pairwise_comparison"
+    },
+    {
+      "id": "swd-repellency-comparison",
+      "question": "Compare Drosophila suzukii repellency assays for oviposition deterrence.",
+      "comparison_route": true,
+      "claim_type": "comparative_summary"
+    },
+    {
+      "id": "metadata-discovery-not-comparison",
+      "question": "List recent mosquito repellent papers from PubMed.",
+      "comparison_route": false
+    },
+    {
+      "id": "general-deet-literature-not-comparison",
+      "question": "What DEET literature is indexed?",
+      "comparison_route": false
+    }
+  ]
+}

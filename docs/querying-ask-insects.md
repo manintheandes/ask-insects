@@ -688,8 +688,12 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 sql "select
 
 Hosted Ask Insects follows the Ask Monarch VM shape: the server reads `/home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite` and the local CLI talks to the server.
 
+The server binds only to `127.0.0.1` on the VM. Install the persistent SSH
+tunnel locally and point the CLI at the tunnel endpoint:
+
 ```bash
-python3 -m askinsects configure --url http://<vm-ip>:8080 --token "$ASK_INSECTS_TOKEN"
+scripts/install_hosted_tunnel_launchd.sh
+python3 -m askinsects configure --url http://127.0.0.1:18080 --token "$ASK_INSECTS_TOKEN"
 python3 -m askinsects health --hosted
 python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
 python3 -m askinsects ingest-inaturalist --species "Aedes aegypti" --observation-limit 5758 --page-size 200 --delay-seconds 1
@@ -710,6 +714,9 @@ python3 -m askinsects ask --hosted "show mosquito observations with images in Br
 python3 -m askinsects sql --hosted "select source, lane, count(*) as n from records group by source, lane"
 python3 -m askinsects search fulltext "microbiota Aedes aegypti" --hosted
 ```
+
+Do not expose VM port `8080` through a public firewall rule. Traffic on the
+local HTTP endpoint is carried inside the encrypted SSH tunnel.
 
 Use extracted facts when you want table-like cross-domain paper evidence at a candidate grain:
 

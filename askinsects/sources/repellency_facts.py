@@ -1,0 +1,85 @@
+from __future__ import annotations
+
+from .extracted_facts import FactFamily
+
+
+REPELLENCY_ASSAY_FACT_FAMILY = FactFamily(
+    fact_type="repellency_assay",
+    lane="behavior",
+    context_terms=(
+        "repellent",
+        "repellency",
+        "spatial repellent",
+        "topical repellent",
+        "landing inhibition",
+        "biting inhibition",
+        "complete protection time",
+        "avoidance",
+        "oviposition deterrence",
+    ),
+    field_terms={
+        "compound": (
+            "deet",
+            "picaridin",
+            "icaridin",
+            "ir3535",
+            "pmd",
+            "citronella",
+            "metofluthrin",
+            "transfluthrin",
+            "prallethrin",
+        ),
+        "formulation": (
+            "emanator",
+            "treated fabric",
+            "lotion",
+            "aerosol",
+            "oil",
+            "solution",
+        ),
+        "exposure_mode": (
+            "contact",
+            "non-contact",
+            "no-contact",
+            "spatial repellent",
+            "vapor phase",
+            "vapour phase",
+            "topical",
+        ),
+        "assay": (
+            "arm-in-cage",
+            "hand-in-cage",
+            "olfactometer",
+            "choice assay",
+            "landing assay",
+            "field trial",
+            "chamber",
+            "cage",
+        ),
+        "endpoint": (
+            "landing inhibition",
+            "landing",
+            "biting inhibition",
+            "biting",
+            "complete protection time",
+            "protection",
+            "repellency",
+            "avoidance",
+            "oviposition deterrence",
+        ),
+        "control": (
+            "untreated control",
+            "solvent control",
+            "vehicle control",
+            "positive control",
+            "negative control",
+        ),
+        "life_stage": ("adult", "female", "male", "larva", "larvae"),
+        "statistics": (
+            "confidence interval",
+            "standard error",
+            "p-value",
+            "statistically significant",
+        ),
+    },
+)

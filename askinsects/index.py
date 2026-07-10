@@ -121,6 +121,18 @@ def _snippet(text: str, query: str, *, max_length: int = 520) -> str:
     return snippet
 
 
+def _fts_prefix_query(query: str) -> str | None:
+    operators = {"AND", "OR", "NOT", "NEAR"}
+    terms = [
+        term
+        for term in re.findall(r"[A-Za-z0-9]+", query)
+        if term and term.upper() not in operators
+    ]
+    if not terms:
+        return None
+    return " AND ".join(f'"{term}"*' for term in terms)
+
+
 class SourceIndex:
     def __init__(self, path: Path):
         self.path = Path(path)
@@ -318,10 +330,9 @@ class SourceIndex:
         conn.execute("DELETE FROM records WHERE source=?", (source,))
 
     def search(self, query: str, lane: str | None = None, limit: int = 10) -> list[EvidenceRecord]:
-        terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]
-        if not terms:
+        match = _fts_prefix_query(query)
+        if not match:
             return []
-        match = " AND ".join(f"{term}*" for term in terms)
         lowered_query = query.lower()
         preferred_source_order = ""
         if any(term in lowered_query for term in ("video", "videos", "movie", "motion", "keyframe", "preview")):
@@ -351,10 +362,9 @@ class SourceIndex:
         return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
     def search_literature_fulltext(self, query: str, limit: int = 10) -> list[EvidenceRecord]:
-        terms = [term for term in re.findall(r"[A-Za-z0-9]+", query) if term]
-        if not terms:
+        match = _fts_prefix_query(query)
+        if not match:
             return []
-        match = " AND ".join(f"{term}*" for term in terms)
         with self.connect() as conn:
             rows = conn.execute(
                 """

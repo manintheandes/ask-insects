@@ -5,9 +5,14 @@ mined. These profiles point the generic extracted-facts engine at the Elicit
 discovery sources so each discovered paper gets a depth outcome, reusing the
 existing per-species fact families (no engine changes).
 """
+
 from __future__ import annotations
 
-from askinsects.sources.extracted_facts import ExtractedFactsProfile, FACT_FAMILIES
+from askinsects.sources.extracted_facts import (
+    ExtractedFactsProfile,
+    FACT_FAMILIES,
+)
+from askinsects.sources.repellency_facts import REPELLENCY_ASSAY_FACT_FAMILY
 from askinsects.sources.drosophila_suzukii_extracted_facts import (
     DROSOPHILA_SUZUKII_FACT_FAMILIES,
 )
@@ -29,7 +34,7 @@ AEDES_AEGYPTI_ELICIT_EXTRACTED_FACTS_PROFILE = ExtractedFactsProfile(
     label="Aedes aegypti — Elicit discovery",
     record_prefix="aedes_elicit_extracted_fact",
     raw_subdir="aedes_aegypti_elicit_extracted_facts",
-    fact_families=FACT_FAMILIES,
+    fact_families=(*FACT_FAMILIES, REPELLENCY_ASSAY_FACT_FAMILY),
 )
 
 ELICIT_EXTRACTED_FACTS_PROFILES = (

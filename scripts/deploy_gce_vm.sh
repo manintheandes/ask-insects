@@ -21,11 +21,8 @@ if ! gcloud compute instances describe "$VM" --zone "$ZONE" >/dev/null 2>&1; the
     --tags "$TAGS"
 fi
 
-if ! gcloud compute firewall-rules describe ask-insects-8080 >/dev/null 2>&1; then
-  gcloud compute firewall-rules create ask-insects-8080 \
-    --allow tcp:8080 \
-    --target-tags "$TAGS" \
-    --description "Allow Ask Insects hosted API"
+if gcloud compute firewall-rules describe ask-insects-8080 >/dev/null 2>&1; then
+  gcloud compute firewall-rules delete ask-insects-8080 --quiet
 fi
 
 gcloud compute instances describe "$VM" --zone "$ZONE" --format='value(networkInterfaces[0].accessConfigs[0].natIP)'

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
+import tempfile
 from typing import Callable
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -20,10 +21,22 @@ class HostedConfig:
 
 def save_config(config: HostedConfig, *, path: Path = CONFIG_PATH) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps({"url": config.url, "token": config.token}, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    try:
+        os.fchmod(descriptor, 0o600)
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump({"url": config.url, "token": config.token}, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, path)
+        os.chmod(path, 0o600)
+    except Exception:
+        try:
+            os.unlink(temporary_name)
+        except FileNotFoundError:
+            pass
+        raise
 
 
 def load_config(*, path: Path = CONFIG_PATH) -> HostedConfig:

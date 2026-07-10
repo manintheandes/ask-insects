@@ -43,6 +43,24 @@ class IndexTests(unittest.TestCase):
             self.assertEqual(summary["record_count"], 1)
             self.assertEqual(summary["lanes"]["observations"], 1)
 
+    def test_search_quotes_fts_reserved_words(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    sample_record(
+                        text="A field comparison of DEET and picaridin that excludes citronella."
+                    )
+                ]
+            )
+
+            for query in ("DEET OR picaridin", "NOT citronella", "NEAR field", "OR"):
+                with self.subTest(query=query):
+                    rows = index.search(query, lane="observations", limit=5)
+                    expected = [] if query == "OR" else ["obs:1"]
+                    self.assertEqual([row.record_id for row in rows], expected)
+
     def test_payloads_are_queryable_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "source_index.sqlite"

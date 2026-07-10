@@ -16,6 +16,7 @@ class HostedClientTests(unittest.TestCase):
 
             self.assertEqual(loaded.url, "https://ask-insects.example")
             self.assertEqual(loaded.token, "secret")
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 
     def test_hosted_request_sends_bearer_token_and_json(self):
         calls = []

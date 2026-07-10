@@ -6,15 +6,22 @@ and the species-appropriate fact families). Reuses the generic extracted-facts
 engine with no engine changes. Registry is keyed by output source id so a generic
 ingest can run any one (or all) of them.
 """
+
 from __future__ import annotations
 
-from askinsects.sources.extracted_facts import ExtractedFactsProfile, FACT_FAMILIES
+from askinsects.sources.extracted_facts import (
+    ExtractedFactsProfile,
+    FACT_FAMILIES,
+)
+from askinsects.sources.repellency_facts import REPELLENCY_ASSAY_FACT_FAMILY
 from askinsects.sources.drosophila_suzukii_extracted_facts import (
     DROSOPHILA_SUZUKII_FACT_FAMILIES,
 )
 
 
-def _profile(*, output: str, input_source: str, species: str, families, prefix: str) -> ExtractedFactsProfile:
+def _profile(
+    *, output: str, input_source: str, species: str, families, prefix: str
+) -> ExtractedFactsProfile:
     return ExtractedFactsProfile(
         source_id=output,
         input_literature_source_id=input_source,
@@ -26,19 +33,22 @@ def _profile(*, output: str, input_source: str, species: str, families, prefix: 
     )
 
 
+MOSQUITO_REPELLENT_FACT_FAMILIES = (*FACT_FAMILIES, REPELLENCY_ASSAY_FACT_FAMILY)
+
+
 LITERATURE_DEPTH_PROFILES = {
     "mosquito_repellent_literature_extracted_facts": _profile(
         output="mosquito_repellent_literature_extracted_facts",
         input_source="mosquito_repellent_literature",
         species="Culicidae",
-        families=FACT_FAMILIES,
+        families=MOSQUITO_REPELLENT_FACT_FAMILIES,
         prefix="mosq_repellent_lit_fact",
     ),
     "mosquito_repellent_external_discovery_extracted_facts": _profile(
         output="mosquito_repellent_external_discovery_extracted_facts",
         input_source="mosquito_repellent_external_discovery",
         species="Culicidae",
-        families=FACT_FAMILIES,
+        families=MOSQUITO_REPELLENT_FACT_FAMILIES,
         prefix="mosq_repellent_ext_fact",
     ),
     "aedes_crossref_literature_audit_extracted_facts": _profile(
