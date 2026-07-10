@@ -10,6 +10,7 @@ from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
 from .planner import QueryPlan, plan_question
 from .records import EvidenceRecord
+from .repellency import build_repellency_comparison_answer, is_repellency_comparison_question
 from .sources.aedes_deep_sources import (
     AEDES_GLOBAL_COMPENDIUM_SOURCE_ID,
     AEDES_POPULATION_GENOMICS_SOURCE_ID,
@@ -5339,6 +5340,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
     if not _index_ready(index):
         return source_gap(plan, "The Ask Insects source index has not been built yet.")
+
+    if is_repellency_comparison_question(plan.question):
+        return build_repellency_comparison_answer(index, plan.question, limit=limit)
 
     q = plan.question.lower()
     requested_species = _requested_species(plan.question)

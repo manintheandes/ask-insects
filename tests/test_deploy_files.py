@@ -17,7 +17,10 @@ class DeployFilesTests(unittest.TestCase):
         self.assertIn("gcloud compute instances", vm)
         self.assertIn("gcloud compute ssh", app)
         self.assertIn("ask-insects", vm)
+        self.assertIn("ASK_INSECTS_ALLOWED_SOURCE_RANGES", vm)
+        self.assertIn('--source-ranges "$ALLOWED_SOURCE_RANGES"', vm)
         self.assertIn("systemctl restart ask-insects", app)
+        self.assertIn("chmod 600", app)
 
 
 if __name__ == "__main__":

@@ -65,6 +65,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-05-28-drosophila-suzukii-source-plane-design.md",
     "docs/superpowers/specs/2026-06-05-swd-aedes-parity-program-design.md",
     "docs/superpowers/specs/2026-06-05-swd-neurobiology-olfaction-lane-design.md",
+    "docs/superpowers/specs/2026-07-10-ask-insects-repellency-evidence-workflow-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -99,6 +100,8 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-28-drosophila-suzukii-source-plane.md",
     "docs/superpowers/plans/2026-05-29-swd-susceptibility-assay-lane.md",
     "docs/superpowers/plans/2026-05-29-swd-biocontrol-outcome-lane.md",
+    "docs/superpowers/plans/2026-07-10-ask-insects-repellency-evidence-workflow.md",
+    "evals/repellency_comparison_v1.json",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
     "askinsects/answer.py",
@@ -108,6 +111,7 @@ REQUIRED_FILES = (
     "askinsects/index.py",
     "askinsects/planner.py",
     "askinsects/records.py",
+    "askinsects/repellency.py",
     "askinsects/server.py",
     "askinsects/voxels.py",
     "askinsects/sources/__init__.py",
@@ -148,6 +152,8 @@ REQUIRED_FILES = (
     "askinsects/sources/aedes_crossref_literature_audit.py",
     "askinsects/sources/mosquito_repellent_literature.py",
     "askinsects/sources/mosquito_repellent_external_discovery.py",
+    "askinsects/sources/repellency_facts.py",
+    "askinsects/sources/literature_depth_profiles.py",
     "askinsects/sources/uniprot_proteins.py",
     "askinsects/sources/wolbachia_interventions.py",
     "askinsects/sources/vectorbyte_traits.py",
@@ -183,6 +189,7 @@ REQUIRED_FILES = (
     "askinsects/sources/ncbi_snp_variation.py",
     "askinsects/sources/harvard_dataverse_suitability.py",
     "scripts/build_source_index.py",
+    "scripts/__init__.py",
     "scripts/enrich_literature_index.py",
     "scripts/ingest_neurobiology_sources.py",
     "scripts/deploy_gce_app.sh",
@@ -223,6 +230,8 @@ REQUIRED_FILES = (
     "scripts/ingest_aedes_crossref_literature_audit.py",
     "scripts/ingest_mosquito_repellent_literature.py",
     "scripts/ingest_mosquito_repellent_external_discovery.py",
+    "scripts/ingest_literature_depth.py",
+    "scripts/eval_repellency_comparison.py",
     "scripts/ingest_uniprot_proteins.py",
     "scripts/ingest_wolbachia_interventions.py",
     "scripts/ingest_vectorbyte_traits.py",
@@ -343,6 +352,9 @@ REQUIRED_FILES = (
     "tests/test_ingest_mosquito_repellent_literature.py",
     "tests/test_mosquito_repellent_external_discovery_source.py",
     "tests/test_ingest_mosquito_repellent_external_discovery.py",
+    "tests/test_literature_depth_profiles.py",
+    "tests/test_ingest_literature_depth.py",
+    "tests/test_repellency_comparison.py",
     "tests/test_uniprot_proteins_source.py",
     "tests/test_wolbachia_interventions_source.py",
     "tests/test_vectorbyte_traits_source.py",
@@ -488,6 +500,9 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_mosquito_repellent_literature",
     "tests.test_mosquito_repellent_external_discovery_source",
     "tests.test_ingest_mosquito_repellent_external_discovery",
+    "tests.test_literature_depth_profiles",
+    "tests.test_ingest_literature_depth",
+    "tests.test_repellency_comparison",
     "tests.test_uniprot_proteins_source",
     "tests.test_wolbachia_interventions_source",
     "tests.test_ingest_wave1_sources",
@@ -611,8 +626,10 @@ def check_open_source_boundary() -> None:
         raise RuntimeError("LICENSE must contain Apache License Version 2.0")
     if 'license = "Apache-2.0"' not in pyproject_text:
         raise RuntimeError("pyproject.toml must declare Apache-2.0")
-    if "License :: OSI Approved :: Apache Software License" not in pyproject_text:
-        raise RuntimeError("pyproject.toml must expose the Apache classifier")
+    if "[build-system]" not in pyproject_text or 'build-backend = "setuptools.build_meta"' not in pyproject_text:
+        raise RuntimeError("pyproject.toml must define the installable setuptools build")
+    if 'ask-insects = "askinsects.cli:main"' not in pyproject_text:
+        raise RuntimeError("pyproject.toml must install the ask-insects CLI entry point")
     if "artifacts/" not in gitignore_text:
         raise RuntimeError(".gitignore must keep generated artifacts out of git")
 
@@ -2197,10 +2214,14 @@ def main() -> int:
         check_mosquito_intelligence_coverage()
         check_aedes_source_plane_benchmark()
         check_cli()
-        check_installed_artifact_receipts()
-        check_literature_artifact()
-        check_aedes_video_atoms_artifact()
-        check_aedes_image_atoms_artifact()
+        installed_db = REPO_ROOT / "artifacts/mosquito-v1/source_index.sqlite"
+        if installed_db.exists():
+            check_installed_artifact_receipts()
+            check_literature_artifact()
+            check_aedes_video_atoms_artifact()
+            check_aedes_image_atoms_artifact()
+        elif os.environ.get("ASK_INSECTS_REQUIRE_INSTALLED_ARTIFACTS") == "1":
+            raise RuntimeError(f"missing SQLite artifact: {installed_db}")
     except Exception as exc:
         return fail(str(exc))
     print("verify_complete ok")

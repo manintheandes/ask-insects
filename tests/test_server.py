@@ -1,6 +1,10 @@
+import io
 import json
 import tempfile
+import threading
+import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest import mock
 
@@ -8,6 +12,8 @@ from askinsects.builder import build_fixture_index
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.server import (
+    AskInsectsHandler,
+    MAX_REQUEST_BODY_BYTES,
     activate_source_staging,
     copy_artifact_to_staging,
     copy_default_video_motion_inputs_to_staging,
@@ -62,6 +68,45 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(response.status, 401)
             self.assertFalse(response.payload["ok"])
 
+    def test_mutating_requests_are_serialized(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            start = threading.Barrier(3)
+            state_lock = threading.Lock()
+            active = 0
+            max_active = 0
+
+            def fake_ingest(payload, *, artifact_dir):
+                nonlocal active, max_active
+                with state_lock:
+                    active += 1
+                    max_active = max(max_active, active)
+                time.sleep(0.05)
+                with state_lock:
+                    active -= 1
+                return {"ok": True, "artifact_dir": str(artifact_dir)}
+
+            def request():
+                start.wait()
+                return dispatch_request(
+                    "POST",
+                    "/ingest/mosquito-repellent-literature",
+                    {},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+            with mock.patch.object(server_module, "ingest_mosquito_repellent_literature_hosted", fake_ingest):
+                with ThreadPoolExecutor(max_workers=2) as executor:
+                    futures = [executor.submit(request) for _ in range(2)]
+                    start.wait()
+                    responses = [future.result() for future in futures]
+
+            self.assertEqual([response.status for response in responses], [200, 200])
+            self.assertEqual(max_active, 1)
+            self.assertEqual((artifact_dir.parent / f".{artifact_dir.name}.ingest.lock").stat().st_mode & 0o777, 0o600)
+
     def test_read_endpoints_reject_missing_source_index_without_creating_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir)
@@ -97,13 +142,77 @@ class ServerTests(unittest.TestCase):
             self.assertFalse(response.payload["ok"])
             self.assertEqual(response.payload["reason"], "source_index_empty")
 
-    def test_staging_copy_hardlinks_raw_files_but_copies_mutable_files(self):
+    def test_read_limits_are_bounded(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            build_fixture_index(artifact_dir=artifact_dir)
+            cases = (
+                ("/ask", {"question": "What is indexed?", "limit": 0}),
+                ("/ask", {"question": "What is indexed?", "limit": 101}),
+                ("/search", {"query": "Aedes", "limit": -1}),
+                ("/sql", {"sql": "select * from records", "limit": 1001}),
+            )
+            for path, payload in cases:
+                with self.subTest(path=path, limit=payload["limit"]):
+                    response = dispatch_request(
+                        "POST",
+                        path,
+                        payload,
+                        headers={"Authorization": "Bearer secret"},
+                        artifact_dir=artifact_dir,
+                        token="secret",
+                    )
+                    self.assertEqual(response.status, 400)
+                    self.assertIn("limit must be between", response.payload["error"])
+
+    def test_oversized_request_body_is_rejected_before_read(self):
+        handler = object.__new__(AskInsectsHandler)
+        handler.headers = {"Content-Length": str(MAX_REQUEST_BODY_BYTES + 1)}
+        handler.rfile = io.BytesIO(b"")
+
+        with self.assertRaisesRegex(ValueError, "request body exceeds"):
+            handler._read_payload()
+
+    def test_unauthorized_post_is_rejected_before_body_processing(self):
+        handler = object.__new__(AskInsectsHandler)
+        handler.headers = {"Authorization": "Bearer wrong", "Content-Length": str(MAX_REQUEST_BODY_BYTES + 1)}
+        handler.token = "secret"
+        handler._read_payload = mock.Mock(side_effect=AssertionError("body should not be read"))
+        handler._send = mock.Mock()
+
+        handler.do_POST()
+
+        handler._read_payload.assert_not_called()
+        response = handler._send.call_args.args[0]
+        self.assertEqual(response.status, 401)
+
+    def test_staging_copy_isolates_raw_and_mutable_files(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             artifact_dir = root / "mosquito-v1"
             raw_dir = artifact_dir / "raw" / "large_source"
             raw_dir.mkdir(parents=True)
-            (artifact_dir / "source_index.sqlite").write_text("mutable-db", encoding="utf-8")
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="snapshot:1",
+                        lane="literature",
+                        source="snapshot_fixture",
+                        title="Snapshot fixture",
+                        text="Snapshot fixture text",
+                        species="Aedes aegypti",
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="snapshot_fixture",
+                            locator="fixture#1",
+                            retrieved_at="2026-07-10T00:00:00Z",
+                        ),
+                    )
+                ]
+            )
             (artifact_dir / "source_index.sqlite-journal").write_text("stale rollback journal", encoding="utf-8")
             (artifact_dir / "source_status.json").write_text("{}", encoding="utf-8")
             (raw_dir / "page.json").write_text('{"ok": true}', encoding="utf-8")
@@ -115,10 +224,14 @@ class ServerTests(unittest.TestCase):
                 (artifact_dir / "source_index.sqlite").stat().st_ino,
                 (staging / "source_index.sqlite").stat().st_ino,
             )
-            self.assertEqual(
+            staged_index = SourceIndex(staging / "source_index.sqlite")
+            self.assertEqual(staged_index.sql("select count(*) as n from records")[0]["n"], 1)
+            self.assertNotEqual(
                 (raw_dir / "page.json").stat().st_ino,
                 (staging / "raw" / "large_source" / "page.json").stat().st_ino,
             )
+            (staging / "raw" / "large_source" / "page.json").write_text('{"ok": false}', encoding="utf-8")
+            self.assertEqual((raw_dir / "page.json").read_text(encoding="utf-8"), '{"ok": true}')
             self.assertFalse((staging / "source_index.sqlite-journal").exists())
 
     def test_source_staging_replaces_mutables_and_one_raw_source(self):
@@ -129,20 +242,61 @@ class ServerTests(unittest.TestCase):
             new_raw = artifact_dir / "raw" / "mosquito_alert"
             old_raw.mkdir(parents=True)
             new_raw.mkdir(parents=True)
-            (artifact_dir / "source_index.sqlite").write_text("old-db", encoding="utf-8")
+            live_index = SourceIndex(artifact_dir / "source_index.sqlite")
+            live_index.initialize()
+            live_index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="old:1",
+                        lane="literature",
+                        source="old_source",
+                        title="Old record",
+                        text="Old record",
+                        species=None,
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="old_source",
+                            locator="fixture#old",
+                            retrieved_at="2026-07-10T00:00:00Z",
+                        ),
+                    )
+                ]
+            )
             (old_raw / "keep.json").write_text("keep", encoding="utf-8")
             (new_raw / "old.json").write_text("old", encoding="utf-8")
 
             staging = root / ".mosquito-v1.staging"
             prepare_mutable_staging(artifact_dir, staging)
-            (staging / "source_index.sqlite").write_text("new-db", encoding="utf-8")
+            staged_index = SourceIndex(staging / "source_index.sqlite")
+            staged_index.delete_source("old_source")
+            staged_index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="new:1",
+                        lane="literature",
+                        source="new_source",
+                        title="New record",
+                        text="New record",
+                        species=None,
+                        url=None,
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="new_source",
+                            locator="fixture#new",
+                            retrieved_at="2026-07-10T00:00:00Z",
+                        ),
+                    )
+                ]
+            )
             staged_raw = staging / "raw" / "mosquito_alert"
             staged_raw.mkdir(parents=True)
             (staged_raw / "new.json").write_text("new", encoding="utf-8")
 
             activate_source_staging(staging, artifact_dir, Path("raw") / "mosquito_alert")
 
-            self.assertEqual((artifact_dir / "source_index.sqlite").read_text(encoding="utf-8"), "new-db")
+            activated_index = SourceIndex(artifact_dir / "source_index.sqlite")
+            self.assertEqual(activated_index.sql("select source from records"), [{"source": "new_source"}])
             self.assertEqual((old_raw / "keep.json").read_text(encoding="utf-8"), "keep")
             self.assertFalse((new_raw / "old.json").exists())
             self.assertEqual((new_raw / "new.json").read_text(encoding="utf-8"), "new")

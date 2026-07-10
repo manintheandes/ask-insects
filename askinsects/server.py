@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, replace
+import fcntl
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -11,6 +13,7 @@ from pathlib import Path
 import shutil
 import sqlite3
 import time
+import threading
 from typing import Callable
 
 from .answer import answer_question
@@ -90,6 +93,25 @@ from .sources.vectornet_surveillance import (
     fetch_vectornet_surveillance_records,
 )
 from .sources.zenodo_aedes_videos import DEFAULT_ZENODO_SIZE, ZENODO_AEDES_VIDEO_SOURCE_ID, fetch_zenodo_aedes_video_records
+
+
+MAX_REQUEST_BODY_BYTES = 1_000_000
+MAX_ANSWER_LIMIT = 100
+MAX_QUERY_LIMIT = 1_000
+REQUEST_SOCKET_TIMEOUT_SECONDS = 30
+
+
+class RequestBodyTooLarge(ValueError):
+    pass
+
+
+def bounded_request_limit(value: object, *, default: int, maximum: int) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"limit must be an integer between 1 and {maximum}")
+    parsed = default if value is None else int(value)
+    if parsed < 1 or parsed > maximum:
+        raise ValueError(f"limit must be between 1 and {maximum}")
+    return parsed
 
 
 @dataclass(frozen=True)
@@ -316,35 +338,67 @@ VOLATILE_ARTIFACT_FILES = {
     "source_index.sqlite-journal",
 }
 
+_INGEST_THREAD_LOCK = threading.RLock()
+
+
+@contextmanager
+def ingest_mutation_lock(artifact_dir: Path):
+    lock_path = artifact_dir.parent / f".{artifact_dir.name}.ingest.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with _INGEST_THREAD_LOCK:
+        descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+        try:
+            os.fchmod(descriptor, 0o600)
+            fcntl.flock(descriptor, fcntl.LOCK_EX)
+            yield
+        finally:
+            fcntl.flock(descriptor, fcntl.LOCK_UN)
+            os.close(descriptor)
+
 
 def _copy_for_staging(src: str, dst: str) -> str:
-    if Path(src).name in MUTABLE_ARTIFACT_FILES:
-        return shutil.copy2(src, dst)
-    try:
-        os.link(src, dst)
-        shutil.copystat(src, dst, follow_symlinks=False)
-        return dst
-    except OSError:
-        return shutil.copy2(src, dst)
+    return shutil.copy2(src, dst)
+
+
+def copy_sqlite_snapshot(source: Path, target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.unlink(missing_ok=True)
+    with sqlite3.connect(source, timeout=30) as source_conn:
+        with sqlite3.connect(target, timeout=30) as target_conn:
+            source_conn.backup(target_conn)
+    shutil.copystat(source, target)
 
 
 def copy_artifact_to_staging(artifact_dir: Path, staging: Path) -> None:
     shutil.copytree(
         artifact_dir,
         staging,
-        ignore=shutil.ignore_patterns(*VOLATILE_ARTIFACT_FILES),
+        ignore=shutil.ignore_patterns(
+            *VOLATILE_ARTIFACT_FILES,
+            "source_index.sqlite",
+            "source_index.sqlite-shm",
+            "source_index.sqlite-wal",
+        ),
         copy_function=_copy_for_staging,
     )
+    source_db = artifact_dir / "source_index.sqlite"
+    if source_db.exists():
+        copy_sqlite_snapshot(source_db, staging / "source_index.sqlite")
 
 
 def prepare_mutable_staging(artifact_dir: Path, staging: Path) -> None:
     staging.mkdir(parents=True, exist_ok=True)
     for name in MUTABLE_ARTIFACT_FILES:
+        if name.startswith("source_index.sqlite"):
+            continue
         source = artifact_dir / name
         if source.exists():
             target = staging / name
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
+    source_db = artifact_dir / "source_index.sqlite"
+    if source_db.exists():
+        copy_sqlite_snapshot(source_db, staging / "source_index.sqlite")
 
 
 def copy_relative_inputs_to_staging(artifact_dir: Path, staging: Path, paths: list[Path]) -> None:
@@ -374,7 +428,7 @@ def copy_default_video_motion_inputs_to_staging(artifact_dir: Path, staging: Pat
     )
 
 
-def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir: Path) -> None:
+def activate_source_staging_dirs(staging: Path, artifact_dir: Path, raw_relative_dirs: list[Path]) -> None:
     artifact_dir.mkdir(parents=True, exist_ok=True)
     for name in MUTABLE_ARTIFACT_FILES:
         source = staging / name
@@ -382,19 +436,24 @@ def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir:
             target = artifact_dir / name
             target.parent.mkdir(parents=True, exist_ok=True)
             source.replace(target)
-    raw_source = staging / raw_relative_dir
-    if raw_source.exists():
-        raw_target = artifact_dir / raw_relative_dir
-        raw_target.parent.mkdir(parents=True, exist_ok=True)
-        backup = raw_target.parent / f".{raw_target.name}.previous"
-        if backup.exists():
-            shutil.rmtree(backup)
-        if raw_target.exists():
-            raw_target.replace(backup)
-        raw_source.replace(raw_target)
-        if backup.exists():
-            shutil.rmtree(backup)
+    for raw_relative_dir in raw_relative_dirs:
+        raw_source = staging / raw_relative_dir
+        if raw_source.exists():
+            raw_target = artifact_dir / raw_relative_dir
+            raw_target.parent.mkdir(parents=True, exist_ok=True)
+            backup = raw_target.parent / f".{raw_target.name}.previous"
+            if backup.exists():
+                shutil.rmtree(backup)
+            if raw_target.exists():
+                raw_target.replace(backup)
+            raw_source.replace(raw_target)
+            if backup.exists():
+                shutil.rmtree(backup)
     shutil.rmtree(staging, ignore_errors=True)
+
+
+def activate_source_staging(staging: Path, artifact_dir: Path, raw_relative_dir: Path) -> None:
+    activate_source_staging_dirs(staging, artifact_dir, [raw_relative_dir])
 
 
 def replace_source_records(index: SourceIndex, source: str, records: list[object]) -> None:
@@ -4077,6 +4136,92 @@ def ingest_mosquito_repellent_external_discovery_hosted(
     return response
 
 
+def ingest_literature_depth_staged(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from askinsects.sources.literature_depth_profiles import LITERATURE_DEPTH_PROFILES
+    from scripts.ingest_literature_depth import ingest_literature_depth
+
+    profile_value = payload.get("profile")
+    profile = str(profile_value) if profile_value else None
+    all_profiles = bool(payload.get("all_profiles"))
+    if all_profiles == bool(profile):
+        raise ValueError("pass exactly one of profile or all_profiles")
+    if profile and profile not in LITERATURE_DEPTH_PROFILES:
+        raise ValueError(f"unknown literature depth profile: {profile}")
+
+    retrieved_at_value = payload.get("retrieved_at")
+    if retrieved_at_value is not None and not isinstance(retrieved_at_value, str):
+        raise ValueError("retrieved_at must be a string")
+
+    def bounded_int(name: str, default: int, *, minimum: int = 0) -> int:
+        raw_value = payload.get(name)
+        if isinstance(raw_value, bool):
+            raise ValueError(f"{name} must be an integer")
+        value = default if raw_value is None else int(raw_value)
+        if value < minimum:
+            raise ValueError(f"{name} must be at least {minimum}")
+        return value
+
+    def boolean_option(name: str) -> bool:
+        value = payload.get(name, False)
+        if not isinstance(value, bool):
+            raise ValueError(f"{name} must be a boolean")
+        return value
+
+    options = {
+        "profile": profile,
+        "all_profiles": all_profiles,
+        "retrieved_at": retrieved_at_value,
+        "max_fulltext_units": bounded_int("max_fulltext_units", 2000, minimum=1),
+        "discover_supplements": boolean_option("discover_supplements"),
+        "download_supplements": boolean_option("download_supplements"),
+        "max_supplement_discovery_records": bounded_int(
+            "max_supplement_discovery_records", 2000, minimum=1
+        ),
+        "max_repository_supplement_discovery_records": bounded_int(
+            "max_repository_supplement_discovery_records", 100
+        ),
+        "max_supplement_files": bounded_int("max_supplement_files", 50, minimum=1),
+        "max_supplement_bytes": bounded_int(
+            "max_supplement_bytes", DEFAULT_MAX_SUPPLEMENT_BYTES, minimum=1
+        ),
+        "max_pdf_supplement_files": bounded_int("max_pdf_supplement_files", 10),
+    }
+    selected_source_ids = (
+        list(LITERATURE_DEPTH_PROFILES)
+        if all_profiles
+        else [str(profile)]
+    )
+
+    staging = artifact_dir.parent / f".{artifact_dir.name}.literature-depth-staging"
+    if staging.exists():
+        shutil.rmtree(staging)
+    try:
+        if artifact_dir.exists():
+            prepare_mutable_staging(artifact_dir, staging)
+        else:
+            staging.mkdir(parents=True, exist_ok=True)
+        result = ingest_literature_depth(artifact_dir=staging, **options)
+        if not result.get("ok"):
+            shutil.rmtree(staging, ignore_errors=True)
+            return result
+        response = rewrite_artifact_references(staging, artifact_dir, result)
+        activate_source_staging_dirs(
+            staging,
+            artifact_dir,
+            [Path("raw") / source_id for source_id in selected_source_ids],
+        )
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["staged"] = True
+    return response
+
+
 def dispatch_request(
     method: str,
     path: str,
@@ -4114,6 +4259,9 @@ def dispatch_request(
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
 
+    mutation_guard = ExitStack()
+    if method == "POST" and path.startswith("/ingest/"):
+        mutation_guard.enter_context(ingest_mutation_lock(artifact_dir))
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     try:
         if method == "GET" and path == "/health":
@@ -4129,14 +4277,14 @@ def dispatch_request(
         if method == "POST" and path == "/ask":
             body = payload or {}
             question = str(body.get("question", ""))
-            limit = int(body.get("limit", 5))
+            limit = bounded_request_limit(body.get("limit"), default=5, maximum=MAX_ANSWER_LIMIT)
             return json_response(200, answer_question(question, artifact_dir=artifact_dir, limit=limit))
         if method == "POST" and path == "/search":
             body = payload or {}
             query = str(body.get("query", ""))
             lane_value = body.get("lane")
             lane = str(lane_value) if lane_value is not None else None
-            limit = int(body.get("limit", 10))
+            limit = bounded_request_limit(body.get("limit"), default=10, maximum=MAX_QUERY_LIMIT)
             if lane == "literature_fulltext":
                 rows = [record.to_row() for record in index.search_literature_fulltext(query, limit=limit)]
             else:
@@ -4145,7 +4293,7 @@ def dispatch_request(
         if method == "POST" and path == "/sql":
             body = payload or {}
             sql = str(body.get("sql", ""))
-            limit = int(body.get("limit", 100))
+            limit = bounded_request_limit(body.get("limit"), default=100, maximum=MAX_QUERY_LIMIT)
             return json_response(200, {"ok": True, "rows": index.sql(sql, limit=limit)})
         if method == "POST" and path == "/ingest/inaturalist":
             result = ingest_inaturalist(
@@ -4399,6 +4547,10 @@ def dispatch_request(
             result = ingest_mosquito_repellent_external_discovery_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
+        if method == "POST" and path == "/ingest/literature-depth":
+            result = ingest_literature_depth_staged(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
         if method == "POST" and path == "/ingest/vectornet-surveillance":
             result = ingest_vectornet_surveillance(
                 payload or {},
@@ -4533,6 +4685,8 @@ def dispatch_request(
         return json_response(400, {"ok": False, "error": str(exc)})
     except Exception as exc:
         return json_response(500, {"ok": False, "error": str(exc)})
+    finally:
+        mutation_guard.close()
 
     return json_response(404, {"ok": False, "error": f"unknown route: {method} {path}"})
 
@@ -4541,10 +4695,16 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR
     token: str = ""
 
+    def setup(self) -> None:
+        super().setup()
+        self.connection.settimeout(REQUEST_SOCKET_TIMEOUT_SECONDS)
+
     def _read_payload(self) -> dict[str, object] | None:
         length = int(self.headers.get("Content-Length", "0") or "0")
         if length <= 0:
             return None
+        if length > MAX_REQUEST_BODY_BYTES:
+            raise RequestBodyTooLarge(f"request body exceeds {MAX_REQUEST_BODY_BYTES} bytes")
         raw = self.rfile.read(length).decode("utf-8")
         payload = json.loads(raw)
         if not isinstance(payload, dict):
@@ -4574,6 +4734,9 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
         self._send(response)
 
     def do_POST(self) -> None:
+        if not is_authorized(self.headers, self.token):
+            self._send(json_response(401, {"ok": False, "error": "unauthorized"}))
+            return
         try:
             payload = self._read_payload()
             response = dispatch_request(
@@ -4584,6 +4747,8 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
                 artifact_dir=self.artifact_dir,
                 token=self.token,
             )
+        except RequestBodyTooLarge as exc:
+            response = json_response(413, {"ok": False, "error": str(exc)})
         except (json.JSONDecodeError, ValueError) as exc:
             response = json_response(400, {"ok": False, "error": str(exc)})
         except Exception as exc:

@@ -37,6 +37,51 @@ def cli_error(error: str, *, lane: str, artifact_dir: Path) -> dict[str, object]
 
 def render_answer(payload: dict[str, object]) -> str:
     lines = [str(payload["answer"]), ""]
+    if payload.get("answer_shape") == "repellency_comparison":
+        claim = payload.get("claim")
+        if isinstance(claim, dict):
+            lines.append(f"Claim status: {claim.get('status', 'unknown')}")
+            reasons = claim.get("reasons")
+            if isinstance(reasons, list) and reasons:
+                for reason in reasons:
+                    if isinstance(reason, dict):
+                        lines.append(f"- {reason.get('message', reason.get('code', 'unspecified reason'))}")
+        coverage = payload.get("coverage")
+        if isinstance(coverage, dict):
+            lines.append("")
+            lines.append(
+                "Coverage: "
+                f"{coverage.get('deduplicated_papers', 0)} deduplicated paper(s), "
+                f"{coverage.get('papers_with_depth_outcome', 0)} depth outcome(s), "
+                f"{coverage.get('structured_assay_facts', 0)} structured assay fact(s), "
+                f"{coverage.get('unresolved_source_gaps', 0)} unresolved source gap(s)."
+            )
+        comparison = payload.get("comparison")
+        if isinstance(comparison, dict):
+            rows = comparison.get("rows")
+            if isinstance(rows, list) and rows:
+                lines.extend(("", "Comparison rows:"))
+                for row in rows:
+                    if not isinstance(row, dict):
+                        continue
+                    dimensions = []
+                    for label, key in (
+                        ("compound", "compounds"),
+                        ("exposure", "exposure_modes"),
+                        ("assay", "assays"),
+                        ("endpoint", "endpoints"),
+                        ("dose", "dose"),
+                        ("outcome", "outcome"),
+                        ("duration", "duration"),
+                    ):
+                        value = row.get(key)
+                        if isinstance(value, list):
+                            value = ", ".join(str(item) for item in value)
+                        if value:
+                            dimensions.append(f"{label}={value}")
+                    row_title = row.get("paper_title") or row.get("title") or row.get("record_id", "assay fact")
+                    lines.append(f"- {row_title}: " + "; ".join(dimensions))
+        lines.append("")
     evidence = payload.get("evidence") or []
     if evidence:
         lines.append("Evidence:")
@@ -581,6 +626,21 @@ def main(argv: list[str] | None = None) -> int:
     ingest_mosquito_repellent_external_discovery = sub.add_parser("ingest-mosquito-repellent-external-discovery")
     ingest_mosquito_repellent_external_discovery.add_argument("--hosted", action="store_true")
     ingest_mosquito_repellent_external_discovery.add_argument("--max-results-per-source", type=int, default=50)
+
+    ingest_literature_depth = sub.add_parser("ingest-literature-depth")
+    ingest_literature_depth.add_argument("--hosted", action="store_true")
+    literature_depth_selection = ingest_literature_depth.add_mutually_exclusive_group(required=True)
+    literature_depth_selection.add_argument("--profile")
+    literature_depth_selection.add_argument("--all", action="store_true")
+    ingest_literature_depth.add_argument("--retrieved-at")
+    ingest_literature_depth.add_argument("--max-fulltext-units", type=int, default=2000)
+    ingest_literature_depth.add_argument("--discover-supplements", action="store_true")
+    ingest_literature_depth.add_argument("--download-supplements", action="store_true")
+    ingest_literature_depth.add_argument("--max-supplement-discovery-records", type=int, default=2000)
+    ingest_literature_depth.add_argument("--max-repository-supplement-discovery-records", type=int, default=100)
+    ingest_literature_depth.add_argument("--max-supplement-files", type=int, default=50)
+    ingest_literature_depth.add_argument("--max-supplement-bytes", type=int, default=DEFAULT_MAX_SUPPLEMENT_BYTES)
+    ingest_literature_depth.add_argument("--max-pdf-supplement-files", type=int, default=10)
 
     args = parser.parse_args(argv)
     artifact_dir = Path(args.artifact_dir)
@@ -2098,6 +2158,33 @@ def main(argv: list[str] | None = None) -> int:
         payload = emit_hosted(
             "POST",
             "/ingest/mosquito-repellent-external-discovery",
+            request_payload,
+            timeout=3600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-literature-depth":
+        request_payload = {
+            "profile": args.profile,
+            "all_profiles": args.all,
+            "retrieved_at": args.retrieved_at,
+            "max_fulltext_units": args.max_fulltext_units,
+            "discover_supplements": args.discover_supplements,
+            "download_supplements": args.download_supplements,
+            "max_supplement_discovery_records": args.max_supplement_discovery_records,
+            "max_repository_supplement_discovery_records": args.max_repository_supplement_discovery_records,
+            "max_supplement_files": args.max_supplement_files,
+            "max_supplement_bytes": args.max_supplement_bytes,
+            "max_pdf_supplement_files": args.max_pdf_supplement_files,
+        }
+        if not args.hosted:
+            from scripts.ingest_literature_depth import ingest_literature_depth
+
+            payload = ingest_literature_depth(artifact_dir=artifact_dir, **request_payload)
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/literature-depth",
             request_payload,
             timeout=3600,
         )

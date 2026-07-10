@@ -2649,6 +2649,14 @@ sources:
     input_literature_source_id: mosquito_repellent_literature
     raw_artifact_dir: artifacts/mosquito-v1/raw/mosquito_repellent_literature_extracted_facts
     ingest_script: scripts/ingest_literature_depth.py
+    fact_families:
+      - repellency_assay
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+      - genomics
     lanes:
       - behavior
       - vector_competence
@@ -2666,6 +2674,14 @@ sources:
     input_literature_source_id: mosquito_repellent_external_discovery
     raw_artifact_dir: artifacts/mosquito-v1/raw/mosquito_repellent_external_discovery_extracted_facts
     ingest_script: scripts/ingest_literature_depth.py
+    fact_families:
+      - repellency_assay
+      - behavior
+      - vector_competence
+      - resistance
+      - ecology
+      - public_health
+      - genomics
     lanes:
       - behavior
       - vector_competence

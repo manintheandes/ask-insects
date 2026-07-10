@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from askinsects.sources.extracted_facts import ExtractedFactsProfile, FactFamily
+from askinsects.sources.repellency_facts import REPELLENCY_ASSAY_FACT_FAMILY
 
 
 DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID = "drosophila_suzukii_extracted_facts"
@@ -9,7 +10,7 @@ SPECIES = "Drosophila suzukii"
 COMMON_NAME = "spotted wing drosophila"
 
 
-DROSOPHILA_SUZUKII_FACT_FAMILIES: tuple[FactFamily, ...] = (
+_DROSOPHILA_SUZUKII_BASE_FACT_FAMILIES: tuple[FactFamily, ...] = (
     FactFamily(
         fact_type="behavior",
         lane="behavior",
@@ -166,6 +167,12 @@ DROSOPHILA_SUZUKII_FACT_FAMILIES: tuple[FactFamily, ...] = (
             "tissue_or_stage": ("adult", "larva", "larvae", "antenna", "ovary", "male", "female"),
         },
     ),
+)
+
+
+DROSOPHILA_SUZUKII_FACT_FAMILIES = (
+    *_DROSOPHILA_SUZUKII_BASE_FACT_FAMILIES,
+    REPELLENCY_ASSAY_FACT_FAMILY,
 )
 
 

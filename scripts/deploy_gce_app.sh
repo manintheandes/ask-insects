@@ -28,6 +28,7 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   mkdir -p '$REMOTE_DIR'
   tar -xzf /tmp/ask-insects-deploy.tgz -C '$REMOTE_DIR'
   printf 'ASK_INSECTS_TOKEN=%s\n' '$TOKEN' > '$REMOTE_DIR/.env'
+  chmod 600 '$REMOTE_DIR/.env'
   sudo cp '$REMOTE_DIR/deploy/systemd/ask-insects.service' /etc/systemd/system/ask-insects.service
   sudo systemctl daemon-reload
   sudo systemctl enable ask-insects

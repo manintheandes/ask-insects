@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "askinsects"
 version = "0.1.0"
@@ -10,7 +14,6 @@ dependencies = [
   "Pillow>=10",
 ]
 classifiers = [
-  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3",
 ]
 
@@ -19,6 +22,7 @@ classifiers = [
 # parsing uses the stdlib (zipfile/ElementTree), so this is not a runtime dep.
 dev = [
   "openpyxl>=3.1",
+  "pytest>=8.0",
 ]
 
 [project.scripts]
@@ -27,6 +31,9 @@ ask-insects = "askinsects.cli:main"
 [project.urls]
 Homepage = "https://openinsects.org"
 Source = "https://github.com/manintheandes/ask-insects"
+
+[tool.setuptools.packages.find]
+include = ["askinsects*", "scripts*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
