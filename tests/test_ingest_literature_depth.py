@@ -71,13 +71,19 @@ def test_ingest_profile_writes_source_grade_status_and_receipt(tmp_path: Path):
 
 
 def test_hosted_route_runs_a_bounded_literature_depth_profile(tmp_path: Path):
-    with patch(
-        "scripts.ingest_literature_depth.ingest_literature_depth",
-        return_value={
-            "ok": True,
-            "results": [{"source": "mosquito_repellent_literature_extracted_facts"}],
-        },
-    ) as ingest:
+    with (
+        patch(
+            "scripts.ingest_literature_depth.ingest_literature_depth",
+            return_value={
+                "ok": True,
+                "results": [{"source": "mosquito_repellent_literature_extracted_facts"}],
+            },
+        ) as ingest,
+        patch(
+            "askinsects.server.rewrite_artifact_references",
+            side_effect=lambda _staging, _artifact_dir, result, **_kwargs: result,
+        ) as rewrite,
+    ):
         response = dispatch_request(
             "POST",
             "/ingest/literature-depth",
@@ -102,6 +108,9 @@ def test_hosted_route_runs_a_bounded_literature_depth_profile(tmp_path: Path):
     assert kwargs["max_fulltext_units"] == 25
     assert kwargs["discover_supplements"] is True
     assert kwargs["max_supplement_files"] == 7
+    assert rewrite.call_args.kwargs["source"] == (
+        "mosquito_repellent_literature_extracted_facts"
+    )
     assert response.payload["staged"] is True
     assert response.payload["activated_artifact_dir"] == str(tmp_path)
 
