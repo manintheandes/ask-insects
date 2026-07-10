@@ -4208,13 +4208,14 @@ def ingest_literature_depth_staged(
         if not result.get("ok"):
             shutil.rmtree(staging, ignore_errors=True)
             return result
-        rewrite_source = selected_source_ids[0] if len(selected_source_ids) == 1 else None
-        response = rewrite_artifact_references(
-            staging,
-            artifact_dir,
-            result,
-            source=rewrite_source,
-        )
+        response = result
+        for source_id in selected_source_ids:
+            response = rewrite_artifact_references(
+                staging,
+                artifact_dir,
+                response,
+                source=source_id,
+            )
         activate_source_staging_dirs(
             staging,
             artifact_dir,

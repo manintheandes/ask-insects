@@ -132,3 +132,29 @@ def test_hosted_route_rejects_string_boolean_options(tmp_path: Path):
     assert response.status == 400
     assert response.payload["error"] == "download_supplements must be a boolean"
     ingest.assert_not_called()
+
+
+def test_hosted_route_scopes_all_profile_path_rewrites(tmp_path: Path):
+    with (
+        patch(
+            "scripts.ingest_literature_depth.ingest_literature_depth",
+            return_value={"ok": True, "results": []},
+        ),
+        patch(
+            "askinsects.server.rewrite_artifact_references",
+            side_effect=lambda _staging, _artifact_dir, result, **_kwargs: result,
+        ) as rewrite,
+    ):
+        response = dispatch_request(
+            "POST",
+            "/ingest/literature-depth",
+            {"all_profiles": True},
+            headers={"Authorization": "Bearer secret"},
+            artifact_dir=tmp_path,
+            token="secret",
+        )
+
+    assert response.status == 200
+    assert [call.kwargs["source"] for call in rewrite.call_args_list] == list(
+        LITERATURE_DEPTH_PROFILES
+    )
