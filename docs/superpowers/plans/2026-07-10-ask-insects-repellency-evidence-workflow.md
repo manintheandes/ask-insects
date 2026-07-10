@@ -37,6 +37,8 @@ Branch: `codex/repellency-evidence-workflow`
 7. Add all new production files and tests to the completion gate.
 8. Run focused tests, all tests, static checks, package/build checks, completion
    verification, and hosted-facing acceptance probes.
+9. Bind the hosted service to loopback, remove public port 8080 access, install
+   the persistent local SSH tunnel, and verify the live CLI through that tunnel.
 
 ## Evaluation Questions
 
@@ -55,3 +57,4 @@ The first corpus must cover:
 
 Do not ship if any evaluation emits an unqualified superlative, omits evidence
 coverage, loses provenance, or treats metadata-only records as comparison-ready.
+Do not ship while the bearer-token service is reachable over public HTTP.

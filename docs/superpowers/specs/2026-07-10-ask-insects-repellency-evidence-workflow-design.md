@@ -123,6 +123,11 @@ literature-depth ingest must produce source status and a receipt atomically.
 These are release prerequisites because incorrect source state invalidates the
 coverage ledger.
 
+The hosted service must bind to the VM loopback interface, with no public
+firewall rule for port 8080. Local clients connect through a persistent,
+encrypted SSH tunnel. Deployment is incomplete until the tunnel-backed CLI
+passes health and a realistic repellency question.
+
 ## Non-Goals
 
 - Claiming exhaustive coverage of paywalled or inaccessible literature.

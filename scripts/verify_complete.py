@@ -194,6 +194,8 @@ REQUIRED_FILES = (
     "scripts/ingest_neurobiology_sources.py",
     "scripts/deploy_gce_app.sh",
     "scripts/deploy_gce_vm.sh",
+    "scripts/install_hosted_tunnel_launchd.sh",
+    "scripts/run_hosted_tunnel.sh",
     "scripts/verify_complete.py",
     "scripts/verify_mosquito_intelligence_coverage.py",
     "scripts/build_literature_facets.py",

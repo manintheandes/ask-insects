@@ -24,7 +24,7 @@ gcloud compute scp "$ARCHIVE" "$VM:/tmp/ask-insects-deploy.tgz" --zone "$ZONE"
 gcloud compute ssh "$VM" --zone "$ZONE" --command "
   set -euo pipefail
   sudo apt-get update
-  sudo apt-get install -y python3 python3-h5py python3-pil ffmpeg poppler-utils
+  sudo apt-get install -y python3 python3-h5py python3-pil curl ffmpeg poppler-utils
   mkdir -p '$REMOTE_DIR'
   tar -xzf /tmp/ask-insects-deploy.tgz -C '$REMOTE_DIR'
   printf 'ASK_INSECTS_TOKEN=%s\n' '$TOKEN' > '$REMOTE_DIR/.env'
@@ -33,4 +33,7 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   sudo systemctl daemon-reload
   sudo systemctl enable ask-insects
   sudo systemctl restart ask-insects
+  curl --retry 30 --retry-delay 1 --retry-connrefused --max-time 10 -fsS \
+    -H 'Authorization: Bearer $TOKEN' \
+    http://127.0.0.1:8080/health >/dev/null
 "
