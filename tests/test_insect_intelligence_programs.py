@@ -250,6 +250,10 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
                 "Does a source gap in spotted wing drosophila ecology mean the literature itself contains no evidence?",
                 artifact_dir=artifact_dir,
             )
+            uncertainty_answer = answer_question(
+                "Does partial Aedes genetics coverage remove all uncertainty?",
+                artifact_dir=artifact_dir,
+            )
 
         self.assertIn("public evidence layer", private_answer["answer"])
         self.assertIn("cannot expose or import private Ask Monarch", private_answer["answer"])
@@ -260,6 +264,11 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertIn("Unverified evidence cannot be presented as a settled result", unverified_answer["answer"])
         self.assertIn("does not show that the literature contains no evidence", source_gap_answer["answer"])
         self.assertIn("source gap", source_gap_answer["answer"])
+        self.assertTrue(uncertainty_answer["answer"].startswith("No."))
+        self.assertIn(
+            "partial coverage does not remove uncertainty",
+            uncertainty_answer["answer"].lower(),
+        )
 
     def test_next_insect_question_returns_the_portfolio_and_diamondback_moth(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -334,6 +334,8 @@ def evaluate_case(
         failures.append("normal Ask Insects call did not use the compact agent payload")
     if len(ask_commands) > 1:
         failures.append(f"normal answer used {len(ask_commands)} ask-insects calls; expected exactly one")
+    if len(execution.commands) != 1 or execution.commands != ask_commands:
+        failures.append("normal answer used commands other than the single hosted Ask Insects call")
 
     for command in execution.commands:
         command_lower = command.casefold()

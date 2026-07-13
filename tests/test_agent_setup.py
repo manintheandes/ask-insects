@@ -16,8 +16,9 @@ class AgentSetupTests(unittest.TestCase):
         text = " ".join(Path("AGENTS.md").read_text(encoding="utf-8").split())
 
         for term in (
-            "the first operational command",
+            "first and only operational command",
             "the user's exact question",
+            "Do not open or read the Ask Insects skill file",
             "Do not inspect memory",
             "Chronicle",
             "answer immediately without another command",

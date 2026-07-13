@@ -5136,6 +5136,16 @@ def _insect_intelligence_calibration_prefix(question: str) -> str:
             "A source gap means adequate evidence is not queryable in Ask Insects; it does not show that the "
             "literature contains no evidence."
         )
+    if any(
+        term in q
+        for term in (
+            "remove all uncertainty",
+            "remove uncertainty",
+            "eliminate all uncertainty",
+            "eliminate uncertainty",
+        )
+    ):
+        statements.append("No. Partial coverage does not remove uncertainty.")
     if any(term in q for term in ("adding", "add a new insect", "new insect")) and any(
         term in q for term in ("redesign", "answer-routing design", "new design")
     ):
