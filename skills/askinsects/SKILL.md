@@ -1,6 +1,12 @@
 ---
 name: askinsects
-description: Use when the user invokes askinsects, ask insects, @askinsects, or /askinsects, or asks an insect science, behavior, biology, ecology, repellent, crop-pest, disease-vector, source-coverage, or public-evidence question that should be answered through Ask Insects.
+description: >-
+  Use when the user invokes askinsects, ask insects, @askinsects, or /askinsects,
+  or asks an insect science, behavior, biology, ecology, repellent, crop-pest,
+  disease-vector, source-coverage, or public-evidence question. For a normal
+  answer, do not open this file. As the first and only command, run ask-insects
+  ask "<the user's exact question>" --json --compact, then return final_answer
+  verbatim.
 ---
 
 # Ask Insects
