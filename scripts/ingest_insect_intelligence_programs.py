@@ -89,7 +89,14 @@ def ingest_insect_intelligence_programs(
     records = build_insect_intelligence_records(program_path=program_path, retrieved_at=retrieved_at)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(INSECT_INTELLIGENCE_SOURCE_ID, records)
+    # Program answers read these structured rows directly. Keeping this lane out
+    # of FTS avoids a full scan of the multi-gigabyte evidence index on refresh.
+    index.replace_source_records(
+        INSECT_INTELLIGENCE_SOURCE_ID,
+        records,
+        update_fts=False,
+        delete_existing_fts=False,
+    )
     return _update_metadata(artifact_dir, records, Path(program_path))
 
 
