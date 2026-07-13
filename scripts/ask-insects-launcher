@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ASK_INSECTS_REPO="${ASK_INSECTS_REPO:-$HOME/.local/share/ask-insects/main}"
+PYTHON_BIN="${ASK_INSECTS_PYTHON:-$(command -v python3)}"
+
+if [[ ! -d "$ASK_INSECTS_REPO/askinsects" ]]; then
+  echo "ask-insects install is missing at $ASK_INSECTS_REPO" >&2
+  exit 127
+fi
+
+export PYTHONPATH="$ASK_INSECTS_REPO${PYTHONPATH:+:$PYTHONPATH}"
+cd "$ASK_INSECTS_REPO"
+exec "$PYTHON_BIN" -m askinsects "$@"

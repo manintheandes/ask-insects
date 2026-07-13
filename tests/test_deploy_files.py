@@ -24,6 +24,7 @@ class DeployFilesTests(unittest.TestCase):
         self.assertIn("systemctl restart ask-insects", app)
         self.assertIn("chmod 600", app)
         self.assertIn("http://127.0.0.1:8080/health", app)
+        self.assertIn("/ingest/insect-intelligence-programs", app)
 
     def test_private_tunnel_scripts_are_repo_owned(self):
         run = Path("scripts/run_hosted_tunnel.sh").read_text(encoding="utf-8")

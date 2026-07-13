@@ -18,6 +18,8 @@ Do not answer insect questions from model memory when the source index can be qu
 
 **Hosted plane is the only answer surface.** The canonical evidence lives on the hosted VM, not in the local checkout. Read commands (`ask`, `search`, `sql`, `summary`, `sources`, `health`) route to the hosted plane **by default** — you do not need (and should not rely on) a local index for answers. A bare `ask-insects sql "..."` hits hosted. The `--local` flag is a dev-only escape that warns loudly and reads the (usually empty) local index; never use it to conclude a source is "not queryable." If a source id shows zero rows locally, re-check on the hosted plane before reporting a gap.
 
+Normal user questions must not run repository tests, install or refresh skills, or refresh sources. Release work refreshes the local runtime and repo-owned skill with `bash scripts/install_local_runtime.sh`; `ask-insects setup-agent` refreshes only the skill.
+
 ## Completion Gate
 
 Run:

@@ -147,6 +147,9 @@ def main(argv: list[str] | None = None) -> int:
     setup.add_argument("--url", required=True)
     setup.add_argument("--token", required=True)
 
+    setup_agent = sub.add_parser("setup-agent")
+    setup_agent.add_argument("--destination")
+
     _LOCAL_HELP = "Dev-only escape: query the LOCAL index instead of the hosted plane (warns; results may be empty/stale)."
 
     health = sub.add_parser("health")
@@ -682,6 +685,13 @@ def main(argv: list[str] | None = None) -> int:
             payload["error"] = health_payload["error"]
         emit(payload)
         return 0 if payload["ok"] else 2
+    if args.command == "setup-agent":
+        from askinsects.agent_setup import DEFAULT_SKILL_DESTINATION, install_askinsects_skill
+
+        destination = Path(args.destination) if args.destination else DEFAULT_SKILL_DESTINATION
+        payload = install_askinsects_skill(destination=destination)
+        emit(payload)
+        return 0 if payload.get("ok") else 2
     if args.command == "health":
         if args.hosted:
             payload = emit_hosted("GET", "/health")
