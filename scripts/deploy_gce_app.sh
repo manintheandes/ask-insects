@@ -36,4 +36,9 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   curl --retry 30 --retry-delay 1 --retry-connrefused --max-time 10 -fsS \
     -H 'Authorization: Bearer $TOKEN' \
     http://127.0.0.1:8080/health >/dev/null
+  curl --max-time 120 -fsS -X POST \
+    -H 'Authorization: Bearer $TOKEN' \
+    -H 'Content-Type: application/json' \
+    --data '{}' \
+    http://127.0.0.1:8080/ingest/insect-intelligence-programs >/dev/null
 "

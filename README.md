@@ -34,6 +34,16 @@ python3 -m askinsects ask "what is the product readiness status of the human mos
 
 Species and assay context fail closed. Evidence from another insect may be useful as a clearly labeled inference, but it cannot silently become evidence about the focal species. Planning and readiness records are not proof that a product works.
 
+### Codex Runtime
+
+Install or refresh the local CLI runtime and the repo-owned Ask Insects skill together:
+
+```bash
+bash scripts/install_local_runtime.sh
+```
+
+Normal user questions go directly through the installed skill to the hosted production source plane. Do not run setup, installation, repository tests, or source refreshes inside a normal answer. The repo-owned skill can be refreshed by itself during maintenance with `ask-insects setup-agent`.
+
 ### Aedes Deep Source Program
 
 The existing comprehensive-source strategy is Aedes-first within the mosquito program: build Ask Insects toward the most comprehensive `Aedes aegypti` intelligence system in the world. That is the goal, not a claim the repo is allowed to make blindly. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for that source-depth push.
