@@ -65,6 +65,29 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0], ("https://ask-insects.example", "GET", "/health", None))
         self.assertTrue(json.loads(output)["hosted"])
 
+    def test_hosted_insect_intelligence_ingest_sends_program_ledger(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 99}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-insect-intelligence-programs",
+                "--hosted",
+                "--program-path",
+                "config/insect-intelligence-programs.json",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/insect-intelligence-programs")
+        self.assertEqual(calls[0][2], {"program_path": "config/insect-intelligence-programs.json"})
+        self.assertEqual(calls[0][3], 120)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_literature_depth_ingest_sends_profile_and_bounds(self):
         calls = []
 

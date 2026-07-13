@@ -590,6 +590,13 @@ def main(argv: list[str] | None = None) -> int:
     ingest_source_coverage.add_argument("--hosted", action="store_true")
     ingest_source_coverage.add_argument("--coverage-path", default="config/mosquito-intelligence-coverage.json")
 
+    ingest_insect_intelligence_programs = sub.add_parser("ingest-insect-intelligence-programs")
+    ingest_insect_intelligence_programs.add_argument("--hosted", action="store_true")
+    ingest_insect_intelligence_programs.add_argument(
+        "--program-path",
+        default="config/insect-intelligence-programs.json",
+    )
+
     ingest_occurrence_ecology = sub.add_parser("ingest-occurrence-ecology")
     ingest_occurrence_ecology.add_argument("--hosted", action="store_true")
 
@@ -2035,6 +2042,23 @@ def main(argv: list[str] | None = None) -> int:
             "POST",
             "/ingest/source-coverage",
             {"coverage_path": args.coverage_path},
+            timeout=120,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-insect-intelligence-programs":
+        if not args.hosted:
+            from scripts.ingest_insect_intelligence_programs import ingest_insect_intelligence_programs
+
+            payload = ingest_insect_intelligence_programs(
+                artifact_dir=artifact_dir,
+                program_path=Path(args.program_path),
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/insect-intelligence-programs",
+            {"program_path": args.program_path},
             timeout=120,
         )
         return 0 if payload.get("ok") else 2

@@ -26,6 +26,7 @@ REQUIRED_FILES = (
     "THIRD_PARTY_DATA.md",
     "pyproject.toml",
     "config/source-map.yaml",
+    "config/insect-intelligence-programs.json",
     "config/mosquito-intelligence-coverage.json",
     "config/aedes-source-plane-benchmark.json",
     "data/fixtures/mosquito_records.json",
@@ -66,6 +67,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-06-05-swd-aedes-parity-program-design.md",
     "docs/superpowers/specs/2026-06-05-swd-neurobiology-olfaction-lane-design.md",
     "docs/superpowers/specs/2026-07-10-ask-insects-repellency-evidence-workflow-design.md",
+    "docs/superpowers/specs/2026-07-13-dual-product-insect-intelligence-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -101,6 +103,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-29-swd-susceptibility-assay-lane.md",
     "docs/superpowers/plans/2026-05-29-swd-biocontrol-outcome-lane.md",
     "docs/superpowers/plans/2026-07-10-ask-insects-repellency-evidence-workflow.md",
+    "docs/superpowers/plans/2026-07-13-dual-product-insect-intelligence.md",
     "evals/repellency_comparison_v1.json",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -153,6 +156,7 @@ REQUIRED_FILES = (
     "askinsects/sources/mosquito_repellent_literature.py",
     "askinsects/sources/mosquito_repellent_external_discovery.py",
     "askinsects/sources/repellency_facts.py",
+    "askinsects/sources/insect_intelligence_programs.py",
     "askinsects/sources/literature_depth_profiles.py",
     "askinsects/sources/uniprot_proteins.py",
     "askinsects/sources/wolbachia_interventions.py",
@@ -234,6 +238,7 @@ REQUIRED_FILES = (
     "scripts/ingest_mosquito_repellent_external_discovery.py",
     "scripts/ingest_literature_depth.py",
     "scripts/eval_repellency_comparison.py",
+    "scripts/ingest_insect_intelligence_programs.py",
     "scripts/ingest_uniprot_proteins.py",
     "scripts/ingest_wolbachia_interventions.py",
     "scripts/ingest_vectorbyte_traits.py",
@@ -357,6 +362,7 @@ REQUIRED_FILES = (
     "tests/test_literature_depth_profiles.py",
     "tests/test_ingest_literature_depth.py",
     "tests/test_repellency_comparison.py",
+    "tests/test_insect_intelligence_programs.py",
     "tests/test_uniprot_proteins_source.py",
     "tests/test_wolbachia_interventions_source.py",
     "tests/test_vectorbyte_traits_source.py",
@@ -505,6 +511,7 @@ UNIT_TEST_MODULES = (
     "tests.test_literature_depth_profiles",
     "tests.test_ingest_literature_depth",
     "tests.test_repellency_comparison",
+    "tests.test_insect_intelligence_programs",
     "tests.test_uniprot_proteins_source",
     "tests.test_wolbachia_interventions_source",
     "tests.test_ingest_wave1_sources",
@@ -1387,6 +1394,109 @@ def check_mosquito_intelligence_coverage() -> None:
             raise RuntimeError(f"config/source-map.yaml missing Aedes deep-source term: {term}")
 
 
+def check_insect_intelligence_programs() -> None:
+    from askinsects.sources.insect_intelligence_programs import (
+        REQUIRED_KNOWLEDGE_DOMAINS,
+        REQUIRED_READINESS_DIMENSIONS,
+        load_program_ledger,
+    )
+
+    payload = load_program_ledger(REPO_ROOT / "config/insect-intelligence-programs.json")
+    product_ids = {str(item.get("id")) for item in payload["products"] if isinstance(item, dict)}
+    species_ids = {str(item.get("id")) for item in payload["species"] if isinstance(item, dict)}
+    domain_ids = {str(item.get("id")) for item in payload["knowledge_domains"] if isinstance(item, dict)}
+    readiness_ids = {str(item.get("id")) for item in payload["readiness_dimensions"] if isinstance(item, dict)}
+    if product_ids != {"swd_crop_repellent", "human_mosquito_repellent"}:
+        raise RuntimeError(f"insect-intelligence product mismatch: {sorted(product_ids)}")
+    if species_ids != {"drosophila_suzukii", "aedes_aegypti", "plutella_xylostella"}:
+        raise RuntimeError(f"insect-intelligence species mismatch: {sorted(species_ids)}")
+    if domain_ids != REQUIRED_KNOWLEDGE_DOMAINS:
+        raise RuntimeError("insect-intelligence knowledge-domain contract mismatch")
+    if readiness_ids != REQUIRED_READINESS_DIMENSIONS:
+        raise RuntimeError("insect-intelligence readiness-dimension contract mismatch")
+
+    source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
+    mapped_source_ids = set(re.findall(r"^  - id: ([^ ]+)$", source_map, flags=re.MULTILINE))
+    referenced_source_ids = {
+        str(source_id)
+        for subject in [*payload["products"], *payload["species"]]
+        if isinstance(subject, dict)
+        for entry in [*subject.get("readiness", []), *subject.get("domains", [])]
+        if isinstance(entry, dict)
+        for source_id in entry.get("current_sources", [])
+    }
+    missing_source_ids = referenced_source_ids - mapped_source_ids
+    if missing_source_ids:
+        raise RuntimeError(f"insect-intelligence ledger references unmapped source ids: {sorted(missing_source_ids)}")
+    for term in (
+        "insect_intelligence_programs",
+        "config/insect-intelligence-programs.json",
+        "scripts/ingest_insect_intelligence_programs.py",
+        "validated_program_ledger_to_sqlite_insect_intelligence_records",
+        "insect_intelligence",
+        "Plutella xylostella",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing insect-intelligence term: {term}")
+    for doc_path in ("README.md", "docs/source-lanes.md", "docs/querying-ask-insects.md"):
+        text = (REPO_ROOT / doc_path).read_text(encoding="utf-8").lower()
+        for term in ("insect-intelligence-programs.json", "diamondback moth", "human mosquito repellent"):
+            if term.lower() not in text:
+                raise RuntimeError(f"{doc_path} missing insect-intelligence term: {term}")
+
+    result = run_json(
+        [
+            sys.executable,
+            "-m",
+            "askinsects",
+            "--artifact-dir",
+            VERIFY_ARTIFACT_DIR.as_posix(),
+            "ingest-insect-intelligence-programs",
+        ]
+    )
+    if result.get("ok") is not True:
+        raise RuntimeError("insect-intelligence program ingest did not report ok true")
+    if int(result.get("species_count", 0)) != 3 or int(result.get("product_count", 0)) != 2:
+        raise RuntimeError("insect-intelligence program ingest returned the wrong species or product count")
+    if int(result.get("knowledge_domain_count", 0)) != 3 * len(REQUIRED_KNOWLEDGE_DOMAINS):
+        raise RuntimeError("insect-intelligence program ingest returned the wrong knowledge-domain count")
+    if int(result.get("readiness_dimension_count", 0)) != 2 * len(REQUIRED_READINESS_DIMENSIONS):
+        raise RuntimeError("insect-intelligence program ingest returned the wrong readiness-dimension count")
+    if int(result.get("gap_count", 0)) < len(REQUIRED_KNOWLEDGE_DOMAINS):
+        raise RuntimeError("insect-intelligence program ingest did not preserve explicit gaps")
+
+    questions = (
+        ("what is missing from diamondback moth biology coverage?", "Plutella xylostella", "14"),
+        ("what is the product readiness status of the human mosquito repellent?", None, "8"),
+    )
+    for question, expected_species, expected_count in questions:
+        answer = run_json(
+            [
+                sys.executable,
+                "-m",
+                "askinsects",
+                "--artifact-dir",
+                VERIFY_ARTIFACT_DIR.as_posix(),
+                "ask",
+                question,
+                "--json",
+                "--local",
+            ]
+        )
+        if answer.get("ok") is not True or not answer.get("evidence"):
+            raise RuntimeError(f"insect-intelligence answer lacked evidence for: {question}")
+        if expected_count not in str(answer.get("answer")):
+            raise RuntimeError(f"insect-intelligence answer lacked tracked count for: {question}")
+        first = answer["evidence"][0]
+        if first.get("source") != "insect_intelligence_programs":
+            raise RuntimeError(f"insect-intelligence answer used the wrong source for: {question}")
+        if expected_species and first.get("species") != expected_species:
+            raise RuntimeError(f"insect-intelligence answer used the wrong species for: {question}")
+        locator = str((first.get("provenance") or {}).get("locator") or "")
+        if not locator.startswith("config/insect-intelligence-programs.json#"):
+            raise RuntimeError(f"insect-intelligence answer lacked exact ledger provenance for: {question}")
+
+
 def check_aedes_source_plane_benchmark() -> None:
     benchmark_path = REPO_ROOT / "config/aedes-source-plane-benchmark.json"
     doc_path = REPO_ROOT / "docs/aedes-source-plane-benchmark.md"
@@ -2214,6 +2324,7 @@ def main() -> int:
         check_atomic_source_replacement()
         check_literature_source_map()
         check_mosquito_intelligence_coverage()
+        check_insect_intelligence_programs()
         check_aedes_source_plane_benchmark()
         check_cli()
         installed_db = REPO_ROOT / "artifacts/mosquito-v1/source_index.sqlite"

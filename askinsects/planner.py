@@ -17,6 +17,22 @@ def plan_question(question: str) -> QueryPlan:
     is_spotted_wing = any(
         term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila")
     ) or bool(re.search(r"\bswd\b", q))
+    insect_intelligence_terms = (
+        "insect intelligence",
+        "biology coverage",
+        "biological coverage",
+        "knowledge coverage",
+        "product readiness",
+        "product program",
+        "product programs",
+        "need to understand",
+        "needs to understand",
+        "which insect is next",
+        "next insect",
+    )
+    evidence_label_count = sum(term in q for term in ("direct", "inferred", "unverified"))
+    if any(term in q for term in insect_intelligence_terms) or ("evidence" in q and evidence_label_count >= 2):
+        return QueryPlan(question, "insect_intelligence", ("insect_intelligence",), question)
     if (
         any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila"))
         and any(term in q for term in ("pubmed", "pmid", "reconciliation"))

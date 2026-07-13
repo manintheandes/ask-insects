@@ -30,6 +30,18 @@ sources:
       - source_coverage
     provenance_required: true
     live_fetch: derived_from_repo_ledger
+  - id: insect_intelligence_programs
+    name: Ask Insects product and species intelligence programs
+    source_type: derived_repo_ledger
+    boundary: Queryable public evidence-coverage plans for the SWD crop repellent, human mosquito repellent, Drosophila suzukii, Aedes aegypti, and Plutella xylostella, with fourteen shared biological domains, eight product-readiness dimensions, directness and verification labels, uncertainty, disagreements, and explicit gaps
+    query_plane: validated_program_ledger_to_sqlite_insect_intelligence_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_insect_intelligence_programs.py
+    input_ledger: config/insect-intelligence-programs.json
+    lanes:
+      - insect_intelligence
+    provenance_required: true
+    live_fetch: derived_from_repo_ledger
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
     source_type: public_api_composite

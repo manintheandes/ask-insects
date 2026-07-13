@@ -46,6 +46,7 @@ from .sources.drosophila_suzukii_pubmed_literature import DROSOPHILA_SUZUKII_PUB
 from .sources.extracted_facts import EXTRACTED_FACTS_SOURCE_ID
 from .sources.expression_omics import EXPRESSION_OMICS_SOURCE_ID
 from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY_SOURCE_ID
+from .sources.insect_intelligence_programs import INSECT_INTELLIGENCE_SOURCE_ID
 from .sources.mosquito_repellent_literature import MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID
 from .sources.mosquito_repellent_external_discovery import MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID
 from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
@@ -5027,6 +5028,248 @@ def _source_coverage_payload(row: sqlite3.Row) -> dict[str, object]:
     return payload if isinstance(payload, dict) else {}
 
 
+def _insect_intelligence_payload(row: sqlite3.Row) -> dict[str, object]:
+    try:
+        payload = json.loads(str(row["payload_json"]))
+    except Exception:
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _alias_matches(question: str, alias: object) -> bool:
+    text = str(alias or "").strip().lower()
+    if not text:
+        return False
+    return bool(re.search(rf"(?<![a-z0-9]){re.escape(text)}(?![a-z0-9])", question.lower()))
+
+
+def _matching_intelligence_row(
+    question: str,
+    rows: list[sqlite3.Row],
+    *,
+    alias_fields: tuple[str, ...],
+) -> sqlite3.Row | None:
+    matches: list[tuple[int, sqlite3.Row]] = []
+    for row in rows:
+        payload = _insect_intelligence_payload(row)
+        aliases: list[object] = []
+        for field in alias_fields:
+            value = payload.get(field)
+            if isinstance(value, list):
+                aliases.extend(value)
+            elif value:
+                aliases.append(value)
+        matching_aliases = [str(alias) for alias in aliases if _alias_matches(question, alias)]
+        if matching_aliases:
+            matches.append((max(len(alias) for alias in matching_aliases), row))
+    if not matches:
+        return None
+    matches.sort(key=lambda item: (-item[0], str(item[1]["record_id"])))
+    return matches[0][1]
+
+
+def _matching_intelligence_dimensions(question: str, rows: list[sqlite3.Row]) -> list[str]:
+    matches: list[str] = []
+    for row in rows:
+        payload = _insect_intelligence_payload(row)
+        aliases = payload.get("aliases") if isinstance(payload.get("aliases"), list) else []
+        aliases = [payload.get("domain_name"), payload.get("dimension_name"), *aliases]
+        if any(_alias_matches(question, alias) for alias in aliases):
+            identifier = str(payload.get("domain") or payload.get("dimension") or "")
+            if identifier and identifier not in matches:
+                matches.append(identifier)
+    return matches
+
+
+def _insect_intelligence_summary_answer(
+    index: SourceIndex,
+    plan: QueryPlan,
+    *,
+    limit: int,
+) -> dict[str, object] | None:
+    if "insect_intelligence" not in plan.lanes:
+        return None
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ? AND r.lane = 'insect_intelligence'
+            ORDER BY r.record_id
+            """,
+            (INSECT_INTELLIGENCE_SOURCE_ID,),
+        ).fetchall()
+    if not rows:
+        return source_gap(plan, "The insect-intelligence program ledger has not been ingested into this source index.")
+
+    by_type: dict[str, list[sqlite3.Row]] = {}
+    for row in rows:
+        atom_type = str(_insect_intelligence_payload(row).get("atom_type") or "unknown")
+        by_type.setdefault(atom_type, []).append(row)
+    q = plan.question.lower()
+    wants_missing = any(term in q for term in ("missing", "gap", "gaps", "need to understand", "needs to understand"))
+    product_row = _matching_intelligence_row(
+        plan.question,
+        by_type.get("product_program", []),
+        alias_fields=("name", "aliases"),
+    )
+    species_row = _matching_intelligence_row(
+        plan.question,
+        by_type.get("species_profile", []),
+        alias_fields=("scientific_name", "common_name", "aliases"),
+    )
+    product_focused = any(term in q for term in ("product", "repellent", "readiness", "commercialization"))
+    portfolio_focused = any(term in q for term in ("which insect is next", "next insect", "next after"))
+    if portfolio_focused:
+        product_row = None
+        species_row = None
+
+    if product_row is not None and (product_focused or species_row is None):
+        product_payload = _insect_intelligence_payload(product_row)
+        product_id = str(product_payload.get("product_id") or "")
+        product_name = str(product_payload.get("name") or product_row["title"])
+        dimension_rows = [
+            row
+            for row in by_type.get("readiness_dimension", [])
+            if _insect_intelligence_payload(row).get("product_id") == product_id
+        ]
+        requested_dimensions = _matching_intelligence_dimensions(plan.question, dimension_rows)
+        if requested_dimensions:
+            dimension_rows = [
+                row for row in dimension_rows if _insect_intelligence_payload(row).get("dimension") in requested_dimensions
+            ]
+        gap_rows = [
+            row
+            for row in by_type.get("readiness_gap", [])
+            if _insect_intelligence_payload(row).get("product_id") == product_id
+            and (
+                not requested_dimensions
+                or _insect_intelligence_payload(row).get("dimension") in requested_dimensions
+            )
+        ]
+        status_counts: dict[str, int] = {}
+        for row in dimension_rows:
+            status = str(_insect_intelligence_payload(row).get("status") or "unknown")
+            status_counts[status] = status_counts.get(status, 0) + 1
+        status_text = ", ".join(
+            f"{status.replace('_', ' ')}: {count}" for status, count in sorted(status_counts.items())
+        )
+        top_gaps = [str(_insect_intelligence_payload(row).get("gap") or "") for row in gap_rows[:3]]
+        answer = (
+            f"Plainly: Ask Insects tracks {len(dimension_rows)} readiness dimensions for the {product_name}. "
+            f"This is evidence coverage, not a claim that the product works. Status mix: {status_text or 'not recorded'}. "
+            f"It currently lists {len(gap_rows)} explicit missing-evidence items. "
+            f"Leading gaps: {_short_list(top_gaps, limit=3)}."
+        )
+        selected_rows = gap_rows + dimension_rows if wants_missing else [product_row, *dimension_rows, *gap_rows]
+        evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows[:limit]]
+        return {
+            "ok": True,
+            "answer_shape": plan.answer_shape,
+            "answer": answer,
+            "evidence": [record_to_evidence(record) for record in evidence_records],
+            "source_gap": None,
+            "insect_intelligence": {
+                "subject_type": "product",
+                "subject_id": product_id,
+                "tracked_dimension_count": len(dimension_rows),
+                "gap_count": len(gap_rows),
+                "status_counts": status_counts,
+                "requested_dimensions": requested_dimensions,
+            },
+        }
+
+    if species_row is not None:
+        species_payload = _insect_intelligence_payload(species_row)
+        species_id = str(species_payload.get("species_id") or "")
+        scientific_name = str(species_payload.get("scientific_name") or species_row["species"] or "")
+        common_name = str(species_payload.get("common_name") or scientific_name)
+        domain_rows = [
+            row
+            for row in by_type.get("knowledge_domain", [])
+            if _insect_intelligence_payload(row).get("species_id") == species_id
+        ]
+        requested_domains = _matching_intelligence_dimensions(plan.question, domain_rows)
+        if requested_domains:
+            domain_rows = [
+                row for row in domain_rows if _insect_intelligence_payload(row).get("domain") in requested_domains
+            ]
+        gap_rows = [
+            row
+            for row in by_type.get("knowledge_gap", [])
+            if _insect_intelligence_payload(row).get("species_id") == species_id
+            and (not requested_domains or _insect_intelligence_payload(row).get("domain") in requested_domains)
+        ]
+        status_counts: dict[str, int] = {}
+        direct_domain_count = 0
+        for row in domain_rows:
+            payload = _insect_intelligence_payload(row)
+            status = str(payload.get("status") or "unknown")
+            status_counts[status] = status_counts.get(status, 0) + 1
+            if status not in {"source_gap", "not_started"} and payload.get("evidence_scope") == "direct":
+                direct_domain_count += 1
+        status_text = ", ".join(
+            f"{status.replace('_', ' ')}: {count}" for status, count in sorted(status_counts.items())
+        )
+        top_gaps = [str(_insect_intelligence_payload(row).get("gap") or "") for row in gap_rows[:3]]
+        answer = (
+            f"Plainly: Ask Insects tracks {len(domain_rows)} biological knowledge domains for {common_name} "
+            f"({scientific_name}). {direct_domain_count} currently have direct, queryable coverage and "
+            f"{len(gap_rows)} missing-evidence items remain explicit. Status mix: {status_text or 'not recorded'}. "
+            f"Leading gaps: {_short_list(top_gaps, limit=3)}."
+        )
+        selected_rows = gap_rows + domain_rows if wants_missing else [species_row, *domain_rows, *gap_rows]
+        evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows[:limit]]
+        return {
+            "ok": True,
+            "answer_shape": plan.answer_shape,
+            "answer": answer,
+            "evidence": [record_to_evidence(record) for record in evidence_records],
+            "source_gap": None,
+            "insect_intelligence": {
+                "subject_type": "species",
+                "subject_id": species_id,
+                "tracked_dimension_count": len(domain_rows),
+                "direct_domain_count": direct_domain_count,
+                "gap_count": len(gap_rows),
+                "status_counts": status_counts,
+                "requested_dimensions": requested_domains,
+            },
+        }
+
+    portfolio_rows = by_type.get("portfolio_overview", [])
+    portfolio_row = portfolio_rows[0] if portfolio_rows else None
+    product_rows = by_type.get("product_program", [])
+    species_rows = by_type.get("species_profile", [])
+    product_names = [str(_insect_intelligence_payload(row).get("name") or row["title"]) for row in product_rows]
+    species_bits = [
+        f"{_insect_intelligence_payload(row).get('common_name')} ({_insect_intelligence_payload(row).get('role')})"
+        for row in species_rows
+    ]
+    answer = (
+        f"Plainly: Ask Insects supports {len(product_rows)} initial product programs: {_short_list(product_names, limit=4)}. "
+        f"It currently tracks {len(species_rows)} insect profiles: {_short_list(species_bits, limit=5)}."
+    )
+    selected_rows = ([portfolio_row] if portfolio_row is not None else []) + product_rows + species_rows
+    evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows[:limit]]
+    return {
+        "ok": True,
+        "answer_shape": plan.answer_shape,
+        "answer": answer,
+        "evidence": [record_to_evidence(record) for record in evidence_records],
+        "source_gap": None,
+        "insect_intelligence": {
+            "subject_type": "portfolio",
+            "subject_id": "portfolio",
+            "tracked_dimension_count": len(product_rows) + len(species_rows),
+            "gap_count": len(by_type.get("knowledge_gap", [])) + len(by_type.get("readiness_gap", [])),
+            "status_counts": {},
+            "requested_dimensions": [],
+        },
+    }
+
+
 def _short_list(values: object, *, limit: int = 4) -> str:
     if not isinstance(values, list) or not values:
         return "none recorded"
@@ -5353,6 +5596,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     canonical_literature_count = _swd_canonical_literature_count_answer(index, plan, limit=limit)
     if canonical_literature_count is not None:
         return canonical_literature_count
+    intelligence_summary = _insect_intelligence_summary_answer(index, plan, limit=limit)
+    if intelligence_summary is not None:
+        return intelligence_summary
     coverage_summary = _source_coverage_summary_answer(index, plan, limit=limit)
     if coverage_summary is not None:
         return coverage_summary
