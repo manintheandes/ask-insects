@@ -1159,7 +1159,7 @@ def build_repellency_comparison_answer(
             + (
                 "The indexed rows are ready for a bounded comparison on the reported dimensions."
                 if status == "comparison_ready"
-                else "The indexed evidence is insufficient for a defensible comparison. Reasons: "
+                else "There is insufficient evidence for a defensible comparison. Reasons: "
                 + "; ".join(reason["message"] for reason in reasons)
             )
         )
