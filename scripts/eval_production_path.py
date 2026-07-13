@@ -32,6 +32,15 @@ BLOCKED_COMMAND_TERMS = (
 )
 
 
+def _is_allowed_installed_skill_read(command: str) -> bool:
+    normalized = command.casefold()
+    if "/.codex/skills/askinsects/skill.md" not in normalized:
+        return False
+    if not re.search(r"\b(?:cat|sed)\b", normalized):
+        return False
+    return not re.search(r"&&|\|\||[;|<>]", command)
+
+
 @dataclass
 class ExecutionResult:
     elapsed_seconds: float
@@ -334,8 +343,21 @@ def evaluate_case(
         failures.append("normal Ask Insects call did not use the compact agent payload")
     if len(ask_commands) > 1:
         failures.append(f"normal answer used {len(ask_commands)} ask-insects calls; expected exactly one")
-    if len(execution.commands) != 1 or execution.commands != ask_commands:
-        failures.append("normal answer used commands other than the single hosted Ask Insects call")
+    extra_commands = [command for command in execution.commands if command not in ask_commands]
+    allowed_skill_reads = [
+        command for command in extra_commands if _is_allowed_installed_skill_read(command)
+    ]
+    skill_read_precedes_ask = bool(
+        allowed_skill_reads
+        and ask_commands
+        and execution.commands.index(allowed_skill_reads[0]) < execution.commands.index(ask_commands[0])
+    )
+    if (
+        len(extra_commands) > 1
+        or len(allowed_skill_reads) != len(extra_commands)
+        or (allowed_skill_reads and not skill_read_precedes_ask)
+    ):
+        failures.append("normal answer used an unexpected command outside the hosted Ask Insects route")
 
     for command in execution.commands:
         command_lower = command.casefold()

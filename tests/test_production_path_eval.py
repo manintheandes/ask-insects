@@ -196,20 +196,32 @@ class ProductionPathEvalTests(unittest.TestCase):
 
                 self.assertFalse(result["ok"])
 
-    def test_skill_file_read_or_any_other_command_fails_the_direct_route(self):
+    def test_one_installed_skill_read_is_allowed_but_other_commands_fail(self):
         execution = successful_execution()
         execution.commands.insert(
             0,
             "sed -n '1,160p' /Users/josh/.codex/skills/askinsects/SKILL.md",
         )
 
-        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        allowed = evaluate_case(sample_case(), execution, maximum_seconds=30)
 
-        self.assertFalse(result["ok"])
+        self.assertTrue(allowed["ok"], allowed["failures"])
+
+        execution.commands.insert(0, "pwd")
+        rejected = evaluate_case(sample_case(), execution, maximum_seconds=30)
+
+        self.assertFalse(rejected["ok"])
         self.assertIn(
-            "normal answer used commands other than the single hosted Ask Insects call",
-            result["failures"],
+            "normal answer used an unexpected command outside the hosted Ask Insects route",
+            rejected["failures"],
         )
+
+        execution = successful_execution()
+        execution.commands.append(
+            "cat /Users/josh/.codex/skills/askinsects/SKILL.md",
+        )
+        wrong_order = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        self.assertFalse(wrong_order["ok"])
 
     def test_full_gate_requires_every_corpus_case_on_the_unmodified_route(self):
         contract = {

@@ -23,6 +23,7 @@ A full run passes only at 100 percent, when all 200 questions pass in one run. E
 must:
 
 - use the installed Ask Insects skill and the hosted `ask-insects ask --compact` path
+- allow at most one read of the installed Ask Insects skill before that call when the Codex harness requires it, with no other exploratory commands
 - preserve Josh's exact question in the hosted call
 - finish the complete visible Codex answer in under 30 seconds
 - match the expected subject and evidence behavior
