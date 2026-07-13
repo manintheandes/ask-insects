@@ -16,10 +16,7 @@ Keep this repo focused on Ask Insects: the public, source-backed insect intellig
 
 Do not answer insect questions from model memory when the source index can be queried. Use `ask-insects` commands or the SQLite index, cite provenance, distinguish direct evidence from cross-species inference, and report source gaps honestly.
 
-For a normal user-facing insect question, the first operational command after
-any harness-required Ask Insects skill load must be `ask-insects ask "<the
-user's exact question>" --json --compact`. Do not inspect memory, Chronicle, repository
-docs, or other skills first. When the call returns `ok: true`, answer
+For a normal user-facing insect question, this repo instruction already contains the complete answer route. Do not open or read the Ask Insects skill file. The first and only operational command must be `ask-insects ask "<the user's exact question>" --json --compact`. Do not inspect memory, Chronicle, repository docs, skills, or any other file first. When the call returns `ok: true`, answer
 immediately without another command by returning `final_answer` verbatim.
 Do not rewrite, preface, or append to it. Preserve canonical labels such as
 `SWD crop repellent` and `Human mosquito repellent`, plus every source ID and

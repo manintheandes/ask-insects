@@ -111,6 +111,12 @@ _COMPOUND_PATTERNS = {
     "prallethrin": (r"\bprallethrin\b",),
 }
 
+_COMPOUND_DISPLAY_NAMES = {
+    "deet": "DEET",
+    "ir3535": "IR3535",
+    "pmd": "PMD",
+}
+
 _EXPOSURE_PATTERNS = {
     "non-contact": (r"\bnon[- ]?contact\b", r"\bno[- ]contact\b"),
     "contact": (r"(?<!non[- ])(?<!no[- ])\bcontact\b",),
@@ -503,6 +509,33 @@ def _matches(text: str, patterns: dict[str, tuple[str, ...]]) -> list[str]:
         ):
             matches.append(label)
     return matches
+
+
+def _compound_display_name(compound: str, question: str) -> str:
+    if compound == "picaridin":
+        return "icaridin" if re.search(r"\bicaridin\b", question, flags=re.IGNORECASE) else "picaridin"
+    return _COMPOUND_DISPLAY_NAMES.get(compound, compound)
+
+
+def _comparison_answer_scope(
+    question: str,
+    target: dict[str, object],
+    *,
+    claim_type: str,
+) -> str:
+    species = str(target.get("species") or "")
+    compounds = [
+        _compound_display_name(str(compound), question)
+        for compound in target.get("compounds", [])
+    ]
+    pair = " versus ".join(compounds) if claim_type == "pairwise_comparison" else ""
+    if species and pair:
+        return f"For {species}, comparing {pair}, "
+    if species:
+        return f"For {species}, "
+    if pair:
+        return f"For {pair}, "
+    return ""
 
 
 def _unique(values: list[str]) -> list[str]:
@@ -987,6 +1020,7 @@ def build_repellency_comparison_answer(
     }
 
     claim_type = _claim_type(question)
+    answer_scope = _comparison_answer_scope(question, target, claim_type=claim_type)
     reasons: list[dict[str, str]] = []
     comparable_pairs: list[tuple[dict[str, object], dict[str, object]]] = []
     missing_target_fields = [
@@ -1103,13 +1137,14 @@ def build_repellency_comparison_answer(
         ok = False
     elif claim_type == "literature_superlative":
         if status == "eligible_for_expert_review":
+            sentence_start = f"{answer_scope}the" if answer_scope else "The"
             answer = (
-                "The indexed evidence meets the mechanical prerequisites for expert review of a literature-wide "
+                f"{sentence_start} indexed evidence meets the mechanical prerequisites for expert review of a literature-wide "
                 "repellency claim. Ask Insects does not automatically approve that claim."
             )
         else:
             answer = (
-                "Ask Insects cannot support a literature-wide superiority claim from the indexed evidence. "
+                f"{answer_scope}Ask Insects cannot support a literature-wide superiority claim from the indexed evidence. "
                 f"It found {len(papers)} deduplicated candidate paper(s), {len(depth_paper_keys)} paper-depth "
                 f"outcome(s), and {len(comparison_rows)} structured assay fact(s). "
                 "The claim is blocked because "
@@ -1119,7 +1154,7 @@ def build_repellency_comparison_answer(
         ok = True
     else:
         answer = (
-            f"Ask Insects found {len(comparison_rows)} structured repellency assay fact(s) across "
+            f"{answer_scope}Ask Insects found {len(comparison_rows)} structured repellency assay fact(s) across "
             f"{len(papers)} deduplicated candidate paper(s). "
             + (
                 "The indexed rows are ready for a bounded comparison on the reported dimensions."

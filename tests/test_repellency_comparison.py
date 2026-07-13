@@ -443,6 +443,7 @@ class RepellencyComparisonTest(unittest.TestCase):
 
         self.assertEqual(result["coverage"]["deduplicated_papers"], 1)
         self.assertEqual(result["coverage"]["structured_assay_facts"], 1)
+        self.assertIn("Drosophila suzukii", result["answer"])
         self.assertNotIn(
             false_parent_id,
             {row["paper_record_id"] for row in result["comparison"]["rows"]},
@@ -482,11 +483,13 @@ class RepellencyComparisonTest(unittest.TestCase):
             )
             result = build_repellency_comparison_answer(
                 index,
-                "Does DEET beat picaridin in Aedes arm-in-cage assays?",
+                "Does DEET beat icaridin in Aedes arm-in-cage assays?",
                 limit=10,
             )
 
         self.assertEqual(result["claim"]["status"], "insufficient_evidence")
+        self.assertIn("DEET", result["answer"])
+        self.assertIn("icaridin", result["answer"])
         self.assertIn(
             "no_comparable_pair",
             {reason["code"] for reason in result["claim"]["reasons"]},

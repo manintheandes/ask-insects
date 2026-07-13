@@ -1561,7 +1561,8 @@ def check_production_path_evaluation() -> None:
             raise RuntimeError(f"Ask Insects skill is missing production-path guidance: {term}")
     agents = " ".join((REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
     for term in (
-        "the first operational command",
+        "Do not open or read the Ask Insects skill file",
+        "first and only operational command",
         "Do not inspect memory",
         "answer immediately without another command",
         "Preserve canonical labels",
