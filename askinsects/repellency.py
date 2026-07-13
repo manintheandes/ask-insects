@@ -87,11 +87,16 @@ _COMPARISON_TERMS = (
     "outperform",
     "beat",
     "best",
+    "strongest",
     "most effective",
     "rank",
     "ranking",
     "leading",
     "superior",
+    "winner",
+    "versus",
+    "comparable",
+    "summarize",
     "nothing in the literature",
 )
 

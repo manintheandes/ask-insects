@@ -5081,6 +5081,112 @@ def _matching_intelligence_dimensions(question: str, rows: list[sqlite3.Row]) ->
     return matches
 
 
+def _insect_intelligence_calibration_prefix(question: str) -> str:
+    q = question.lower()
+    statements: list[str] = []
+    if "private" in q and any(term in q for term in ("public", "ask monarch", "ask insects")):
+        statements.append(
+            "No. Ask Insects is the public evidence layer and cannot expose or import private Ask Monarch "
+            "assays, compounds, formulations, or results."
+        )
+
+    transfer_terms = (
+        "another species",
+        "cross-species",
+        "relabeled",
+        "relabelled",
+        "filled silently",
+    )
+    focal_groups = (
+        ("aedes", "yellow fever mosquito", "human mosquito repellent"),
+        ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"),
+        ("diamondback moth", "diamond back moth", "plutella xylostella", "dbm"),
+    )
+    matched_focal_groups = sum(any(term in q for term in group) for group in focal_groups)
+    asks_for_transfer = any(term in q for term in transfer_terms) or (
+        matched_focal_groups >= 2 and any(term in q for term in ("prove", "establish", "direct evidence"))
+    )
+    if asks_for_transfer:
+        statements.append(
+            "No. Evidence from another species cannot be relabeled as direct focal-species evidence; it can "
+            "only support an explicitly labeled inference."
+        )
+
+    proof_terms = (
+        " prove ",
+        " establish ",
+        "settled result",
+        "equivalent to evidence",
+        "described as product readiness",
+        "ready for use",
+        "ready for market",
+        "commercially ready",
+        "claim commercial readiness",
+    )
+    padded_q = f" {q} "
+    if any(term in padded_q for term in proof_terms):
+        statements.append(
+            "These records describe evidence coverage and gaps, not proof that a product works, is safe, or "
+            "is commercially ready."
+        )
+    if "unverified" in q and any(term in q for term in ("settled", "proven", "proof", "result")):
+        statements.append("Unverified evidence cannot be presented as a settled result.")
+    if "source gap" in q:
+        statements.append(
+            "A source gap means adequate evidence is not queryable in Ask Insects; it does not show that the "
+            "literature contains no evidence."
+        )
+    if any(term in q for term in ("adding", "add a new insect", "new insect")) and any(
+        term in q for term in ("redesign", "answer-routing design", "new design")
+    ):
+        statements.append(
+            "No. A new insect uses the same shared species profile and answer path; adding it does not require "
+            "a new routing design."
+        )
+    return " ".join(statements)
+
+
+def _insect_intelligence_status_line(payload: dict[str, object], *, name_field: str) -> str:
+    name = str(payload.get(name_field) or "Unnamed dimension")
+    status = str(payload.get("status") or "unknown").replace("_", " ")
+    evidence_scope = str(payload.get("evidence_scope") or "unknown").replace("_", " ")
+    verification = str(payload.get("verification_status") or "unknown").replace("_", " ")
+    return f"{name}: {status}; evidence scope {evidence_scope}; verification {verification}"
+
+
+def _insect_intelligence_evidence_notes(rows: list[sqlite3.Row]) -> str:
+    notes: list[str] = []
+    for row in rows:
+        payload = _insect_intelligence_payload(row)
+        name = str(payload.get("dimension_name") or payload.get("domain_name") or row["title"])
+        summary = str(payload.get("summary") or "").strip()
+        uncertainties = payload.get("uncertainties") if isinstance(payload.get("uncertainties"), list) else []
+        disagreements = payload.get("disagreements") if isinstance(payload.get("disagreements"), list) else []
+        details = [f"summary: {summary}"] if summary else []
+        details.append(f"uncertainty: {_short_list(uncertainties, limit=3)}")
+        details.append(f"disagreements: {_short_list(disagreements, limit=3)}")
+        notes.append(f"{name} ({'; '.join(details)})")
+    return "; ".join(notes)
+
+
+def _count_label(value: int) -> str:
+    words = {
+        0: "zero",
+        1: "one",
+        2: "two",
+        3: "three",
+        4: "four",
+        5: "five",
+        6: "six",
+        7: "seven",
+        8: "eight",
+        9: "nine",
+        10: "ten",
+    }
+    word = words.get(value)
+    return f"{word} ({value})" if word is not None else str(value)
+
+
 def _insect_intelligence_summary_answer(
     index: SourceIndex,
     plan: QueryPlan,
@@ -5108,6 +5214,7 @@ def _insect_intelligence_summary_answer(
         atom_type = str(_insect_intelligence_payload(row).get("atom_type") or "unknown")
         by_type.setdefault(atom_type, []).append(row)
     q = plan.question.lower()
+    calibration_prefix = _insect_intelligence_calibration_prefix(plan.question)
     wants_missing = any(term in q for term in ("missing", "gap", "gaps", "need to understand", "needs to understand"))
     product_row = _matching_intelligence_row(
         plan.question,
@@ -5120,7 +5227,19 @@ def _insect_intelligence_summary_answer(
         alias_fields=("scientific_name", "common_name", "aliases"),
     )
     product_focused = any(term in q for term in ("product", "repellent", "readiness", "commercialization"))
-    portfolio_focused = any(term in q for term in ("which insect is next", "next insect", "next after"))
+    portfolio_focused = any(
+        term in q
+        for term in (
+            "which insect is next",
+            "next insect",
+            "next after",
+            "comes after",
+            "portfolio",
+            "expansion proof",
+            "adding diamondback moth",
+            "which product program targets",
+        )
+    )
     if portfolio_focused:
         product_row = None
         species_row = None
@@ -5156,14 +5275,26 @@ def _insect_intelligence_summary_answer(
             f"{status.replace('_', ' ')}: {count}" for status, count in sorted(status_counts.items())
         )
         top_gaps = [str(_insect_intelligence_payload(row).get("gap") or "") for row in gap_rows[:3]]
-        answer = (
+        dimension_statuses = [
+            _insect_intelligence_status_line(_insect_intelligence_payload(row), name_field="dimension_name")
+            for row in dimension_rows
+        ]
+        answer_body = (
             f"Plainly: Ask Insects tracks {len(dimension_rows)} readiness dimensions for the {product_name}. "
             f"This is evidence coverage, not a claim that the product works. Status mix: {status_text or 'not recorded'}. "
             f"It currently lists {len(gap_rows)} explicit missing-evidence items. "
             f"Leading gaps: {_short_list(top_gaps, limit=3)}."
         )
-        selected_rows = gap_rows + dimension_rows if wants_missing else [product_row, *dimension_rows, *gap_rows]
-        evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows[:limit]]
+        if not requested_dimensions:
+            answer_body += f" Readiness by dimension: {'; '.join(dimension_statuses)}."
+            selected_rows = [product_row, *dimension_rows]
+        else:
+            answer_body += f" Requested readiness: {'; '.join(dimension_statuses)}."
+            answer_body += f" Evidence notes: {_insect_intelligence_evidence_notes(dimension_rows)}."
+            selected_rows = gap_rows + dimension_rows if wants_missing else [*dimension_rows, *gap_rows]
+            selected_rows = selected_rows[:limit]
+        answer = f"{calibration_prefix} {answer_body}".strip()
+        evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows]
         return {
             "ok": True,
             "answer_shape": plan.answer_shape,
@@ -5213,14 +5344,26 @@ def _insect_intelligence_summary_answer(
             f"{status.replace('_', ' ')}: {count}" for status, count in sorted(status_counts.items())
         )
         top_gaps = [str(_insect_intelligence_payload(row).get("gap") or "") for row in gap_rows[:3]]
-        answer = (
+        domain_statuses = [
+            _insect_intelligence_status_line(_insect_intelligence_payload(row), name_field="domain_name")
+            for row in domain_rows
+        ]
+        answer_body = (
             f"Plainly: Ask Insects tracks {len(domain_rows)} biological knowledge domains for {common_name} "
             f"({scientific_name}). {direct_domain_count} currently have direct, queryable coverage and "
             f"{len(gap_rows)} missing-evidence items remain explicit. Status mix: {status_text or 'not recorded'}. "
             f"Leading gaps: {_short_list(top_gaps, limit=3)}."
         )
-        selected_rows = gap_rows + domain_rows if wants_missing else [species_row, *domain_rows, *gap_rows]
-        evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows[:limit]]
+        if not requested_domains:
+            answer_body += f" Coverage by domain: {'; '.join(domain_statuses)}."
+            selected_rows = [species_row, *domain_rows]
+        else:
+            answer_body += f" Requested coverage: {'; '.join(domain_statuses)}."
+            answer_body += f" Evidence notes: {_insect_intelligence_evidence_notes(domain_rows)}."
+            selected_rows = gap_rows + domain_rows if wants_missing else [*domain_rows, *gap_rows]
+            selected_rows = selected_rows[:limit]
+        answer = f"{calibration_prefix} {answer_body}".strip()
+        evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows]
         return {
             "ok": True,
             "answer_shape": plan.answer_shape,
@@ -5247,12 +5390,14 @@ def _insect_intelligence_summary_answer(
         f"{_insect_intelligence_payload(row).get('common_name')} ({_insect_intelligence_payload(row).get('role')})"
         for row in species_rows
     ]
-    answer = (
-        f"Plainly: Ask Insects supports {len(product_rows)} initial product programs: {_short_list(product_names, limit=4)}. "
-        f"It currently tracks {len(species_rows)} insect profiles: {_short_list(species_bits, limit=5)}."
+    answer_body = (
+        f"Plainly: Ask Insects supports {_count_label(len(product_rows))} initial product programs: "
+        f"{_short_list(product_names, limit=4)}. It currently tracks {_count_label(len(species_rows))} insect "
+        f"profiles: {_short_list(species_bits, limit=5)}."
     )
+    answer = f"{calibration_prefix} {answer_body}".strip()
     selected_rows = ([portfolio_row] if portfolio_row is not None else []) + product_rows + species_rows
-    evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows[:limit]]
+    evidence_records = [EvidenceRecord.from_row(dict(row)) for row in selected_rows]
     return {
         "ok": True,
         "answer_shape": plan.answer_shape,

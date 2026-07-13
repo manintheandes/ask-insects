@@ -23,6 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 EVAL_CASES = json.loads(
     (ROOT / "evals" / "repellency_comparison_v1.json").read_text(encoding="utf-8")
 )
+PRODUCTION_PATH_CASES = json.loads(
+    (ROOT / "evals" / "ask_insects_production_path_v1.json").read_text(encoding="utf-8")
+)
 
 
 def _record(
@@ -208,6 +211,18 @@ class RepellencyComparisonTest(unittest.TestCase):
                     is_repellency_comparison_question(case["question"]),
                     case["comparison_route"],
                 )
+
+    def test_every_production_comparison_case_uses_the_comparison_route(self):
+        cases = [
+            case
+            for case in PRODUCTION_PATH_CASES["cases"]
+            if case["category"] == "repellency_comparison"
+        ]
+
+        self.assertEqual(len(cases), 32)
+        for case in cases:
+            with self.subTest(case=case["id"]):
+                self.assertTrue(is_repellency_comparison_question(case["question"]))
 
     def test_comparison_contract_deduplicates_papers_and_reports_depth(self):
         with tempfile.TemporaryDirectory() as tmp:

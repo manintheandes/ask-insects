@@ -24,6 +24,9 @@ class AgentSetupTests(unittest.TestCase):
             "source id",
             "row or locator",
             "Do not run setup-agent during a user question",
+            "Do not inspect memory",
+            "run a second Ask Insects call",
+            "write every cited locator in full",
         ):
             self.assertIn(term, text)
         self.assertNotIn("current top-level product goal is Aedes-first", text)

@@ -31,6 +31,7 @@ REQUIRED_FILES = (
     "config/aedes-source-plane-benchmark.json",
     "data/fixtures/mosquito_records.json",
     "docs/aedes-source-plane-benchmark.md",
+    "docs/production-path-evaluation.md",
     "docs/querying-ask-insects.md",
     "docs/source-lanes.md",
     "docs/superpowers/specs/2026-05-23-ask-insects-mosquito-v1-design.md",
@@ -104,6 +105,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-29-swd-biocontrol-outcome-lane.md",
     "docs/superpowers/plans/2026-07-10-ask-insects-repellency-evidence-workflow.md",
     "docs/superpowers/plans/2026-07-13-dual-product-insect-intelligence.md",
+    "evals/ask_insects_production_path_v1.json",
     "evals/repellency_comparison_v1.json",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -242,6 +244,7 @@ REQUIRED_FILES = (
     "scripts/ingest_mosquito_repellent_literature.py",
     "scripts/ingest_mosquito_repellent_external_discovery.py",
     "scripts/ingest_literature_depth.py",
+    "scripts/eval_production_path.py",
     "scripts/eval_repellency_comparison.py",
     "scripts/ingest_insect_intelligence_programs.py",
     "scripts/ingest_uniprot_proteins.py",
@@ -367,6 +370,7 @@ REQUIRED_FILES = (
     "tests/test_literature_depth_profiles.py",
     "tests/test_ingest_literature_depth.py",
     "tests/test_repellency_comparison.py",
+    "tests/test_production_path_eval.py",
     "tests/test_agent_setup.py",
     "tests/test_insect_intelligence_programs.py",
     "tests/test_uniprot_proteins_source.py",
@@ -1504,6 +1508,59 @@ def check_insect_intelligence_programs() -> None:
             raise RuntimeError(f"insect-intelligence answer lacked exact ledger provenance for: {question}")
 
 
+def check_production_path_evaluation() -> None:
+    from scripts.eval_production_path import CONTRACT_VERSION, load_contract
+
+    contract = load_contract(REPO_ROOT / "evals/ask_insects_production_path_v1.json")
+    if contract.get("contract_version") != CONTRACT_VERSION:
+        raise RuntimeError("production-path evaluation contract version mismatch")
+    if int(contract.get("minimum_case_count", 0)) < 200:
+        raise RuntimeError("production-path evaluation must require at least 200 questions")
+    if float(contract.get("maximum_seconds", 999)) > 30:
+        raise RuntimeError("production-path evaluation must require every answer in under 30 seconds")
+    cases = contract.get("cases")
+    if not isinstance(cases, list) or len(cases) < 200:
+        raise RuntimeError("production-path evaluation corpus has fewer than 200 questions")
+    questions = "\n".join(str(case.get("question") or "") for case in cases if isinstance(case, dict)).lower()
+    for term in (
+        "drosophila suzukii",
+        "aedes",
+        "diamondback moth",
+        "swd crop repellent",
+        "human mosquito repellent",
+        "contact and non-contact",
+        "best mosquito repellent",
+        "private monarch",
+    ):
+        if term not in questions:
+            raise RuntimeError(f"production-path evaluation corpus is missing required question coverage: {term}")
+    runner = (REPO_ROOT / "scripts/eval_production_path.py").read_text(encoding="utf-8")
+    for term in (
+        "codex",
+        "--ephemeral",
+        "ask-insects",
+        "maximum_seconds",
+        "production_gate_passed",
+        "visible_answer",
+        "locator_patterns",
+    ):
+        if term not in runner:
+            raise RuntimeError(f"production-path evaluator is missing required behavior: {term}")
+    skill = (REPO_ROOT / "skills/askinsects/SKILL.md").read_text(encoding="utf-8")
+    for term in (
+        "Do not inspect memory",
+        "run a second Ask Insects call",
+        "write every cited locator in full",
+        "under 30 seconds",
+    ):
+        if term not in skill:
+            raise RuntimeError(f"Ask Insects skill is missing production-path guidance: {term}")
+    docs = (REPO_ROOT / "docs/production-path-evaluation.md").read_text(encoding="utf-8")
+    for term in ("200", "100 percent", "under 30 seconds", "production_gate_passed: true"):
+        if term not in docs:
+            raise RuntimeError(f"production-path evaluation documentation is missing: {term}")
+
+
 def check_aedes_source_plane_benchmark() -> None:
     benchmark_path = REPO_ROOT / "config/aedes-source-plane-benchmark.json"
     doc_path = REPO_ROOT / "docs/aedes-source-plane-benchmark.md"
@@ -2332,6 +2389,7 @@ def main() -> int:
         check_literature_source_map()
         check_mosquito_intelligence_coverage()
         check_insect_intelligence_programs()
+        check_production_path_evaluation()
         check_aedes_source_plane_benchmark()
         check_cli()
         installed_db = REPO_ROOT / "artifacts/mosquito-v1/source_index.sqlite"

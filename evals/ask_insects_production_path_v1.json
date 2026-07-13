@@ -1,0 +1,5121 @@
+{
+  "contract_version": "ask-insects-production-path.v1",
+  "minimum_case_count": 200,
+  "maximum_seconds": 30,
+  "required_categories": {
+    "species_coverage": 84,
+    "product_readiness": 32,
+    "portfolio_and_expansion": 20,
+    "repellency_comparison": 32,
+    "evidence_calibration": 16,
+    "boundary_and_false_premise": 16
+  },
+  "cases": [
+    {
+      "id": "species-drosophila_suzukii-sensory_world-status",
+      "category": "species_coverage",
+      "question": "What is the sensory world evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Sensory world",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-sensory_world-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which sensory world evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Sensory world",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-brain_neurobiology-status",
+      "category": "species_coverage",
+      "question": "What is the brain and neurobiology evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Brain and neurobiology",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/1"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-brain_neurobiology-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which brain and neurobiology evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Brain and neurobiology",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/1"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-receptors_signaling-status",
+      "category": "species_coverage",
+      "question": "What is the receptors and signaling evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Receptors and signaling",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/2"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-receptors_signaling-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which receptors and signaling evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Receptors and signaling",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/2"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-anatomy_physiology-status",
+      "category": "species_coverage",
+      "question": "What is the anatomy and physiology evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Anatomy and physiology",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/3"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-anatomy_physiology-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which anatomy and physiology evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Anatomy and physiology",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/3"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-genetics_gene_activity-status",
+      "category": "species_coverage",
+      "question": "What is the genetics and gene activity evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Genetics and gene activity",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/4"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-genetics_gene_activity-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which genetics and gene activity evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Genetics and gene activity",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/4"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-life_cycle_development-status",
+      "category": "species_coverage",
+      "question": "What is the life cycle and development evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Life cycle and development",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/5"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-life_cycle_development-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which life cycle and development evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Life cycle and development",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/5"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-behavior-status",
+      "category": "species_coverage",
+      "question": "What is the behavior evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Behavior",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/6"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-behavior-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which behavior evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Behavior",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/6"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-reproduction_oviposition-status",
+      "category": "species_coverage",
+      "question": "What is the reproduction and egg laying evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Reproduction and egg laying",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/7"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-reproduction_oviposition-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which reproduction and egg laying evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Reproduction and egg laying",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/7"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-feeding_host_finding-status",
+      "category": "species_coverage",
+      "question": "What is the feeding and host finding evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Feeding and host finding",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/8"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-feeding_host_finding-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which feeding and host finding evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Feeding and host finding",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/8"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-movement_flight_navigation-status",
+      "category": "species_coverage",
+      "question": "What is the movement, flight, and navigation evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Movement, flight, and navigation",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/9"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-movement_flight_navigation-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which movement, flight, and navigation evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Movement, flight, and navigation",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/9"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-learning_memory_internal_state-status",
+      "category": "species_coverage",
+      "question": "What is the learning, memory, and internal state evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Learning, memory, and internal state",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/10"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-learning_memory_internal_state-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which learning, memory, and internal state evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Learning, memory, and internal state",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/10"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-ecology_interactions-status",
+      "category": "species_coverage",
+      "question": "What is the ecology and interactions evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Ecology and interactions",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/11"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-ecology_interactions-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which ecology and interactions evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Ecology and interactions",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/11"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-chemical_responses_metabolism-status",
+      "category": "species_coverage",
+      "question": "What is the chemical responses and metabolism evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Chemical responses and metabolism",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/12"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-chemical_responses_metabolism-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which chemical responses and metabolism evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Chemical responses and metabolism",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/12"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-adaptation_resistance-status",
+      "category": "species_coverage",
+      "question": "What is the adaptation and resistance evidence status for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Adaptation and resistance",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/13"
+        ]
+      }
+    },
+    {
+      "id": "species-drosophila_suzukii-adaptation_resistance-missing",
+      "category": "species_coverage",
+      "question": "For Drosophila suzukii, which adaptation and resistance evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Adaptation and resistance",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/13"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-sensory_world-status",
+      "category": "species_coverage",
+      "question": "What is the sensory world evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Sensory world",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-sensory_world-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which sensory world evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Sensory world",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-brain_neurobiology-status",
+      "category": "species_coverage",
+      "question": "What is the brain and neurobiology evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Brain and neurobiology",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/1"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-brain_neurobiology-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which brain and neurobiology evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Brain and neurobiology",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/1"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-receptors_signaling-status",
+      "category": "species_coverage",
+      "question": "What is the receptors and signaling evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Receptors and signaling",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/2"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-receptors_signaling-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which receptors and signaling evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Receptors and signaling",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/2"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-anatomy_physiology-status",
+      "category": "species_coverage",
+      "question": "What is the anatomy and physiology evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Anatomy and physiology",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/3"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-anatomy_physiology-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which anatomy and physiology evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Anatomy and physiology",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/3"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-genetics_gene_activity-status",
+      "category": "species_coverage",
+      "question": "What is the genetics and gene activity evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Genetics and gene activity",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/4"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-genetics_gene_activity-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which genetics and gene activity evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Genetics and gene activity",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/4"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-life_cycle_development-status",
+      "category": "species_coverage",
+      "question": "What is the life cycle and development evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Life cycle and development",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/5"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-life_cycle_development-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which life cycle and development evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Life cycle and development",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/5"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-behavior-status",
+      "category": "species_coverage",
+      "question": "What is the behavior evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Behavior",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/6"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-behavior-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which behavior evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Behavior",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/6"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-reproduction_oviposition-status",
+      "category": "species_coverage",
+      "question": "What is the reproduction and egg laying evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Reproduction and egg laying",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/7"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-reproduction_oviposition-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which reproduction and egg laying evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Reproduction and egg laying",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/7"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-feeding_host_finding-status",
+      "category": "species_coverage",
+      "question": "What is the feeding and host finding evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Feeding and host finding",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/8"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-feeding_host_finding-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which feeding and host finding evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Feeding and host finding",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/8"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-movement_flight_navigation-status",
+      "category": "species_coverage",
+      "question": "What is the movement, flight, and navigation evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Movement, flight, and navigation",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/9"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-movement_flight_navigation-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which movement, flight, and navigation evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Movement, flight, and navigation",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/9"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-learning_memory_internal_state-status",
+      "category": "species_coverage",
+      "question": "What is the learning, memory, and internal state evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Learning, memory, and internal state",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/10"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-learning_memory_internal_state-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which learning, memory, and internal state evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Learning, memory, and internal state",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/10"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-ecology_interactions-status",
+      "category": "species_coverage",
+      "question": "What is the ecology and interactions evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Ecology and interactions",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/11"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-ecology_interactions-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which ecology and interactions evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Ecology and interactions",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/11"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-chemical_responses_metabolism-status",
+      "category": "species_coverage",
+      "question": "What is the chemical responses and metabolism evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Chemical responses and metabolism",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/12"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-chemical_responses_metabolism-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which chemical responses and metabolism evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Chemical responses and metabolism",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/12"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-adaptation_resistance-status",
+      "category": "species_coverage",
+      "question": "What is the adaptation and resistance evidence status for yellow fever mosquito?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Adaptation and resistance",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/13"
+        ]
+      }
+    },
+    {
+      "id": "species-aedes_aegypti-adaptation_resistance-missing",
+      "category": "species_coverage",
+      "question": "For Aedes aegypti, which adaptation and resistance evidence is still missing?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "Adaptation and resistance",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/13"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-sensory_world-status",
+      "category": "species_coverage",
+      "question": "What is the sensory world evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Sensory world",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-sensory_world-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which sensory world evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Sensory world",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-brain_neurobiology-status",
+      "category": "species_coverage",
+      "question": "What is the brain and neurobiology evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Brain and neurobiology",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/1"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-brain_neurobiology-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which brain and neurobiology evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Brain and neurobiology",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/1"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-receptors_signaling-status",
+      "category": "species_coverage",
+      "question": "What is the receptors and signaling evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Receptors and signaling",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/2"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-receptors_signaling-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which receptors and signaling evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Receptors and signaling",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/2"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-anatomy_physiology-status",
+      "category": "species_coverage",
+      "question": "What is the anatomy and physiology evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Anatomy and physiology",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/3"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-anatomy_physiology-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which anatomy and physiology evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Anatomy and physiology",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/3"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-genetics_gene_activity-status",
+      "category": "species_coverage",
+      "question": "What is the genetics and gene activity evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Genetics and gene activity",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/4"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-genetics_gene_activity-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which genetics and gene activity evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Genetics and gene activity",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/4"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-life_cycle_development-status",
+      "category": "species_coverage",
+      "question": "What is the life cycle and development evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Life cycle and development",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/5"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-life_cycle_development-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which life cycle and development evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Life cycle and development",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/5"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-behavior-status",
+      "category": "species_coverage",
+      "question": "What is the behavior evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Behavior",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/6"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-behavior-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which behavior evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Behavior",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/6"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-reproduction_oviposition-status",
+      "category": "species_coverage",
+      "question": "What is the reproduction and egg laying evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Reproduction and egg laying",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/7"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-reproduction_oviposition-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which reproduction and egg laying evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Reproduction and egg laying",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/7"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-feeding_host_finding-status",
+      "category": "species_coverage",
+      "question": "What is the feeding and host finding evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Feeding and host finding",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/8"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-feeding_host_finding-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which feeding and host finding evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Feeding and host finding",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/8"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-movement_flight_navigation-status",
+      "category": "species_coverage",
+      "question": "What is the movement, flight, and navigation evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Movement, flight, and navigation",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/9"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-movement_flight_navigation-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which movement, flight, and navigation evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Movement, flight, and navigation",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/9"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-learning_memory_internal_state-status",
+      "category": "species_coverage",
+      "question": "What is the learning, memory, and internal state evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Learning, memory, and internal state",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/10"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-learning_memory_internal_state-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which learning, memory, and internal state evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Learning, memory, and internal state",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/10"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-ecology_interactions-status",
+      "category": "species_coverage",
+      "question": "What is the ecology and interactions evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Ecology and interactions",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/11"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-ecology_interactions-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which ecology and interactions evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Ecology and interactions",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/11"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-chemical_responses_metabolism-status",
+      "category": "species_coverage",
+      "question": "What is the chemical responses and metabolism evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Chemical responses and metabolism",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/12"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-chemical_responses_metabolism-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which chemical responses and metabolism evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Chemical responses and metabolism",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/12"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-adaptation_resistance-status",
+      "category": "species_coverage",
+      "question": "What is the adaptation and resistance evidence status for diamondback moth?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Adaptation and resistance",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/13"
+        ]
+      }
+    },
+    {
+      "id": "species-plutella_xylostella-adaptation_resistance-missing",
+      "category": "species_coverage",
+      "question": "For Plutella xylostella, which adaptation and resistance evidence is still missing?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "Adaptation and resistance",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/13"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-efficacy-status",
+      "category": "product_readiness",
+      "question": "What is the efficacy in intended use readiness status for the SWD crop repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Efficacy in intended use",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/0"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-efficacy-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for efficacy in intended use in the SWD crop repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Efficacy in intended use",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/0"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-mode_of_action-status",
+      "category": "product_readiness",
+      "question": "What is the mode of action readiness status for the SWD crop repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Mode of action",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/1"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-mode_of_action-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for mode of action in the SWD crop repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Mode of action",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/1"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-formulation_delivery-status",
+      "category": "product_readiness",
+      "question": "What is the formulation and delivery readiness status for the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Formulation and delivery",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/2"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-formulation_delivery-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for formulation and delivery in the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Formulation and delivery",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/2"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-persistence_reapplication-status",
+      "category": "product_readiness",
+      "question": "What is the persistence and reapplication readiness status for the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Persistence and reapplication",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/3"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-persistence_reapplication-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for persistence and reapplication in the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Persistence and reapplication",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/3"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-human_or_crop_safety-status",
+      "category": "product_readiness",
+      "question": "What is the human or crop safety readiness status for the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Human or crop safety",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/4"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-human_or_crop_safety-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for human or crop safety in the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Human or crop safety",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/4"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-non_target_ecological_effects-status",
+      "category": "product_readiness",
+      "question": "What is the non-target and ecological effects readiness status for the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Non-target and ecological effects",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/5"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-non_target_ecological_effects-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for non-target and ecological effects in the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Non-target and ecological effects",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/5"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-field_or_human_use_performance-status",
+      "category": "product_readiness",
+      "question": "What is the field or human-use performance readiness status for the SWD crop repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Field or human-use performance",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/6"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-field_or_human_use_performance-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for field or human-use performance in the SWD crop repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Field or human-use performance",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/6"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-regulatory_commercialization-status",
+      "category": "product_readiness",
+      "question": "What is the regulatory and commercialization evidence readiness status for the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Regulatory and commercialization evidence",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/7"
+        ]
+      }
+    },
+    {
+      "id": "product-swd_crop_repellent-regulatory_commercialization-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for regulatory and commercialization evidence in the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "Regulatory and commercialization evidence",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/7"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-efficacy-status",
+      "category": "product_readiness",
+      "question": "What is the efficacy in intended use readiness status for the Human mosquito repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Efficacy in intended use",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/0"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-efficacy-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for efficacy in intended use in the Human mosquito repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Efficacy in intended use",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/0"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-mode_of_action-status",
+      "category": "product_readiness",
+      "question": "What is the mode of action readiness status for the Human mosquito repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Mode of action",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/1"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-mode_of_action-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for mode of action in the Human mosquito repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Mode of action",
+          "partial source grade"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/1"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-formulation_delivery-status",
+      "category": "product_readiness",
+      "question": "What is the formulation and delivery readiness status for the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Formulation and delivery",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/2"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-formulation_delivery-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for formulation and delivery in the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Formulation and delivery",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/2"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-persistence_reapplication-status",
+      "category": "product_readiness",
+      "question": "What is the persistence and reapplication readiness status for the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Persistence and reapplication",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/3"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-persistence_reapplication-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for persistence and reapplication in the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Persistence and reapplication",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/3"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-human_or_crop_safety-status",
+      "category": "product_readiness",
+      "question": "What is the human or crop safety readiness status for the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Human or crop safety",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/4"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-human_or_crop_safety-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for human or crop safety in the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Human or crop safety",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/4"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-non_target_ecological_effects-status",
+      "category": "product_readiness",
+      "question": "What is the non-target and ecological effects readiness status for the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Non-target and ecological effects",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/5"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-non_target_ecological_effects-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for non-target and ecological effects in the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Non-target and ecological effects",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/5"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-field_or_human_use_performance-status",
+      "category": "product_readiness",
+      "question": "What is the field or human-use performance readiness status for the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Field or human-use performance",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/6"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-field_or_human_use_performance-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for field or human-use performance in the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Field or human-use performance",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/6"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-regulatory_commercialization-status",
+      "category": "product_readiness",
+      "question": "What is the regulatory and commercialization evidence readiness status for the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Regulatory and commercialization evidence",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/7"
+        ]
+      }
+    },
+    {
+      "id": "product-human_mosquito_repellent-regulatory_commercialization-missing",
+      "category": "product_readiness",
+      "question": "What evidence is still missing for regulatory and commercialization evidence in the Human mosquito repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "Regulatory and commercialization evidence",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/7"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-01",
+      "category": "portfolio_and_expansion",
+      "question": "What are the two product programs Ask Insects supports?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "two",
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-02",
+      "category": "portfolio_and_expansion",
+      "question": "Which two repellent products are the first Ask Insects priorities?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "two",
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-03",
+      "category": "portfolio_and_expansion",
+      "question": "Name the initial Ask Insects crop and human repellent programs.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-04",
+      "category": "portfolio_and_expansion",
+      "question": "How many initial product programs does Ask Insects track and what are they?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "two",
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-05",
+      "category": "portfolio_and_expansion",
+      "question": "Which Ask Insects program protects crops and which protects people?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-06",
+      "category": "portfolio_and_expansion",
+      "question": "Is Ask Insects initially building one product or two?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "two",
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-07",
+      "category": "portfolio_and_expansion",
+      "question": "What crop-repellent and human-repellent programs are in the current portfolio?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-08",
+      "category": "portfolio_and_expansion",
+      "question": "Summarize the two current Ask Insects product objectives.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-09",
+      "category": "portfolio_and_expansion",
+      "question": "Which product program targets SWD and which targets mosquitoes?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-products-10",
+      "category": "portfolio_and_expansion",
+      "question": "List the initial Ask Insects repellent product portfolio.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "Human mosquito repellent"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-01",
+      "category": "portfolio_and_expansion",
+      "question": "Which insect is next after SWD and mosquitoes?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "diamondback moth",
+          "three"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-02",
+      "category": "portfolio_and_expansion",
+      "question": "What is the next crop pest Ask Insects will add?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "diamondback moth",
+          "Plutella xylostella"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-03",
+      "category": "portfolio_and_expansion",
+      "question": "Which species proves Ask Insects can expand without redesign?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "diamondback moth",
+          "Plutella xylostella"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-04",
+      "category": "portfolio_and_expansion",
+      "question": "How many insect profiles are currently tracked and which one is next?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "three",
+          "diamondback moth"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-05",
+      "category": "portfolio_and_expansion",
+      "question": "Is diamondback moth an active first product target or the next expansion proof?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "diamondback moth",
+          "expansion"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-06",
+      "category": "portfolio_and_expansion",
+      "question": "What role does Plutella xylostella have in the Ask Insects portfolio?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Plutella xylostella",
+          "expansion"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-07",
+      "category": "portfolio_and_expansion",
+      "question": "Name the three initial insect profiles in Ask Insects.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Aedes aegypti",
+          "Plutella xylostella"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-08",
+      "category": "portfolio_and_expansion",
+      "question": "Which insects anchor the crop, human, and expansion work?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "Aedes aegypti",
+          "Plutella xylostella"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-09",
+      "category": "portfolio_and_expansion",
+      "question": "Does adding diamondback moth require a new answer-routing design?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "diamondback moth",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "portfolio-expansion-10",
+      "category": "portfolio_and_expansion",
+      "question": "What comes after the SWD and Aedes intelligence programs?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "diamondback moth",
+          "Plutella xylostella"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "repellency-superlative-01",
+      "category": "repellency_comparison",
+      "question": "Does anything in the literature beat this spatial-repellency result?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "literature",
+          "cannot"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-superlative-02",
+      "category": "repellency_comparison",
+      "question": "Can Ask Insects confirm this is the best mosquito repellent result in the literature?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "literature",
+          "cannot"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-superlative-03",
+      "category": "repellency_comparison",
+      "question": "Is this non-contact Aedes result stronger than every published repellent result?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "literature",
+          "cannot"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-superlative-04",
+      "category": "repellency_comparison",
+      "question": "Has any published mosquito repellent outperformed this result?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "literature",
+          "cannot"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-superlative-05",
+      "category": "repellency_comparison",
+      "question": "Can we call this mosquito repellent finding literature-leading?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "literature",
+          "cannot"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-superlative-06",
+      "category": "repellency_comparison",
+      "question": "Does the indexed literature prove that no repellent beats this outcome?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "literature",
+          "cannot"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-superlative-07",
+      "category": "repellency_comparison",
+      "question": "Is this the strongest spatial repellency result Ask Insects can find?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "literature",
+          "cannot"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-superlative-08",
+      "category": "repellency_comparison",
+      "question": "Can we say that no published mosquito repellent research beats this assay?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "literature",
+          "cannot"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-pairwise-01",
+      "category": "repellency_comparison",
+      "question": "Does DEET beat picaridin in Aedes arm-in-cage assays?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "DEET",
+          "picaridin"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-pairwise-02",
+      "category": "repellency_comparison",
+      "question": "Is picaridin better than DEET in directly matched mosquito assays?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "DEET",
+          "picaridin"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-pairwise-03",
+      "category": "repellency_comparison",
+      "question": "Compare DEET and IR3535 in directly matched Aedes assays.",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "DEET",
+          "IR3535"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-pairwise-04",
+      "category": "repellency_comparison",
+      "question": "Does PMD outperform DEET in comparable mosquito protection tests?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "DEET",
+          "PMD"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-pairwise-05",
+      "category": "repellency_comparison",
+      "question": "Which works better in matched Aedes evidence, DEET or icaridin?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "DEET",
+          "icaridin"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-pairwise-06",
+      "category": "repellency_comparison",
+      "question": "Can indexed evidence rank DEET above IR3535 across the same assay conditions?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "DEET",
+          "IR3535"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-pairwise-07",
+      "category": "repellency_comparison",
+      "question": "Is there a directly comparable pair proving picaridin beats DEET?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "DEET",
+          "picaridin"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-pairwise-08",
+      "category": "repellency_comparison",
+      "question": "Do matched mosquito assays establish a winner between DEET and PMD?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "DEET",
+          "PMD"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-mosquito-01",
+      "category": "repellency_comparison",
+      "question": "Compare contact and non-contact mosquito repellency studies.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-mosquito-02",
+      "category": "repellency_comparison",
+      "question": "Compare spatial and topical mosquito repellent evidence without merging the exposure modes.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-mosquito-03",
+      "category": "repellency_comparison",
+      "question": "Summarize mosquito repellent studies by exposure mode without declaring a winner.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-mosquito-04",
+      "category": "repellency_comparison",
+      "question": "Compare landing, biting, and repellency endpoints in mosquito assays.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-mosquito-05",
+      "category": "repellency_comparison",
+      "question": "Compare vapor-phase and skin-applied mosquito repellent studies.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-mosquito-06",
+      "category": "repellency_comparison",
+      "question": "What do indexed mosquito assays show about contact versus spatial repellency?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-mosquito-07",
+      "category": "repellency_comparison",
+      "question": "Compare Aedes repellency evidence while keeping dose and duration separate.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-mosquito-08",
+      "category": "repellency_comparison",
+      "question": "Give a bounded comparison of mosquito repellents by species, assay, and endpoint.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_external_discovery_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#mosquito_repellent_external_discovery:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-swd-01",
+      "category": "repellency_comparison",
+      "question": "Compare Drosophila suzukii repellency assays for oviposition deterrence.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#swd:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-swd-02",
+      "category": "repellency_comparison",
+      "question": "Compare SWD contact toxicity and oviposition deterrence without treating them as the same endpoint.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#swd:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-swd-03",
+      "category": "repellency_comparison",
+      "question": "What indexed SWD assays compare repellency with egg-laying deterrence?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#swd:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-swd-04",
+      "category": "repellency_comparison",
+      "question": "Summarize spatial, contact, feeding, and oviposition effects in SWD repellent studies.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#swd:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-swd-05",
+      "category": "repellency_comparison",
+      "question": "Compare direct Drosophila suzukii repellent evidence across dose and duration.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#swd:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-swd-06",
+      "category": "repellency_comparison",
+      "question": "Which SWD oviposition-deterrence studies are directly comparable?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#swd:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-swd-07",
+      "category": "repellency_comparison",
+      "question": "Compare volatile plant repellent compounds tested against SWD while preserving assay context.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#swd:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "repellency-swd-08",
+      "category": "repellency_comparison",
+      "question": "Give a bounded comparison of SWD repellent studies on fruit crops.",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "re:records#swd:[A-Za-z0-9_.:-]+"
+        ]
+      }
+    },
+    {
+      "id": "calibration-01",
+      "category": "evidence_calibration",
+      "question": "Does partial source-grade sensory evidence prove an SWD repellent works?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "calibration-02",
+      "category": "evidence_calibration",
+      "question": "Is unverified Aedes brain evidence the same as human-verified proof?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/1"
+        ]
+      }
+    },
+    {
+      "id": "calibration-03",
+      "category": "evidence_calibration",
+      "question": "Can candidate SWD receptor records establish a proven mode of action?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/2"
+        ]
+      }
+    },
+    {
+      "id": "calibration-04",
+      "category": "evidence_calibration",
+      "question": "Does Aedes behavior coverage prove a human mosquito product is effective?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/6"
+        ]
+      }
+    },
+    {
+      "id": "calibration-05",
+      "category": "evidence_calibration",
+      "question": "Is inferred evidence direct evidence for diamondback moth sensory biology?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "calibration-06",
+      "category": "evidence_calibration",
+      "question": "Are the mapped SWD anatomy records already human verified?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "unverified"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/3"
+        ]
+      }
+    },
+    {
+      "id": "calibration-07",
+      "category": "evidence_calibration",
+      "question": "Does partial Aedes genetics coverage remove all uncertainty?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/4"
+        ]
+      }
+    },
+    {
+      "id": "calibration-08",
+      "category": "evidence_calibration",
+      "question": "Can missing diamondback moth behavior be filled silently from another species?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2/domains/6"
+        ]
+      }
+    },
+    {
+      "id": "calibration-09",
+      "category": "evidence_calibration",
+      "question": "Does partial efficacy coverage mean the SWD crop repellent is proven effective?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/0"
+        ]
+      }
+    },
+    {
+      "id": "calibration-10",
+      "category": "evidence_calibration",
+      "question": "Does partial mode-of-action coverage prove the human mosquito repellent mechanism?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/1"
+        ]
+      }
+    },
+    {
+      "id": "calibration-11",
+      "category": "evidence_calibration",
+      "question": "Can a formulation source gap be described as product readiness for the SWD crop repellent?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "SWD crop repellent",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/2"
+        ]
+      }
+    },
+    {
+      "id": "calibration-12",
+      "category": "evidence_calibration",
+      "question": "Is missing human mosquito repellent safety evidence equivalent to evidence of safety?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/4"
+        ]
+      }
+    },
+    {
+      "id": "calibration-13",
+      "category": "evidence_calibration",
+      "question": "Does public literature metadata alone prove human mosquito repellent efficacy?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/0"
+        ]
+      }
+    },
+    {
+      "id": "calibration-14",
+      "category": "evidence_calibration",
+      "question": "Can unverified SWD crop repellent efficacy extraction be presented as a settled result?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "unverified"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0/readiness/0"
+        ]
+      }
+    },
+    {
+      "id": "calibration-15",
+      "category": "evidence_calibration",
+      "question": "Does a source gap in spotted wing drosophila ecology mean the literature itself contains no evidence?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Drosophila suzukii",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/11"
+        ]
+      }
+    },
+    {
+      "id": "calibration-16",
+      "category": "evidence_calibration",
+      "question": "Must disagreements and uncertainty remain visible in Aedes sensory coverage?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "uncertainty"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "boundary-01",
+      "category": "boundary_and_false_premise",
+      "question": "Can private Monarch assay results be copied into Ask Insects to eliminate diamondback moth source gaps?",
+      "expect": {
+        "behavior": "boundary",
+        "required_terms": [
+          "public",
+          "private"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2"
+        ]
+      }
+    },
+    {
+      "id": "boundary-02",
+      "category": "boundary_and_false_premise",
+      "question": "When answering SWD sensory coverage, may Ask Insects cite private Monarch compound results?",
+      "expect": {
+        "behavior": "boundary",
+        "required_terms": [
+          "public",
+          "private"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/0"
+        ]
+      }
+    },
+    {
+      "id": "boundary-03",
+      "category": "boundary_and_false_premise",
+      "question": "Can the public Ask Insects path expose a private human mosquito repellent formulation while discussing readiness?",
+      "expect": {
+        "behavior": "boundary",
+        "required_terms": [
+          "public",
+          "private"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1"
+        ]
+      }
+    },
+    {
+      "id": "boundary-04",
+      "category": "boundary_and_false_premise",
+      "question": "Should missing public SWD crop repellent evidence be filled from private Ask Monarch experiments?",
+      "expect": {
+        "behavior": "boundary",
+        "required_terms": [
+          "public",
+          "private"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-05",
+      "category": "boundary_and_false_premise",
+      "question": "Can Aedes evidence be relabeled as direct diamondback moth evidence?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-06",
+      "category": "boundary_and_false_premise",
+      "question": "Can Drosophila melanogaster oviposition evidence prove the same effect in Drosophila suzukii?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/7"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-07",
+      "category": "boundary_and_false_premise",
+      "question": "Does mosquito receptor evidence establish a Drosophila suzukii repellent mode of action?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/0/domains/2"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-08",
+      "category": "boundary_and_false_premise",
+      "question": "Can SWD repellent evidence prove human mosquito repellent safety?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Human mosquito repellent",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1/readiness/4"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-09",
+      "category": "boundary_and_false_premise",
+      "question": "Does Aedes landing evidence prove diamondback moth crop protection?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-10",
+      "category": "boundary_and_false_premise",
+      "question": "Can diamondback moth insecticide resistance evidence establish yellow fever mosquito repellent resistance?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1/domains/13"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-11",
+      "category": "boundary_and_false_premise",
+      "question": "Since two readiness dimensions are partial, is the human mosquito repellent ready for use?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/1"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-12",
+      "category": "boundary_and_false_premise",
+      "question": "Since SWD has public papers, is the crop repellent already proven?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "not"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#products/0"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-13",
+      "category": "boundary_and_false_premise",
+      "question": "Does having a diamondback moth profile mean direct sources already exist?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/2"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-14",
+      "category": "boundary_and_false_premise",
+      "question": "Are all fourteen Aedes biology domains already human verified?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "unverified"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#species/1"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-15",
+      "category": "boundary_and_false_premise",
+      "question": "Do 122 insect-intelligence records prove either product works?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "not",
+          "evidence coverage"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    },
+    {
+      "id": "false-premise-16",
+      "category": "boundary_and_false_premise",
+      "question": "Can Ask Insects claim commercial readiness from the program ledger alone?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "not",
+          "evidence coverage"
+        ],
+        "forbidden_terms": [
+          "nothing beats it",
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#portfolio"
+        ]
+      }
+    }
+  ]
+}

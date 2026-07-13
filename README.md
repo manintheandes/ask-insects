@@ -219,6 +219,21 @@ python3 -m askinsects ask "show Drosophila suzukii videos" --json
 python3 -m askinsects ask "show spotted wing drosophila motion evidence" --json
 ```
 
+## Production-Path Evaluation
+
+The final answer gate is a 200-question black-box run through Josh's normal
+Codex route, the installed Ask Insects skill, and the hosted production source
+plane. It requires 100 percent expected behavior, exact provenance in every
+visible answer, and a complete answer in under 30 seconds.
+
+```bash
+python3 scripts/eval_production_path.py
+```
+
+See `docs/production-path-evaluation.md` for the corpus, failure rules, result
+artifact, and non-gating smoke command. `scripts/verify_complete.py` validates
+the evaluator but does not substitute for the live 200-question run.
+
 ## Quick Start
 
 ```bash
