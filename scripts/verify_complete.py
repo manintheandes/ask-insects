@@ -1547,12 +1547,14 @@ def check_production_path_evaluation() -> None:
     ):
         if term not in runner:
             raise RuntimeError(f"production-path evaluator is missing required behavior: {term}")
-    skill = (REPO_ROOT / "skills/askinsects/SKILL.md").read_text(encoding="utf-8")
+    skill = " ".join((REPO_ROOT / "skills/askinsects/SKILL.md").read_text(encoding="utf-8").split())
     for term in (
         "Do not inspect memory",
         "run a second Ask Insects call",
         "write every cited locator in full",
         "--compact",
+        "final_answer",
+        "verbatim",
         "under 30 seconds",
     ):
         if term not in skill:
@@ -1564,6 +1566,8 @@ def check_production_path_evaluation() -> None:
         "answer immediately without another command",
         "Preserve canonical labels",
         "--compact",
+        "final_answer",
+        "verbatim",
     ):
         if term not in agents:
             raise RuntimeError(f"Ask Insects AGENTS.md is missing production-path guidance: {term}")
