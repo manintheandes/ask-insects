@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
 import sqlite3
 from unittest import mock
@@ -315,6 +316,41 @@ class IndexTests(unittest.TestCase):
                 index.sql("select record_id from records_fts where records_fts match 'staleunique'"),
                 [],
             )
+
+    def test_new_records_do_not_scan_fts_for_rows_that_cannot_exist(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            statements: list[str] = []
+            original_connect = index.connect
+
+            @contextmanager
+            def traced_connect():
+                with original_connect() as conn:
+                    conn.set_trace_callback(statements.append)
+                    yield conn
+
+            with mock.patch.object(index, "connect", traced_connect):
+                index.upsert_records([sample_record(record_id="obs:new")])
+
+            fts_deletes = [
+                statement
+                for statement in statements
+                if statement.lstrip().upper().startswith("DELETE FROM RECORDS_FTS")
+            ]
+            self.assertEqual(fts_deletes, [])
+            self.assertEqual(index.search("Brazil")[0].record_id, "obs:new")
+
+    def test_existing_record_update_replaces_its_search_text(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([sample_record(record_id="obs:1", text="oldunique row")])
+
+            index.upsert_records([sample_record(record_id="obs:1", text="newunique row")])
+
+            self.assertEqual(index.search("oldunique"), [])
+            self.assertEqual(index.search("newunique")[0].record_id, "obs:1")
 
     def test_replace_source_records_can_preserve_existing_fts_for_large_sources(self):
         with tempfile.TemporaryDirectory() as tmpdir:

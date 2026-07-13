@@ -181,6 +181,16 @@ class SourceIndex:
         if not records:
             return
         rows = [record.to_row() for record in records]
+        existing_fts_record_ids: list[str] = []
+        if update_fts:
+            record_ids = [record.record_id for record in records]
+            for chunk in _chunks(record_ids):
+                placeholders = ",".join("?" for _ in chunk)
+                existing_rows = conn.execute(
+                    f"SELECT record_id FROM records WHERE record_id IN ({placeholders})",
+                    chunk,
+                ).fetchall()
+                existing_fts_record_ids.extend(str(row["record_id"]) for row in existing_rows)
         conn.executemany(
                 """
                 INSERT INTO records (
@@ -212,8 +222,7 @@ class SourceIndex:
                 ],
         )
         if update_fts:
-            record_ids = [record.record_id for record in records]
-            for chunk in _chunks(record_ids):
+            for chunk in _chunks(existing_fts_record_ids):
                 placeholders = ",".join("?" for _ in chunk)
                 conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
             conn.executemany(
