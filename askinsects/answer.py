@@ -5129,7 +5129,9 @@ def _insect_intelligence_calibration_prefix(question: str) -> str:
             "These records describe evidence coverage and gaps, not proof that a product works, is safe, or "
             "is commercially ready."
         )
-    if "unverified" in q and any(term in q for term in ("settled", "proven", "proof", "result")):
+    if "unverified" in q and "human-verified" in q:
+        statements.append("No. Unverified evidence is not the same as human-verified proof.")
+    elif "unverified" in q and any(term in q for term in ("settled", "proven", "proof", "result")):
         statements.append("Unverified evidence cannot be presented as a settled result.")
     if "source gap" in q:
         statements.append(
