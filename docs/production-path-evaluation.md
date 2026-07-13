@@ -22,13 +22,23 @@ public/private boundary.
 A full run passes only at 100 percent, when all 200 questions pass in one run. Every question
 must:
 
-- use the installed Ask Insects skill and the hosted `ask-insects ask` path
+- use the installed Ask Insects skill and the hosted `ask-insects ask --compact` path
 - preserve Josh's exact question in the hosted call
 - finish the complete visible Codex answer in under 30 seconds
 - match the expected subject and evidence behavior
 - show the expected source ID and exact row or locator in the final answer
 - avoid local-index, memory, web, Ask Monarch, setup, refresh, and test fallbacks
 - avoid unsupported efficacy, readiness, and best-in-literature claims
+
+Scientific/common species names and configured domain or product aliases count
+as the same expected term. Punctuation and status formatting do not matter, so
+`partial_source_grade` and `partial source grade` are equivalent. Source IDs
+and locators remain exact, and a negated warning such as "not ready for market"
+is not misgraded as a readiness claim.
+
+The compact agent payload removes duplicated internal rows and long evidence
+text only after the hosted answer is complete. It retains the answer, claim
+status, coverage counts, evidence identities, source IDs, and exact locators.
 
 The runner writes the exact question, expected behavior, visible answer,
 commands, elapsed time, provenance, pass/fail decision, and failure reasons to

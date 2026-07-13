@@ -35,6 +35,54 @@ def cli_error(error: str, *, lane: str, artifact_dir: Path) -> dict[str, object]
     }
 
 
+def compact_agent_answer(payload: dict[str, object]) -> dict[str, object]:
+    if payload.get("answer_shape") not in {"insect_intelligence", "repellency_comparison"}:
+        return payload
+    compact = {
+        key: payload[key]
+        for key in (
+            "ok",
+            "answer_shape",
+            "answer",
+            "source_gap",
+            "contract_version",
+            "claim",
+            "insect_intelligence",
+        )
+        if key in payload
+    }
+    coverage = payload.get("coverage")
+    if isinstance(coverage, dict):
+        compact["coverage"] = {
+            key: value
+            for key, value in coverage.items()
+            if key != "source_gaps"
+        }
+    comparison = payload.get("comparison")
+    if isinstance(comparison, dict):
+        compact["comparison"] = {
+            key: comparison[key]
+            for key in (
+                "target",
+                "dimensions",
+                "directly_comparable_record_ids",
+                "comparable_pair_record_ids",
+            )
+            if key in comparison
+        }
+    evidence = payload.get("evidence")
+    compact["evidence"] = [
+        {
+            key: item[key]
+            for key in ("record_id", "source", "species", "title", "provenance")
+            if key in item
+        }
+        for item in evidence
+        if isinstance(item, dict)
+    ] if isinstance(evidence, list) else []
+    return compact
+
+
 def render_answer(payload: dict[str, object]) -> str:
     lines = [str(payload["answer"]), ""]
     if payload.get("answer_shape") == "repellency_comparison":
@@ -168,6 +216,11 @@ def main(argv: list[str] | None = None) -> int:
     ask.add_argument("question")
     ask.add_argument("--limit", type=int, default=5)
     ask.add_argument("--json", action="store_true")
+    ask.add_argument(
+        "--compact",
+        action="store_true",
+        help="Keep the complete answer and exact provenance while omitting duplicate agent-irrelevant detail",
+    )
     ask.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
     ask.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
@@ -736,7 +789,7 @@ def main(argv: list[str] | None = None) -> int:
                     artifact_dir=artifact_dir,
                 )
         if args.json:
-            emit(payload)
+            emit(compact_agent_answer(payload) if args.compact else payload)
         elif args.hosted and "answer" not in payload:
             emit(payload)
         else:

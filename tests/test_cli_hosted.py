@@ -65,6 +65,74 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0], ("https://ask-insects.example", "GET", "/health", None))
         self.assertTrue(json.loads(output)["hosted"])
 
+    def test_compact_hosted_ask_keeps_answer_and_exact_provenance_without_duplicate_rows(self):
+        calls = []
+        hosted_payload = {
+            "ok": True,
+            "answer_shape": "repellency_comparison",
+            "answer": "Ask Insects cannot support the comparison claim.",
+            "claim": {"status": "insufficient_evidence", "reasons": []},
+            "coverage": {
+                "deduplicated_papers": 10,
+                "unresolved_source_gaps": 1,
+                "source_gaps": [{"detail": "large duplicate detail"}],
+            },
+            "comparison": {
+                "target": {"species": "Culicidae"},
+                "dimensions": ["species", "assay"],
+                "directly_comparable_record_ids": [],
+                "comparable_pair_record_ids": [],
+                "rows": [{"evidence_text": "large duplicate detail"}],
+            },
+            "evidence": [
+                {
+                    "record_id": "fact:1",
+                    "source": "mosquito_repellent_external_discovery_extracted_facts",
+                    "species": "Culicidae",
+                    "title": "Candidate assay fact",
+                    "text": "large duplicate detail",
+                    "provenance": {
+                        "source_id": "mosquito_repellent_external_discovery_extracted_facts",
+                        "locator": "records#mosquito_repellent_external_discovery:fact:1",
+                    },
+                }
+            ],
+        }
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload))
+            return hosted_payload
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", fake_request
+        ):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ask",
+                "Does anything in the literature beat this result?",
+                "--json",
+                "--compact",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            calls[0],
+            (
+                "POST",
+                "/ask",
+                {"question": "Does anything in the literature beat this result?", "limit": 5},
+            ),
+        )
+        payload = json.loads(output)
+        self.assertEqual(payload["answer"], hosted_payload["answer"])
+        self.assertNotIn("source_gaps", payload["coverage"])
+        self.assertNotIn("rows", payload["comparison"])
+        self.assertNotIn("text", payload["evidence"][0])
+        self.assertEqual(
+            payload["evidence"][0]["provenance"]["locator"],
+            "records#mosquito_repellent_external_discovery:fact:1",
+        )
+
     def test_hosted_insect_intelligence_ingest_sends_program_ledger(self):
         calls = []
 

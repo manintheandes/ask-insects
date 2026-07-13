@@ -12,6 +12,10 @@ targets. Diamondback moth, `Plutella xylostella`, is next.
 
 ## Normal Answer Path
 
+This file and the active `AGENTS.md` are the complete routing instruction. Do
+not inspect memory, Chronicle, repository docs, or another skill before the
+hosted call.
+
 1. Use the installed `ask-insects` command. If it is not on `PATH`, use
    `$HOME/.local/bin/ask-insects`.
 2. Query the hosted production source plane. A bare read command is hosted by
@@ -19,8 +23,11 @@ targets. Diamondback moth, `Plutella xylostella`, is next.
 3. Start with one targeted call:
 
 ```bash
-ask-insects ask "<the user's exact question>" --json
+ask-insects ask "<the user's exact question>" --json --compact
 ```
+
+`--compact` keeps the complete hosted answer and exact evidence locators while
+removing duplicated internal detail that is not needed in the visible answer.
 
 4. When that call returns `ok: true`, answer immediately from that payload.
    Do not inspect memory, browse the web, run a second Ask Insects call, or
@@ -31,7 +38,8 @@ ask-insects ask "<the user's exact question>" --json
 6. Return the direct answer first, then the evidence and limitations in plain
    language. For a portfolio answer, cite the exact `#portfolio` locator.
    Never shorten a repeated locator to a fragment such as `#products/1`;
-   write every cited locator in full.
+   write every cited locator in full. Preserve canonical labels exactly,
+   including `SWD crop repellent` and `Human mosquito repellent`.
 
 Complete the visible answer in under 30 seconds. Do not run repository tests,
 source refreshes, installation, or broad exploratory commands during a normal
