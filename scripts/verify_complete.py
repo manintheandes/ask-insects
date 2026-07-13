@@ -1539,6 +1539,7 @@ def check_production_path_evaluation() -> None:
         "codex",
         "--ephemeral",
         "ask-insects",
+        "--compact",
         "maximum_seconds",
         "production_gate_passed",
         "visible_answer",
@@ -1551,10 +1552,21 @@ def check_production_path_evaluation() -> None:
         "Do not inspect memory",
         "run a second Ask Insects call",
         "write every cited locator in full",
+        "--compact",
         "under 30 seconds",
     ):
         if term not in skill:
             raise RuntimeError(f"Ask Insects skill is missing production-path guidance: {term}")
+    agents = " ".join((REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
+    for term in (
+        "the first operational command",
+        "Do not inspect memory",
+        "answer immediately without another command",
+        "Preserve canonical labels",
+        "--compact",
+    ):
+        if term not in agents:
+            raise RuntimeError(f"Ask Insects AGENTS.md is missing production-path guidance: {term}")
     docs = (REPO_ROOT / "docs/production-path-evaluation.md").read_text(encoding="utf-8")
     for term in ("200", "100 percent", "under 30 seconds", "production_gate_passed: true"):
         if term not in docs:

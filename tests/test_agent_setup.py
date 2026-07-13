@@ -12,6 +12,19 @@ from askinsects.agent_setup import REPO_SKILL_DIR, install_askinsects_skill, ski
 
 
 class AgentSetupTests(unittest.TestCase):
+    def test_repo_instructions_make_the_hosted_call_the_first_normal_action(self):
+        text = " ".join(Path("AGENTS.md").read_text(encoding="utf-8").split())
+
+        for term in (
+            "the first operational command",
+            "the user's exact question",
+            "Do not inspect memory",
+            "Chronicle",
+            "answer immediately without another command",
+            "Preserve canonical labels",
+        ):
+            self.assertIn(term, text)
+
     def test_repo_skill_encodes_current_product_and_answer_contract(self):
         text = (REPO_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
 
@@ -27,6 +40,7 @@ class AgentSetupTests(unittest.TestCase):
             "Do not inspect memory",
             "run a second Ask Insects call",
             "write every cited locator in full",
+            "--compact",
         ):
             self.assertIn(term, text)
         self.assertNotIn("current top-level product goal is Aedes-first", text)

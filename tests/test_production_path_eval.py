@@ -43,7 +43,7 @@ def successful_execution() -> ExecutionResult:
         turn_completed=True,
         visible_answer=answer,
         agent_messages=[answer],
-        commands=[f'/bin/zsh -lc \'ask-insects ask "{question}" --json\''],
+        commands=[f'/bin/zsh -lc \'ask-insects ask "{question}" --json --compact\''],
         event_types=["thread.started", "turn.started", "turn.completed"],
         stdout_jsonl="",
         stderr="",
@@ -75,6 +75,48 @@ class ProductionPathEvalTests(unittest.TestCase):
             result["provenance"]["locators"],
             ["config/insect-intelligence-programs.json#species/2"],
         )
+
+    def test_equivalent_species_domain_and_status_labels_are_accepted(self):
+        question = "What is the sensory world evidence status for spotted wing drosophila?"
+        case = {
+            **sample_case(),
+            "question": question,
+            "expect": {
+                **sample_case()["expect"],
+                "behavior": "bounded_answer",
+                "required_terms": ["Drosophila suzukii", "Sensory world", "partial source grade"],
+                "locator_patterns": [
+                    "config/insect-intelligence-programs.json#species/0/domains/0"
+                ],
+            },
+        }
+        answer = (
+            "Spotted wing drosophila sensory-world evidence is partial_source_grade. "
+            "Source: insect_intelligence_programs. Locator: "
+            "config/insect-intelligence-programs.json#species/0/domains/0."
+        )
+        execution = successful_execution()
+        execution.visible_answer = answer
+        execution.agent_messages = [answer]
+        execution.commands = [f'ask-insects ask "{question}" --json --compact']
+
+        result = evaluate_case(case, execution, maximum_seconds=30)
+
+        self.assertTrue(result["ok"], result["failures"])
+
+    def test_negated_forbidden_claim_is_not_treated_as_an_unsupported_claim(self):
+        case = sample_case()
+        case["expect"] = {**case["expect"], "forbidden_terms": ["ready for market"]}
+        execution = successful_execution()
+        execution.visible_answer += " This is not ready for market."
+
+        negated = evaluate_case(case, execution, maximum_seconds=30)
+
+        self.assertTrue(negated["ok"], negated["failures"])
+        execution.visible_answer = execution.visible_answer.replace("not ready", "ready")
+        unsupported = evaluate_case(case, execution, maximum_seconds=30)
+        self.assertFalse(unsupported["ok"])
+        self.assertIn("final answer contains forbidden term: ready for market", unsupported["failures"])
 
     def test_timeout_is_a_hard_failure(self):
         execution = successful_execution()
@@ -111,6 +153,17 @@ class ProductionPathEvalTests(unittest.TestCase):
 
         self.assertFalse(result["ok"])
         self.assertTrue(any("exact question" in failure for failure in result["failures"]))
+
+    def test_noncompact_agent_payload_fails_the_normal_route(self):
+        execution = successful_execution()
+        execution.commands = [
+            'ask-insects ask "What is missing from diamondback moth biology coverage?" --json'
+        ]
+
+        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+
+        self.assertFalse(result["ok"])
+        self.assertIn("normal Ask Insects call did not use the compact agent payload", result["failures"])
 
     def test_memory_web_local_private_and_maintenance_fallbacks_fail(self):
         blocked_commands = [

@@ -6,6 +6,7 @@ from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from functools import lru_cache
 import json
 import os
 from pathlib import Path
@@ -217,6 +218,85 @@ def _matched_locator(answer: str, pattern: str) -> str | None:
     return answer[start : start + len(pattern)] if start >= 0 else None
 
 
+def _basic_term_text(value: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", value.casefold())).strip()
+
+
+@lru_cache(maxsize=1)
+def _term_alias_groups() -> tuple[tuple[str, ...], ...]:
+    groups: list[tuple[str, ...]] = []
+
+    def add_group(values: list[object]) -> None:
+        normalized = tuple(
+            dict.fromkeys(
+                text
+                for value in values
+                if (text := _basic_term_text(str(value or "")))
+            )
+        )
+        if len(normalized) > 1:
+            groups.append(normalized)
+
+    add_group(["source gap", "source gaps", "missing evidence", "insufficient evidence"])
+    add_group(["cannot", "can not", "can't", "unable to"])
+    try:
+        ledger = json.loads(
+            (REPO_ROOT / "config" / "insect-intelligence-programs.json").read_text(encoding="utf-8")
+        )
+    except (OSError, json.JSONDecodeError):
+        ledger = {}
+    if isinstance(ledger, dict):
+        for key, name_field in (
+            ("knowledge_domains", "name"),
+            ("readiness_dimensions", "name"),
+            ("species", "scientific_name"),
+            ("products", "name"),
+        ):
+            entries = ledger.get(key)
+            if not isinstance(entries, list):
+                continue
+            for entry in entries:
+                if not isinstance(entry, dict):
+                    continue
+                values: list[object] = [entry.get(name_field)]
+                if key == "species":
+                    values.append(entry.get("common_name"))
+                aliases = entry.get("aliases")
+                if isinstance(aliases, list):
+                    values.extend(aliases)
+                add_group(values)
+    return tuple(groups)
+
+
+def _contains_required_term(answer: str, term: str) -> bool:
+    normalized_answer = _basic_term_text(answer)
+    normalized_term = _basic_term_text(term)
+    padded_answer = f" {normalized_answer} "
+    if normalized_term and f" {normalized_term} " in padded_answer:
+        return True
+    for group in _term_alias_groups():
+        if normalized_term in group and any(f" {alias} " in padded_answer for alias in group):
+            return True
+    return False
+
+
+def _contains_forbidden_claim(answer: str, term: str) -> bool:
+    normalized_answer = _basic_term_text(answer)
+    normalized_term = _basic_term_text(term)
+    if not normalized_term:
+        return False
+    for match in re.finditer(re.escape(normalized_term), normalized_answer):
+        before = normalized_answer[max(0, match.start() - 80) : match.start()]
+        negated = re.search(
+            r"\b(?:no|not|cannot|can not|cant|do not|does not|did not|is not|are not|without|unsupported)\b"
+            r"(?:\s+[a-z0-9]+){0,8}\s*$",
+            before,
+        )
+        if not negated:
+            return True
+    return False
+
+
 def evaluate_case(
     case: dict[str, object],
     execution: ExecutionResult,
@@ -250,6 +330,8 @@ def evaluate_case(
         failures.append("normal Codex route did not call ask-insects ask")
     elif question.casefold() not in ask_commands[0].casefold():
         failures.append("first ask-insects call did not preserve the user's exact question")
+    elif not re.search(r"\s--compact(?:\s|['\"]|$)", ask_commands[0]):
+        failures.append("normal Ask Insects call did not use the compact agent payload")
     if len(ask_commands) > 1:
         failures.append(f"normal answer used {len(ask_commands)} ask-insects calls; expected exactly one")
 
@@ -266,10 +348,10 @@ def evaluate_case(
         failures.append("web search was used instead of the hosted Ask Insects source plane")
 
     for term in _string_list(expect.get("required_terms"), "required_terms"):
-        if term.casefold() not in answer_lower:
+        if not _contains_required_term(answer, term):
             failures.append(f"final answer missing required term: {term}")
     for term in _string_list(expect.get("forbidden_terms"), "forbidden_terms"):
-        if term.casefold() in answer_lower:
+        if _contains_forbidden_claim(answer, term):
             failures.append(f"final answer contains forbidden term: {term}")
 
     behavior = expect.get("behavior")
