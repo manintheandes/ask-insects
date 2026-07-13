@@ -16,9 +16,9 @@ class AgentSetupTests(unittest.TestCase):
         text = " ".join(Path("AGENTS.md").read_text(encoding="utf-8").split())
 
         for term in (
-            "first and only operational command",
+            "preferred first and only operational command",
             "the user's exact question",
-            "Do not open or read the Ask Insects skill file",
+            "one installed Ask Insects skill read",
             "Do not inspect memory",
             "Chronicle",
             "answer immediately without another command",
@@ -54,8 +54,8 @@ class AgentSetupTests(unittest.TestCase):
 
         frontmatter = " ".join(source.split("---", 2)[1].split())
         for term in (
-            "do not open this file",
-            "first and only command",
+            "without opening this file when the harness permits",
+            "first hosted command",
             'ask-insects ask "<the user\'s exact question>" --json --compact',
             "return final_answer verbatim",
         ):
