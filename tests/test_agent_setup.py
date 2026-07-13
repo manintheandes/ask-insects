@@ -29,7 +29,8 @@ class AgentSetupTests(unittest.TestCase):
             self.assertIn(term, text)
 
     def test_repo_skill_encodes_current_product_and_answer_contract(self):
-        text = " ".join((REPO_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").split())
+        source = (REPO_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        text = " ".join(source.split())
 
         for term in (
             "SWD crop repellent",
@@ -50,6 +51,15 @@ class AgentSetupTests(unittest.TestCase):
             self.assertIn(term, text)
         self.assertNotIn("current top-level product goal is Aedes-first", text)
         self.assertNotIn("/Users/josh/projects/ask-insects", text)
+
+        frontmatter = " ".join(source.split("---", 2)[1].split())
+        for term in (
+            "do not open this file",
+            "first and only command",
+            'ask-insects ask "<the user\'s exact question>" --json --compact',
+            "return final_answer verbatim",
+        ):
+            self.assertIn(term, frontmatter)
 
     def test_installer_atomically_replaces_and_verifies_skill_tree(self):
         with tempfile.TemporaryDirectory() as tmpdir:

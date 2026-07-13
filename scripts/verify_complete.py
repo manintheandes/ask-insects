@@ -1547,7 +1547,8 @@ def check_production_path_evaluation() -> None:
     ):
         if term not in runner:
             raise RuntimeError(f"production-path evaluator is missing required behavior: {term}")
-    skill = " ".join((REPO_ROOT / "skills/askinsects/SKILL.md").read_text(encoding="utf-8").split())
+    skill_source = (REPO_ROOT / "skills/askinsects/SKILL.md").read_text(encoding="utf-8")
+    skill = " ".join(skill_source.split())
     for term in (
         "Do not inspect memory",
         "run a second Ask Insects call",
@@ -1559,6 +1560,15 @@ def check_production_path_evaluation() -> None:
     ):
         if term not in skill:
             raise RuntimeError(f"Ask Insects skill is missing production-path guidance: {term}")
+    skill_frontmatter = " ".join(skill_source.split("---", 2)[1].split())
+    for term in (
+        "do not open this file",
+        "first and only command",
+        'ask-insects ask "<the user\'s exact question>" --json --compact',
+        "return final_answer verbatim",
+    ):
+        if term not in skill_frontmatter:
+            raise RuntimeError(f"Ask Insects skill description is missing direct-route guidance: {term}")
     agents = " ".join((REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
     for term in (
         "Do not open or read the Ask Insects skill file",
