@@ -1,6 +1,10 @@
 # Source Lanes
 
-V1 is Aedes-first. Other mosquitoes can be indexed as comparison records, but `Aedes aegypti` is the completion boundary for this push.
+Ask Insects supports two initial product programs: a spotted wing drosophila crop repellent and a human mosquito repellent. `Drosophila suzukii` and `Aedes aegypti` are the active product targets. Diamondback moth, `Plutella xylostella`, is the next crop-pest target and the proof that new insects can use the same architecture.
+
+`insect_intelligence_programs` derives the shared portfolio from `config/insect-intelligence-programs.json`. It writes queryable `insect_intelligence` records for the portfolio, each product, each species, fourteen knowledge domains per species, eight readiness dimensions per product, and every declared evidence gap. Its validator fails if a species omits a domain, a product omits a readiness dimension, or a gap-status record carries borrowed sources. These records describe evidence coverage and research needs, not product efficacy.
+
+Within the mosquito depth program, the current comprehensive-source push is Aedes-first. Other mosquitoes can be indexed as comparison records, but `Aedes aegypti` remains the completion boundary for that source-depth push.
 
 The comprehensive-source push is Aedes-first: Ask Insects is building toward the most comprehensive `Aedes aegypti` intelligence system in the world. Other mosquitoes can remain comparison records, but Aedes is the completion boundary for this push. The coverage ledger lives at `config/mosquito-intelligence-coverage.json` and tracks required domains, gate status, next source candidates, and completion evidence. The benchmark ledger lives at `config/aedes-source-plane-benchmark.json` and currently marks the world-largest/world-deepest claim as not proven.
 

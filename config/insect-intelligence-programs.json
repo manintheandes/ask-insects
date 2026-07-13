@@ -1,0 +1,219 @@
+{
+  "schema_version": "insect-intelligence-programs.v1",
+  "last_reviewed": "2026-07-13",
+  "objective": "Help Monarch deeply understand insects and use that understanding to create effective repellents that protect people and crops without killing insects.",
+  "evidence_gates": [
+    "species_confirmed",
+    "context_preserved",
+    "directness_labeled",
+    "verification_labeled",
+    "uncertainty_visible",
+    "disagreements_visible",
+    "provenance_exact"
+  ],
+  "knowledge_domains": [
+    {"id": "sensory_world", "name": "Sensory world", "aliases": ["senses", "sensory", "smell", "taste", "vision", "hearing"]},
+    {"id": "brain_neurobiology", "name": "Brain and neurobiology", "aliases": ["brain", "neurobiology", "neurons", "neural circuits"]},
+    {"id": "receptors_signaling", "name": "Receptors and signaling", "aliases": ["receptors", "signaling", "olfactory receptors", "chemoreceptors"]},
+    {"id": "anatomy_physiology", "name": "Anatomy and physiology", "aliases": ["anatomy", "physiology", "body", "organs"]},
+    {"id": "genetics_gene_activity", "name": "Genetics and gene activity", "aliases": ["genetics", "genes", "genomics", "gene activity", "expression"]},
+    {"id": "life_cycle_development", "name": "Life cycle and development", "aliases": ["life cycle", "development", "larva", "pupa", "adult"]},
+    {"id": "behavior", "name": "Behavior", "aliases": ["behavior", "behaviour", "actions"]},
+    {"id": "reproduction_oviposition", "name": "Reproduction and egg laying", "aliases": ["reproduction", "egg laying", "oviposition", "mating"]},
+    {"id": "feeding_host_finding", "name": "Feeding and host finding", "aliases": ["feeding", "host finding", "host seeking", "blood feeding", "crop finding"]},
+    {"id": "movement_flight_navigation", "name": "Movement, flight, and navigation", "aliases": ["movement", "flight", "navigation", "dispersal", "locomotion"]},
+    {"id": "learning_memory_internal_state", "name": "Learning, memory, and internal state", "aliases": ["learning", "memory", "internal state", "hunger", "circadian"]},
+    {"id": "ecology_interactions", "name": "Ecology and interactions", "aliases": ["ecology", "environment", "predators", "parasitoids", "microbiome", "interactions"]},
+    {"id": "chemical_responses_metabolism", "name": "Chemical responses and metabolism", "aliases": ["chemical response", "metabolism", "detoxification", "repellent response"]},
+    {"id": "adaptation_resistance", "name": "Adaptation and resistance", "aliases": ["adaptation", "resistance", "tolerance", "evolution"]}
+  ],
+  "readiness_dimensions": [
+    {"id": "efficacy", "name": "Efficacy in intended use", "aliases": ["efficacy", "effectiveness", "works"]},
+    {"id": "mode_of_action", "name": "Mode of action", "aliases": ["mode of action", "mechanism", "why it works"]},
+    {"id": "formulation_delivery", "name": "Formulation and delivery", "aliases": ["formulation", "delivery", "application"]},
+    {"id": "persistence_reapplication", "name": "Persistence and reapplication", "aliases": ["persistence", "duration", "reapplication", "volatility"]},
+    {"id": "human_or_crop_safety", "name": "Human or crop safety", "aliases": ["safety", "human safety", "crop safety", "phytotoxicity"]},
+    {"id": "non_target_ecological_effects", "name": "Non-target and ecological effects", "aliases": ["non-target", "ecological effects", "pollinators", "beneficial insects"]},
+    {"id": "field_or_human_use_performance", "name": "Field or human-use performance", "aliases": ["field performance", "human use", "real world", "field trial"]},
+    {"id": "regulatory_commercialization", "name": "Regulatory and commercialization evidence", "aliases": ["regulatory", "commercialization", "registration", "manufacturing"]}
+  ],
+  "products": [
+    {
+      "id": "swd_crop_repellent",
+      "name": "SWD crop repellent",
+      "aliases": ["SWD crop repellent", "spotted wing drosophila crop repellent", "crop repellent"],
+      "objective": "Prevent spotted wing drosophila from landing, feeding, or laying eggs on crops while protecting crops and non-target organisms.",
+      "target_species": ["drosophila_suzukii"],
+      "readiness": [
+        {
+          "id": "efficacy", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified",
+          "summary": "Public SWD repellency and oviposition-deterrence candidates are queryable, but the evidence is not yet a complete product comparison set.",
+          "current_sources": ["drosophila_suzukii_core", "drosophila_suzukii_extracted_facts"],
+          "gaps": ["human-verified, directly comparable SWD assay rows across dose, formulation, duration, crop, and endpoint"], "uncertainties": ["candidate extractions may not preserve every decisive assay dimension"], "disagreements": []
+        },
+        {
+          "id": "mode_of_action", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified",
+          "summary": "SWD olfaction, neurobiology, chemoreceptor, and candidate repellent evidence can support mechanism hypotheses, not proof of mechanism.",
+          "current_sources": ["drosophila_suzukii_neurobiology_sources", "drosophila_suzukii_olfaction_literature", "drosophila_suzukii_chemoreceptors"],
+          "gaps": ["receptor-to-behavior validation for product compounds in the intended assay and crop context"], "uncertainties": ["behavioral repellency can arise through several sensory and physiological routes"], "disagreements": []
+        },
+        {
+          "id": "formulation_delivery", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Ask Insects does not yet have a product-specific public formulation evidence lane for the SWD crop repellent.",
+          "current_sources": [], "gaps": ["formulation, carrier, release-rate, application-method, and crop-surface compatibility evidence"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "persistence_reapplication", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Product-specific persistence and reapplication evidence is not yet queryable in Ask Insects.",
+          "current_sources": [], "gaps": ["field-relevant weathering, volatility, residue, rainfastness, and reapplication data"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "human_or_crop_safety", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Public product-specific crop and worker safety evidence is not yet integrated.",
+          "current_sources": [], "gaps": ["crop phytotoxicity, residue, worker exposure, and intended-use safety evidence by formulation and dose"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "non_target_ecological_effects", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Product-specific non-target evidence is not yet queryable.",
+          "current_sources": [], "gaps": ["pollinator, predator, parasitoid, soil, aquatic, and beneficial-insect effects at intended exposure"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "field_or_human_use_performance", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified",
+          "summary": "SWD crop, monitoring, ecology, and extension context is queryable, but it is not a product field-performance package.",
+          "current_sources": ["drosophila_suzukii_extension_guidance", "drosophila_suzukii_osu_trap_reports", "drosophila_suzukii_jki_drosomon_trap_captures"],
+          "gaps": ["replicated field trials measuring crop damage, marketable yield, persistence, and operational fit"], "uncertainties": ["laboratory avoidance may not transfer to crop protection under field conditions"], "disagreements": []
+        },
+        {
+          "id": "regulatory_commercialization", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "The public source plane does not yet map a product-specific regulatory and commercialization evidence package.",
+          "current_sources": [], "gaps": ["intended claims, jurisdiction, registration path, manufacturing specification, cost, and market evidence"], "uncertainties": [], "disagreements": []
+        }
+      ]
+    },
+    {
+      "id": "human_mosquito_repellent",
+      "name": "Human mosquito repellent",
+      "aliases": ["human mosquito repellent", "mosquito repellent for humans", "personal mosquito repellent"],
+      "objective": "Prevent mosquitoes from landing or feeding on people with an effective, safe, durable, and usable repellent.",
+      "target_species": ["aedes_aegypti"],
+      "readiness": [
+        {
+          "id": "efficacy", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified",
+          "summary": "Public Aedes and mosquito repellent literature is queryable, but it is not a complete directly comparable product evidence set.",
+          "current_sources": ["mosquito_repellent_literature", "mosquito_repellent_external_discovery", "aedes_extracted_facts"],
+          "gaps": ["human-verified comparisons aligned on species, formulation, dose, exposure mode, endpoint, duration, and uncertainty"], "uncertainties": ["spatial, topical, contact, and non-contact assays are not interchangeable"], "disagreements": []
+        },
+        {
+          "id": "mode_of_action", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified",
+          "summary": "Aedes olfaction, neurobiology, receptor, and repellent sources can support mechanism hypotheses but do not prove a product mechanism.",
+          "current_sources": ["aedes_olfaction_literature", "aedes_neurobiology_sources", "aedes_uniprot_proteins", "vectorbase_aedes_genomics"],
+          "gaps": ["compound-specific receptor and behavior validation under intended human-use exposure"], "uncertainties": ["landing and feeding prevention may involve different sensory or behavioral mechanisms"], "disagreements": []
+        },
+        {
+          "id": "formulation_delivery", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Product-specific formulation and delivery evidence is not yet integrated in the public source plane.",
+          "current_sources": [], "gaps": ["carrier, concentration, skin application, spatial delivery, release rate, and user-experience evidence"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "persistence_reapplication", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Product-specific protection duration and reapplication evidence is not yet queryable.",
+          "current_sources": [], "gaps": ["protection-time data under heat, sweat, abrasion, airflow, and realistic use conditions"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "human_or_crop_safety", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Product-specific human safety evidence is not yet mapped into Ask Insects.",
+          "current_sources": [], "gaps": ["dermal, inhalation, eye, ingestion, sensitive-population, and repeated-use safety evidence by formulation"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "non_target_ecological_effects", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Product-specific non-target and environmental exposure evidence is not yet queryable.",
+          "current_sources": [], "gaps": ["non-target organism, indoor and outdoor environmental, and disposal exposure evidence"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "field_or_human_use_performance", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "Ask Insects does not yet hold a public product-specific human-use performance package.",
+          "current_sources": [], "gaps": ["controlled human landing, real-use adherence, sensory acceptability, duration, and diverse-environment performance evidence"], "uncertainties": [], "disagreements": []
+        },
+        {
+          "id": "regulatory_commercialization", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable",
+          "summary": "The public source plane does not yet map the product-specific regulatory and commercialization package.",
+          "current_sources": [], "gaps": ["intended claims, jurisdiction, registration path, manufacturing specification, packaging, cost, and market evidence"], "uncertainties": [], "disagreements": []
+        }
+      ]
+    }
+  ],
+  "species": [
+    {
+      "id": "drosophila_suzukii",
+      "scientific_name": "Drosophila suzukii",
+      "common_name": "spotted wing drosophila",
+      "aliases": ["spotted-wing drosophila", "SWD"],
+      "role": "active crop-product target",
+      "product_ids": ["swd_crop_repellent"],
+      "domains": [
+        {"id": "sensory_world", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Direct SWD olfaction, chemosensation, antennal, and host-odor sources are queryable but incomplete.", "current_sources": ["drosophila_suzukii_olfaction_literature", "drosophila_suzukii_chemoreceptors"], "gaps": ["human-verified sensory evidence connected to crop volatiles, repellents, sex, age, and internal state"], "uncertainties": ["candidate literature records vary in depth"], "disagreements": []},
+        {"id": "brain_neurobiology", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD neurobiology metadata and selected expression sources are queryable.", "current_sources": ["drosophila_suzukii_neurobiology_sources"], "gaps": ["cell-, circuit-, and brain-region evidence tied to repellent and oviposition behavior"], "uncertainties": ["coverage is metadata-heavy"], "disagreements": []},
+        {"id": "receptors_signaling", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD chemoreceptor, protein, gene, and orthology records are queryable.", "current_sources": ["drosophila_suzukii_chemoreceptors", "drosophila_suzukii_genome_files", "drosophila_suzukii_ncbi_gene_orthologs"], "gaps": ["ligand-response and causal receptor-to-behavior validation"], "uncertainties": ["orthology does not prove matching function"], "disagreements": []},
+        {"id": "anatomy_physiology", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Licensed observations, images, traits, and literature provide partial body and physiological context.", "current_sources": ["drosophila_suzukii_core", "drosophila_suzukii_traits"], "gaps": ["validated anatomy labels and physiological measurements relevant to chemical exposure"], "uncertainties": ["image labels are incomplete"], "disagreements": []},
+        {"id": "genetics_gene_activity", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD genome, orthology, population-genomics, variation-audit, and expression records are queryable.", "current_sources": ["drosophila_suzukii_genome_files", "drosophila_suzukii_population_genomics", "drosophila_suzukii_geo_expression_matrices"], "gaps": ["broader validated expression contrasts and parsed population-variant rows"], "uncertainties": ["large variant files remain only partly parsed"], "disagreements": []},
+        {"id": "life_cycle_development", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Trait, literature, and occurrence lanes provide partial SWD life-stage and seasonal context.", "current_sources": ["drosophila_suzukii_traits", "drosophila_suzukii_core", "drosophila_suzukii_occurrence_ecology"], "gaps": ["query-ready development rates and stage-specific product responses across temperature and host crop"], "uncertainties": ["literature metadata is not a complete life-history table"], "disagreements": []},
+        {"id": "behavior", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD behavior literature, candidate facts, flight rows, and media are queryable.", "current_sources": ["drosophila_suzukii_extracted_facts", "drosophila_suzukii_umn_flight_assay_rows", "drosophila_suzukii_video_atoms"], "gaps": ["human-validated assay tables and broader decoded trajectories for landing, feeding, and avoidance"], "uncertainties": ["candidate extraction does not establish causal behavior"], "disagreements": []},
+        {"id": "reproduction_oviposition", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD oviposition and reproduction candidate evidence is queryable.", "current_sources": ["drosophila_suzukii_extracted_facts", "drosophila_suzukii_olfaction_literature"], "gaps": ["directly comparable egg-laying assay rows across crop, ripeness, dose, duration, and formulation"], "uncertainties": ["deterrence, toxicity, and reduced egg laying can be confounded"], "disagreements": []},
+        {"id": "feeding_host_finding", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Host odor, crop context, olfaction, and management literature provide partial host-finding evidence.", "current_sources": ["drosophila_suzukii_olfaction_literature", "drosophila_suzukii_extracted_facts", "drosophila_suzukii_extension_guidance"], "gaps": ["validated host-choice and feeding assays linked to sensory mechanisms and crop state"], "uncertainties": ["attraction and feeding can differ by crop and fruit condition"], "disagreements": []},
+        {"id": "movement_flight_navigation", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD flight-mill, free-flight, video, occurrence, and landscape rows are queryable.", "current_sources": ["drosophila_suzukii_umn_flight_assay_rows", "drosophila_suzukii_video_atoms", "drosophila_suzukii_dryad_landscape_monitoring"], "gaps": ["broader decoded trajectories and field-scale movement connected to product exposure"], "uncertainties": ["laboratory flight measures may not predict field dispersal"], "disagreements": []},
+        {"id": "learning_memory_internal_state", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Some SWD neurobiology and literature candidates touch state-dependent behavior, but coverage is shallow.", "current_sources": ["drosophila_suzukii_neurobiology_sources", "drosophila_suzukii_core"], "gaps": ["direct learning, habituation, memory, circadian, hunger, mating-state, and prior-exposure evidence"], "uncertainties": ["metadata matches may not contain usable experimental detail"], "disagreements": []},
+        {"id": "ecology_interactions", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD occurrence, climate, landscape, crop, management, and candidate biocontrol evidence is queryable.", "current_sources": ["drosophila_suzukii_occurrence_ecology", "drosophila_suzukii_plos_climate_suitability", "drosophila_suzukii_biocontrol_outcome_rows"], "gaps": ["validated interaction evidence for crops, microbes, parasitoids, predators, competitors, and seasonal conditions"], "uncertainties": ["candidate biocontrol rows require expert review"], "disagreements": []},
+        {"id": "chemical_responses_metabolism", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD repellency, susceptibility, resistance, and chemical-response candidates are queryable.", "current_sources": ["drosophila_suzukii_extracted_facts", "drosophila_suzukii_susceptibility_assay_rows", "drosophila_suzukii_geo_expression_matrices"], "gaps": ["compound-specific uptake, metabolism, detoxification, sensory response, and behavioral outcome evidence"], "uncertainties": ["avoidance and physiological stress are distinct mechanisms"], "disagreements": []},
+        {"id": "adaptation_resistance", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "SWD susceptibility, population-genomics, positive-selection, and variation sources are queryable.", "current_sources": ["drosophila_suzukii_susceptibility_assay_rows", "drosophila_suzukii_population_genomics", "drosophila_suzukii_figshare_mk_selection"], "gaps": ["longitudinal resistance, cross-resistance, behavioral tolerance, and field-frequency evidence for repellent-relevant pressures"], "uncertainties": ["selection signals do not establish product resistance"], "disagreements": []}
+      ]
+    },
+    {
+      "id": "aedes_aegypti",
+      "scientific_name": "Aedes aegypti",
+      "common_name": "yellow fever mosquito",
+      "aliases": ["Aedes", "Ae. aegypti", "mosquito"],
+      "role": "active human-product target and deep mosquito model",
+      "product_ids": ["human_mosquito_repellent"],
+      "domains": [
+        {"id": "sensory_world", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes olfaction, sensory, host-seeking, and neurobiology sources are queryable but incomplete.", "current_sources": ["aedes_olfaction_literature", "aedes_neurobiology_sources", "aedes_literature_facets"], "gaps": ["human-verified multimodal sensory evidence tied to repellent exposure and human context"], "uncertainties": ["literature depth varies"], "disagreements": []},
+        {"id": "brain_neurobiology", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes neural-circuit, connectome, expression, and neurobiology records are queryable.", "current_sources": ["aedes_neurobiology_sources", "aedes_expression_omics"], "gaps": ["complete circuit-level links from repellent sensing to landing and feeding decisions"], "uncertainties": ["model and assay contexts differ"], "disagreements": []},
+        {"id": "receptors_signaling", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes receptor, protein, genome, expression, and olfaction sources are queryable.", "current_sources": ["aedes_uniprot_proteins", "vectorbase_aedes_genomics", "aedes_expression_omics", "aedes_olfaction_literature"], "gaps": ["compound-specific receptor validation connected to intended-use behavior"], "uncertainties": ["binding or expression does not prove behavioral mechanism"], "disagreements": []},
+        {"id": "anatomy_physiology", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes images, traits, literature, and sample metadata provide partial anatomical and physiological context.", "current_sources": ["aedes_image_atoms", "aedes_vectorbyte_traits", "aedes_literature_facets"], "gaps": ["validated anatomy labels and exposure-relevant physiological measurements by sex and life stage"], "uncertainties": ["image and trait coverage is uneven"], "disagreements": []},
+        {"id": "genetics_gene_activity", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes genome, population, variation, expression, protein, and sample records are queryable.", "current_sources": ["vectorbase_aedes_genomics", "aedes_population_genomics", "aedes_expression_omics", "aedes_ncbi_snp_variation"], "gaps": ["broader validated gene-activity contrasts under repellent and host-seeking conditions"], "uncertainties": ["metadata and computed outputs vary in depth"], "disagreements": []},
+        {"id": "life_cycle_development", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes traits, literature, surveillance, and occurrence sources provide partial life-stage context.", "current_sources": ["aedes_vectorbyte_traits", "aedes_literature_facets", "aedes_occurrence_ecology"], "gaps": ["query-ready stage-specific development and repellent-response evidence across environments"], "uncertainties": ["adult-focused evidence dominates product relevance"], "disagreements": []},
+        {"id": "behavior", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes behavior literature, assay candidates, video atoms, and motion sources are queryable.", "current_sources": ["aedes_video_atoms", "dryad_aedes_behavior_videos", "aedes_extracted_facts"], "gaps": ["human-validated landing, contact, feeding, avoidance, and trajectory rows across assay contexts"], "uncertainties": ["different behavior endpoints are not interchangeable"], "disagreements": []},
+        {"id": "reproduction_oviposition", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes mating and oviposition literature facets and candidate facts are queryable.", "current_sources": ["aedes_literature_facets", "aedes_extracted_facts"], "gaps": ["directly comparable reproduction and egg-laying assays linked to chemical exposure"], "uncertainties": ["human-repellent use is primarily adult host-seeking focused"], "disagreements": []},
+        {"id": "feeding_host_finding", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Host-seeking, blood-feeding, olfaction, sensory, and behavior evidence is queryable.", "current_sources": ["aedes_olfaction_literature", "aedes_literature_facets", "aedes_video_atoms"], "gaps": ["validated links among human cues, compound exposure, landing, probing, and feeding prevention"], "uncertainties": ["preventing approach, landing, probing, and blood feeding are different outcomes"], "disagreements": []},
+        {"id": "movement_flight_navigation", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes flight, video, trajectory-candidate, occurrence, and climate records are queryable.", "current_sources": ["aedes_video_atoms", "osf_flighttrackai_aedes_videos", "aedes_occurrence_ecology"], "gaps": ["broader decoded flight trajectories connected to odor plumes and repellent exposure"], "uncertainties": ["laboratory motion may not predict outdoor approach"], "disagreements": []},
+        {"id": "learning_memory_internal_state", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes neurobiology and literature include partial learning, circadian, hunger, and state-dependent behavior evidence.", "current_sources": ["aedes_neurobiology_sources", "aedes_literature_facets"], "gaps": ["direct habituation, learning, prior-exposure, hunger, mating-state, and circadian effects on repellency"], "uncertainties": ["many records are not product-context experiments"], "disagreements": []},
+        {"id": "ecology_interactions", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes occurrence, climate, surveillance, traits, pathogens, Wolbachia, and intervention sources are queryable.", "current_sources": ["aedes_occurrence_ecology", "aedes_observation_climate_join", "aedes_pathogen_taxonomy", "aedes_wolbachia_interventions"], "gaps": ["product-relevant ecological interactions and non-target exposure across realistic environments"], "uncertainties": ["surveillance abundance and individual behavior answer different questions"], "disagreements": []},
+        {"id": "chemical_responses_metabolism", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes repellent, susceptibility, resistance, expression, and chemical-response sources are queryable.", "current_sources": ["mosquito_repellent_literature", "aedes_extracted_facts", "aedes_resistance_table_rows", "aedes_expression_omics"], "gaps": ["compound-specific sensory, metabolic, physiological, and behavioral response evidence under intended exposure"], "uncertainties": ["toxicity, irritation, masking, and spatial avoidance can look similar in simple assays"], "disagreements": []},
+        {"id": "adaptation_resistance", "status": "partial_source_grade", "evidence_scope": "direct", "verification_status": "unverified", "summary": "Aedes resistance markers, assay tables, population genomics, and guidance are queryable.", "current_sources": ["aedes_resistance_markers", "aedes_resistance_table_rows", "aedes_population_genomics", "aedes_who_resistance_guidance"], "gaps": ["repellent-specific behavioral tolerance, cross-resistance, longitudinal frequency, and product-pressure evidence"], "uncertainties": ["insecticide resistance does not automatically imply repellent resistance"], "disagreements": []}
+      ]
+    },
+    {
+      "id": "plutella_xylostella",
+      "scientific_name": "Plutella xylostella",
+      "common_name": "diamondback moth",
+      "aliases": ["diamond back moth", "DBM"],
+      "role": "next crop-pest target and reusable expansion proof",
+      "product_ids": [],
+      "domains": [
+        {"id": "sensory_world", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth sensory source lane is currently queryable in Ask Insects.", "current_sources": [], "gaps": ["map and ingest direct diamondback moth smell, taste, vision, hearing, and host-cue evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "brain_neurobiology", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth brain or neurobiology lane is currently queryable.", "current_sources": [], "gaps": ["map and ingest direct brain, neuron, circuit, and neuroanatomy evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "receptors_signaling", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth receptor and signaling lane is currently queryable.", "current_sources": [], "gaps": ["map genome, protein, chemoreceptor, ligand-response, and signaling sources"], "uncertainties": [], "disagreements": []},
+        {"id": "anatomy_physiology", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth anatomy and physiology lane is currently queryable.", "current_sources": [], "gaps": ["map images, anatomy, physiology, sex, and life-stage evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "genetics_gene_activity", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth genetics and gene-activity lane is currently queryable.", "current_sources": [], "gaps": ["map genome, genes, proteins, expression, orthology, variation, and population-genomics sources"], "uncertainties": [], "disagreements": []},
+        {"id": "life_cycle_development", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth life-cycle and development lane is currently queryable.", "current_sources": [], "gaps": ["map egg, larval, pupal, adult, development-rate, seasonality, and temperature evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "behavior", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth behavior lane is currently queryable.", "current_sources": [], "gaps": ["map direct landing, orientation, feeding, avoidance, mating, and assay-behavior evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "reproduction_oviposition", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth reproduction and egg-laying lane is currently queryable.", "current_sources": [], "gaps": ["map mating, fecundity, host choice, egg-laying, and oviposition-deterrence evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "feeding_host_finding", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth feeding and host-finding lane is currently queryable.", "current_sources": [], "gaps": ["map Brassica host cues, larval feeding, adult orientation, and crop-state evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "movement_flight_navigation", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth movement, flight, and navigation lane is currently queryable.", "current_sources": [], "gaps": ["map flight, migration, plume tracking, movement, dispersal, and field-navigation evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "learning_memory_internal_state", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth learning, memory, and internal-state lane is currently queryable.", "current_sources": [], "gaps": ["map learning, habituation, memory, circadian, hunger, mating-state, and prior-exposure evidence"], "uncertainties": [], "disagreements": []},
+        {"id": "ecology_interactions", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth ecology and interaction lane is currently queryable.", "current_sources": [], "gaps": ["map crops, climate, geography, seasonality, predators, parasitoids, microbes, and competitors"], "uncertainties": [], "disagreements": []},
+        {"id": "chemical_responses_metabolism", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth chemical-response and metabolism lane is currently queryable.", "current_sources": [], "gaps": ["map repellents, attractants, deterrents, insecticides, detoxification, metabolism, and assay outcomes"], "uncertainties": [], "disagreements": []},
+        {"id": "adaptation_resistance", "status": "source_gap", "evidence_scope": "none", "verification_status": "not_applicable", "summary": "No exact-species diamondback moth adaptation and resistance lane is currently queryable.", "current_sources": [], "gaps": ["map resistance mechanisms, field frequencies, cross-resistance, behavioral tolerance, and evolutionary history"], "uncertainties": [], "disagreements": []}
+      ]
+    }
+  ]
+}

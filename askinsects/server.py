@@ -3424,6 +3424,25 @@ def ingest_source_coverage_hosted(
     return response
 
 
+def ingest_insect_intelligence_programs_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_insect_intelligence_programs import ingest_insect_intelligence_programs
+
+    program_path = payload.get("program_path") or "config/insect-intelligence-programs.json"
+    if not isinstance(program_path, str):
+        raise ValueError("program_path must be a string")
+    response = ingest_insect_intelligence_programs(
+        artifact_dir=artifact_dir,
+        program_path=Path(program_path),
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_expression_omics_hosted(
     payload: dict[str, object],
     *,
@@ -4670,6 +4689,10 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/source-coverage":
             result = ingest_source_coverage_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/insect-intelligence-programs":
+            result = ingest_insect_intelligence_programs_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/occurrence-ecology":

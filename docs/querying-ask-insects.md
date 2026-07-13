@@ -6,6 +6,18 @@ Build the local source index first:
 python3 scripts/build_source_index.py --fixtures
 ```
 
+To make the shared product and insect intelligence program in `config/insect-intelligence-programs.json` queryable:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-insect-intelligence-programs
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what are the two product programs Ask Insects supports?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what does Ask Insects need to understand about spotted wing drosophila?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is missing from diamondback moth biology coverage?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is the product readiness status of the human mosquito repellent?" --json
+```
+
+These answers report evidence coverage and explicit gaps. They do not claim that a product works. Cross-species evidence must remain labeled as inference rather than being presented as focal-species proof.
+
 To make the Aedes coverage ledger itself queryable:
 
 ```bash

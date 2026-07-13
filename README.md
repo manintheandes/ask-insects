@@ -6,7 +6,7 @@ Ask Insects is the first tool in Open Insects: a CLI and hosted source plane for
 
 Public home: `https://openinsects.org`
 
-V1 starts with mosquitoes, then expands to other insect groups. It follows a source-plane pattern:
+The first product programs are a spotted wing drosophila crop repellent and a human mosquito repellent. Diamondback moth is the next insect expansion. Ask Insects follows a source-plane pattern:
 
 ```text
 source artifacts -> mapped lanes -> local parsed indexes -> receipts -> CLI -> answer with provenance or gap
@@ -20,9 +20,23 @@ Third-party scientific data, images, videos, papers, API payloads, and database 
 
 The public repository ships code, docs, tests, source maps, small deterministic fixtures, and provenance rules. Raw artifacts, SQLite mirrors, video archives, paper downloads, API tokens, and credentials stay out of git.
 
-## Comprehensive Mosquito Intelligence Goal
+## Product And Insect Intelligence Goal
 
-The current comprehensive-source strategy is Aedes-first: build Ask Insects toward the most comprehensive `Aedes aegypti` intelligence system in the world. That is the goal, not a claim the repo is allowed to make blindly. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for this push. Open Insects expands outward from that source-backed base.
+Ask Insects helps Monarch understand insects deeply enough to create effective repellents that protect people and crops without killing insects. It tracks each focal insect across the same fourteen biological domains, from sensory systems, brain, genes, and body through behavior, egg laying, feeding, movement, ecology, chemical response, learning, development, and adaptation. It separately tracks eight product-readiness dimensions, including efficacy, mechanism, formulation, persistence, safety, non-target effects, real-world performance, and commercialization evidence.
+
+The machine-readable portfolio is `config/insect-intelligence-programs.json`. It currently defines the SWD crop repellent, the human mosquito repellent, `Drosophila suzukii`, `Aedes aegypti`, and `Plutella xylostella`. The derived source `insect_intelligence_programs` makes every profile, domain, readiness dimension, and explicit gap queryable:
+
+```bash
+python3 -m askinsects ingest-insect-intelligence-programs
+python3 -m askinsects ask "what is missing from diamondback moth biology coverage?" --json
+python3 -m askinsects ask "what is the product readiness status of the human mosquito repellent?" --json
+```
+
+Species and assay context fail closed. Evidence from another insect may be useful as a clearly labeled inference, but it cannot silently become evidence about the focal species. Planning and readiness records are not proof that a product works.
+
+### Aedes Deep Source Program
+
+The existing comprehensive-source strategy is Aedes-first within the mosquito program: build Ask Insects toward the most comprehensive `Aedes aegypti` intelligence system in the world. That is the goal, not a claim the repo is allowed to make blindly. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for that source-depth push.
 
 The machine-readable coverage ledger is `config/mosquito-intelligence-coverage.json`. It is the durable backlog for domains that are not source grade yet. Do not treat a domain as covered unless the ledger, source map, receipts, SQLite records, and Ask Insects CLI all agree.
 

@@ -107,6 +107,32 @@ class ServerTests(unittest.TestCase):
             self.assertEqual(max_active, 1)
             self.assertEqual((artifact_dir.parent / f".{artifact_dir.name}.ingest.lock").stat().st_mode & 0o777, 0o600)
 
+    def test_insect_intelligence_program_ingest_route(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            expected = {"ok": True, "record_count": 99}
+            with mock.patch.object(
+                server_module,
+                "ingest_insect_intelligence_programs_hosted",
+                return_value=expected,
+                create=True,
+            ) as ingest:
+                response = dispatch_request(
+                    "POST",
+                    "/ingest/insect-intelligence-programs",
+                    {"program_path": "config/insect-intelligence-programs.json"},
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.payload, expected)
+        ingest.assert_called_once_with(
+            {"program_path": "config/insect-intelligence-programs.json"},
+            artifact_dir=artifact_dir,
+        )
+
     def test_read_endpoints_reject_missing_source_index_without_creating_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir)
