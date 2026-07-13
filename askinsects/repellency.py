@@ -735,7 +735,22 @@ def _target_profile(question: str) -> dict[str, object]:
 def _claim_type(question: str) -> str:
     normalized = question.lower()
     named_compounds = _matches(normalized, _COMPOUND_PATTERNS)
-    literature_wide = any(
+    publication_scope = any(
+        term in normalized for term in ("literature", "published", "research")
+    )
+    broad_publication_comparison = publication_scope and any(
+        term in normalized
+        for term in (
+            "every",
+            "any published",
+            "no published",
+            "no repellent",
+            "outperform",
+            "stronger than",
+            "beat",
+        )
+    )
+    literature_wide = broad_publication_comparison or any(
         term in normalized
         for term in (
             "in the literature",
@@ -751,7 +766,17 @@ def _claim_type(question: str) -> str:
     if literature_wide:
         return "literature_superlative"
     if len(named_compounds) >= 2 and any(
-        term in normalized for term in ("compare", "beat", "better", "outperform")
+        term in normalized
+        for term in (
+            "compare",
+            "beat",
+            "better",
+            "outperform",
+            "rank",
+            "winner",
+            "versus",
+            "which works",
+        )
     ):
         return "pairwise_comparison"
     return "comparative_summary"

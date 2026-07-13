@@ -367,6 +367,35 @@ class RepellencyComparisonTest(unittest.TestCase):
                     self.assertIn("coverage", result)
                     self.assertIn("comparison", result)
 
+    def test_every_production_comparison_case_has_the_expected_claim_type(self):
+        expected_by_id_prefix = {
+            "repellency-superlative-": "literature_superlative",
+            "repellency-pairwise-": "pairwise_comparison",
+            "repellency-mosquito-": "comparative_summary",
+            "repellency-swd-": "comparative_summary",
+        }
+        cases = [
+            case
+            for case in PRODUCTION_PATH_CASES["cases"]
+            if case["category"] == "repellency_comparison"
+        ]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            index = _build_index(Path(tmp) / "source_index.sqlite")
+            for case in cases:
+                expected = next(
+                    claim_type
+                    for prefix, claim_type in expected_by_id_prefix.items()
+                    if case["id"].startswith(prefix)
+                )
+                with self.subTest(case=case["id"]):
+                    result = build_repellency_comparison_answer(
+                        index,
+                        case["question"],
+                        limit=10,
+                    )
+                    self.assertEqual(result["claim"]["type"], expected)
+
     def test_swd_question_never_uses_mosquito_comparison_rows(self):
         with tempfile.TemporaryDirectory() as tmp:
             result = build_repellency_comparison_answer(

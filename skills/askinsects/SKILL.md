@@ -11,104 +11,52 @@ description: >-
 
 # Ask Insects
 
-Use Ask Insects as the public scientific evidence layer for Monarch's repellent
-work. The first products are an SWD crop repellent and a human mosquito
-repellent. `Drosophila suzukii` and `Aedes aegypti` are the first active insect
-targets. Diamondback moth, `Plutella xylostella`, is next.
+Ask Insects is Monarch's public scientific evidence layer. Its first products
+are an SWD crop repellent and a human mosquito repellent. The active species are
+`Drosophila suzukii` and `Aedes aegypti`; diamondback moth (`Plutella
+xylostella`) is the next expansion proof.
 
-## Normal Answer Path
+## Normal Answer
 
-This file and the active `AGENTS.md` are the complete routing instruction. Do
-not inspect memory, Chronicle, repository docs, or another skill before the
-hosted call.
-
-1. Use the installed `ask-insects` command. If it is not on `PATH`, use
-   `$HOME/.local/bin/ask-insects`.
-2. Query the hosted production source plane. A bare read command is hosted by
-   default. Never add `--local` to a user answer.
-3. Start with one targeted call:
+Do not inspect memory, Chronicle, repository docs, another skill, or the web
+before the hosted call. Use the installed command, or
+`$HOME/.local/bin/ask-insects` when it is not on `PATH`:
 
 ```bash
 ask-insects ask "<the user's exact question>" --json --compact
 ```
 
-`--compact` returns a ready-to-use `final_answer` containing the complete
-hosted answer and every returned evidence source ID and exact locator.
+A bare call uses the hosted production source plane. Never add `--local` to a
+user answer. When `ok` is true, return `final_answer` verbatim as the entire
+visible answer. Do not preface, rewrite, summarize, append, search, run SQL, or
+run a second Ask Insects call. Complete the visible answer in under 30 seconds.
+Do not run setup-agent during a user question. Do not run tests, installation,
+or source refreshes during a normal answer.
 
-4. When that call returns `ok: true`, return the value of `final_answer`
-   verbatim as the entire visible answer. Do not rewrite, summarize, preface,
-   or append to it. Do not inspect memory, browse the web, run a second Ask
-   Insects call, or expand the investigation during a normal answer.
-5. Use hosted `search` or read-only `sql` only when the first call fails or the
-   user explicitly asks to inspect a named record beyond the returned evidence.
-6. Return the direct answer first, then the evidence and limitations in plain
-   language. For a portfolio answer, cite the exact `#portfolio` locator.
-   Never shorten a repeated locator to a fragment such as `#products/1`;
-   write every cited locator in full. Preserve canonical labels exactly,
-   including `SWD crop repellent` and `Human mosquito repellent`.
+## Evidence Contract
 
-Complete the visible answer in under 30 seconds. Do not run repository tests,
-source refreshes, installation, or broad exploratory commands during a normal
-question. Do not run setup-agent during a user question. A one-call answer does
-not need a progress update before the final response.
+- Answer from hosted records, not model memory.
+- Give the source id and exact row or locator for every material factual answer.
+- Keep species, sex, life stage, assay, endpoint, dose, duration, formulation,
+  crop or human context, and environment distinct when the source provides them.
+- Label direct evidence, cross-species inference, candidate or unverified
+  extraction, disagreement, uncertainty, and missing knowledge.
+- Never turn another insect's record into direct focal-species evidence.
+- Program records describe coverage and gaps, not proof of efficacy, safety,
+  readiness, or commercial success.
+- Repellency comparisons must preserve contact versus non-contact, spatial
+  versus topical, assay, endpoint, dose, duration, and species comparability.
+  Unsupported literature-wide claims fail closed.
+- If evidence is inadequate, name the source gap. Do not fill it from general
+  knowledge or ad hoc web search.
+- Preserve canonical product labels. For portfolio answers, cite `#portfolio`
+  and write every cited locator in full.
 
-## Evidence Rules
-
-- Answer from the hosted records, not model memory.
-- Give the source id and exact row or locator provenance for every material
-  factual answer.
-- Keep the focal species, sex, life stage, assay, endpoint, dose, duration,
-  formulation, crop or human context, and environment distinct when the source
-  provides them.
-- Label direct focal-species evidence, cross-species inference, candidate or
-  unverified extraction, disagreement, uncertainty, and missing knowledge.
-- Never turn a search result about another insect into focal-species evidence.
-- Never claim product efficacy, readiness, safety, or a literature-wide
-  superlative from a planning record or metadata-only paper.
-- If the hosted plane lacks adequate evidence, return the source gap and name
-  what is missing. Do not fill the gap from general knowledge or an ad hoc web
-  search.
-
-## Product And Species Questions
-
-Use the generic `ask` path for product-program, biology-coverage, and expansion
-questions. The queryable source is `insect_intelligence_programs`.
-
-Examples:
-
-```bash
-ask-insects ask "what does Ask Insects need to understand about spotted wing drosophila?" --json
-ask-insects ask "what is missing from diamondback moth biology coverage?" --json
-ask-insects ask "what is the product readiness status of the human mosquito repellent?" --json
-```
-
-These records describe evidence coverage and gaps. They do not prove that a
-compound or product works.
-
-## Comparative Repellency
-
-Let the specialized hosted comparison path handle questions such as whether a
-result beats DEET or anything in the literature. Preserve contact versus
-non-contact, spatial versus topical, assay, endpoint, dose, duration, and
-species comparability. An unsupported best-in-literature claim must fail
-closed.
-
-## Public And Private Boundary
+## Boundary And Maintenance
 
 Ask Insects owns public insect evidence. Ask Monarch owns private compounds,
-assays, videos, results, decisions, and commercial work. Public Ask Insects
-evidence may inform a private Ask Monarch answer. Never copy private Ask
-Monarch evidence into the public Ask Insects source plane.
+assays, formulations, videos, results, decisions, and commercial work. Never
+copy private Ask Monarch evidence into Ask Insects.
 
-## Maintenance
-
-The canonical repository is `/Users/josh/Documents/ask-insects`. Maintenance
-and release work may run `python3 scripts/verify_complete.py`. Install this
-repo-owned skill with:
-
-```bash
-ask-insects setup-agent
-```
-
-For source onboarding, mapping, access, parsing, receipts, or source gaps, use
-the `insectsource` skill.
+Maintenance may run `python3 scripts/verify_complete.py` and `ask-insects
+setup-agent`. Source onboarding uses the `insectsource` skill.

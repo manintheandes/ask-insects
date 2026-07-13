@@ -32,6 +32,8 @@ class AgentSetupTests(unittest.TestCase):
         source = (REPO_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
         text = " ".join(source.split())
 
+        self.assertLessEqual(len(source.splitlines()), 70)
+
         for term in (
             "SWD crop repellent",
             "human mosquito repellent",

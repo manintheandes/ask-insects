@@ -254,6 +254,10 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
                 "Does partial Aedes genetics coverage remove all uncertainty?",
                 artifact_dir=artifact_dir,
             )
+            verification_answer = answer_question(
+                "Is unverified Aedes brain evidence the same as human-verified proof?",
+                artifact_dir=artifact_dir,
+            )
 
         self.assertIn("public evidence layer", private_answer["answer"])
         self.assertIn("cannot expose or import private Ask Monarch", private_answer["answer"])
@@ -268,6 +272,11 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertIn(
             "partial coverage does not remove uncertainty",
             uncertainty_answer["answer"].lower(),
+        )
+        self.assertTrue(verification_answer["answer"].startswith("No."))
+        self.assertIn(
+            "is not the same as human-verified proof",
+            verification_answer["answer"],
         )
 
     def test_next_insect_question_returns_the_portfolio_and_diamondback_moth(self):
