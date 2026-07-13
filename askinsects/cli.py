@@ -35,52 +35,36 @@ def cli_error(error: str, *, lane: str, artifact_dir: Path) -> dict[str, object]
     }
 
 
+def _agent_final_answer(payload: dict[str, object]) -> str:
+    lines = [str(payload.get("answer") or "")]
+    evidence = payload.get("evidence")
+    provenance_rows: list[tuple[str, str]] = []
+    if isinstance(evidence, list):
+        for item in evidence:
+            if not isinstance(item, dict):
+                continue
+            provenance = item.get("provenance")
+            if not isinstance(provenance, dict):
+                continue
+            source_id = str(provenance.get("source_id") or item.get("source") or "").strip()
+            locator = str(provenance.get("locator") or "").strip()
+            pair = (source_id, locator)
+            if source_id and locator and pair not in provenance_rows:
+                provenance_rows.append(pair)
+    if provenance_rows:
+        lines.extend(("", "Sources:"))
+        lines.extend(f"- `{source_id}`: `{locator}`" for source_id, locator in provenance_rows)
+    return "\n".join(lines)
+
+
 def compact_agent_answer(payload: dict[str, object]) -> dict[str, object]:
     if payload.get("answer_shape") not in {"insect_intelligence", "repellency_comparison"}:
         return payload
-    compact = {
-        key: payload[key]
-        for key in (
-            "ok",
-            "answer_shape",
-            "answer",
-            "source_gap",
-            "contract_version",
-            "claim",
-            "insect_intelligence",
-        )
-        if key in payload
+    return {
+        "ok": payload.get("ok"),
+        "answer_shape": payload.get("answer_shape"),
+        "final_answer": _agent_final_answer(payload),
     }
-    coverage = payload.get("coverage")
-    if isinstance(coverage, dict):
-        compact["coverage"] = {
-            key: value
-            for key, value in coverage.items()
-            if key != "source_gaps"
-        }
-    comparison = payload.get("comparison")
-    if isinstance(comparison, dict):
-        compact["comparison"] = {
-            key: comparison[key]
-            for key in (
-                "target",
-                "dimensions",
-                "directly_comparable_record_ids",
-                "comparable_pair_record_ids",
-            )
-            if key in comparison
-        }
-    evidence = payload.get("evidence")
-    compact["evidence"] = [
-        {
-            key: item[key]
-            for key in ("record_id", "source", "species", "title", "provenance")
-            if key in item
-        }
-        for item in evidence
-        if isinstance(item, dict)
-    ] if isinstance(evidence, list) else []
-    return compact
 
 
 def render_answer(payload: dict[str, object]) -> str:

@@ -124,14 +124,17 @@ class HostedCliTests(unittest.TestCase):
             ),
         )
         payload = json.loads(output)
-        self.assertEqual(payload["answer"], hosted_payload["answer"])
-        self.assertNotIn("source_gaps", payload["coverage"])
-        self.assertNotIn("rows", payload["comparison"])
-        self.assertNotIn("text", payload["evidence"][0])
         self.assertEqual(
-            payload["evidence"][0]["provenance"]["locator"],
-            "records#mosquito_repellent_external_discovery:fact:1",
+            set(payload),
+            {"ok", "answer_shape", "final_answer"},
         )
+        self.assertIn(hosted_payload["answer"], payload["final_answer"])
+        self.assertIn("mosquito_repellent_external_discovery_extracted_facts", payload["final_answer"])
+        self.assertIn(
+            "records#mosquito_repellent_external_discovery:fact:1",
+            payload["final_answer"],
+        )
+        self.assertNotIn("large duplicate detail", payload["final_answer"])
 
     def test_hosted_insect_intelligence_ingest_sends_program_ledger(self):
         calls = []

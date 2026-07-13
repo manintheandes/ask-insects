@@ -37,8 +37,10 @@ and locators remain exact, and a negated warning such as "not ready for market"
 is not misgraded as a readiness claim.
 
 The compact agent payload removes duplicated internal rows and long evidence
-text only after the hosted answer is complete. It retains the answer, claim
-status, coverage counts, evidence identities, source IDs, and exact locators.
+text only after the hosted answer is complete. Its ready-to-use `final_answer`
+retains the deterministic conclusion, claim reasons and coverage counts, plus
+the source ID and exact locator for every returned evidence row. The installed
+skill returns that value verbatim.
 
 The runner writes the exact question, expected behavior, visible answer,
 commands, elapsed time, provenance, pass/fail decision, and failure reasons to

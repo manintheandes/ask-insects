@@ -22,11 +22,13 @@ class AgentSetupTests(unittest.TestCase):
             "Chronicle",
             "answer immediately without another command",
             "Preserve canonical labels",
+            "final_answer",
+            "verbatim",
         ):
             self.assertIn(term, text)
 
     def test_repo_skill_encodes_current_product_and_answer_contract(self):
-        text = (REPO_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
+        text = " ".join((REPO_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8").split())
 
         for term in (
             "SWD crop repellent",
@@ -41,6 +43,8 @@ class AgentSetupTests(unittest.TestCase):
             "run a second Ask Insects call",
             "write every cited locator in full",
             "--compact",
+            "final_answer",
+            "verbatim",
         ):
             self.assertIn(term, text)
         self.assertNotIn("current top-level product goal is Aedes-first", text)

@@ -26,13 +26,13 @@ hosted call.
 ask-insects ask "<the user's exact question>" --json --compact
 ```
 
-`--compact` keeps the complete hosted answer and exact evidence locators while
-removing duplicated internal detail that is not needed in the visible answer.
+`--compact` returns a ready-to-use `final_answer` containing the complete
+hosted answer and every returned evidence source ID and exact locator.
 
-4. When that call returns `ok: true`, answer immediately from that payload.
-   Do not inspect memory, browse the web, run a second Ask Insects call, or
-   expand the investigation during a normal answer. The hosted answer is
-   deliberately complete for broad program and coverage questions.
+4. When that call returns `ok: true`, return the value of `final_answer`
+   verbatim as the entire visible answer. Do not rewrite, summarize, preface,
+   or append to it. Do not inspect memory, browse the web, run a second Ask
+   Insects call, or expand the investigation during a normal answer.
 5. Use hosted `search` or read-only `sql` only when the first call fails or the
    user explicitly asks to inspect a named record beyond the returned evidence.
 6. Return the direct answer first, then the evidence and limitations in plain

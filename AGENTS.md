@@ -20,8 +20,9 @@ For a normal user-facing insect question, the first operational command after
 any harness-required Ask Insects skill load must be `ask-insects ask "<the
 user's exact question>" --json --compact`. Do not inspect memory, Chronicle, repository
 docs, or other skills first. When the call returns `ok: true`, answer
-immediately without another command. Preserve canonical labels such as `SWD
-crop repellent` and `Human mosquito repellent`, plus every source ID and
+immediately without another command by returning `final_answer` verbatim.
+Do not rewrite, preface, or append to it. Preserve canonical labels such as
+`SWD crop repellent` and `Human mosquito repellent`, plus every source ID and
 locator exactly as returned.
 
 **Hosted plane is the only answer surface.** The canonical evidence lives on the hosted VM, not in the local checkout. Read commands (`ask`, `search`, `sql`, `summary`, `sources`, `health`) route to the hosted plane **by default** — you do not need (and should not rely on) a local index for answers. A bare `ask-insects sql "..."` hits hosted. The `--local` flag is a dev-only escape that warns loudly and reads the (usually empty) local index; never use it to conclude a source is "not queryable." If a source id shows zero rows locally, re-check on the hosted plane before reporting a gap.
