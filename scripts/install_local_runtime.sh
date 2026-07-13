@@ -28,5 +28,8 @@ rsync -a --delete \
   "$REPO_ROOT/" "$INSTALL_DIR/"
 
 install -m 0755 "$INSTALL_DIR/scripts/ask-insects-launcher" "$BIN_DIR/ask-insects"
-PYTHONPATH="$INSTALL_DIR${PYTHONPATH:+:$PYTHONPATH}" \
-  "$PYTHON_BIN" -m askinsects setup-agent --destination "$SKILL_DIR"
+(
+  cd "$INSTALL_DIR"
+  PYTHONPATH="$INSTALL_DIR${PYTHONPATH:+:$PYTHONPATH}" \
+    "$PYTHON_BIN" -m askinsects setup-agent --destination "$SKILL_DIR"
+)

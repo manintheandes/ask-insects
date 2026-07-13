@@ -87,6 +87,11 @@ class AgentSetupTests(unittest.TestCase):
             )
 
             self.assertEqual(result.returncode, 0, result.stderr)
+            install_payload = json.loads(result.stdout)
+            self.assertEqual(
+                Path(install_payload["source"]),
+                (runtime / "skills" / "askinsects").resolve(),
+            )
             self.assertTrue((runtime / "askinsects" / "__init__.py").exists())
             self.assertTrue((runtime / "config" / "insect-intelligence-programs.json").exists())
             self.assertTrue((bin_dir / "ask-insects").exists())
