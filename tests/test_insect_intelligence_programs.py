@@ -5,8 +5,10 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from askinsects.answer import answer_question
+from askinsects.index import SourceIndex
 from askinsects.planner import plan_question
 from askinsects.sources.insect_intelligence_programs import (
     DEFAULT_PROGRAM_LEDGER,
@@ -68,6 +70,32 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertIn("knowledge_gap", atom_types)
         self.assertIn("readiness_gap", atom_types)
         self.assertTrue(all(record.provenance.locator.startswith("config/insect-intelligence-programs.json#") for record in records))
+
+    def test_ingest_skips_the_full_text_index_used_by_large_evidence_lanes(self):
+        calls: list[dict[str, object]] = []
+        original = SourceIndex.replace_source_records
+
+        def tracked_replace(
+            index: SourceIndex,
+            source: str,
+            records: list[object],
+            **kwargs: object,
+        ) -> None:
+            calls.append(kwargs)
+            original(index, source, records, **kwargs)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            with patch.object(SourceIndex, "replace_source_records", new=tracked_replace):
+                ingest_insect_intelligence_programs(
+                    artifact_dir=artifact_dir,
+                    retrieved_at=RETRIEVED_AT,
+                )
+
+        self.assertEqual(
+            calls,
+            [{"update_fts": False, "delete_existing_fts": False}],
+        )
 
     def test_diamondback_moth_is_structured_without_borrowed_evidence(self):
         records = build_insect_intelligence_records(retrieved_at=RETRIEVED_AT)
