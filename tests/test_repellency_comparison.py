@@ -490,7 +490,7 @@ class RepellencyComparisonTest(unittest.TestCase):
         self.assertEqual(result["claim"]["status"], "insufficient_evidence")
         self.assertIn("DEET", result["answer"])
         self.assertIn("icaridin", result["answer"])
-        self.assertIn("insufficient", result["answer"])
+        self.assertIn("insufficient evidence", result["answer"])
         self.assertIn(
             "no_comparable_pair",
             {reason["code"] for reason in result["claim"]["reasons"]},
