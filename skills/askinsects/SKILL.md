@@ -22,14 +22,21 @@ targets. Diamondback moth, `Plutella xylostella`, is next.
 ask-insects ask "<the user's exact question>" --json
 ```
 
-4. Use hosted `search` or read-only `sql` only when the first answer identifies
-   a concrete evidence detail that needs inspection.
-5. Return the direct answer first, then the evidence and limitations in plain
-   language.
+4. When that call returns `ok: true`, answer immediately from that payload.
+   Do not inspect memory, browse the web, run a second Ask Insects call, or
+   expand the investigation during a normal answer. The hosted answer is
+   deliberately complete for broad program and coverage questions.
+5. Use hosted `search` or read-only `sql` only when the first call fails or the
+   user explicitly asks to inspect a named record beyond the returned evidence.
+6. Return the direct answer first, then the evidence and limitations in plain
+   language. For a portfolio answer, cite the exact `#portfolio` locator.
+   Never shorten a repeated locator to a fragment such as `#products/1`;
+   write every cited locator in full.
 
 Complete the visible answer in under 30 seconds. Do not run repository tests,
 source refreshes, installation, or broad exploratory commands during a normal
-question. Do not run setup-agent during a user question.
+question. Do not run setup-agent during a user question. A one-call answer does
+not need a progress update before the final response.
 
 ## Evidence Rules
 

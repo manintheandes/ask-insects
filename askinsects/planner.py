@@ -12,26 +12,172 @@ class QueryPlan:
     search_query: str
 
 
-def plan_question(question: str) -> QueryPlan:
+def _is_insect_intelligence_question(question: str) -> bool:
     q = question.lower()
-    is_spotted_wing = any(
-        term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila")
-    ) or bool(re.search(r"\bswd\b", q))
-    insect_intelligence_terms = (
+    established_terms = (
         "insect intelligence",
+        "insect-intelligence",
         "biology coverage",
         "biological coverage",
         "knowledge coverage",
         "product readiness",
         "product program",
         "product programs",
+        "program ledger",
+        "which two repellent products",
+        "one product or two",
         "need to understand",
         "needs to understand",
         "which insect is next",
         "next insect",
     )
+    if any(term in q for term in established_terms):
+        return True
+
+    focal_groups = (
+        ("aedes aegypti", "aedes", "yellow fever mosquito", "human mosquito repellent"),
+        ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"),
+        ("plutella xylostella", "diamondback moth", "diamond back moth", "dbm"),
+        ("drosophila melanogaster",),
+    )
+    matched_focal_groups = sum(any(term in q for term in group) for group in focal_groups)
+    has_focal_subject = matched_focal_groups > 0
+    product_subject = any(
+        term in q
+        for term in (
+            "swd crop repellent",
+            "spotted wing drosophila crop repellent",
+            "crop repellent",
+            "human mosquito repellent",
+            "human mosquito product",
+            "mosquito repellent for humans",
+            "personal mosquito repellent",
+        )
+    )
+    status_or_calibration = any(
+        term in q
+        for term in (
+            "evidence status",
+            "evidence is still missing",
+            "evidence still missing",
+            "source gap",
+            "source gaps",
+            "human verified",
+            "human-verified",
+            "unverified",
+            "partial",
+            "biology domain",
+            "biology domains",
+            "knowledge domain",
+            "knowledge domains",
+            "disagreement",
+            "disagreements",
+            "uncertainty",
+            "inference",
+            "inferred evidence",
+            "filled silently",
+            "from another species",
+        )
+    )
+    if has_focal_subject and status_or_calibration:
+        return True
+    if product_subject and any(
+        term in q
+        for term in (
+            "readiness",
+            "evidence",
+            "status",
+            "missing",
+            "works",
+            "effective",
+            "efficacy",
+            "safe",
+            "safety",
+            "proven",
+            "proof",
+            "mode of action",
+            "formulation",
+            "commercial",
+        )
+    ):
+        return True
+
+    portfolio_language = any(
+        term in q
+        for term in (
+            "portfolio",
+            "initial product",
+            "initial crop",
+            "repellent programs",
+            "crop-repellent",
+            "human-repellent",
+            "protects crops",
+            "protects people",
+            "product objectives",
+            "insect profiles",
+            "expansion proof",
+            "expand without redesign",
+            "adding diamondback moth",
+            "answer-routing design",
+            "next crop pest",
+            "will add",
+            "comes after",
+            "anchor the crop",
+        )
+    )
+    if portfolio_language and (
+        "ask insects" in q or has_focal_subject or "insect" in q or "repellent" in q or "portfolio" in q
+    ):
+        return True
+
+    if any(term in q for term in ("private monarch", "private ask monarch", "public ask insects")):
+        return True
+    transfer_language = any(
+        term in q
+        for term in (
+            "prove",
+            "proof",
+            "proven",
+            "establish",
+            "relabeled",
+            "relabelled",
+            "same effect",
+            "filled silently",
+            "copied into",
+        )
+    )
+    if matched_focal_groups >= 2 and transfer_language:
+        return True
+    if (has_focal_subject or product_subject) and transfer_language and any(
+        term in q
+        for term in (
+            "candidate",
+            "metadata",
+            "partial",
+            "evidence",
+            "records",
+            "coverage",
+            "behavior",
+            "another species",
+        )
+    ):
+        return True
+    if "source gap" in q and "literature" in q and any(term in q for term in ("mean", "equivalent", "prove")):
+        return True
+    if "metadata" in q and "repellent" in q and any(term in q for term in ("prove", "establish")):
+        return True
+    if "profile" in q and has_focal_subject:
+        return True
+    return False
+
+
+def plan_question(question: str) -> QueryPlan:
+    q = question.lower()
+    is_spotted_wing = any(
+        term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila")
+    ) or bool(re.search(r"\bswd\b", q))
     evidence_label_count = sum(term in q for term in ("direct", "inferred", "unverified"))
-    if any(term in q for term in insect_intelligence_terms) or ("evidence" in q and evidence_label_count >= 2):
+    if _is_insect_intelligence_question(q) or ("evidence" in q and evidence_label_count >= 2):
         return QueryPlan(question, "insect_intelligence", ("insect_intelligence",), question)
     if (
         any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila"))
