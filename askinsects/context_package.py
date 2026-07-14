@@ -3,10 +3,13 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import UTC, datetime
 import hashlib
+import ipaddress
 import json
+import math
 from pathlib import Path
 import re
 import sqlite3
+from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 from .builder import DEFAULT_ARTIFACT_DIR
 from .sources.literature import abstract_from_inverted_index
@@ -23,6 +26,100 @@ VALIDATION_CONTRACT = {
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTEXT_CONFIG = REPO_ROOT / "config/insect-evidence-package.json"
 MAX_SELECTOR_LIMIT = 25
+MAX_PACKAGE_BYTES = 16 * 1024 * 1024
+MAX_STRING_LENGTH = 100_000
+MAX_LIST_ITEMS = 10_000
+MAX_NESTING_DEPTH = 20
+PUBLIC_PROGRAM_CONFIG_URL = (
+    "https://github.com/manintheandes/ask-insects/blob/main/"
+    "config/insect-intelligence-programs.json"
+)
+PUBLIC_CONTEXT_CONFIG_URL = (
+    "https://github.com/manintheandes/ask-insects/blob/main/"
+    "config/insect-evidence-package.json"
+)
+PACKAGE_FIELDS = frozenset(
+    {
+        "ok",
+        "schema_version",
+        "package_version",
+        "generated_at",
+        "objective",
+        "validation_contract",
+        "knowledge_domains",
+        "upstream_snapshot",
+        "contexts",
+        "program_records",
+        "evidence_records",
+        "selector_results",
+        "gaps",
+        "content_sha256",
+    }
+)
+UPSTREAM_SNAPSHOT_FIELDS = frozenset(
+    {
+        "source_id",
+        "source_status_sha256",
+        "source_status_generated_at",
+        "record_count",
+    }
+)
+PROGRAM_RECORD_FIELDS = frozenset(
+    {"record_id", "lane", "source", "title", "text", "species", "payload", "provenance"}
+)
+EVIDENCE_RECORD_FIELDS = PROGRAM_RECORD_FIELDS | {
+    "species_id",
+    "context_ids",
+    "selector_ids",
+    "eligibility",
+}
+PUBLIC_PROVENANCE_FIELDS = frozenset(
+    {"source_id", "locator", "index_record_id", "retrieved_at", "license"}
+)
+SELECTOR_RESULT_FIELDS = frozenset(
+    {
+        "context_id",
+        "selector_id",
+        "species_id",
+        "scientific_name",
+        "source",
+        "query_any",
+        "context_required_term_groups",
+        "taxon_field_paths",
+        "context_field_paths",
+        "context_field_prerequisites",
+        "parent_record",
+        "fulltext_context",
+        "record_requirements",
+        "limit",
+        "required",
+        "candidate_count",
+        "eligible_count",
+        "selected_count",
+        "selected_record_ids",
+        "rejection_counts",
+    }
+)
+GAP_FIELDS = SELECTOR_RESULT_FIELDS | {"gap_type"}
+ELIGIBILITY_FIELDS = frozenset({"ruleset_version", "taxon", "context"})
+TAXON_ASSERTION_FIELDS = frozenset({"status", "basis", "species_id", "scientific_name"})
+CONTEXT_ASSERTION_FIELDS = frozenset({"status", "basis", "context_ids"})
+ASSERTION_BASIS_FIELDS = frozenset(
+    {
+        "field_path",
+        "matched_term",
+        "excerpt",
+        "retained_source",
+        "retained_store",
+        "retained_path",
+        "evidence_snapshot",
+        "evidence_sha256",
+        "selector_id",
+    }
+)
+ASSERTION_BASIS_LINK_FIELDS = frozenset(
+    {"context_id", "parent_record_id", "fulltext_unit_id"}
+)
 GENERIC_CONTEXT_FIELDS = frozenset(
     {
         "id",
@@ -95,14 +192,41 @@ ELIGIBILITY_REJECTION_REASONS = frozenset(
         "trusted_field_missing",
         "fulltext_unit_link_invalid",
         "record_requirement_not_met",
+        "public_provenance_missing",
     }
 )
-PRIVATE_SOURCE_MARKERS = (
-    "gs://monarch-videos-new",
-    "/ask-monarch/",
-    "ask_monarch",
-    "ask-monarch-server",
+SAFE_LOCATOR_FRAGMENT_RE = re.compile(
+    r"^(?:row|page|cell|sheet|result|works|jsonpath)(?:$|[/=:.\[])",
+    flags=re.IGNORECASE,
 )
+DOI_RE = re.compile(r"^(?:doi:\s*)?(10\.\d{4,9}/\S+)$", flags=re.IGNORECASE)
+NON_HTTPS_AUTHORITY_RE = re.compile(
+    r"(?<![A-Za-z0-9+.-])(?!https://)[A-Za-z][A-Za-z0-9+.-]*://",
+    flags=re.IGNORECASE,
+)
+URL_RE = re.compile(r"https?://[^\s<>\"']+", flags=re.IGNORECASE)
+POSIX_ABSOLUTE_PATH_RE = re.compile(r"(?:^|[\s\"'=])/(?!/)[^\s\"']+")
+WINDOWS_ABSOLUTE_PATH_RE = re.compile(
+    r"(?:^|[\s\"'=])(?:[A-Za-z]:[\\/]|\\\\)[^\s\"']+"
+)
+CREDENTIAL_KEY_TOKENS = frozenset(
+    {
+        "apikey",
+        "auth",
+        "authentication",
+        "authorization",
+        "credential",
+        "credentials",
+        "passwd",
+        "password",
+        "secret",
+        "token",
+    }
+)
+QUERY_CREDENTIAL_KEY_TOKENS = frozenset(
+    {"key", "session", "sig", "signature"}
+)
+CONSUMER_KEY_TOKENS = frozenset({"consumer", "customer", "private", "tenant"})
 
 
 def utc_now() -> str:
@@ -110,7 +234,13 @@ def utc_now() -> str:
 
 
 def canonical_json(value: object) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return json.dumps(
+        value,
+        allow_nan=False,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
 
 
 def canonical_package_hash(package: dict[str, object]) -> str:
@@ -118,6 +248,326 @@ def canonical_package_hash(package: dict[str, object]) -> str:
     payload.pop("generated_at", None)
     payload.pop("content_sha256", None)
     return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+
+def _key_tokens(key: str) -> list[str]:
+    expanded = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+    return [token for token in re.split(r"[^A-Za-z0-9]+", expanded.casefold()) if token]
+
+
+def _is_credential_key(key: str) -> bool:
+    if key.casefold() == "snapshot_authentication":
+        return False
+    tokens = _key_tokens(key)
+    if any(token in CREDENTIAL_KEY_TOKENS for token in tokens):
+        return True
+    return any(left == "api" and right == "key" for left, right in zip(tokens, tokens[1:]))
+
+
+def _is_consumer_key(key: str) -> bool:
+    return bool(set(_key_tokens(key)).intersection(CONSUMER_KEY_TOKENS))
+
+
+def _is_credential_query_key(key: str) -> bool:
+    return _is_credential_key(key) or bool(
+        set(_key_tokens(key)).intersection(QUERY_CREDENTIAL_KEY_TOKENS)
+    )
+
+
+def _is_machine_bookkeeping_key(key: str) -> bool:
+    tokens = set(_key_tokens(key))
+    if key.casefold() in {"payload_json", "provenance_json"}:
+        return True
+    if "path" in tokens and tokens.intersection(
+        {"artifact", "cache", "ledger", "local", "machine", "raw"}
+    ):
+        return True
+    return bool(
+        tokens.intersection({"original", "raw", "internal"})
+        and tokens.intersection({"payload", "provenance"})
+    )
+
+
+def _is_unsafe_key(key: str) -> bool:
+    return _is_credential_key(key) or _is_consumer_key(key) or _is_machine_bookkeeping_key(key)
+
+
+def _url_has_credentials(value: str) -> bool:
+    parsed = urlsplit(value)
+    if parsed.username is not None or parsed.password is not None:
+        return True
+    return any(
+        _is_credential_query_key(key)
+        for key, _ in parse_qsl(parsed.query, keep_blank_values=True)
+    )
+
+
+def _is_public_hostname(hostname: str | None) -> bool:
+    if not hostname:
+        return False
+    normalized = hostname.rstrip(".").casefold()
+    if normalized == "localhost" or normalized.endswith((".localhost", ".local")):
+        return False
+    try:
+        address = ipaddress.ip_address(normalized)
+    except ValueError:
+        return True
+    return address.is_global
+
+
+def _string_has_credentials(value: str) -> bool:
+    for match in URL_RE.finditer(value):
+        if _url_has_credentials(match.group(0).rstrip(".,);]")):
+            return True
+    return False
+
+
+def _unsafe_string_reason(value: str) -> str | None:
+    if _string_has_credentials(value):
+        return "credentialed URL"
+    if NON_HTTPS_AUTHORITY_RE.search(value) or re.search(
+        r"(?i)(?<![A-Za-z0-9+.-])file:/", value
+    ):
+        return "non-HTTPS or private scheme"
+    if POSIX_ABSOLUTE_PATH_RE.search(value):
+        return "absolute POSIX path"
+    if WINDOWS_ABSOLUTE_PATH_RE.search(value):
+        return "absolute Windows path"
+    return None
+
+
+def _validate_recursive_boundary(value: object, *, label: str, depth: int = 0) -> None:
+    if depth > MAX_NESTING_DEPTH:
+        raise ValueError(f"{label} exceeds maximum nesting depth {MAX_NESTING_DEPTH}")
+    if isinstance(value, str):
+        if len(value) > MAX_STRING_LENGTH:
+            raise ValueError(f"{label} contains a string longer than {MAX_STRING_LENGTH} characters")
+        reason = _unsafe_string_reason(value)
+        if reason == "credentialed URL":
+            raise ValueError(f"{label} contains URL credentials")
+        if reason is not None:
+            raise ValueError(f"{label} contains an unsafe value ({reason})")
+        return
+    if isinstance(value, list):
+        if len(value) > MAX_LIST_ITEMS:
+            raise ValueError(f"{label} contains a list longer than {MAX_LIST_ITEMS} items")
+        for index, item in enumerate(value):
+            _validate_recursive_boundary(item, label=f"{label}/{index}", depth=depth + 1)
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            if not isinstance(key, str):
+                raise ValueError(f"{label} contains a non-string object key")
+            if len(key) > MAX_STRING_LENGTH:
+                raise ValueError(f"{label} contains a key longer than {MAX_STRING_LENGTH} characters")
+            if _is_unsafe_key(key):
+                raise ValueError(f"{label} contains unsafe key: {key}")
+            _validate_recursive_boundary(item, label=f"{label}/{key}", depth=depth + 1)
+        return
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError(f"{label} contains a non-finite float")
+    if value is None or isinstance(value, (bool, int, float)):
+        return
+    raise ValueError(f"{label} contains an unsupported value type: {type(value).__name__}")
+
+
+def _require_exact_fields(
+    value: object, expected: frozenset[str], *, label: str
+) -> dict[str, object]:
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must be an object")
+    unsupported = set(value) - expected
+    if unsupported:
+        raise ValueError(f"{label} contains unsupported fields: {sorted(unsupported)}")
+    missing = expected - set(value)
+    if missing:
+        raise ValueError(f"{label} is missing fields: {sorted(missing)}")
+    return value
+
+
+def _safe_locator_fragment(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    fragment = value.removeprefix("#").strip()
+    if not fragment or len(fragment) > MAX_STRING_LENGTH:
+        return None
+    if SAFE_LOCATOR_FRAGMENT_RE.match(fragment) is None:
+        return None
+    if _unsafe_string_reason(fragment) is not None:
+        return None
+    fragment_keys = re.findall(r"(?:^|[?&;/])([A-Za-z0-9_.-]+)=", fragment)
+    if any(_is_credential_query_key(key) for key in fragment_keys):
+        return None
+    return fragment
+
+
+def _public_source_base(value: object) -> tuple[str, str | None]:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("record provenance requires a public HTTPS source_url")
+    source_url = value.strip()
+    doi_match = DOI_RE.fullmatch(source_url)
+    if doi_match is not None:
+        return f"https://doi.org/{doi_match.group(1)}", None
+
+    parsed = urlsplit(source_url)
+    if (
+        parsed.scheme.casefold() != "https"
+        or not parsed.netloc
+        or not _is_public_hostname(parsed.hostname)
+        or parsed.username is not None
+        or parsed.password is not None
+        or any(
+            _is_credential_query_key(key)
+            for key, _ in parse_qsl(parsed.query, keep_blank_values=True)
+        )
+    ):
+        raise ValueError("record provenance requires a public HTTPS source_url without credentials")
+    base = urlunsplit(("https", parsed.netloc, parsed.path, parsed.query, ""))
+    return base, _safe_locator_fragment(parsed.fragment)
+
+
+def _public_provenance(record: dict[str, object]) -> dict[str, object]:
+    """Return source id, stable public locator, record id, retrieval time, and license."""
+    raw = record.get("provenance")
+    if not isinstance(raw, dict):
+        raise ValueError("record is missing source provenance")
+    source_id = _require_string(raw.get("source_id"), "record provenance source_id")
+    record_id = _require_string(record.get("record_id"), "record record_id")
+    retrieved_at = _require_string(raw.get("retrieved_at"), "record provenance retrieved_at")
+    base, source_fragment = _public_source_base(raw.get("source_url"))
+    indexed_locator = raw.get("locator")
+    indexed_fragment = None
+    if isinstance(indexed_locator, str) and "#" in indexed_locator:
+        indexed_fragment = _safe_locator_fragment(indexed_locator.split("#", 1)[1])
+    fragment = indexed_fragment or source_fragment
+    locator = f"{base}#{fragment}" if fragment else base
+    license_value = raw.get("license")
+    if license_value is not None:
+        license_value = _require_string(license_value, "record provenance license")
+    public = {
+        "source_id": source_id,
+        "locator": locator,
+        "index_record_id": record_id,
+        "retrieved_at": retrieved_at,
+        "license": license_value,
+    }
+    _validate_recursive_boundary(public, label="public provenance")
+    return public
+
+
+def _sanitize_program_payload(value: object) -> object:
+    if isinstance(value, dict):
+        return {
+            str(key): _sanitize_program_payload(item)
+            for key, item in value.items()
+            if isinstance(key, str) and not _is_unsafe_key(key)
+        }
+    if isinstance(value, list):
+        return [_sanitize_program_payload(item) for item in value]
+    return deepcopy(value)
+
+
+def _public_program_record(record: dict[str, object]) -> dict[str, object]:
+    payload = record.get("payload")
+    if not isinstance(payload, dict):
+        raise ValueError(f"program record {record.get('record_id')} payload must be an object")
+    provenance_record = deepcopy(record)
+    provenance = provenance_record.get("provenance")
+    if not isinstance(provenance, dict):
+        raise ValueError(f"program record {record.get('record_id')} is missing provenance")
+    provenance["source_url"] = PUBLIC_PROGRAM_CONFIG_URL
+    return {
+        key: deepcopy(record.get(key))
+        for key in ("record_id", "lane", "source", "title", "text", "species")
+    } | {
+        "payload": _sanitize_program_payload(payload),
+        "provenance": _public_provenance(provenance_record),
+    }
+
+
+def _selector_payload_paths(selector: dict[str, object]) -> set[str]:
+    paths = {
+        str(path)
+        for field in ("taxon_field_paths", "context_field_paths")
+        for path in selector.get(field, [])
+    }
+    prerequisites = selector.get("context_field_prerequisites")
+    if isinstance(prerequisites, dict):
+        paths.update(
+            str(path)
+            for prerequisite_paths in prerequisites.values()
+            if isinstance(prerequisite_paths, list)
+            for path in prerequisite_paths
+        )
+    parent = selector.get("parent_record")
+    if isinstance(parent, dict):
+        paths.add(str(parent.get("record_id_path")))
+    fulltext = selector.get("fulltext_context")
+    if isinstance(fulltext, dict):
+        paths.update(
+            {
+                str(fulltext.get("unit_id_path")),
+                str(fulltext.get("parent_record_id_path")),
+            }
+        )
+    requirements = selector.get("record_requirements")
+    if isinstance(requirements, dict):
+        paths.update(str(path) for path in requirements)
+    return {path for path in paths if path.startswith("payload.")}
+
+
+def _copy_record_path(record: dict[str, object], path: str, target: dict[str, object]) -> None:
+    parts = path.split(".")
+    current: object = record
+    for part in parts:
+        if not isinstance(current, dict) or part not in current:
+            return
+        current = current[part]
+
+    output_parts = parts[1:]
+    if not output_parts:
+        return
+    output = target
+    for part in output_parts[:-1]:
+        existing = output.get(part)
+        if not isinstance(existing, dict):
+            existing = {}
+            output[part] = existing
+        output = existing
+    output[output_parts[-1]] = deepcopy(current)
+
+
+def _minimal_evidence_payload(
+    record: dict[str, object], selectors: list[dict[str, object]]
+) -> dict[str, object]:
+    payload: dict[str, object] = {}
+    paths = sorted({path for selector in selectors for path in _selector_payload_paths(selector)})
+    for path in paths:
+        _copy_record_path(record, path, payload)
+    return payload
+
+
+def _public_evidence_record(
+    record: dict[str, object], selectors: list[dict[str, object]]
+) -> dict[str, object]:
+    return {
+        key: deepcopy(record.get(key))
+        for key in (
+            "record_id",
+            "lane",
+            "source",
+            "title",
+            "text",
+            "species",
+            "species_id",
+            "context_ids",
+            "selector_ids",
+            "eligibility",
+        )
+    } | {
+        "payload": _minimal_evidence_payload(record, selectors),
+        "provenance": _public_provenance(record),
+    }
 
 
 def _load_json_object(path: Path) -> dict[str, object]:
@@ -831,6 +1281,11 @@ def _candidate_eligibility(
     if context is None:
         return None, "context_not_directly_confirmed"
 
+    try:
+        _public_provenance(record)
+    except ValueError:
+        return None, "public_provenance_missing"
+
     for basis in taxon["basis"]:
         basis["selector_id"] = selector_id
     for basis in context["basis"]:
@@ -882,12 +1337,18 @@ def _merge_eligibility(existing: dict[str, object], additional: dict[str, object
 def _context_export(context: dict[str, object], *, index: int, config: dict[str, object]) -> dict[str, object]:
     last_reviewed = _require_string(config.get("last_reviewed"), "context config last_reviewed")
     exported = {key: deepcopy(value) for key, value in context.items() if key != "selectors"}
-    exported["provenance"] = {
-        "source_id": "ask_insects_context_config",
-        "locator": f"config/insect-evidence-package.json#contexts/{index}",
-        "retrieved_at": f"{last_reviewed}T00:00:00Z",
-        "license": "Repository interpretation policy",
-    }
+    exported["provenance"] = _public_provenance(
+        {
+            "record_id": str(context["id"]),
+            "provenance": {
+                "source_id": "ask_insects_context_config",
+                "source_url": PUBLIC_CONTEXT_CONFIG_URL,
+                "locator": f"config/insect-evidence-package.json#jsonpath=$.contexts[{index}]",
+                "retrieved_at": f"{last_reviewed}T00:00:00Z",
+                "license": "Repository interpretation policy",
+            },
+        }
+    )
     return exported
 
 
@@ -914,8 +1375,9 @@ def build_context_package(
     conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
-        program_records = _program_records(conn)
-        species_profiles = _species_profiles(program_records)
+        raw_program_records = _program_records(conn)
+        species_profiles = _species_profiles(raw_program_records)
+        program_records = [_public_program_record(record) for record in raw_program_records]
         contexts = config["contexts"]
         exported_contexts: list[dict[str, object]] = []
         selector_results: list[dict[str, object]] = []
@@ -1036,7 +1498,20 @@ def build_context_package(
                     if selector_id not in existing["selector_ids"]:
                         existing["selector_ids"].append(selector_id)
                     _merge_eligibility(existing["eligibility"], eligibility)
-        evidence_records = [selected_by_id[key] for key in sorted(selected_by_id)]
+        selectors_by_id = {
+            str(job["selector"]["id"]): dict(job["selector"])
+            for job in selector_jobs
+        }
+        evidence_records = [
+            _public_evidence_record(
+                selected_by_id[key],
+                [
+                    selectors_by_id[str(selector_id)]
+                    for selector_id in selected_by_id[key]["selector_ids"]
+                ],
+            )
+            for key in sorted(selected_by_id)
+        ]
     finally:
         conn.close()
 
@@ -1060,6 +1535,7 @@ def build_context_package(
         "selector_results": selector_results,
         "gaps": gaps,
     }
+    _validate_recursive_boundary(package, label="context package")
     package["content_sha256"] = canonical_package_hash(package)
     validate_context_package(package)
     return package
@@ -1071,15 +1547,51 @@ def _unique(items: list[dict[str, object]], key: str, label: str) -> None:
         raise ValueError(f"{label} must have unique non-empty {key} values")
 
 
-def _validate_public_provenance(item: dict[str, object], label: str) -> None:
-    provenance = item.get("provenance")
-    if not isinstance(provenance, dict):
-        raise ValueError(f"{label} is missing provenance")
+def _validate_public_provenance(
+    item: dict[str, object],
+    label: str,
+    *,
+    expected_source_id: str | None = None,
+    expected_locator: str | None = None,
+    expected_record_id: str | None = None,
+) -> None:
+    provenance = _require_exact_fields(
+        item.get("provenance"),
+        PUBLIC_PROVENANCE_FIELDS,
+        label=f"{label} provenance",
+    )
     source_id = _require_string(provenance.get("source_id"), f"{label} provenance source_id")
     locator = _require_string(provenance.get("locator"), f"{label} provenance locator")
-    combined = f"{source_id} {locator}".lower()
-    if any(marker in combined for marker in PRIVATE_SOURCE_MARKERS):
-        raise ValueError(f"{label} references a private Monarch source")
+    index_record_id = _require_string(
+        provenance.get("index_record_id"),
+        f"{label} provenance index_record_id",
+    )
+    _require_string(provenance.get("retrieved_at"), f"{label} provenance retrieved_at")
+    license_value = provenance.get("license")
+    if license_value is not None:
+        _require_string(license_value, f"{label} provenance license")
+
+    parsed = urlsplit(locator)
+    if (
+        parsed.scheme.casefold() != "https"
+        or not parsed.netloc
+        or not _is_public_hostname(parsed.hostname)
+        or parsed.username is not None
+        or parsed.password is not None
+        or any(
+            _is_credential_query_key(key)
+            for key, _ in parse_qsl(parsed.query, keep_blank_values=True)
+        )
+    ):
+        raise ValueError(f"{label} provenance locator must be public HTTPS without credentials")
+    if parsed.fragment and _safe_locator_fragment(parsed.fragment) != parsed.fragment:
+        raise ValueError(f"{label} provenance locator has an unsafe fragment")
+    if expected_source_id is not None and source_id != expected_source_id:
+        raise ValueError(f"{label} provenance source_id does not match its public source")
+    if expected_locator is not None and locator != expected_locator:
+        raise ValueError(f"{label} provenance locator does not match its public source")
+    if expected_record_id is not None and index_record_id != expected_record_id:
+        raise ValueError(f"{label} provenance index_record_id does not match its record")
 
 
 def _validate_assertion_basis(
@@ -1092,6 +1604,14 @@ def _validate_assertion_basis(
         raise ValueError(f"{label} basis must be a non-empty list of objects")
     basis = [dict(item) for item in value]
     for index, item in enumerate(basis):
+        item_label = f"{label} basis/{index}"
+        unsupported = set(item) - ASSERTION_BASIS_FIELDS - ASSERTION_BASIS_LINK_FIELDS
+        if unsupported:
+            raise ValueError(f"{item_label} contains unsupported fields: {sorted(unsupported)}")
+        required_fields = ASSERTION_BASIS_FIELDS | ({"context_id"} if require_context else set())
+        missing = required_fields - set(item)
+        if missing:
+            raise ValueError(f"{item_label} is missing fields: {sorted(missing)}")
         field_path = _require_string(item.get("field_path"), f"{label} basis/{index} field_path")
         matched_term = _require_string(item.get("matched_term"), f"{label} basis/{index} matched_term")
         excerpt = _require_string(item.get("excerpt"), f"{label} basis/{index} excerpt")
@@ -1151,12 +1671,45 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
     internal hash. Authenticating the snapshot requires a publisher-pinned
     content_sha256 outside this standalone validator.
     """
+    if not isinstance(package, dict):
+        raise ValueError("context package top-level must be an object")
+    _validate_recursive_boundary(package, label="context package")
+    if len(canonical_json(package).encode("utf-8")) > MAX_PACKAGE_BYTES:
+        raise ValueError("context package exceeds maximum size of 16 MiB")
+    _require_exact_fields(package, PACKAGE_FIELDS, label="context package top-level")
+    if package.get("ok") is not True:
+        raise ValueError("context package ok must be true")
     if package.get("schema_version") != PACKAGE_SCHEMA_VERSION:
         raise ValueError(f"context package schema_version must be {PACKAGE_SCHEMA_VERSION}")
     if package.get("validation_contract") != VALIDATION_CONTRACT:
         raise ValueError("context package validation_contract is invalid")
     _require_string(package.get("package_version"), "context package package_version")
+    _require_string(package.get("generated_at"), "context package generated_at")
+    _require_string(package.get("objective"), "context package objective")
+    content_sha256 = _require_string(package.get("content_sha256"), "context package content_sha256")
+    if re.fullmatch(r"[0-9a-f]{64}", content_sha256) is None:
+        raise ValueError("context package content_sha256 must be a lowercase SHA-256 digest")
     domains = set(_require_string_list(package.get("knowledge_domains"), "context package knowledge_domains"))
+    upstream_snapshot = _require_exact_fields(
+        package.get("upstream_snapshot"),
+        UPSTREAM_SNAPSHOT_FIELDS,
+        label="context package upstream_snapshot",
+    )
+    if upstream_snapshot.get("source_id") != "ask_insects_hosted_source_index":
+        raise ValueError("context package upstream_snapshot source_id is invalid")
+    source_status_sha256 = _require_string(
+        upstream_snapshot.get("source_status_sha256"),
+        "context package upstream_snapshot source_status_sha256",
+    )
+    if re.fullmatch(r"[0-9a-f]{64}", source_status_sha256) is None:
+        raise ValueError("context package upstream_snapshot source_status_sha256 is invalid")
+    _require_string(
+        upstream_snapshot.get("source_status_generated_at"),
+        "context package upstream_snapshot source_status_generated_at",
+    )
+    record_count = upstream_snapshot.get("record_count")
+    if isinstance(record_count, bool) or not isinstance(record_count, int) or record_count < 0:
+        raise ValueError("context package upstream_snapshot record_count is invalid")
     program_records = package.get("program_records")
     evidence_records = package.get("evidence_records")
     contexts = package.get("contexts")
@@ -1176,11 +1729,26 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
     _unique(evidence_records, "record_id", "evidence_records")
 
     for record in program_records:
-        _validate_public_provenance(record, f"program record {record.get('record_id')}")
+        record_id = _require_string(record.get("record_id"), "program record record_id")
+        _require_exact_fields(record, PROGRAM_RECORD_FIELDS, label=f"program record {record_id}")
+        for field in ("lane", "source", "title", "text"):
+            _require_string(record.get(field), f"program record {record_id} {field}")
+        if record.get("source") != "insect_intelligence_programs":
+            raise ValueError(f"program record {record_id} source is invalid")
+        if not isinstance(record.get("payload"), dict):
+            raise ValueError(f"program record {record_id} payload must be an object")
+        _validate_public_provenance(
+            record,
+            f"program record {record_id}",
+            expected_source_id="insect_intelligence_programs",
+            expected_locator=PUBLIC_PROGRAM_CONFIG_URL,
+            expected_record_id=record_id,
+        )
     species_profiles = _species_profiles(program_records)
 
     context_by_id = {str(context["id"]): context for context in contexts}
-    for context_id, context in context_by_id.items():
+    for context_index, context in enumerate(contexts):
+        context_id = str(context["id"])
         species_ids, required_domains = _validate_generic_context(
             context,
             context_id=context_id,
@@ -1192,13 +1760,26 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         unknown_domains = required_domains - domains
         if unknown_domains:
             raise ValueError(f"context {context_id} names unknown knowledge domains: {sorted(unknown_domains)}")
-        _validate_public_provenance(context, f"context {context_id}")
+        _validate_public_provenance(
+            context,
+            f"context {context_id}",
+            expected_source_id="ask_insects_context_config",
+            expected_locator=(
+                f"{PUBLIC_CONTEXT_CONFIG_URL}#jsonpath=$.contexts[{context_index}]"
+            ),
+            expected_record_id=context_id,
+        )
 
     selector_receipts: dict[str, dict[str, object]] = {}
     selected_record_species: dict[str, str] = {}
     receipts_by_record: dict[str, list[dict[str, object]]] = {}
     selector_keys: list[str] = []
     for result in selector_results:
+        _require_exact_fields(
+            result,
+            SELECTOR_RESULT_FIELDS,
+            label="selector result",
+        )
         selector_id = _require_string(result.get("selector_id"), "selector result selector_id")
         selector_keys.append(selector_id)
         context_id = _require_string(result.get("context_id"), f"selector {selector_id} context_id")
@@ -1271,7 +1852,7 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
     if len(selector_keys) != len(set(selector_keys)):
         raise ValueError("selector results must have unique selector ids")
 
-    evidence_by_id = {str(record["record_id"]): record for record in evidence_records}
+    evidence_by_id = {str(record.get("record_id") or ""): record for record in evidence_records}
     for result in selector_results:
         selector_id = str(result["selector_id"])
         for record_id in result["selected_record_ids"]:
@@ -1279,8 +1860,18 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                 raise ValueError(f"selector {selector_id} selects missing evidence record {record_id}")
 
     for record in evidence_records:
-        record_id = str(record["record_id"])
-        _validate_public_provenance(record, f"evidence record {record_id}")
+        record_id = _require_string(record.get("record_id"), "evidence record record_id")
+        _require_exact_fields(record, EVIDENCE_RECORD_FIELDS, label=f"evidence record {record_id}")
+        for field in ("lane", "source", "title", "text"):
+            _require_string(record.get(field), f"evidence record {record_id} {field}")
+        if not isinstance(record.get("payload"), dict):
+            raise ValueError(f"evidence record {record_id} payload must be an object")
+        _validate_public_provenance(
+            record,
+            f"evidence record {record_id}",
+            expected_source_id=str(record["source"]),
+            expected_record_id=record_id,
+        )
         species_id = _require_string(record.get("species_id"), f"evidence record {record_id} species_id")
         profile = species_profiles.get(species_id)
         if profile is None:
@@ -1309,6 +1900,11 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             raise ValueError(f"evidence record {record_id} names an unknown context")
         if any(selector_id not in selector_receipts for selector_id in selector_ids):
             raise ValueError(f"evidence record {record_id} names an unknown selector")
+        expected_payload = _minimal_evidence_payload(record, selecting_receipts)
+        if record["payload"] != expected_payload:
+            raise ValueError(
+                f"evidence record {record_id} payload contains fields outside its trusted selector paths"
+            )
 
         receipt_contexts: list[str] = []
         for selector_id in selector_ids:
@@ -1317,6 +1913,10 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                 raise ValueError(f"evidence record {record_id} is not selected by receipt {selector_id}")
             if receipt["species_id"] != species_id:
                 raise ValueError(f"evidence record {record_id} selector species does not match")
+            if receipt["source"] != record["source"]:
+                raise ValueError(f"evidence record {record_id} selector source does not match")
+            if not _record_requirements_match(record, receipt):
+                raise ValueError(f"evidence record {record_id} does not satisfy selector record requirements")
             receipt_contexts.append(str(receipt["context_id"]))
         if set(context_ids) != set(receipt_contexts):
             raise ValueError(f"evidence record {record_id} contexts do not match selector receipts")
@@ -1324,12 +1924,22 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         eligibility = record.get("eligibility")
         if not isinstance(eligibility, dict):
             raise ValueError(f"evidence record {record_id} is missing eligibility")
+        _require_exact_fields(
+            eligibility,
+            ELIGIBILITY_FIELDS,
+            label=f"evidence record {record_id} eligibility",
+        )
         if eligibility.get("ruleset_version") != ELIGIBILITY_RULESET_VERSION:
             raise ValueError(f"evidence record {record_id} has an invalid eligibility ruleset_version")
 
         taxon = eligibility.get("taxon")
         if not isinstance(taxon, dict) or taxon.get("status") != "direct_focal_taxon":
             raise ValueError(f"evidence record {record_id} taxon assertion is not direct")
+        _require_exact_fields(
+            taxon,
+            TAXON_ASSERTION_FIELDS,
+            label=f"evidence record {record_id} taxon assertion",
+        )
         if taxon.get("species_id") != species_id or taxon.get("scientific_name") != scientific_name:
             raise ValueError(f"evidence record {record_id} taxon assertion disagrees with selector receipt")
         taxon_basis = _validate_assertion_basis(
@@ -1352,6 +1962,11 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             retained_path = str(basis["retained_path"])
             snapshot = str(basis["evidence_snapshot"])
             if field_path.startswith("parent."):
+                _require_exact_fields(
+                    basis,
+                    ASSERTION_BASIS_FIELDS | {"parent_record_id"},
+                    label=f"evidence record {record_id} taxon basis",
+                )
                 parent = receipt.get("parent_record")
                 parent_path = field_path.removeprefix("parent.")
                 if not isinstance(parent, dict) or parent_path not in parent.get("taxon_field_paths", []):
@@ -1370,6 +1985,11 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                 if retained_path != parent_path:
                     raise ValueError(f"evidence record {record_id} taxon basis retained_path is invalid")
             else:
+                _require_exact_fields(
+                    basis,
+                    ASSERTION_BASIS_FIELDS,
+                    label=f"evidence record {record_id} taxon basis",
+                )
                 if field_path not in receipt["taxon_field_paths"]:
                     raise ValueError(f"evidence record {record_id} taxon basis field_path is not trusted")
                 if retained_store != "record_payloads":
@@ -1387,6 +2007,11 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         context = eligibility.get("context")
         if not isinstance(context, dict) or context.get("status") != "direct_context":
             raise ValueError(f"evidence record {record_id} context assertion is not direct")
+        _require_exact_fields(
+            context,
+            CONTEXT_ASSERTION_FIELDS,
+            label=f"evidence record {record_id} context assertion",
+        )
         asserted_context_ids = _require_string_list(
             context.get("context_ids"),
             f"evidence record {record_id} context assertion context_ids",
@@ -1426,6 +2051,11 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                 raise ValueError(f"evidence record {record_id} context basis term is not configured")
 
             if field_path in receipt["context_field_paths"]:
+                _require_exact_fields(
+                    basis,
+                    ASSERTION_BASIS_FIELDS | {"context_id"},
+                    label=f"evidence record {record_id} context basis",
+                )
                 for prerequisite_path in receipt["context_field_prerequisites"].get(field_path, []):
                     if not _value_at_path(record, str(prerequisite_path)):
                         raise ValueError(f"evidence record {record_id} context basis prerequisite is missing")
@@ -1438,6 +2068,12 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                 if not _record_snapshot_matches(record, field_path, snapshot, matched_term):
                     raise ValueError(f"evidence record {record_id} context basis is not present in its field")
             else:
+                _require_exact_fields(
+                    basis,
+                    ASSERTION_BASIS_FIELDS
+                    | {"context_id", "fulltext_unit_id", "parent_record_id"},
+                    label=f"evidence record {record_id} context basis",
+                )
                 fulltext = receipt.get("fulltext_context")
                 if not isinstance(fulltext, dict) or field_path != fulltext.get("text_field_path"):
                     raise ValueError(f"evidence record {record_id} context basis field_path is not trusted")
@@ -1480,6 +2116,7 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
     }
     gap_selectors: set[str] = set()
     for gap in gaps:
+        _require_exact_fields(gap, GAP_FIELDS, label="selector gap")
         if gap.get("gap_type") != "selector_no_direct_evidence":
             raise ValueError("context package contains an unsupported selector gap type")
         selector_id = _require_string(gap.get("selector_id"), "selector gap selector_id")

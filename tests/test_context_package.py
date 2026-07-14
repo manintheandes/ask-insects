@@ -4,9 +4,11 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from askinsects import context_package as context_package_module
 from askinsects.context_package import (
     DEFAULT_CONTEXT_CONFIG,
     build_context_package,
+    canonical_package_hash,
     load_context_config,
     validate_context_package,
 )
@@ -132,6 +134,9 @@ def record(
     title: str | None = None,
     payload: dict | None = None,
     locator: str | None = None,
+    source_url: str | None = None,
+    license: str | None = "CC-BY-4.0",
+    include_source_url: bool = True,
 ) -> EvidenceRecord:
     return EvidenceRecord(
         record_id=record_id,
@@ -146,6 +151,12 @@ def record(
             source_id=source,
             locator=locator or f"records#{record_id}",
             retrieved_at="2026-07-13T00:00:00Z",
+            license=license,
+            source_url=(
+                source_url or f"https://example.org/records/{record_id}"
+                if include_source_url
+                else None
+            ),
         ),
         payload=payload,
     )
@@ -225,6 +236,12 @@ class ContextPackageTests(unittest.TestCase):
                             "SWD",
                         ],
                         "product_ids": ["swd_crop_repellent"],
+                        "ledger_path": (
+                            "/Users/josh/Documents/ask-insects/"
+                            "config/insect-intelligence-programs.json"
+                        ),
+                        "consumer_id": "downstream-consumer",
+                        "private_locator": "https://example.org/private-config",
                     },
                 ),
                 record(
@@ -287,7 +304,16 @@ class ContextPackageTests(unittest.TestCase):
                     payload={
                         "title": "Drosophila suzukii contact avoidance assay",
                         "abstract": "Direct contact avoidance and repellent behavior was measured.",
+                        "raw_artifact_path": "/Users/josh/private/source.json",
+                        "cached_locator": "file:///tmp/x",
+                        "cloud_copy": "gs://private-bucket/x",
+                        "original_provenance": {
+                            "auth_token": "must-not-serialize",
+                            "locator": "/home/josh/ask-insects/private/source.json",
+                        },
                     },
+                    locator="/home/josh/ask-insects/source.json#row/100",
+                    source_url="10.1234/swd.1",
                 ),
                 record(
                     "public:swd:2",
@@ -1813,12 +1839,104 @@ class ContextPackageTests(unittest.TestCase):
         ):
             self.assertEqual(gap[field], receipt[field])
 
+    def test_selector_rejects_missing_or_nonpublic_provenance_and_continues(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "provenance:missing",
+                    source="public_provenance_candidates",
+                    species="Drosophila suzukii",
+                    text="Contact avoidance candidate with missing public provenance.",
+                    payload={
+                        "title": "Drosophila suzukii contact behavior",
+                        "abstract": "Contact avoidance was measured on a treated surface.",
+                    },
+                    include_source_url=False,
+                ),
+                record(
+                    "provenance:localhost",
+                    source="public_provenance_candidates",
+                    species="Drosophila suzukii",
+                    text="Contact avoidance candidate with nonpublic provenance.",
+                    payload={
+                        "title": "Drosophila suzukii contact behavior",
+                        "abstract": "Contact avoidance was measured on a treated surface.",
+                    },
+                    source_url="https://localhost/private/source.json",
+                ),
+                record(
+                    "provenance:public",
+                    source="public_provenance_candidates",
+                    species="Drosophila suzukii",
+                    text="Contact avoidance candidate with public provenance.",
+                    payload={
+                        "title": "Drosophila suzukii contact behavior",
+                        "abstract": "Contact avoidance was measured on a treated surface.",
+                    },
+                    source_url="https://journals.plos.org/plosone/article"
+                    "?id=10.1371/journal.pone.0000001&type=printable",
+                ),
+            ]
+        )
+        selector = self.selector(
+            "public_provenance_selector",
+            "drosophila_suzukii",
+            "public_provenance_candidates",
+            query_any=["contact", "avoidance"],
+            context_required_term_groups=CONTEXT_REQUIRED_TERM_GROUPS[
+                "treated_area_contact_avoidance"
+            ],
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
+        )
+
+        package = self.build_with_contexts(
+            [self.context("public_provenance_context", ["drosophila_suzukii"], [selector])]
+        )
+
+        receipt = package["selector_results"][0]
+        self.assertEqual(receipt["candidate_count"], 3)
+        self.assertEqual(receipt["eligible_count"], 1)
+        self.assertEqual(receipt["selected_record_ids"], ["provenance:public"])
+        self.assertEqual(receipt["rejection_counts"], {"public_provenance_missing": 2})
+        self.assertEqual(
+            package["evidence_records"][0]["provenance"]["locator"],
+            "https://journals.plos.org/plosone/article"
+            "?id=10.1371/journal.pone.0000001&type=printable",
+        )
+
     def test_package_hash_is_stable_across_generation_times(self):
         first = self.build("2026-07-14T01:00:00Z")
         second = self.build("2026-07-14T02:00:00Z")
 
         self.assertNotEqual(first["generated_at"], second["generated_at"])
         self.assertEqual(first["content_sha256"], second["content_sha256"])
+
+    def test_package_hash_covers_scientific_receipt_and_provenance_fields(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        original_hash = canonical_package_hash(package)
+
+        ignored = json.loads(json.dumps(package))
+        ignored["generated_at"] = "2099-01-01T00:00:00Z"
+        ignored["content_sha256"] = "0" * 64
+        self.assertEqual(canonical_package_hash(ignored), original_hash)
+
+        mutations = [
+            lambda value: value["evidence_records"][0]["payload"].__setitem__(
+                "abstract", "Changed scientific evidence."
+            ),
+            lambda value: value["evidence_records"][0]["provenance"].__setitem__(
+                "locator", "https://example.org/changed#row/100"
+            ),
+            lambda value: value["selector_results"][0].__setitem__(
+                "candidate_count", value["selector_results"][0]["candidate_count"] + 1
+            ),
+        ]
+        for mutate in mutations:
+            with self.subTest(mutate=mutate):
+                changed = json.loads(json.dumps(package))
+                mutate(changed)
+                self.assertNotEqual(canonical_package_hash(changed), original_hash)
 
     def test_package_declares_producer_and_downstream_validation_boundary(self):
         package = self.build("2026-07-14T01:00:00Z")
@@ -1842,9 +1960,316 @@ class ContextPackageTests(unittest.TestCase):
         package = self.build("2026-07-14T01:00:00Z")
 
         for item in [*package["program_records"], *package["evidence_records"]]:
-            self.assertTrue(item["provenance"]["source_id"])
-            self.assertTrue(item["provenance"]["locator"])
+            self.assertEqual(
+                set(item["provenance"]),
+                {"source_id", "locator", "index_record_id", "retrieved_at", "license"},
+            )
+            self.assertEqual(item["provenance"]["index_record_id"], item["record_id"])
+            self.assertTrue(item["provenance"]["locator"].startswith("https://"))
+        for context in package["contexts"]:
+            self.assertEqual(
+                set(context["provenance"]),
+                {"source_id", "locator", "index_record_id", "retrieved_at", "license"},
+            )
         validate_context_package(package)
+
+    def test_builder_exports_exact_public_record_shapes_and_minimal_payloads(self):
+        package = self.build("2026-07-14T01:00:00Z")
+
+        self.assertEqual(
+            set(package),
+            {
+                "ok",
+                "schema_version",
+                "package_version",
+                "generated_at",
+                "objective",
+                "validation_contract",
+                "knowledge_domains",
+                "upstream_snapshot",
+                "contexts",
+                "program_records",
+                "evidence_records",
+                "selector_results",
+                "gaps",
+                "content_sha256",
+            },
+        )
+        expected_program_fields = {
+            "record_id",
+            "lane",
+            "source",
+            "title",
+            "text",
+            "species",
+            "payload",
+            "provenance",
+        }
+        expected_evidence_fields = expected_program_fields | {
+            "species_id",
+            "context_ids",
+            "selector_ids",
+            "eligibility",
+        }
+        self.assertTrue(package["program_records"])
+        self.assertTrue(package["evidence_records"])
+        for item in package["program_records"]:
+            self.assertEqual(set(item), expected_program_fields)
+        for item in package["evidence_records"]:
+            self.assertEqual(set(item), expected_evidence_fields)
+
+        evidence = package["evidence_records"][0]
+        self.assertEqual(
+            evidence["payload"],
+            {
+                "title": "Drosophila suzukii contact avoidance assay",
+                "abstract": "Direct contact avoidance and repellent behavior was measured.",
+            },
+        )
+        self.assertEqual(
+            evidence["provenance"]["locator"],
+            "https://doi.org/10.1234/swd.1#row/100",
+        )
+        self.assertEqual(
+            package["program_records"][0]["provenance"]["locator"],
+            "https://github.com/manintheandes/ask-insects/blob/main/"
+            "config/insect-intelligence-programs.json",
+        )
+        self.assertNotIn("ledger_path", package["program_records"][0]["payload"])
+
+        serialized = json.dumps(package, sort_keys=True)
+        for unsafe in (
+            "/home/josh/",
+            "/Users/josh/",
+            "file:///tmp/x",
+            "gs://private-bucket/x",
+            "must-not-serialize",
+            '"consumer_id"',
+            '"private_locator"',
+        ):
+            with self.subTest(unsafe=unsafe):
+                self.assertNotIn(unsafe, serialized)
+
+    def test_public_provenance_normalizes_doi_and_preserves_only_safe_fragments(self):
+        public_provenance = context_package_module._public_provenance
+        base_record = {
+            "record_id": "public:record:1",
+            "provenance": {
+                "source_id": "public_source",
+                "source_url": "https://example.org/public/data.json",
+                "locator": "/home/josh/private/data.json#row/100",
+                "retrieved_at": "2026-07-13T00:00:00Z",
+                "license": "CC-BY-4.0",
+            },
+        }
+
+        expected_fragments = {
+            "row/100",
+            "page=4",
+            "cell/B12",
+            "sheet=assays",
+            "result/3",
+            "works/W123",
+            "jsonpath=$.items[0]",
+        }
+        for fragment in expected_fragments:
+            with self.subTest(fragment=fragment):
+                candidate = json.loads(json.dumps(base_record))
+                candidate["provenance"]["locator"] = f"/home/josh/private/data#{fragment}"
+                normalized = public_provenance(candidate)
+                self.assertEqual(
+                    normalized["locator"],
+                    f"https://example.org/public/data.json#{fragment}",
+                )
+
+        for fragment in (
+            "token=secret",
+            "row/1?token=secret",
+            "artifact=/Users/josh/x",
+            "file:///tmp/x",
+        ):
+            with self.subTest(fragment=fragment):
+                candidate = json.loads(json.dumps(base_record))
+                candidate["provenance"]["locator"] = f"/home/josh/private/data#{fragment}"
+                normalized = public_provenance(candidate)
+                self.assertEqual(normalized["locator"], "https://example.org/public/data.json")
+
+        doi_record = json.loads(json.dumps(base_record))
+        doi_record["provenance"]["source_url"] = "10.5555/example.doi"
+        normalized = public_provenance(doi_record)
+        self.assertEqual(normalized["locator"], "https://doi.org/10.5555/example.doi#row/100")
+
+    def test_public_provenance_rejects_nonpublic_or_credentialed_source_urls(self):
+        invalid_urls = (
+            "file:///tmp/x",
+            "gs://private-bucket/x",
+            "s3://private-bucket/x",
+            "ssh://example.org/x",
+            "private://consumer/x",
+            "http://example.org/x",
+            "https://user:password@example.org/x",
+            "https://example.org/x?access_token=secret",
+            "https://example.org/x?password=secret",
+            "https://example.org/x?X-Amz-Signature=secret",
+            "https://localhost/x",
+            "https://127.0.0.1/x",
+            "https://[::1]/x",
+            "https://169.254.169.254/x",
+            "https://10.0.0.1/x",
+            "https://172.16.0.1/x",
+            "https://192.168.1.1/x",
+            "https://[fe80::1]/x",
+            "https://[fd00::1]/x",
+            "https://source.local/x",
+        )
+        for source_url in invalid_urls:
+            with self.subTest(source_url=source_url):
+                candidate = {
+                    "record_id": "public:record:1",
+                    "provenance": {
+                        "source_id": "public_source",
+                        "source_url": source_url,
+                        "locator": "records#row/1",
+                        "retrieved_at": "2026-07-13T00:00:00Z",
+                        "license": "CC-BY-4.0",
+                    },
+                }
+                with self.assertRaisesRegex(ValueError, "public HTTPS source_url"):
+                    context_package_module._public_provenance(candidate)
+
+    def test_validator_rejects_unknown_package_record_and_payload_fields(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        mutations = [
+            (
+                "top-level",
+                lambda value: value.__setitem__("unexpected", "public-looking"),
+            ),
+            (
+                "record",
+                lambda value: value["evidence_records"][0].__setitem__(
+                    "unexpected", "public-looking"
+                ),
+            ),
+            (
+                "payload",
+                lambda value: value["evidence_records"][0]["payload"].__setitem__(
+                    "untrusted_summary", "public-looking"
+                ),
+            ),
+            (
+                "provenance",
+                lambda value: value["evidence_records"][0]["provenance"].__setitem__(
+                    "source_url", "https://example.org/not-part-of-export-shape"
+                ),
+            ),
+        ]
+        for expected_error, mutate in mutations:
+            with self.subTest(expected_error=expected_error):
+                invalid = json.loads(json.dumps(package))
+                mutate(invalid)
+                with self.assertRaisesRegex(ValueError, expected_error):
+                    validate_context_package(invalid, verify_hash=False)
+
+    def test_validator_rejects_unsafe_paths_schemes_and_urls_anywhere(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        unsafe_values = (
+            "/home/josh/ask-insects/source.csv#row/100",
+            "/Users/josh/Documents/private.json",
+            "/etc/passwd",
+            "file:///tmp/x",
+            "file:/tmp/x",
+            "gs://private-bucket/x",
+            "s3://private-bucket/x",
+            "ssh://example.org/private/x",
+            "private://consumer/x",
+            r"C:\Users\josh\private.txt",
+            r"\\server\private\share.txt",
+            "http://example.org/not-https",
+            "ftp://example.org/not-https",
+        )
+        for unsafe in unsafe_values:
+            with self.subTest(unsafe=unsafe):
+                invalid = json.loads(json.dumps(package))
+                invalid["program_records"][0]["text"] = unsafe
+                with self.assertRaisesRegex(ValueError, "unsafe value"):
+                    validate_context_package(invalid, verify_hash=False)
+
+    def test_validator_rejects_credentials_and_consumer_specific_keys(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        unsafe_keys = (
+            "api_token",
+            "password",
+            "auth",
+            "authorization_header",
+            "consumer_id",
+            "customer_config",
+            "tenant_identifier",
+            "private_locator",
+        )
+        for unsafe_key in unsafe_keys:
+            with self.subTest(unsafe_key=unsafe_key):
+                invalid = json.loads(json.dumps(package))
+                invalid["program_records"][0]["payload"][unsafe_key] = "secret"
+                with self.assertRaisesRegex(ValueError, "unsafe key"):
+                    validate_context_package(invalid, verify_hash=False)
+
+        credentialed_urls = (
+            "https://user:password@example.org/data",
+            "https://example.org/data?token=secret",
+            "https://example.org/data?auth=secret",
+        )
+        for locator in credentialed_urls:
+            with self.subTest(locator=locator):
+                invalid = json.loads(json.dumps(package))
+                invalid["evidence_records"][0]["provenance"]["locator"] = locator
+                with self.assertRaisesRegex(ValueError, "credential"):
+                    validate_context_package(invalid, verify_hash=False)
+
+    def test_validator_enforces_string_list_depth_and_package_size_limits(self):
+        package = self.build("2026-07-14T01:00:00Z")
+
+        oversized_string = json.loads(json.dumps(package))
+        oversized_string["objective"] = "x" * (1024 * 1024)
+        with self.assertRaisesRegex(ValueError, "100000"):
+            validate_context_package(oversized_string, verify_hash=False)
+
+        oversized_list = json.loads(json.dumps(package))
+        oversized_list["knowledge_domains"] = [f"domain-{index}" for index in range(10_001)]
+        with self.assertRaisesRegex(ValueError, "10000"):
+            validate_context_package(oversized_list, verify_hash=False)
+
+        too_deep = json.loads(json.dumps(package))
+        nested: object = "leaf"
+        for _ in range(21):
+            nested = {"level": nested}
+        too_deep["program_records"][0]["payload"]["nested"] = nested
+        with self.assertRaisesRegex(ValueError, "depth 20"):
+            validate_context_package(too_deep, verify_hash=False)
+
+        oversized_package = json.loads(json.dumps(package))
+        oversized_package["program_records"][0]["payload"]["large_public_fields"] = {
+            f"field_{index}": "x" * 99_000 for index in range(170)
+        }
+        with self.assertRaisesRegex(ValueError, "16 MiB"):
+            validate_context_package(oversized_package, verify_hash=False)
+
+    def test_validator_rejects_non_finite_floats(self):
+        package = self.build("2026-07-14T01:00:00Z")
+
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value):
+                invalid = json.loads(json.dumps(package))
+                invalid["program_records"][0]["payload"]["measurement"] = value
+                with self.assertRaisesRegex(ValueError, "non-finite"):
+                    validate_context_package(invalid, verify_hash=False)
+
+    def test_validator_allows_generic_public_text_about_external_private_systems(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        package["program_records"][0]["text"] = (
+            "Public evidence may inform external private systems, including Monarch."
+        )
+
+        validate_context_package(package, verify_hash=False)
 
     def test_validator_rejects_exported_contexts_missing_generic_fields(self):
         package = self.build("2026-07-14T01:00:00Z")
@@ -1868,13 +2293,13 @@ class ContextPackageTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, field):
                     validate_context_package(invalid, verify_hash=False)
 
-    def test_validator_rejects_private_monarch_locator(self):
+    def test_validator_rejects_private_cloud_locator_without_consumer_markers(self):
         package = self.build("2026-07-14T01:00:00Z")
         package["evidence_records"][0]["provenance"]["locator"] = (
-            "gs://monarch-videos-new/private/results.csv#row=1"
+            "gs://private-bucket/results.csv#row=1"
         )
 
-        with self.assertRaisesRegex(ValueError, "private Monarch source"):
+        with self.assertRaisesRegex(ValueError, "unsafe value"):
             validate_context_package(package, verify_hash=False)
 
     def test_validator_rejects_taxon_assertion_that_disagrees_with_receipt(self):
