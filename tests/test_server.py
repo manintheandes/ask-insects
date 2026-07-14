@@ -1,4 +1,5 @@
 import io
+import http.client
 import json
 import tempfile
 import threading
@@ -289,7 +290,64 @@ class ServerTests(unittest.TestCase):
                             response.payload["error"]["code"],
                             "method_not_allowed",
                         )
+                        self.assertEqual(dict(response.headers).get("Allow"), "GET")
                 build.assert_not_called()
+
+    def test_context_package_real_handler_uses_json_auth_and_405_for_every_method(self):
+        methods = ("PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "PROPFIND")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            handler = type(
+                "TestAskInsectsHandler",
+                (AskInsectsHandler,),
+                {
+                    "artifact_dir": Path(tmpdir),
+                    "token": "secret",
+                    "log_message": lambda self, format, *args: None,
+                },
+            )
+            server = server_module.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                for method in methods:
+                    with self.subTest(method=method, authorization="missing"):
+                        connection = http.client.HTTPConnection(*server.server_address, timeout=5)
+                        connection.request(method, "/context-package")
+                        response = connection.getresponse()
+                        body = response.read()
+                        connection.close()
+                        self.assertEqual(response.status, 401)
+                        self.assertEqual(response.getheader("Content-Type"), "application/json")
+                        if method == "HEAD":
+                            self.assertEqual(body, b"")
+                        else:
+                            self.assertEqual(json.loads(body), {"ok": False, "error": "unauthorized"})
+
+                    with self.subTest(method=method, authorization="valid"):
+                        connection = http.client.HTTPConnection(*server.server_address, timeout=5)
+                        connection.request(
+                            method,
+                            "/context-package",
+                            headers={"Authorization": "Bearer secret"},
+                        )
+                        response = connection.getresponse()
+                        body = response.read()
+                        connection.close()
+                        self.assertEqual(response.status, 405)
+                        self.assertEqual(response.getheader("Allow"), "GET")
+                        self.assertEqual(response.getheader("Content-Type"), "application/json")
+                        self.assertGreater(int(response.getheader("Content-Length") or "0"), 0)
+                        if method == "HEAD":
+                            self.assertEqual(body, b"")
+                        else:
+                            self.assertEqual(
+                                json.loads(body)["error"]["code"],
+                                "method_not_allowed",
+                            )
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
 
     def test_context_package_generation_error_is_bounded_and_path_free(self):
         with tempfile.TemporaryDirectory() as tmpdir:

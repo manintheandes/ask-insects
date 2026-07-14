@@ -6,6 +6,7 @@ from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, replace
 import fcntl
 import hashlib
+from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -119,13 +120,25 @@ def bounded_request_limit(value: object, *, default: int, maximum: int) -> int:
 class Response:
     status: int
     payload: dict[str, object]
+    headers: tuple[tuple[str, str], ...] = ()
 
 
-def json_response(status: int, payload: dict[str, object]) -> Response:
-    return Response(status=status, payload=payload)
+def json_response(
+    status: int,
+    payload: dict[str, object],
+    *,
+    headers: tuple[tuple[str, str], ...] = (),
+) -> Response:
+    return Response(status=status, payload=payload, headers=headers)
 
 
-def evidence_package_error(status: int, code: str, message: str) -> Response:
+def evidence_package_error(
+    status: int,
+    code: str,
+    message: str,
+    *,
+    headers: tuple[tuple[str, str], ...] = (),
+) -> Response:
     return json_response(
         status,
         {
@@ -135,6 +148,7 @@ def evidence_package_error(status: int, code: str, message: str) -> Response:
                 "message": message,
             },
         },
+        headers=headers,
     )
 
 
@@ -4305,6 +4319,7 @@ def dispatch_request(
                     405,
                     "method_not_allowed",
                     "The generic public evidence package is available only through GET.",
+                    headers=(("Allow", "GET"),),
                 )
             if has_query or payload is not None:
                 return evidence_package_error(
@@ -4788,16 +4803,43 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
             raise ValueError("request JSON must be an object")
         return payload
 
-    def _send(self, response: Response) -> None:
+    def _send(self, response: Response, *, include_body: bool = True) -> None:
         body = json.dumps(response.payload, sort_keys=True).encode("utf-8")
         self.send_response(response.status)
         self.send_header("Content-Type", "application/json")
+        for name, value in response.headers:
+            self.send_header(name, value)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Connection", "close")
         self.end_headers()
-        self.wfile.write(body)
+        if include_body:
+            self.wfile.write(body)
         self.wfile.flush()
         self.close_connection = True
+
+    def send_error(
+        self,
+        code: int,
+        message: str | None = None,
+        explain: str | None = None,
+    ) -> None:
+        if (
+            code == HTTPStatus.NOT_IMPLEMENTED
+            and getattr(self, "path", "").split("?", 1)[0] == "/context-package"
+        ):
+            method = str(getattr(self, "command", ""))
+            payload = {} if self._request_declares_body() else None
+            response = dispatch_request(
+                method,
+                self.path,
+                payload,
+                headers=self.headers,
+                artifact_dir=self.artifact_dir,
+                token=self.token,
+            )
+            self._send(response, include_body=method != "HEAD")
+            return
+        super().send_error(code, message, explain)
 
     def _request_declares_body(self) -> bool:
         content_length = self.headers.get("Content-Length")

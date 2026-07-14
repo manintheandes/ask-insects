@@ -119,7 +119,9 @@ class HostedCliTests(unittest.TestCase):
 
         with patch("askinsects.cli.load_config") as load_config, patch(
             "askinsects.cli.hosted_request", fake_request
-        ), patch("askinsects.cli.build_context_package") as local_build:
+        ), patch("askinsects.cli.build_context_package") as local_build, patch(
+            "askinsects.cli.validate_context_package"
+        ) as validate_package:
             load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
             code, output = self.run_cli("context-package")
 
@@ -129,6 +131,7 @@ class HostedCliTests(unittest.TestCase):
             ("https://ask-insects.example", "GET", "/context-package", None, 120),
         )
         local_build.assert_not_called()
+        validate_package.assert_called_once()
         payload = json.loads(output)
         self.assertEqual(payload["schema_version"], "ask-insects-evidence-package.v2")
         self.assertEqual(payload["contexts"][0]["endpoint_family"], "treated_area_occupancy")
@@ -179,6 +182,68 @@ class HostedCliTests(unittest.TestCase):
             json.loads(output)["error"]["code"],
             "evidence_package_generation_failed",
         )
+
+    def test_context_package_hosted_failure_is_rebuilt_without_untrusted_error_text(self):
+        leaked = "/Users/josh/private/source.json Authorization: Bearer secret-token " + "x" * 5000
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            return {
+                "ok": False,
+                "error": {
+                    "code": "evidence_package_generation_failed",
+                    "message": leaked,
+                    "debug": leaked,
+                },
+            }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", fake_request
+        ), patch("askinsects.cli.build_context_package") as local_build:
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli("context-package")
+
+        self.assertEqual(code, 2)
+        local_build.assert_not_called()
+        self.assertEqual(
+            json.loads(output),
+            {
+                "ok": False,
+                "error": {
+                    "code": "evidence_package_generation_failed",
+                    "message": "The generic public evidence package could not be generated.",
+                },
+            },
+        )
+        self.assertLess(len(output), 256)
+        self.assertNotIn(leaked, output)
+        self.assertNotIn("/Users/josh", output)
+        self.assertNotIn("secret-token", output)
+
+    def test_context_package_rejects_invalid_hosted_success_without_echoing_it(self):
+        leaked = "/Users/josh/private/package.json Authorization: Bearer secret-token"
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            return {
+                "ok": True,
+                "schema_version": "ask-insects-evidence-package.v2",
+                "objective": leaked,
+            }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", fake_request
+        ), patch(
+            "askinsects.cli.validate_context_package",
+            side_effect=ValueError(leaked),
+        ):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli("context-package")
+
+        self.assertEqual(code, 2)
+        payload = json.loads(output)
+        self.assertEqual(payload["error"]["code"], "evidence_package_invalid")
+        self.assertLess(len(output), 256)
+        self.assertNotIn("/Users/josh", output)
+        self.assertNotIn("secret-token", output)
 
     def test_context_package_rejects_a_legacy_hosted_success_without_local_fallback(self):
         calls = []

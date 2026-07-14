@@ -7,7 +7,11 @@ import sqlite3
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
-from .context_package import PACKAGE_SCHEMA_VERSION, build_context_package
+from .context_package import (
+    PACKAGE_SCHEMA_VERSION,
+    build_context_package,
+    validate_context_package,
+)
 from .hosted import CONFIG_PATH as HOSTED_CONFIG_PATH
 from .hosted import HostedConfig, hosted_request, load_config, save_config
 from .sources.extracted_facts import DEFAULT_MAX_SUPPLEMENT_BYTES
@@ -32,6 +36,14 @@ def evidence_package_error(code: str, message: str) -> dict[str, object]:
     }
 
 
+HOSTED_EVIDENCE_ERROR_MESSAGES = {
+    "evidence_package_unavailable": "The generic public evidence package is unavailable.",
+    "evidence_package_generation_failed": (
+        "The generic public evidence package could not be generated."
+    ),
+}
+
+
 def hosted_evidence_package() -> dict[str, object]:
     try:
         payload = hosted_request(
@@ -45,10 +57,27 @@ def hosted_evidence_package() -> dict[str, object]:
             "evidence_package_request_failed",
             "The generic public evidence package could not be fetched from the hosted source plane.",
         )
-    if payload.get("ok") and payload.get("schema_version") != PACKAGE_SCHEMA_VERSION:
+    if payload.get("ok") is not True:
+        error = payload.get("error")
+        code = error.get("code") if isinstance(error, dict) else None
+        message = HOSTED_EVIDENCE_ERROR_MESSAGES.get(str(code))
+        if message is not None:
+            return evidence_package_error(str(code), message)
+        return evidence_package_error(
+            "evidence_package_request_failed",
+            "The generic public evidence package could not be fetched from the hosted source plane.",
+        )
+    if payload.get("schema_version") != PACKAGE_SCHEMA_VERSION:
         return evidence_package_error(
             "evidence_package_schema_mismatch",
             f"Ask Insects did not return {PACKAGE_SCHEMA_VERSION}.",
+        )
+    try:
+        validate_context_package(payload)
+    except Exception:
+        return evidence_package_error(
+            "evidence_package_invalid",
+            "The hosted source plane returned an invalid generic public evidence package.",
         )
     return payload
 
