@@ -98,6 +98,10 @@ def hosted_request(
             result = json.loads(detail)
         except json.JSONDecodeError:
             result = {"ok": False, "error": detail}
+        if isinstance(result, dict):
+            result = dict(result)
+            result["ok"] = False
+            result.setdefault("error", f"hosted Ask Insects returned HTTP {exc.code}")
     if not isinstance(result, dict):
         return {"ok": False, "error": "hosted Ask Insects returned non-object JSON"}
     return result

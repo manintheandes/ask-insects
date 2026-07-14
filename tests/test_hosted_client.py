@@ -118,6 +118,35 @@ class HostedClientTests(unittest.TestCase):
                 max_response_bytes=16,
             )
 
+    def test_hosted_request_never_treats_an_http_error_body_as_success(self):
+        claimed_success = json.dumps(
+            {
+                "ok": True,
+                "schema_version": "ask-insects-evidence-package.v2",
+                "content_sha256": "a" * 64,
+            }
+        ).encode("utf-8")
+
+        def http_error_with_success_body(request, timeout):
+            raise HTTPError(
+                request.full_url,
+                500,
+                "failure",
+                {"Content-Length": str(len(claimed_success))},
+                io.BytesIO(claimed_success),
+            )
+
+        payload = hosted_request(
+            HostedConfig(url="https://ask-insects.example", token="secret"),
+            "GET",
+            "/context-package",
+            urlopen_fn=http_error_with_success_body,
+            max_response_bytes=1024,
+        )
+
+        self.assertFalse(payload["ok"])
+        self.assertIn("error", payload)
+
 
 if __name__ == "__main__":
     unittest.main()
