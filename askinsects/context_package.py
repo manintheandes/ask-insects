@@ -11,11 +11,24 @@ from typing import Any
 from .builder import DEFAULT_ARTIFACT_DIR
 
 
-PACKAGE_SCHEMA_VERSION = "ask-insects-context-package.v1"
-CONFIG_SCHEMA_VERSION = "ask-insects-context-package-config.v1"
+PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v2"
+CONFIG_SCHEMA_VERSION = "ask-insects-evidence-package-config.v2"
+ELIGIBILITY_RULESET_VERSION = "direct-semantic-evidence.v1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONTEXT_CONFIG = REPO_ROOT / "config/ask-monarch-context-package.json"
+DEFAULT_CONTEXT_CONFIG = REPO_ROOT / "config/insect-evidence-package.json"
 MAX_SELECTOR_LIMIT = 25
+CONTEXT_CONFIG_FIELDS = {
+    "id",
+    "endpoint_family",
+    "exposure_routes",
+    "species_ids",
+    "required_domains",
+    "measures",
+    "does_not_establish",
+    "plausible_explanations",
+    "discriminating_evidence",
+    "selectors",
+}
 PRIVATE_SOURCE_MARKERS = (
     "gs://monarch-videos-new",
     "/ask-monarch/",
@@ -78,16 +91,17 @@ def _validate_config(config: dict[str, object]) -> None:
     for context_index, context in enumerate(contexts):
         context_id = _require_string(context.get("id"), f"contexts/{context_index}/id")
         context_ids.append(context_id)
+        unexpected_fields = set(context) - CONTEXT_CONFIG_FIELDS
+        if unexpected_fields:
+            raise ValueError(
+                f"context {context_id} contains unsupported fields: {sorted(unexpected_fields)}"
+            )
+        missing_fields = CONTEXT_CONFIG_FIELDS - set(context)
+        if missing_fields:
+            raise ValueError(f"context {context_id} is missing fields: {sorted(missing_fields)}")
+        _require_string(context.get("endpoint_family"), f"context {context_id} endpoint_family")
+        _require_string_list(context.get("exposure_routes"), f"context {context_id} exposure_routes")
         _require_string_list(context.get("species_ids"), f"context {context_id} species_ids")
-        _require_string_list(
-            context.get("private_assay_families"),
-            f"context {context_id} private_assay_families",
-        )
-        _require_string_list(
-            context.get("private_assay_modes", []),
-            f"context {context_id} private_assay_modes",
-            allow_empty=True,
-        )
         required_domains = set(
             _require_string_list(context.get("required_domains"), f"context {context_id} required_domains")
         )
@@ -256,7 +270,7 @@ def _context_export(context: dict[str, object], *, index: int, config: dict[str,
     exported = {key: deepcopy(value) for key, value in context.items() if key != "selectors"}
     exported["provenance"] = {
         "source_id": "ask_insects_context_config",
-        "locator": f"config/ask-monarch-context-package.json#contexts/{index}",
+        "locator": f"config/insect-evidence-package.json#contexts/{index}",
         "retrieved_at": f"{last_reviewed}T00:00:00Z",
         "license": "Repository interpretation policy",
     }

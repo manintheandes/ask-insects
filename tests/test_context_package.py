@@ -6,6 +6,7 @@ from pathlib import Path
 from askinsects.context_package import (
     DEFAULT_CONTEXT_CONFIG,
     build_context_package,
+    load_context_config,
     validate_context_package,
 )
 from askinsects.index import SourceIndex
@@ -40,9 +41,53 @@ def record(
 
 
 class ContextPackageTests(unittest.TestCase):
-    def test_default_config_path_is_independent_of_launch_directory(self):
+    def test_default_config_uses_generic_v2_contract(self):
         self.assertTrue(DEFAULT_CONTEXT_CONFIG.is_absolute())
+        self.assertEqual(DEFAULT_CONTEXT_CONFIG.name, "insect-evidence-package.json")
         self.assertTrue(DEFAULT_CONTEXT_CONFIG.is_file())
+        config = load_context_config()
+
+        self.assertEqual(
+            config["schema_version"],
+            "ask-insects-evidence-package-config.v2",
+        )
+        contexts = config["contexts"]
+        self.assertEqual(
+            [context["id"] for context in contexts],
+            [
+                "treated_area_contact_avoidance",
+                "treated_area_noncontact_avoidance",
+                "bounded_choice_orientation",
+                "oviposition_choice",
+                "human_landing_response",
+                "spatial_behavior",
+                "post_exposure_behavior",
+            ],
+        )
+        expected_fields = {
+            "id",
+            "endpoint_family",
+            "exposure_routes",
+            "species_ids",
+            "required_domains",
+            "measures",
+            "does_not_establish",
+            "plausible_explanations",
+            "discriminating_evidence",
+            "selectors",
+        }
+        for context in contexts:
+            self.assertEqual(set(context), expected_fields)
+
+        by_id = {context["id"]: context for context in contexts}
+        self.assertEqual(
+            by_id["treated_area_contact_avoidance"]["exposure_routes"],
+            ["contact"],
+        )
+        self.assertEqual(
+            by_id["treated_area_noncontact_avoidance"]["exposure_routes"],
+            ["non_contact"],
+        )
 
     def setUp(self):
         self.tempdir = tempfile.TemporaryDirectory()
@@ -105,17 +150,17 @@ class ContextPackageTests(unittest.TestCase):
         self.config_path.write_text(
             json.dumps(
                 {
-                    "schema_version": "ask-insects-context-package-config.v1",
+                    "schema_version": "ask-insects-evidence-package-config.v2",
                     "package_version": "2026-07-14.1",
                     "last_reviewed": "2026-07-14",
                     "objective": "Provide public context for private interpretation.",
                     "knowledge_domains": ["behavior"],
                     "contexts": [
                         {
-                            "id": "contact_no_contact",
+                            "id": "treated_area_contact_avoidance",
+                            "endpoint_family": "treated_area_occupancy",
+                            "exposure_routes": ["contact"],
                             "species_ids": ["drosophila_suzukii"],
-                            "private_assay_families": ["contact_no_contact"],
-                            "private_assay_modes": ["contact", "non_contact"],
                             "required_domains": ["behavior"],
                             "measures": ["time or occupancy relative to a treated region"],
                             "does_not_establish": ["a proven receptor mechanism"],
@@ -147,6 +192,26 @@ class ContextPackageTests(unittest.TestCase):
             config_path=self.config_path,
             generated_at=generated_at,
         )
+
+    def test_loader_accepts_generic_context_fields(self):
+        config = load_context_config(self.config_path)
+
+        context = config["contexts"][0]
+        self.assertEqual(context["endpoint_family"], "treated_area_occupancy")
+        self.assertEqual(context["exposure_routes"], ["contact"])
+
+    def test_loader_rejects_private_assay_fields(self):
+        config = json.loads(self.config_path.read_text(encoding="utf-8"))
+
+        for field in ("private_assay_families", "private_assay_modes"):
+            with self.subTest(field=field):
+                legacy_config = json.loads(json.dumps(config))
+                legacy_config["contexts"][0][field] = ["private_value"]
+                path = self.root / f"{field}.json"
+                path.write_text(json.dumps(legacy_config), encoding="utf-8")
+
+                with self.assertRaisesRegex(ValueError, field):
+                    load_context_config(path)
 
     def test_package_selects_only_exact_species_and_respects_limit(self):
         package = self.build("2026-07-14T01:00:00Z")
