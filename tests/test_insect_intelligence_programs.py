@@ -55,6 +55,22 @@ INDEPENDENT_PUBLIC_OBJECTIVE = (
 
 
 class InsectIntelligenceProgramTests(unittest.TestCase):
+    @staticmethod
+    def _resolve_jsonpath(root: object, expression: str) -> object:
+        if not expression.startswith("$"):
+            raise AssertionError(f"not a JSONPath expression: {expression}")
+        current = root
+        offset = 1
+        token_pattern = re.compile(r"\.([A-Za-z_][A-Za-z0-9_]*)|\[(\d+)\]")
+        while offset < len(expression):
+            match = token_pattern.match(expression, offset)
+            if match is None:
+                raise AssertionError(f"unsupported JSONPath token: {expression[offset:]}")
+            key, index = match.groups()
+            current = current[int(index)] if index is not None else current[key]
+            offset = match.end()
+        return current
+
     def test_owned_public_product_surfaces_are_consumer_independent(self):
         for relative_path in PUBLIC_PRODUCT_SURFACES:
             text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
@@ -133,6 +149,17 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertIn("knowledge_gap", atom_types)
         self.assertIn("readiness_gap", atom_types)
         self.assertTrue(all(record.provenance.locator.startswith("config/insect-intelligence-programs.json#") for record in records))
+
+    def test_every_program_record_locator_resolves_to_one_source_value(self):
+        ledger = load_program_ledger(DEFAULT_PROGRAM_LEDGER)
+        records = build_insect_intelligence_records(retrieved_at=RETRIEVED_AT)
+
+        for record in records:
+            with self.subTest(record_id=record.record_id):
+                fragment = record.provenance.locator.split("#", 1)[1]
+                self.assertTrue(fragment.startswith("jsonpath="))
+                resolved = self._resolve_jsonpath(ledger, fragment.removeprefix("jsonpath="))
+                self.assertIsNot(resolved, ledger)
 
     def test_ingest_skips_the_full_text_index_used_by_large_evidence_lanes(self):
         calls: list[dict[str, object]] = []

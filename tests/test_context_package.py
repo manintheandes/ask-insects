@@ -8,6 +8,9 @@ from unittest.mock import patch
 from askinsects import context_package as context_package_module
 from askinsects.context_package import (
     DEFAULT_CONTEXT_CONFIG,
+    DEFAULT_PROGRAM_CONFIG,
+    PUBLIC_CONTEXT_CONFIG_URL,
+    PUBLIC_PROGRAM_CONFIG_URL,
     build_context_package,
     canonical_package_hash,
     load_context_config,
@@ -125,6 +128,10 @@ CONTEXT_REQUIRED_TERM_GROUPS = {
         ],
     ],
 }
+TEST_CONTEXT_CONFIG_URL = (
+    "https://raw.githubusercontent.com/example/ask-insects/"
+    f"{'1' * 40}/tests/context-config.json"
+)
 
 
 def record(
@@ -175,7 +182,7 @@ class ContextPackageTests(unittest.TestCase):
             config["schema_version"],
             "ask-insects-evidence-package-config.v2",
         )
-        self.assertEqual(config["package_version"], "2026-07-14.5")
+        self.assertEqual(config["package_version"], "2026-07-14.6")
         contexts = config["contexts"]
         self.assertEqual(
             [context["id"] for context in contexts],
@@ -398,24 +405,24 @@ class ContextPackageTests(unittest.TestCase):
     def build(self, generated_at: str, *, sync_status: bool = True):
         if sync_status:
             self._sync_status_record_count()
-        config = json.loads(self.config_path.read_text(encoding="utf-8"))
-        with patch("askinsects.context_package.load_context_config", return_value=config):
-            return build_context_package(
-                artifact_dir=self.artifact_dir,
-                config_path=self.config_path,
-                generated_at=generated_at,
-            )
+        return build_context_package(
+            artifact_dir=self.artifact_dir,
+            config_path=self.config_path,
+            context_config_source_url=TEST_CONTEXT_CONFIG_URL,
+            context_config_sha256=hashlib.sha256(self.config_path.read_bytes()).hexdigest(),
+            generated_at=generated_at,
+        )
 
     def build_with_contexts(self, contexts: list[dict], generated_at: str = "2026-07-14T01:00:00Z"):
         self._sync_status_record_count()
-        config = json.loads(self.config_path.read_text(encoding="utf-8"))
+        original = self.config_path.read_bytes()
+        config = json.loads(original)
         config["contexts"] = contexts
-        with patch("askinsects.context_package.load_context_config", return_value=config):
-            return build_context_package(
-                artifact_dir=self.artifact_dir,
-                config_path=self.config_path,
-                generated_at=generated_at,
-            )
+        self.config_path.write_text(json.dumps(config), encoding="utf-8")
+        try:
+            return self.build(generated_at, sync_status=False)
+        finally:
+            self.config_path.write_bytes(original)
 
     @staticmethod
     def context(context_id: str, species_ids: list[str], selectors: list[dict]) -> dict:
@@ -866,6 +873,8 @@ class ContextPackageTests(unittest.TestCase):
         package = build_context_package(
             artifact_dir=self.artifact_dir,
             config_path=self.config_path,
+            context_config_source_url=TEST_CONTEXT_CONFIG_URL,
+            context_config_sha256=hashlib.sha256(self.config_path.read_bytes()).hexdigest(),
             program_config_path=(
                 Path(__file__).resolve().parents[1]
                 / "config"
@@ -886,6 +895,39 @@ class ContextPackageTests(unittest.TestCase):
             "protect people and crops without killing insects.",
         )
         self.assertNotIn("monarch", serialized.casefold())
+        program_source = package["configuration_sources"]["program_config"]
+        self.assertEqual(
+            program_source["sha256"],
+            hashlib.sha256(
+                (
+                    Path(__file__).resolve().parents[1]
+                    / "config"
+                    / "insect-intelligence-programs.json"
+                ).read_bytes()
+            ).hexdigest(),
+        )
+        self.assertTrue(
+            all(
+                record["provenance"]["locator"].startswith(
+                    f"{program_source['source_url']}#jsonpath=$"
+                )
+                for record in package["program_records"]
+            )
+        )
+
+    def test_builder_rejects_even_one_byte_of_config_drift(self):
+        self._sync_status_record_count()
+        expected_sha256 = hashlib.sha256(self.config_path.read_bytes()).hexdigest()
+        self.config_path.write_bytes(self.config_path.read_bytes() + b"\n")
+
+        with self.assertRaisesRegex(ValueError, "context config SHA-256"):
+            build_context_package(
+                artifact_dir=self.artifact_dir,
+                config_path=self.config_path,
+                context_config_source_url=TEST_CONTEXT_CONFIG_URL,
+                context_config_sha256=expected_sha256,
+                generated_at="2026-07-14T01:00:00Z",
+            )
 
     def test_published_package_loader_checks_raw_hash_and_contract(self):
         package = self.build("2026-07-14T01:00:00Z")
@@ -1207,6 +1249,69 @@ class ContextPackageTests(unittest.TestCase):
                     eligibility["taxon"]["basis"][0]["matched_term"],
                     {"Aedes", "mosquito"},
                 )
+
+    def test_parasitoid_choice_is_not_published_as_swd_choice(self):
+        record_id = "swd:openalex_literature:openalex:W4399796030"
+        self.index.upsert_records(
+            [
+                record(
+                    record_id,
+                    source="parasitoid_review_case",
+                    species="Drosophila suzukii",
+                    title=(
+                        "Foraging behavior of Ganaspis brasiliensis in response to "
+                        "temporal dynamics of volatile release by the fruit-Drosophila "
+                        "suzukii complex"
+                    ),
+                    text=(
+                        "The results showed a choice made by Ganaspis brasiliensis females "
+                        "in a two-choice olfactometer using Drosophila suzukii-infested fruit."
+                    ),
+                    payload={
+                        "title": (
+                            "Foraging behavior of Ganaspis brasiliensis in response to "
+                            "temporal dynamics of volatile release by the fruit-Drosophila "
+                            "suzukii complex"
+                        ),
+                        "abstract": (
+                            "The results showed a choice made by Ganaspis brasiliensis females "
+                            "in a two-choice olfactometer using Drosophila suzukii-infested fruit."
+                        ),
+                    },
+                )
+            ]
+        )
+        context = self.context(
+            "bounded_choice_orientation",
+            ["drosophila_suzukii"],
+            [
+                self.selector(
+                    "choice_swd_subject_role",
+                    "drosophila_suzukii",
+                    "parasitoid_review_case",
+                    query_any=["choice", "olfactometer"],
+                    context_required_term_groups=CONTEXT_REQUIRED_TERM_GROUPS[
+                        "bounded_choice_orientation"
+                    ],
+                    taxon_field_paths=["payload.title"],
+                    context_field_paths=["payload.abstract"],
+                )
+            ],
+        )
+
+        package = self.build_with_contexts([context])
+
+        self.assertNotIn(
+            record_id,
+            {item["record_id"] for item in package["evidence_records"]},
+        )
+        receipt = package["selector_results"][0]
+        self.assertEqual(receipt["candidate_count"], 1)
+        self.assertEqual(receipt["eligible_count"], 0)
+        self.assertEqual(
+            receipt["rejection_counts"],
+            {"taxon_role_not_directly_confirmed": 1},
+        )
 
     def test_derived_fact_uses_parent_taxon_and_current_context(self):
         self.index.upsert_records(
@@ -2142,6 +2247,7 @@ class ContextPackageTests(unittest.TestCase):
                 "generated_at",
                 "objective",
                 "validation_contract",
+                "configuration_sources",
                 "knowledge_domains",
                 "upstream_snapshot",
                 "contexts",
@@ -2189,9 +2295,7 @@ class ContextPackageTests(unittest.TestCase):
         )
         self.assertEqual(
             package["program_records"][0]["provenance"]["locator"],
-            "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-            "03684f235f87dc4299a18136c7acbac6cd821d12/"
-            "config/insect-intelligence-programs.json",
+            "https://example.org/records/program:domain:swd:behavior",
         )
         self.assertNotIn("ledger_path", package["program_records"][0]["payload"])
 
@@ -2617,7 +2721,6 @@ class ContextPackageTests(unittest.TestCase):
 
     def test_builder_uses_bounded_read_only_database_checks_not_integrity_scans(self):
         self._sync_status_record_count()
-        config = json.loads(self.config_path.read_text(encoding="utf-8"))
         real_connect = context_package_module.sqlite3.connect
         connect_calls = []
         statements: list[str] = []
@@ -2629,15 +2732,16 @@ class ContextPackageTests(unittest.TestCase):
             return connection
 
         with patch(
-            "askinsects.context_package.load_context_config",
-            return_value=config,
-        ), patch(
             "askinsects.context_package.sqlite3.connect",
             side_effect=tracked_connect,
         ):
             build_context_package(
                 artifact_dir=self.artifact_dir,
                 config_path=self.config_path,
+                context_config_source_url=TEST_CONTEXT_CONFIG_URL,
+                context_config_sha256=hashlib.sha256(
+                    self.config_path.read_bytes()
+                ).hexdigest(),
                 generated_at="2026-07-14T01:00:00Z",
             )
 
@@ -3222,14 +3326,43 @@ class ContextPackageTests(unittest.TestCase):
                     context_package_module._public_provenance(candidate)
 
     def test_config_provenance_is_pinned_to_immutable_version_commit(self):
-        package = self.build("2026-07-14T01:00:00Z")
-        expected_prefix = (
-            "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-            "03684f235f87dc4299a18136c7acbac6cd821d12/config/"
+        self._sync_status_record_count()
+        package = build_context_package(
+            artifact_dir=self.artifact_dir,
+            program_config_path=DEFAULT_PROGRAM_CONFIG,
+            generated_at="2026-07-14T01:00:00Z",
         )
-        locators = [record["provenance"]["locator"] for record in package["program_records"]]
-        locators.extend(context["provenance"]["locator"] for context in package["contexts"])
-        self.assertTrue(all(locator.startswith(expected_prefix) for locator in locators))
+        self.assertEqual(
+            package["configuration_sources"]["context_config"]["source_url"],
+            PUBLIC_CONTEXT_CONFIG_URL,
+        )
+        self.assertEqual(
+            package["configuration_sources"]["program_config"]["source_url"],
+            PUBLIC_PROGRAM_CONFIG_URL,
+        )
+        self.assertTrue(
+            all(
+                record["provenance"]["locator"].startswith(
+                    f"{PUBLIC_PROGRAM_CONFIG_URL}#jsonpath=$"
+                )
+                for record in package["program_records"]
+            )
+        )
+        self.assertTrue(
+            all(
+                context["provenance"]["locator"].startswith(
+                    f"{PUBLIC_CONTEXT_CONFIG_URL}#jsonpath=$.contexts["
+                )
+                for context in package["contexts"]
+            )
+        )
+        locators = [
+            record["provenance"]["locator"]
+            for record in package["program_records"]
+        ]
+        locators.extend(
+            context["provenance"]["locator"] for context in package["contexts"]
+        )
         self.assertNotIn("blob/main", json.dumps(locators))
 
         mutable = json.loads(json.dumps(package))

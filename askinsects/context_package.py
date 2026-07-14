@@ -19,7 +19,7 @@ from .sources.insect_intelligence_programs import (
 )
 
 
-PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v2"
+PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v3"
 CONFIG_SCHEMA_VERSION = "ask-insects-evidence-package-config.v2"
 ELIGIBILITY_RULESET_VERSION = "direct-semantic-evidence.v2"
 VALIDATION_CONTRACT = {
@@ -36,10 +36,10 @@ DEFAULT_PUBLISHED_PACKAGE = (
     REPO_ROOT
     / "public"
     / "evidence-packages"
-    / "ask-insects-evidence-package-2026-07-14.5.json"
+    / "ask-insects-evidence-package-2026-07-14.6.json"
 )
 DEFAULT_PUBLISHED_PACKAGE_SHA256 = (
-    "a46cad1b935b6f54ddf279339e4c2b7bd583de7a1f039b51ebed1e63b2a50881"
+    "PENDING_CORRECTED_RELEASE"
 )
 MAX_SELECTOR_LIMIT = 25
 MAX_SELECTOR_CANDIDATE_FRONTIER = 2_000
@@ -55,13 +55,19 @@ MAX_LIST_ITEMS = 10_000
 MAX_NESTING_DEPTH = 20
 PUBLIC_PROGRAM_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "03684f235f87dc4299a18136c7acbac6cd821d12/"
+    "b642de22e1a282ac25fe3125e4987d248d7cf4ac/"
     "config/insect-intelligence-programs.json"
 )
 PUBLIC_CONTEXT_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "03684f235f87dc4299a18136c7acbac6cd821d12/"
+    "b642de22e1a282ac25fe3125e4987d248d7cf4ac/"
     "config/insect-evidence-package.json"
+)
+PUBLIC_PROGRAM_CONFIG_SHA256 = (
+    "4952fe18397ffdc62036bdd62d68ffab5eb2b28b85cd1bcc565f539222867138"
+)
+PUBLIC_CONTEXT_CONFIG_SHA256 = (
+    "04e7b7845b338b512f016c8ce02e1791fedc390e39346189bdb7343d55d95438"
 )
 PACKAGE_FIELDS = frozenset(
     {
@@ -71,6 +77,7 @@ PACKAGE_FIELDS = frozenset(
         "generated_at",
         "objective",
         "validation_contract",
+        "configuration_sources",
         "knowledge_domains",
         "upstream_snapshot",
         "contexts",
@@ -81,6 +88,8 @@ PACKAGE_FIELDS = frozenset(
         "content_sha256",
     }
 )
+CONFIGURATION_SOURCES_FIELDS = frozenset({"context_config", "program_config"})
+CONFIGURATION_SOURCE_FIELDS = frozenset({"source_url", "sha256"})
 UPSTREAM_SNAPSHOT_FIELDS = frozenset(
     {
         "source_id",
@@ -215,6 +224,7 @@ RECORD_REQUIREMENT_PATHS = frozenset({"payload.atom_type"})
 ELIGIBILITY_REJECTION_REASONS = frozenset(
     {
         "taxon_not_directly_confirmed",
+        "taxon_role_not_directly_confirmed",
         "context_not_directly_confirmed",
         "upstream_record_missing",
         "trusted_field_missing",
@@ -230,6 +240,9 @@ SAFE_LOCATOR_FRAGMENT_RE = re.compile(
     flags=re.IGNORECASE,
 )
 DOI_RE = re.compile(r"^(?:doi:\s*)?(10\.\d{4,9}/\S+)$", flags=re.IGNORECASE)
+BINOMIAL_NAME_RE = re.compile(
+    r"(?<![A-Za-z])([A-Z][a-z]{2,})\s+([a-z][a-z-]{2,})(?![A-Za-z])"
+)
 NON_HTTPS_AUTHORITY_RE = re.compile(
     r"(?<![A-Za-z0-9+.-])(?!https://)[A-Za-z][A-Za-z0-9+.-]*://",
     flags=re.IGNORECASE,
@@ -515,6 +528,48 @@ def _public_source_base(value: object) -> tuple[str, str | None]:
     return base, _safe_locator_fragment(parsed.fragment)
 
 
+def _require_sha256(value: object, label: str) -> str:
+    digest = _require_string(value, label)
+    if re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+        raise ValueError(f"{label} must be a lowercase SHA-256 digest")
+    return digest
+
+
+def _configuration_binding(
+    path: Path,
+    *,
+    source_url: str | None,
+    expected_sha256: str | None,
+    default_path: Path,
+    default_source_url: str,
+    default_sha256: str,
+    label: str,
+) -> dict[str, str]:
+    path = Path(path)
+    using_default_path = path.resolve() == Path(default_path).resolve()
+    if source_url is None:
+        if not using_default_path:
+            raise ValueError(f"custom {label} requires an explicit public source URL")
+        source_url = default_source_url
+    if expected_sha256 is None:
+        if not using_default_path:
+            raise ValueError(f"custom {label} requires an explicit expected SHA-256")
+        expected_sha256 = default_sha256
+
+    base, fragment = _public_source_base(source_url)
+    if fragment is not None:
+        raise ValueError(f"{label} source URL must not contain a fragment")
+    expected_digest = _require_sha256(expected_sha256, f"{label} expected SHA-256")
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise ValueError(f"{label} is not readable") from exc
+    actual_digest = hashlib.sha256(raw).hexdigest()
+    if actual_digest != expected_digest:
+        raise ValueError(f"{label} SHA-256 does not match its declared public source")
+    return {"source_url": base, "sha256": actual_digest}
+
+
 def _public_provenance(record: dict[str, object]) -> dict[str, object]:
     """Return source id, stable public locator, record id, retrieval time, and license."""
     raw = record.get("provenance")
@@ -565,7 +620,11 @@ def _sanitize_program_payload(value: object) -> object:
     return deepcopy(value)
 
 
-def _public_program_record(record: dict[str, object]) -> dict[str, object]:
+def _public_program_record(
+    record: dict[str, object],
+    *,
+    source_url: str | None = None,
+) -> dict[str, object]:
     payload = record.get("payload")
     if not isinstance(payload, dict):
         raise ValueError(f"program record {record.get('record_id')} payload must be an object")
@@ -573,7 +632,8 @@ def _public_program_record(record: dict[str, object]) -> dict[str, object]:
     provenance = provenance_record.get("provenance")
     if not isinstance(provenance, dict):
         raise ValueError(f"program record {record.get('record_id')} is missing provenance")
-    provenance["source_url"] = PUBLIC_PROGRAM_CONFIG_URL
+    if source_url is not None:
+        provenance["source_url"] = source_url
     return {
         key: deepcopy(record.get(key))
         for key in ("record_id", "lane", "source", "title", "text", "species")
@@ -1096,6 +1156,78 @@ def _direct_assertion(
     return None
 
 
+def _plain_semantic_text(value: object) -> str:
+    without_tags = re.sub(r"<[^>]+>", " ", str(value))
+    return re.sub(r"\s+", " ", without_tags).strip()
+
+
+def _title_confirms_focal_subject(
+    title: str,
+    *,
+    focal_term: str,
+    focal_match: re.Match[str],
+) -> bool:
+    preceding_binomials = [
+        match.group(0)
+        for match in BINOMIAL_NAME_RE.finditer(title)
+        if match.start() < focal_match.start()
+        and match.group(0).casefold() != focal_term.casefold()
+    ]
+    if not preceding_binomials:
+        return True
+
+    normalized = title.casefold()
+    escaped_focal = re.escape(focal_term.casefold())
+    explicit_joint_subject = re.search(
+        r"\b(?:comparison|comparative|compared|between)\b",
+        normalized,
+    )
+    explicit_target = re.search(
+        rf"\b(?:against|effect(?:s)?\s+of\b.{{0,100}}\bon)\s+(?:the\s+)?{escaped_focal}\b",
+        normalized,
+    )
+    return explicit_joint_subject is not None or explicit_target is not None
+
+
+def _focal_taxon_assertion(
+    values: list[dict[str, object]],
+    terms: list[str],
+) -> tuple[dict[str, object] | None, bool]:
+    title_role_failure = False
+    non_title_matches: list[tuple[dict[str, object], str, re.Match[str]]] = []
+    for semantic_value in values:
+        field_path = str(semantic_value.get("field_path") or "")
+        compact = _plain_semantic_text(semantic_value["value"])
+        is_title = field_path.endswith(("title", "display_name"))
+        for term in terms:
+            match = _term_match(compact, term)
+            if match is None:
+                continue
+            if is_title:
+                if _title_confirms_focal_subject(
+                    compact,
+                    focal_term=term,
+                    focal_match=match,
+                ):
+                    return {
+                        "status": "direct_focal_taxon",
+                        "basis": [_assertion_basis(semantic_value, term, match)],
+                    }, False
+                title_role_failure = True
+            else:
+                non_title_matches.append((semantic_value, term, match))
+
+    if title_role_failure:
+        return None, True
+    if non_title_matches:
+        semantic_value, term, match = non_title_matches[0]
+        return {
+            "status": "direct_focal_taxon",
+            "basis": [_assertion_basis(semantic_value, term, match)],
+        }, False
+    return None, False
+
+
 def _assertion_basis(
     semantic_value: dict[str, object], term: str, match: re.Match[str]
 ) -> dict[str, object]:
@@ -1589,8 +1721,10 @@ def _candidate_eligibility(
 
     if not taxon_values:
         return None, "trusted_field_missing"
-    taxon = _direct_assertion(taxon_values, taxon_terms, status="direct_focal_taxon")
+    taxon, taxon_role_failure = _focal_taxon_assertion(taxon_values, taxon_terms)
     if taxon is None:
+        if taxon_role_failure:
+            return None, "taxon_role_not_directly_confirmed"
         return None, "taxon_not_directly_confirmed"
 
     if isinstance(fulltext_config, dict):
@@ -1868,7 +2002,13 @@ def _merge_eligibility(existing: dict[str, object], additional: dict[str, object
     _merge_basis(existing_context["basis"], additional_context["basis"])
 
 
-def _context_export(context: dict[str, object], *, index: int, config: dict[str, object]) -> dict[str, object]:
+def _context_export(
+    context: dict[str, object],
+    *,
+    index: int,
+    config: dict[str, object],
+    source_url: str,
+) -> dict[str, object]:
     last_reviewed = _require_string(config.get("last_reviewed"), "context config last_reviewed")
     exported = {key: deepcopy(value) for key, value in context.items() if key != "selectors"}
     exported["provenance"] = _public_provenance(
@@ -1876,7 +2016,7 @@ def _context_export(context: dict[str, object], *, index: int, config: dict[str,
             "record_id": str(context["id"]),
             "provenance": {
                 "source_id": "ask_insects_context_config",
-                "source_url": PUBLIC_CONTEXT_CONFIG_URL,
+                "source_url": source_url,
                 "locator": f"config/insect-evidence-package.json#jsonpath=$.contexts[{index}]",
                 "retrieved_at": f"{last_reviewed}T00:00:00Z",
                 "license": "Repository interpretation policy",
@@ -1911,11 +2051,38 @@ def build_context_package(
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     config_path: Path = DEFAULT_CONTEXT_CONFIG,
     program_config_path: Path | None = None,
+    context_config_source_url: str | None = None,
+    context_config_sha256: str | None = None,
+    program_config_source_url: str | None = None,
+    program_config_sha256: str | None = None,
     generated_at: str | None = None,
 ) -> dict[str, object]:
     artifact_dir = Path(artifact_dir)
     config_path = Path(config_path)
+    context_config_binding = _configuration_binding(
+        config_path,
+        source_url=context_config_source_url,
+        expected_sha256=context_config_sha256,
+        default_path=DEFAULT_CONTEXT_CONFIG,
+        default_source_url=PUBLIC_CONTEXT_CONFIG_URL,
+        default_sha256=PUBLIC_CONTEXT_CONFIG_SHA256,
+        label="context config",
+    )
     config = load_context_config(config_path)
+    if hashlib.sha256(config_path.read_bytes()).hexdigest() != context_config_binding["sha256"]:
+        raise ValueError("context config changed while the package was being built")
+    program_config_binding: dict[str, str] | None = None
+    if program_config_path is not None:
+        program_config_path = Path(program_config_path)
+        program_config_binding = _configuration_binding(
+            program_config_path,
+            source_url=program_config_source_url,
+            expected_sha256=program_config_sha256,
+            default_path=DEFAULT_PROGRAM_CONFIG,
+            default_source_url=PUBLIC_PROGRAM_CONFIG_URL,
+            default_sha256=PUBLIC_PROGRAM_CONFIG_SHA256,
+            label="program config",
+        )
     status_path = artifact_dir / "source_status.json"
     if not status_path.exists():
         raise ValueError("source_status.json is required to identify the public source snapshot")
@@ -1952,10 +2119,26 @@ def build_context_package(
         raw_program_records = (
             _program_records(conn)
             if program_config_path is None
-            else _program_records_from_config(Path(program_config_path))
+            else _program_records_from_config(program_config_path)
         )
+        if (
+            program_config_path is not None
+            and hashlib.sha256(program_config_path.read_bytes()).hexdigest()
+            != program_config_binding["sha256"]
+        ):
+            raise ValueError("program config changed while the package was being built")
         species_profiles = _species_profiles(raw_program_records)
-        program_records = [_public_program_record(record) for record in raw_program_records]
+        program_records = [
+            _public_program_record(
+                record,
+                source_url=(
+                    program_config_binding["source_url"]
+                    if program_config_binding is not None
+                    else None
+                ),
+            )
+            for record in raw_program_records
+        ]
         contexts = config["contexts"]
         exported_contexts: list[dict[str, object]] = []
         selector_results: list[dict[str, object]] = []
@@ -1968,7 +2151,14 @@ def build_context_package(
             for species_id in context["species_ids"]:
                 if species_id not in species_profiles:
                     raise ValueError(f"context {context_id} names unknown species profile: {species_id}")
-            exported_contexts.append(_context_export(context, index=context_index, config=config))
+            exported_contexts.append(
+                _context_export(
+                    context,
+                    index=context_index,
+                    config=config,
+                    source_url=context_config_binding["source_url"],
+                )
+            )
             for selector in context["selectors"]:
                 species_id = _require_string(selector.get("species_id"), "selector species_id")
                 profile = species_profiles[species_id]
@@ -2061,6 +2251,10 @@ def build_context_package(
         "generated_at": generated_at or utc_now(),
         "objective": config["objective"],
         "validation_contract": deepcopy(VALIDATION_CONTRACT),
+        "configuration_sources": {
+            "context_config": context_config_binding,
+            "program_config": program_config_binding,
+        },
         "knowledge_domains": config["knowledge_domains"],
         "upstream_snapshot": {
             "source_id": "ask_insects_hosted_source_index",
@@ -2095,6 +2289,8 @@ def _validate_public_provenance(
     *,
     expected_source_id: str | None = None,
     expected_locator: str | None = None,
+    expected_locator_base: str | None = None,
+    required_fragment_prefix: str | None = None,
     expected_record_id: str | None = None,
 ) -> None:
     provenance = _require_exact_fields(
@@ -2132,8 +2328,25 @@ def _validate_public_provenance(
         raise ValueError(f"{label} provenance source_id does not match its public source")
     if expected_locator is not None and locator != expected_locator:
         raise ValueError(f"{label} provenance locator does not match its public source")
+    locator_base = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, parsed.query, ""))
+    if expected_locator_base is not None and locator_base != expected_locator_base:
+        raise ValueError(f"{label} provenance locator base does not match its public source")
+    if required_fragment_prefix is not None and not parsed.fragment.startswith(
+        required_fragment_prefix
+    ):
+        raise ValueError(f"{label} provenance locator is not atomic")
     if expected_record_id is not None and index_record_id != expected_record_id:
         raise ValueError(f"{label} provenance index_record_id does not match its record")
+
+
+def _validate_configuration_source(value: object, *, label: str) -> dict[str, str]:
+    source = _require_exact_fields(value, CONFIGURATION_SOURCE_FIELDS, label=label)
+    source_url = _require_string(source.get("source_url"), f"{label} source_url")
+    base, fragment = _public_source_base(source_url)
+    if base != source_url or fragment is not None:
+        raise ValueError(f"{label} source_url must be a canonical public HTTPS URL")
+    sha256 = _require_sha256(source.get("sha256"), f"{label} sha256")
+    return {"source_url": source_url, "sha256": sha256}
 
 
 def _validate_assertion_basis(
@@ -2226,6 +2439,24 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         raise ValueError(f"context package schema_version must be {PACKAGE_SCHEMA_VERSION}")
     if package.get("validation_contract") != VALIDATION_CONTRACT:
         raise ValueError("context package validation_contract is invalid")
+    configuration_sources = _require_exact_fields(
+        package.get("configuration_sources"),
+        CONFIGURATION_SOURCES_FIELDS,
+        label="context package configuration_sources",
+    )
+    context_config_source = _validate_configuration_source(
+        configuration_sources.get("context_config"),
+        label="context package context_config source",
+    )
+    raw_program_config_source = configuration_sources.get("program_config")
+    program_config_source = (
+        None
+        if raw_program_config_source is None
+        else _validate_configuration_source(
+            raw_program_config_source,
+            label="context package program_config source",
+        )
+    )
     _require_string(package.get("package_version"), "context package package_version")
     _require_string(package.get("generated_at"), "context package generated_at")
     _require_string(package.get("objective"), "context package objective")
@@ -2283,12 +2514,18 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             raise ValueError(f"program record {record_id} source is invalid")
         if not isinstance(record.get("payload"), dict):
             raise ValueError(f"program record {record_id} payload must be an object")
+        provenance_kwargs: dict[str, str] = {}
+        if program_config_source is not None:
+            provenance_kwargs = {
+                "expected_locator_base": program_config_source["source_url"],
+                "required_fragment_prefix": "jsonpath=$",
+            }
         _validate_public_provenance(
             record,
             f"program record {record_id}",
             expected_source_id="insect_intelligence_programs",
-            expected_locator=PUBLIC_PROGRAM_CONFIG_URL,
             expected_record_id=record_id,
+            **provenance_kwargs,
         )
     species_profiles = _species_profiles(program_records)
 
@@ -2311,7 +2548,7 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             f"context {context_id}",
             expected_source_id="ask_insects_context_config",
             expected_locator=(
-                f"{PUBLIC_CONTEXT_CONFIG_URL}#jsonpath=$.contexts[{context_index}]"
+                f"{context_config_source['source_url']}#jsonpath=$.contexts[{context_index}]"
             ),
             expected_record_id=context_id,
         )

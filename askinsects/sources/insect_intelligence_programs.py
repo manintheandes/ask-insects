@@ -246,9 +246,21 @@ def _list_text(values: object, *, empty: str = "none") -> str:
 
 
 def _provenance(program_path: Path, fragment: str, retrieved_at: str) -> Provenance:
+    parts = fragment.split("/")
+    if parts == ["portfolio"]:
+        jsonpath = "$.objective"
+    else:
+        jsonpath = "$"
+        for part in parts:
+            if part.isdigit():
+                jsonpath += f"[{part}]"
+            elif re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part):
+                jsonpath += f".{part}"
+            else:
+                raise ValueError(f"unsupported program-ledger locator segment: {part}")
     return Provenance(
         source_id=INSECT_INTELLIGENCE_SOURCE_ID,
-        locator=f"{program_path.as_posix()}#{fragment}",
+        locator=f"{program_path.as_posix()}#jsonpath={jsonpath}",
         retrieved_at=retrieved_at,
         license="Repository program ledger",
     )
