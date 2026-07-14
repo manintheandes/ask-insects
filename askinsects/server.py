@@ -4311,7 +4311,6 @@ def dispatch_request(
     mutation_guard = ExitStack()
     if method == "POST" and path.startswith("/ingest/"):
         mutation_guard.enter_context(ingest_mutation_lock(artifact_dir))
-    index = SourceIndex(artifact_dir / "source_index.sqlite")
     try:
         if path == "/context-package":
             if method != "GET":
@@ -4328,16 +4327,6 @@ def dispatch_request(
                     "The generic public evidence package accepts no request parameters.",
                 )
             try:
-                ready, _ = source_index_readiness(artifact_dir)
-            except Exception:
-                ready = False
-            if not ready:
-                return evidence_package_error(
-                    503,
-                    "evidence_package_unavailable",
-                    "The generic public evidence package is unavailable.",
-                )
-            try:
                 package = load_published_context_package()
                 if (
                     not isinstance(package, dict)
@@ -4352,6 +4341,7 @@ def dispatch_request(
                     "The generic public evidence package could not be generated.",
                 )
             return json_response(200, package)
+        index = SourceIndex(artifact_dir / "source_index.sqlite")
         if method == "GET" and path == "/health":
             return json_response(200, health_payload(artifact_dir))
         if method in {"GET", "POST"} and path in {"/summary", "/ask", "/search", "/sql"}:

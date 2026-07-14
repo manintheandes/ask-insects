@@ -349,42 +349,48 @@ class ServerTests(unittest.TestCase):
                 server.server_close()
                 thread.join(timeout=5)
 
-    def test_context_package_generation_error_is_bounded_and_path_free(self):
+    def test_context_package_static_release_errors_are_bounded_and_path_free(self):
         with tempfile.TemporaryDirectory() as tmpdir:
-            artifact_dir = Path(tmpdir) / "mosquito-v1"
-            build_fixture_index(artifact_dir=artifact_dir)
-            leaked_detail = f"failed at {artifact_dir}/raw/private.json with token secret-token"
-            with mock.patch.object(
-                server_module,
-                "load_published_context_package",
-                side_effect=RuntimeError(leaked_detail),
-            ) as build:
-                response = dispatch_request(
-                    "GET",
-                    "/context-package",
-                    None,
-                    headers={"Authorization": "Bearer secret"},
-                    artifact_dir=artifact_dir,
-                    token="secret",
-                )
+            artifact_dir = Path(tmpdir) / "missing-hosted-index"
+            leaked_detail = f"{artifact_dir}/private/release.json with token secret-token"
+            failures = (
+                ("missing", FileNotFoundError(leaked_detail)),
+                ("corrupt", ValueError(f"artifact hash mismatch at {leaked_detail}")),
+                ("invalid", ValueError(f"invalid package contract at {leaked_detail}")),
+            )
+            for label, failure in failures:
+                with self.subTest(label=label), mock.patch.object(
+                    server_module,
+                    "load_published_context_package",
+                    side_effect=failure,
+                ) as load:
+                    response = dispatch_request(
+                        "GET",
+                        "/context-package",
+                        None,
+                        headers={"Authorization": "Bearer secret"},
+                        artifact_dir=artifact_dir,
+                        token="secret",
+                    )
 
-        self.assertEqual(response.status, 500)
-        self.assertEqual(
-            response.payload,
-            {
-                "ok": False,
-                "error": {
-                    "code": "evidence_package_generation_failed",
-                    "message": "The generic public evidence package could not be generated.",
-                },
-            },
-        )
-        serialized = json.dumps(response.payload, sort_keys=True)
-        self.assertLessEqual(len(serialized), 256)
-        self.assertNotIn(tmpdir, serialized)
-        self.assertNotIn(leaked_detail, serialized)
-        self.assertNotIn("Traceback", serialized)
-        build.assert_called_once_with()
+                self.assertEqual(response.status, 500)
+                self.assertEqual(
+                    response.payload,
+                    {
+                        "ok": False,
+                        "error": {
+                            "code": "evidence_package_generation_failed",
+                            "message": "The generic public evidence package could not be generated.",
+                        },
+                    },
+                )
+                serialized = json.dumps(response.payload, sort_keys=True)
+                self.assertLessEqual(len(serialized), 256)
+                self.assertNotIn(tmpdir, serialized)
+                self.assertNotIn(leaked_detail, serialized)
+                self.assertNotIn("secret-token", serialized)
+                self.assertNotIn("Traceback", serialized)
+                load.assert_called_once_with()
 
     def test_context_package_route_never_serves_a_legacy_v1_build(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -415,33 +421,49 @@ class ServerTests(unittest.TestCase):
         )
         self.assertNotIn("legacy-hash", json.dumps(response.payload, sort_keys=True))
 
-    def test_context_package_missing_index_error_is_bounded_and_path_free(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            artifact_dir = Path(tmpdir) / "missing-hosted-index"
-            response = dispatch_request(
-                "GET",
-                "/context-package",
-                None,
-                headers={"Authorization": "Bearer secret"},
-                artifact_dir=artifact_dir,
-                token="secret",
-            )
-
-        self.assertEqual(response.status, 503)
-        self.assertEqual(
-            response.payload,
-            {
-                "ok": False,
-                "error": {
-                    "code": "evidence_package_unavailable",
-                    "message": "The generic public evidence package is unavailable.",
-                },
-            },
+    def test_context_package_ignores_missing_and_unavailable_live_index(self):
+        expected = generic_evidence_package_v2()
+        cases = (
+            ("missing", None),
+            ("unavailable", b"not a sqlite database"),
         )
-        serialized = json.dumps(response.payload, sort_keys=True)
-        self.assertLessEqual(len(serialized), 256)
-        self.assertNotIn(tmpdir, serialized)
-        self.assertNotIn("source_index.sqlite", serialized)
+        for label, index_bytes in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmpdir:
+                artifact_dir = Path(tmpdir) / "mosquito-v1"
+                artifact_dir.mkdir(parents=True)
+                if index_bytes is not None:
+                    (artifact_dir / "source_index.sqlite").write_bytes(index_bytes)
+                with (
+                    mock.patch.object(
+                        server_module,
+                        "load_published_context_package",
+                        return_value=expected,
+                    ) as load,
+                    mock.patch.object(
+                        server_module,
+                        "source_index_readiness",
+                        side_effect=AssertionError("live index readiness must not be checked"),
+                    ) as readiness,
+                    mock.patch.object(
+                        server_module,
+                        "SourceIndex",
+                        side_effect=AssertionError("live index must not be initialized"),
+                    ) as source_index,
+                ):
+                    response = dispatch_request(
+                        "GET",
+                        "/context-package",
+                        None,
+                        headers={"Authorization": "Bearer secret"},
+                        artifact_dir=artifact_dir,
+                        token="secret",
+                    )
+
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.payload, expected)
+                load.assert_called_once_with()
+                readiness.assert_not_called()
+                source_index.assert_not_called()
 
     def test_context_package_handler_preserves_query_and_body_presence_for_rejection(self):
         cases = (
