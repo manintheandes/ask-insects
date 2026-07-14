@@ -15,6 +15,11 @@ from .sources.literature import abstract_from_inverted_index
 PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v2"
 CONFIG_SCHEMA_VERSION = "ask-insects-evidence-package-config.v2"
 ELIGIBILITY_RULESET_VERSION = "direct-semantic-evidence.v1"
+VALIDATION_CONTRACT = {
+    "producer_linkage": "verified_in_read_only_source_index_during_build",
+    "downstream_validation": "exported_snapshot_internal_consistency_only",
+    "snapshot_authentication": "publisher_pinned_content_sha256",
+}
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTEXT_CONFIG = REPO_ROOT / "config/insect-evidence-package.json"
 MAX_SELECTOR_LIMIT = 25
@@ -140,8 +145,8 @@ def _require_string_list(value: object, label: str, *, allow_empty: bool = False
 
 
 def _require_term_groups(value: object, label: str) -> list[list[str]]:
-    if not isinstance(value, list) or not value:
-        raise ValueError(f"{label} must be a non-empty list of term groups")
+    if not isinstance(value, list) or len(value) < 2:
+        raise ValueError(f"{label} must contain at least two term groups")
     groups = [
         _require_string_list(group, f"{label}/{index}")
         for index, group in enumerate(value)
@@ -149,6 +154,17 @@ def _require_term_groups(value: object, label: str) -> list[list[str]]:
     markers = [canonical_json(group) for group in groups]
     if len(markers) != len(set(markers)):
         raise ValueError(f"{label} must not contain duplicate term groups")
+    normalized_groups = [
+        {
+            re.sub(r"[\s_-]+", " ", term).strip().casefold()
+            for term in group
+        }
+        for group in groups
+    ]
+    for index, normalized_group in enumerate(normalized_groups):
+        prior_terms = set().union(*normalized_groups[:index]) if index else set()
+        if normalized_group.intersection(prior_terms):
+            raise ValueError(f"{label} term groups must be disjoint after normalization")
     return groups
 
 
@@ -295,6 +311,14 @@ def _validate_selector(selector: dict[str, object], *, selector_id: str) -> None
         if parent_record_id_path != parent.get("record_id_path"):
             raise ValueError(
                 f"selector {selector_id} fulltext parent path must match parent_record record_id_path"
+            )
+        if context_paths:
+            raise ValueError(
+                f"selector {selector_id} fulltext_context requires empty context_field_paths"
+            )
+        if prerequisites:
+            raise ValueError(
+                f"selector {selector_id} fulltext_context requires empty context_field_prerequisites"
             )
 
     requirements = selector.get("record_requirements")
@@ -720,6 +744,26 @@ def _candidate_eligibility(
     if not _record_requirements_match(record, selector):
         return None, "record_requirement_not_met"
 
+    fulltext_config = selector.get("fulltext_context")
+    fulltext_unit: dict[str, object] | None = None
+    fulltext_unit_id: str | None = None
+    fulltext_parent_id: str | None = None
+    if isinstance(fulltext_config, dict):
+        unit_ids = _value_at_path(record, str(fulltext_config["unit_id_path"]))
+        linked_parent_ids = _value_at_path(
+            record, str(fulltext_config["parent_record_id_path"])
+        )
+        if len(unit_ids) != 1 or len(linked_parent_ids) != 1:
+            return None, "fulltext_unit_link_invalid"
+        fulltext_unit_id = unit_ids[0]
+        fulltext_parent_id = linked_parent_ids[0]
+        fulltext_unit = _fulltext_unit_by_id(conn, fulltext_unit_id)
+        if (
+            fulltext_unit is None
+            or str(fulltext_unit["record_id"]) != fulltext_parent_id
+        ):
+            return None, "fulltext_unit_link_invalid"
+
     taxon_values = _trusted_semantic_values(
         record,
         [str(path) for path in selector["taxon_field_paths"]],
@@ -755,40 +799,25 @@ def _candidate_eligibility(
     if taxon is None:
         return None, "taxon_not_directly_confirmed"
 
-    context_values = _context_semantic_values(record, selector)
-    fulltext_config = selector.get("fulltext_context")
     if isinstance(fulltext_config, dict):
-        unit_ids = list(
-            dict.fromkeys(
-                _value_at_path(record, str(fulltext_config["unit_id_path"]))
+        assert fulltext_unit is not None
+        assert fulltext_unit_id is not None and fulltext_parent_id is not None
+        context_values: list[dict[str, str]] = []
+        text = re.sub(r"\s+", " ", str(fulltext_unit.get("text") or "")).strip()
+        if text:
+            context_values.append(
+                {
+                    "field_path": str(fulltext_config["text_field_path"]),
+                    "value": text,
+                    "retained_store": "literature_fulltext_units",
+                    "retained_source": str(fulltext_unit.get("source") or ""),
+                    "retained_path": str(fulltext_config["text_field_path"]),
+                    "fulltext_unit_id": str(fulltext_unit_id),
+                    "parent_record_id": str(fulltext_parent_id),
+                }
             )
-        )
-        linked_parent_ids = list(
-            dict.fromkeys(
-                _value_at_path(record, str(fulltext_config["parent_record_id_path"]))
-            )
-        )
-        if unit_ids:
-            if len(unit_ids) != 1 or len(linked_parent_ids) != 1:
-                return None, "fulltext_unit_link_invalid"
-            unit_id = unit_ids[0]
-            parent_id = linked_parent_ids[0]
-            unit = _fulltext_unit_by_id(conn, unit_id)
-            if unit is None or str(unit["record_id"]) != parent_id:
-                return None, "fulltext_unit_link_invalid"
-            text = re.sub(r"\s+", " ", str(unit.get("text") or "")).strip()
-            if text:
-                context_values.append(
-                    {
-                        "field_path": str(fulltext_config["text_field_path"]),
-                        "value": text,
-                        "retained_store": "literature_fulltext_units",
-                        "retained_source": str(unit.get("source") or ""),
-                        "retained_path": str(fulltext_config["text_field_path"]),
-                        "fulltext_unit_id": unit_id,
-                        "parent_record_id": parent_id,
-                    }
-                )
+    else:
+        context_values = _context_semantic_values(record, selector)
     if not context_values:
         return None, "trusted_field_missing"
     context = _required_groups_assertion(
@@ -1017,6 +1046,7 @@ def build_context_package(
         "package_version": config["package_version"],
         "generated_at": generated_at or utc_now(),
         "objective": config["objective"],
+        "validation_contract": deepcopy(VALIDATION_CONTRACT),
         "knowledge_domains": config["knowledge_domains"],
         "upstream_snapshot": {
             "source_id": "ask_insects_hosted_source_index",
@@ -1114,8 +1144,17 @@ def _record_snapshot_matches(
 
 
 def validate_context_package(package: dict[str, object], *, verify_hash: bool = True) -> None:
+    """Validate exported snapshot consistency, not the producer's source database.
+
+    Source-record and fulltext links are re-queried only by build_context_package.
+    Downstream validation checks the exported IDs, receipts, basis data, and
+    internal hash. Authenticating the snapshot requires a publisher-pinned
+    content_sha256 outside this standalone validator.
+    """
     if package.get("schema_version") != PACKAGE_SCHEMA_VERSION:
         raise ValueError(f"context package schema_version must be {PACKAGE_SCHEMA_VERSION}")
+    if package.get("validation_contract") != VALIDATION_CONTRACT:
+        raise ValueError("context package validation_contract is invalid")
     _require_string(package.get("package_version"), "context package package_version")
     domains = set(_require_string_list(package.get("knowledge_domains"), "context package knowledge_domains"))
     program_records = package.get("program_records")
