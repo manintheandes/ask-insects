@@ -27,7 +27,7 @@ The only supported data flow is:
 
 ```text
 public Ask Insects source index
--> generic signed evidence package
+-> generic hash-authenticated evidence package
 -> any downstream consumer
 ```
 
@@ -42,7 +42,7 @@ The public repository owns:
 - generic biological and assay concepts
 - direct-evidence eligibility rules
 - public provenance
-- package schema, validation, and signing
+- package schema, validation, and publisher-pinned hashes
 
 Each consumer owns:
 
@@ -53,17 +53,19 @@ Each consumer owns:
 
 ## Public Contract
 
-The new schema is `ask-insects-evidence-package.v2`. The CLI command and hosted
+The new schema is `ask-insects-evidence-package.v3`. The CLI command and hosted
 endpoint remain `context-package` during migration, but their output is generic.
 The package contains:
 
 - `schema_version`, `package_version`, and `content_sha256`
 - `generated_at` and a source-index snapshot receipt
+- hash-bound context and program configuration sources
 - public knowledge domains
 - generic evidence contexts
 - public insect-program records
 - eligible public evidence records
 - selector receipts and explicit gaps
+- human-reviewed record approvals for each selector
 
 Generic evidence contexts describe observable concepts, not private assay
 names. The initial contexts are:
@@ -112,6 +114,8 @@ common-name alias for the focal taxon. The assertion records:
 For derived facts, the exporter checks both the fact passage and the upstream
 source record. A derived fact is rejected when its upstream paper is about a
 different organism, even if the derived row was stored under the focal species.
+Taxon mentions in titles are also checked for subject role, so a parasitoid
+study that merely names its SWD host is not treated as direct SWD evidence.
 
 ### Context Assertion
 
@@ -131,7 +135,9 @@ Rejected candidates are not silently dropped. Each selector reports counts by
 rejection reason, including:
 
 - `taxon_not_directly_confirmed`
+- `taxon_role_not_directly_confirmed`
 - `context_not_directly_confirmed`
+- `record_not_approved_for_context`
 - `upstream_record_missing`
 - `trusted_field_missing`
 - `public_provenance_missing`
@@ -160,8 +166,11 @@ The validator walks the complete package and rejects:
 - unknown top-level fields
 - strings, arrays, or packages above declared size limits
 
-The canonical SHA-256 excludes only `generated_at`. All scientific content,
-eligibility assertions, selector receipts, and provenance are signed.
+The canonical SHA-256 excludes only `generated_at`. It binds all scientific
+content, eligibility assertions, selector receipts, configuration references,
+and provenance. The separately pinned raw-file hash binds the exact published
+bytes. These hashes provide integrity and publisher-pin authentication, not a
+digital signature.
 
 ## Determinism
 
@@ -179,7 +188,7 @@ surfaces. The generic config becomes `config/insect-evidence-package.json`.
 Active README, source-map, query docs, CLI help, and completion checks describe
 only the generic package.
 
-Downstream consumers must explicitly adopt v2. A v1 consumer receives a schema
+Downstream consumers must explicitly adopt v3. A v1 or v2 consumer receives a schema
 mismatch and keeps its previously verified snapshot. There is no silent schema
 translation.
 
@@ -201,5 +210,5 @@ Tests must prove:
 - the full Ask Insects regression suite and `scripts/verify_complete.py` pass
 
 The hosted release is complete only after the generic package endpoint returns
-v2, its hash matches the deployed source snapshot, and live SWD, Aedes, and DBM
+v3, its hash matches the deployed source snapshot, and live SWD, Aedes, and DBM
 package inspections show direct evidence or explicit honest gaps.

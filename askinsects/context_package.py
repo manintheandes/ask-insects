@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import UTC, datetime
 import hashlib
+from importlib.resources import files as resource_files
 import ipaddress
 import json
 import math
@@ -21,7 +22,7 @@ from .sources.insect_intelligence_programs import (
 
 PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v3"
 CONFIG_SCHEMA_VERSION = "ask-insects-evidence-package-config.v2"
-ELIGIBILITY_RULESET_VERSION = "direct-semantic-evidence.v2"
+ELIGIBILITY_RULESET_VERSION = "direct-semantic-evidence.v3"
 VALIDATION_CONTRACT = {
     "producer_linkage": (
         "status_record_count_selected_rows_and_links_verified_in_read_only_source_index"
@@ -30,16 +31,39 @@ VALIDATION_CONTRACT = {
     "snapshot_authentication": "publisher_pinned_content_sha256",
 }
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CONTEXT_CONFIG = REPO_ROOT / "config/insect-evidence-package.json"
-DEFAULT_PROGRAM_CONFIG = REPO_ROOT / "config/insect-intelligence-programs.json"
-DEFAULT_PUBLISHED_PACKAGE = (
+
+
+def _repository_or_packaged_resource(
+    repository_path: Path,
+    resource_name: str,
+) -> Path:
+    source_checkout = (
+        (REPO_ROOT / "pyproject.toml").is_file()
+        or (REPO_ROOT / "config" / "insect-evidence-package.json").is_file()
+    )
+    if repository_path.is_file() or source_checkout:
+        return repository_path
+    packaged = resource_files("askinsects.resources").joinpath(resource_name)
+    return Path(str(packaged))
+
+
+DEFAULT_CONTEXT_CONFIG = _repository_or_packaged_resource(
+    REPO_ROOT / "config/insect-evidence-package.json",
+    "insect-evidence-package.json",
+)
+DEFAULT_PROGRAM_CONFIG = _repository_or_packaged_resource(
+    REPO_ROOT / "config/insect-intelligence-programs.json",
+    "insect-intelligence-programs.json",
+)
+DEFAULT_PUBLISHED_PACKAGE = _repository_or_packaged_resource(
     REPO_ROOT
     / "public"
     / "evidence-packages"
-    / "ask-insects-evidence-package-2026-07-14.6.json"
+    / "ask-insects-evidence-package-2026-07-14.6.json",
+    "ask-insects-evidence-package-2026-07-14.6.json",
 )
 DEFAULT_PUBLISHED_PACKAGE_SHA256 = (
-    "PENDING_CORRECTED_RELEASE"
+    "5f6c67ac01e37edb93a0022aac83f9d1c3e4c6800968efbb0bcb5ea4f3ae71a8"
 )
 MAX_SELECTOR_LIMIT = 25
 MAX_SELECTOR_CANDIDATE_FRONTIER = 2_000
@@ -55,19 +79,19 @@ MAX_LIST_ITEMS = 10_000
 MAX_NESTING_DEPTH = 20
 PUBLIC_PROGRAM_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "b642de22e1a282ac25fe3125e4987d248d7cf4ac/"
+    "c50c5715739214b59c1138d7b002c8f395be30ee/"
     "config/insect-intelligence-programs.json"
 )
 PUBLIC_CONTEXT_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "b642de22e1a282ac25fe3125e4987d248d7cf4ac/"
+    "c50c5715739214b59c1138d7b002c8f395be30ee/"
     "config/insect-evidence-package.json"
 )
 PUBLIC_PROGRAM_CONFIG_SHA256 = (
     "4952fe18397ffdc62036bdd62d68ffab5eb2b28b85cd1bcc565f539222867138"
 )
 PUBLIC_CONTEXT_CONFIG_SHA256 = (
-    "04e7b7845b338b512f016c8ce02e1791fedc390e39346189bdb7343d55d95438"
+    "86d6c22824472900cd5777a5f164faf2f730523871e16e7a686dad60decde487"
 )
 PACKAGE_FIELDS = frozenset(
     {
@@ -125,6 +149,7 @@ SELECTOR_RESULT_FIELDS = frozenset(
         "parent_record",
         "fulltext_context",
         "record_requirements",
+        "approved_record_ids",
         "limit",
         "required",
         "candidate_count",
@@ -185,7 +210,12 @@ SELECTOR_REQUIRED_FIELDS = frozenset(
     }
 )
 SELECTOR_OPTIONAL_FIELDS = frozenset(
-    {"parent_record", "fulltext_context", "record_requirements"}
+    {
+        "parent_record",
+        "fulltext_context",
+        "record_requirements",
+        "approved_record_ids",
+    }
 )
 PARENT_RECORD_FIELDS = frozenset({"record_id_path", "taxon_field_paths"})
 FULLTEXT_CONTEXT_FIELDS = frozenset(
@@ -230,6 +260,7 @@ ELIGIBILITY_REJECTION_REASONS = frozenset(
         "trusted_field_missing",
         "fulltext_unit_link_invalid",
         "record_requirement_not_met",
+        "record_not_approved_for_context",
         "public_provenance_missing",
         "invalid_candidate_shape",
         "unsafe_export_boundary",
@@ -941,6 +972,14 @@ def _validate_selector(selector: dict[str, object], *, selector_id: str) -> None
             )
             _require_string(expected, f"selector {selector_id} record requirement {field_path}")
 
+    approved_record_ids = selector.get("approved_record_ids")
+    if approved_record_ids is not None:
+        _require_string_list(
+            approved_record_ids,
+            f"selector {selector_id} approved_record_ids",
+            allow_empty=True,
+        )
+
     limit = selector.get("limit")
     if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= MAX_SELECTOR_LIMIT:
         raise ValueError(f"selector {selector_id} limit must be between 1 and {MAX_SELECTOR_LIMIT}")
@@ -955,6 +994,18 @@ def _validate_config(config: dict[str, object]) -> None:
     _require_string(config.get("last_reviewed"), "context config last_reviewed")
     _require_string(config.get("objective"), "context config objective")
     domains = set(_require_string_list(config.get("knowledge_domains"), "context config knowledge_domains"))
+    selector_approvals = config.get("selector_approvals")
+    if selector_approvals is not None:
+        if not isinstance(selector_approvals, dict):
+            raise ValueError("context config selector_approvals must be an object")
+        for selector_id, record_ids in selector_approvals.items():
+            if not isinstance(selector_id, str) or not selector_id.strip():
+                raise ValueError("context config selector_approvals keys must be selector ids")
+            _require_string_list(
+                record_ids,
+                f"context config selector_approvals {selector_id}",
+                allow_empty=True,
+            )
     contexts = config.get("contexts")
     if not isinstance(contexts, list) or not contexts or not all(isinstance(item, dict) for item in contexts):
         raise ValueError("context config contexts must be a non-empty list of objects")
@@ -996,6 +1047,13 @@ def _validate_config(config: dict[str, object]) -> None:
         raise ValueError("context ids must be unique")
     if len(selector_ids) != len(set(selector_ids)):
         raise ValueError("selector ids must be unique across the package")
+    if isinstance(selector_approvals, dict) and set(selector_approvals) != set(selector_ids):
+        missing = sorted(set(selector_ids) - set(selector_approvals))
+        unknown = sorted(set(selector_approvals) - set(selector_ids))
+        raise ValueError(
+            "context config selector_approvals must cover every selector exactly; "
+            f"missing={missing}, unknown={unknown}"
+        )
 
 
 def load_context_config(path: Path = DEFAULT_CONTEXT_CONFIG) -> dict[str, object]:
@@ -1197,11 +1255,13 @@ def _focal_taxon_assertion(
     non_title_matches: list[tuple[dict[str, object], str, re.Match[str]]] = []
     for semantic_value in values:
         field_path = str(semantic_value.get("field_path") or "")
+        original = re.sub(r"\s+", " ", str(semantic_value["value"])).strip()
         compact = _plain_semantic_text(semantic_value["value"])
         is_title = field_path.endswith(("title", "display_name"))
         for term in terms:
             match = _term_match(compact, term)
-            if match is None:
+            original_match = _term_match(original, term)
+            if match is None or original_match is None:
                 continue
             if is_title:
                 if _title_confirms_focal_subject(
@@ -1211,11 +1271,11 @@ def _focal_taxon_assertion(
                 ):
                     return {
                         "status": "direct_focal_taxon",
-                        "basis": [_assertion_basis(semantic_value, term, match)],
+                        "basis": [_assertion_basis(semantic_value, term, original_match)],
                     }, False
                 title_role_failure = True
             else:
-                non_title_matches.append((semantic_value, term, match))
+                non_title_matches.append((semantic_value, term, original_match))
 
     if title_role_failure:
         return None, True
@@ -1635,7 +1695,6 @@ def _candidate_eligibility(
         return None, "public_provenance_missing"
     if not _record_requirements_match(record, selector):
         return None, "record_requirement_not_met"
-
     fulltext_config = selector.get("fulltext_context")
     fulltext_unit: dict[str, object] | None = None
     fulltext_provenance: dict[str, object] | None = None
@@ -1764,6 +1823,13 @@ def _candidate_eligibility(
     )
     if context is None:
         return None, "context_not_directly_confirmed"
+
+    approved_record_ids = selector.get("approved_record_ids")
+    if (
+        isinstance(approved_record_ids, list)
+        and record.get("record_id") not in approved_record_ids
+    ):
+        return None, "record_not_approved_for_context"
 
     for basis in taxon["basis"]:
         basis["selector_id"] = selector_id
@@ -2160,6 +2226,12 @@ def build_context_package(
                 )
             )
             for selector in context["selectors"]:
+                selector = dict(selector)
+                approvals = config.get("selector_approvals")
+                if isinstance(approvals, dict):
+                    selector["approved_record_ids"] = deepcopy(
+                        approvals.get(selector.get("id"))
+                    )
                 species_id = _require_string(selector.get("species_id"), "selector species_id")
                 profile = species_profiles[species_id]
                 selector_jobs.append(
@@ -2198,6 +2270,7 @@ def build_context_package(
                 "parent_record": deepcopy(selector.get("parent_record")),
                 "fulltext_context": deepcopy(selector.get("fulltext_context")),
                 "record_requirements": deepcopy(selector.get("record_requirements")),
+                "approved_record_ids": deepcopy(selector.get("approved_record_ids")),
                 "limit": selector["limit"],
                 "required": selector["required"],
                 "candidate_count": state["candidate_count"],
@@ -2611,6 +2684,13 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             or not all(isinstance(item, str) and item for item in ids)
         ):
             raise ValueError(f"selector {selector_id} selected_record_ids do not match selected_count")
+        approved_record_ids = result.get("approved_record_ids")
+        if isinstance(approved_record_ids, list) and not set(ids).issubset(
+            approved_record_ids
+        ):
+            raise ValueError(
+                f"selector {selector_id} selected records are not all approved for context"
+            )
         if count > eligible_count:
             raise ValueError(f"selector {selector_id} selected_count exceeds eligible_count")
         expected_selected_count = min(limit, eligible_count)

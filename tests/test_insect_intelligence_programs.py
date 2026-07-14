@@ -90,13 +90,13 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
                 self.assertIn("generic public evidence package", text.lower())
                 self.assertIn("any downstream tool", text.lower())
 
-    def test_source_map_declares_the_generic_v2_evidence_package(self):
+    def test_source_map_declares_the_generic_v3_evidence_package(self):
         source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
         export_block = source_map.split("      - id: ask_insects_context_package", 1)[1]
         export_block = export_block.split("\n  - id:", 1)[0]
 
         self.assertIn("config: config/insect-evidence-package.json", export_block)
-        self.assertIn("schema_version: ask-insects-evidence-package.v2", export_block)
+        self.assertIn("schema_version: ask-insects-evidence-package.v3", export_block)
         self.assertIn("generic public insect evidence package", export_block.lower())
         self.assertIn("any downstream tool", export_block.lower())
 
@@ -312,9 +312,10 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertEqual(
             {item["provenance"]["locator"] for item in dbm_answer["evidence"]},
             {
-                "config/insect-intelligence-programs.json#species/2",
+                "config/insect-intelligence-programs.json#jsonpath=$.species[2]",
                 *{
-                    f"config/insect-intelligence-programs.json#species/2/domains/{index}"
+                    "config/insect-intelligence-programs.json"
+                    f"#jsonpath=$.species[2].domains[{index}]"
                     for index in range(14)
                 },
             },

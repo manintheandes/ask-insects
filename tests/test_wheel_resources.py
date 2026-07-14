@@ -98,6 +98,18 @@ class WheelResourceTests(unittest.TestCase):
                     import sys
 
                     sys.path.insert(0, sys.argv[1])
+                    from askinsects.context_package import (
+                        DEFAULT_CONTEXT_CONFIG,
+                        DEFAULT_PROGRAM_CONFIG,
+                        DEFAULT_PUBLISHED_PACKAGE,
+                        load_context_config,
+                        load_published_context_package,
+                    )
+                    from askinsects.sources.insect_intelligence_programs import (
+                        DEFAULT_PROGRAM_LEDGER,
+                        load_program_ledger,
+                    )
+
                     expected = json.loads(sys.argv[2])
                     resources = files("askinsects.resources")
                     actual = {}
@@ -107,7 +119,27 @@ class WheelResourceTests(unittest.TestCase):
                         actual[name] = hashlib.sha256(data).hexdigest()
                     if actual != expected:
                         raise SystemExit(f"resource digests differ: {actual!r}")
-                    print(json.dumps(actual, sort_keys=True))
+                    defaults = {
+                        "context": DEFAULT_CONTEXT_CONFIG.name,
+                        "program": DEFAULT_PROGRAM_CONFIG.name,
+                        "program_ledger": DEFAULT_PROGRAM_LEDGER.name,
+                        "published": DEFAULT_PUBLISHED_PACKAGE.name,
+                    }
+                    if defaults != {
+                        "context": "insect-evidence-package.json",
+                        "program": "insect-intelligence-programs.json",
+                        "program_ledger": "insect-intelligence-programs.json",
+                        "published": "ask-insects-evidence-package-2026-07-14.6.json",
+                    }:
+                        raise SystemExit(f"installed defaults are wrong: {defaults!r}")
+                    if load_context_config()["package_version"] != "2026-07-14.6":
+                        raise SystemExit("installed context config did not load")
+                    if load_program_ledger(DEFAULT_PROGRAM_LEDGER)["schema_version"] != "insect-intelligence-programs.v1":
+                        raise SystemExit("installed program ledger did not load")
+                    published = load_published_context_package()
+                    if published["package_version"] != "2026-07-14.6":
+                        raise SystemExit("installed published release did not load")
+                    print(json.dumps({"digests": actual, "defaults": defaults}, sort_keys=True))
                     """
                 ),
                 installed.as_posix(),
@@ -115,7 +147,7 @@ class WheelResourceTests(unittest.TestCase):
                 cwd=run_dir,
             )
 
-            self.assertEqual(json.loads(verification.stdout), expected)
+            self.assertEqual(json.loads(verification.stdout)["digests"], expected)
             self.assertEqual(list(source_resources.glob("*.json")), [])
 
     def _run(self, *args: str, cwd: Path) -> subprocess.CompletedProcess[str]:

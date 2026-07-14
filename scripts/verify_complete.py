@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 import csv
+import hashlib
 import ipaddress
 import json
 import os
@@ -23,8 +24,8 @@ VERIFY_ARTIFACT_DIR = Path(tempfile.mkdtemp(prefix="ask-insects-verify-")) / "mo
 VERIFY_ENV = {**os.environ, "ASK_INSECTS_ARTIFACT_DIR": VERIFY_ARTIFACT_DIR.as_posix()}
 GENERIC_CONFIG_PATH = "config/insect-evidence-package.json"
 GENERIC_CONFIG_SCHEMA_VERSION = "ask-insects-evidence-package-config.v2"
-PUBLIC_PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v2"
-DIRECT_EVIDENCE_RULESET_VERSION = "direct-semantic-evidence.v2"
+PUBLIC_PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v3"
+DIRECT_EVIDENCE_RULESET_VERSION = "direct-semantic-evidence.v3"
 PUBLIC_VALIDATION_CONTRACT = {
     "producer_linkage": (
         "status_record_count_selected_rows_and_links_verified_in_read_only_source_index"
@@ -64,6 +65,7 @@ PUBLIC_PACKAGE_FIELDS = frozenset(
         "generated_at",
         "objective",
         "validation_contract",
+        "configuration_sources",
         "knowledge_domains",
         "upstream_snapshot",
         "contexts",
@@ -123,7 +125,7 @@ REQUIRED_FILES = (
     "config/source-map.yaml",
     "config/insect-evidence-package.json",
     "config/insect-intelligence-programs.json",
-    "public/evidence-packages/ask-insects-evidence-package-2026-07-14.5.json",
+    "public/evidence-packages/ask-insects-evidence-package-2026-07-14.6.json",
     "config/mosquito-intelligence-coverage.json",
     "config/aedes-source-plane-benchmark.json",
     "data/fixtures/mosquito_records.json",
@@ -752,6 +754,7 @@ def validate_generic_evidence_config(payload: object) -> dict[str, object]:
         "objective",
         "knowledge_domains",
         "contexts",
+        "selector_approvals",
     }
     if set(payload) != expected_fields:
         raise RuntimeError("generic evidence config must use exact top-level fields")
@@ -763,6 +766,7 @@ def validate_generic_evidence_config(payload: object) -> dict[str, object]:
     context_ids = [str(context.get("id") or "") for context in contexts]
     if tuple(context_ids) != GENERIC_CONTEXT_IDS:
         raise RuntimeError("generic evidence config does not declare the complete generic context inventory")
+    selector_ids: list[str] = []
     for context in contexts:
         context_id = str(context.get("id") or "<missing>")
         if set(context) != GENERIC_CONFIG_CONTEXT_FIELDS:
@@ -799,6 +803,24 @@ def validate_generic_evidence_config(payload: object) -> dict[str, object]:
             }
             if not required.issubset(selector):
                 raise RuntimeError(f"generic context {context_id} selector is missing direct-evidence fields")
+            selector_id = selector.get("id")
+            if not isinstance(selector_id, str) or not selector_id.strip():
+                raise RuntimeError(f"generic context {context_id} selector has an invalid id")
+            selector_ids.append(selector_id)
+    if len(selector_ids) != len(set(selector_ids)):
+        raise RuntimeError("generic evidence config selector ids must be unique")
+    approvals = payload.get("selector_approvals")
+    if not isinstance(approvals, dict) or set(approvals) != set(selector_ids):
+        raise RuntimeError("generic evidence config approvals must cover every selector exactly")
+    for selector_id, record_ids in approvals.items():
+        if (
+            not isinstance(record_ids, list)
+            or len(record_ids) != len(set(record_ids))
+            or not all(isinstance(record_id, str) and record_id for record_id in record_ids)
+        ):
+            raise RuntimeError(
+                f"generic evidence config approval list is invalid for selector {selector_id}"
+            )
     return payload
 
 
@@ -934,9 +956,9 @@ assert Path(askinsects.__file__).resolve().is_relative_to(Path.cwd().resolve())
 assert DEFAULT_CONTEXT_CONFIG.resolve() == (Path.cwd() / "config/insect-evidence-package.json").resolve()
 assert load_context_config()["schema_version"] == "ask-insects-evidence-package-config.v2"
 assert DEFAULT_PUBLISHED_PACKAGE.resolve() == (
-    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-14.5.json"
+    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-14.6.json"
 ).resolve()
-assert load_published_context_package()["package_version"] == "2026-07-14.5"
+assert load_published_context_package()["package_version"] == "2026-07-14.6"
 assert not (Path.cwd() / "artifacts/mosquito-v1/source_index.sqlite").exists()
 """
         _run_clean_clone_command(
@@ -1151,11 +1173,42 @@ def validate_public_evidence_package(
     if set(package) != PUBLIC_PACKAGE_FIELDS:
         raise RuntimeError("public evidence package must use exact top-level fields")
     if package.get("schema_version") != PUBLIC_PACKAGE_SCHEMA_VERSION:
-        raise RuntimeError(f"public evidence package must use schema v2: {PUBLIC_PACKAGE_SCHEMA_VERSION}")
+        raise RuntimeError(f"public evidence package must use schema v3: {PUBLIC_PACKAGE_SCHEMA_VERSION}")
     if package.get("validation_contract") != PUBLIC_VALIDATION_CONTRACT:
         raise RuntimeError("public evidence package validation_contract is invalid")
     if package.get("ok") is not True:
         raise RuntimeError("public evidence package must report ok true")
+
+    configuration_sources = package.get("configuration_sources")
+    if not isinstance(configuration_sources, dict) or set(configuration_sources) != {
+        "context_config",
+        "program_config",
+    }:
+        raise RuntimeError("public evidence package configuration sources are invalid")
+    for source_name, source in configuration_sources.items():
+        if not isinstance(source, dict) or set(source) != {"source_url", "sha256"}:
+            raise RuntimeError(
+                f"public evidence package {source_name} configuration source is invalid"
+            )
+        source_url = source.get("source_url")
+        digest = source.get("sha256")
+        if not isinstance(source_url, str) or urlsplit(source_url).fragment:
+            raise RuntimeError(
+                f"public evidence package {source_name} configuration URL is invalid"
+            )
+        _validate_public_https_provenance(
+            {
+                "provenance": {
+                    "source_id": f"ask_insects_{source_name}",
+                    "locator": source_url,
+                }
+            },
+            label=f"{source_name} configuration source",
+        )
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            raise RuntimeError(
+                f"public evidence package {source_name} configuration hash is invalid"
+            )
 
     contexts = _object_list(package, "contexts", allow_empty=False)
     context_ids: list[str] = []
@@ -1234,6 +1287,15 @@ def validate_public_evidence_package(
             or counts["selected_count"] > counts["eligible_count"]
         ):
             raise RuntimeError(f"selector {selector_id} rejection receipt has invalid selected records")
+        approved_ids = result.get("approved_record_ids")
+        if (
+            not isinstance(approved_ids, list)
+            or len(approved_ids) != len(set(approved_ids))
+            or not all(isinstance(item, str) and item for item in approved_ids)
+        ):
+            raise RuntimeError(f"selector {selector_id} has invalid approved records")
+        if not set(ids).issubset(approved_ids):
+            raise RuntimeError(f"selector {selector_id} selected records are not approved")
         selected_ids.update(ids)
     if selected_ids != evidence_ids:
         raise RuntimeError("selector rejection receipts do not exactly cover evidence records")
@@ -1243,6 +1305,118 @@ def validate_public_evidence_package(
     if not isinstance(content_hash, str) or re.fullmatch(r"[0-9a-f]{64}", content_hash) is None:
         raise RuntimeError("public evidence package content_sha256 is invalid")
     return package
+
+
+def _check_exact_published_release(package: dict[str, object]) -> None:
+    from askinsects.context_package import (
+        DEFAULT_CONTEXT_CONFIG,
+        DEFAULT_PROGRAM_CONFIG,
+        DEFAULT_PUBLISHED_PACKAGE,
+        DEFAULT_PUBLISHED_PACKAGE_SHA256,
+        PUBLIC_CONTEXT_CONFIG_SHA256,
+        PUBLIC_CONTEXT_CONFIG_URL,
+        PUBLIC_PROGRAM_CONFIG_SHA256,
+        PUBLIC_PROGRAM_CONFIG_URL,
+    )
+    from askinsects.sources.insect_intelligence_programs import (
+        build_insect_intelligence_records,
+    )
+
+    expected_sources = {
+        "context_config": {
+            "source_url": PUBLIC_CONTEXT_CONFIG_URL,
+            "sha256": PUBLIC_CONTEXT_CONFIG_SHA256,
+        },
+        "program_config": {
+            "source_url": PUBLIC_PROGRAM_CONFIG_URL,
+            "sha256": PUBLIC_PROGRAM_CONFIG_SHA256,
+        },
+    }
+    if package.get("package_version") != "2026-07-14.6":
+        raise RuntimeError("published evidence package has the wrong release version")
+    if package.get("content_sha256") != (
+        "e76e293064d39c8065ee3be9f9e9b9acd58d66a25dab3f80819686075141d3bc"
+    ):
+        raise RuntimeError("published evidence package has the wrong content hash")
+    if hashlib.sha256(DEFAULT_PUBLISHED_PACKAGE.read_bytes()).hexdigest() != (
+        DEFAULT_PUBLISHED_PACKAGE_SHA256
+    ):
+        raise RuntimeError("published evidence package has the wrong file hash")
+    if package.get("configuration_sources") != expected_sources:
+        raise RuntimeError("published evidence package configuration sources do not match runtime pins")
+    for path, source_name in (
+        (DEFAULT_CONTEXT_CONFIG, "context_config"),
+        (DEFAULT_PROGRAM_CONFIG, "program_config"),
+    ):
+        actual = hashlib.sha256(path.read_bytes()).hexdigest()
+        if actual != expected_sources[source_name]["sha256"]:
+            raise RuntimeError(f"published evidence package {source_name} bytes do not match its pin")
+
+    evidence_records = _object_list(package, "evidence_records", allow_empty=False)
+    program_records = _object_list(package, "program_records", allow_empty=False)
+    selector_results = _object_list(package, "selector_results", allow_empty=False)
+    gaps = _object_list(package, "gaps")
+    if (len(evidence_records), len(program_records), len(gaps)) != (22, 122, 11):
+        raise RuntimeError("published evidence package release counts do not match the audited release")
+
+    context_config = json.loads(DEFAULT_CONTEXT_CONFIG.read_text(encoding="utf-8"))
+    approvals = context_config.get("selector_approvals")
+    if not isinstance(approvals, dict):
+        raise RuntimeError("published evidence config is missing selector approvals")
+    receipts = {str(result.get("selector_id") or ""): result for result in selector_results}
+    if set(receipts) != set(approvals):
+        raise RuntimeError("published evidence package receipts do not cover every curated selector")
+    selected_pairs: set[tuple[str, str]] = set()
+    approved_pairs: set[tuple[str, str]] = set()
+    for selector_id, approved_ids in approvals.items():
+        receipt = receipts[selector_id]
+        if receipt.get("approved_record_ids") != approved_ids:
+            raise RuntimeError(f"published selector {selector_id} does not match its curated approvals")
+        selected_pairs.update(
+            (selector_id, record_id)
+            for record_id in receipt.get("selected_record_ids", [])
+        )
+        approved_pairs.update((selector_id, record_id) for record_id in approved_ids)
+    if len(approved_pairs) != 23 or selected_pairs != approved_pairs:
+        raise RuntimeError("published evidence package does not exactly contain the 23 audited approvals")
+    if any("W4399796030" in str(record.get("record_id")) for record in evidence_records):
+        raise RuntimeError("published evidence package contains the SWD parasitoid-role paper")
+    role_rejections = sum(
+        int((result.get("rejection_counts") or {}).get("taxon_role_not_directly_confirmed", 0))
+        for result in selector_results
+    )
+    if role_rejections <= 0:
+        raise RuntimeError("published evidence package does not preserve focal-taxon role rejections")
+
+    expected_program_records = {
+        record.record_id: record
+        for record in build_insect_intelligence_records(
+            DEFAULT_PROGRAM_CONFIG,
+            retrieved_at="2026-07-14T00:00:00Z",
+        )
+    }
+    actual_program_records = {
+        str(record.get("record_id") or ""): record for record in program_records
+    }
+    if set(actual_program_records) != set(expected_program_records):
+        raise RuntimeError("published program records do not exactly match the program ledger")
+    for record_id, expected in expected_program_records.items():
+        expected_fragment = expected.provenance.locator.split("#", 1)[1]
+        actual_locator = str(actual_program_records[record_id]["provenance"]["locator"])
+        if urlsplit(actual_locator).fragment != expected_fragment:
+            raise RuntimeError(f"published program record {record_id} has a non-resolving locator")
+
+    source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
+    source_map_terms = (
+        PUBLIC_PACKAGE_SCHEMA_VERSION,
+        "2026-07-14.6",
+        DEFAULT_PUBLISHED_PACKAGE.relative_to(REPO_ROOT).as_posix(),
+        DEFAULT_PUBLISHED_PACKAGE_SHA256,
+        str(package["content_sha256"]),
+    )
+    missing = [term for term in source_map_terms if term not in source_map]
+    if missing:
+        raise RuntimeError(f"source map is missing published release binding: {missing}")
 
 
 def check_open_source_boundary() -> None:
@@ -2127,7 +2301,7 @@ def _seed_verification_package_records(artifact_dir: Path) -> None:
     records = []
     fixtures = (
         (
-            "verify-package:aedes-landing-direct",
+            "openalex:W2344416877",
             "Aedes aegypti human landing repellency response",
             "https://doi.org/10.0000/ask-insects-public-fixture-1",
         ),
@@ -2142,20 +2316,25 @@ def _seed_verification_package_records(artifact_dir: Path) -> None:
             EvidenceRecord(
                 record_id=record_id,
                 lane="literature",
-                source="aedes_olfaction_literature",
+                source="aedes_literature_openalex",
                 title=retained_title,
                 text=f"Fixture candidate for Aedes aegypti: {retained_title}",
                 species="Aedes aegypti",
                 url=source_url,
                 media_url=None,
                 provenance=Provenance(
-                    source_id="aedes_olfaction_literature",
+                    source_id="aedes_literature_openalex",
                     locator=f"fixture#{record_id}",
                     retrieved_at="2026-07-14T00:00:00Z",
                     license="CC-BY-4.0",
                     source_url=source_url,
                 ),
-                payload={"title": retained_title},
+                payload={
+                    "raw_openalex_work": {
+                        "display_name": retained_title,
+                        "abstract_inverted_index": None,
+                    }
+                },
             )
         )
     index.upsert_records(records)
@@ -2345,6 +2524,7 @@ def check_evidence_package(artifact_dir: Path = VERIFY_ARTIFACT_DIR) -> None:
     _check_producer_limit_alignment()
     published = load_published_context_package()
     validate_public_evidence_package(published, require_complete_contexts=True)
+    _check_exact_published_release(published)
     package = _load_verification_evidence_package(artifact_dir)
     validate_context_package(package)
     validate_public_evidence_package(package, require_complete_contexts=True)

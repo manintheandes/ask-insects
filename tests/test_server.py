@@ -54,10 +54,10 @@ from tests.test_image_atoms_source import write_image_fixture
 from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
 
 
-def generic_evidence_package_v2():
+def generic_evidence_package_v3():
     return {
         "ok": True,
-        "schema_version": "ask-insects-evidence-package.v2",
+        "schema_version": "ask-insects-evidence-package.v3",
         "content_sha256": "abc123",
         "validation_contract": {
             "producer_linkage": "verified_in_read_only_source_index_during_build",
@@ -75,7 +75,7 @@ def generic_evidence_package_v2():
             {
                 "record_id": "public:swd:1",
                 "eligibility": {
-                    "ruleset_version": "direct-semantic-evidence.v1",
+                    "ruleset_version": "direct-semantic-evidence.v3",
                     "taxon": {
                         "status": "direct_focal_taxon",
                         "basis": [{"field_path": "payload.title"}],
@@ -183,7 +183,7 @@ class ServerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             build_fixture_index(artifact_dir=artifact_dir)
-            expected = generic_evidence_package_v2()
+            expected = generic_evidence_package_v3()
             with mock.patch.object(
                 server_module,
                 "load_published_context_package",
@@ -201,7 +201,7 @@ class ServerTests(unittest.TestCase):
 
         self.assertEqual(response.status, 200)
         self.assertEqual(response.payload, expected)
-        self.assertEqual(response.payload["schema_version"], "ask-insects-evidence-package.v2")
+        self.assertEqual(response.payload["schema_version"], "ask-insects-evidence-package.v3")
         self.assertEqual(response.payload["contexts"][0]["endpoint_family"], "treated_area_occupancy")
         self.assertEqual(response.payload["contexts"][0]["exposure_routes"], ["contact"])
         self.assertEqual(
@@ -422,7 +422,7 @@ class ServerTests(unittest.TestCase):
         self.assertNotIn("legacy-hash", json.dumps(response.payload, sort_keys=True))
 
     def test_context_package_ignores_missing_and_unavailable_live_index(self):
-        expected = generic_evidence_package_v2()
+        expected = generic_evidence_package_v3()
         cases = (
             ("missing", None),
             ("unavailable", b"not a sqlite database"),

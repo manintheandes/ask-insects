@@ -172,6 +172,21 @@ def record(
 
 
 class ContextPackageTests(unittest.TestCase):
+    def test_source_checkout_can_reference_a_release_before_it_is_built(self):
+        future_release = (
+            context_package_module.REPO_ROOT
+            / "public"
+            / "evidence-packages"
+            / "not-built-yet.json"
+        )
+
+        resolved = context_package_module._repository_or_packaged_resource(
+            future_release,
+            future_release.name,
+        )
+
+        self.assertEqual(resolved, future_release)
+
     def test_default_config_uses_generic_v2_contract(self):
         self.assertTrue(DEFAULT_CONTEXT_CONFIG.is_absolute())
         self.assertEqual(DEFAULT_CONTEXT_CONFIG.name, "insect-evidence-package.json")
@@ -210,6 +225,18 @@ class ContextPackageTests(unittest.TestCase):
         }
         for context in contexts:
             self.assertEqual(set(context), expected_fields)
+        selector_ids = {
+            selector["id"]
+            for context in contexts
+            for selector in context["selectors"]
+        }
+        self.assertEqual(set(config["selector_approvals"]), selector_ids)
+        self.assertTrue(
+            all(
+                isinstance(record_ids, list)
+                for record_ids in config["selector_approvals"].values()
+            )
+        )
 
         by_id = {context["id"]: context for context in contexts}
         self.assertEqual(
@@ -968,10 +995,24 @@ class ContextPackageTests(unittest.TestCase):
         package = load_published_context_package()
         serialized = json.dumps(package, sort_keys=True).casefold()
 
-        self.assertEqual(package["schema_version"], "ask-insects-evidence-package.v2")
-        self.assertEqual(package["package_version"], "2026-07-14.5")
-        self.assertEqual(len(package["evidence_records"]), 36)
-        self.assertEqual(len(package["gaps"]), 10)
+        self.assertEqual(package["schema_version"], "ask-insects-evidence-package.v3")
+        self.assertEqual(package["package_version"], "2026-07-14.6")
+        self.assertEqual(len(package["evidence_records"]), 22)
+        self.assertEqual(len(package["gaps"]), 11)
+        self.assertEqual(len(package["program_records"]), 122)
+        selected_pairs = {
+            (result["selector_id"], record_id)
+            for result in package["selector_results"]
+            for record_id in result["selected_record_ids"]
+        }
+        approved_pairs = {
+            (result["selector_id"], record_id)
+            for result in package["selector_results"]
+            for record_id in result["approved_record_ids"]
+        }
+        self.assertEqual(selected_pairs, approved_pairs)
+        self.assertEqual(len(selected_pairs), 23)
+        self.assertNotIn("W4399796030", serialized)
         self.assertNotIn("monarch", serialized)
         self.assertNotIn("/users/", serialized)
         self.assertNotIn("/home/", serialized)
@@ -1239,7 +1280,7 @@ class ContextPackageTests(unittest.TestCase):
         )
         for item in package["evidence_records"]:
             eligibility = item["eligibility"]
-            self.assertEqual(eligibility["ruleset_version"], "direct-semantic-evidence.v2")
+            self.assertEqual(eligibility["ruleset_version"], "direct-semantic-evidence.v3")
             self.assertEqual(eligibility["taxon"]["status"], "direct_focal_taxon")
             self.assertEqual(eligibility["context"]["status"], "direct_context")
             for basis in [*eligibility["taxon"]["basis"], *eligibility["context"]["basis"]]:
@@ -1311,6 +1352,56 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(
             receipt["rejection_counts"],
             {"taxon_role_not_directly_confirmed": 1},
+        )
+
+    def test_selector_approval_list_blocks_uncurated_context_matches(self):
+        self.index.upsert_records(
+            [
+                record(
+                    f"curation:{status}",
+                    source="curated_context_source",
+                    species="Drosophila suzukii",
+                    text="Drosophila suzukii choice in a Y-tube olfactometer.",
+                    payload={
+                        "title": f"Drosophila suzukii {status} choice study",
+                        "abstract": "Choice was measured in a Y-tube olfactometer.",
+                    },
+                )
+                for status in ("approved", "uncurated")
+            ]
+        )
+        selector = self.selector(
+            "curated_choice_swd",
+            "drosophila_suzukii",
+            "curated_context_source",
+            query_any=["choice", "olfactometer"],
+            context_required_term_groups=CONTEXT_REQUIRED_TERM_GROUPS[
+                "bounded_choice_orientation"
+            ],
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
+        )
+        selector["approved_record_ids"] = ["curation:approved"]
+
+        package = self.build_with_contexts(
+            [
+                self.context(
+                    "bounded_choice_orientation",
+                    ["drosophila_suzukii"],
+                    [selector],
+                )
+            ]
+        )
+
+        self.assertEqual(
+            [item["record_id"] for item in package["evidence_records"]],
+            ["curation:approved"],
+        )
+        receipt = package["selector_results"][0]
+        self.assertEqual(receipt["approved_record_ids"], ["curation:approved"])
+        self.assertEqual(
+            receipt["rejection_counts"],
+            {"record_not_approved_for_context": 1},
         )
 
     def test_derived_fact_uses_parent_taxon_and_current_context(self):
@@ -3196,6 +3287,15 @@ class ContextPackageTests(unittest.TestCase):
         receipt["selected_record_ids"] = []
 
         with self.assertRaisesRegex(ValueError, "selected_count must equal"):
+            validate_context_package(package, verify_hash=False)
+
+    def test_validator_rejects_a_selected_record_missing_from_approvals(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        receipt = package["selector_results"][0]
+        self.assertTrue(receipt["selected_record_ids"])
+        receipt["approved_record_ids"] = []
+
+        with self.assertRaisesRegex(ValueError, "not all approved"):
             validate_context_package(package, verify_hash=False)
 
     def test_candidate_frontier_handles_more_than_sqlite_variable_limit(self):

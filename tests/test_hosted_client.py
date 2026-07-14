@@ -122,7 +122,7 @@ class HostedClientTests(unittest.TestCase):
         claimed_success = json.dumps(
             {
                 "ok": True,
-                "schema_version": "ask-insects-evidence-package.v2",
+                "schema_version": "ask-insects-evidence-package.v3",
                 "content_sha256": "a" * 64,
             }
         ).encode("utf-8")

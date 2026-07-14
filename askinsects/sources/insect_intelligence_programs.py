@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from importlib.resources import files as resource_files
 import json
 from pathlib import Path
 import re
@@ -9,7 +10,18 @@ from askinsects.records import EvidenceRecord, Provenance
 
 
 INSECT_INTELLIGENCE_SOURCE_ID = "insect_intelligence_programs"
-DEFAULT_PROGRAM_LEDGER = Path("config/insect-intelligence-programs.json")
+_REPOSITORY_PROGRAM_LEDGER = Path("config/insect-intelligence-programs.json")
+DEFAULT_PROGRAM_LEDGER = (
+    _REPOSITORY_PROGRAM_LEDGER
+    if _REPOSITORY_PROGRAM_LEDGER.is_file()
+    else Path(
+        str(
+            resource_files("askinsects.resources").joinpath(
+                "insect-intelligence-programs.json"
+            )
+        )
+    )
+)
 
 REQUIRED_KNOWLEDGE_DOMAINS = {
     "sensory_world",

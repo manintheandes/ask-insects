@@ -11,10 +11,10 @@ from askinsects.cli import main
 from askinsects.context_package import MAX_PACKAGE_BYTES
 
 
-def generic_evidence_package_v2():
+def generic_evidence_package_v3():
     return {
         "ok": True,
-        "schema_version": "ask-insects-evidence-package.v2",
+        "schema_version": "ask-insects-evidence-package.v3",
         "content_sha256": "abc123",
         "validation_contract": {
             "producer_linkage": "verified_in_read_only_source_index_during_build",
@@ -32,7 +32,7 @@ def generic_evidence_package_v2():
             {
                 "record_id": "public:swd:1",
                 "eligibility": {
-                    "ruleset_version": "direct-semantic-evidence.v1",
+                    "ruleset_version": "direct-semantic-evidence.v3",
                     "taxon": {
                         "status": "direct_focal_taxon",
                         "basis": [{"field_path": "payload.title"}],
@@ -118,7 +118,7 @@ class HostedCliTests(unittest.TestCase):
             config, method, path, payload=None, timeout=120, max_response_bytes=None
         ):
             calls.append((config.url, method, path, payload, timeout, max_response_bytes))
-            return generic_evidence_package_v2()
+            return generic_evidence_package_v3()
 
         with patch("askinsects.cli.load_config") as load_config, patch(
             "askinsects.cli.hosted_request", fake_request
@@ -143,7 +143,7 @@ class HostedCliTests(unittest.TestCase):
         local_build.assert_not_called()
         validate_package.assert_called_once()
         payload = json.loads(output)
-        self.assertEqual(payload["schema_version"], "ask-insects-evidence-package.v2")
+        self.assertEqual(payload["schema_version"], "ask-insects-evidence-package.v3")
         self.assertEqual(payload["contexts"][0]["endpoint_family"], "treated_area_occupancy")
         self.assertEqual(payload["contexts"][0]["exposure_routes"], ["contact"])
         self.assertEqual(
@@ -244,7 +244,7 @@ class HostedCliTests(unittest.TestCase):
         ):
             return {
                 "ok": True,
-                "schema_version": "ask-insects-evidence-package.v2",
+                "schema_version": "ask-insects-evidence-package.v3",
                 "objective": leaked,
             }
 
@@ -291,10 +291,10 @@ class HostedCliTests(unittest.TestCase):
         local_build.assert_not_called()
         payload = json.loads(output)
         self.assertEqual(payload["error"]["code"], "evidence_package_schema_mismatch")
-        self.assertIn("ask-insects-evidence-package.v2", payload["error"]["message"])
+        self.assertIn("ask-insects-evidence-package.v3", payload["error"]["message"])
         self.assertNotIn("legacy-hash", output)
 
-    def test_context_package_help_names_the_generic_v2_contract_without_private_parameters(self):
+    def test_context_package_help_names_the_generic_v3_contract_without_private_parameters(self):
         output = io.StringIO()
         with redirect_stdout(output), self.assertRaises(SystemExit) as raised:
             main(["context-package", "--help"])
@@ -302,7 +302,7 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(raised.exception.code, 0)
         help_text = output.getvalue()
         self.assertIn("generic public insect evidence package", help_text)
-        self.assertIn("ask-insects-evidence-package.v2", help_text)
+        self.assertIn("ask-insects-evidence-package.v3", help_text)
         for forbidden_option in ("--consumer", "--experiment", "--callback", "--destination"):
             self.assertNotIn(forbidden_option, help_text)
 

@@ -17,7 +17,7 @@ def public_package_fixture() -> dict[str, object]:
     record_id = "evidence:aedes-landing"
     return {
         "ok": True,
-        "schema_version": "ask-insects-evidence-package.v2",
+        "schema_version": "ask-insects-evidence-package.v3",
         "package_version": "2026-07-14.test",
         "generated_at": "2026-07-14T12:00:00Z",
         "objective": "Provide bounded public insect evidence.",
@@ -27,6 +27,22 @@ def public_package_fixture() -> dict[str, object]:
             ),
             "downstream_validation": "exported_snapshot_internal_consistency_only",
             "snapshot_authentication": "publisher_pinned_content_sha256",
+        },
+        "configuration_sources": {
+            "context_config": {
+                "source_url": (
+                    "https://raw.githubusercontent.com/example/ask-insects/"
+                    f"{'1' * 40}/config/insect-evidence-package.json"
+                ),
+                "sha256": "3" * 64,
+            },
+            "program_config": {
+                "source_url": (
+                    "https://raw.githubusercontent.com/example/ask-insects/"
+                    f"{'1' * 40}/config/insect-intelligence-programs.json"
+                ),
+                "sha256": "4" * 64,
+            },
         },
         "knowledge_domains": ["behavior"],
         "upstream_snapshot": {
@@ -69,7 +85,7 @@ def public_package_fixture() -> dict[str, object]:
                 "context_ids": [context_id],
                 "selector_ids": [selector_id],
                 "eligibility": {
-                    "ruleset_version": "direct-semantic-evidence.v2",
+                    "ruleset_version": "direct-semantic-evidence.v3",
                     "taxon": {
                         "status": "direct_focal_taxon",
                         "basis": [
@@ -106,6 +122,7 @@ def public_package_fixture() -> dict[str, object]:
                 "eligible_count": 1,
                 "selected_count": 1,
                 "selected_record_ids": [record_id],
+                "approved_record_ids": [record_id],
                 "rejection_counts": {"taxon_not_directly_confirmed": 1},
             }
         ],
@@ -390,15 +407,15 @@ class VerifyCompleteTests(unittest.TestCase):
 
             status = json.loads((artifact_dir / "source_status.json").read_text())
             updated_receipt = json.loads((artifact_dir / "source_receipt.json").read_text())
-            expected_sources = {"aedes_olfaction_literature": 2}
+            expected_sources = {"aedes_literature_openalex": 2}
             self.assertEqual(status["record_count"], 2)
             self.assertEqual(status["source_counts"], expected_sources)
             self.assertEqual(status["lanes"], {"literature": 2})
-            self.assertEqual(status["sources"], ["aedes_olfaction_literature"])
+            self.assertEqual(status["sources"], ["aedes_literature_openalex"])
             self.assertEqual(updated_receipt["record_count"], 2)
             self.assertEqual(updated_receipt["source_counts"], expected_sources)
             self.assertEqual(
-                updated_receipt["sources"]["aedes_olfaction_literature"]["record_count"],
+                updated_receipt["sources"]["aedes_literature_openalex"]["record_count"],
                 2,
             )
             verify_complete.check_receipts_match_sqlite(artifact_dir)
@@ -500,7 +517,7 @@ class VerifyCompleteTests(unittest.TestCase):
         self.assertIn("THIRD_PARTY_DATA.md", required_files)
         verify_complete.check_open_source_boundary()
 
-    def test_verify_complete_requires_generic_v2_evidence_package(self):
+    def test_verify_complete_requires_generic_v3_evidence_package(self):
         required_files = set(verify_complete.REQUIRED_FILES)
         unit_modules = set(verify_complete.UNIT_TEST_MODULES)
 
@@ -535,11 +552,11 @@ class VerifyCompleteTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "generic context fields"):
             verify_complete.validate_generic_evidence_config(invalid)
 
-    def test_public_package_contract_requires_v2_assertions_receipts_and_https(self):
+    def test_public_package_contract_requires_v3_assertions_receipts_and_https(self):
         verify_complete.validate_public_evidence_package(public_package_fixture())
 
         mutations = {
-            "schema v2": lambda package: package.__setitem__("schema_version", "v1"),
+            "schema v3": lambda package: package.__setitem__("schema_version", "v2"),
             "validation_contract": lambda package: package["validation_contract"].__setitem__(
                 "producer_linkage", "claimed_without_source_index"
             ),
@@ -554,6 +571,9 @@ class VerifyCompleteTests(unittest.TestCase):
             ]["context"].__setitem__("status", "inferred_context"),
             "rejection receipt": lambda package: package["selector_results"][0].__setitem__(
                 "rejection_counts", {}
+            ),
+            "not approved": lambda package: package["selector_results"][0].__setitem__(
+                "approved_record_ids", []
             ),
             "public HTTPS": lambda package: package["evidence_records"][0][
                 "provenance"
