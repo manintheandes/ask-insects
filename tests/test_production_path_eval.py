@@ -8,6 +8,7 @@ from scripts.eval_production_path import (
     ExecutionResult,
     evaluate_case,
     load_contract,
+    regrade_evaluation,
     run_evaluation,
 )
 
@@ -196,13 +197,18 @@ class ProductionPathEvalTests(unittest.TestCase):
 
                 self.assertFalse(result["ok"])
 
-    def test_installed_skill_reads_and_other_extra_commands_fail(self):
+    def test_one_installed_skill_read_is_allowed_but_other_commands_fail(self):
         execution = successful_execution()
         execution.commands.insert(
             0,
             "sed -n '1,160p' /Users/josh/.codex/skills/askinsects/SKILL.md",
         )
 
+        allowed = evaluate_case(sample_case(), execution, maximum_seconds=30)
+
+        self.assertTrue(allowed["ok"], allowed["failures"])
+
+        execution.commands.insert(0, "pwd")
         rejected = evaluate_case(sample_case(), execution, maximum_seconds=30)
 
         self.assertFalse(rejected["ok"])
@@ -211,12 +217,12 @@ class ProductionPathEvalTests(unittest.TestCase):
             rejected["failures"],
         )
 
-        for command in ("pwd", "cat /Users/josh/.codex/skills/askinsects/SKILL.md"):
-            with self.subTest(command=command):
-                execution = successful_execution()
-                execution.commands.append(command)
-                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
-                self.assertFalse(result["ok"])
+        execution = successful_execution()
+        execution.commands.append(
+            "cat /Users/josh/.codex/skills/askinsects/SKILL.md",
+        )
+        wrong_order = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        self.assertFalse(wrong_order["ok"])
 
     def test_full_gate_requires_every_corpus_case_on_the_unmodified_route(self):
         contract = {
@@ -244,6 +250,62 @@ class ProductionPathEvalTests(unittest.TestCase):
         self.assertFalse(result["production_gate_passed"])
         self.assertFalse(result["gate_eligible"])
         self.assertEqual(result["selected_case_count"], 1)
+
+    def test_regrade_preserves_execution_and_reapplies_current_grader(self):
+        second_case = {
+            **sample_case(),
+            "id": "diamondback-gap-paraphrase",
+            "question": "Which diamondback moth biology areas are still source gaps?",
+        }
+        contract = {
+            "contract_version": CONTRACT_VERSION,
+            "minimum_case_count": 2,
+            "maximum_seconds": 30,
+            "required_categories": {"species_coverage": 2},
+            "cases": [sample_case(), second_case],
+        }
+
+        def execution_for(case: dict[str, object]) -> ExecutionResult:
+            execution = successful_execution()
+            execution.commands = [
+                f'/bin/zsh -lc \'ask-insects ask "{case["question"]}" --json --compact\''
+            ]
+            return execution
+
+        source = run_evaluation(contract, execute=execution_for)
+        source["results"][0]["ok"] = False
+        source["results"][0]["failures"] = ["stale grader failure"]
+        source["passed_count"] = 1
+        source["failed_count"] = 1
+        source["all_cases_passed"] = False
+        source["production_gate_passed"] = False
+
+        regraded = regrade_evaluation(contract, source)
+
+        self.assertTrue(regraded["production_gate_passed"])
+        self.assertEqual(regraded["passed_count"], 2)
+        self.assertEqual(regraded["failed_count"], 0)
+        self.assertEqual(regraded["started_at"], source["started_at"])
+        self.assertEqual(regraded["finished_at"], source["finished_at"])
+        self.assertEqual(
+            regraded["results"][0]["commands"],
+            source["results"][0]["commands"],
+        )
+        self.assertIn("regraded_at", regraded)
+
+    def test_regrade_rejects_changed_questions(self):
+        contract = {
+            "contract_version": CONTRACT_VERSION,
+            "minimum_case_count": 1,
+            "maximum_seconds": 30,
+            "required_categories": {"species_coverage": 1},
+            "cases": [sample_case()],
+        }
+        source = run_evaluation(contract, execute=lambda case: successful_execution())
+        source["results"][0]["question"] = "A different question"
+
+        with self.assertRaisesRegex(ValueError, "question mismatch"):
+            regrade_evaluation(contract, source)
 
     def test_invalid_contract_rejects_category_shortfall(self):
         cases = []

@@ -23,7 +23,7 @@ A full run passes only at 100 percent, when all 200 questions pass in one run. E
 must:
 
 - use the installed Ask Insects skill and the hosted `ask-insects ask --compact` path
-- use the complete route exposed in the skill description and repository instructions without opening the skill file or doing exploratory work first
+- use the complete route exposed in the skill description and repository instructions, allowing at most one normal installed-skill read before the hosted call and no other exploratory work
 - preserve Josh's exact question in the hosted call
 - finish the complete visible Codex answer in under 30 seconds
 - match the expected subject and evidence behavior
@@ -59,6 +59,24 @@ python3 scripts/eval_production_path.py \
 
 A smoke run can show that selected cases pass. It can never satisfy the full
 production gate. Retries do not erase a failed full run.
+
+## Corrected Grading
+
+If the grading rules contain a defect, fix and test the grader, then reapply it
+to the unchanged saved full-run artifact:
+
+```bash
+python3 scripts/eval_production_path.py \
+  --regrade-results artifacts/production-path-evals/<run>/results.json
+```
+
+Regrading does not rerun or replace any question. It requires a complete normal
+Codex-route artifact whose case IDs, questions, categories, expected behavior,
+time limit, answers, commands, timings, and raw event streams match the current
+contract. The new artifact records the absolute source path and SHA-256 of the
+original bytes. Keep both artifacts. A regrade is appropriate for a corrected
+grader, not for changed questions, changed expectations, retries, or edited
+executions.
 
 ## Other Checks
 

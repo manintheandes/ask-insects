@@ -1544,6 +1544,8 @@ def check_production_path_evaluation() -> None:
         "production_gate_passed",
         "visible_answer",
         "locator_patterns",
+        "--regrade-results",
+        "regraded_source_sha256",
     ):
         if term not in runner:
             raise RuntimeError(f"production-path evaluator is missing required behavior: {term}")
