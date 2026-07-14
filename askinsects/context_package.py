@@ -17,25 +17,34 @@ from .sources.literature import abstract_from_inverted_index
 
 PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v2"
 CONFIG_SCHEMA_VERSION = "ask-insects-evidence-package-config.v2"
-ELIGIBILITY_RULESET_VERSION = "direct-semantic-evidence.v1"
+ELIGIBILITY_RULESET_VERSION = "direct-semantic-evidence.v2"
 VALIDATION_CONTRACT = {
-    "producer_linkage": "verified_in_read_only_source_index_during_build",
+    "producer_linkage": (
+        "status_record_count_selected_rows_and_links_verified_in_read_only_source_index"
+    ),
     "downstream_validation": "exported_snapshot_internal_consistency_only",
     "snapshot_authentication": "publisher_pinned_content_sha256",
 }
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTEXT_CONFIG = REPO_ROOT / "config/insect-evidence-package.json"
 MAX_SELECTOR_LIMIT = 25
+MAX_SELECTOR_CANDIDATE_FRONTIER = 2_000
+MAX_LINKED_RECORD_IDS = 16
+REQUIRED_SOURCE_TABLES = frozenset(
+    {"records", "record_payloads", "literature_fulltext_units"}
+)
 MAX_PACKAGE_BYTES = 16 * 1024 * 1024
 MAX_STRING_LENGTH = 100_000
 MAX_LIST_ITEMS = 10_000
 MAX_NESTING_DEPTH = 20
 PUBLIC_PROGRAM_CONFIG_URL = (
-    "https://github.com/manintheandes/ask-insects/blob/main/"
+    "https://raw.githubusercontent.com/manintheandes/ask-insects/"
+    "175605e32adb6aea14a4664b75e913042d748055/"
     "config/insect-intelligence-programs.json"
 )
 PUBLIC_CONTEXT_CONFIG_URL = (
-    "https://github.com/manintheandes/ask-insects/blob/main/"
+    "https://raw.githubusercontent.com/manintheandes/ask-insects/"
+    "175605e32adb6aea14a4664b75e913042d748055/"
     "config/insect-evidence-package.json"
 )
 PACKAGE_FIELDS = frozenset(
@@ -115,6 +124,7 @@ ASSERTION_BASIS_FIELDS = frozenset(
         "evidence_snapshot",
         "evidence_sha256",
         "selector_id",
+        "provenance",
     }
 )
 ASSERTION_BASIS_LINK_FIELDS = frozenset(
@@ -193,6 +203,8 @@ ELIGIBILITY_REJECTION_REASONS = frozenset(
         "fulltext_unit_link_invalid",
         "record_requirement_not_met",
         "public_provenance_missing",
+        "invalid_candidate_shape",
+        "unsafe_export_boundary",
     }
 )
 SAFE_LOCATOR_FRAGMENT_RE = re.compile(
@@ -205,7 +217,9 @@ NON_HTTPS_AUTHORITY_RE = re.compile(
     flags=re.IGNORECASE,
 )
 URL_RE = re.compile(r"https?://[^\s<>\"']+", flags=re.IGNORECASE)
-POSIX_ABSOLUTE_PATH_RE = re.compile(r"(?:^|[\s\"'=])/(?!/)[^\s\"']+")
+POSIX_ABSOLUTE_PATH_RE = re.compile(
+    r"(?<![A-Za-z0-9:/])/(?!/)[A-Za-z0-9._~-]+(?:/[^\s,;)\]}\"']+)+"
+)
 WINDOWS_ABSOLUTE_PATH_RE = re.compile(
     r"(?:^|[\s\"'=])(?:[A-Za-z]:[\\/]|\\\\)[^\s\"']+"
 )
@@ -227,6 +241,30 @@ QUERY_CREDENTIAL_KEY_TOKENS = frozenset(
     {"key", "session", "sig", "signature"}
 )
 CONSUMER_KEY_TOKENS = frozenset({"consumer", "customer", "private", "tenant"})
+PRIVATE_DNS_SUFFIXES = (".internal", ".local", ".localhost", ".home.arpa")
+PRIVATE_DNS_NAME_RE = re.compile(
+    r"(?i)(?<![A-Za-z0-9-])(?:localhost|"
+    r"(?:[A-Za-z0-9-]+\.)+(?:internal|local|localhost)|"
+    r"(?:[A-Za-z0-9-]+\.)*home\.arpa)(?![A-Za-z0-9-])"
+)
+IPV4_LITERAL_RE = re.compile(r"(?<![A-Za-z0-9.])(?:\d{1,3}\.){3}\d{1,3}(?![A-Za-z0-9.])")
+IPV6_LITERAL_RE = re.compile(
+    r"(?<![A-Za-z0-9:])\[?[0-9A-Fa-f:]*:[0-9A-Fa-f:]+\]?(?![A-Za-z0-9:])"
+)
+SECRET_VALUE_RE = r"[A-Za-z0-9._~+/=-]{12,}"
+STANDALONE_CREDENTIAL_RE = re.compile(
+    rf"(?ix)(?:"
+    rf"\bauthorization\s*[:=]\s*(?:bearer|basic|token)\s+{SECRET_VALUE_RE}|"
+    rf"\b(?:bearer|basic)\s+{SECRET_VALUE_RE}|"
+    rf"\b(?:api[ _-]?key|access[ _-]?token|auth[ _-]?token|password|secret|token)"
+    rf"\s*[:=]\s*[\"']?{SECRET_VALUE_RE}|"
+    rf"\bsk-[A-Za-z0-9_-]{{16,}}|"
+    rf"\bgh[pousr]_[A-Za-z0-9]{{20,}}|"
+    rf"\bxox[baprs]-[A-Za-z0-9-]{{16,}}|"
+    rf"\bAKIA[0-9A-Z]{{16}}|"
+    rf"\bAIza[0-9A-Za-z_-]{{20,}}"
+    rf")"
+)
 
 
 def utc_now() -> str:
@@ -306,7 +344,10 @@ def _is_public_hostname(hostname: str | None) -> bool:
     if not hostname:
         return False
     normalized = hostname.rstrip(".").casefold()
-    if normalized == "localhost" or normalized.endswith((".localhost", ".local")):
+    if (
+        normalized in {"localhost", "home.arpa"}
+        or normalized.endswith(PRIVATE_DNS_SUFFIXES)
+    ):
         return False
     try:
         address = ipaddress.ip_address(normalized)
@@ -316,19 +357,49 @@ def _is_public_hostname(hostname: str | None) -> bool:
 
 
 def _string_has_credentials(value: str) -> bool:
+    if STANDALONE_CREDENTIAL_RE.search(value):
+        return True
     for match in URL_RE.finditer(value):
         if _url_has_credentials(match.group(0).rstrip(".,);]")):
             return True
     return False
 
 
+def _string_has_private_network_reference(value: str) -> bool:
+    if PRIVATE_DNS_NAME_RE.search(value):
+        return True
+    for match in URL_RE.finditer(value):
+        candidate = match.group(0).rstrip(".,);]")
+        parsed = urlsplit(candidate)
+        if parsed.hostname and not _is_public_hostname(parsed.hostname):
+            return True
+    for match in IPV4_LITERAL_RE.finditer(value):
+        try:
+            address = ipaddress.ip_address(match.group(0))
+        except ValueError:
+            continue
+        if not address.is_global:
+            return True
+    for match in IPV6_LITERAL_RE.finditer(value):
+        candidate = match.group(0).strip("[]")
+        try:
+            address = ipaddress.ip_address(candidate)
+        except ValueError:
+            continue
+        if not address.is_global:
+            return True
+    return False
+
+
 def _unsafe_string_reason(value: str) -> str | None:
     if _string_has_credentials(value):
-        return "credentialed URL"
+        return "credential or credentialed URL"
     if NON_HTTPS_AUTHORITY_RE.search(value) or re.search(
         r"(?i)(?<![A-Za-z0-9+.-])file:/", value
     ):
         return "non-HTTPS or private scheme"
+    if _string_has_private_network_reference(value):
+        return "private network reference"
     if POSIX_ABSOLUTE_PATH_RE.search(value):
         return "absolute POSIX path"
     if WINDOWS_ABSOLUTE_PATH_RE.search(value):
@@ -343,7 +414,7 @@ def _validate_recursive_boundary(value: object, *, label: str, depth: int = 0) -
         if len(value) > MAX_STRING_LENGTH:
             raise ValueError(f"{label} contains a string longer than {MAX_STRING_LENGTH} characters")
         reason = _unsafe_string_reason(value)
-        if reason == "credentialed URL":
+        if reason == "credential or credentialed URL":
             raise ValueError(f"{label} contains URL credentials")
         if reason is not None:
             raise ValueError(f"{label} contains an unsafe value ({reason})")
@@ -455,10 +526,19 @@ def _public_provenance(record: dict[str, object]) -> dict[str, object]:
     return public
 
 
+def _contributing_public_provenance(
+    record: dict[str, object], *, expected_source: str
+) -> dict[str, object]:
+    provenance = _public_provenance(record)
+    if provenance["source_id"] != expected_source:
+        raise ValueError("contributing row provenance source_id does not match its source")
+    return provenance
+
+
 def _sanitize_program_payload(value: object) -> object:
     if isinstance(value, dict):
         return {
-            str(key): _sanitize_program_payload(item)
+            key: _sanitize_program_payload(item)
             for key, item in value.items()
             if isinstance(key, str) and not _is_unsafe_key(key)
         }
@@ -487,32 +567,32 @@ def _public_program_record(record: dict[str, object]) -> dict[str, object]:
 
 def _selector_payload_paths(selector: dict[str, object]) -> set[str]:
     paths = {
-        str(path)
+        path
         for field in ("taxon_field_paths", "context_field_paths")
         for path in selector.get(field, [])
     }
     prerequisites = selector.get("context_field_prerequisites")
     if isinstance(prerequisites, dict):
         paths.update(
-            str(path)
+            path
             for prerequisite_paths in prerequisites.values()
             if isinstance(prerequisite_paths, list)
             for path in prerequisite_paths
         )
     parent = selector.get("parent_record")
     if isinstance(parent, dict):
-        paths.add(str(parent.get("record_id_path")))
+        paths.add(parent["record_id_path"])
     fulltext = selector.get("fulltext_context")
     if isinstance(fulltext, dict):
         paths.update(
             {
-                str(fulltext.get("unit_id_path")),
-                str(fulltext.get("parent_record_id_path")),
+                fulltext["unit_id_path"],
+                fulltext["parent_record_id_path"],
             }
         )
     requirements = selector.get("record_requirements")
     if isinstance(requirements, dict):
-        paths.update(str(path) for path in requirements)
+        paths.update(requirements)
     return {path for path in paths if path.startswith("payload.")}
 
 
@@ -902,13 +982,54 @@ def _value_at_path(record: dict[str, object], path: str) -> list[str]:
     return [item for value in values for item in _flatten_semantic_value(value)]
 
 
+def _raw_values_at_path(record: dict[str, object], path: str) -> list[object]:
+    values: list[object] = [record]
+    for part in path.split("."):
+        next_values: list[object] = []
+        for value in values:
+            if isinstance(value, dict) and part in value:
+                next_values.append(value[part])
+            elif isinstance(value, list):
+                next_values.extend(
+                    item[part]
+                    for item in value
+                    if isinstance(item, dict) and part in item
+                )
+        values = next_values
+        if not values:
+            return []
+    return values
+
+
+def _path_is_present(record: dict[str, object], path: str) -> bool:
+    return bool(_raw_values_at_path(record, path))
+
+
+def _identifier_values_at_path(
+    record: dict[str, object], path: str
+) -> list[str] | None:
+    raw_values = _raw_values_at_path(record, path)
+    flattened: list[object] = []
+    for value in raw_values:
+        if isinstance(value, list):
+            flattened.extend(value)
+        else:
+            flattened.append(value)
+    if not flattened:
+        return []
+    if not all(isinstance(value, str) and value.strip() for value in flattened):
+        return None
+    return [value.strip() for value in flattened if isinstance(value, str)]
+
+
 def _trusted_semantic_values(
     record: dict[str, object],
     field_paths: list[str],
     *,
+    provenance: dict[str, object],
     field_prefix: str = "",
     link: dict[str, str] | None = None,
-) -> list[dict[str, str]]:
+) -> list[dict[str, object]]:
     link_fields = link or {}
     return [
         {
@@ -917,6 +1038,7 @@ def _trusted_semantic_values(
             "retained_store": "record_payloads",
             "retained_source": str(record.get("source") or ""),
             "retained_path": field_path,
+            "provenance": deepcopy(provenance),
             **link_fields,
         }
         for field_path in field_paths
@@ -939,10 +1061,10 @@ def _matching_excerpt(value: str, match: re.Match[str], *, limit: int = 240) -> 
 
 
 def _direct_assertion(
-    values: list[dict[str, str]], terms: list[str], *, status: str
+    values: list[dict[str, object]], terms: list[str], *, status: str
 ) -> dict[str, object] | None:
     for semantic_value in values:
-        compact = re.sub(r"\s+", " ", semantic_value["value"]).strip()
+        compact = re.sub(r"\s+", " ", str(semantic_value["value"])).strip()
         for term in terms:
             match = _term_match(compact, term)
             if match:
@@ -954,9 +1076,9 @@ def _direct_assertion(
 
 
 def _assertion_basis(
-    semantic_value: dict[str, str], term: str, match: re.Match[str]
-) -> dict[str, str]:
-    compact = re.sub(r"\s+", " ", semantic_value["value"]).strip()
+    semantic_value: dict[str, object], term: str, match: re.Match[str]
+) -> dict[str, object]:
+    compact = re.sub(r"\s+", " ", str(semantic_value["value"])).strip()
     snapshot = _matching_excerpt(compact, match, limit=1000)
     snapshot_match = _term_match(snapshot, term)
     if snapshot_match is None:
@@ -974,16 +1096,16 @@ def _assertion_basis(
 
 
 def _required_groups_assertion(
-    values: list[dict[str, str]],
+    values: list[dict[str, object]],
     required_groups: list[list[str]],
     *,
     status: str,
 ) -> dict[str, object] | None:
     basis: list[dict[str, str]] = []
     for terms in required_groups:
-        matched_basis: dict[str, str] | None = None
+        matched_basis: dict[str, object] | None = None
         for semantic_value in values:
-            compact = re.sub(r"\s+", " ", semantic_value["value"]).strip()
+            compact = re.sub(r"\s+", " ", str(semantic_value["value"])).strip()
             for term in terms:
                 match = _term_match(compact, term)
                 if match:
@@ -1078,65 +1200,34 @@ def _species_profiles(program_records: list[dict[str, object]]) -> dict[str, dic
     return profiles
 
 
-def _select_record_ids_for_group(
-    conn: sqlite3.Connection,
-    *,
-    source: str,
-    scientific_name: str,
-    selectors: list[dict[str, object]],
-) -> dict[str, list[str]]:
-    prepared = [
-        (
-            str(selector["id"]),
-            [str(value).casefold() for value in selector["query_any"]],
-        )
-        for selector in selectors
-    ]
-    score_buckets: dict[str, dict[int, list[str]]] = {
-        selector_id: {} for selector_id, _ in prepared
-    }
-    rows = conn.execute(
+def _record_by_id(
+    conn: sqlite3.Connection, record_id: str
+) -> dict[str, object] | None:
+    row = conn.execute(
         """
-        SELECT r.record_id, r.title, r.text
+        SELECT r.*, p.payload_json
+        FROM records AS r
+        LEFT JOIN record_payloads AS p ON p.record_id = r.record_id
+        WHERE r.record_id = ?
+        """,
+        (record_id,),
+    ).fetchone()
+    return _export_record(row) if row is not None else None
+
+
+def _source_records(
+    conn: sqlite3.Connection, source: str
+):
+    return conn.execute(
+        """
+        SELECT r.*, p.payload_json
         FROM records AS r INDEXED BY idx_records_source
-        WHERE r.source = ? AND r.species = ?
+        LEFT JOIN record_payloads AS p ON p.record_id = r.record_id
+        WHERE r.source = ?
         ORDER BY r.record_id
         """,
-        (source, scientific_name),
+        (source,),
     )
-    for row in rows:
-        record_id = str(row["record_id"])
-        haystack = f"{row['title']} {row['text']}".casefold()
-        for selector_id, terms in prepared:
-            score = sum(term in haystack for term in terms)
-            if not score:
-                continue
-            bucket = score_buckets[selector_id].setdefault(score, [])
-            bucket.append(record_id)
-
-    selected: dict[str, list[str]] = {}
-    for selector_id, _ in prepared:
-        record_ids: list[str] = []
-        for score in sorted(score_buckets[selector_id], reverse=True):
-            record_ids.extend(score_buckets[selector_id][score])
-        selected[selector_id] = record_ids
-    return selected
-
-
-def _records_by_id(conn: sqlite3.Connection, record_ids: list[str]) -> dict[str, dict[str, object]]:
-    if not record_ids:
-        return {}
-    placeholders = ",".join("?" for _ in record_ids)
-    rows = conn.execute(
-        f"""
-        SELECT r.*, p.payload_json
-        FROM records r
-        LEFT JOIN record_payloads p ON p.record_id = r.record_id
-        WHERE r.record_id IN ({placeholders})
-        """,
-        record_ids,
-    ).fetchall()
-    return {str(row["record_id"]): _export_record(row) for row in rows}
 
 
 def _fulltext_unit_by_id(
@@ -1153,19 +1244,116 @@ def _fulltext_unit_by_id(
     return dict(row) if row is not None else None
 
 
-def _context_semantic_values(
+def _fulltext_public_provenance(unit: dict[str, object]) -> dict[str, object]:
+    provenance = _json_or_empty(unit.get("provenance_json"))
+    if not provenance.get("source_url") and unit.get("url"):
+        provenance["source_url"] = unit["url"]
+    if provenance.get("license") is None and unit.get("license") is not None:
+        provenance["license"] = unit["license"]
+    unit_id = _require_string(unit.get("unit_id"), "fulltext unit_id")
+    source = _require_string(unit.get("source"), f"fulltext unit {unit_id} source")
+    return _contributing_public_provenance(
+        {"record_id": unit_id, "provenance": provenance},
+        expected_source=source,
+    )
+
+
+def _active_context_field_paths(
     record: dict[str, object], selector: dict[str, object]
-) -> list[dict[str, str]]:
+) -> list[str]:
     prerequisites = dict(selector["context_field_prerequisites"])
-    field_paths = [
-        str(field_path)
+    return [
+        field_path
         for field_path in selector["context_field_paths"]
         if all(
-            _value_at_path(record, str(prerequisite_path))
+            _path_is_present(record, prerequisite_path)
             for prerequisite_path in prerequisites.get(field_path, [])
         )
     ]
-    return _trusted_semantic_values(record, field_paths)
+
+
+def _context_semantic_values(
+    record: dict[str, object],
+    selector: dict[str, object],
+    *,
+    provenance: dict[str, object],
+) -> list[dict[str, object]]:
+    return _trusted_semantic_values(
+        record,
+        _active_context_field_paths(record, selector),
+        provenance=provenance,
+    )
+
+
+def _trusted_candidate_search_values(
+    conn: sqlite3.Connection,
+    *,
+    record: dict[str, object],
+    selector: dict[str, object],
+) -> tuple[list[str], bool]:
+    values = [
+        value
+        for field_path in [
+            *selector["taxon_field_paths"],
+            *_active_context_field_paths(record, selector),
+        ]
+        for value in _value_at_path(record, field_path)
+    ]
+    reference_paths: list[str] = []
+
+    parent = selector.get("parent_record")
+    if isinstance(parent, dict):
+        parent_id_path = parent["record_id_path"]
+        reference_paths.append(parent_id_path)
+        parent_ids = _identifier_values_at_path(record, parent_id_path)
+        if parent_ids is not None:
+            for parent_id in parent_ids[:MAX_LINKED_RECORD_IDS]:
+                parent_record = _record_by_id(conn, parent_id)
+                if parent_record is None:
+                    continue
+                for field_path in parent["taxon_field_paths"]:
+                    values.extend(_value_at_path(parent_record, field_path))
+
+    fulltext = selector.get("fulltext_context")
+    if isinstance(fulltext, dict):
+        unit_id_path = fulltext["unit_id_path"]
+        parent_id_path = fulltext["parent_record_id_path"]
+        reference_paths.extend([unit_id_path, parent_id_path])
+        unit_ids = _identifier_values_at_path(record, unit_id_path)
+        parent_ids = _identifier_values_at_path(record, parent_id_path)
+        if unit_ids is not None and parent_ids is not None and len(unit_ids) == len(parent_ids) == 1:
+            unit = _fulltext_unit_by_id(conn, unit_ids[0])
+            if unit is not None and unit.get("record_id") == parent_ids[0]:
+                values.extend(_flatten_semantic_value(unit.get("text")))
+
+    requirements = selector.get("record_requirements")
+    if isinstance(requirements, dict):
+        for field_path in requirements:
+            values.extend(_value_at_path(record, field_path))
+
+    has_reference_prerequisites = bool(reference_paths) and all(
+        _path_is_present(record, path) for path in reference_paths
+    )
+    return values, has_reference_prerequisites
+
+
+def _trusted_candidate_score(
+    conn: sqlite3.Connection,
+    *,
+    record: dict[str, object],
+    selector: dict[str, object],
+) -> tuple[int, bool]:
+    values, has_reference_prerequisites = _trusted_candidate_search_values(
+        conn,
+        record=record,
+        selector=selector,
+    )
+    normalized_values = [value.casefold() for value in values]
+    score = sum(
+        any(term.casefold() in value for value in normalized_values)
+        for term in selector["query_any"]
+    )
+    return score, has_reference_prerequisites
 
 
 def _record_requirements_match(
@@ -1190,20 +1378,36 @@ def _candidate_eligibility(
     scientific_name: str,
     taxon_terms: list[str],
 ) -> tuple[dict[str, object] | None, str | None]:
-    selector_id = str(selector["id"])
+    selector_id = _require_string(selector.get("id"), "selector id")
+    record_source = _require_string(record.get("source"), f"candidate {record.get('record_id')} source")
+    try:
+        record_provenance = _contributing_public_provenance(
+            record,
+            expected_source=record_source,
+        )
+    except ValueError:
+        return None, "public_provenance_missing"
     if not _record_requirements_match(record, selector):
         return None, "record_requirement_not_met"
 
     fulltext_config = selector.get("fulltext_context")
     fulltext_unit: dict[str, object] | None = None
+    fulltext_provenance: dict[str, object] | None = None
     fulltext_unit_id: str | None = None
     fulltext_parent_id: str | None = None
     if isinstance(fulltext_config, dict):
-        unit_ids = _value_at_path(record, str(fulltext_config["unit_id_path"]))
-        linked_parent_ids = _value_at_path(
-            record, str(fulltext_config["parent_record_id_path"])
+        unit_ids = _identifier_values_at_path(
+            record, fulltext_config["unit_id_path"]
         )
-        if len(unit_ids) != 1 or len(linked_parent_ids) != 1:
+        linked_parent_ids = _identifier_values_at_path(
+            record, fulltext_config["parent_record_id_path"]
+        )
+        if (
+            unit_ids is None
+            or linked_parent_ids is None
+            or len(unit_ids) != 1
+            or len(linked_parent_ids) != 1
+        ):
             return None, "fulltext_unit_link_invalid"
         fulltext_unit_id = unit_ids[0]
         fulltext_parent_id = linked_parent_ids[0]
@@ -1213,31 +1417,49 @@ def _candidate_eligibility(
             or str(fulltext_unit["record_id"]) != fulltext_parent_id
         ):
             return None, "fulltext_unit_link_invalid"
+        try:
+            fulltext_provenance = _fulltext_public_provenance(fulltext_unit)
+        except ValueError:
+            return None, "public_provenance_missing"
 
     taxon_values = _trusted_semantic_values(
         record,
-        [str(path) for path in selector["taxon_field_paths"]],
+        list(selector["taxon_field_paths"]),
+        provenance=record_provenance,
     )
 
     parent_config = selector.get("parent_record")
     parent_ids: list[str] = []
     if isinstance(parent_config, dict):
-        parent_ids = list(
-            dict.fromkeys(
-                _value_at_path(record, str(parent_config["record_id_path"]))
-            )
+        raw_parent_ids = _identifier_values_at_path(
+            record, parent_config["record_id_path"]
         )
+        if raw_parent_ids is None or len(raw_parent_ids) > MAX_LINKED_RECORD_IDS:
+            return None, "invalid_candidate_shape"
+        parent_ids = list(dict.fromkeys(raw_parent_ids))
         if not parent_ids:
             return None, "upstream_record_missing"
-        parents = _records_by_id(conn, parent_ids)
-        if any(parent_id not in parents for parent_id in parent_ids):
-            return None, "upstream_record_missing"
-        parent_paths = [str(path) for path in parent_config["taxon_field_paths"]]
+        parent_paths = list(parent_config["taxon_field_paths"])
         for parent_id in parent_ids:
+            parent_record = _record_by_id(conn, parent_id)
+            if parent_record is None:
+                return None, "upstream_record_missing"
+            try:
+                parent_source = _require_string(
+                    parent_record.get("source"),
+                    f"parent record {parent_id} source",
+                )
+                parent_provenance = _contributing_public_provenance(
+                    parent_record,
+                    expected_source=parent_source,
+                )
+            except ValueError:
+                return None, "public_provenance_missing"
             taxon_values.extend(
                 _trusted_semantic_values(
-                    parents[parent_id],
+                    parent_record,
                     parent_paths,
+                    provenance=parent_provenance,
                     field_prefix="parent.",
                     link={"parent_record_id": parent_id},
                 )
@@ -1251,8 +1473,9 @@ def _candidate_eligibility(
 
     if isinstance(fulltext_config, dict):
         assert fulltext_unit is not None
+        assert fulltext_provenance is not None
         assert fulltext_unit_id is not None and fulltext_parent_id is not None
-        context_values: list[dict[str, str]] = []
+        context_values: list[dict[str, object]] = []
         text = re.sub(r"\s+", " ", str(fulltext_unit.get("text") or "")).strip()
         if text:
             context_values.append(
@@ -1264,10 +1487,15 @@ def _candidate_eligibility(
                     "retained_path": str(fulltext_config["text_field_path"]),
                     "fulltext_unit_id": str(fulltext_unit_id),
                     "parent_record_id": str(fulltext_parent_id),
+                    "provenance": deepcopy(fulltext_provenance),
                 }
             )
     else:
-        context_values = _context_semantic_values(record, selector)
+        context_values = _context_semantic_values(
+            record,
+            selector,
+            provenance=record_provenance,
+        )
     if not context_values:
         return None, "trusted_field_missing"
     context = _required_groups_assertion(
@@ -1280,11 +1508,6 @@ def _candidate_eligibility(
     )
     if context is None:
         return None, "context_not_directly_confirmed"
-
-    try:
-        _public_provenance(record)
-    except ValueError:
-        return None, "public_provenance_missing"
 
     for basis in taxon["basis"]:
         basis["selector_id"] = selector_id
@@ -1303,6 +1526,119 @@ def _candidate_eligibility(
         "taxon": taxon,
         "context": context,
     }, None
+
+
+def _prepare_candidate_for_export(
+    *,
+    record: dict[str, object],
+    selector: dict[str, object],
+    context_id: str,
+    selector_id: str,
+    species_id: str,
+    scientific_name: str,
+    eligibility: dict[str, object],
+) -> dict[str, object]:
+    prepared = deepcopy(record)
+    prepared["species"] = scientific_name
+    prepared["species_id"] = species_id
+    prepared["context_ids"] = [context_id]
+    prepared["selector_ids"] = [selector_id]
+    prepared["eligibility"] = eligibility
+    exported = _public_evidence_record(prepared, [selector])
+    _validate_recursive_boundary(exported, label=f"candidate {prepared.get('record_id')}")
+    _require_exact_fields(
+        exported,
+        EVIDENCE_RECORD_FIELDS,
+        label=f"candidate {prepared.get('record_id')}",
+    )
+    record_id = _require_string(exported.get("record_id"), "candidate record_id")
+    for field in ("lane", "source", "title", "text", "species", "species_id"):
+        _require_string(exported.get(field), f"candidate {record_id} {field}")
+    _require_string_list(exported.get("context_ids"), f"candidate {record_id} context_ids")
+    _require_string_list(exported.get("selector_ids"), f"candidate {record_id} selector_ids")
+    if not isinstance(exported.get("payload"), dict):
+        raise ValueError(f"candidate {record_id} payload must be an object")
+    canonical_json(exported)
+    return prepared
+
+
+def _stream_candidate_states(
+    conn: sqlite3.Connection,
+    selector_jobs: list[dict[str, object]],
+) -> dict[str, dict[str, object]]:
+    states: dict[str, dict[str, object]] = {}
+    grouped_jobs: dict[str, list[dict[str, object]]] = {}
+    for job in selector_jobs:
+        selector = job["selector"]
+        selector_id = _require_string(selector.get("id"), "selector id")
+        states[selector_id] = {
+            "candidate_count": 0,
+            "eligible_count": 0,
+            "rejection_counts": {},
+            "selected": [],
+        }
+        source = _require_string(selector.get("source"), f"selector {selector_id} source")
+        grouped_jobs.setdefault(source, []).append(job)
+
+    for source, jobs in grouped_jobs.items():
+        for raw_row in _source_records(conn, source):
+            record = _export_record(raw_row)
+            for job in jobs:
+                selector = job["selector"]
+                selector_id = selector["id"]
+                score, has_reference_prerequisites = _trusted_candidate_score(
+                    conn,
+                    record=record,
+                    selector=selector,
+                )
+                if score == 0 and not has_reference_prerequisites:
+                    continue
+
+                state = states[selector_id]
+                state["candidate_count"] += 1
+                if state["candidate_count"] > MAX_SELECTOR_CANDIDATE_FRONTIER:
+                    raise ValueError(
+                        f"selector {selector_id} candidate frontier exceeds "
+                        f"{MAX_SELECTOR_CANDIDATE_FRONTIER}; narrow its source or query_any terms"
+                    )
+
+                eligibility, rejection_reason = _candidate_eligibility(
+                    conn,
+                    record=record,
+                    selector=selector,
+                    context_id=job["context_id"],
+                    species_id=job["species_id"],
+                    scientific_name=job["scientific_name"],
+                    taxon_terms=job["taxon_terms"],
+                )
+                if eligibility is None:
+                    reason = _require_string(rejection_reason, "candidate rejection reason")
+                    rejection_counts = state["rejection_counts"]
+                    rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
+                    continue
+
+                try:
+                    prepared = _prepare_candidate_for_export(
+                        record=record,
+                        selector=selector,
+                        context_id=job["context_id"],
+                        selector_id=selector_id,
+                        species_id=job["species_id"],
+                        scientific_name=job["scientific_name"],
+                        eligibility=eligibility,
+                    )
+                except ValueError:
+                    rejection_counts = state["rejection_counts"]
+                    reason = "unsafe_export_boundary"
+                    rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
+                    continue
+
+                state["eligible_count"] += 1
+                selected = state["selected"]
+                selected.append((score, prepared["record_id"], prepared, eligibility))
+                selected.sort(key=lambda item: (-item[0], item[1]))
+                del selected[int(selector["limit"]):]
+    return states
 
 
 def _merge_basis(existing: list[dict[str, object]], additional: list[dict[str, object]]) -> None:
@@ -1352,6 +1688,26 @@ def _context_export(context: dict[str, object], *, index: int, config: dict[str,
     return exported
 
 
+def _verify_bounded_source_index_contract(conn: sqlite3.Connection) -> int:
+    conn.execute("PRAGMA query_only = ON")
+    query_only = conn.execute("PRAGMA query_only").fetchone()
+    if query_only is None or int(query_only[0]) != 1:
+        raise ValueError("source_index.sqlite did not enter query_only mode")
+
+    table_names = {
+        str(row[0])
+        for row in conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'table'"
+        )
+    }
+    missing_tables = sorted(REQUIRED_SOURCE_TABLES - table_names)
+    if missing_tables:
+        raise ValueError(
+            f"source_index.sqlite is missing required tables: {missing_tables}"
+        )
+    return int(conn.execute("SELECT COUNT(*) FROM records").fetchone()[0])
+
+
 def build_context_package(
     *,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
@@ -1364,10 +1720,22 @@ def build_context_package(
     status_path = artifact_dir / "source_status.json"
     if not status_path.exists():
         raise ValueError("source_status.json is required to identify the public source snapshot")
-    status_bytes = status_path.read_bytes()
-    status = json.loads(status_bytes)
+    status = json.loads(status_path.read_text(encoding="utf-8"))
     if not isinstance(status, dict):
         raise ValueError("source_status.json must contain a JSON object")
+    status_generated_at = _require_string(
+        status.get("generated_at"),
+        "source_status.json generated_at",
+    )
+    status_record_count = status.get("record_count")
+    if (
+        isinstance(status_record_count, bool)
+        or not isinstance(status_record_count, int)
+        or status_record_count < 0
+    ):
+        raise ValueError("source_status.json record_count must be a non-negative integer")
+    canonical_status = canonical_json(status)
+    source_status_sha256 = hashlib.sha256(canonical_status.encode("utf-8")).hexdigest()
     db_path = artifact_dir / "source_index.sqlite"
     if not db_path.exists():
         raise ValueError("source_index.sqlite is required to build the context package")
@@ -1375,6 +1743,13 @@ def build_context_package(
     conn = sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
+        database_record_count = _verify_bounded_source_index_contract(conn)
+        if database_record_count != status_record_count:
+            raise ValueError(
+                "source_status.json record_count does not match the read-only database "
+                f"({status_record_count} != {database_record_count})"
+            )
+
         raw_program_records = _program_records(conn)
         species_profiles = _species_profiles(raw_program_records)
         program_records = [_public_program_record(record) for record in raw_program_records]
@@ -1386,13 +1761,13 @@ def build_context_package(
         selector_jobs: list[dict[str, object]] = []
         for context_index, raw_context in enumerate(contexts):
             context = dict(raw_context)
-            context_id = str(context["id"])
+            context_id = _require_string(context.get("id"), "context id")
             for species_id in context["species_ids"]:
                 if species_id not in species_profiles:
                     raise ValueError(f"context {context_id} names unknown species profile: {species_id}")
             exported_contexts.append(_context_export(context, index=context_index, config=config))
             for selector in context["selectors"]:
-                species_id = str(selector["species_id"])
+                species_id = _require_string(selector.get("species_id"), "selector species_id")
                 profile = species_profiles[species_id]
                 selector_jobs.append(
                     {
@@ -1404,50 +1779,16 @@ def build_context_package(
                     }
                 )
 
-        grouped_jobs: dict[tuple[str, str], list[dict[str, object]]] = {}
-        for job in selector_jobs:
-            selector = job["selector"]
-            key = (str(selector["source"]), str(job["scientific_name"]))
-            grouped_jobs.setdefault(key, []).append(job)
-
-        selected_ids: dict[str, list[str]] = {}
-        records_by_id: dict[str, dict[str, object]] = {}
-        for (source, scientific_name), jobs in grouped_jobs.items():
-            group_selected = _select_record_ids_for_group(
-                conn,
-                source=source,
-                scientific_name=scientific_name,
-                selectors=[dict(job["selector"]) for job in jobs],
-            )
-            selected_ids.update(group_selected)
-            group_ids = sorted({record_id for values in group_selected.values() for record_id in values})
-            records_by_id.update(_records_by_id(conn, group_ids))
+        candidate_states = _stream_candidate_states(conn, selector_jobs)
 
         for job in selector_jobs:
-            context_id = str(job["context_id"])
+            context_id = job["context_id"]
             selector = dict(job["selector"])
-            selector_id = str(selector["id"])
-            species_id = str(job["species_id"])
-            scientific_name = str(job["scientific_name"])
-            candidate_rows = [records_by_id[record_id] for record_id in selected_ids[selector_id]]
-            eligible: list[tuple[dict[str, object], dict[str, object]]] = []
-            rejection_counts: dict[str, int] = {}
-            for row in candidate_rows:
-                eligibility, rejection_reason = _candidate_eligibility(
-                    conn,
-                    record=row,
-                    selector=selector,
-                    context_id=context_id,
-                    species_id=species_id,
-                    scientific_name=scientific_name,
-                    taxon_terms=[str(term) for term in job["taxon_terms"]],
-                )
-                if eligibility is None:
-                    reason = str(rejection_reason)
-                    rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
-                else:
-                    eligible.append((row, eligibility))
-            selected = eligible[: int(selector["limit"])]
+            selector_id = selector["id"]
+            species_id = job["species_id"]
+            scientific_name = job["scientific_name"]
+            state = candidate_states[selector_id]
+            selected = state["selected"]
             result = {
                 "context_id": context_id,
                 "selector_id": selector_id,
@@ -1466,11 +1807,11 @@ def build_context_package(
                 "record_requirements": deepcopy(selector.get("record_requirements")),
                 "limit": selector["limit"],
                 "required": selector["required"],
-                "candidate_count": len(candidate_rows),
-                "eligible_count": len(eligible),
+                "candidate_count": state["candidate_count"],
+                "eligible_count": state["eligible_count"],
                 "selected_count": len(selected),
-                "selected_record_ids": [row["record_id"] for row, _ in selected],
-                "rejection_counts": dict(sorted(rejection_counts.items())),
+                "selected_record_ids": [record_id for _, record_id, _, _ in selected],
+                "rejection_counts": dict(sorted(state["rejection_counts"].items())),
             }
             selector_results.append(result)
             if not selected:
@@ -1480,15 +1821,10 @@ def build_context_package(
                         **result,
                     }
                 )
-            for row, eligibility in selected:
-                record_id = str(row["record_id"])
+            for _, record_id, row, eligibility in selected:
                 existing = selected_by_id.get(record_id)
                 if existing is None:
                     exported_row = deepcopy(row)
-                    exported_row["species_id"] = species_id
-                    exported_row["context_ids"] = [context_id]
-                    exported_row["selector_ids"] = [selector_id]
-                    exported_row["eligibility"] = eligibility
                     selected_by_id[record_id] = exported_row
                 else:
                     if existing["species_id"] != species_id:
@@ -1499,14 +1835,14 @@ def build_context_package(
                         existing["selector_ids"].append(selector_id)
                     _merge_eligibility(existing["eligibility"], eligibility)
         selectors_by_id = {
-            str(job["selector"]["id"]): dict(job["selector"])
+            job["selector"]["id"]: dict(job["selector"])
             for job in selector_jobs
         }
         evidence_records = [
             _public_evidence_record(
                 selected_by_id[key],
                 [
-                    selectors_by_id[str(selector_id)]
+                    selectors_by_id[selector_id]
                     for selector_id in selected_by_id[key]["selector_ids"]
                 ],
             )
@@ -1525,9 +1861,9 @@ def build_context_package(
         "knowledge_domains": config["knowledge_domains"],
         "upstream_snapshot": {
             "source_id": "ask_insects_hosted_source_index",
-            "source_status_sha256": hashlib.sha256(status_bytes).hexdigest(),
-            "source_status_generated_at": status.get("generated_at"),
-            "record_count": status.get("record_count"),
+            "source_status_sha256": source_status_sha256,
+            "source_status_generated_at": status_generated_at,
+            "record_count": status_record_count,
         },
         "contexts": exported_contexts,
         "program_records": program_records,
@@ -1542,8 +1878,11 @@ def build_context_package(
 
 
 def _unique(items: list[dict[str, object]], key: str, label: str) -> None:
-    values = [str(item.get(key) or "") for item in items]
-    if any(not value for value in values) or len(values) != len(set(values)):
+    values = [
+        _require_string(item.get(key), f"{label} {key}")
+        for item in items
+    ]
+    if len(values) != len(set(values)):
         raise ValueError(f"{label} must have unique non-empty {key} values")
 
 
@@ -1638,6 +1977,7 @@ def _validate_assertion_basis(
         _require_string(item.get("selector_id"), f"{label} basis/{index} selector_id")
         if require_context:
             _require_string(item.get("context_id"), f"{label} basis/{index} context_id")
+        _validate_public_provenance(item, item_label)
         if retained_store not in {"record_payloads", "literature_fulltext_units"}:
             raise ValueError(f"{label} basis/{index} retained_store is invalid")
         if not retained_source or not retained_path:
@@ -1733,6 +2073,9 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         _require_exact_fields(record, PROGRAM_RECORD_FIELDS, label=f"program record {record_id}")
         for field in ("lane", "source", "title", "text"):
             _require_string(record.get(field), f"program record {record_id} {field}")
+        species = record.get("species")
+        if species is not None:
+            _require_string(species, f"program record {record_id} species")
         if record.get("source") != "insect_intelligence_programs":
             raise ValueError(f"program record {record_id} source is invalid")
         if not isinstance(record.get("payload"), dict):
@@ -1746,9 +2089,9 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         )
     species_profiles = _species_profiles(program_records)
 
-    context_by_id = {str(context["id"]): context for context in contexts}
+    context_by_id = {context["id"]: context for context in contexts}
     for context_index, context in enumerate(contexts):
-        context_id = str(context["id"])
+        context_id = _require_string(context.get("id"), f"contexts/{context_index}/id")
         species_ids, required_domains = _validate_generic_context(
             context,
             context_id=context_id,
@@ -1830,6 +2173,12 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             raise ValueError(f"selector {selector_id} selected_record_ids do not match selected_count")
         if count > eligible_count:
             raise ValueError(f"selector {selector_id} selected_count exceeds eligible_count")
+        expected_selected_count = min(limit, eligible_count)
+        if count != expected_selected_count:
+            raise ValueError(
+                f"selector {selector_id} selected_count must equal "
+                f"min(limit, eligible_count) ({expected_selected_count})"
+            )
         if not isinstance(rejection_counts, dict):
             raise ValueError(f"selector {selector_id} rejection_counts must be an object")
         rejection_total = 0
@@ -1852,9 +2201,9 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
     if len(selector_keys) != len(set(selector_keys)):
         raise ValueError("selector results must have unique selector ids")
 
-    evidence_by_id = {str(record.get("record_id") or ""): record for record in evidence_records}
+    evidence_by_id = {record["record_id"]: record for record in evidence_records}
     for result in selector_results:
-        selector_id = str(result["selector_id"])
+        selector_id = result["selector_id"]
         for record_id in result["selected_record_ids"]:
             if record_id not in evidence_by_id:
                 raise ValueError(f"selector {selector_id} selects missing evidence record {record_id}")
@@ -1869,14 +2218,14 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         _validate_public_provenance(
             record,
             f"evidence record {record_id}",
-            expected_source_id=str(record["source"]),
+            expected_source_id=record["source"],
             expected_record_id=record_id,
         )
         species_id = _require_string(record.get("species_id"), f"evidence record {record_id} species_id")
         profile = species_profiles.get(species_id)
         if profile is None:
             raise ValueError(f"evidence record {record_id} names unknown species: {species_id}")
-        scientific_name = str(profile["scientific_name"])
+        scientific_name = profile["scientific_name"]
         if record.get("species") != scientific_name:
             raise ValueError(f"evidence record {record_id} is not exact-species evidence for {scientific_name}")
         if selected_record_species.get(record_id) != species_id:
@@ -1884,9 +2233,9 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         context_ids = _require_string_list(record.get("context_ids"), f"evidence record {record_id} context_ids")
         selector_ids = _require_string_list(record.get("selector_ids"), f"evidence record {record_id} selector_ids")
         selecting_receipts = receipts_by_record.get(record_id, [])
-        expected_selector_ids = [str(receipt["selector_id"]) for receipt in selecting_receipts]
+        expected_selector_ids = [receipt["selector_id"] for receipt in selecting_receipts]
         expected_context_ids = list(
-            dict.fromkeys(str(receipt["context_id"]) for receipt in selecting_receipts)
+            dict.fromkeys(receipt["context_id"] for receipt in selecting_receipts)
         )
         if selector_ids != expected_selector_ids:
             raise ValueError(
@@ -1917,7 +2266,7 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                 raise ValueError(f"evidence record {record_id} selector source does not match")
             if not _record_requirements_match(record, receipt):
                 raise ValueError(f"evidence record {record_id} does not satisfy selector record requirements")
-            receipt_contexts.append(str(receipt["context_id"]))
+            receipt_contexts.append(receipt["context_id"])
         if set(context_ids) != set(receipt_contexts):
             raise ValueError(f"evidence record {record_id} contexts do not match selector receipts")
 
@@ -1975,8 +2324,10 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                     basis.get("parent_record_id"),
                     f"evidence record {record_id} taxon basis parent_record_id",
                 )
-                linked_parent_ids = _value_at_path(record, str(parent["record_id_path"]))
-                if parent_record_id not in linked_parent_ids:
+                linked_parent_ids = _identifier_values_at_path(
+                    record, parent["record_id_path"]
+                )
+                if linked_parent_ids is None or parent_record_id not in linked_parent_ids:
                     raise ValueError(
                         f"evidence record {record_id} taxon basis parent_record_id is not linked"
                     )
@@ -1984,6 +2335,12 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                     raise ValueError(f"evidence record {record_id} taxon basis retained_store is invalid")
                 if retained_path != parent_path:
                     raise ValueError(f"evidence record {record_id} taxon basis retained_path is invalid")
+                _validate_public_provenance(
+                    basis,
+                    f"evidence record {record_id} taxon basis",
+                    expected_source_id=retained_source,
+                    expected_record_id=parent_record_id,
+                )
             else:
                 _require_exact_fields(
                     basis,
@@ -2000,6 +2357,17 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                     raise ValueError(f"evidence record {record_id} taxon basis retained_path is invalid")
                 if not _record_snapshot_matches(record, field_path, snapshot, matched_term):
                     raise ValueError(f"evidence record {record_id} taxon basis is not present in its field")
+                _validate_public_provenance(
+                    basis,
+                    f"evidence record {record_id} taxon basis",
+                    expected_source_id=retained_source,
+                    expected_record_id=record_id,
+                )
+                if basis["provenance"] != record["provenance"]:
+                    raise ValueError(
+                        f"evidence record {record_id} taxon basis provenance "
+                        "does not match record provenance"
+                    )
             taxon_basis_selectors.add(selector_id)
         if set(selector_ids) != taxon_basis_selectors:
             raise ValueError(f"evidence record {record_id} taxon assertion is missing selector basis")
@@ -2067,6 +2435,17 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                     raise ValueError(f"evidence record {record_id} context basis retained_path is invalid")
                 if not _record_snapshot_matches(record, field_path, snapshot, matched_term):
                     raise ValueError(f"evidence record {record_id} context basis is not present in its field")
+                _validate_public_provenance(
+                    basis,
+                    f"evidence record {record_id} context basis",
+                    expected_source_id=retained_source,
+                    expected_record_id=record_id,
+                )
+                if basis["provenance"] != record["provenance"]:
+                    raise ValueError(
+                        f"evidence record {record_id} context basis provenance "
+                        "does not match record provenance"
+                    )
             else:
                 _require_exact_fields(
                     basis,
@@ -2085,13 +2464,17 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                     basis.get("parent_record_id"),
                     f"evidence record {record_id} context basis parent_record_id",
                 )
-                if fulltext_unit_id not in _value_at_path(record, str(fulltext["unit_id_path"])):
+                linked_unit_ids = _identifier_values_at_path(
+                    record, fulltext["unit_id_path"]
+                )
+                if linked_unit_ids is None or fulltext_unit_id not in linked_unit_ids:
                     raise ValueError(
                         f"evidence record {record_id} context basis fulltext_unit_id is not linked"
                     )
-                if parent_record_id not in _value_at_path(
-                    record, str(fulltext["parent_record_id_path"])
-                ):
+                linked_parent_ids = _identifier_values_at_path(
+                    record, fulltext["parent_record_id_path"]
+                )
+                if linked_parent_ids is None or parent_record_id not in linked_parent_ids:
                     raise ValueError(
                         f"evidence record {record_id} context basis parent_record_id is not linked"
                     )
@@ -2099,9 +2482,15 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                     raise ValueError(f"evidence record {record_id} context basis retained_store is invalid")
                 if retained_path != field_path:
                     raise ValueError(f"evidence record {record_id} context basis retained_path is invalid")
+                _validate_public_provenance(
+                    basis,
+                    f"evidence record {record_id} context basis",
+                    expected_source_id=retained_source,
+                    expected_record_id=fulltext_unit_id,
+                )
             covered_groups.setdefault((selector_id, context_id), set()).update(matching_groups)
         for selector_id in selector_ids:
-            context_id = str(selector_receipts[selector_id]["context_id"])
+            context_id = selector_receipts[selector_id]["context_id"]
             required_count = len(selector_receipts[selector_id]["context_required_term_groups"])
             if covered_groups.get((selector_id, context_id), set()) != set(range(required_count)):
                 raise ValueError(
@@ -2110,7 +2499,7 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
                 )
 
     zero_selected = {
-        str(result["selector_id"]): result
+        result["selector_id"]: result
         for result in selector_results
         if result["selected_count"] == 0
     }

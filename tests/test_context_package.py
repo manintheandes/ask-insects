@@ -173,6 +173,7 @@ class ContextPackageTests(unittest.TestCase):
             config["schema_version"],
             "ask-insects-evidence-package-config.v2",
         )
+        self.assertEqual(config["package_version"], "2026-07-14.3")
         contexts = config["contexts"]
         self.assertEqual(
             [context["id"] for context in contexts],
@@ -342,7 +343,7 @@ class ContextPackageTests(unittest.TestCase):
             json.dumps(
                 {
                     "schema_version": "ask-insects-evidence-package-config.v2",
-                    "package_version": "2026-07-14.1",
+                    "package_version": "2026-07-14.3",
                     "last_reviewed": "2026-07-14",
                     "objective": "Provide public context for private interpretation.",
                     "knowledge_domains": ["behavior"],
@@ -383,7 +384,18 @@ class ContextPackageTests(unittest.TestCase):
     def tearDown(self):
         self.tempdir.cleanup()
 
-    def build(self, generated_at: str):
+    def _sync_status_record_count(self) -> None:
+        with self.index.connect() as conn:
+            record_count = conn.execute("SELECT COUNT(*) FROM records").fetchone()[0]
+        status_path = self.artifact_dir / "source_status.json"
+        status = json.loads(status_path.read_text(encoding="utf-8"))
+        if status.get("record_count") != record_count:
+            status["record_count"] = record_count
+            status_path.write_text(json.dumps(status), encoding="utf-8")
+
+    def build(self, generated_at: str, *, sync_status: bool = True):
+        if sync_status:
+            self._sync_status_record_count()
         config = json.loads(self.config_path.read_text(encoding="utf-8"))
         with patch("askinsects.context_package.load_context_config", return_value=config):
             return build_context_package(
@@ -393,6 +405,7 @@ class ContextPackageTests(unittest.TestCase):
             )
 
     def build_with_contexts(self, contexts: list[dict], generated_at: str = "2026-07-14T01:00:00Z"):
+        self._sync_status_record_count()
         config = json.loads(self.config_path.read_text(encoding="utf-8"))
         config["contexts"] = contexts
         with patch("askinsects.context_package.load_context_config", return_value=config):
@@ -556,6 +569,7 @@ class ContextPackageTests(unittest.TestCase):
                         source_id="public_parent_literature",
                         locator="literature_fulltext_units#unit:validator:swd",
                         retrieved_at="2026-07-13T00:00:00Z",
+                        source_url="https://example.org/fulltext/unit-validator-swd",
                     ),
                 )
             ]
@@ -830,6 +844,18 @@ class ContextPackageTests(unittest.TestCase):
         self.index.upsert_records(
             [
                 record(
+                    "public:swd:1",
+                    source="public_swd_behavior",
+                    species="Drosophila suzukii",
+                    text="Generated text repeats every search term.",
+                    payload={
+                        "title": "Drosophila suzukii contact avoidance assay",
+                        "abstract": "Direct contact avoidance was measured.",
+                    },
+                    locator="/home/josh/ask-insects/source.json#row/100",
+                    source_url="10.1234/swd.1",
+                ),
+                record(
                     "public:swd:three-matches",
                     source="public_swd_behavior",
                     species="Drosophila suzukii",
@@ -898,8 +924,8 @@ class ContextPackageTests(unittest.TestCase):
         self.assertTrue(selected_ids.intersection({"public:swd:1", "public:swd:2"}))
         self.assertFalse(selected_ids.intersection({item[0] for item in contaminated}))
         receipt = package["selector_results"][0]
-        self.assertEqual(receipt["candidate_count"], 6)
-        self.assertEqual(receipt["rejection_counts"], {"taxon_not_directly_confirmed": 4})
+        self.assertEqual(receipt["candidate_count"], 5)
+        self.assertEqual(receipt["rejection_counts"], {"taxon_not_directly_confirmed": 3})
 
     def test_single_concept_evidence_cannot_qualify_any_context(self):
         context_cases = [
@@ -1065,7 +1091,7 @@ class ContextPackageTests(unittest.TestCase):
         )
         for item in package["evidence_records"]:
             eligibility = item["eligibility"]
-            self.assertEqual(eligibility["ruleset_version"], "direct-semantic-evidence.v1")
+            self.assertEqual(eligibility["ruleset_version"], "direct-semantic-evidence.v2")
             self.assertEqual(eligibility["taxon"]["status"], "direct_focal_taxon")
             self.assertEqual(eligibility["context"]["status"], "direct_context")
             for basis in [*eligibility["taxon"]["basis"], *eligibility["context"]["basis"]]:
@@ -1123,6 +1149,7 @@ class ContextPackageTests(unittest.TestCase):
                         source_id="public_parent_literature",
                         locator="literature_fulltext_units#unit:1",
                         retrieved_at="2026-07-13T00:00:00Z",
+                        source_url="https://example.org/fulltext/unit-1",
                     ),
                 )
             ]
@@ -1159,6 +1186,10 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(taxon_basis["parent_record_id"], "parent:swd:paper")
         self.assertEqual(taxon_basis["retained_source"], "public_parent_literature")
         self.assertEqual(
+            taxon_basis["provenance"]["index_record_id"],
+            "parent:swd:paper",
+        )
+        self.assertEqual(
             taxon_basis["retained_path"],
             "payload.raw_openalex_work.abstract_inverted_index",
         )
@@ -1170,6 +1201,7 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(context_basis["fulltext_unit_id"], "unit:1")
         self.assertEqual(context_basis["parent_record_id"], "parent:swd:paper")
         self.assertEqual(context_basis["retained_source"], "public_parent_literature")
+        self.assertEqual(context_basis["provenance"]["index_record_id"], "unit:1")
         self.assertEqual(context_basis["retained_path"], "literature_fulltext_units.text")
         for basis in (taxon_basis, context_basis):
             self.assertTrue(basis["evidence_snapshot"])
@@ -1205,6 +1237,7 @@ class ContextPackageTests(unittest.TestCase):
                         source_id="public_parent_literature",
                         locator="literature_fulltext_units#unit:missing-parent",
                         retrieved_at="2026-07-13T00:00:00Z",
+                        source_url="https://example.org/fulltext/unit-missing-parent",
                     ),
                 )
             ]
@@ -1284,6 +1317,7 @@ class ContextPackageTests(unittest.TestCase):
                         source_id="public_parent_literature",
                         locator="literature_fulltext_units#unit:top-level-only",
                         retrieved_at="2026-07-13T00:00:00Z",
+                        source_url="https://example.org/fulltext/unit-top-level-only",
                     ),
                 )
             ]
@@ -1369,6 +1403,7 @@ class ContextPackageTests(unittest.TestCase):
                         source_id="public_parent_literature",
                         locator="literature_fulltext_units#unit:belongs-elsewhere",
                         retrieved_at="2026-07-13T00:00:00Z",
+                        source_url="https://example.org/fulltext/unit-belongs-elsewhere",
                     ),
                 )
             ]
@@ -1475,6 +1510,7 @@ class ContextPackageTests(unittest.TestCase):
                         source_id="public_parent_literature",
                         locator=f"literature_fulltext_units#{unit_id}",
                         retrieved_at="2026-07-13T00:00:00Z",
+                        source_url=f"https://example.org/fulltext/{unit_id}",
                     ),
                 )
                 for index, unit_id in enumerate(
@@ -1550,6 +1586,7 @@ class ContextPackageTests(unittest.TestCase):
                         source_id="public_parent_literature",
                         locator="literature_fulltext_units#unit:no-parent-fields",
                         retrieved_at="2026-07-13T00:00:00Z",
+                        source_url="https://example.org/fulltext/unit-no-parent-fields",
                     ),
                 )
             ]
@@ -1729,8 +1766,19 @@ class ContextPackageTests(unittest.TestCase):
             },
             {
                 "flight_without_parent": {"record_requirement_not_met": 1},
-                "hard_coded_neurobiology": {"trusted_field_missing": 1},
-                "unmapped_dbm": {"trusted_field_missing": 1},
+                "hard_coded_neurobiology": {},
+                "unmapped_dbm": {},
+            },
+        )
+        self.assertEqual(
+            {
+                result["selector_id"]: result["candidate_count"]
+                for result in package["selector_results"]
+            },
+            {
+                "flight_without_parent": 1,
+                "hard_coded_neurobiology": 0,
+                "unmapped_dbm": 0,
             },
         )
 
@@ -1771,7 +1819,7 @@ class ContextPackageTests(unittest.TestCase):
             "receipt_selector",
             "drosophila_suzukii",
             "receipt_evidence",
-            query_any=["avoidance"],
+            query_any=["assay"],
             context_required_term_groups=[["avoidance"], ["measured"]],
             limit=1,
             taxon_field_paths=["payload.title"],
@@ -1944,7 +1992,9 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(
             package["validation_contract"],
             {
-                "producer_linkage": "verified_in_read_only_source_index_during_build",
+                "producer_linkage": (
+                    "status_record_count_selected_rows_and_links_verified_in_read_only_source_index"
+                ),
                 "downstream_validation": "exported_snapshot_internal_consistency_only",
                 "snapshot_authentication": "publisher_pinned_content_sha256",
             },
@@ -2032,7 +2082,8 @@ class ContextPackageTests(unittest.TestCase):
         )
         self.assertEqual(
             package["program_records"][0]["provenance"]["locator"],
-            "https://github.com/manintheandes/ask-insects/blob/main/"
+            "https://raw.githubusercontent.com/manintheandes/ask-insects/"
+            "175605e32adb6aea14a4664b75e913042d748055/"
             "config/insect-intelligence-programs.json",
         )
         self.assertNotIn("ledger_path", package["program_records"][0]["payload"])
@@ -2430,6 +2481,602 @@ class ContextPackageTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "gap receipt"):
             validate_context_package(package, verify_hash=False)
+
+    def test_status_receipt_must_match_database_record_count(self):
+        status_path = self.artifact_dir / "source_status.json"
+        status = json.loads(status_path.read_text(encoding="utf-8"))
+        status["record_count"] = status["record_count"] + 1
+        status_path.write_text(json.dumps(status), encoding="utf-8")
+
+        with self.assertRaisesRegex(ValueError, "record_count.*database"):
+            self.build("2026-07-14T01:00:00Z", sync_status=False)
+
+    def test_status_receipt_hash_is_stable_across_json_formatting(self):
+        first = self.build("2026-07-14T01:00:00Z")
+        status_path = self.artifact_dir / "source_status.json"
+        status = json.loads(status_path.read_text(encoding="utf-8"))
+        status_path.write_text(
+            json.dumps(status, indent=4, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+
+        second = self.build("2026-07-14T01:00:00Z")
+
+        self.assertEqual(
+            first["upstream_snapshot"]["source_status_sha256"],
+            second["upstream_snapshot"]["source_status_sha256"],
+        )
+        self.assertEqual(first["content_sha256"], second["content_sha256"])
+
+    def test_builder_uses_bounded_read_only_database_checks_not_integrity_scans(self):
+        self._sync_status_record_count()
+        config = json.loads(self.config_path.read_text(encoding="utf-8"))
+        real_connect = context_package_module.sqlite3.connect
+        connect_calls = []
+        statements: list[str] = []
+
+        def tracked_connect(*args, **kwargs):
+            connect_calls.append((args, kwargs))
+            connection = real_connect(*args, **kwargs)
+            connection.set_trace_callback(statements.append)
+            return connection
+
+        with patch(
+            "askinsects.context_package.load_context_config",
+            return_value=config,
+        ), patch(
+            "askinsects.context_package.sqlite3.connect",
+            side_effect=tracked_connect,
+        ):
+            build_context_package(
+                artifact_dir=self.artifact_dir,
+                config_path=self.config_path,
+                generated_at="2026-07-14T01:00:00Z",
+            )
+
+        self.assertEqual(len(connect_calls), 1)
+        args, kwargs = connect_calls[0]
+        self.assertIn("mode=ro", args[0])
+        self.assertIs(kwargs.get("uri"), True)
+        normalized = [" ".join(statement.casefold().split()) for statement in statements]
+        self.assertIn("pragma query_only = on", normalized)
+        self.assertIn("pragma query_only", normalized)
+        self.assertTrue(any("from sqlite_master" in statement for statement in normalized))
+        self.assertTrue(any("select count(*) from records" in statement for statement in normalized))
+        self.assertFalse(any("quick_check" in statement for statement in normalized))
+        self.assertFalse(any("integrity_check" in statement for statement in normalized))
+
+    def test_builder_rejects_missing_required_source_table(self):
+        with self.index.connect() as conn:
+            conn.execute("DROP TABLE literature_fulltext_units")
+
+        with self.assertRaisesRegex(ValueError, "missing required tables.*literature_fulltext_units"):
+            self.build("2026-07-14T01:00:00Z")
+
+    def test_discovery_uses_only_trusted_fields_not_generated_columns_or_species_label(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "trusted-discovery:selected",
+                    source="trusted_discovery_source",
+                    species="Generated wrong species label",
+                    title="Neutral generated database title",
+                    text="Neutral generated database text.",
+                    payload={
+                        "title": "Drosophila suzukii needle assay",
+                        "abstract": "Needle contact avoidance was measured directly.",
+                    },
+                ),
+                record(
+                    "trusted-discovery:decoy",
+                    source="trusted_discovery_source",
+                    species="Drosophila suzukii",
+                    title="Needle contact avoidance Drosophila suzukii",
+                    text="Needle contact avoidance was repeated in generated text.",
+                    payload={
+                        "title": "Drosophila suzukii locomotion assay",
+                        "abstract": "Adult locomotion was measured directly.",
+                    },
+                ),
+            ]
+        )
+        selector = self.selector(
+            "trusted_discovery",
+            "drosophila_suzukii",
+            "trusted_discovery_source",
+            query_any=["needle", "contact", "avoidance"],
+            context_required_term_groups=[["avoidance"], ["contact"]],
+            limit=1,
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
+        )
+
+        package = self.build_with_contexts(
+            [self.context("trusted_discovery_context", ["drosophila_suzukii"], [selector])]
+        )
+
+        receipt = package["selector_results"][0]
+        self.assertEqual(receipt["candidate_count"], 1)
+        self.assertEqual(receipt["selected_record_ids"], ["trusted-discovery:selected"])
+        self.assertEqual(package["evidence_records"][0]["species"], "Drosophila suzukii")
+
+    def test_generated_text_cannot_change_trusted_tie_ranking(self):
+        def insert_rows(first_text: str, second_text: str) -> None:
+            self.index.upsert_records(
+                [
+                    record(
+                        record_id,
+                        source="trusted_ranking_source",
+                        species="Drosophila suzukii",
+                        title=f"Generated title {record_id}",
+                        text=generated_text,
+                        payload={
+                            "title": "Drosophila suzukii needle assay",
+                            "abstract": "Needle contact avoidance was measured.",
+                        },
+                    )
+                    for record_id, generated_text in (
+                        ("trusted-ranking:a", first_text),
+                        ("trusted-ranking:b", second_text),
+                    )
+                ]
+            )
+
+        selector = self.selector(
+            "trusted_ranking",
+            "drosophila_suzukii",
+            "trusted_ranking_source",
+            query_any=["needle", "contact", "avoidance"],
+            context_required_term_groups=[["avoidance"], ["contact"]],
+            limit=1,
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
+        )
+        contexts = [self.context("trusted_ranking_context", ["drosophila_suzukii"], [selector])]
+
+        insert_rows("Neutral generated text.", "Needle contact avoidance " * 20)
+        first = self.build_with_contexts(contexts)
+        insert_rows("Needle contact avoidance " * 20, "Neutral generated text.")
+        second = self.build_with_contexts(contexts)
+
+        self.assertEqual(first["selector_results"][0]["candidate_count"], 2)
+        self.assertEqual(
+            first["selector_results"][0]["selected_record_ids"],
+            ["trusted-ranking:a"],
+        )
+        self.assertEqual(
+            second["selector_results"][0]["selected_record_ids"],
+            ["trusted-ranking:a"],
+        )
+
+    def test_unsafe_eligible_candidates_are_receipted_and_selection_continues(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "boundary:bad-path",
+                    source="boundary_candidates",
+                    species="Drosophila suzukii",
+                    title="see(/Users/josh/private/results.csv)",
+                    text="Generated contact avoidance candidate.",
+                    payload={
+                        "title": "Drosophila suzukii needle assay",
+                        "abstract": "Needle contact avoidance was measured.",
+                    },
+                ),
+                record(
+                    "boundary:bad-credential",
+                    source="boundary_candidates",
+                    species="Drosophila suzukii",
+                    text="Generated contact avoidance candidate.",
+                    payload={
+                        "title": [
+                            "Drosophila suzukii needle assay",
+                            "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+                        ],
+                        "abstract": "Needle contact avoidance was measured.",
+                    },
+                ),
+                record(
+                    "boundary:bad-number",
+                    source="boundary_candidates",
+                    species="Drosophila suzukii",
+                    text="Generated contact avoidance candidate.",
+                    payload={
+                        "title": "Drosophila suzukii needle assay",
+                        "abstract": [
+                            "Needle contact avoidance was measured.",
+                            float("nan"),
+                        ],
+                    },
+                ),
+                record(
+                    "boundary:safe",
+                    source="boundary_candidates",
+                    species="Drosophila suzukii",
+                    text="Neutral generated text.",
+                    payload={
+                        "title": "Drosophila suzukii needle assay",
+                        "abstract": "Needle contact avoidance was measured.",
+                    },
+                ),
+            ]
+        )
+        selector = self.selector(
+            "boundary_selector",
+            "drosophila_suzukii",
+            "boundary_candidates",
+            query_any=["needle", "contact", "avoidance"],
+            context_required_term_groups=[["avoidance"], ["contact"]],
+            limit=1,
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
+        )
+
+        package = self.build_with_contexts(
+            [self.context("boundary_context", ["drosophila_suzukii"], [selector])]
+        )
+
+        receipt = package["selector_results"][0]
+        self.assertEqual(receipt["candidate_count"], 4)
+        self.assertEqual(receipt["eligible_count"], 1)
+        self.assertEqual(receipt["selected_record_ids"], ["boundary:safe"])
+        self.assertEqual(receipt["rejection_counts"], {"unsafe_export_boundary": 3})
+
+    def test_parent_and_fulltext_basis_each_require_public_provenance(self):
+        parent_specs = (
+            ("parent:private", "https://metadata.google.internal/paper"),
+            ("parent:unit-private", "https://example.org/paper/unit-private"),
+            ("parent:public", "https://example.org/paper/public"),
+        )
+        child_specs = (
+            ("derived:private-parent", "parent:private", "unit:public-one"),
+            ("derived:private-unit", "parent:unit-private", "unit:private"),
+            ("derived:public", "parent:public", "unit:public-two"),
+        )
+        self.index.upsert_records(
+            [
+                record(
+                    parent_id,
+                    source="basis_parent_source",
+                    species="Drosophila suzukii",
+                    text="Neutral generated parent text.",
+                    payload={
+                        "raw_openalex_work": {
+                            "display_name": "Drosophila suzukii study",
+                            "abstract_inverted_index": {},
+                        }
+                    },
+                    source_url=source_url,
+                )
+                for parent_id, source_url in parent_specs
+            ]
+            + [
+                record(
+                    child_id,
+                    source="basis_provenance_candidates",
+                    species="Drosophila suzukii",
+                    text="Neutral generated child text.",
+                    payload={
+                        "source_record_id": parent_id,
+                        "fulltext_unit_id": unit_id,
+                    },
+                )
+                for child_id, parent_id, unit_id in child_specs
+            ]
+        )
+        self.index.upsert_fulltext_units(
+            [
+                FullTextUnit(
+                    unit_id=unit_id,
+                    record_id=parent_id,
+                    source="basis_parent_source",
+                    unit_index=index,
+                    text="Needle contact avoidance was measured on a treated surface.",
+                    url=source_url,
+                    license="CC-BY-4.0",
+                    provenance=Provenance(
+                        source_id="basis_parent_source",
+                        locator=f"fulltext#row/{index}",
+                        retrieved_at="2026-07-13T00:00:00Z",
+                        source_url=source_url,
+                    ),
+                )
+                for index, (unit_id, parent_id, source_url) in enumerate(
+                    (
+                        ("unit:public-one", "parent:private", "https://example.org/unit/one"),
+                        ("unit:private", "parent:unit-private", "https://service.internal/unit"),
+                        ("unit:public-two", "parent:public", "https://example.org/unit/two"),
+                    )
+                )
+            ]
+        )
+        selector = self.selector(
+            "basis_provenance_selector",
+            "drosophila_suzukii",
+            "basis_provenance_candidates",
+            query_any=["needle", "contact", "avoidance"],
+            context_required_term_groups=[["avoidance"], ["contact"]],
+            parent_record={
+                "record_id_path": "payload.source_record_id",
+                "taxon_field_paths": [
+                    "payload.raw_openalex_work.display_name",
+                    "payload.raw_openalex_work.abstract_inverted_index",
+                ],
+            },
+            fulltext_context=self.fulltext_context(),
+        )
+
+        package = self.build_with_contexts(
+            [self.context("basis_provenance_context", ["drosophila_suzukii"], [selector])]
+        )
+
+        receipt = package["selector_results"][0]
+        self.assertEqual(receipt["candidate_count"], 3)
+        self.assertEqual(receipt["selected_record_ids"], ["derived:public"])
+        self.assertEqual(receipt["rejection_counts"], {"public_provenance_missing": 2})
+        item = package["evidence_records"][0]
+        taxon_basis = item["eligibility"]["taxon"]["basis"][0]
+        context_basis = item["eligibility"]["context"]["basis"][0]
+        self.assertEqual(taxon_basis["provenance"]["index_record_id"], "parent:public")
+        self.assertEqual(context_basis["provenance"]["index_record_id"], "unit:public-two")
+
+    def test_malformed_linked_parent_is_receipted_instead_of_crashing_build(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "parent:malformed-source",
+                    source="public_parent_literature",
+                    species="Drosophila suzukii",
+                    text="Indexed parent paper.",
+                    payload={
+                        "raw_openalex_work": {
+                            "display_name": "Drosophila suzukii contact behavior",
+                        }
+                    },
+                ),
+                record(
+                    "derived:malformed-parent",
+                    source="malformed_parent_candidates",
+                    species="Drosophila suzukii",
+                    text="Generated candidate text.",
+                    payload={
+                        "source_record_id": "parent:malformed-source",
+                        "abstract": "Contact avoidance was measured on a treated surface.",
+                    },
+                ),
+            ]
+        )
+        with self.index.connect() as conn:
+            conn.execute(
+                "UPDATE records SET source='' WHERE record_id='parent:malformed-source'"
+            )
+        selector = self.selector(
+            "malformed_parent_selector",
+            "drosophila_suzukii",
+            "malformed_parent_candidates",
+            query_any=["contact", "avoidance"],
+            context_required_term_groups=[["avoidance"], ["contact"]],
+            taxon_field_paths=[],
+            context_field_paths=["payload.abstract"],
+            parent_record={
+                "record_id_path": "payload.source_record_id",
+                "taxon_field_paths": ["payload.raw_openalex_work.display_name"],
+            },
+        )
+
+        package = self.build_with_contexts(
+            [
+                self.context(
+                    "malformed_parent_context",
+                    ["drosophila_suzukii"],
+                    [selector],
+                )
+            ]
+        )
+
+        self.assertEqual(package["evidence_records"], [])
+        self.assertEqual(
+            package["selector_results"][0]["rejection_counts"],
+            {"public_provenance_missing": 1},
+        )
+
+    def test_validator_rejects_inconsistent_basis_provenance(self):
+        package = self.build_linked_fulltext_package()
+        mutations = (
+            lambda basis: basis["provenance"].pop("license"),
+            lambda basis: basis["provenance"].__setitem__("source_id", "wrong-source"),
+            lambda basis: basis["provenance"].__setitem__("index_record_id", "wrong-row"),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutate):
+                invalid = json.loads(json.dumps(package))
+                mutate(invalid["evidence_records"][0]["eligibility"]["taxon"]["basis"][0])
+                with self.assertRaisesRegex(ValueError, "provenance"):
+                    validate_context_package(invalid, verify_hash=False)
+
+        direct = self.build("2026-07-14T01:00:00Z")
+        direct["evidence_records"][0]["eligibility"]["taxon"]["basis"][0][
+            "provenance"
+        ]["locator"] = "https://example.org/different-public-row"
+        with self.assertRaisesRegex(ValueError, "basis provenance.*record provenance"):
+            validate_context_package(direct, verify_hash=False)
+
+    def test_validator_rejects_under_selection_and_false_gap(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        receipt = package["selector_results"][0]
+        self.assertGreater(receipt["eligible_count"], 0)
+        receipt["selected_count"] = 0
+        receipt["selected_record_ids"] = []
+
+        with self.assertRaisesRegex(ValueError, "selected_count must equal"):
+            validate_context_package(package, verify_hash=False)
+
+    def test_candidate_frontier_handles_more_than_sqlite_variable_limit(self):
+        self.index.upsert_records(
+            [
+                record(
+                    f"frontier:{index:04d}",
+                    source="bounded_frontier_source",
+                    species="Drosophila suzukii",
+                    text="Neutral generated text.",
+                    payload={
+                        "title": "Drosophila suzukii needle assay",
+                        "abstract": "Needle contact avoidance was measured.",
+                    },
+                )
+                for index in range(1005)
+            ]
+        )
+        selector = self.selector(
+            "bounded_frontier",
+            "drosophila_suzukii",
+            "bounded_frontier_source",
+            query_any=["needle"],
+            context_required_term_groups=[["avoidance"], ["contact"]],
+            limit=1,
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
+        )
+
+        package = self.build_with_contexts(
+            [self.context("bounded_frontier_context", ["drosophila_suzukii"], [selector])]
+        )
+
+        receipt = package["selector_results"][0]
+        self.assertEqual(receipt["candidate_count"], 1005)
+        self.assertEqual(receipt["eligible_count"], 1005)
+        self.assertEqual(receipt["selected_count"], 1)
+
+    def test_candidate_frontier_fails_closed_when_configuration_is_too_broad(self):
+        self.index.upsert_records(
+            [
+                record(
+                    f"too-broad:{index}",
+                    source="too_broad_source",
+                    species="Drosophila suzukii",
+                    text="Neutral generated text.",
+                    payload={
+                        "title": "Drosophila suzukii needle assay",
+                        "abstract": "Needle contact avoidance was measured.",
+                    },
+                )
+                for index in range(4)
+            ]
+        )
+        selector = self.selector(
+            "too_broad",
+            "drosophila_suzukii",
+            "too_broad_source",
+            query_any=["needle"],
+            context_required_term_groups=[["avoidance"], ["contact"]],
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
+        )
+
+        with patch.object(context_package_module, "MAX_SELECTOR_CANDIDATE_FRONTIER", 3):
+            with self.assertRaisesRegex(ValueError, "candidate frontier.*narrow"):
+                self.build_with_contexts(
+                    [self.context("too_broad_context", ["drosophila_suzukii"], [selector])]
+                )
+
+    def test_validator_rejects_embedded_credentials_paths_and_private_hosts(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        unsafe_values = (
+            "Authorization: Bearer abcdefghijklmnopqrstuvwxyz012345",
+            "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJwcml2YXRlIn0.signaturevalue",
+            "api_key=sk-abcdefghijklmnopqrstuvwxyz012345",
+            "token=abcdefghijklmnopqrstuvwxyz012345",
+            "ghp_abcdefghijklmnopqrstuvwxyz0123456789",
+            "see(/Users/josh/private/results.csv)",
+            "https://metadata.google.internal/computeMetadata/v1/",
+            "https://service.internal/private",
+            "https://node.localhost/private",
+            "https://lab.home.arpa/private",
+            "metadata.google.internal",
+            "::1",
+            "fe80::1",
+            "fd00::1",
+        )
+        for unsafe in unsafe_values:
+            with self.subTest(unsafe=unsafe):
+                invalid = json.loads(json.dumps(package))
+                invalid["program_records"][0]["text"] = unsafe
+                with self.assertRaisesRegex(ValueError, "unsafe|credential"):
+                    validate_context_package(invalid, verify_hash=False)
+
+        safe_values = (
+            "The concentration ratio was 10:1 in the assay.",
+            "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0000001&type=printable",
+            "Bearer plants were observed near the treated plots.",
+            "The internal state of the insect changed after feeding.",
+        )
+        for safe in safe_values:
+            with self.subTest(safe=safe):
+                valid = json.loads(json.dumps(package))
+                valid["program_records"][0]["text"] = safe
+                validate_context_package(valid, verify_hash=False)
+
+    def test_public_provenance_rejects_private_dns_suffixes(self):
+        for source_url in (
+            "https://metadata.google.internal/source",
+            "https://service.internal/source",
+            "https://service.local/source",
+            "https://service.localhost/source",
+            "https://service.home.arpa/source",
+        ):
+            with self.subTest(source_url=source_url):
+                candidate = {
+                    "record_id": "public:record:1",
+                    "provenance": {
+                        "source_id": "public_source",
+                        "source_url": source_url,
+                        "locator": "records#row/1",
+                        "retrieved_at": "2026-07-13T00:00:00Z",
+                        "license": "CC-BY-4.0",
+                    },
+                }
+                with self.assertRaisesRegex(ValueError, "public HTTPS source_url"):
+                    context_package_module._public_provenance(candidate)
+
+    def test_config_provenance_is_pinned_to_immutable_version_commit(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        expected_prefix = (
+            "https://raw.githubusercontent.com/manintheandes/ask-insects/"
+            "175605e32adb6aea14a4664b75e913042d748055/config/"
+        )
+        locators = [record["provenance"]["locator"] for record in package["program_records"]]
+        locators.extend(context["provenance"]["locator"] for context in package["contexts"])
+        self.assertTrue(all(locator.startswith(expected_prefix) for locator in locators))
+        self.assertNotIn("blob/main", json.dumps(locators))
+
+        mutable = json.loads(json.dumps(package))
+        mutable["program_records"][0]["provenance"]["locator"] = (
+            "https://github.com/manintheandes/ask-insects/blob/main/"
+            "config/insect-intelligence-programs.json"
+        )
+        with self.assertRaisesRegex(ValueError, "public source"):
+            validate_context_package(mutable, verify_hash=False)
+
+    def test_validator_requires_exact_identifier_and_species_types(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        mutations = (
+            lambda value: value["program_records"][0].__setitem__("species", {}),
+            lambda value: value["program_records"][0].__setitem__("record_id", 7),
+            lambda value: value["contexts"][0].__setitem__("id", 7),
+            lambda value: value["selector_results"][0].__setitem__("selector_id", 7),
+            lambda value: value["evidence_records"][0].__setitem__("record_id", 7),
+            lambda value: value["evidence_records"][0]["eligibility"]["taxon"]["basis"][0].__setitem__("selector_id", 7),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutate):
+                invalid = json.loads(json.dumps(package))
+                mutate(invalid)
+                with self.assertRaisesRegex(ValueError, "string"):
+                    validate_context_package(invalid, verify_hash=False)
+
+        nullable_species = json.loads(json.dumps(package))
+        nullable_species["program_records"][0]["species"] = None
+        validate_context_package(nullable_species, verify_hash=False)
 
     def test_validator_rejects_hash_mismatch(self):
         package = self.build("2026-07-14T01:00:00Z")

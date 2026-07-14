@@ -22,7 +22,9 @@ def public_package_fixture() -> dict[str, object]:
         "generated_at": "2026-07-14T12:00:00Z",
         "objective": "Provide bounded public insect evidence.",
         "validation_contract": {
-            "producer_linkage": "verified_in_read_only_source_index_during_build",
+            "producer_linkage": (
+                "status_record_count_selected_rows_and_links_verified_in_read_only_source_index"
+            ),
             "downstream_validation": "exported_snapshot_internal_consistency_only",
             "snapshot_authentication": "publisher_pinned_content_sha256",
         },
@@ -67,7 +69,7 @@ def public_package_fixture() -> dict[str, object]:
                 "context_ids": [context_id],
                 "selector_ids": [selector_id],
                 "eligibility": {
-                    "ruleset_version": "direct-semantic-evidence.v1",
+                    "ruleset_version": "direct-semantic-evidence.v2",
                     "taxon": {
                         "status": "direct_focal_taxon",
                         "basis": [
@@ -359,6 +361,46 @@ class VerifyCompleteTests(unittest.TestCase):
             (artifact_dir / "source_status.json").write_text(json.dumps(current), encoding="utf-8")
             (artifact_dir / "source_receipt.json").write_text(json.dumps(current), encoding="utf-8")
 
+            verify_complete.check_receipts_match_sqlite(artifact_dir)
+
+    def test_verification_package_seeding_rebinds_fixture_receipts(self):
+        from askinsects.index import SourceIndex
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            SourceIndex(artifact_dir / "source_index.sqlite").initialize()
+            initial = {
+                "generated_at": "2026-07-14T00:00:00Z",
+                "record_count": 0,
+                "source_counts": {},
+                "lanes": {},
+                "sources": [],
+            }
+            (artifact_dir / "source_status.json").write_text(
+                json.dumps(initial),
+                encoding="utf-8",
+            )
+            receipt = {**initial, "sources": {}}
+            (artifact_dir / "source_receipt.json").write_text(
+                json.dumps(receipt),
+                encoding="utf-8",
+            )
+
+            verify_complete._seed_verification_package_records(artifact_dir)
+
+            status = json.loads((artifact_dir / "source_status.json").read_text())
+            updated_receipt = json.loads((artifact_dir / "source_receipt.json").read_text())
+            expected_sources = {"aedes_olfaction_literature": 2}
+            self.assertEqual(status["record_count"], 2)
+            self.assertEqual(status["source_counts"], expected_sources)
+            self.assertEqual(status["lanes"], {"literature": 2})
+            self.assertEqual(status["sources"], ["aedes_olfaction_literature"])
+            self.assertEqual(updated_receipt["record_count"], 2)
+            self.assertEqual(updated_receipt["source_counts"], expected_sources)
+            self.assertEqual(
+                updated_receipt["sources"]["aedes_olfaction_literature"]["record_count"],
+                2,
+            )
             verify_complete.check_receipts_match_sqlite(artifact_dir)
 
     def test_verify_complete_rejects_non_queryable_video_gaps(self):

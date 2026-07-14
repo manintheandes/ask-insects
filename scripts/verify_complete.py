@@ -24,9 +24,11 @@ VERIFY_ENV = {**os.environ, "ASK_INSECTS_ARTIFACT_DIR": VERIFY_ARTIFACT_DIR.as_p
 GENERIC_CONFIG_PATH = "config/insect-evidence-package.json"
 GENERIC_CONFIG_SCHEMA_VERSION = "ask-insects-evidence-package-config.v2"
 PUBLIC_PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v2"
-DIRECT_EVIDENCE_RULESET_VERSION = "direct-semantic-evidence.v1"
+DIRECT_EVIDENCE_RULESET_VERSION = "direct-semantic-evidence.v2"
 PUBLIC_VALIDATION_CONTRACT = {
-    "producer_linkage": "verified_in_read_only_source_index_during_build",
+    "producer_linkage": (
+        "status_record_count_selected_rows_and_links_verified_in_read_only_source_index"
+    ),
     "downstream_validation": "exported_snapshot_internal_consistency_only",
     "snapshot_authentication": "publisher_pinned_content_sha256",
 }
@@ -2146,6 +2148,50 @@ def _seed_verification_package_records(artifact_dir: Path) -> None:
             )
         )
     index.upsert_records(records)
+    _synchronize_verification_receipts(artifact_dir)
+
+
+def _synchronize_verification_receipts(artifact_dir: Path) -> None:
+    """Keep synthetic completion-gate receipts bound to their mutated fixture DB."""
+    db_path = artifact_dir / "source_index.sqlite"
+    with sqlite3.connect(f"file:{db_path.as_posix()}?mode=ro", uri=True) as conn:
+        record_count = int(conn.execute("SELECT COUNT(*) FROM records").fetchone()[0])
+        source_counts = {
+            str(source): int(count)
+            for source, count in conn.execute(
+                "SELECT source, COUNT(*) FROM records GROUP BY source ORDER BY source"
+            )
+        }
+        lane_counts = {
+            str(lane): int(count)
+            for lane, count in conn.execute(
+                "SELECT lane, COUNT(*) FROM records GROUP BY lane ORDER BY lane"
+            )
+        }
+
+    for filename in ("source_status.json", "source_receipt.json"):
+        path = artifact_dir / filename
+        payload = _json_file(path, {})
+        if not isinstance(payload, dict):
+            raise RuntimeError(f"{path} is not a JSON object")
+        payload["record_count"] = record_count
+        payload["source_counts"] = source_counts
+        payload["lanes"] = lane_counts
+        sources = payload.get("sources")
+        if isinstance(sources, list):
+            payload["sources"] = sorted(source_counts)
+        elif isinstance(sources, dict):
+            synchronized_sources = {}
+            for source, count in source_counts.items():
+                source_payload = sources.get(source)
+                if not isinstance(source_payload, dict):
+                    source_payload = {
+                        "source": source,
+                        "method": "synthetic completion-gate evidence records",
+                    }
+                synchronized_sources[source] = {**source_payload, "record_count": count}
+            payload["sources"] = synchronized_sources
+        path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _load_verification_evidence_package(artifact_dir: Path) -> dict[str, object]:
