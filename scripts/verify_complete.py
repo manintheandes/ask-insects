@@ -627,6 +627,7 @@ UNIT_TEST_MODULES = (
     "tests.test_repellency_comparison",
     "tests.test_insect_intelligence_programs",
     "tests.test_context_package",
+    "tests.test_wheel_resources",
     "tests.test_uniprot_proteins_source",
     "tests.test_wolbachia_interventions_source",
     "tests.test_ingest_wave1_sources",

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from setuptools import setup
@@ -12,21 +13,19 @@ CONFIG_RESOURCES = (
     ROOT / "config" / "insect-evidence-package.json",
     ROOT / "config" / "insect-intelligence-programs.json",
 )
-PUBLISHED_RESOURCE_PATTERN = "ask-insects-evidence-package-*.json"
-
-
 def canonical_resource_files() -> tuple[Path, ...]:
-    published = tuple(
-        sorted(
-            (ROOT / "public" / "evidence-packages").glob(
-                PUBLISHED_RESOURCE_PATTERN
-            )
-        )
+    context_config = json.loads(CONFIG_RESOURCES[0].read_text(encoding="utf-8"))
+    package_version = context_config.get("package_version")
+    if not isinstance(package_version, str) or not package_version.strip():
+        raise RuntimeError("context config has no package_version")
+    published = (
+        ROOT
+        / "public"
+        / "evidence-packages"
+        / f"ask-insects-evidence-package-{package_version}.json"
     )
-    if not published:
-        raise RuntimeError("no published Ask Insects evidence package found")
 
-    resources = (*CONFIG_RESOURCES, *published)
+    resources = (*CONFIG_RESOURCES, published)
     missing = [path for path in resources if not path.is_file()]
     if missing:
         names = ", ".join(path.relative_to(ROOT).as_posix() for path in missing)

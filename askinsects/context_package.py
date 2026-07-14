@@ -274,6 +274,32 @@ DOI_RE = re.compile(r"^(?:doi:\s*)?(10\.\d{4,9}/\S+)$", flags=re.IGNORECASE)
 BINOMIAL_NAME_RE = re.compile(
     r"(?<![A-Za-z])([A-Z][a-z]{2,})\s+([a-z][a-z-]{2,})(?![A-Za-z])"
 )
+NON_TAXON_EPITHETS = frozenset(
+    {
+        "against",
+        "analysis",
+        "and",
+        "between",
+        "behavior",
+        "behaviour",
+        "choice",
+        "comparison",
+        "density",
+        "distribution",
+        "effects",
+        "for",
+        "from",
+        "presence",
+        "response",
+        "responses",
+        "ritual",
+        "selection",
+        "studies",
+        "study",
+        "with",
+        "wing",
+    }
+)
 NON_HTTPS_AUTHORITY_RE = re.compile(
     r"(?<![A-Za-z0-9+.-])(?!https://)[A-Za-z][A-Za-z0-9+.-]*://",
     flags=re.IGNORECASE,
@@ -995,17 +1021,16 @@ def _validate_config(config: dict[str, object]) -> None:
     _require_string(config.get("objective"), "context config objective")
     domains = set(_require_string_list(config.get("knowledge_domains"), "context config knowledge_domains"))
     selector_approvals = config.get("selector_approvals")
-    if selector_approvals is not None:
-        if not isinstance(selector_approvals, dict):
-            raise ValueError("context config selector_approvals must be an object")
-        for selector_id, record_ids in selector_approvals.items():
-            if not isinstance(selector_id, str) or not selector_id.strip():
-                raise ValueError("context config selector_approvals keys must be selector ids")
-            _require_string_list(
-                record_ids,
-                f"context config selector_approvals {selector_id}",
-                allow_empty=True,
-            )
+    if not isinstance(selector_approvals, dict):
+        raise ValueError("context config selector_approvals must be an object")
+    for selector_id, record_ids in selector_approvals.items():
+        if not isinstance(selector_id, str) or not selector_id.strip():
+            raise ValueError("context config selector_approvals keys must be selector ids")
+        _require_string_list(
+            record_ids,
+            f"context config selector_approvals {selector_id}",
+            allow_empty=True,
+        )
     contexts = config.get("contexts")
     if not isinstance(contexts, list) or not contexts or not all(isinstance(item, dict) for item in contexts):
         raise ValueError("context config contexts must be a non-empty list of objects")
@@ -1047,7 +1072,7 @@ def _validate_config(config: dict[str, object]) -> None:
         raise ValueError("context ids must be unique")
     if len(selector_ids) != len(set(selector_ids)):
         raise ValueError("selector ids must be unique across the package")
-    if isinstance(selector_approvals, dict) and set(selector_approvals) != set(selector_ids):
+    if set(selector_approvals) != set(selector_ids):
         missing = sorted(set(selector_ids) - set(selector_approvals))
         unknown = sorted(set(selector_approvals) - set(selector_ids))
         raise ValueError(
@@ -1225,13 +1250,13 @@ def _title_confirms_focal_subject(
     focal_term: str,
     focal_match: re.Match[str],
 ) -> bool:
-    preceding_binomials = [
+    competing_binomials = [
         match.group(0)
         for match in BINOMIAL_NAME_RE.finditer(title)
-        if match.start() < focal_match.start()
-        and match.group(0).casefold() != focal_term.casefold()
+        if match.group(0).casefold() != focal_term.casefold()
+        and match.group(2).casefold() not in NON_TAXON_EPITHETS
     ]
-    if not preceding_binomials:
+    if not competing_binomials:
         return True
 
     normalized = title.casefold()
@@ -1825,10 +1850,9 @@ def _candidate_eligibility(
         return None, "context_not_directly_confirmed"
 
     approved_record_ids = selector.get("approved_record_ids")
-    if (
-        isinstance(approved_record_ids, list)
-        and record.get("record_id") not in approved_record_ids
-    ):
+    if not isinstance(approved_record_ids, list) or record.get(
+        "record_id"
+    ) not in approved_record_ids:
         return None, "record_not_approved_for_context"
 
     for basis in taxon["basis"]:
@@ -2227,11 +2251,10 @@ def build_context_package(
             )
             for selector in context["selectors"]:
                 selector = dict(selector)
-                approvals = config.get("selector_approvals")
-                if isinstance(approvals, dict):
-                    selector["approved_record_ids"] = deepcopy(
-                        approvals.get(selector.get("id"))
-                    )
+                approvals = config["selector_approvals"]
+                selector["approved_record_ids"] = deepcopy(
+                    approvals.get(selector.get("id"))
+                )
                 species_id = _require_string(selector.get("species_id"), "selector species_id")
                 profile = species_profiles[species_id]
                 selector_jobs.append(
@@ -2685,9 +2708,9 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         ):
             raise ValueError(f"selector {selector_id} selected_record_ids do not match selected_count")
         approved_record_ids = result.get("approved_record_ids")
-        if isinstance(approved_record_ids, list) and not set(ids).issubset(
-            approved_record_ids
-        ):
+        if not isinstance(approved_record_ids, list):
+            raise ValueError(f"selector {selector_id} approved_record_ids must be a list")
+        if not set(ids).issubset(approved_record_ids):
             raise ValueError(
                 f"selector {selector_id} selected records are not all approved for context"
             )

@@ -10,7 +10,11 @@ from askinsects.records import EvidenceRecord, Provenance
 
 
 INSECT_INTELLIGENCE_SOURCE_ID = "insect_intelligence_programs"
-_REPOSITORY_PROGRAM_LEDGER = Path("config/insect-intelligence-programs.json")
+_REPOSITORY_PROGRAM_LEDGER = (
+    Path(__file__).resolve().parents[2]
+    / "config"
+    / "insect-intelligence-programs.json"
+)
 DEFAULT_PROGRAM_LEDGER = (
     _REPOSITORY_PROGRAM_LEDGER
     if _REPOSITORY_PROGRAM_LEDGER.is_file()
@@ -270,9 +274,14 @@ def _provenance(program_path: Path, fragment: str, retrieved_at: str) -> Provena
                 jsonpath += f".{part}"
             else:
                 raise ValueError(f"unsupported program-ledger locator segment: {part}")
+    locator_path = (
+        Path("config/insect-intelligence-programs.json")
+        if program_path == DEFAULT_PROGRAM_LEDGER
+        else program_path
+    )
     return Provenance(
         source_id=INSECT_INTELLIGENCE_SOURCE_ID,
-        locator=f"{program_path.as_posix()}#jsonpath={jsonpath}",
+        locator=f"{locator_path.as_posix()}#jsonpath={jsonpath}",
         retrieved_at=retrieved_at,
         license="Repository program ledger",
     )

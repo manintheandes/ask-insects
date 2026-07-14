@@ -2,6 +2,7 @@ import hashlib
 import json
 import tempfile
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -132,6 +133,11 @@ TEST_CONTEXT_CONFIG_URL = (
     "https://raw.githubusercontent.com/example/ask-insects/"
     f"{'1' * 40}/tests/context-config.json"
 )
+TEST_SCIENTIFIC_NAMES = {
+    "drosophila_suzukii": "Drosophila suzukii",
+    "aedes_aegypti": "Aedes aegypti",
+    "plutella_xylostella": "Plutella xylostella",
+}
 
 
 def record(
@@ -383,6 +389,7 @@ class ContextPackageTests(unittest.TestCase):
                     "last_reviewed": "2026-07-14",
                     "objective": "Provide public context for private interpretation.",
                     "knowledge_domains": ["behavior"],
+                    "selector_approvals": {"swd_behavior": ["public:swd:1"]},
                     "contexts": [
                         {
                             "id": "treated_area_contact_avoidance",
@@ -429,25 +436,77 @@ class ContextPackageTests(unittest.TestCase):
             status["record_count"] = record_count
             status_path.write_text(json.dumps(status), encoding="utf-8")
 
-    def build(self, generated_at: str, *, sync_status: bool = True):
+    def build(
+        self,
+        generated_at: str,
+        *,
+        sync_status: bool = True,
+        preserve_approvals: bool = False,
+    ):
         if sync_status:
             self._sync_status_record_count()
-        return build_context_package(
-            artifact_dir=self.artifact_dir,
-            config_path=self.config_path,
-            context_config_source_url=TEST_CONTEXT_CONFIG_URL,
-            context_config_sha256=hashlib.sha256(self.config_path.read_bytes()).hexdigest(),
-            generated_at=generated_at,
-        )
+        original = self.config_path.read_bytes()
+        if not preserve_approvals:
+            config = json.loads(original)
+            with self.index.connect() as conn:
+                record_ids_by_source_species: dict[tuple[str, str], list[str]] = {}
+                for row in conn.execute(
+                    "SELECT source, species, record_id FROM records "
+                    "ORDER BY source, species, record_id"
+                ):
+                    record_ids_by_source_species.setdefault(
+                        (str(row[0]), str(row[1])), []
+                    ).append(str(row[2]))
+            config["selector_approvals"] = {
+                selector["id"]: record_ids_by_source_species.get(
+                    (
+                        str(selector["source"]),
+                        TEST_SCIENTIFIC_NAMES[str(selector["species_id"])],
+                    ),
+                    [],
+                )
+                for context in config["contexts"]
+                for selector in context["selectors"]
+            }
+            self.config_path.write_text(json.dumps(config), encoding="utf-8")
+        try:
+            return build_context_package(
+                artifact_dir=self.artifact_dir,
+                config_path=self.config_path,
+                context_config_source_url=TEST_CONTEXT_CONFIG_URL,
+                context_config_sha256=hashlib.sha256(self.config_path.read_bytes()).hexdigest(),
+                generated_at=generated_at,
+            )
+        finally:
+            self.config_path.write_bytes(original)
 
     def build_with_contexts(self, contexts: list[dict], generated_at: str = "2026-07-14T01:00:00Z"):
         self._sync_status_record_count()
         original = self.config_path.read_bytes()
         config = json.loads(original)
-        config["contexts"] = contexts
+        normalized_contexts = deepcopy(contexts)
+        with self.index.connect() as conn:
+            record_ids_by_source: dict[str, list[str]] = {}
+            for row in conn.execute(
+                "SELECT source, record_id FROM records ORDER BY source, record_id"
+            ):
+                record_ids_by_source.setdefault(str(row[0]), []).append(str(row[1]))
+        approvals = {}
+        for context in normalized_contexts:
+            for selector in context["selectors"]:
+                approvals[selector["id"]] = selector.pop(
+                    "approved_record_ids",
+                    record_ids_by_source.get(str(selector["source"]), []),
+                )
+        config["contexts"] = normalized_contexts
+        config["selector_approvals"] = approvals
         self.config_path.write_text(json.dumps(config), encoding="utf-8")
         try:
-            return self.build(generated_at, sync_status=False)
+            return self.build(
+                generated_at,
+                sync_status=False,
+                preserve_approvals=True,
+            )
         finally:
             self.config_path.write_bytes(original)
 
@@ -1354,6 +1413,61 @@ class ContextPackageTests(unittest.TestCase):
             {"taxon_role_not_directly_confirmed": 1},
         )
 
+    def test_focal_first_parasitoid_title_is_still_rejected(self):
+        record_id = "swd:openalex_literature:openalex:focal-first-parasitoid"
+        self.index.upsert_records(
+            [
+                record(
+                    record_id,
+                    source="parasitoid_review_case",
+                    species="Drosophila suzukii",
+                    title=(
+                        "Drosophila suzukii fruit volatiles and foraging behavior of "
+                        "Ganaspis brasiliensis"
+                    ),
+                    text=(
+                        "Choice by Ganaspis brasiliensis was measured in a two-choice "
+                        "olfactometer using Drosophila suzukii-infested fruit."
+                    ),
+                    payload={
+                        "title": (
+                            "Drosophila suzukii fruit volatiles and foraging behavior of "
+                            "Ganaspis brasiliensis"
+                        ),
+                        "abstract": (
+                            "Choice by Ganaspis brasiliensis was measured in a two-choice "
+                            "olfactometer using Drosophila suzukii-infested fruit."
+                        ),
+                    },
+                )
+            ]
+        )
+        context = self.context(
+            "bounded_choice_orientation",
+            ["drosophila_suzukii"],
+            [
+                self.selector(
+                    "choice_swd_focal_first_role",
+                    "drosophila_suzukii",
+                    "parasitoid_review_case",
+                    query_any=["choice", "olfactometer"],
+                    context_required_term_groups=CONTEXT_REQUIRED_TERM_GROUPS[
+                        "bounded_choice_orientation"
+                    ],
+                    taxon_field_paths=["payload.title"],
+                    context_field_paths=["payload.abstract"],
+                )
+            ],
+        )
+
+        package = self.build_with_contexts([context])
+
+        self.assertEqual(package["evidence_records"], [])
+        self.assertEqual(
+            package["selector_results"][0]["rejection_counts"],
+            {"taxon_role_not_directly_confirmed": 1},
+        )
+
     def test_selector_approval_list_blocks_uncurated_context_matches(self):
         self.index.upsert_records(
             [
@@ -2205,7 +2319,7 @@ class ContextPackageTests(unittest.TestCase):
                     include_source_url=False,
                 ),
                 record(
-                    "provenance:localhost",
+                    "provenance:nonpublic-source",
                     source="public_provenance_candidates",
                     species="Drosophila suzukii",
                     text="Contact avoidance candidate with nonpublic provenance.",
@@ -3297,6 +3411,22 @@ class ContextPackageTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "not all approved"):
             validate_context_package(package, verify_hash=False)
+
+        missing_approvals = self.build("2026-07-14T01:00:00Z")
+        del missing_approvals["selector_results"][0]["approved_record_ids"]
+        with self.assertRaisesRegex(ValueError, "approved_record_ids"):
+            validate_context_package(missing_approvals, verify_hash=False)
+
+    def test_context_config_requires_an_exact_approval_map(self):
+        original = self.config_path.read_bytes()
+        config = json.loads(original)
+        del config["selector_approvals"]
+        self.config_path.write_text(json.dumps(config), encoding="utf-8")
+        try:
+            with self.assertRaisesRegex(ValueError, "selector_approvals must be an object"):
+                load_context_config(self.config_path)
+        finally:
+            self.config_path.write_bytes(original)
 
     def test_candidate_frontier_handles_more_than_sqlite_variable_limit(self):
         self.index.upsert_records(
