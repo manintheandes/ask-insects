@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 import hashlib
 import json
 from pathlib import Path
-import re
 import sqlite3
 from typing import Any
 
@@ -156,21 +155,6 @@ def _export_record(row: sqlite3.Row | dict[str, object]) -> dict[str, object]:
     }
 
 
-def _fts_any_query(terms: list[str]) -> str:
-    expressions = []
-    for value in terms:
-        tokens = re.findall(r"[A-Za-z0-9]+", value)
-        if not tokens:
-            continue
-        if len(tokens) == 1:
-            expressions.append(f'"{tokens[0]}"*')
-        else:
-            expressions.append('"' + " ".join(tokens) + '"')
-    if not expressions:
-        raise ValueError("selector query_any did not contain searchable terms")
-    return " OR ".join(expressions)
-
-
 def _program_records(conn: sqlite3.Connection) -> list[dict[str, object]]:
     rows = conn.execute(
         """
@@ -210,19 +194,25 @@ def _select_records(
     query_any: list[str],
     limit: int,
 ) -> list[dict[str, object]]:
+    terms = [value.casefold() for value in query_any]
+    score = " + ".join(
+        "CASE WHEN instr(lower(r.title || ' ' || r.text), ?) > 0 THEN 1 ELSE 0 END"
+        for _ in terms
+    )
     rows = conn.execute(
-        """
-        SELECT r.*, p.payload_json, bm25(records_fts) AS score
-        FROM records_fts
-        JOIN records r ON r.record_id = records_fts.record_id
-        LEFT JOIN record_payloads p ON p.record_id = r.record_id
-        WHERE records_fts MATCH ?
-          AND r.source = ?
-          AND r.species = ?
-        ORDER BY score, r.record_id
+        f"""
+        SELECT candidates.*
+        FROM (
+          SELECT r.*, p.payload_json, ({score}) AS match_count
+          FROM records AS r INDEXED BY idx_records_source
+          LEFT JOIN record_payloads p ON p.record_id = r.record_id
+          WHERE r.source = ? AND r.species = ?
+        ) AS candidates
+        WHERE candidates.match_count > 0
+        ORDER BY candidates.match_count DESC, candidates.record_id
         LIMIT ?
         """,
-        (_fts_any_query(query_any), source, scientific_name, limit),
+        (*terms, source, scientific_name, limit),
     ).fetchall()
     return [_export_record(row) for row in rows]
 
