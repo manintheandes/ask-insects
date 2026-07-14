@@ -4804,7 +4804,12 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
         return payload
 
     def _send(self, response: Response, *, include_body: bool = True) -> None:
-        body = json.dumps(response.payload, sort_keys=True).encode("utf-8")
+        body = json.dumps(
+            response.payload,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
         self.send_response(response.status)
         self.send_header("Content-Type", "application/json")
         for name, value in response.headers:

@@ -8,6 +8,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from askinsects.cli import main
+from askinsects.context_package import MAX_PACKAGE_BYTES
 
 
 def generic_evidence_package_v2():
@@ -113,8 +114,10 @@ class HostedCliTests(unittest.TestCase):
     def test_context_package_uses_the_hosted_read_surface_by_default(self):
         calls = []
 
-        def fake_request(config, method, path, payload=None, timeout=120):
-            calls.append((config.url, method, path, payload, timeout))
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
+            calls.append((config.url, method, path, payload, timeout, max_response_bytes))
             return generic_evidence_package_v2()
 
         with patch("askinsects.cli.load_config") as load_config, patch(
@@ -128,7 +131,14 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(
             calls[0],
-            ("https://ask-insects.example", "GET", "/context-package", None, 120),
+            (
+                "https://ask-insects.example",
+                "GET",
+                "/context-package",
+                None,
+                120,
+                MAX_PACKAGE_BYTES,
+            ),
         )
         local_build.assert_not_called()
         validate_package.assert_called_once()
@@ -159,8 +169,10 @@ class HostedCliTests(unittest.TestCase):
     def test_context_package_hosted_failure_never_falls_back_to_local_generation(self):
         calls = []
 
-        def fake_request(config, method, path, payload=None, timeout=120):
-            calls.append((method, path, payload, timeout))
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
+            calls.append((method, path, payload, timeout, max_response_bytes))
             return {
                 "ok": False,
                 "error": {
@@ -176,7 +188,10 @@ class HostedCliTests(unittest.TestCase):
             code, output = self.run_cli("context-package")
 
         self.assertEqual(code, 2)
-        self.assertEqual(calls, [("GET", "/context-package", None, 120)])
+        self.assertEqual(
+            calls,
+            [("GET", "/context-package", None, 120, MAX_PACKAGE_BYTES)],
+        )
         local_build.assert_not_called()
         self.assertEqual(
             json.loads(output)["error"]["code"],
@@ -186,7 +201,9 @@ class HostedCliTests(unittest.TestCase):
     def test_context_package_hosted_failure_is_rebuilt_without_untrusted_error_text(self):
         leaked = "/Users/josh/private/source.json Authorization: Bearer secret-token " + "x" * 5000
 
-        def fake_request(config, method, path, payload=None, timeout=120):
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
             return {
                 "ok": False,
                 "error": {
@@ -222,7 +239,9 @@ class HostedCliTests(unittest.TestCase):
     def test_context_package_rejects_invalid_hosted_success_without_echoing_it(self):
         leaked = "/Users/josh/private/package.json Authorization: Bearer secret-token"
 
-        def fake_request(config, method, path, payload=None, timeout=120):
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
             return {
                 "ok": True,
                 "schema_version": "ask-insects-evidence-package.v2",
@@ -248,8 +267,10 @@ class HostedCliTests(unittest.TestCase):
     def test_context_package_rejects_a_legacy_hosted_success_without_local_fallback(self):
         calls = []
 
-        def fake_request(config, method, path, payload=None, timeout=120):
-            calls.append((method, path, payload, timeout))
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
+            calls.append((method, path, payload, timeout, max_response_bytes))
             return {
                 "ok": True,
                 "schema_version": "ask-insects-context-package.v1",
@@ -263,7 +284,10 @@ class HostedCliTests(unittest.TestCase):
             code, output = self.run_cli("context-package")
 
         self.assertEqual(code, 2)
-        self.assertEqual(calls, [("GET", "/context-package", None, 120)])
+        self.assertEqual(
+            calls,
+            [("GET", "/context-package", None, 120, MAX_PACKAGE_BYTES)],
+        )
         local_build.assert_not_called()
         payload = json.loads(output)
         self.assertEqual(payload["error"]["code"], "evidence_package_schema_mismatch")

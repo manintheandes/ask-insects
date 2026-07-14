@@ -8,6 +8,7 @@ import sqlite3
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
 from .context_package import (
+    MAX_PACKAGE_BYTES,
     PACKAGE_SCHEMA_VERSION,
     build_context_package,
     validate_context_package,
@@ -51,6 +52,7 @@ def hosted_evidence_package() -> dict[str, object]:
             "GET",
             "/context-package",
             None,
+            max_response_bytes=MAX_PACKAGE_BYTES,
         )
     except Exception:
         return evidence_package_error(

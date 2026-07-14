@@ -1,7 +1,9 @@
+import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from urllib.error import HTTPError
 
 from askinsects.hosted import HostedConfig, hosted_request, load_config, save_config
 
@@ -31,8 +33,9 @@ class HostedClientTests(unittest.TestCase):
                 def __exit__(self, exc_type, exc, tb):
                     return False
 
-                def read(self):
-                    return json.dumps({"ok": True}).encode("utf-8")
+                def read(self, size=-1):
+                    data = json.dumps({"ok": True}).encode("utf-8")
+                    return data if size is None or size < 0 else data[:size]
 
             return Response()
 
@@ -50,6 +53,70 @@ class HostedClientTests(unittest.TestCase):
         self.assertEqual(request.get_header("Content-type"), "application/json")
         self.assertEqual(request.full_url, "https://ask-insects.example/ask")
         self.assertEqual(timeout, 120)
+
+    def test_hosted_request_rejects_oversized_success_and_error_bodies(self):
+        config = HostedConfig(url="https://ask-insects.example", token="secret")
+
+        class OversizedResponse:
+            headers = {}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self, size=-1):
+                return b"x" * min(17, size)
+
+        with self.assertRaisesRegex(ValueError, "configured byte limit"):
+            hosted_request(
+                config,
+                "GET",
+                "/context-package",
+                urlopen_fn=lambda request, timeout: OversizedResponse(),
+                max_response_bytes=16,
+            )
+
+        def oversized_error(request, timeout):
+            raise HTTPError(
+                request.full_url,
+                500,
+                "failure",
+                {},
+                io.BytesIO(b"/Users/josh/private token-secret"),
+            )
+
+        with self.assertRaisesRegex(ValueError, "configured byte limit"):
+            hosted_request(
+                config,
+                "GET",
+                "/context-package",
+                urlopen_fn=oversized_error,
+                max_response_bytes=16,
+            )
+
+    def test_hosted_request_rejects_declared_oversized_body_before_reading(self):
+        class DeclaredOversizedResponse:
+            headers = {"Content-Length": "17"}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return False
+
+            def read(self, size=-1):
+                raise AssertionError("oversized declared body must not be read")
+
+        with self.assertRaisesRegex(ValueError, "configured byte limit"):
+            hosted_request(
+                HostedConfig(url="https://ask-insects.example", token="secret"),
+                "GET",
+                "/context-package",
+                urlopen_fn=lambda request, timeout: DeclaredOversizedResponse(),
+                max_response_bytes=16,
+            )
 
 
 if __name__ == "__main__":
