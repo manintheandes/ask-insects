@@ -1,3 +1,4 @@
+import hashlib
 import json
 import tempfile
 import unittest
@@ -10,6 +11,7 @@ from askinsects.context_package import (
     build_context_package,
     canonical_package_hash,
     load_context_config,
+    load_published_context_package,
     validate_context_package,
 )
 from askinsects.index import SourceIndex
@@ -173,7 +175,7 @@ class ContextPackageTests(unittest.TestCase):
             config["schema_version"],
             "ask-insects-evidence-package-config.v2",
         )
-        self.assertEqual(config["package_version"], "2026-07-14.3")
+        self.assertEqual(config["package_version"], "2026-07-14.5")
         contexts = config["contexts"]
         self.assertEqual(
             [context["id"] for context in contexts],
@@ -619,26 +621,29 @@ class ContextPackageTests(unittest.TestCase):
                 self.assertIn("context_required_term_groups", selector)
                 self.assertNotIn("context_terms", selector)
 
-        derived = [
+        direct_openalex = [
             selector
             for selector in selectors
             if selector["source"] in {
-                "drosophila_suzukii_extracted_facts",
-                "aedes_extracted_facts",
+                "drosophila_suzukii_core",
+                "aedes_literature_openalex",
             }
         ]
-        self.assertTrue(derived)
-        self.assertTrue(all("parent_record" in selector for selector in derived))
-        for selector in derived:
+        self.assertTrue(direct_openalex)
+        for selector in direct_openalex:
             self.assertEqual(
-                selector["parent_record"]["taxon_field_paths"],
+                selector["taxon_field_paths"],
+                ["payload.raw_openalex_work.display_name"],
+            )
+            self.assertEqual(
+                selector["context_field_paths"],
                 [
                     "payload.raw_openalex_work.display_name",
                     "payload.raw_openalex_work.abstract_inverted_index",
                 ],
             )
-            self.assertEqual(selector["fulltext_context"], self.fulltext_context())
-            self.assertEqual(selector["context_field_paths"], [])
+            self.assertNotIn("parent_record", selector)
+            self.assertNotIn("fulltext_context", selector)
 
         flight = next(selector for selector in selectors if selector["id"] == "choice_swd_flight")
         self.assertEqual(
@@ -804,29 +809,130 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(
             actual,
             [
-                ("treated_area_contact_avoidance", "contact_swd_behavior", "drosophila_suzukii", "drosophila_suzukii_extracted_facts", ("repellent", "avoidance", "contact"), 4, False),
+                ("treated_area_contact_avoidance", "contact_swd_behavior", "drosophila_suzukii", "drosophila_suzukii_core", ("repellent", "avoidance", "deterrence"), 4, False),
                 ("treated_area_contact_avoidance", "contact_swd_olfaction", "drosophila_suzukii", "drosophila_suzukii_olfaction_literature", ("olfaction", "odor", "host volatile"), 3, False),
-                ("treated_area_contact_avoidance", "contact_aedes_behavior", "aedes_aegypti", "aedes_extracted_facts", ("repellent", "avoidance", "contact"), 4, False),
+                ("treated_area_contact_avoidance", "contact_aedes_behavior", "aedes_aegypti", "aedes_literature_openalex", ("repellent", "avoidance", "deterrence"), 4, False),
                 ("treated_area_contact_avoidance", "contact_aedes_olfaction", "aedes_aegypti", "aedes_olfaction_literature", ("repellent", "olfaction", "host seeking"), 3, False),
-                ("treated_area_noncontact_avoidance", "noncontact_swd_behavior", "drosophila_suzukii", "drosophila_suzukii_extracted_facts", ("repellent", "avoidance", "spatial"), 4, False),
+                ("treated_area_noncontact_avoidance", "noncontact_swd_behavior", "drosophila_suzukii", "drosophila_suzukii_core", ("spatial repellent", "non-contact", "noncontact", "airborne", "vapor", "vapour"), 4, False),
                 ("treated_area_noncontact_avoidance", "noncontact_swd_olfaction", "drosophila_suzukii", "drosophila_suzukii_olfaction_literature", ("olfaction", "odor", "host volatile"), 3, False),
-                ("treated_area_noncontact_avoidance", "noncontact_aedes_behavior", "aedes_aegypti", "aedes_extracted_facts", ("repellent", "avoidance", "spatial"), 4, False),
+                ("treated_area_noncontact_avoidance", "noncontact_aedes_behavior", "aedes_aegypti", "aedes_literature_openalex", ("spatial repellent", "non-contact", "noncontact", "airborne", "vapor", "vapour"), 4, False),
                 ("treated_area_noncontact_avoidance", "noncontact_aedes_olfaction", "aedes_aegypti", "aedes_olfaction_literature", ("repellent", "olfaction", "host seeking"), 3, False),
-                ("bounded_choice_orientation", "choice_swd_behavior", "drosophila_suzukii", "drosophila_suzukii_extracted_facts", ("choice", "avoidance", "repellent"), 4, False),
+                ("bounded_choice_orientation", "choice_swd_behavior", "drosophila_suzukii", "drosophila_suzukii_core", ("olfactometer", "Y-tube", "Y tube", "choice", "preference"), 4, False),
                 ("bounded_choice_orientation", "choice_swd_flight", "drosophila_suzukii", "drosophila_suzukii_umn_flight_assay_rows", ("flight", "movement", "distance"), 3, False),
-                ("bounded_choice_orientation", "choice_aedes_behavior", "aedes_aegypti", "aedes_extracted_facts", ("choice", "avoidance", "repellent"), 4, False),
+                ("bounded_choice_orientation", "choice_aedes_behavior", "aedes_aegypti", "aedes_literature_openalex", ("olfactometer", "Y-tube", "Y tube", "choice", "preference"), 4, False),
                 ("bounded_choice_orientation", "choice_aedes_olfaction", "aedes_aegypti", "aedes_olfaction_literature", ("olfaction", "orientation", "host seeking"), 3, False),
-                ("oviposition_choice", "oviposition_swd_behavior", "drosophila_suzukii", "drosophila_suzukii_extracted_facts", ("oviposition", "egg laying", "host choice"), 5, False),
+                ("oviposition_choice", "oviposition_swd_behavior", "drosophila_suzukii", "drosophila_suzukii_core", ("oviposition", "egg laying", "egg-laying"), 5, False),
                 ("oviposition_choice", "oviposition_swd_olfaction", "drosophila_suzukii", "drosophila_suzukii_olfaction_literature", ("oviposition", "fruit odor", "host volatile"), 3, False),
                 ("oviposition_choice", "oviposition_dbm_direct", "plutella_xylostella", "plutella_xylostella_oviposition_literature", ("oviposition", "egg laying", "host choice"), 5, False),
                 ("human_landing_response", "landing_aedes_host_seeking", "aedes_aegypti", "aedes_olfaction_literature", ("host seeking", "human odor", "landing", "blood feeding"), 6, False),
-                ("human_landing_response", "landing_aedes_behavior", "aedes_aegypti", "aedes_extracted_facts", ("landing", "probing", "feeding", "repellent"), 5, False),
+                ("human_landing_response", "landing_aedes_behavior", "aedes_aegypti", "aedes_literature_openalex", ("landing", "probing", "blood feeding", "human host"), 5, False),
                 ("spatial_behavior", "spatial_aedes_olfaction", "aedes_aegypti", "aedes_olfaction_literature", ("spatial repellent", "olfaction", "odor plume", "host seeking"), 6, False),
-                ("spatial_behavior", "spatial_aedes_neurobiology", "aedes_aegypti", "aedes_neurobiology_sources", ("olfactory", "sensory neuron", "odor receptor"), 4, False),
-                ("post_exposure_behavior", "post_aedes_behavior", "aedes_aegypti", "aedes_extracted_facts", ("post exposure", "recovery", "knockdown", "locomotion"), 5, False),
-                ("post_exposure_behavior", "post_aedes_chemical", "aedes_aegypti", "aedes_neurobiology_sources", ("chemical exposure", "locomotor", "recovery", "toxicity"), 4, False),
+                ("spatial_behavior", "spatial_aedes_literature", "aedes_aegypti", "aedes_literature_openalex", ("spatial repellent", "airborne", "odor plume", "non-contact", "noncontact"), 4, False),
+                ("post_exposure_behavior", "post_aedes_behavior", "aedes_aegypti", "aedes_literature_openalex", ("post exposure", "post-exposure", "after exposure", "knockdown", "recovery"), 5, False),
             ],
         )
+
+    def test_default_config_uses_original_public_papers_for_openalex_evidence(self):
+        config = load_context_config()
+        selectors = [
+            selector
+            for context in config["contexts"]
+            for selector in context["selectors"]
+        ]
+        direct_sources = {
+            "drosophila_suzukii_core",
+            "aedes_literature_openalex",
+        }
+        openalex_title_path = [
+            "payload.raw_openalex_work.display_name",
+        ]
+        openalex_context_paths = [
+            *openalex_title_path,
+            "payload.raw_openalex_work.abstract_inverted_index",
+        ]
+
+        self.assertFalse(
+            any(selector["source"].endswith("_extracted_facts") for selector in selectors)
+        )
+        for selector in selectors:
+            if selector["source"] in direct_sources:
+                self.assertEqual(selector["taxon_field_paths"], openalex_title_path)
+                self.assertEqual(selector["context_field_paths"], openalex_context_paths)
+                self.assertNotIn("parent_record", selector)
+                self.assertNotIn("fulltext_context", selector)
+
+    def test_explicit_public_program_config_replaces_stale_index_records(self):
+        self._sync_status_record_count()
+        package = build_context_package(
+            artifact_dir=self.artifact_dir,
+            config_path=self.config_path,
+            program_config_path=(
+                Path(__file__).resolve().parents[1]
+                / "config"
+                / "insect-intelligence-programs.json"
+            ),
+            generated_at="2026-07-14T01:00:00Z",
+        )
+
+        serialized = json.dumps(package, sort_keys=True)
+        portfolio = next(
+            record
+            for record in package["program_records"]
+            if record["record_id"] == "insect_intelligence_programs:portfolio"
+        )
+        self.assertEqual(
+            portfolio["payload"]["objective"],
+            "Deeply understand insects and accelerate effective, safe repellents that "
+            "protect people and crops without killing insects.",
+        )
+        self.assertNotIn("monarch", serialized.casefold())
+
+    def test_published_package_loader_checks_raw_hash_and_contract(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        raw = (json.dumps(package, sort_keys=True) + "\n").encode("utf-8")
+        path = self.root / "published-package.json"
+        path.write_bytes(raw)
+
+        loaded = load_published_context_package(
+            path,
+            expected_artifact_sha256=hashlib.sha256(raw).hexdigest(),
+        )
+
+        self.assertEqual(loaded, package)
+
+    def test_published_package_loader_rejects_duplicate_keys(self):
+        raw = b'{"ok":true,"ok":true}'
+        path = self.root / "duplicate-package.json"
+        path.write_bytes(raw)
+
+        with self.assertRaisesRegex(ValueError, "duplicate JSON key: ok"):
+            load_published_context_package(
+                path,
+                expected_artifact_sha256=hashlib.sha256(raw).hexdigest(),
+            )
+
+    def test_published_package_loader_rejects_raw_hash_mismatch(self):
+        package = self.build("2026-07-14T01:00:00Z")
+        path = self.root / "mismatched-package.json"
+        path.write_text(json.dumps(package), encoding="utf-8")
+
+        with self.assertRaisesRegex(ValueError, "artifact hash does not match"):
+            load_published_context_package(
+                path,
+                expected_artifact_sha256="0" * 64,
+            )
+
+    def test_default_published_package_is_the_exact_public_release(self):
+        package = load_published_context_package()
+        serialized = json.dumps(package, sort_keys=True).casefold()
+
+        self.assertEqual(package["schema_version"], "ask-insects-evidence-package.v2")
+        self.assertEqual(package["package_version"], "2026-07-14.5")
+        self.assertEqual(len(package["evidence_records"]), 36)
+        self.assertEqual(len(package["gaps"]), 10)
+        self.assertNotIn("monarch", serialized)
+        self.assertNotIn("/users/", serialized)
+        self.assertNotIn("/home/", serialized)
 
     def test_package_selects_only_exact_species_and_respects_limit(self):
         package = self.build("2026-07-14T01:00:00Z")
@@ -1360,7 +1466,7 @@ class ContextPackageTests(unittest.TestCase):
                     text="Indexed parent paper.",
                     payload={
                         "raw_openalex_work": {
-                            "display_name": "Drosophila suzukii behavior",
+                            "display_name": "Drosophila suzukii contact avoidance behavior",
                             "abstract_inverted_index": {},
                         }
                     },
@@ -1446,7 +1552,7 @@ class ContextPackageTests(unittest.TestCase):
                     text="Indexed parent paper.",
                     payload={
                         "raw_openalex_work": {
-                            "display_name": "Drosophila suzukii behavior",
+                            "display_name": "Drosophila suzukii contact avoidance behavior",
                             "abstract_inverted_index": {},
                         }
                     },
@@ -1541,11 +1647,12 @@ class ContextPackageTests(unittest.TestCase):
         )
 
         self.assertEqual(package["evidence_records"], [])
+        self.assertEqual(package["selector_results"][0]["candidate_count"], 4)
         self.assertEqual(
             package["selector_results"][0]["rejection_counts"],
             {
                 "context_not_directly_confirmed": 1,
-                "fulltext_unit_link_invalid": 4,
+                "fulltext_unit_link_invalid": 3,
             },
         )
 
@@ -2083,7 +2190,7 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(
             package["program_records"][0]["provenance"]["locator"],
             "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-            "175605e32adb6aea14a4664b75e913042d748055/"
+            "03684f235f87dc4299a18136c7acbac6cd821d12/"
             "config/insect-intelligence-programs.json",
         )
         self.assertNotIn("ledger_path", package["program_records"][0]["payload"])
@@ -2600,6 +2707,82 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(receipt["selected_record_ids"], ["trusted-discovery:selected"])
         self.assertEqual(package["evidence_records"][0]["species"], "Drosophila suzukii")
 
+    def test_link_references_alone_do_not_make_generated_text_a_candidate(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "parent:no-context-match",
+                    source="public_parent_literature",
+                    species="Drosophila suzukii",
+                    text="Indexed parent paper.",
+                    payload={
+                        "raw_openalex_work": {
+                            "display_name": "Drosophila suzukii locomotion study",
+                        }
+                    },
+                ),
+                record(
+                    "derived:generated-only-match",
+                    source="linked_discovery_source",
+                    species="Drosophila suzukii",
+                    text="Needle contact avoidance appeared only in generated text.",
+                    payload={
+                        "source_record_id": "parent:no-context-match",
+                        "fulltext_unit_id": "unit:no-context-match",
+                    },
+                ),
+            ]
+        )
+        self.index.upsert_fulltext_units(
+            [
+                FullTextUnit(
+                    unit_id="unit:no-context-match",
+                    record_id="parent:no-context-match",
+                    source="public_parent_literature",
+                    unit_index=0,
+                    text="Adult movement was measured after emergence.",
+                    url="https://example.org/fulltext/no-context-match",
+                    license="CC-BY-4.0",
+                    provenance=Provenance(
+                        source_id="public_parent_literature",
+                        locator="literature_fulltext_units#unit:no-context-match",
+                        retrieved_at="2026-07-13T00:00:00Z",
+                        source_url="https://example.org/fulltext/no-context-match",
+                        license="CC-BY-4.0",
+                    ),
+                )
+            ]
+        )
+        selector = self.selector(
+            "linked_generated_only",
+            "drosophila_suzukii",
+            "linked_discovery_source",
+            query_any=["needle", "contact", "avoidance"],
+            context_required_term_groups=[["avoidance"], ["contact"]],
+            taxon_field_paths=[],
+            context_field_paths=[],
+            parent_record={
+                "record_id_path": "payload.source_record_id",
+                "taxon_field_paths": ["payload.raw_openalex_work.display_name"],
+            },
+            fulltext_context=self.fulltext_context(),
+        )
+
+        package = self.build_with_contexts(
+            [
+                self.context(
+                    "linked_generated_only_context",
+                    ["drosophila_suzukii"],
+                    [selector],
+                )
+            ]
+        )
+
+        receipt = package["selector_results"][0]
+        self.assertEqual(receipt["candidate_count"], 0)
+        self.assertEqual(receipt["rejection_counts"], {})
+        self.assertEqual(package["evidence_records"], [])
+
     def test_generated_text_cannot_change_trusted_tie_ranking(self):
         def insert_rows(first_text: str, second_text: str) -> None:
             self.index.upsert_records(
@@ -3042,7 +3225,7 @@ class ContextPackageTests(unittest.TestCase):
         package = self.build("2026-07-14T01:00:00Z")
         expected_prefix = (
             "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-            "175605e32adb6aea14a4664b75e913042d748055/config/"
+            "03684f235f87dc4299a18136c7acbac6cd821d12/config/"
         )
         locators = [record["provenance"]["locator"] for record in package["program_records"]]
         locators.extend(context["provenance"]["locator"] for context in package["contexts"])

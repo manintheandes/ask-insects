@@ -13,6 +13,10 @@ from urllib.parse import parse_qsl, urlsplit, urlunsplit
 
 from .builder import DEFAULT_ARTIFACT_DIR
 from .sources.literature import abstract_from_inverted_index
+from .sources.insect_intelligence_programs import (
+    build_insect_intelligence_records,
+    load_program_ledger,
+)
 
 
 PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v2"
@@ -27,9 +31,21 @@ VALIDATION_CONTRACT = {
 }
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTEXT_CONFIG = REPO_ROOT / "config/insect-evidence-package.json"
+DEFAULT_PROGRAM_CONFIG = REPO_ROOT / "config/insect-intelligence-programs.json"
+DEFAULT_PUBLISHED_PACKAGE = (
+    REPO_ROOT
+    / "public"
+    / "evidence-packages"
+    / "ask-insects-evidence-package-2026-07-14.5.json"
+)
+DEFAULT_PUBLISHED_PACKAGE_SHA256 = (
+    "a46cad1b935b6f54ddf279339e4c2b7bd583de7a1f039b51ebed1e63b2a50881"
+)
 MAX_SELECTOR_LIMIT = 25
 MAX_SELECTOR_CANDIDATE_FRONTIER = 2_000
 MAX_LINKED_RECORD_IDS = 16
+SOURCE_RECORD_BATCH_SIZE = 500
+SQLITE_ID_BATCH_SIZE = 400
 REQUIRED_SOURCE_TABLES = frozenset(
     {"records", "record_payloads", "literature_fulltext_units"}
 )
@@ -39,12 +55,12 @@ MAX_LIST_ITEMS = 10_000
 MAX_NESTING_DEPTH = 20
 PUBLIC_PROGRAM_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "175605e32adb6aea14a4664b75e913042d748055/"
+    "03684f235f87dc4299a18136c7acbac6cd821d12/"
     "config/insect-intelligence-programs.json"
 )
 PUBLIC_CONTEXT_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "175605e32adb6aea14a4664b75e913042d748055/"
+    "03684f235f87dc4299a18136c7acbac6cd821d12/"
     "config/insect-evidence-package.json"
 )
 PACKAGE_FIELDS = frozenset(
@@ -177,6 +193,8 @@ RETAINED_SEMANTIC_FIELD_PATHS = frozenset(
         "payload.assay_types",
         "payload.table_row",
         "payload.fields.table_row",
+        "payload.raw_openalex_work.display_name",
+        "payload.raw_openalex_work.abstract_inverted_index",
     }
 )
 RETAINED_PARENT_TAXON_PATHS = frozenset(
@@ -1012,9 +1030,12 @@ def _identifier_values_at_path(
     flattened: list[object] = []
     for value in raw_values:
         if isinstance(value, list):
-            flattened.extend(value)
+            flattened.extend(value[: MAX_LINKED_RECORD_IDS + 1])
         else:
             flattened.append(value)
+        if len(flattened) > MAX_LINKED_RECORD_IDS:
+            flattened = flattened[: MAX_LINKED_RECORD_IDS + 1]
+            break
     if not flattened:
         return []
     if not all(isinstance(value, str) and value.strip() for value in flattened):
@@ -1175,6 +1196,33 @@ def _program_records(conn: sqlite3.Connection) -> list[dict[str, object]]:
     return [_export_record(row) for row in rows]
 
 
+def _program_records_from_config(path: Path) -> list[dict[str, object]]:
+    ledger = load_program_ledger(path)
+    last_reviewed = _require_string(
+        ledger.get("last_reviewed"),
+        "program config last_reviewed",
+    )
+    records = build_insect_intelligence_records(
+        path,
+        retrieved_at=f"{last_reviewed}T00:00:00Z",
+    )
+    return [
+        {
+            "record_id": record.record_id,
+            "lane": record.lane,
+            "source": record.source,
+            "title": record.title,
+            "text": record.text,
+            "species": record.species,
+            "url": record.url,
+            "media_url": record.media_url,
+            "payload": deepcopy(record.payload or {}),
+            "provenance": record.provenance.to_dict(),
+        }
+        for record in records
+    ]
+
+
 def _species_profiles(program_records: list[dict[str, object]]) -> dict[str, dict[str, object]]:
     profiles: dict[str, dict[str, object]] = {}
     for record in program_records:
@@ -1201,8 +1249,13 @@ def _species_profiles(program_records: list[dict[str, object]]) -> dict[str, dic
 
 
 def _record_by_id(
-    conn: sqlite3.Connection, record_id: str
+    conn: sqlite3.Connection,
+    record_id: str,
+    *,
+    cache: dict[str, dict[str, object]] | None = None,
 ) -> dict[str, object] | None:
+    if cache is not None:
+        return cache.get(record_id)
     row = conn.execute(
         """
         SELECT r.*, p.payload_json
@@ -1215,10 +1268,34 @@ def _record_by_id(
     return _export_record(row) if row is not None else None
 
 
-def _source_records(
+def _records_by_ids(
+    conn: sqlite3.Connection, record_ids: set[str]
+) -> dict[str, dict[str, object]]:
+    records = {}
+    ordered = sorted(record_ids)
+    for start in range(0, len(ordered), SQLITE_ID_BATCH_SIZE):
+        batch = ordered[start : start + SQLITE_ID_BATCH_SIZE]
+        placeholders = ",".join("?" for _ in batch)
+        rows = conn.execute(
+            f"""
+            SELECT r.*, p.payload_json
+            FROM records AS r
+            LEFT JOIN record_payloads AS p ON p.record_id = r.record_id
+            WHERE r.record_id IN ({placeholders})
+            """,
+            batch,
+        ).fetchall()
+        records.update(
+            (str(row["record_id"]), _export_record(row))
+            for row in rows
+        )
+    return records
+
+
+def _source_record_batches(
     conn: sqlite3.Connection, source: str
 ):
-    return conn.execute(
+    cursor = conn.execute(
         """
         SELECT r.*, p.payload_json
         FROM records AS r INDEXED BY idx_records_source
@@ -1228,11 +1305,18 @@ def _source_records(
         """,
         (source,),
     )
+    while rows := cursor.fetchmany(SOURCE_RECORD_BATCH_SIZE):
+        yield [_export_record(row) for row in rows]
 
 
 def _fulltext_unit_by_id(
-    conn: sqlite3.Connection, unit_id: str
+    conn: sqlite3.Connection,
+    unit_id: str,
+    *,
+    cache: dict[str, dict[str, object]] | None = None,
 ) -> dict[str, object] | None:
+    if cache is not None:
+        return cache.get(unit_id)
     row = conn.execute(
         """
         SELECT unit_id, record_id, source, unit_index, text, url, license, provenance_json
@@ -1242,6 +1326,27 @@ def _fulltext_unit_by_id(
         (unit_id,),
     ).fetchone()
     return dict(row) if row is not None else None
+
+
+def _fulltext_units_by_ids(
+    conn: sqlite3.Connection, unit_ids: set[str]
+) -> dict[str, dict[str, object]]:
+    units = {}
+    ordered = sorted(unit_ids)
+    for start in range(0, len(ordered), SQLITE_ID_BATCH_SIZE):
+        batch = ordered[start : start + SQLITE_ID_BATCH_SIZE]
+        placeholders = ",".join("?" for _ in batch)
+        rows = conn.execute(
+            f"""
+            SELECT unit_id, record_id, source, unit_index, text, url, license,
+                   provenance_json
+            FROM literature_fulltext_units
+            WHERE unit_id IN ({placeholders})
+            """,
+            batch,
+        ).fetchall()
+        units.update((str(row["unit_id"]), dict(row)) for row in rows)
+    return units
 
 
 def _fulltext_public_provenance(unit: dict[str, object]) -> dict[str, object]:
@@ -1290,7 +1395,9 @@ def _trusted_candidate_search_values(
     *,
     record: dict[str, object],
     selector: dict[str, object],
-) -> tuple[list[str], bool]:
+    record_cache: dict[str, dict[str, object]],
+    fulltext_cache: dict[str, dict[str, object]],
+) -> list[str]:
     values = [
         value
         for field_path in [
@@ -1299,16 +1406,17 @@ def _trusted_candidate_search_values(
         ]
         for value in _value_at_path(record, field_path)
     ]
-    reference_paths: list[str] = []
-
     parent = selector.get("parent_record")
     if isinstance(parent, dict):
         parent_id_path = parent["record_id_path"]
-        reference_paths.append(parent_id_path)
         parent_ids = _identifier_values_at_path(record, parent_id_path)
         if parent_ids is not None:
             for parent_id in parent_ids[:MAX_LINKED_RECORD_IDS]:
-                parent_record = _record_by_id(conn, parent_id)
+                parent_record = _record_by_id(
+                    conn,
+                    parent_id,
+                    cache=record_cache,
+                )
                 if parent_record is None:
                     continue
                 for field_path in parent["taxon_field_paths"]:
@@ -1318,11 +1426,14 @@ def _trusted_candidate_search_values(
     if isinstance(fulltext, dict):
         unit_id_path = fulltext["unit_id_path"]
         parent_id_path = fulltext["parent_record_id_path"]
-        reference_paths.extend([unit_id_path, parent_id_path])
         unit_ids = _identifier_values_at_path(record, unit_id_path)
         parent_ids = _identifier_values_at_path(record, parent_id_path)
         if unit_ids is not None and parent_ids is not None and len(unit_ids) == len(parent_ids) == 1:
-            unit = _fulltext_unit_by_id(conn, unit_ids[0])
+            unit = _fulltext_unit_by_id(
+                conn,
+                unit_ids[0],
+                cache=fulltext_cache,
+            )
             if unit is not None and unit.get("record_id") == parent_ids[0]:
                 values.extend(_flatten_semantic_value(unit.get("text")))
 
@@ -1331,10 +1442,7 @@ def _trusted_candidate_search_values(
         for field_path in requirements:
             values.extend(_value_at_path(record, field_path))
 
-    has_reference_prerequisites = bool(reference_paths) and all(
-        _path_is_present(record, path) for path in reference_paths
-    )
-    return values, has_reference_prerequisites
+    return values
 
 
 def _trusted_candidate_score(
@@ -1342,18 +1450,22 @@ def _trusted_candidate_score(
     *,
     record: dict[str, object],
     selector: dict[str, object],
-) -> tuple[int, bool]:
-    values, has_reference_prerequisites = _trusted_candidate_search_values(
+    record_cache: dict[str, dict[str, object]],
+    fulltext_cache: dict[str, dict[str, object]],
+) -> int:
+    values = _trusted_candidate_search_values(
         conn,
         record=record,
         selector=selector,
+        record_cache=record_cache,
+        fulltext_cache=fulltext_cache,
     )
     normalized_values = [value.casefold() for value in values]
     score = sum(
         any(term.casefold() in value for value in normalized_values)
         for term in selector["query_any"]
     )
-    return score, has_reference_prerequisites
+    return score
 
 
 def _record_requirements_match(
@@ -1377,6 +1489,8 @@ def _candidate_eligibility(
     species_id: str,
     scientific_name: str,
     taxon_terms: list[str],
+    record_cache: dict[str, dict[str, object]],
+    fulltext_cache: dict[str, dict[str, object]],
 ) -> tuple[dict[str, object] | None, str | None]:
     selector_id = _require_string(selector.get("id"), "selector id")
     record_source = _require_string(record.get("source"), f"candidate {record.get('record_id')} source")
@@ -1411,7 +1525,11 @@ def _candidate_eligibility(
             return None, "fulltext_unit_link_invalid"
         fulltext_unit_id = unit_ids[0]
         fulltext_parent_id = linked_parent_ids[0]
-        fulltext_unit = _fulltext_unit_by_id(conn, fulltext_unit_id)
+        fulltext_unit = _fulltext_unit_by_id(
+            conn,
+            fulltext_unit_id,
+            cache=fulltext_cache,
+        )
         if (
             fulltext_unit is None
             or str(fulltext_unit["record_id"]) != fulltext_parent_id
@@ -1441,7 +1559,11 @@ def _candidate_eligibility(
             return None, "upstream_record_missing"
         parent_paths = list(parent_config["taxon_field_paths"])
         for parent_id in parent_ids:
-            parent_record = _record_by_id(conn, parent_id)
+            parent_record = _record_by_id(
+                conn,
+                parent_id,
+                cache=record_cache,
+            )
             if parent_record is None:
                 return None, "upstream_record_missing"
             try:
@@ -1562,6 +1684,64 @@ def _prepare_candidate_for_export(
     return prepared
 
 
+def _linked_batch_caches(
+    conn: sqlite3.Connection,
+    records: list[dict[str, object]],
+    jobs: list[dict[str, object]],
+) -> tuple[dict[str, dict[str, object]], dict[str, dict[str, object]]]:
+    record_ids: set[str] = set()
+    unit_ids: set[str] = set()
+    for record in records:
+        for job in jobs:
+            selector = job["selector"]
+            parent = selector.get("parent_record")
+            if isinstance(parent, dict):
+                values = _identifier_values_at_path(record, parent["record_id_path"])
+                if values is not None:
+                    record_ids.update(values)
+            fulltext = selector.get("fulltext_context")
+            if isinstance(fulltext, dict):
+                values = _identifier_values_at_path(record, fulltext["unit_id_path"])
+                if values is not None:
+                    unit_ids.update(values)
+    return _records_by_ids(conn, record_ids), _fulltext_units_by_ids(conn, unit_ids)
+
+
+def _reference_link_rejection(
+    record: dict[str, object],
+    selector: dict[str, object],
+    *,
+    record_cache: dict[str, dict[str, object]],
+    fulltext_cache: dict[str, dict[str, object]],
+) -> str | None:
+    fulltext = selector.get("fulltext_context")
+    if isinstance(fulltext, dict):
+        unit_ids = _identifier_values_at_path(record, fulltext["unit_id_path"])
+        parent_ids = _identifier_values_at_path(
+            record,
+            fulltext["parent_record_id_path"],
+        )
+        if (
+            unit_ids is None
+            or parent_ids is None
+            or len(unit_ids) != 1
+            or len(parent_ids) != 1
+        ):
+            return "fulltext_unit_link_invalid"
+        unit = fulltext_cache.get(unit_ids[0])
+        if unit is None or unit.get("record_id") != parent_ids[0]:
+            return "fulltext_unit_link_invalid"
+
+    parent = selector.get("parent_record")
+    if isinstance(parent, dict):
+        parent_ids = _identifier_values_at_path(record, parent["record_id_path"])
+        if parent_ids is None or len(parent_ids) > MAX_LINKED_RECORD_IDS:
+            return "invalid_candidate_shape"
+        if not parent_ids or any(parent_id not in record_cache for parent_id in parent_ids):
+            return "upstream_record_missing"
+    return None
+
+
 def _stream_candidate_states(
     conn: sqlite3.Connection,
     selector_jobs: list[dict[str, object]],
@@ -1581,63 +1761,81 @@ def _stream_candidate_states(
         grouped_jobs.setdefault(source, []).append(job)
 
     for source, jobs in grouped_jobs.items():
-        for raw_row in _source_records(conn, source):
-            record = _export_record(raw_row)
-            for job in jobs:
-                selector = job["selector"]
-                selector_id = selector["id"]
-                score, has_reference_prerequisites = _trusted_candidate_score(
-                    conn,
-                    record=record,
-                    selector=selector,
-                )
-                if score == 0 and not has_reference_prerequisites:
-                    continue
-
-                state = states[selector_id]
-                state["candidate_count"] += 1
-                if state["candidate_count"] > MAX_SELECTOR_CANDIDATE_FRONTIER:
-                    raise ValueError(
-                        f"selector {selector_id} candidate frontier exceeds "
-                        f"{MAX_SELECTOR_CANDIDATE_FRONTIER}; narrow its source or query_any terms"
+        for records in _source_record_batches(conn, source):
+            record_cache, fulltext_cache = _linked_batch_caches(conn, records, jobs)
+            for record in records:
+                for job in jobs:
+                    selector = job["selector"]
+                    selector_id = selector["id"]
+                    link_rejection = _reference_link_rejection(
+                        record,
+                        selector,
+                        record_cache=record_cache,
+                        fulltext_cache=fulltext_cache,
                     )
+                    score = _trusted_candidate_score(
+                        conn,
+                        record=record,
+                        selector=selector,
+                        record_cache=record_cache,
+                        fulltext_cache=fulltext_cache,
+                    )
+                    if score == 0:
+                        continue
 
-                eligibility, rejection_reason = _candidate_eligibility(
-                    conn,
-                    record=record,
-                    selector=selector,
-                    context_id=job["context_id"],
-                    species_id=job["species_id"],
-                    scientific_name=job["scientific_name"],
-                    taxon_terms=job["taxon_terms"],
-                )
-                if eligibility is None:
-                    reason = _require_string(rejection_reason, "candidate rejection reason")
-                    rejection_counts = state["rejection_counts"]
-                    rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
-                    continue
+                    state = states[selector_id]
+                    state["candidate_count"] += 1
+                    if state["candidate_count"] > MAX_SELECTOR_CANDIDATE_FRONTIER:
+                        raise ValueError(
+                            f"selector {selector_id} candidate frontier exceeds "
+                            f"{MAX_SELECTOR_CANDIDATE_FRONTIER}; narrow its source or query_any terms"
+                        )
 
-                try:
-                    prepared = _prepare_candidate_for_export(
+                    if link_rejection is not None:
+                        rejection_counts = state["rejection_counts"]
+                        rejection_counts[link_rejection] = (
+                            rejection_counts.get(link_rejection, 0) + 1
+                        )
+                        continue
+
+                    eligibility, rejection_reason = _candidate_eligibility(
+                        conn,
                         record=record,
                         selector=selector,
                         context_id=job["context_id"],
-                        selector_id=selector_id,
                         species_id=job["species_id"],
                         scientific_name=job["scientific_name"],
-                        eligibility=eligibility,
+                        taxon_terms=job["taxon_terms"],
+                        record_cache=record_cache,
+                        fulltext_cache=fulltext_cache,
                     )
-                except ValueError:
-                    rejection_counts = state["rejection_counts"]
-                    reason = "unsafe_export_boundary"
-                    rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
-                    continue
+                    if eligibility is None:
+                        reason = _require_string(rejection_reason, "candidate rejection reason")
+                        rejection_counts = state["rejection_counts"]
+                        rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
+                        continue
 
-                state["eligible_count"] += 1
-                selected = state["selected"]
-                selected.append((score, prepared["record_id"], prepared, eligibility))
-                selected.sort(key=lambda item: (-item[0], item[1]))
-                del selected[int(selector["limit"]):]
+                    try:
+                        prepared = _prepare_candidate_for_export(
+                            record=record,
+                            selector=selector,
+                            context_id=job["context_id"],
+                            selector_id=selector_id,
+                            species_id=job["species_id"],
+                            scientific_name=job["scientific_name"],
+                            eligibility=eligibility,
+                        )
+                    except ValueError:
+                        rejection_counts = state["rejection_counts"]
+                        reason = "unsafe_export_boundary"
+                        rejection_counts[reason] = rejection_counts.get(reason, 0) + 1
+                        continue
+
+                    state["eligible_count"] += 1
+                    selected = state["selected"]
+                    selected.append((score, prepared["record_id"], prepared, eligibility))
+                    selected.sort(key=lambda item: (-item[0], item[1]))
+                    del selected[int(selector["limit"]):]
     return states
 
 
@@ -1712,6 +1910,7 @@ def build_context_package(
     *,
     artifact_dir: Path = DEFAULT_ARTIFACT_DIR,
     config_path: Path = DEFAULT_CONTEXT_CONFIG,
+    program_config_path: Path | None = None,
     generated_at: str | None = None,
 ) -> dict[str, object]:
     artifact_dir = Path(artifact_dir)
@@ -1750,7 +1949,11 @@ def build_context_package(
                 f"({status_record_count} != {database_record_count})"
             )
 
-        raw_program_records = _program_records(conn)
+        raw_program_records = (
+            _program_records(conn)
+            if program_config_path is None
+            else _program_records_from_config(Path(program_config_path))
+        )
         species_profiles = _species_profiles(raw_program_records)
         program_records = [_public_program_record(record) for record in raw_program_records]
         contexts = config["contexts"]
@@ -2523,3 +2726,45 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
         expected = canonical_package_hash(package)
         if package.get("content_sha256") != expected:
             raise ValueError("context package content_sha256 does not match canonical content")
+
+
+def _reject_duplicate_json_keys(
+    pairs: list[tuple[str, object]],
+) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def load_published_context_package(
+    path: Path = DEFAULT_PUBLISHED_PACKAGE,
+    *,
+    expected_artifact_sha256: str | None = DEFAULT_PUBLISHED_PACKAGE_SHA256,
+) -> dict[str, object]:
+    package_path = Path(path)
+    with package_path.open("rb") as handle:
+        raw = handle.read(MAX_PACKAGE_BYTES + 1)
+    if not raw:
+        raise ValueError("published evidence package is empty")
+    if len(raw) > MAX_PACKAGE_BYTES:
+        raise ValueError("published evidence package exceeds the byte limit")
+    if expected_artifact_sha256 is not None:
+        if not re.fullmatch(r"[0-9a-f]{64}", expected_artifact_sha256):
+            raise ValueError("expected artifact hash must be a lowercase SHA-256")
+        actual_artifact_sha256 = hashlib.sha256(raw).hexdigest()
+        if actual_artifact_sha256 != expected_artifact_sha256:
+            raise ValueError("published evidence package artifact hash does not match")
+    try:
+        package = json.loads(
+            raw.decode("utf-8"),
+            object_pairs_hook=_reject_duplicate_json_keys,
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("published evidence package is not valid UTF-8 JSON") from exc
+    if not isinstance(package, dict):
+        raise ValueError("published evidence package must contain a JSON object")
+    validate_context_package(package)
+    return package

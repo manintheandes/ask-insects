@@ -79,7 +79,7 @@ MAX_PUBLIC_PACKAGE_STRING_LENGTH = 100_000
 MAX_PUBLIC_PACKAGE_LIST_ITEMS = 10_000
 MAX_PUBLIC_PACKAGE_DEPTH = 20
 FORBIDDEN_FILES = ("config/ask-monarch-context-package.json",)
-ACTIVE_PUBLIC_SURFACE_DIRS = ("askinsects", "config", "skills/askinsects")
+ACTIVE_PUBLIC_SURFACE_DIRS = ("askinsects", "config", "public", "skills/askinsects")
 ACTIVE_PUBLIC_SURFACE_FILES = ("pyproject.toml",)
 ACTIVE_TEXT_SUFFIXES = frozenset({".json", ".md", ".py", ".toml", ".yaml", ".yml"})
 CONSUMER_NAME_RE = re.compile(
@@ -123,6 +123,7 @@ REQUIRED_FILES = (
     "config/source-map.yaml",
     "config/insect-evidence-package.json",
     "config/insect-intelligence-programs.json",
+    "public/evidence-packages/ask-insects-evidence-package-2026-07-14.5.json",
     "config/mosquito-intelligence-coverage.json",
     "config/aedes-source-plane-benchmark.json",
     "data/fixtures/mosquito_records.json",
@@ -921,12 +922,21 @@ def check_clean_clone_independence(repo_root: Path = REPO_ROOT) -> None:
 import os
 from pathlib import Path
 import askinsects
-from askinsects.context_package import DEFAULT_CONTEXT_CONFIG, load_context_config
+from askinsects.context_package import (
+    DEFAULT_CONTEXT_CONFIG,
+    DEFAULT_PUBLISHED_PACKAGE,
+    load_context_config,
+    load_published_context_package,
+)
 
 assert not any(key.startswith("ASK_INSECTS_") for key in os.environ)
 assert Path(askinsects.__file__).resolve().is_relative_to(Path.cwd().resolve())
 assert DEFAULT_CONTEXT_CONFIG.resolve() == (Path.cwd() / "config/insect-evidence-package.json").resolve()
 assert load_context_config()["schema_version"] == "ask-insects-evidence-package-config.v2"
+assert DEFAULT_PUBLISHED_PACKAGE.resolve() == (
+    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-14.5.json"
+).resolve()
+assert load_published_context_package()["package_version"] == "2026-07-14.5"
 assert not (Path.cwd() / "artifacts/mosquito-v1/source_index.sqlite").exists()
 """
         _run_clean_clone_command(
@@ -940,6 +950,7 @@ assert not (Path.cwd() / "artifacts/mosquito-v1/source_index.sqlite").exists()
             "tests.test_context_package.ContextPackageTests.test_selector_receipt_counts_all_rejections",
             "tests.test_context_package.ContextPackageTests.test_package_declares_producer_and_downstream_validation_boundary",
             "tests.test_context_package.ContextPackageTests.test_validator_rejects_exported_contexts_with_private_fields",
+            "tests.test_context_package.ContextPackageTests.test_default_published_package_is_the_exact_public_release",
         ]
         _run_clean_clone_command(
             clone_root,
@@ -2210,11 +2221,15 @@ def _load_verification_evidence_package(artifact_dir: Path) -> dict[str, object]
             [sys.executable, "-m", "askinsects", "context-package", "--hosted"]
         )
     else:
-        from askinsects.context_package import build_context_package
+        from askinsects.context_package import (
+            DEFAULT_PROGRAM_CONFIG,
+            build_context_package,
+        )
 
         _seed_verification_package_records(artifact_dir)
         package = build_context_package(
             artifact_dir=artifact_dir,
+            program_config_path=DEFAULT_PROGRAM_CONFIG,
             generated_at="2026-07-14T00:00:00Z",
         )
     if not isinstance(package, dict):
@@ -2322,9 +2337,14 @@ def _check_context_package_validator_guards(package: dict[str, object]) -> None:
 
 
 def check_evidence_package(artifact_dir: Path = VERIFY_ARTIFACT_DIR) -> None:
-    from askinsects.context_package import validate_context_package
+    from askinsects.context_package import (
+        load_published_context_package,
+        validate_context_package,
+    )
 
     _check_producer_limit_alignment()
+    published = load_published_context_package()
+    validate_public_evidence_package(published, require_complete_contexts=True)
     package = _load_verification_evidence_package(artifact_dir)
     validate_context_package(package)
     validate_public_evidence_package(package, require_complete_contexts=True)

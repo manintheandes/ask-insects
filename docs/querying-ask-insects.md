@@ -24,7 +24,7 @@ To export the bounded generic public evidence package for any downstream tool:
 ask-insects context-package
 ```
 
-This command uses the hosted source plane by default. The v2 output includes a version, a content hash, generic evidence contexts, exact-species public evidence, explicit gaps, and provenance for every exported record. Private experiments and results belong in a separate private system. They are not sent to Ask Insects and cannot fill gaps in public evidence.
+This command uses the hosted source plane by default. The hosted route reads the prebuilt release at `public/evidence-packages/ask-insects-evidence-package-2026-07-14.5.json`, verifies its exact file hash and signed contents, and then returns it. Package generation is a release operation against the hosted index, not work performed during a user request. The v2 output includes a version, a content hash, generic evidence contexts, exact-species public evidence, explicit gaps, and provenance for every exported record. Private experiments and results belong in a separate private system. They are not sent to Ask Insects and cannot fill gaps in public evidence.
 
 To make the Aedes coverage ledger itself queryable:
 

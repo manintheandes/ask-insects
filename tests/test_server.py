@@ -179,14 +179,14 @@ class ServerTests(unittest.TestCase):
             artifact_dir=artifact_dir,
         )
 
-    def test_context_package_route_builds_from_the_hosted_index(self):
+    def test_context_package_route_serves_the_verified_release_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             build_fixture_index(artifact_dir=artifact_dir)
             expected = generic_evidence_package_v2()
             with mock.patch.object(
                 server_module,
-                "build_context_package",
+                "load_published_context_package",
                 return_value=expected,
                 create=True,
             ) as build:
@@ -216,12 +216,12 @@ class ServerTests(unittest.TestCase):
             response.payload["selector_results"][0]["rejection_counts"],
             {"taxon_not_directly_confirmed": 1},
         )
-        build.assert_called_once_with(artifact_dir=artifact_dir)
+        build.assert_called_once_with()
 
     def test_context_package_route_requires_authentication_before_generation(self):
         with tempfile.TemporaryDirectory() as tmpdir, mock.patch.object(
             server_module,
-            "build_context_package",
+            "load_published_context_package",
         ) as build:
             response = dispatch_request(
                 "GET",
@@ -246,7 +246,7 @@ class ServerTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             build_fixture_index(artifact_dir=artifact_dir)
-            with mock.patch.object(server_module, "build_context_package") as build:
+            with mock.patch.object(server_module, "load_published_context_package") as build:
                 for field, value in private_fields.items():
                     with self.subTest(transport="query", field=field):
                         response = dispatch_request(
@@ -356,7 +356,7 @@ class ServerTests(unittest.TestCase):
             leaked_detail = f"failed at {artifact_dir}/raw/private.json with token secret-token"
             with mock.patch.object(
                 server_module,
-                "build_context_package",
+                "load_published_context_package",
                 side_effect=RuntimeError(leaked_detail),
             ) as build:
                 response = dispatch_request(
@@ -384,7 +384,7 @@ class ServerTests(unittest.TestCase):
         self.assertNotIn(tmpdir, serialized)
         self.assertNotIn(leaked_detail, serialized)
         self.assertNotIn("Traceback", serialized)
-        build.assert_called_once_with(artifact_dir=artifact_dir)
+        build.assert_called_once_with()
 
     def test_context_package_route_never_serves_a_legacy_v1_build(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -392,7 +392,7 @@ class ServerTests(unittest.TestCase):
             build_fixture_index(artifact_dir=artifact_dir)
             with mock.patch.object(
                 server_module,
-                "build_context_package",
+                "load_published_context_package",
                 return_value={
                     "ok": True,
                     "schema_version": "ask-insects-context-package.v1",

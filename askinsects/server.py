@@ -19,7 +19,7 @@ from typing import Callable
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR, build_source_index
-from .context_package import PACKAGE_SCHEMA_VERSION, build_context_package
+from .context_package import PACKAGE_SCHEMA_VERSION, load_published_context_package
 from .index import SourceIndex
 from .sources.dryad_behavior_videos import DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, fetch_dryad_behavior_video_records
 from .sources.extracted_facts import DEFAULT_MAX_SUPPLEMENT_BYTES
@@ -4338,7 +4338,7 @@ def dispatch_request(
                     "The generic public evidence package is unavailable.",
                 )
             try:
-                package = build_context_package(artifact_dir=artifact_dir)
+                package = load_published_context_package()
                 if (
                     not isinstance(package, dict)
                     or package.get("ok") is not True

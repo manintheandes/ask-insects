@@ -8,6 +8,7 @@ import sqlite3
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
 from .context_package import (
+    DEFAULT_PROGRAM_CONFIG,
     MAX_PACKAGE_BYTES,
     PACKAGE_SCHEMA_VERSION,
     build_context_package,
@@ -842,7 +843,10 @@ def main(argv: list[str] | None = None) -> int:
             emit(payload)
             return 0 if payload.get("ok") else 2
         try:
-            payload = build_context_package(artifact_dir=artifact_dir)
+            payload = build_context_package(
+                artifact_dir=artifact_dir,
+                program_config_path=DEFAULT_PROGRAM_CONFIG,
+            )
             if payload.get("schema_version") != PACKAGE_SCHEMA_VERSION:
                 payload = evidence_package_error(
                     "evidence_package_schema_mismatch",
