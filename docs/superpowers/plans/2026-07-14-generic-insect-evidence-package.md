@@ -86,6 +86,7 @@ git commit -m "refactor: make insect evidence config generic"
 ### Task 2: Prove Direct Taxon And Context Eligibility
 
 **Files:**
+- Modify: `config/insect-evidence-package.json`
 - Modify: `askinsects/context_package.py`
 - Modify: `tests/test_context_package.py`
 
@@ -110,6 +111,11 @@ record["eligibility"]["ruleset_version"] == "direct-semantic-evidence.v1"
 
 Also assert each basis includes `field_path`, `matched_term`, and `excerpt`.
 
+Each selector must declare the trusted field paths used for its taxon and
+context assertions. For derived facts, it must also declare the parent-record
+id path and trusted parent fields. Do not infer a trusted profile from the
+source id at runtime.
+
 - [ ] **Step 2: Verify RED**
 
 Run: `python3 -m pytest tests/test_context_package.py -q`
@@ -133,6 +139,17 @@ def _direct_assertion(
 ```
 
 Only configured paths may be read. Do not include `query`, `search_term`, `scope`, `inclusion_paths`, generated species labels, or the database `species` column in the allowlist.
+
+The retained source shapes have these additional constraints:
+
+- extracted facts require `payload.source_record_id`; taxon confirmation comes
+  from the loaded parent paper title or raw OpenAlex abstract, while context
+  confirmation comes from retained source text or a structured source row
+- olfaction literature may use its retained source title; a matched-record id
+  is usable only after the matched record independently passes the same checks
+- flight table rows without a species-bearing parent link, hard-coded
+  neurobiology atoms without retained raw species text, and the not-yet-mapped
+  DBM selector must be rejected and reported as direct-evidence gaps
 
 - [ ] **Step 4: Implement derived-record upstream checks**
 
@@ -164,7 +181,7 @@ Expected: all focused tests pass and known cross-species fixtures are excluded.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add askinsects/context_package.py tests/test_context_package.py
+git add config/insect-evidence-package.json askinsects/context_package.py tests/test_context_package.py
 git commit -m "fix: require direct species and context evidence"
 ```
 
