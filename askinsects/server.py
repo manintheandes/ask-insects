@@ -189,6 +189,7 @@ def health_payload(artifact_dir: Path) -> dict[str, object]:
     ready, reason = source_index_readiness(artifact_dir)
     payload: dict[str, object] = {
         "ok": ready and status_path.exists(),
+        "index_ready": ready,
         "db_exists": db_path.exists(),
         "status_exists": status_path.exists(),
         "db_path": str(db_path),
@@ -198,12 +199,6 @@ def health_payload(artifact_dir: Path) -> dict[str, object]:
     if not ready:
         payload["error"] = "source_index_unavailable"
         payload["reason"] = reason
-    else:
-        try:
-            payload.update(SourceIndex(db_path).summary())
-        except sqlite3.Error as exc:
-            payload["ok"] = False
-            payload["error"] = str(exc)
     return payload
 
 

@@ -161,6 +161,28 @@ class ServerTests(unittest.TestCase):
         self.assertEqual(response.payload, expected)
         build.assert_called_once_with(artifact_dir=artifact_dir)
 
+    def test_health_does_not_run_the_full_index_summary(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch.object(
+                server_module.SourceIndex,
+                "summary",
+                side_effect=AssertionError("health must stay lightweight"),
+            ):
+                response = dispatch_request(
+                    "GET",
+                    "/health",
+                    None,
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+        self.assertEqual(response.status, 200)
+        self.assertTrue(response.payload["ok"])
+        self.assertTrue(response.payload["index_ready"])
+
     def test_read_endpoints_reject_missing_source_index_without_creating_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir)
