@@ -39,7 +39,7 @@ SELECTOR_REQUIRED_FIELDS = frozenset(
         "species_id",
         "source",
         "query_any",
-        "context_terms",
+        "context_required_term_groups",
         "taxon_field_paths",
         "context_field_paths",
         "context_field_prerequisites",
@@ -47,32 +47,49 @@ SELECTOR_REQUIRED_FIELDS = frozenset(
         "required",
     }
 )
-SELECTOR_OPTIONAL_FIELDS = frozenset({"parent_record"})
+SELECTOR_OPTIONAL_FIELDS = frozenset(
+    {"parent_record", "fulltext_context", "record_requirements"}
+)
 PARENT_RECORD_FIELDS = frozenset({"record_id_path", "taxon_field_paths"})
-FORBIDDEN_TRUST_PATH_PARTS = frozenset(
+FULLTEXT_CONTEXT_FIELDS = frozenset(
     {
-        "generated_text",
-        "generated_title",
-        "openalex_search_term",
-        "query",
-        "query_any",
-        "search",
-        "search_term",
-        "scope",
-        "inclusion_paths",
-        "matched_record_ids",
-        "primary_taxon",
-        "source",
-        "source_id",
-        "source_record_id",
+        "unit_id_path",
+        "parent_record_id_path",
+        "text_field_path",
     }
 )
+RETAINED_SEMANTIC_FIELD_PATHS = frozenset(
+    {
+        "payload.title",
+        "payload.abstract",
+        "payload.assay_types",
+        "payload.table_row",
+        "payload.fields.table_row",
+    }
+)
+RETAINED_PARENT_TAXON_PATHS = frozenset(
+    {
+        "payload.raw_openalex_work.display_name",
+        "payload.raw_openalex_work.abstract_inverted_index",
+    }
+)
+REFERENCE_ID_PATHS = frozenset(
+    {
+        "payload.source_record_id",
+        "payload.fulltext_unit_id",
+        "payload.matched_record_ids",
+    }
+)
+FULLTEXT_TEXT_PATH = "literature_fulltext_units.text"
+RECORD_REQUIREMENT_PATHS = frozenset({"payload.atom_type"})
 ELIGIBILITY_REJECTION_REASONS = frozenset(
     {
         "taxon_not_directly_confirmed",
         "context_not_directly_confirmed",
         "upstream_record_missing",
         "trusted_field_missing",
+        "fulltext_unit_link_invalid",
+        "record_requirement_not_met",
     }
 )
 PRIVATE_SOURCE_MARKERS = (
@@ -122,6 +139,19 @@ def _require_string_list(value: object, label: str, *, allow_empty: bool = False
     return values
 
 
+def _require_term_groups(value: object, label: str) -> list[list[str]]:
+    if not isinstance(value, list) or not value:
+        raise ValueError(f"{label} must be a non-empty list of term groups")
+    groups = [
+        _require_string_list(group, f"{label}/{index}")
+        for index, group in enumerate(value)
+    ]
+    markers = [canonical_json(group) for group in groups]
+    if len(markers) != len(set(markers)):
+        raise ValueError(f"{label} must not contain duplicate term groups")
+    return groups
+
+
 def _validate_generic_context(
     context: dict[str, object],
     *,
@@ -145,25 +175,9 @@ def _validate_generic_context(
     return species_ids, required_domains
 
 
-def _validate_trusted_field_path(
-    path: str,
-    *,
-    label: str,
-    allow_parent_title: bool = False,
-    allow_record_reference: bool = False,
-) -> None:
-    if path == "title" and allow_parent_title:
-        return
-    if not path.startswith("payload."):
-        raise ValueError(f"{label} trusted field path must start with payload.: {path}")
-    if allow_record_reference and path in {
-        "payload.source_record_id",
-        "payload.matched_record_ids",
-    }:
-        return
-    parts = {part.casefold() for part in path.split(".")}
-    if parts.intersection(FORBIDDEN_TRUST_PATH_PARTS):
-        raise ValueError(f"{label} trusted field path is not eligible evidence: {path}")
+def _validate_path(path: str, *, label: str, allowed: frozenset[str]) -> None:
+    if path not in allowed:
+        raise ValueError(f"{label} path is not allowlisted: {path}")
 
 
 def _validate_selector(selector: dict[str, object], *, selector_id: str) -> None:
@@ -176,7 +190,10 @@ def _validate_selector(selector: dict[str, object], *, selector_id: str) -> None
 
     _require_string(selector.get("source"), f"selector {selector_id} source")
     _require_string_list(selector.get("query_any"), f"selector {selector_id} query_any")
-    _require_string_list(selector.get("context_terms"), f"selector {selector_id} context_terms")
+    _require_term_groups(
+        selector.get("context_required_term_groups"),
+        f"selector {selector_id} context_required_term_groups",
+    )
     taxon_paths = _require_string_list(
         selector.get("taxon_field_paths"),
         f"selector {selector_id} taxon_field_paths",
@@ -188,7 +205,11 @@ def _validate_selector(selector: dict[str, object], *, selector_id: str) -> None
         allow_empty=True,
     )
     for field_path in [*taxon_paths, *context_paths]:
-        _validate_trusted_field_path(field_path, label=f"selector {selector_id}")
+        _validate_path(
+            field_path,
+            label=f"selector {selector_id} trusted field",
+            allowed=RETAINED_SEMANTIC_FIELD_PATHS,
+        )
 
     prerequisites = selector.get("context_field_prerequisites")
     if not isinstance(prerequisites, dict):
@@ -203,11 +224,10 @@ def _validate_selector(selector: dict[str, object], *, selector_id: str) -> None
             f"selector {selector_id} prerequisite for {field_path}",
         )
         for prerequisite_path in paths:
-            _validate_trusted_field_path(prerequisite_path, label=f"selector {selector_id} prerequisite")
-    for field_path in context_paths:
-        if field_path.endswith("evidence_text") and not prerequisites.get(field_path):
-            raise ValueError(
-                f"selector {selector_id} evidence_text requires a configured prerequisite"
+            _validate_path(
+                prerequisite_path,
+                label=f"selector {selector_id} prerequisite reference",
+                allowed=REFERENCE_ID_PATHS,
             )
 
     parent = selector.get("parent_record")
@@ -220,21 +240,74 @@ def _validate_selector(selector: dict[str, object], *, selector_id: str) -> None
             parent.get("record_id_path"),
             f"selector {selector_id} parent record_id_path",
         )
-        _validate_trusted_field_path(
+        _validate_path(
             record_id_path,
             label=f"selector {selector_id} parent id",
-            allow_record_reference=True,
+            allowed=REFERENCE_ID_PATHS,
         )
         parent_paths = _require_string_list(
             parent.get("taxon_field_paths"),
             f"selector {selector_id} parent taxon_field_paths",
         )
         for field_path in parent_paths:
-            _validate_trusted_field_path(
+            _validate_path(
                 field_path,
-                label=f"selector {selector_id} parent",
-                allow_parent_title=True,
+                label=f"selector {selector_id} parent trusted field",
+                allowed=RETAINED_PARENT_TAXON_PATHS,
             )
+
+    fulltext = selector.get("fulltext_context")
+    if fulltext is not None:
+        if not isinstance(fulltext, dict) or set(fulltext) != FULLTEXT_CONTEXT_FIELDS:
+            raise ValueError(
+                f"selector {selector_id} fulltext_context must contain unit_id_path, "
+                "parent_record_id_path, and text_field_path"
+            )
+        if not isinstance(parent, dict):
+            raise ValueError(f"selector {selector_id} fulltext_context requires parent_record")
+        unit_id_path = _require_string(
+            fulltext.get("unit_id_path"),
+            f"selector {selector_id} fulltext unit_id_path",
+        )
+        parent_record_id_path = _require_string(
+            fulltext.get("parent_record_id_path"),
+            f"selector {selector_id} fulltext parent_record_id_path",
+        )
+        text_field_path = _require_string(
+            fulltext.get("text_field_path"),
+            f"selector {selector_id} fulltext text_field_path",
+        )
+        _validate_path(
+            unit_id_path,
+            label=f"selector {selector_id} fulltext unit id",
+            allowed=frozenset({"payload.fulltext_unit_id"}),
+        )
+        _validate_path(
+            parent_record_id_path,
+            label=f"selector {selector_id} fulltext parent id",
+            allowed=frozenset({"payload.source_record_id"}),
+        )
+        _validate_path(
+            text_field_path,
+            label=f"selector {selector_id} fulltext text",
+            allowed=frozenset({FULLTEXT_TEXT_PATH}),
+        )
+        if parent_record_id_path != parent.get("record_id_path"):
+            raise ValueError(
+                f"selector {selector_id} fulltext parent path must match parent_record record_id_path"
+            )
+
+    requirements = selector.get("record_requirements")
+    if requirements is not None:
+        if not isinstance(requirements, dict) or not requirements:
+            raise ValueError(f"selector {selector_id} record_requirements must be a non-empty object")
+        for field_path, expected in requirements.items():
+            _validate_path(
+                str(field_path),
+                label=f"selector {selector_id} record requirement",
+                allowed=RECORD_REQUIREMENT_PATHS,
+            )
+            _require_string(expected, f"selector {selector_id} record requirement {field_path}")
 
     limit = selector.get("limit")
     if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= MAX_SELECTOR_LIMIT:
@@ -269,6 +342,7 @@ def _validate_config(config: dict[str, object]) -> None:
         selectors = context.get("selectors")
         if not isinstance(selectors, list) or not all(isinstance(item, dict) for item in selectors):
             raise ValueError(f"context {context_id} selectors must be a list of objects")
+        context_term_groups: str | None = None
         for selector_index, selector in enumerate(selectors):
             selector_id = _require_string(
                 selector.get("id"),
@@ -279,6 +353,13 @@ def _validate_config(config: dict[str, object]) -> None:
             if species_id not in species_ids:
                 raise ValueError(f"selector {selector_id} species_id is not supported by context {context_id}")
             _validate_selector(selector, selector_id=selector_id)
+            selector_term_groups = canonical_json(selector["context_required_term_groups"])
+            if context_term_groups is None:
+                context_term_groups = selector_term_groups
+            elif selector_term_groups != context_term_groups:
+                raise ValueError(
+                    f"context {context_id} selectors must use the same context_required_term_groups"
+                )
     if len(context_ids) != len(set(context_ids)):
         raise ValueError("context ids must be unique")
     if len(selector_ids) != len(set(selector_ids)):
@@ -348,10 +429,22 @@ def _value_at_path(record: dict[str, object], path: str) -> list[str]:
 
 
 def _trusted_semantic_values(
-    record: dict[str, object], field_paths: list[str]
-) -> list[tuple[str, str]]:
+    record: dict[str, object],
+    field_paths: list[str],
+    *,
+    field_prefix: str = "",
+    link: dict[str, str] | None = None,
+) -> list[dict[str, str]]:
+    link_fields = link or {}
     return [
-        (field_path, value)
+        {
+            "field_path": f"{field_prefix}{field_path}",
+            "value": value,
+            "retained_store": "record_payloads",
+            "retained_source": str(record.get("source") or ""),
+            "retained_path": field_path,
+            **link_fields,
+        }
         for field_path in field_paths
         for value in _value_at_path(record, field_path)
     ]
@@ -372,24 +465,62 @@ def _matching_excerpt(value: str, match: re.Match[str], *, limit: int = 240) -> 
 
 
 def _direct_assertion(
-    values: list[tuple[str, str]], terms: list[str], *, status: str
+    values: list[dict[str, str]], terms: list[str], *, status: str
 ) -> dict[str, object] | None:
-    for field_path, value in values:
-        compact = re.sub(r"\s+", " ", value).strip()
+    for semantic_value in values:
+        compact = re.sub(r"\s+", " ", semantic_value["value"]).strip()
         for term in terms:
             match = _term_match(compact, term)
             if match:
                 return {
                     "status": status,
-                    "basis": [
-                        {
-                            "field_path": field_path,
-                            "matched_term": term,
-                            "excerpt": _matching_excerpt(compact, match),
-                        }
-                    ],
+                    "basis": [_assertion_basis(semantic_value, term, match)],
                 }
     return None
+
+
+def _assertion_basis(
+    semantic_value: dict[str, str], term: str, match: re.Match[str]
+) -> dict[str, str]:
+    compact = re.sub(r"\s+", " ", semantic_value["value"]).strip()
+    snapshot = _matching_excerpt(compact, match, limit=1000)
+    snapshot_match = _term_match(snapshot, term)
+    if snapshot_match is None:
+        raise ValueError("retained evidence snapshot lost its matched term")
+    return {
+        key: value
+        for key, value in semantic_value.items()
+        if key != "value"
+    } | {
+        "matched_term": term,
+        "excerpt": _matching_excerpt(snapshot, snapshot_match),
+        "evidence_snapshot": snapshot,
+        "evidence_sha256": hashlib.sha256(snapshot.encode("utf-8")).hexdigest(),
+    }
+
+
+def _required_groups_assertion(
+    values: list[dict[str, str]],
+    required_groups: list[list[str]],
+    *,
+    status: str,
+) -> dict[str, object] | None:
+    basis: list[dict[str, str]] = []
+    for terms in required_groups:
+        matched_basis: dict[str, str] | None = None
+        for semantic_value in values:
+            compact = re.sub(r"\s+", " ", semantic_value["value"]).strip()
+            for term in terms:
+                match = _term_match(compact, term)
+                if match:
+                    matched_basis = _assertion_basis(semantic_value, term, match)
+                    break
+            if matched_basis is not None:
+                break
+        if matched_basis is None:
+            return None
+        basis.append(matched_basis)
+    return {"status": status, "basis": basis}
 
 
 def _direct_taxon_terms(
@@ -534,9 +665,23 @@ def _records_by_id(conn: sqlite3.Connection, record_ids: list[str]) -> dict[str,
     return {str(row["record_id"]): _export_record(row) for row in rows}
 
 
+def _fulltext_unit_by_id(
+    conn: sqlite3.Connection, unit_id: str
+) -> dict[str, object] | None:
+    row = conn.execute(
+        """
+        SELECT unit_id, record_id, source, unit_index, text, url, license, provenance_json
+        FROM literature_fulltext_units
+        WHERE unit_id = ?
+        """,
+        (unit_id,),
+    ).fetchone()
+    return dict(row) if row is not None else None
+
+
 def _context_semantic_values(
     record: dict[str, object], selector: dict[str, object]
-) -> list[tuple[str, str]]:
+) -> list[dict[str, str]]:
     prerequisites = dict(selector["context_field_prerequisites"])
     field_paths = [
         str(field_path)
@@ -547,6 +692,18 @@ def _context_semantic_values(
         )
     ]
     return _trusted_semantic_values(record, field_paths)
+
+
+def _record_requirements_match(
+    record: dict[str, object], selector: dict[str, object]
+) -> bool:
+    requirements = selector.get("record_requirements")
+    if not isinstance(requirements, dict):
+        return True
+    return all(
+        str(expected) in _value_at_path(record, str(field_path))
+        for field_path, expected in requirements.items()
+    )
 
 
 def _candidate_eligibility(
@@ -560,12 +717,16 @@ def _candidate_eligibility(
     taxon_terms: list[str],
 ) -> tuple[dict[str, object] | None, str | None]:
     selector_id = str(selector["id"])
+    if not _record_requirements_match(record, selector):
+        return None, "record_requirement_not_met"
+
     taxon_values = _trusted_semantic_values(
         record,
         [str(path) for path in selector["taxon_field_paths"]],
     )
 
     parent_config = selector.get("parent_record")
+    parent_ids: list[str] = []
     if isinstance(parent_config, dict):
         parent_ids = list(
             dict.fromkeys(
@@ -580,8 +741,12 @@ def _candidate_eligibility(
         parent_paths = [str(path) for path in parent_config["taxon_field_paths"]]
         for parent_id in parent_ids:
             taxon_values.extend(
-                (f"parent.{field_path}", value)
-                for field_path, value in _trusted_semantic_values(parents[parent_id], parent_paths)
+                _trusted_semantic_values(
+                    parents[parent_id],
+                    parent_paths,
+                    field_prefix="parent.",
+                    link={"parent_record_id": parent_id},
+                )
             )
 
     if not taxon_values:
@@ -591,11 +756,47 @@ def _candidate_eligibility(
         return None, "taxon_not_directly_confirmed"
 
     context_values = _context_semantic_values(record, selector)
+    fulltext_config = selector.get("fulltext_context")
+    if isinstance(fulltext_config, dict):
+        unit_ids = list(
+            dict.fromkeys(
+                _value_at_path(record, str(fulltext_config["unit_id_path"]))
+            )
+        )
+        linked_parent_ids = list(
+            dict.fromkeys(
+                _value_at_path(record, str(fulltext_config["parent_record_id_path"]))
+            )
+        )
+        if unit_ids:
+            if len(unit_ids) != 1 or len(linked_parent_ids) != 1:
+                return None, "fulltext_unit_link_invalid"
+            unit_id = unit_ids[0]
+            parent_id = linked_parent_ids[0]
+            unit = _fulltext_unit_by_id(conn, unit_id)
+            if unit is None or str(unit["record_id"]) != parent_id:
+                return None, "fulltext_unit_link_invalid"
+            text = re.sub(r"\s+", " ", str(unit.get("text") or "")).strip()
+            if text:
+                context_values.append(
+                    {
+                        "field_path": str(fulltext_config["text_field_path"]),
+                        "value": text,
+                        "retained_store": "literature_fulltext_units",
+                        "retained_source": str(unit.get("source") or ""),
+                        "retained_path": str(fulltext_config["text_field_path"]),
+                        "fulltext_unit_id": unit_id,
+                        "parent_record_id": parent_id,
+                    }
+                )
     if not context_values:
         return None, "trusted_field_missing"
-    context = _direct_assertion(
+    context = _required_groups_assertion(
         context_values,
-        [str(term) for term in selector["context_terms"]],
+        [
+            [str(term) for term in group]
+            for group in selector["context_required_term_groups"]
+        ],
         status="direct_context",
     )
     if context is None:
@@ -763,11 +964,15 @@ def build_context_package(
                 "scientific_name": scientific_name,
                 "source": selector["source"],
                 "query_any": selector["query_any"],
-                "context_terms": selector["context_terms"],
+                "context_required_term_groups": selector[
+                    "context_required_term_groups"
+                ],
                 "taxon_field_paths": selector["taxon_field_paths"],
                 "context_field_paths": selector["context_field_paths"],
                 "context_field_prerequisites": selector["context_field_prerequisites"],
                 "parent_record": deepcopy(selector.get("parent_record")),
+                "fulltext_context": deepcopy(selector.get("fulltext_context")),
+                "record_requirements": deepcopy(selector.get("record_requirements")),
                 "limit": selector["limit"],
                 "required": selector["required"],
                 "candidate_count": len(candidate_rows),
@@ -860,18 +1065,52 @@ def _validate_assertion_basis(
         field_path = _require_string(item.get("field_path"), f"{label} basis/{index} field_path")
         matched_term = _require_string(item.get("matched_term"), f"{label} basis/{index} matched_term")
         excerpt = _require_string(item.get("excerpt"), f"{label} basis/{index} excerpt")
+        retained_source = _require_string(
+            item.get("retained_source"),
+            f"{label} basis/{index} retained_source",
+        )
+        retained_store = _require_string(
+            item.get("retained_store"),
+            f"{label} basis/{index} retained_store",
+        )
+        retained_path = _require_string(
+            item.get("retained_path"),
+            f"{label} basis/{index} retained_path",
+        )
+        snapshot = _require_string(
+            item.get("evidence_snapshot"),
+            f"{label} basis/{index} evidence_snapshot",
+        )
+        evidence_sha256 = _require_string(
+            item.get("evidence_sha256"),
+            f"{label} basis/{index} evidence_sha256",
+        )
         _require_string(item.get("selector_id"), f"{label} basis/{index} selector_id")
         if require_context:
             _require_string(item.get("context_id"), f"{label} basis/{index} context_id")
-        if _term_match(excerpt, matched_term) is None:
+        if retained_store not in {"record_payloads", "literature_fulltext_units"}:
+            raise ValueError(f"{label} basis/{index} retained_store is invalid")
+        if not retained_source or not retained_path:
+            raise ValueError(f"{label} basis/{index} retained source/path identity is missing")
+        if hashlib.sha256(snapshot.encode("utf-8")).hexdigest() != evidence_sha256:
+            raise ValueError(f"{label} basis/{index} evidence_sha256 does not match evidence_snapshot")
+        if excerpt not in snapshot:
+            raise ValueError(f"{label} basis/{index} excerpt is not in evidence_snapshot")
+        if _term_match(excerpt, matched_term) is None or _term_match(snapshot, matched_term) is None:
             raise ValueError(f"{label} basis/{index} excerpt does not contain matched_term")
         if not field_path:
             raise ValueError(f"{label} basis/{index} field_path is missing")
     return basis
 
 
-def _record_field_matches(record: dict[str, object], field_path: str, matched_term: str) -> bool:
-    return any(_term_match(value, matched_term) for value in _value_at_path(record, field_path))
+def _record_snapshot_matches(
+    record: dict[str, object], field_path: str, snapshot: str, matched_term: str
+) -> bool:
+    return any(
+        snapshot in re.sub(r"\s+", " ", value).strip()
+        and _term_match(value, matched_term)
+        for value in _value_at_path(record, field_path)
+    )
 
 
 def validate_context_package(package: dict[str, object], *, verify_hash: bool = True) -> None:
@@ -918,6 +1157,7 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
 
     selector_receipts: dict[str, dict[str, object]] = {}
     selected_record_species: dict[str, str] = {}
+    receipts_by_record: dict[str, list[dict[str, object]]] = {}
     selector_keys: list[str] = []
     for result in selector_results:
         selector_id = _require_string(result.get("selector_id"), "selector result selector_id")
@@ -942,8 +1182,9 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             for field in SELECTOR_REQUIRED_FIELDS | SELECTOR_OPTIONAL_FIELDS
         }
         selector_contract["id"] = selector_id
-        if selector_contract.get("parent_record") is None:
-            selector_contract.pop("parent_record")
+        for optional_field in SELECTOR_OPTIONAL_FIELDS:
+            if selector_contract.get(optional_field) is None:
+                selector_contract.pop(optional_field)
         _validate_selector(selector_contract, selector_id=selector_id)
 
         limit = result.get("limit")
@@ -987,6 +1228,7 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             if owner and owner != species_id:
                 raise ValueError(f"record {record_id} is assigned to more than one species")
             selected_record_species[record_id] = species_id
+            receipts_by_record.setdefault(record_id, []).append(result)
     if len(selector_keys) != len(set(selector_keys)):
         raise ValueError("selector results must have unique selector ids")
 
@@ -1011,6 +1253,19 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             raise ValueError(f"evidence record {record_id} is not backed by a selector result")
         context_ids = _require_string_list(record.get("context_ids"), f"evidence record {record_id} context_ids")
         selector_ids = _require_string_list(record.get("selector_ids"), f"evidence record {record_id} selector_ids")
+        selecting_receipts = receipts_by_record.get(record_id, [])
+        expected_selector_ids = [str(receipt["selector_id"]) for receipt in selecting_receipts]
+        expected_context_ids = list(
+            dict.fromkeys(str(receipt["context_id"]) for receipt in selecting_receipts)
+        )
+        if selector_ids != expected_selector_ids:
+            raise ValueError(
+                f"evidence record {record_id} selector_ids do not exactly match selecting receipts"
+            )
+        if context_ids != expected_context_ids:
+            raise ValueError(
+                f"evidence record {record_id} context_ids do not exactly match selecting receipts"
+            )
         if any(context_id not in context_by_id for context_id in context_ids):
             raise ValueError(f"evidence record {record_id} names an unknown context")
         if any(selector_id not in selector_receipts for selector_id in selector_ids):
@@ -1053,18 +1308,41 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             if matched_term.casefold() not in direct_taxon_terms:
                 raise ValueError(f"evidence record {record_id} taxon basis uses an ambiguous alias")
             field_path = str(basis["field_path"])
+            retained_store = str(basis["retained_store"])
+            retained_source = str(basis["retained_source"])
+            retained_path = str(basis["retained_path"])
+            snapshot = str(basis["evidence_snapshot"])
             if field_path.startswith("parent."):
                 parent = receipt.get("parent_record")
                 parent_path = field_path.removeprefix("parent.")
                 if not isinstance(parent, dict) or parent_path not in parent.get("taxon_field_paths", []):
                     raise ValueError(f"evidence record {record_id} taxon basis field_path is not trusted")
+                parent_record_id = _require_string(
+                    basis.get("parent_record_id"),
+                    f"evidence record {record_id} taxon basis parent_record_id",
+                )
+                linked_parent_ids = _value_at_path(record, str(parent["record_id_path"]))
+                if parent_record_id not in linked_parent_ids:
+                    raise ValueError(
+                        f"evidence record {record_id} taxon basis parent_record_id is not linked"
+                    )
+                if retained_store != "record_payloads":
+                    raise ValueError(f"evidence record {record_id} taxon basis retained_store is invalid")
+                if retained_path != parent_path:
+                    raise ValueError(f"evidence record {record_id} taxon basis retained_path is invalid")
             else:
                 if field_path not in receipt["taxon_field_paths"]:
                     raise ValueError(f"evidence record {record_id} taxon basis field_path is not trusted")
-                if not _record_field_matches(record, field_path, matched_term):
+                if retained_store != "record_payloads":
+                    raise ValueError(f"evidence record {record_id} taxon basis retained_store is invalid")
+                if retained_source != record.get("source"):
+                    raise ValueError(f"evidence record {record_id} taxon basis retained_source is invalid")
+                if retained_path != field_path:
+                    raise ValueError(f"evidence record {record_id} taxon basis retained_path is invalid")
+                if not _record_snapshot_matches(record, field_path, snapshot, matched_term):
                     raise ValueError(f"evidence record {record_id} taxon basis is not present in its field")
             taxon_basis_selectors.add(selector_id)
-        if not set(selector_ids).issubset(taxon_basis_selectors):
+        if set(selector_ids) != taxon_basis_selectors:
             raise ValueError(f"evidence record {record_id} taxon assertion is missing selector basis")
 
         context = eligibility.get("context")
@@ -1081,7 +1359,7 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             label=f"evidence record {record_id} context assertion",
             require_context=True,
         )
-        covered_pairs: set[tuple[str, str]] = set()
+        covered_groups: dict[tuple[str, str], set[int]] = {}
         for basis in context_basis:
             selector_id = str(basis["selector_id"])
             context_id = str(basis["context_id"])
@@ -1091,22 +1369,69 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
             if receipt["context_id"] != context_id:
                 raise ValueError(f"evidence record {record_id} context basis disagrees with selector receipt")
             field_path = str(basis["field_path"])
-            if field_path not in receipt["context_field_paths"]:
-                raise ValueError(f"evidence record {record_id} context basis field_path is not trusted")
-            for prerequisite_path in receipt["context_field_prerequisites"].get(field_path, []):
-                if not _value_at_path(record, str(prerequisite_path)):
-                    raise ValueError(f"evidence record {record_id} context basis prerequisite is missing")
             matched_term = str(basis["matched_term"])
-            if matched_term not in receipt["context_terms"]:
+            snapshot = str(basis["evidence_snapshot"])
+            retained_store = str(basis["retained_store"])
+            retained_source = str(basis["retained_source"])
+            retained_path = str(basis["retained_path"])
+            required_groups = [
+                [str(term) for term in group]
+                for group in receipt["context_required_term_groups"]
+            ]
+            matching_groups = {
+                index
+                for index, terms in enumerate(required_groups)
+                if matched_term.casefold() in {term.casefold() for term in terms}
+            }
+            if not matching_groups:
                 raise ValueError(f"evidence record {record_id} context basis term is not configured")
-            if not _record_field_matches(record, field_path, matched_term):
-                raise ValueError(f"evidence record {record_id} context basis is not present in its field")
-            covered_pairs.add((selector_id, context_id))
+
+            if field_path in receipt["context_field_paths"]:
+                for prerequisite_path in receipt["context_field_prerequisites"].get(field_path, []):
+                    if not _value_at_path(record, str(prerequisite_path)):
+                        raise ValueError(f"evidence record {record_id} context basis prerequisite is missing")
+                if retained_store != "record_payloads":
+                    raise ValueError(f"evidence record {record_id} context basis retained_store is invalid")
+                if retained_source != record.get("source"):
+                    raise ValueError(f"evidence record {record_id} context basis retained_source is invalid")
+                if retained_path != field_path:
+                    raise ValueError(f"evidence record {record_id} context basis retained_path is invalid")
+                if not _record_snapshot_matches(record, field_path, snapshot, matched_term):
+                    raise ValueError(f"evidence record {record_id} context basis is not present in its field")
+            else:
+                fulltext = receipt.get("fulltext_context")
+                if not isinstance(fulltext, dict) or field_path != fulltext.get("text_field_path"):
+                    raise ValueError(f"evidence record {record_id} context basis field_path is not trusted")
+                fulltext_unit_id = _require_string(
+                    basis.get("fulltext_unit_id"),
+                    f"evidence record {record_id} context basis fulltext_unit_id",
+                )
+                parent_record_id = _require_string(
+                    basis.get("parent_record_id"),
+                    f"evidence record {record_id} context basis parent_record_id",
+                )
+                if fulltext_unit_id not in _value_at_path(record, str(fulltext["unit_id_path"])):
+                    raise ValueError(
+                        f"evidence record {record_id} context basis fulltext_unit_id is not linked"
+                    )
+                if parent_record_id not in _value_at_path(
+                    record, str(fulltext["parent_record_id_path"])
+                ):
+                    raise ValueError(
+                        f"evidence record {record_id} context basis parent_record_id is not linked"
+                    )
+                if retained_store != "literature_fulltext_units":
+                    raise ValueError(f"evidence record {record_id} context basis retained_store is invalid")
+                if retained_path != field_path:
+                    raise ValueError(f"evidence record {record_id} context basis retained_path is invalid")
+            covered_groups.setdefault((selector_id, context_id), set()).update(matching_groups)
         for selector_id in selector_ids:
             context_id = str(selector_receipts[selector_id]["context_id"])
-            if (selector_id, context_id) not in covered_pairs:
+            required_count = len(selector_receipts[selector_id]["context_required_term_groups"])
+            if covered_groups.get((selector_id, context_id), set()) != set(range(required_count)):
                 raise ValueError(
-                    f"evidence record {record_id} context assertion is missing basis for {context_id}"
+                    f"evidence record {record_id} context assertion is missing basis for "
+                    f"{context_id} receipt {selector_id}"
                 )
 
     zero_selected = {

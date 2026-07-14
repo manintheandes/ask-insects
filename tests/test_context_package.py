@@ -12,6 +12,7 @@ from askinsects.context_package import (
 )
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
+from askinsects.sources.literature import FullTextUnit
 
 
 def record(
@@ -176,8 +177,8 @@ class ContextPackageTests(unittest.TestCase):
                     species="Drosophila suzukii",
                     text="Direct avoidance and repellent behavior was measured in a choice assay.",
                     payload={
-                        "source_title": "Drosophila suzukii contact avoidance assay",
-                        "source_text": "Direct contact avoidance and repellent behavior was measured.",
+                        "title": "Drosophila suzukii contact avoidance assay",
+                        "abstract": "Direct contact avoidance and repellent behavior was measured.",
                     },
                 ),
                 record(
@@ -186,8 +187,8 @@ class ContextPackageTests(unittest.TestCase):
                     species="Drosophila suzukii",
                     text="A second direct avoidance and repellent behavior record.",
                     payload={
-                        "source_title": "Spotted wing drosophila avoidance behavior",
-                        "source_text": "A second direct contact avoidance record.",
+                        "title": "Spotted wing drosophila avoidance behavior",
+                        "abstract": "A second direct contact avoidance record.",
                     },
                 ),
                 record(
@@ -228,9 +229,11 @@ class ContextPackageTests(unittest.TestCase):
                                     "species_id": "drosophila_suzukii",
                                     "source": "public_swd_behavior",
                                     "query_any": ["avoidance", "repellent", "contact"],
-                                    "context_terms": ["avoidance", "repellent", "contact"],
-                                    "taxon_field_paths": ["payload.source_title"],
-                                    "context_field_paths": ["payload.source_text"],
+                                    "context_required_term_groups": [
+                                        ["contact", "surface", "inside zone", "inside-zone"]
+                                    ],
+                                    "taxon_field_paths": ["payload.title"],
+                                    "context_field_paths": ["payload.abstract"],
                                     "context_field_prerequisites": {},
                                     "limit": 1,
                                     "required": True,
@@ -287,19 +290,21 @@ class ContextPackageTests(unittest.TestCase):
         source: str,
         *,
         query_any: list[str],
-        context_terms: list[str],
+        context_required_term_groups: list[list[str]],
         limit: int = 5,
         taxon_field_paths: list[str] | None = None,
         context_field_paths: list[str] | None = None,
         context_field_prerequisites: dict[str, list[str]] | None = None,
         parent_record: dict | None = None,
+        fulltext_context: dict | None = None,
+        record_requirements: dict[str, str] | None = None,
     ) -> dict:
         selector = {
             "id": selector_id,
             "species_id": species_id,
             "source": source,
             "query_any": query_any,
-            "context_terms": context_terms,
+            "context_required_term_groups": context_required_term_groups,
             "taxon_field_paths": taxon_field_paths or [],
             "context_field_paths": context_field_paths or [],
             "context_field_prerequisites": context_field_prerequisites or {},
@@ -308,7 +313,19 @@ class ContextPackageTests(unittest.TestCase):
         }
         if parent_record is not None:
             selector["parent_record"] = parent_record
+        if fulltext_context is not None:
+            selector["fulltext_context"] = fulltext_context
+        if record_requirements is not None:
+            selector["record_requirements"] = record_requirements
         return selector
+
+    @staticmethod
+    def fulltext_context() -> dict[str, str]:
+        return {
+            "unit_id_path": "payload.fulltext_unit_id",
+            "parent_record_id_path": "payload.source_record_id",
+            "text_field_path": "literature_fulltext_units.text",
+        }
 
     def build_multi_context_package(self):
         self.index.upsert_records(
@@ -319,8 +336,8 @@ class ContextPackageTests(unittest.TestCase):
                     species="Drosophila suzukii",
                     text="Generated contact avoidance and oviposition choice candidate.",
                     payload={
-                        "source_title": "Drosophila suzukii behavior study",
-                        "source_text": "Contact avoidance and oviposition choice were measured directly.",
+                        "title": "Drosophila suzukii behavior study",
+                        "abstract": "Contact avoidance and oviposition choice were measured directly.",
                     },
                 )
             ]
@@ -335,9 +352,9 @@ class ContextPackageTests(unittest.TestCase):
                         "drosophila_suzukii",
                         "shared_direct_evidence",
                         query_any=["contact", "avoidance"],
-                        context_terms=["contact avoidance"],
-                        taxon_field_paths=["payload.source_title"],
-                        context_field_paths=["payload.source_text"],
+                        context_required_term_groups=[["contact", "surface"]],
+                        taxon_field_paths=["payload.title"],
+                        context_field_paths=["payload.abstract"],
                     )
                 ],
             ),
@@ -350,14 +367,79 @@ class ContextPackageTests(unittest.TestCase):
                         "drosophila_suzukii",
                         "shared_direct_evidence",
                         query_any=["oviposition", "choice"],
-                        context_terms=["oviposition choice"],
-                        taxon_field_paths=["payload.source_title"],
-                        context_field_paths=["payload.source_text"],
+                        context_required_term_groups=[["oviposition", "egg laying"]],
+                        taxon_field_paths=["payload.title"],
+                        context_field_paths=["payload.abstract"],
                     )
                 ],
             ),
         ]
         return self.build_with_contexts(contexts)
+
+    def build_linked_fulltext_package(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "parent:validator:swd",
+                    source="public_parent_literature",
+                    species="Drosophila suzukii",
+                    text="Indexed parent paper.",
+                    payload={
+                        "raw_openalex_work": {
+                            "display_name": "Drosophila suzukii behavior",
+                            "abstract_inverted_index": {},
+                        }
+                    },
+                ),
+                record(
+                    "derived:validator:swd",
+                    source="derived_validator_evidence",
+                    species="Drosophila suzukii",
+                    text="Generated contact avoidance candidate.",
+                    payload={
+                        "source_record_id": "parent:validator:swd",
+                        "fulltext_unit_id": "unit:validator:swd",
+                        "evidence_text": "Generated repellent summary.",
+                    },
+                ),
+            ]
+        )
+        self.index.upsert_fulltext_units(
+            [
+                FullTextUnit(
+                    unit_id="unit:validator:swd",
+                    record_id="parent:validator:swd",
+                    source="public_parent_literature",
+                    unit_index=0,
+                    text="Contact avoidance was measured on a treated surface.",
+                    url=None,
+                    license=None,
+                    provenance=Provenance(
+                        source_id="public_parent_literature",
+                        locator="literature_fulltext_units#unit:validator:swd",
+                        retrieved_at="2026-07-13T00:00:00Z",
+                    ),
+                )
+            ]
+        )
+        selector = self.selector(
+            "derived_validator",
+            "drosophila_suzukii",
+            "derived_validator_evidence",
+            query_any=["contact", "avoidance"],
+            context_required_term_groups=[["contact", "surface"]],
+            parent_record={
+                "record_id_path": "payload.source_record_id",
+                "taxon_field_paths": [
+                    "payload.raw_openalex_work.display_name",
+                    "payload.raw_openalex_work.abstract_inverted_index",
+                ],
+            },
+            fulltext_context=self.fulltext_context(),
+        )
+        return self.build_with_contexts(
+            [self.context("derived_validator_context", ["drosophila_suzukii"], [selector])]
+        )
 
     def test_loader_accepts_generic_context_fields(self):
         config = load_context_config(self.config_path)
@@ -380,7 +462,8 @@ class ContextPackageTests(unittest.TestCase):
                 self.assertIn("taxon_field_paths", selector)
                 self.assertIn("context_field_paths", selector)
                 self.assertIn("context_field_prerequisites", selector)
-                self.assertIn("context_terms", selector)
+                self.assertIn("context_required_term_groups", selector)
+                self.assertNotIn("context_terms", selector)
 
         derived = [
             selector
@@ -392,6 +475,68 @@ class ContextPackageTests(unittest.TestCase):
         ]
         self.assertTrue(derived)
         self.assertTrue(all("parent_record" in selector for selector in derived))
+        for selector in derived:
+            self.assertEqual(
+                selector["parent_record"]["taxon_field_paths"],
+                [
+                    "payload.raw_openalex_work.display_name",
+                    "payload.raw_openalex_work.abstract_inverted_index",
+                ],
+            )
+            self.assertEqual(selector["fulltext_context"], self.fulltext_context())
+            self.assertNotIn("payload.evidence_text", selector["context_field_paths"])
+
+        flight = next(selector for selector in selectors if selector["id"] == "choice_swd_flight")
+        self.assertEqual(
+            flight["record_requirements"],
+            {"payload.atom_type": "umn_flight_assay_dataset"},
+        )
+
+    def test_default_config_requires_context_defining_terms_not_generic_repellent(self):
+        expected_groups = {
+            "treated_area_contact_avoidance": [
+                ["contact", "surface", "inside zone", "inside-zone"]
+            ],
+            "treated_area_noncontact_avoidance": [
+                ["non-contact", "noncontact", "spatial", "airborne", "vapor", "plume"]
+            ],
+            "bounded_choice_orientation": [
+                ["choice", "orientation", "Y-tube", "Y tube", "olfactometer"]
+            ],
+            "oviposition_choice": [["oviposition", "egg laying", "egg-laying"]],
+            "human_landing_response": [
+                [
+                    "landing",
+                    "probing",
+                    "blood feeding",
+                    "blood-feeding",
+                    "human host",
+                    "human-host",
+                ]
+            ],
+            "spatial_behavior": [
+                ["spatial", "airborne", "plume", "non-contact", "noncontact"]
+            ],
+            "post_exposure_behavior": [
+                [
+                    "post exposure",
+                    "post-exposure",
+                    "recovery",
+                    "knockdown",
+                    "after exposure",
+                    "after-exposure",
+                ]
+            ],
+        }
+
+        for context in load_context_config()["contexts"]:
+            for selector in context["selectors"]:
+                with self.subTest(context=context["id"], selector=selector["id"]):
+                    self.assertEqual(
+                        selector["context_required_term_groups"],
+                        expected_groups[context["id"]],
+                    )
+                    self.assertNotIn("repellent", selector["context_required_term_groups"][0])
 
     def test_loader_rejects_untrusted_candidate_field_paths(self):
         config = json.loads(self.config_path.read_text(encoding="utf-8"))
@@ -414,6 +559,9 @@ class ContextPackageTests(unittest.TestCase):
             "payload.inclusion_paths",
             "payload.source_record_id",
             "payload.matched_record_ids",
+            "payload.candidate_source",
+            "payload.matched_sources",
+            "payload.arbitrary_retained_claim",
             "payload.primary_taxon",
         ):
             with self.subTest(field_path=field_path):
@@ -425,15 +573,57 @@ class ContextPackageTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "trusted field path"):
                     load_context_config(path)
 
-    def test_loader_requires_evidence_text_prerequisite(self):
+    def test_loader_rejects_payload_evidence_text_as_retained_fulltext(self):
         config = json.loads(self.config_path.read_text(encoding="utf-8"))
         selector = config["contexts"][0]["selectors"][0]
         selector["context_field_paths"] = ["payload.evidence_text"]
-        selector["context_field_prerequisites"] = {}
+        selector["context_field_prerequisites"] = {
+            "payload.evidence_text": ["payload.fulltext_unit_id"]
+        }
         path = self.root / "missing-evidence-prerequisite.json"
         path.write_text(json.dumps(config), encoding="utf-8")
 
-        with self.assertRaisesRegex(ValueError, "evidence_text.*prerequisite"):
+        with self.assertRaisesRegex(ValueError, "trusted field path"):
+            load_context_config(path)
+
+    def test_loader_requires_exact_parent_fulltext_and_requirement_paths(self):
+        config = json.loads(self.config_path.read_text(encoding="utf-8"))
+        selector = config["contexts"][0]["selectors"][0]
+        selector["parent_record"] = {
+            "record_id_path": "payload.source_record_id",
+            "taxon_field_paths": [
+                "payload.raw_openalex_work.display_name",
+                "payload.raw_openalex_work.abstract_inverted_index",
+            ],
+        }
+        selector["fulltext_context"] = {
+            "unit_id_path": "payload.fulltext_unit_id",
+            "parent_record_id_path": "payload.source_record_id",
+            "text_field_path": "literature_fulltext_units.text",
+        }
+
+        invalid_values = (
+            ("parent_record", "taxon_field_paths", ["title"]),
+            ("parent_record", "record_id_path", "payload.candidate_parent_id"),
+            ("fulltext_context", "unit_id_path", "payload.fabricated_unit_id"),
+            ("fulltext_context", "text_field_path", "payload.evidence_text"),
+        )
+        for section, field, value in invalid_values:
+            with self.subTest(section=section, field=field):
+                invalid = json.loads(json.dumps(config))
+                invalid["contexts"][0]["selectors"][0][section][field] = value
+                path = self.root / f"invalid-{section}-{field}.json"
+                path.write_text(json.dumps(invalid), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "path"):
+                    load_context_config(path)
+
+        invalid = json.loads(json.dumps(config))
+        invalid["contexts"][0]["selectors"][0]["record_requirements"] = {
+            "payload.source": "umn_flight_assay_dataset"
+        }
+        path = self.root / "invalid-record-requirement.json"
+        path.write_text(json.dumps(invalid), encoding="utf-8")
+        with self.assertRaisesRegex(ValueError, "record requirement"):
             load_context_config(path)
 
     def test_loader_rejects_private_assay_fields(self):
@@ -513,8 +703,8 @@ class ContextPackageTests(unittest.TestCase):
                     species="Drosophila suzukii",
                     text="Repellent contact avoidance was measured directly.",
                     payload={
-                        "source_title": "Drosophila suzukii contact avoidance assay",
-                        "source_text": "Repellent contact avoidance was measured directly.",
+                        "title": "Drosophila suzukii contact avoidance assay",
+                        "abstract": "Repellent contact avoidance was measured directly.",
                     },
                 )
             ]
@@ -558,8 +748,8 @@ class ContextPackageTests(unittest.TestCase):
                     species="Drosophila suzukii",
                     text="Generated Drosophila suzukii repellent contact avoidance candidate.",
                     payload={
-                        "source_title": source_title,
-                        "source_text": source_text,
+                        "title": source_title,
+                        "abstract": source_text,
                         "primary_taxon": "Drosophila suzukii",
                         "query": "Drosophila suzukii repellent",
                         "scope": "Drosophila suzukii behavior",
@@ -579,6 +769,119 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(receipt["candidate_count"], 6)
         self.assertEqual(receipt["rejection_counts"], {"taxon_not_directly_confirmed": 4})
 
+    def test_generic_repellent_evidence_cannot_cross_contexts(self):
+        context_cases = [
+            (
+                "treated_area_contact_avoidance",
+                ["contact", "surface", "inside zone", "inside-zone"],
+                "Contact with a treated surface was measured.",
+            ),
+            (
+                "treated_area_noncontact_avoidance",
+                ["non-contact", "noncontact", "spatial", "airborne", "vapor", "plume"],
+                "Airborne vapor plume avoidance was measured.",
+            ),
+            (
+                "bounded_choice_orientation",
+                ["choice", "orientation", "Y-tube", "Y tube", "olfactometer"],
+                "Orientation choice in a Y-tube olfactometer was measured.",
+            ),
+            (
+                "oviposition_choice",
+                ["oviposition", "egg laying", "egg-laying"],
+                "Oviposition and egg-laying choice were measured.",
+            ),
+            (
+                "human_landing_response",
+                [
+                    "landing",
+                    "probing",
+                    "blood feeding",
+                    "blood-feeding",
+                    "human host",
+                    "human-host",
+                ],
+                "Landing and probing on a human host were measured.",
+            ),
+            (
+                "spatial_behavior",
+                ["spatial", "airborne", "plume", "non-contact", "noncontact"],
+                "Spatial airborne plume behavior was measured.",
+            ),
+            (
+                "post_exposure_behavior",
+                [
+                    "post exposure",
+                    "post-exposure",
+                    "recovery",
+                    "knockdown",
+                    "after exposure",
+                    "after-exposure",
+                ],
+                "Recovery and knockdown were measured after-exposure.",
+            ),
+        ]
+        records = []
+        contexts = []
+        for context_id, defining_terms, direct_text in context_cases:
+            source = f"context_specific_{context_id}"
+            records.extend(
+                [
+                    record(
+                        f"generic:{context_id}",
+                        source=source,
+                        species="Drosophila suzukii",
+                        text="Generated repellent candidate.",
+                        payload={
+                            "title": "Drosophila suzukii repellent study",
+                            "abstract": "Repellent activity was measured.",
+                        },
+                    ),
+                    record(
+                        f"direct:{context_id}",
+                        source=source,
+                        species="Drosophila suzukii",
+                        text="Generated repellent candidate.",
+                        payload={
+                            "title": "Drosophila suzukii repellent study",
+                            "abstract": direct_text,
+                        },
+                    ),
+                ]
+            )
+            contexts.append(
+                self.context(
+                    context_id,
+                    ["drosophila_suzukii"],
+                    [
+                        self.selector(
+                            f"selector_{context_id}",
+                            "drosophila_suzukii",
+                            source,
+                            query_any=["repellent"],
+                            context_required_term_groups=[defining_terms],
+                            taxon_field_paths=["payload.title"],
+                            context_field_paths=["payload.abstract"],
+                        )
+                    ],
+                )
+            )
+        self.index.upsert_records(records)
+
+        package = self.build_with_contexts(contexts)
+
+        self.assertEqual(
+            {item["record_id"] for item in package["evidence_records"]},
+            {f"direct:{context_id}" for context_id, _, _ in context_cases},
+        )
+        for receipt in package["selector_results"]:
+            self.assertEqual(receipt["candidate_count"], 2)
+            self.assertEqual(receipt["selected_count"], 1)
+            self.assertEqual(
+                receipt["rejection_counts"],
+                {"context_not_directly_confirmed": 1},
+            )
+
     def test_direct_swd_aedes_and_dbm_records_include_eligibility_basis(self):
         direct_records = [
             ("direct:swd", "drosophila_suzukii", "Drosophila suzukii"),
@@ -593,8 +896,8 @@ class ContextPackageTests(unittest.TestCase):
                     species=scientific_name,
                     text="Generated oviposition choice candidate.",
                     payload={
-                        "source_title": f"{scientific_name} oviposition study",
-                        "source_text": "Oviposition choice was measured with matched controls.",
+                        "title": f"{scientific_name} oviposition study",
+                        "abstract": "Oviposition choice was measured with matched controls.",
                     },
                 )
                 for record_id, _, scientific_name in direct_records
@@ -606,8 +909,8 @@ class ContextPackageTests(unittest.TestCase):
                     species="Aedes aegypti",
                     text="Generated oviposition choice candidate for Aedes aegypti.",
                     payload={
-                        "source_title": "Aedes mosquito oviposition study",
-                        "source_text": "Oviposition choice was measured with matched controls.",
+                        "title": "Aedes mosquito oviposition study",
+                        "abstract": "Oviposition choice was measured with matched controls.",
                     },
                 )
             ]
@@ -622,9 +925,9 @@ class ContextPackageTests(unittest.TestCase):
                         species_id,
                         "mapped_direct_evidence",
                         query_any=["oviposition", "choice"],
-                        context_terms=["oviposition choice"],
-                        taxon_field_paths=["payload.source_title"],
-                        context_field_paths=["payload.source_text"],
+                        context_required_term_groups=[["oviposition", "egg laying"]],
+                        taxon_field_paths=["payload.title"],
+                        context_field_paths=["payload.abstract"],
                     )
                 ],
             )
@@ -657,7 +960,7 @@ class ContextPackageTests(unittest.TestCase):
                     "parent:swd:paper",
                     source="public_parent_literature",
                     species="Drosophila suzukii",
-                    title="Retained paper title",
+                    title="Generated database title without the focal taxon",
                     text="Indexed parent paper.",
                     payload={
                         "raw_openalex_work": {
@@ -678,9 +981,27 @@ class ContextPackageTests(unittest.TestCase):
                     payload={
                         "source_record_id": "parent:swd:paper",
                         "fulltext_unit_id": "unit:1",
-                        "evidence_text": "Contact avoidance was measured in the retained passage.",
+                        "evidence_text": "Repellent activity was generated by the extractor.",
                     },
                 ),
+            ]
+        )
+        self.index.upsert_fulltext_units(
+            [
+                FullTextUnit(
+                    unit_id="unit:1",
+                    record_id="parent:swd:paper",
+                    source="public_parent_literature",
+                    unit_index=0,
+                    text="Contact avoidance was measured in the retained fulltext passage.",
+                    url="https://example.test/swd-paper#unit-1",
+                    license="CC BY 4.0",
+                    provenance=Provenance(
+                        source_id="public_parent_literature",
+                        locator="literature_fulltext_units#unit:1",
+                        retrieved_at="2026-07-13T00:00:00Z",
+                    ),
+                )
             ]
         )
         selector = self.selector(
@@ -688,17 +1009,15 @@ class ContextPackageTests(unittest.TestCase):
             "drosophila_suzukii",
             "derived_direct_evidence",
             query_any=["contact", "avoidance"],
-            context_terms=["contact avoidance"],
-            context_field_paths=["payload.evidence_text"],
-            context_field_prerequisites={"payload.evidence_text": ["payload.fulltext_unit_id"]},
+            context_required_term_groups=[["contact", "surface"]],
             parent_record={
                 "record_id_path": "payload.source_record_id",
                 "taxon_field_paths": [
-                    "title",
                     "payload.raw_openalex_work.display_name",
                     "payload.raw_openalex_work.abstract_inverted_index",
                 ],
             },
+            fulltext_context=self.fulltext_context(),
         )
 
         package = self.build_with_contexts(
@@ -711,6 +1030,21 @@ class ContextPackageTests(unittest.TestCase):
             item["eligibility"]["taxon"]["basis"][0]["field_path"],
             "parent.payload.raw_openalex_work.abstract_inverted_index",
         )
+        taxon_basis = item["eligibility"]["taxon"]["basis"][0]
+        self.assertEqual(taxon_basis["parent_record_id"], "parent:swd:paper")
+        self.assertEqual(taxon_basis["retained_source"], "public_parent_literature")
+        self.assertEqual(
+            taxon_basis["retained_path"],
+            "payload.raw_openalex_work.abstract_inverted_index",
+        )
+        context_basis = item["eligibility"]["context"]["basis"][0]
+        self.assertEqual(context_basis["fulltext_unit_id"], "unit:1")
+        self.assertEqual(context_basis["parent_record_id"], "parent:swd:paper")
+        self.assertEqual(context_basis["retained_source"], "public_parent_literature")
+        self.assertEqual(context_basis["retained_path"], "literature_fulltext_units.text")
+        for basis in (taxon_basis, context_basis):
+            self.assertTrue(basis["evidence_snapshot"])
+            self.assertRegex(basis["evidence_sha256"], r"^[0-9a-f]{64}$")
 
     def test_derived_fact_rejects_missing_parent(self):
         self.index.upsert_records(
@@ -733,13 +1067,15 @@ class ContextPackageTests(unittest.TestCase):
             "drosophila_suzukii",
             "derived_missing_parent",
             query_any=["contact", "avoidance"],
-            context_terms=["contact avoidance"],
-            context_field_paths=["payload.evidence_text"],
-            context_field_prerequisites={"payload.evidence_text": ["payload.fulltext_unit_id"]},
+            context_required_term_groups=[["contact", "surface"]],
             parent_record={
                 "record_id_path": "payload.source_record_id",
-                "taxon_field_paths": ["title", "payload.raw_openalex_work.abstract_inverted_index"],
+                "taxon_field_paths": [
+                    "payload.raw_openalex_work.display_name",
+                    "payload.raw_openalex_work.abstract_inverted_index",
+                ],
             },
+            fulltext_context=self.fulltext_context(),
         )
 
         package = self.build_with_contexts(
@@ -752,26 +1088,185 @@ class ContextPackageTests(unittest.TestCase):
             {"upstream_record_missing": 1},
         )
 
-    def test_evidence_text_without_configured_prerequisite_value_is_rejected(self):
+    def test_parent_top_level_title_cannot_prove_derived_taxon(self):
         self.index.upsert_records(
             [
                 record(
-                    "parent:trusted:swd",
+                    "parent:top-level-only",
                     source="public_parent_literature",
                     species="Drosophila suzukii",
                     title="Drosophila suzukii retained paper title",
                     text="Indexed parent paper.",
-                    payload={},
+                    payload={
+                        "raw_openalex_work": {
+                            "display_name": "Generic insect behavior paper",
+                            "abstract_inverted_index": {
+                                "Generic": [0],
+                                "repellent": [1],
+                                "study": [2],
+                            },
+                        }
+                    },
                 ),
                 record(
-                    "derived:missing-trusted-field",
-                    source="derived_missing_trusted_field",
+                    "derived:top-level-parent-title",
+                    source="derived_top_level_parent_title",
                     species="Drosophila suzukii",
                     text="Generated Drosophila suzukii contact avoidance candidate.",
                     payload={
-                        "source_record_id": "parent:trusted:swd",
-                        "fulltext_unit_id": None,
+                        "source_record_id": "parent:top-level-only",
+                        "fulltext_unit_id": "unit:top-level-only",
                         "evidence_text": "Contact avoidance was measured.",
+                    },
+                ),
+            ]
+        )
+        self.index.upsert_fulltext_units(
+            [
+                FullTextUnit(
+                    unit_id="unit:top-level-only",
+                    record_id="parent:top-level-only",
+                    source="public_parent_literature",
+                    unit_index=0,
+                    text="Contact avoidance was measured.",
+                    url=None,
+                    license=None,
+                    provenance=Provenance(
+                        source_id="public_parent_literature",
+                        locator="literature_fulltext_units#unit:top-level-only",
+                        retrieved_at="2026-07-13T00:00:00Z",
+                    ),
+                )
+            ]
+        )
+        selector = self.selector(
+            "top_level_parent_title",
+            "drosophila_suzukii",
+            "derived_top_level_parent_title",
+            query_any=["contact", "avoidance"],
+            context_required_term_groups=[["contact", "surface"]],
+            parent_record={
+                "record_id_path": "payload.source_record_id",
+                "taxon_field_paths": [
+                    "payload.raw_openalex_work.display_name",
+                    "payload.raw_openalex_work.abstract_inverted_index",
+                ],
+            },
+            fulltext_context=self.fulltext_context(),
+        )
+
+        package = self.build_with_contexts(
+            [self.context("top_level_parent_context", ["drosophila_suzukii"], [selector])]
+        )
+
+        self.assertEqual(package["evidence_records"], [])
+        self.assertEqual(
+            package["selector_results"][0]["rejection_counts"],
+            {"taxon_not_directly_confirmed": 1},
+        )
+
+    def test_fulltext_context_requires_existing_unit_linked_to_parent(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "parent:linked:swd",
+                    source="public_parent_literature",
+                    species="Drosophila suzukii",
+                    text="Indexed parent paper.",
+                    payload={
+                        "raw_openalex_work": {
+                            "display_name": "Drosophila suzukii behavior",
+                            "abstract_inverted_index": {},
+                        }
+                    },
+                ),
+                record(
+                    "derived:missing-unit",
+                    source="derived_invalid_fulltext_link",
+                    species="Drosophila suzukii",
+                    text="Generated contact avoidance candidate.",
+                    payload={
+                        "source_record_id": "parent:linked:swd",
+                        "fulltext_unit_id": "unit:does-not-exist",
+                        "evidence_text": "Contact avoidance was fabricated here.",
+                    },
+                ),
+                record(
+                    "derived:mismatched-unit",
+                    source="derived_invalid_fulltext_link",
+                    species="Drosophila suzukii",
+                    text="Generated contact avoidance candidate.",
+                    payload={
+                        "source_record_id": "parent:linked:swd",
+                        "fulltext_unit_id": "unit:belongs-elsewhere",
+                        "evidence_text": "Contact avoidance was fabricated here.",
+                    },
+                ),
+            ]
+        )
+        self.index.upsert_fulltext_units(
+            [
+                FullTextUnit(
+                    unit_id="unit:belongs-elsewhere",
+                    record_id="parent:another-paper",
+                    source="public_parent_literature",
+                    unit_index=0,
+                    text="Contact avoidance was measured.",
+                    url=None,
+                    license=None,
+                    provenance=Provenance(
+                        source_id="public_parent_literature",
+                        locator="literature_fulltext_units#unit:belongs-elsewhere",
+                        retrieved_at="2026-07-13T00:00:00Z",
+                    ),
+                )
+            ]
+        )
+        selector = self.selector(
+            "invalid_fulltext_link",
+            "drosophila_suzukii",
+            "derived_invalid_fulltext_link",
+            query_any=["contact", "avoidance"],
+            context_required_term_groups=[["contact", "surface"]],
+            parent_record={
+                "record_id_path": "payload.source_record_id",
+                "taxon_field_paths": [
+                    "payload.raw_openalex_work.display_name",
+                    "payload.raw_openalex_work.abstract_inverted_index",
+                ],
+            },
+            fulltext_context=self.fulltext_context(),
+        )
+
+        package = self.build_with_contexts(
+            [self.context("invalid_fulltext_context", ["drosophila_suzukii"], [selector])]
+        )
+
+        self.assertEqual(package["evidence_records"], [])
+        self.assertEqual(
+            package["selector_results"][0]["rejection_counts"],
+            {"fulltext_unit_link_invalid": 2},
+        )
+
+    def test_missing_retained_parent_fields_reject_explicitly(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "parent:no-raw-fields",
+                    source="public_parent_literature",
+                    species="Drosophila suzukii",
+                    title="Drosophila suzukii generated title",
+                    text="Indexed parent paper.",
+                    payload={},
+                ),
+                record(
+                    "derived:no-parent-fields",
+                    source="derived_missing_trusted_field",
+                    species="Drosophila suzukii",
+                    text="Generated contact avoidance candidate.",
+                    payload={
+                        "source_record_id": "parent:no-raw-fields",
+                        "fulltext_unit_id": None,
                     },
                 ),
             ]
@@ -781,13 +1276,15 @@ class ContextPackageTests(unittest.TestCase):
             "drosophila_suzukii",
             "derived_missing_trusted_field",
             query_any=["contact", "avoidance"],
-            context_terms=["contact avoidance"],
-            context_field_paths=["payload.evidence_text"],
-            context_field_prerequisites={"payload.evidence_text": ["payload.fulltext_unit_id"]},
+            context_required_term_groups=[["contact", "surface"]],
             parent_record={
                 "record_id_path": "payload.source_record_id",
-                "taxon_field_paths": ["title"],
+                "taxon_field_paths": [
+                    "payload.raw_openalex_work.display_name",
+                    "payload.raw_openalex_work.abstract_inverted_index",
+                ],
             },
+            fulltext_context=self.fulltext_context(),
         )
 
         package = self.build_with_contexts(
@@ -800,6 +1297,53 @@ class ContextPackageTests(unittest.TestCase):
             {"trusted_field_missing": 1},
         )
 
+    def test_flight_selector_accepts_only_dataset_atom(self):
+        flight_records = []
+        for atom_type in (
+            "umn_flight_assay_dataset",
+            "umn_flight_assay_file",
+            "umn_flight_assay_row",
+        ):
+            flight_records.append(
+                record(
+                    f"flight:{atom_type}",
+                    source="flight_atom_evidence",
+                    species="Drosophila suzukii",
+                    text="Generated flight orientation candidate.",
+                    payload={
+                        "atom_type": atom_type,
+                        "title": "Drosophila suzukii flight orientation dataset",
+                        "abstract": "Choice and orientation were measured in a Y-tube.",
+                    },
+                )
+            )
+        self.index.upsert_records(flight_records)
+        selector = self.selector(
+            "flight_dataset_only",
+            "drosophila_suzukii",
+            "flight_atom_evidence",
+            query_any=["flight", "orientation"],
+            context_required_term_groups=[
+                ["choice", "orientation", "Y-tube", "Y tube", "olfactometer"]
+            ],
+            taxon_field_paths=["payload.title", "payload.abstract"],
+            context_field_paths=["payload.title", "payload.abstract"],
+            record_requirements={"payload.atom_type": "umn_flight_assay_dataset"},
+        )
+
+        package = self.build_with_contexts(
+            [self.context("flight_dataset_context", ["drosophila_suzukii"], [selector])]
+        )
+
+        self.assertEqual(
+            [item["record_id"] for item in package["evidence_records"]],
+            ["flight:umn_flight_assay_dataset"],
+        )
+        self.assertEqual(
+            package["selector_results"][0]["rejection_counts"],
+            {"record_requirement_not_met": 2},
+        )
+
     def test_unretained_flight_neurobiology_and_unmapped_dbm_rows_reject_explicitly(self):
         self.index.upsert_records(
             [
@@ -809,6 +1353,7 @@ class ContextPackageTests(unittest.TestCase):
                     species="Drosophila suzukii",
                     text="Generated Drosophila suzukii flight distance candidate.",
                     payload={
+                        "atom_type": "umn_flight_assay_row",
                         "assay": "tethered flight mill",
                         "table_row": {"distancecm": "42"},
                     },
@@ -846,9 +1391,12 @@ class ContextPackageTests(unittest.TestCase):
                         "drosophila_suzukii",
                         "flight_rows_without_parent",
                         query_any=["flight", "distance"],
-                        context_terms=["flight", "distance"],
-                        taxon_field_paths=["payload.dataset_title", "payload.dataset_abstract"],
-                        context_field_paths=["payload.table_row"],
+                        context_required_term_groups=[["choice", "orientation", "Y-tube"]],
+                        taxon_field_paths=["payload.title", "payload.abstract"],
+                        context_field_paths=["payload.title", "payload.abstract"],
+                        record_requirements={
+                            "payload.atom_type": "umn_flight_assay_dataset"
+                        },
                     )
                 ],
             ),
@@ -861,9 +1409,7 @@ class ContextPackageTests(unittest.TestCase):
                         "aedes_aegypti",
                         "hard_coded_neurobiology",
                         query_any=["olfactory", "sensory neuron"],
-                        context_terms=["olfactory", "sensory neuron"],
-                        taxon_field_paths=["payload.raw.title", "payload.raw.text"],
-                        context_field_paths=["payload.raw.title", "payload.raw.text"],
+                        context_required_term_groups=[["spatial", "airborne", "plume"]],
                     )
                 ],
             ),
@@ -876,7 +1422,7 @@ class ContextPackageTests(unittest.TestCase):
                         "plutella_xylostella",
                         "unmapped_dbm_literature",
                         query_any=["oviposition"],
-                        context_terms=["oviposition"],
+                        context_required_term_groups=[["oviposition", "egg laying"]],
                     )
                 ],
             ),
@@ -891,7 +1437,7 @@ class ContextPackageTests(unittest.TestCase):
                 for result in package["selector_results"]
             },
             {
-                "flight_without_parent": {"trusted_field_missing": 1},
+                "flight_without_parent": {"record_requirement_not_met": 1},
                 "hard_coded_neurobiology": {"trusted_field_missing": 1},
                 "unmapped_dbm": {"trusted_field_missing": 1},
             },
@@ -925,7 +1471,7 @@ class ContextPackageTests(unittest.TestCase):
                     source="receipt_evidence",
                     species="Drosophila suzukii",
                     text="Generated avoidance candidate.",
-                    payload={"source_title": source_title, "source_text": source_text},
+                    payload={"title": source_title, "abstract": source_text},
                 )
                 for record_id, source_title, source_text in candidates
             ]
@@ -935,10 +1481,10 @@ class ContextPackageTests(unittest.TestCase):
             "drosophila_suzukii",
             "receipt_evidence",
             query_any=["avoidance"],
-            context_terms=["avoidance"],
+            context_required_term_groups=[["avoidance"]],
             limit=1,
-            taxon_field_paths=["payload.source_title"],
-            context_field_paths=["payload.source_text"],
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
         )
 
         package = self.build_with_contexts(
@@ -966,8 +1512,8 @@ class ContextPackageTests(unittest.TestCase):
                     species="Drosophila suzukii",
                     text="Generated avoidance candidate.",
                     payload={
-                        "source_title": "Haemaphysalis longicornis avoidance",
-                        "source_text": "Avoidance was measured.",
+                        "title": "Haemaphysalis longicornis avoidance",
+                        "abstract": "Avoidance was measured.",
                     },
                 )
             ]
@@ -977,9 +1523,9 @@ class ContextPackageTests(unittest.TestCase):
             "drosophila_suzukii",
             "gap_evidence",
             query_any=["avoidance"],
-            context_terms=["avoidance"],
-            taxon_field_paths=["payload.source_title"],
-            context_field_paths=["payload.source_text"],
+            context_required_term_groups=[["avoidance"]],
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
         )
 
         package = self.build_with_contexts(
@@ -1072,6 +1618,77 @@ class ContextPackageTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "context assertion.*oviposition_context"):
             validate_context_package(package, verify_hash=False)
 
+    def test_validator_requires_exact_reverse_selector_receipts(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "reverse:shared:1",
+                    source="reverse_receipt_evidence",
+                    species="Drosophila suzukii",
+                    text="Generated contact avoidance candidate.",
+                    payload={
+                        "title": "Drosophila suzukii contact behavior",
+                        "abstract": "Contact avoidance was measured on a treated surface.",
+                    },
+                )
+            ]
+        )
+        selectors = [
+            self.selector(
+                selector_id,
+                "drosophila_suzukii",
+                "reverse_receipt_evidence",
+                query_any=["contact", "avoidance"],
+                context_required_term_groups=[["contact", "surface"]],
+                taxon_field_paths=["payload.title"],
+                context_field_paths=["payload.abstract"],
+            )
+            for selector_id in ("reverse_selector_one", "reverse_selector_two")
+        ]
+        package = self.build_with_contexts(
+            [self.context("reverse_context", ["drosophila_suzukii"], selectors)]
+        )
+        package["evidence_records"][0]["selector_ids"] = ["reverse_selector_one"]
+
+        with self.assertRaisesRegex(ValueError, "selector_ids.*receipts"):
+            validate_context_package(package, verify_hash=False)
+
+    def test_validator_rejects_invalid_parent_unit_and_snapshot_basis(self):
+        package = self.build_linked_fulltext_package()
+
+        mutations = [
+            (
+                "parent_record_id",
+                lambda item: item["eligibility"]["taxon"]["basis"][0].pop(
+                    "parent_record_id"
+                ),
+            ),
+            (
+                "fulltext_unit_id",
+                lambda item: item["eligibility"]["context"]["basis"][0].pop(
+                    "fulltext_unit_id"
+                ),
+            ),
+            (
+                "evidence_sha256",
+                lambda item: item["eligibility"]["context"]["basis"][0].__setitem__(
+                    "evidence_snapshot", "Contact was rewritten after export."
+                ),
+            ),
+            (
+                "retained_path",
+                lambda item: item["eligibility"]["context"]["basis"][0].__setitem__(
+                    "retained_path", "payload.evidence_text"
+                ),
+            ),
+        ]
+        for expected_error, mutate in mutations:
+            with self.subTest(expected_error=expected_error):
+                invalid = json.loads(json.dumps(package))
+                mutate(invalid["evidence_records"][0])
+                with self.assertRaisesRegex(ValueError, expected_error):
+                    validate_context_package(invalid, verify_hash=False)
+
     def test_validator_rejects_gap_that_does_not_match_selector_receipt(self):
         self.index.upsert_records(
             [
@@ -1081,8 +1698,8 @@ class ContextPackageTests(unittest.TestCase):
                     species="Drosophila suzukii",
                     text="Generated avoidance candidate.",
                     payload={
-                        "source_title": "Tribolium castaneum avoidance",
-                        "source_text": "Avoidance was measured.",
+                        "title": "Tribolium castaneum avoidance",
+                        "abstract": "Avoidance was measured.",
                     },
                 )
             ]
@@ -1092,9 +1709,9 @@ class ContextPackageTests(unittest.TestCase):
             "drosophila_suzukii",
             "validator_gap_evidence",
             query_any=["avoidance"],
-            context_terms=["avoidance"],
-            taxon_field_paths=["payload.source_title"],
-            context_field_paths=["payload.source_text"],
+            context_required_term_groups=[["avoidance"]],
+            taxon_field_paths=["payload.title"],
+            context_field_paths=["payload.abstract"],
         )
         package = self.build_with_contexts(
             [self.context("validator_gap_context", ["drosophila_suzukii"], [selector])]
