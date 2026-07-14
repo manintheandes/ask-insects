@@ -1,0 +1,204 @@
+{
+  "schema_version": "ask-insects-context-package-config.v1",
+  "package_version": "2026-07-14.1",
+  "last_reviewed": "2026-07-14",
+  "objective": "Give private Monarch experiments bounded, exact-species public context without sending private experiment data to Ask Insects.",
+  "knowledge_domains": [
+    "sensory_world",
+    "brain_neurobiology",
+    "receptors_signaling",
+    "anatomy_physiology",
+    "genetics_gene_activity",
+    "life_cycle_development",
+    "behavior",
+    "reproduction_oviposition",
+    "feeding_host_finding",
+    "movement_flight_navigation",
+    "learning_memory_internal_state",
+    "ecology_interactions",
+    "chemical_responses_metabolism",
+    "adaptation_resistance"
+  ],
+  "contexts": [
+    {
+      "id": "contact_no_contact",
+      "species_ids": ["drosophila_suzukii", "aedes_aegypti"],
+      "private_assay_families": ["contact_no_contact"],
+      "private_assay_modes": ["contact", "non_contact", "control", "contact_no_contact"],
+      "required_domains": ["sensory_world", "behavior", "receptors_signaling", "movement_flight_navigation", "chemical_responses_metabolism"],
+      "measures": [
+        "position, occupancy, or avoidance relative to a treated region under a declared contact or non-contact exposure mode"
+      ],
+      "does_not_establish": [
+        "a proven receptor or neural mechanism",
+        "feeding prevention, egg-laying prevention, protection duration, field efficacy, or product safety"
+      ],
+      "plausible_explanations": [
+        "sensory avoidance or masking",
+        "contact irritation or altered locomotion",
+        "physiological stress or toxicity",
+        "solvent, side, airflow, visibility, or baseline movement differences"
+      ],
+      "discriminating_evidence": [
+        "matched solvent and side controls with contact and non-contact exposure",
+        "dose and time series with locomotor and survival checks",
+        "landing, feeding, and egg-laying endpoints measured separately",
+        "receptor or neural perturbation only when a mechanism is being tested"
+      ],
+      "selectors": [
+        {"id": "contact_swd_behavior", "species_id": "drosophila_suzukii", "source": "drosophila_suzukii_extracted_facts", "query_any": ["repellent", "avoidance", "contact"], "limit": 4, "required": false},
+        {"id": "contact_swd_olfaction", "species_id": "drosophila_suzukii", "source": "drosophila_suzukii_olfaction_literature", "query_any": ["olfaction", "odor", "host volatile"], "limit": 3, "required": false},
+        {"id": "contact_aedes_behavior", "species_id": "aedes_aegypti", "source": "aedes_extracted_facts", "query_any": ["repellent", "avoidance", "contact"], "limit": 4, "required": false},
+        {"id": "contact_aedes_olfaction", "species_id": "aedes_aegypti", "source": "aedes_olfaction_literature", "query_any": ["repellent", "olfaction", "host seeking"], "limit": 3, "required": false}
+      ]
+    },
+    {
+      "id": "dart_choice",
+      "species_ids": ["drosophila_suzukii", "aedes_aegypti"],
+      "private_assay_families": ["fly_repellency_dart", "fly_contact_dart", "mosquito_dart"],
+      "private_assay_modes": ["DART"],
+      "required_domains": ["sensory_world", "behavior", "movement_flight_navigation", "feeding_host_finding", "chemical_responses_metabolism"],
+      "measures": [
+        "relative side choice, position, or avoidance inside a bounded laboratory arena"
+      ],
+      "does_not_establish": [
+        "landing, probing, feeding, egg-laying, field protection, or a proven molecular mechanism"
+      ],
+      "plausible_explanations": [
+        "odor-mediated orientation or avoidance",
+        "contact response if subjects can touch treated material",
+        "side, light, temperature, humidity, airflow, or arena-position bias",
+        "general movement suppression or activation"
+      ],
+      "discriminating_evidence": [
+        "side-swapped and solvent controls",
+        "pre-exposure baseline and movement-quality checks",
+        "dose, time, and release-rate measurements",
+        "separate landing, feeding, or oviposition assays for the intended product claim"
+      ],
+      "selectors": [
+        {"id": "dart_swd_behavior", "species_id": "drosophila_suzukii", "source": "drosophila_suzukii_extracted_facts", "query_any": ["choice", "avoidance", "repellent"], "limit": 4, "required": false},
+        {"id": "dart_swd_flight", "species_id": "drosophila_suzukii", "source": "drosophila_suzukii_umn_flight_assay_rows", "query_any": ["flight", "movement", "distance"], "limit": 3, "required": false},
+        {"id": "dart_aedes_behavior", "species_id": "aedes_aegypti", "source": "aedes_extracted_facts", "query_any": ["choice", "avoidance", "repellent"], "limit": 4, "required": false},
+        {"id": "dart_aedes_olfaction", "species_id": "aedes_aegypti", "source": "aedes_olfaction_literature", "query_any": ["olfaction", "orientation", "host seeking"], "limit": 3, "required": false}
+      ]
+    },
+    {
+      "id": "oviposition_choice",
+      "species_ids": ["drosophila_suzukii", "plutella_xylostella"],
+      "private_assay_families": ["fly_oviposition", "dbm_oviposition"],
+      "private_assay_modes": ["oviposition"],
+      "required_domains": ["sensory_world", "behavior", "reproduction_oviposition", "feeding_host_finding", "ecology_interactions", "chemical_responses_metabolism"],
+      "measures": [
+        "egg placement or egg count between declared experimental and control substrates"
+      ],
+      "does_not_establish": [
+        "adult spatial repellency, larval feeding protection, crop protection, toxicity, or reduced fecundity by itself"
+      ],
+      "plausible_explanations": [
+        "host or chemical choice before egg laying",
+        "substrate, plant, ripeness, moisture, side, or visual differences",
+        "reduced activity, mortality, mating, or total fecundity",
+        "egg-counting or treatment-label error"
+      ],
+      "discriminating_evidence": [
+        "total eggs, survival, mating state, and activity alongside side-specific eggs",
+        "side-swapped, host-matched, solvent, and untreated controls",
+        "dose and time series with plant or fruit condition recorded",
+        "larval establishment and crop-damage follow-up for a crop-protection claim"
+      ],
+      "selectors": [
+        {"id": "oviposition_swd_behavior", "species_id": "drosophila_suzukii", "source": "drosophila_suzukii_extracted_facts", "query_any": ["oviposition", "egg laying", "host choice"], "limit": 5, "required": false},
+        {"id": "oviposition_swd_olfaction", "species_id": "drosophila_suzukii", "source": "drosophila_suzukii_olfaction_literature", "query_any": ["oviposition", "fruit odor", "host volatile"], "limit": 3, "required": false},
+        {"id": "oviposition_dbm_direct", "species_id": "plutella_xylostella", "source": "plutella_xylostella_oviposition_literature", "query_any": ["oviposition", "egg laying", "host choice"], "limit": 5, "required": false}
+      ]
+    },
+    {
+      "id": "arm_in_cage",
+      "species_ids": ["aedes_aegypti"],
+      "private_assay_families": ["arm_in_cage"],
+      "private_assay_modes": ["arm_in_cage"],
+      "required_domains": ["sensory_world", "behavior", "feeding_host_finding", "movement_flight_navigation", "learning_memory_internal_state", "chemical_responses_metabolism"],
+      "measures": [
+        "declared human approach, landing, probing, or feeding behavior under close-range exposure"
+      ],
+      "does_not_establish": [
+        "long protection duration, broad population performance, human safety, or a molecular mechanism"
+      ],
+      "plausible_explanations": [
+        "reduced attraction, landing, probing, or feeding",
+        "masking or alteration of human odor cues",
+        "contact irritation or spatial avoidance",
+        "host, time-of-day, hunger, airflow, heat, humidity, or operator effects"
+      ],
+      "discriminating_evidence": [
+        "separate landing, probing, and feeding endpoints",
+        "randomized host and treatment order with matched controls",
+        "protection-time, sweat, abrasion, airflow, and formulation testing",
+        "human safety and acceptability evidence before a product claim"
+      ],
+      "selectors": [
+        {"id": "arm_aedes_host_seeking", "species_id": "aedes_aegypti", "source": "aedes_olfaction_literature", "query_any": ["host seeking", "human odor", "landing", "blood feeding"], "limit": 6, "required": false},
+        {"id": "arm_aedes_behavior", "species_id": "aedes_aegypti", "source": "aedes_extracted_facts", "query_any": ["landing", "probing", "feeding", "repellent"], "limit": 5, "required": false}
+      ]
+    },
+    {
+      "id": "spatial_affect",
+      "species_ids": ["aedes_aegypti"],
+      "private_assay_families": ["spatial_affect"],
+      "private_assay_modes": ["spatial_affect"],
+      "required_domains": ["sensory_world", "brain_neurobiology", "receptors_signaling", "behavior", "movement_flight_navigation", "chemical_responses_metabolism"],
+      "measures": [
+        "behavioral change without intended direct contact under a declared vapor or spatial exposure"
+      ],
+      "does_not_establish": [
+        "a specific olfactory receptor, long-range field protection, dose at the insect, or human safety"
+      ],
+      "plausible_explanations": [
+        "odor-mediated avoidance, masking, or disorientation",
+        "airborne irritation or physiological stress",
+        "plume, airflow, temperature, humidity, light, or arena effects",
+        "unrecognized contact or surface contamination"
+      ],
+      "discriminating_evidence": [
+        "measured airborne concentration and release rate",
+        "airflow and plume controls with contact excluded",
+        "trajectory, landing, and feeding endpoints measured separately",
+        "receptor or neural perturbation only for a claimed mechanism"
+      ],
+      "selectors": [
+        {"id": "spatial_aedes_olfaction", "species_id": "aedes_aegypti", "source": "aedes_olfaction_literature", "query_any": ["spatial repellent", "olfaction", "odor plume", "host seeking"], "limit": 6, "required": false},
+        {"id": "spatial_aedes_neurobiology", "species_id": "aedes_aegypti", "source": "aedes_neurobiology_sources", "query_any": ["olfactory", "sensory neuron", "odor receptor"], "limit": 4, "required": false}
+      ]
+    },
+    {
+      "id": "post_exposure",
+      "species_ids": ["aedes_aegypti"],
+      "private_assay_families": ["mosquito_post_exposure"],
+      "private_assay_modes": ["post_exposure"],
+      "required_domains": ["anatomy_physiology", "behavior", "movement_flight_navigation", "chemical_responses_metabolism", "adaptation_resistance"],
+      "measures": [
+        "behavior, movement, impairment, recovery, or survival after a declared exposure"
+      ],
+      "does_not_establish": [
+        "repellency during exposure, sensory avoidance, protection from landing or feeding, or a proven toxic mechanism"
+      ],
+      "plausible_explanations": [
+        "temporary sensory or locomotor disruption",
+        "physiological stress, knockdown, or toxicity",
+        "handling, solvent, temperature, humidity, or observation bias",
+        "recovery, delayed effects, or prior-exposure state"
+      ],
+      "discriminating_evidence": [
+        "matched exposure-period behavior and post-exposure recovery time series",
+        "survival, locomotion, and sensory choice measured separately",
+        "dose, internal exposure, solvent, and handling controls",
+        "repeat exposure and recovery evidence for tolerance questions"
+      ],
+      "selectors": [
+        {"id": "post_aedes_behavior", "species_id": "aedes_aegypti", "source": "aedes_extracted_facts", "query_any": ["post exposure", "recovery", "knockdown", "locomotion"], "limit": 5, "required": false},
+        {"id": "post_aedes_chemical", "species_id": "aedes_aegypti", "source": "aedes_neurobiology_sources", "query_any": ["chemical exposure", "locomotor", "recovery", "toxicity"], "limit": 4, "required": false}
+      ]
+    }
+  ]
+}

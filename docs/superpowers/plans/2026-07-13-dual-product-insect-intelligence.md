@@ -41,9 +41,13 @@ Branch: `codex/dual-product-insect-intelligence`
    questions, expected route and behavior, visible answers, provenance, elapsed
    time, and failure reasons. Fix every failure until one clean run passes 100
    percent with every answer under 30 seconds.
-10. Design and implement the private Ask Monarch context bridge.
+10. Design and implement the private Ask Monarch context bridge. The accepted
+    design and executable plan are in
+    `docs/superpowers/specs/2026-07-14-ask-monarch-context-bridge-design.md` and
+    `docs/superpowers/plans/2026-07-14-ask-monarch-context-bridge.md`.
 11. Run a blinded historical-experiment evaluation against the current Ask
-    Monarch baseline.
+    Monarch baseline and require measurable improvement with complete public
+    and private provenance.
 
 ## First Hosted Questions
 

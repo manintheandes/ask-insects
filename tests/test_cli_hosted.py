@@ -65,6 +65,30 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0], ("https://ask-insects.example", "GET", "/health", None))
         self.assertTrue(json.loads(output)["hosted"])
 
+    def test_context_package_uses_the_hosted_read_surface_by_default(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((config.url, method, path, payload, timeout))
+            return {
+                "ok": True,
+                "schema_version": "ask-insects-context-package.v1",
+                "content_sha256": "abc123",
+            }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", fake_request
+        ):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli("context-package")
+
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            calls[0],
+            ("https://ask-insects.example", "GET", "/context-package", None, 120),
+        )
+        self.assertEqual(json.loads(output)["content_sha256"], "abc123")
+
     def test_compact_hosted_ask_keeps_answer_and_exact_provenance_without_duplicate_rows(self):
         calls = []
         hosted_payload = {

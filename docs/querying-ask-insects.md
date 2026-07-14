@@ -18,6 +18,14 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is the prod
 
 These answers report evidence coverage and explicit gaps. They do not claim that a product works. Cross-species evidence must remain labeled as inference rather than being presented as focal-species proof.
 
+To export the bounded public context package used by Ask Monarch:
+
+```bash
+ask-insects context-package
+```
+
+This command uses the hosted source plane by default. The output includes a version, a content hash, exact-species public evidence, explicit gaps, and provenance for every exported record. It contains no private Monarch experiments or outcomes. Ask Monarch imports this package and performs the private experiment join on its own side.
+
 To make the Aedes coverage ledger itself queryable:
 
 ```bash

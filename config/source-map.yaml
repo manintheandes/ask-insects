@@ -42,6 +42,12 @@ sources:
       - insect_intelligence
     provenance_required: true
     live_fetch: derived_from_repo_ledger
+    exports:
+      - id: ask_insects_context_package
+        config: config/ask-monarch-context-package.json
+        command: ask-insects context-package
+        boundary: Bounded exact-species public context for private Ask Monarch interpretation; contains no private experiment data or outcomes
+        provenance_required: true
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
     source_type: public_api_composite
