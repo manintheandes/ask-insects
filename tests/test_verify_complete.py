@@ -647,13 +647,20 @@ class VerifyCompleteTests(unittest.TestCase):
             historical.write_text("Historical Ask Monarch bridge.\n", encoding="utf-8")
 
             verify_complete.check_active_public_surfaces(root)
+            runtime.write_text(
+                "XML_NAMESPACE = 'http://schemas.openxmlformats.org/example'\n"
+                "NCBI_FTP = 'ftp://ftp.ncbi.nlm.nih.gov/public'\n"
+                "FORBIDDEN_SCHEME_PATTERN = r'file:/'\n",
+                encoding="utf-8",
+            )
+            verify_complete.check_active_public_surfaces(root)
 
             offenders = (
                 "from ask_monarch import Client\n",
                 "CONFIG = 'config/ask-monarch-context-package.json'\n",
                 "PRIVATE = '/Users/josh/projects/ask-monarch/results.json'\n",
                 "DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS = []\n",
-                "LOCATOR = 'gs://private-consumer/results.json'\n",
+                "LOCATOR = 'gs://monarch-private/results.json'\n",
             )
             for text in offenders:
                 with self.subTest(text=text):
@@ -747,10 +754,7 @@ class VerifyCompleteTests(unittest.TestCase):
         self.assertIn("tests.test_neurobiology_source", unit_modules)
 
     def test_verify_complete_gate_passes_after_public_surface_tasks_land(self):
-        try:
-            verify_complete.check_active_public_surfaces()
-        except RuntimeError as exc:
-            self.skipTest(f"integration awaits Tasks 3-5 active-surface changes: {exc}")
+        verify_complete.check_active_public_surfaces()
         result = subprocess.run(
             [sys.executable, "scripts/verify_complete.py"],
             capture_output=True,

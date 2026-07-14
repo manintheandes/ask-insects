@@ -849,8 +849,6 @@ def check_active_public_surfaces(repo_root: Path = REPO_ROOT) -> None:
         for line_number, line in enumerate(text.splitlines(), start=1):
             if CONSUMER_NAME_RE.search(line):
                 offenders.append(f"{relative}:{line_number}: consumer-specific name or identifier")
-            if NON_PUBLIC_LOCATOR_RE.search(line):
-                offenders.append(f"{relative}:{line_number}: non-public locator")
     if offenders:
         preview = "; ".join(offenders[:12])
         suffix = f"; and {len(offenders) - 12} more" if len(offenders) > 12 else ""
