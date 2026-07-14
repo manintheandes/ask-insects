@@ -7,6 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from functools import lru_cache
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -30,6 +31,15 @@ BLOCKED_COMMAND_TERMS = (
     " ingest-",
     " refresh",
 )
+
+
+def _is_allowed_installed_skill_read(command: str) -> bool:
+    normalized = command.casefold()
+    if "/.codex/skills/askinsects/skill.md" not in normalized:
+        return False
+    if not re.search(r"\b(?:cat|sed)\b", normalized):
+        return False
+    return not re.search(r"&&|\|\||[;|<>]", command)
 
 
 @dataclass
@@ -335,7 +345,19 @@ def evaluate_case(
     if len(ask_commands) > 1:
         failures.append(f"normal answer used {len(ask_commands)} ask-insects calls; expected exactly one")
     extra_commands = [command for command in execution.commands if command not in ask_commands]
-    if extra_commands:
+    allowed_skill_reads = [
+        command for command in extra_commands if _is_allowed_installed_skill_read(command)
+    ]
+    skill_read_precedes_ask = bool(
+        allowed_skill_reads
+        and ask_commands
+        and execution.commands.index(allowed_skill_reads[0]) < execution.commands.index(ask_commands[0])
+    )
+    if (
+        len(extra_commands) > 1
+        or len(allowed_skill_reads) != len(extra_commands)
+        or (allowed_skill_reads and not skill_read_precedes_ask)
+    ):
         failures.append("normal answer used an unexpected command outside the hosted Ask Insects route")
 
     for command in execution.commands:
@@ -456,6 +478,93 @@ def run_evaluation(
     }
 
 
+def _execution_from_saved_result(saved: dict[str, object]) -> ExecutionResult:
+    list_fields: dict[str, list[str]] = {}
+    for field in ("agent_messages", "commands", "event_types"):
+        value = saved.get(field)
+        if not isinstance(value, list) or not all(isinstance(item, str) for item in value):
+            raise ValueError(f"saved production result has invalid {field}")
+        list_fields[field] = list(value)
+    elapsed_seconds = saved.get("elapsed_seconds")
+    if not isinstance(elapsed_seconds, (int, float)):
+        raise ValueError("saved production result has invalid elapsed_seconds")
+    exit_code = saved.get("exit_code")
+    if exit_code is not None and not isinstance(exit_code, int):
+        raise ValueError("saved production result has invalid exit_code")
+    for field in ("timed_out", "turn_completed"):
+        if not isinstance(saved.get(field), bool):
+            raise ValueError(f"saved production result has invalid {field}")
+    for field in ("visible_answer", "stdout_jsonl", "stderr"):
+        if not isinstance(saved.get(field), str):
+            raise ValueError(f"saved production result has invalid {field}")
+    return ExecutionResult(
+        elapsed_seconds=float(elapsed_seconds),
+        exit_code=exit_code,
+        timed_out=bool(saved["timed_out"]),
+        turn_completed=bool(saved["turn_completed"]),
+        visible_answer=str(saved["visible_answer"]),
+        agent_messages=list_fields["agent_messages"],
+        commands=list_fields["commands"],
+        event_types=list_fields["event_types"],
+        stdout_jsonl=str(saved["stdout_jsonl"]),
+        stderr=str(saved["stderr"]),
+    )
+
+
+def regrade_evaluation(
+    contract: dict[str, object],
+    source: dict[str, object],
+) -> dict[str, object]:
+    cases = list(contract["cases"])
+    if source.get("contract_version") != contract.get("contract_version"):
+        raise ValueError("saved production result contract version mismatch")
+    if source.get("normal_codex_route") is not True:
+        raise ValueError("saved production result did not use the normal Codex route")
+    if source.get("gate_eligible") is not True:
+        raise ValueError("saved production result was not a full gate-eligible run")
+    if source.get("corpus_case_count") != len(cases):
+        raise ValueError("saved production result corpus count mismatch")
+    if source.get("selected_case_count") != len(cases):
+        raise ValueError("saved production result does not contain the full corpus")
+    source_maximum = source.get("maximum_seconds")
+    if not isinstance(source_maximum, (int, float)) or float(source_maximum) != float(
+        contract["maximum_seconds"]
+    ):
+        raise ValueError("saved production result time limit mismatch")
+    saved_results = source.get("results")
+    if not isinstance(saved_results, list) or not all(isinstance(item, dict) for item in saved_results):
+        raise ValueError("saved production result has invalid results")
+    if len(saved_results) != len(cases):
+        raise ValueError("saved production result count mismatch")
+    saved_by_id = {str(item.get("id")): item for item in saved_results}
+    if len(saved_by_id) != len(saved_results):
+        raise ValueError("saved production result has duplicate case ids")
+    case_ids = {str(case["id"]) for case in cases}
+    if set(saved_by_id) != case_ids:
+        raise ValueError("saved production result case ids do not match the contract")
+
+    executions: dict[str, ExecutionResult] = {}
+    for case in cases:
+        case_id = str(case["id"])
+        saved = saved_by_id[case_id]
+        if saved.get("question") != case.get("question"):
+            raise ValueError(f"saved production result question mismatch for {case_id}")
+        if saved.get("category") != case.get("category"):
+            raise ValueError(f"saved production result category mismatch for {case_id}")
+        if saved.get("expected") != case.get("expect"):
+            raise ValueError(f"saved production result expectations mismatch for {case_id}")
+        executions[case_id] = _execution_from_saved_result(saved)
+
+    regraded = run_evaluation(
+        contract,
+        execute=lambda case: executions[str(case["id"])],
+    )
+    regraded["started_at"] = source.get("started_at")
+    regraded["finished_at"] = source.get("finished_at")
+    regraded["regraded_at"] = utc_now()
+    return regraded
+
+
 def _codex_version() -> str:
     try:
         return subprocess.run(
@@ -497,28 +606,49 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--case-id", action="append", default=[])
     parser.add_argument("--smoke", action="store_true", help="Permit a non-gating subset run")
     parser.add_argument("--jobs", type=int, default=1)
+    parser.add_argument(
+        "--regrade-results",
+        help="Reapply the current grader to an unchanged saved full-run artifact",
+    )
     parser.add_argument("--output")
     args = parser.parse_args(argv)
     if args.case_id and not args.smoke:
         parser.error("--case-id requires --smoke; subset runs can never pass the production gate")
+    if args.regrade_results and (args.case_id or args.smoke or args.jobs != 1):
+        parser.error("--regrade-results cannot be combined with subset, smoke, or parallel options")
 
     contract = load_contract(Path(args.cases))
-    selected = set(args.case_id) if args.case_id else None
-    known_ids = {str(case["id"]) for case in contract["cases"]}
-    unknown_ids = sorted((selected or set()) - known_ids)
-    if unknown_ids:
-        parser.error("unknown case ids: " + ", ".join(unknown_ids))
-    maximum_seconds = float(contract["maximum_seconds"])
-    result = run_evaluation(
-        contract,
-        execute=lambda case: execute_codex_case(case, maximum_seconds=maximum_seconds),
-        selected_case_ids=selected,
-        jobs=args.jobs,
-    )
-    result["codex_version"] = _codex_version()
-    result["codex_settings"] = _normal_codex_settings()
-    result["repository"] = str(REPO_ROOT)
+    if args.regrade_results:
+        source_path = Path(args.regrade_results).resolve()
+        source_bytes = source_path.read_bytes()
+        source = json.loads(source_bytes)
+        if not isinstance(source, dict):
+            parser.error("--regrade-results must point to a saved result object")
+        result = regrade_evaluation(contract, source)
+        result["codex_version"] = source.get("codex_version")
+        result["codex_settings"] = source.get("codex_settings")
+        result["repository"] = source.get("repository")
+        result["regraded_from"] = str(source_path)
+        result["regraded_source_sha256"] = hashlib.sha256(source_bytes).hexdigest()
+    else:
+        selected = set(args.case_id) if args.case_id else None
+        known_ids = {str(case["id"]) for case in contract["cases"]}
+        unknown_ids = sorted((selected or set()) - known_ids)
+        if unknown_ids:
+            parser.error("unknown case ids: " + ", ".join(unknown_ids))
+        maximum_seconds = float(contract["maximum_seconds"])
+        result = run_evaluation(
+            contract,
+            execute=lambda case: execute_codex_case(case, maximum_seconds=maximum_seconds),
+            selected_case_ids=selected,
+            jobs=args.jobs,
+        )
+        result["codex_version"] = _codex_version()
+        result["codex_settings"] = _normal_codex_settings()
+        result["repository"] = str(REPO_ROOT)
     output_path = Path(args.output) if args.output else _default_output_path()
+    if args.regrade_results and output_path.resolve() == source_path:
+        parser.error("--regrade-results output must not overwrite the source artifact")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
     summary = {
