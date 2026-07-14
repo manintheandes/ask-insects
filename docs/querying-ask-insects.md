@@ -18,13 +18,13 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is the prod
 
 These answers report evidence coverage and explicit gaps. They do not claim that a product works. Cross-species evidence must remain labeled as inference rather than being presented as focal-species proof.
 
-To export the bounded public context package used by Ask Monarch:
+To export the bounded generic public evidence package for any downstream tool:
 
 ```bash
 ask-insects context-package
 ```
 
-This command uses the hosted source plane by default. The output includes a version, a content hash, exact-species public evidence, explicit gaps, and provenance for every exported record. It contains no private Monarch experiments or outcomes. Ask Monarch imports this package and performs the private experiment join on its own side.
+This command uses the hosted source plane by default. The hosted route reads the prebuilt release at `public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json`, verifies its exact publisher-pinned file hash and hash-bound contents, and then returns it. SHA-256 authentication is not a digital signature. Package generation is a release operation against the hosted index, not work performed during a user request. The v3 output includes a version, a content hash, hash-bound configuration sources, generic evidence contexts, human-reviewed exact-species public evidence, explicit gaps, and provenance for every exported record. Private experiments and results belong in a separate private system. They are not sent to Ask Insects and cannot fill gaps in public evidence.
 
 To make the Aedes coverage ledger itself queryable:
 
@@ -535,7 +535,7 @@ For a hosted deep GBIF refresh of the current `Aedes aegypti` occurrence set:
 python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
 ```
 
-This command talks to the hosted API. The server fetches GBIF pages with a small worker pool, writes raw JSON under `/home/josh/ask-insects/artifacts/mosquito-v1/raw/gbif/`, refreshes `gbif_api` rows in `/home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite`, and preserves the other hosted lanes. The May 24, 2026 hosted refresh installed 82,237 `Aedes aegypti` occurrence records plus the GBIF taxonomy row with zero GBIF gaps.
+This command talks to the hosted API. The server fetches GBIF pages with a small worker pool, writes raw JSON under `raw/gbif/` in the deployment-configured artifact directory, refreshes `gbif_api` rows in the configured hosted SQLite index, and preserves the other hosted lanes. The May 24, 2026 hosted refresh installed 82,237 `Aedes aegypti` occurrence records plus the GBIF taxonomy row with zero GBIF gaps.
 
 iNaturalist records use source id `inaturalist_api`. Raw iNaturalist responses are saved under `artifacts/mosquito-v1/raw/inaturalist/` and summarized in `artifacts/mosquito-v1/source_receipt.json`.
 Deep iNaturalist ingests save one raw JSON file per API page, for example `Aedes_aegypti_anywhere_page_001.json`.
@@ -706,7 +706,7 @@ python3 -m askinsects --artifact-dir artifacts/aedes-literature-2020 sql "select
 
 ## Hosted Querying
 
-Hosted Ask Insects follows the Ask Monarch VM shape: the server reads `/home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite` and the local CLI talks to the server.
+Hosted Ask Insects reads the deployment-configured SQLite index, and the local CLI talks to the server through its configured endpoint.
 
 The server binds only to `127.0.0.1` on the VM. Install the persistent SSH
 tunnel locally and point the CLI at the tunnel endpoint:

@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shlex
 import signal
 import subprocess
 import time
@@ -23,23 +24,82 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_VERSION = "ask-insects-production-path.v1"
 DEFAULT_CASES_PATH = REPO_ROOT / "evals" / "ask_insects_production_path_v1.json"
 DEFAULT_RESULTS_DIR = REPO_ROOT / "artifacts" / "production-path-evals"
-BLOCKED_COMMAND_TERMS = (
-    ".codex/memories",
-    "ask-monarch",
-    "verify_complete.py",
-    "setup-agent",
-    " ingest-",
-    " refresh",
-)
+
+
+def _command_tokens(command: str, *, allow_shell_wrapper: bool = True) -> list[str] | None:
+    try:
+        lexer = shlex.shlex(
+            command,
+            posix=True,
+            punctuation_chars=";&|<>()",
+        )
+        lexer.whitespace_split = True
+        lexer.commenters = ""
+        tokens = list(lexer)
+    except ValueError:
+        return None
+    if not tokens or any(re.fullmatch(r"[;&|<>()]+", token) for token in tokens):
+        return None
+    executable = Path(tokens[0]).name.casefold()
+    if executable in {"bash", "sh", "zsh"}:
+        if not allow_shell_wrapper or len(tokens) != 3 or tokens[1] not in {"-c", "-lc"}:
+            return None
+        return _command_tokens(tokens[2], allow_shell_wrapper=False)
+    return tokens
+
+
+def _is_installed_skill_path(value: str) -> bool:
+    normalized = value.replace("\\", "/")
+    if not normalized.endswith("/.codex/skills/askinsects/SKILL.md"):
+        return False
+    return normalized.startswith(("/", "$HOME/", "~/"))
 
 
 def _is_allowed_installed_skill_read(command: str) -> bool:
-    normalized = command.casefold()
-    if "/.codex/skills/askinsects/skill.md" not in normalized:
+    tokens = _command_tokens(command)
+    if not tokens:
         return False
-    if not re.search(r"\b(?:cat|sed)\b", normalized):
-        return False
-    return not re.search(r"&&|\|\||[;|<>]", command)
+    executable = Path(tokens[0]).name.casefold()
+    if executable == "cat":
+        return len(tokens) == 2 and _is_installed_skill_path(tokens[1])
+    if executable == "sed":
+        return (
+            len(tokens) == 4
+            and tokens[1] == "-n"
+            and re.fullmatch(r"\d+(?:,\d+)?p", tokens[2]) is not None
+            and _is_installed_skill_path(tokens[3])
+        )
+    return False
+
+
+def _is_ask_command(tokens: list[str] | None) -> bool:
+    return bool(
+        tokens
+        and len(tokens) >= 2
+        and Path(tokens[0]).name.casefold() == "ask-insects"
+        and tokens[1] == "ask"
+    )
+
+
+def _ask_command_failure(command: str, question: str) -> str | None:
+    tokens = _command_tokens(command)
+    if not _is_ask_command(tokens):
+        return "normal Codex route did not use exactly one ask-insects ask command"
+    assert tokens is not None
+    arguments = tokens[2:]
+    if "--local" in arguments:
+        return "normal Ask Insects call was not a hosted call"
+    allowed_flags = {"--compact", "--hosted", "--json"}
+    positionals = [argument for argument in arguments if argument not in allowed_flags]
+    if positionals != [question]:
+        return "first ask-insects call did not preserve the user's exact question"
+    if arguments.count("--compact") != 1:
+        return "normal Ask Insects call did not use the compact agent payload"
+    if arguments.count("--json") != 1 or arguments.count("--hosted") > 1:
+        return "normal Ask Insects call was not the exact hosted allowlisted command"
+    if any(argument.startswith("-") and argument not in allowed_flags for argument in arguments):
+        return "normal Ask Insects call was not the exact hosted allowlisted command"
+    return None
 
 
 @dataclass
@@ -155,14 +215,12 @@ def parse_codex_events(stdout_jsonl: str) -> tuple[list[str], list[str], list[st
         if not isinstance(item, dict):
             continue
         item_type = item.get("type")
+        if isinstance(item_type, str) and "web" in item_type.casefold():
+            event_types.append(item_type)
         if item_type == "agent_message" and isinstance(item.get("text"), str):
             agent_messages.append(str(item["text"]))
         if item_type == "command_execution" and isinstance(item.get("command"), str):
-            command = str(item["command"])
-            if command not in commands:
-                commands.append(command)
-        if item_type == "web_search":
-            event_types.append("web_search")
+            commands.append(str(item["command"]))
     return agent_messages, commands, event_types, turn_completed
 
 
@@ -331,46 +389,33 @@ def evaluate_case(
     if not answer.strip():
         failures.append("Codex returned no final visible answer")
 
-    ask_commands = [
-        command
-        for command in execution.commands
-        if re.search(r"\bask-insects\s+ask\s", command, flags=re.IGNORECASE)
+    parsed_commands = [_command_tokens(command) for command in execution.commands]
+    ask_indexes = [
+        index for index, tokens in enumerate(parsed_commands) if _is_ask_command(tokens)
     ]
-    if not ask_commands:
-        failures.append("normal Codex route did not call ask-insects ask")
-    elif question.casefold() not in ask_commands[0].casefold():
-        failures.append("first ask-insects call did not preserve the user's exact question")
-    elif not re.search(r"\s--compact(?:\s|['\"]|$)", ask_commands[0]):
-        failures.append("normal Ask Insects call did not use the compact agent payload")
-    if len(ask_commands) > 1:
-        failures.append(f"normal answer used {len(ask_commands)} ask-insects calls; expected exactly one")
-    extra_commands = [command for command in execution.commands if command not in ask_commands]
-    allowed_skill_reads = [
-        command for command in extra_commands if _is_allowed_installed_skill_read(command)
-    ]
-    skill_read_precedes_ask = bool(
-        allowed_skill_reads
-        and ask_commands
-        and execution.commands.index(allowed_skill_reads[0]) < execution.commands.index(ask_commands[0])
-    )
-    if (
-        len(extra_commands) > 1
-        or len(allowed_skill_reads) != len(extra_commands)
-        or (allowed_skill_reads and not skill_read_precedes_ask)
-    ):
+    if len(ask_indexes) != 1:
+        failures.append(
+            f"normal answer used {len(ask_indexes)} ask-insects ask commands; expected exactly one"
+        )
+        ask_index = None
+    else:
+        ask_index = ask_indexes[0]
+        ask_failure = _ask_command_failure(execution.commands[ask_index], question)
+        if ask_failure:
+            failures.append(ask_failure)
+
+    route_commands_are_allowed = False
+    if ask_index is not None and ask_index == len(execution.commands) - 1:
+        prior_commands = execution.commands[:ask_index]
+        route_commands_are_allowed = (
+            not prior_commands
+            or (len(prior_commands) == 1 and _is_allowed_installed_skill_read(prior_commands[0]))
+        )
+    if not route_commands_are_allowed:
         failures.append("normal answer used an unexpected command outside the hosted Ask Insects route")
 
-    for command in execution.commands:
-        command_lower = command.casefold()
-        for blocked in BLOCKED_COMMAND_TERMS:
-            if blocked in command_lower:
-                failures.append(f"blocked fallback or maintenance command used: {blocked.strip()}")
-        if "ask-insects" in command_lower and "--local" in command_lower:
-            failures.append("Ask Insects used the local index instead of hosted production")
-        if re.search(r"\bask-insects\s+(search|sql)\s", command, flags=re.IGNORECASE):
-            failures.append("normal answer expanded into search or SQL instead of using the complete first answer")
-    if any("web_search" in event_type.casefold() for event_type in execution.event_types):
-        failures.append("web search was used instead of the hosted Ask Insects source plane")
+    if any("web" in event_type.casefold() for event_type in execution.event_types):
+        failures.append("a web event was used instead of the hosted Ask Insects source plane")
 
     for term in _string_list(expect.get("required_terms"), "required_terms"):
         if not _contains_required_term(answer, term):

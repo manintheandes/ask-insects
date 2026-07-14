@@ -4,7 +4,7 @@ Ask Insects supports two initial product programs: a spotted wing drosophila cro
 
 `insect_intelligence_programs` derives the shared portfolio from `config/insect-intelligence-programs.json`. It writes queryable `insect_intelligence` records for the portfolio, each product, each species, fourteen knowledge domains per species, eight readiness dimensions per product, and every declared evidence gap. Its validator fails if a species omits a domain, a product omits a readiness dimension, or a gap-status record carries borrowed sources. These records describe evidence coverage and research needs, not product efficacy.
 
-`ask_insects_context_package` is a bounded export, not a new evidence source. `config/ask-monarch-context-package.json` declares the supported assay contexts and exact-species evidence selectors. `ask-insects context-package` resolves those selectors against the hosted index, limits every result set, records empty selectors as gaps, and signs the canonical contents with SHA-256. The package flows one way into Ask Monarch. Private experiments and outcomes never flow back into Ask Insects.
+`ask_insects_context_package` is a bounded generic export, not a new evidence source. `config/insect-evidence-package.json` declares generic evidence contexts, direct exact-species selectors, and human-reviewed study approvals for schema `ask-insects-evidence-package.v3`. During release, the builder resolves those selectors against the hosted index, preserves scientific rejection reasons, limits every result set to reviewed studies, and records empty selectors as gaps. The hosted `ask-insects context-package` route serves the publisher-hash-pinned, prebuilt release from `public/evidence-packages/`; it does not rebuild the source index view during a request. SHA-256 binds the file and its configuration, but is not a digital signature. It is a generic public insect evidence package for any downstream tool. Private experiments and results belong in a separate private system; they never flow into Ask Insects and cannot fill gaps in public evidence.
 
 Within the mosquito depth program, the current comprehensive-source push is Aedes-first. Other mosquitoes can be indexed as comparison records, but `Aedes aegypti` remains the completion boundary for that source-depth push.
 
@@ -147,7 +147,7 @@ VectorByte abundance rows cite saved VecDyn provider metadata and `vecdyncsv` pa
 
 ## Hosted Boundary
 
-Hosted Ask Insects uses the same source lanes. The difference is location: parsed artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`, and the local CLI asks the hosted API to ingest or query those artifacts.
+Hosted Ask Insects uses the same source lanes. The difference is location: parsed artifacts live in the deployment-configured hosted artifact directory, and the local CLI asks the hosted API to ingest or query those artifacts.
 
 Hosted GBIF and iNaturalist ingests stage a copy of the active artifact directory, fetch into the staging copy, replace only the matching source rows in SQLite, write receipts, and activate the staged directory only after the refresh succeeds. This keeps the old server database readable during long pulls.
 

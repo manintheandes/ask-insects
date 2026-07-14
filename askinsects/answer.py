@@ -5084,10 +5084,10 @@ def _matching_intelligence_dimensions(question: str, rows: list[sqlite3.Row]) ->
 def _insect_intelligence_calibration_prefix(question: str) -> str:
     q = question.lower()
     statements: list[str] = []
-    if "private" in q and any(term in q for term in ("public", "ask monarch", "ask insects")):
+    if "private" in q and any(term in q for term in ("public", "ask insects", "separate private system")):
         statements.append(
-            "No. Ask Insects is the public evidence layer and cannot expose or import private Ask Monarch "
-            "assays, compounds, formulations, or results."
+            "No. Ask Insects is the public evidence layer. Private experiments and results belong in a "
+            "separate private system, and private evidence cannot be imported to fill gaps in public evidence."
         )
 
     transfer_terms = (

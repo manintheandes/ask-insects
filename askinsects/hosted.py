@@ -56,6 +56,7 @@ def hosted_request(
     *,
     urlopen_fn: Callable[..., object] = urlopen,
     timeout: int = 120,
+    max_response_bytes: int | None = None,
 ) -> dict[str, object]:
     url = config.url.rstrip("/") + "/" + path.lstrip("/")
     body = None if payload is None else json.dumps(payload).encode("utf-8")
@@ -68,15 +69,39 @@ def hosted_request(
             "Content-Type": "application/json",
         },
     )
+
+    def read_response(response: object) -> bytes:
+        if max_response_bytes is None:
+            return response.read()
+        if max_response_bytes < 1:
+            raise ValueError("max_response_bytes must be positive")
+        headers = getattr(response, "headers", None)
+        content_length = headers.get("Content-Length") if hasattr(headers, "get") else None
+        if content_length not in {None, ""}:
+            try:
+                declared_length = int(content_length)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("hosted Ask Insects returned an invalid Content-Length") from exc
+            if declared_length > max_response_bytes:
+                raise ValueError("hosted Ask Insects response exceeds the configured byte limit")
+        raw = response.read(max_response_bytes + 1)
+        if len(raw) > max_response_bytes:
+            raise ValueError("hosted Ask Insects response exceeds the configured byte limit")
+        return raw
+
     try:
         with urlopen_fn(request, timeout=timeout) as response:
-            result = json.loads(response.read().decode("utf-8"))
+            result = json.loads(read_response(response).decode("utf-8"))
     except HTTPError as exc:
-        detail = exc.read().decode("utf-8")
+        detail = read_response(exc).decode("utf-8")
         try:
             result = json.loads(detail)
         except json.JSONDecodeError:
             result = {"ok": False, "error": detail}
+        if isinstance(result, dict):
+            result = dict(result)
+            result["ok"] = False
+            result.setdefault("error", f"hosted Ask Insects returned HTTP {exc.code}")
     if not isinstance(result, dict):
         return {"ok": False, "error": "hosted Ask Insects returned non-object JSON"}
     return result

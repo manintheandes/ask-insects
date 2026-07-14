@@ -44,9 +44,14 @@ sources:
     live_fetch: derived_from_repo_ledger
     exports:
       - id: ask_insects_context_package
-        config: config/ask-monarch-context-package.json
+        config: config/insect-evidence-package.json
+        schema_version: ask-insects-evidence-package.v3
+        package_version: 2026-07-14.7
+        release_artifact: public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json
+        release_artifact_sha256: e1a5a85fac387cfe55bb390fa29bd4d2c833086c125eb0d8938756c30f6e175d
+        release_content_sha256: 48f4013118f9f32ea4466790d0e4ff266db12d21c3a476c185986e85fbde8d55
         command: ask-insects context-package
-        boundary: Bounded exact-species public context for private Ask Monarch interpretation; contains no private experiment data or outcomes
+        boundary: Generic public insect evidence package for any downstream tool; private experiments and results belong in a separate private system and cannot fill gaps in public evidence
         provenance_required: true
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
@@ -2764,9 +2769,9 @@ sources:
 hosted:
   provider: google_compute_engine
   vm_name: ask-insects
-  remote_root: /home/josh/ask-insects
-  artifact_dir: /home/josh/ask-insects/artifacts/mosquito-v1
-  sqlite_index: /home/josh/ask-insects/artifacts/mosquito-v1/source_index.sqlite
+  remote_root: "${ASK_INSECTS_REMOTE_ROOT}"
+  artifact_dir: "${ASK_INSECTS_ARTIFACT_DIR}"
+  sqlite_index: "${ASK_INSECTS_SQLITE_INDEX}"
 coverage:
   comprehensive_strategy: Build toward the most comprehensive Aedes aegypti intelligence system in the world, while current public claims follow the benchmark ledger.
   ledger: config/mosquito-intelligence-coverage.json

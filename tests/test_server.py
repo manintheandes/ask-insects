@@ -1,4 +1,5 @@
 import io
+import http.client
 import json
 import tempfile
 import threading
@@ -51,6 +52,51 @@ from askinsects.sources.zenodo_aedes_videos import ZenodoAedesVideoResult
 from tests.test_inaturalist_source import observation
 from tests.test_image_atoms_source import write_image_fixture
 from tests.test_video_atoms_source import RETRIEVED_AT, write_video_fixture
+
+
+def generic_evidence_package_v3():
+    return {
+        "ok": True,
+        "schema_version": "ask-insects-evidence-package.v3",
+        "content_sha256": "abc123",
+        "validation_contract": {
+            "producer_linkage": "verified_in_read_only_source_index_during_build",
+            "downstream_validation": "exported_snapshot_internal_consistency_only",
+            "snapshot_authentication": "publisher_pinned_content_sha256",
+        },
+        "contexts": [
+            {
+                "id": "treated_area_contact_avoidance",
+                "endpoint_family": "treated_area_occupancy",
+                "exposure_routes": ["contact"],
+            }
+        ],
+        "evidence_records": [
+            {
+                "record_id": "public:swd:1",
+                "eligibility": {
+                    "ruleset_version": "direct-semantic-evidence.v3",
+                    "taxon": {
+                        "status": "direct_focal_taxon",
+                        "basis": [{"field_path": "payload.title"}],
+                    },
+                    "context": {
+                        "status": "direct_context",
+                        "basis": [{"field_path": "payload.abstract"}],
+                    },
+                },
+            }
+        ],
+        "selector_results": [
+            {
+                "selector_id": "contact_swd_behavior",
+                "candidate_count": 2,
+                "selected_count": 1,
+                "rejection_counts": {"taxon_not_directly_confirmed": 1},
+            }
+        ],
+        "gaps": [],
+    }
 
 
 class ServerTests(unittest.TestCase):
@@ -133,18 +179,14 @@ class ServerTests(unittest.TestCase):
             artifact_dir=artifact_dir,
         )
 
-    def test_context_package_route_builds_from_the_hosted_index(self):
+    def test_context_package_route_serves_the_verified_release_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             build_fixture_index(artifact_dir=artifact_dir)
-            expected = {
-                "ok": True,
-                "schema_version": "ask-insects-context-package.v1",
-                "content_sha256": "abc123",
-            }
+            expected = generic_evidence_package_v3()
             with mock.patch.object(
                 server_module,
-                "build_context_package",
+                "load_published_context_package",
                 return_value=expected,
                 create=True,
             ) as build:
@@ -159,7 +201,331 @@ class ServerTests(unittest.TestCase):
 
         self.assertEqual(response.status, 200)
         self.assertEqual(response.payload, expected)
-        build.assert_called_once_with(artifact_dir=artifact_dir)
+        self.assertEqual(response.payload["schema_version"], "ask-insects-evidence-package.v3")
+        self.assertEqual(response.payload["contexts"][0]["endpoint_family"], "treated_area_occupancy")
+        self.assertEqual(response.payload["contexts"][0]["exposure_routes"], ["contact"])
+        self.assertEqual(
+            response.payload["evidence_records"][0]["eligibility"]["taxon"]["status"],
+            "direct_focal_taxon",
+        )
+        self.assertEqual(
+            response.payload["evidence_records"][0]["eligibility"]["context"]["status"],
+            "direct_context",
+        )
+        self.assertEqual(
+            response.payload["selector_results"][0]["rejection_counts"],
+            {"taxon_not_directly_confirmed": 1},
+        )
+        build.assert_called_once_with()
+
+    def test_context_package_route_requires_authentication_before_generation(self):
+        with tempfile.TemporaryDirectory() as tmpdir, mock.patch.object(
+            server_module,
+            "load_published_context_package",
+        ) as build:
+            response = dispatch_request(
+                "GET",
+                "/context-package",
+                None,
+                headers={},
+                artifact_dir=Path(tmpdir),
+                token="secret",
+            )
+
+        self.assertEqual(response.status, 401)
+        self.assertEqual(response.payload, {"ok": False, "error": "unauthorized"})
+        build.assert_not_called()
+
+    def test_context_package_route_rejects_query_body_and_private_request_fields(self):
+        private_fields = {
+            "consumer_id": "consumer-17",
+            "experiment_detail": "private assay result",
+            "callback": "https://consumer.example/callback",
+            "destination": "gs://private-bucket/export.json",
+        }
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch.object(server_module, "load_published_context_package") as build:
+                for field, value in private_fields.items():
+                    with self.subTest(transport="query", field=field):
+                        response = dispatch_request(
+                            "GET",
+                            f"/context-package?{field}={value}",
+                            None,
+                            headers={"Authorization": "Bearer secret"},
+                            artifact_dir=artifact_dir,
+                            token="secret",
+                        )
+                        self.assertEqual(response.status, 400)
+                        self.assertEqual(
+                            response.payload["error"]["code"],
+                            "evidence_package_parameters_not_allowed",
+                        )
+                    with self.subTest(transport="get-body", field=field):
+                        response = dispatch_request(
+                            "GET",
+                            "/context-package",
+                            {field: value},
+                            headers={"Authorization": "Bearer secret"},
+                            artifact_dir=artifact_dir,
+                            token="secret",
+                        )
+                        self.assertEqual(response.status, 400)
+                        self.assertEqual(
+                            response.payload["error"]["code"],
+                            "evidence_package_parameters_not_allowed",
+                        )
+                    with self.subTest(transport="post-body", field=field):
+                        response = dispatch_request(
+                            "POST",
+                            "/context-package",
+                            {field: value},
+                            headers={"Authorization": "Bearer secret"},
+                            artifact_dir=artifact_dir,
+                            token="secret",
+                        )
+                        self.assertEqual(response.status, 405)
+                        self.assertEqual(
+                            response.payload["error"]["code"],
+                            "method_not_allowed",
+                        )
+                        self.assertEqual(dict(response.headers).get("Allow"), "GET")
+                build.assert_not_called()
+
+    def test_context_package_real_handler_uses_json_auth_and_405_for_every_method(self):
+        methods = ("PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "PROPFIND")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            handler = type(
+                "TestAskInsectsHandler",
+                (AskInsectsHandler,),
+                {
+                    "artifact_dir": Path(tmpdir),
+                    "token": "secret",
+                    "log_message": lambda self, format, *args: None,
+                },
+            )
+            server = server_module.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            try:
+                for method in methods:
+                    with self.subTest(method=method, authorization="missing"):
+                        connection = http.client.HTTPConnection(*server.server_address, timeout=5)
+                        connection.request(method, "/context-package")
+                        response = connection.getresponse()
+                        body = response.read()
+                        connection.close()
+                        self.assertEqual(response.status, 401)
+                        self.assertEqual(response.getheader("Content-Type"), "application/json")
+                        if method == "HEAD":
+                            self.assertEqual(body, b"")
+                        else:
+                            self.assertEqual(json.loads(body), {"ok": False, "error": "unauthorized"})
+
+                    with self.subTest(method=method, authorization="valid"):
+                        connection = http.client.HTTPConnection(*server.server_address, timeout=5)
+                        connection.request(
+                            method,
+                            "/context-package",
+                            headers={"Authorization": "Bearer secret"},
+                        )
+                        response = connection.getresponse()
+                        body = response.read()
+                        connection.close()
+                        self.assertEqual(response.status, 405)
+                        self.assertEqual(response.getheader("Allow"), "GET")
+                        self.assertEqual(response.getheader("Content-Type"), "application/json")
+                        self.assertGreater(int(response.getheader("Content-Length") or "0"), 0)
+                        if method == "HEAD":
+                            self.assertEqual(body, b"")
+                        else:
+                            self.assertEqual(
+                                json.loads(body)["error"]["code"],
+                                "method_not_allowed",
+                            )
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=5)
+
+    def test_context_package_static_release_errors_are_bounded_and_path_free(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "missing-hosted-index"
+            leaked_detail = f"{artifact_dir}/private/release.json with token secret-token"
+            failures = (
+                ("missing", FileNotFoundError(leaked_detail)),
+                ("corrupt", ValueError(f"artifact hash mismatch at {leaked_detail}")),
+                ("invalid", ValueError(f"invalid package contract at {leaked_detail}")),
+            )
+            for label, failure in failures:
+                with self.subTest(label=label), mock.patch.object(
+                    server_module,
+                    "load_published_context_package",
+                    side_effect=failure,
+                ) as load:
+                    response = dispatch_request(
+                        "GET",
+                        "/context-package",
+                        None,
+                        headers={"Authorization": "Bearer secret"},
+                        artifact_dir=artifact_dir,
+                        token="secret",
+                    )
+
+                self.assertEqual(response.status, 500)
+                self.assertEqual(
+                    response.payload,
+                    {
+                        "ok": False,
+                        "error": {
+                            "code": "evidence_package_generation_failed",
+                            "message": "The generic public evidence package could not be generated.",
+                        },
+                    },
+                )
+                serialized = json.dumps(response.payload, sort_keys=True)
+                self.assertLessEqual(len(serialized), 256)
+                self.assertNotIn(tmpdir, serialized)
+                self.assertNotIn(leaked_detail, serialized)
+                self.assertNotIn("secret-token", serialized)
+                self.assertNotIn("Traceback", serialized)
+                load.assert_called_once_with()
+
+    def test_context_package_route_never_serves_a_legacy_v1_build(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch.object(
+                server_module,
+                "load_published_context_package",
+                return_value={
+                    "ok": True,
+                    "schema_version": "ask-insects-context-package.v1",
+                    "content_sha256": "legacy-hash",
+                },
+            ):
+                response = dispatch_request(
+                    "GET",
+                    "/context-package",
+                    None,
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+        self.assertEqual(response.status, 500)
+        self.assertEqual(
+            response.payload["error"]["code"],
+            "evidence_package_generation_failed",
+        )
+        self.assertNotIn("legacy-hash", json.dumps(response.payload, sort_keys=True))
+
+    def test_context_package_ignores_missing_and_unavailable_live_index(self):
+        expected = generic_evidence_package_v3()
+        cases = (
+            ("missing", None),
+            ("unavailable", b"not a sqlite database"),
+        )
+        for label, index_bytes in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as tmpdir:
+                artifact_dir = Path(tmpdir) / "mosquito-v1"
+                artifact_dir.mkdir(parents=True)
+                if index_bytes is not None:
+                    (artifact_dir / "source_index.sqlite").write_bytes(index_bytes)
+                with (
+                    mock.patch.object(
+                        server_module,
+                        "load_published_context_package",
+                        return_value=expected,
+                    ) as load,
+                    mock.patch.object(
+                        server_module,
+                        "source_index_readiness",
+                        side_effect=AssertionError("live index readiness must not be checked"),
+                    ) as readiness,
+                    mock.patch.object(
+                        server_module,
+                        "SourceIndex",
+                        side_effect=AssertionError("live index must not be initialized"),
+                    ) as source_index,
+                ):
+                    response = dispatch_request(
+                        "GET",
+                        "/context-package",
+                        None,
+                        headers={"Authorization": "Bearer secret"},
+                        artifact_dir=artifact_dir,
+                        token="secret",
+                    )
+
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.payload, expected)
+                load.assert_called_once_with()
+                readiness.assert_not_called()
+                source_index.assert_not_called()
+
+    def test_context_package_handler_preserves_query_and_body_presence_for_rejection(self):
+        cases = (
+            ("/context-package?consumer_id=consumer-17", {"Content-Length": "0"}, None),
+            ("/context-package", {"Content-Length": "17"}, "body-present"),
+        )
+        for path, headers, expected_payload in cases:
+            with self.subTest(path=path, headers=headers):
+                handler = object.__new__(AskInsectsHandler)
+                handler.path = path
+                handler.headers = {"Authorization": "Bearer secret", **headers}
+                handler.artifact_dir = Path("/hosted/public-artifacts")
+                handler.token = "secret"
+                handler._send = mock.Mock()
+                response = server_module.json_response(400, {"ok": False})
+                with mock.patch.object(
+                    server_module,
+                    "dispatch_request",
+                    return_value=response,
+                ) as dispatch:
+                    handler.do_GET()
+
+                call = dispatch.call_args
+                self.assertEqual(call.args[1], path)
+                if expected_payload is None:
+                    self.assertIsNone(call.args[2])
+                else:
+                    self.assertIsNotNone(call.args[2])
+                handler._send.assert_called_once_with(response)
+
+    def test_context_package_handler_rejects_post_without_reading_the_body(self):
+        handler = object.__new__(AskInsectsHandler)
+        handler.path = "/context-package?consumer_id=consumer-17"
+        handler.headers = {
+            "Authorization": "Bearer secret",
+            "Content-Length": "1000000",
+        }
+        handler.artifact_dir = Path("/hosted/public-artifacts")
+        handler.token = "secret"
+        handler._read_payload = mock.Mock(side_effect=AssertionError("body must not be read"))
+        handler._send = mock.Mock()
+        response = server_module.json_response(
+            405,
+            {
+                "ok": False,
+                "error": {
+                    "code": "method_not_allowed",
+                    "message": "The generic public evidence package is available only through GET.",
+                },
+            },
+        )
+        with mock.patch.object(
+            server_module,
+            "dispatch_request",
+            return_value=response,
+        ) as dispatch:
+            handler.do_POST()
+
+        handler._read_payload.assert_not_called()
+        self.assertEqual(dispatch.call_args.args[1], handler.path)
+        self.assertIsNotNone(dispatch.call_args.args[2])
+        handler._send.assert_called_once_with(response)
 
     def test_health_does_not_run_the_full_index_summary(self):
         with tempfile.TemporaryDirectory() as tmpdir:

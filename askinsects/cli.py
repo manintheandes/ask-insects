@@ -7,7 +7,13 @@ import sqlite3
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
-from .context_package import build_context_package
+from .context_package import (
+    DEFAULT_PROGRAM_CONFIG,
+    MAX_PACKAGE_BYTES,
+    PACKAGE_SCHEMA_VERSION,
+    build_context_package,
+    validate_context_package,
+)
 from .hosted import CONFIG_PATH as HOSTED_CONFIG_PATH
 from .hosted import HostedConfig, hosted_request, load_config, save_config
 from .sources.extracted_facts import DEFAULT_MAX_SUPPLEMENT_BYTES
@@ -20,6 +26,63 @@ from .voxels import read_voxel_value
 
 def emit(payload: object) -> None:
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+
+
+def evidence_package_error(code: str, message: str) -> dict[str, object]:
+    return {
+        "ok": False,
+        "error": {
+            "code": code,
+            "message": message,
+        },
+    }
+
+
+HOSTED_EVIDENCE_ERROR_MESSAGES = {
+    "evidence_package_unavailable": "The generic public evidence package is unavailable.",
+    "evidence_package_generation_failed": (
+        "The generic public evidence package could not be generated."
+    ),
+}
+
+
+def hosted_evidence_package() -> dict[str, object]:
+    try:
+        payload = hosted_request(
+            load_config(),
+            "GET",
+            "/context-package",
+            None,
+            max_response_bytes=MAX_PACKAGE_BYTES,
+        )
+    except Exception:
+        return evidence_package_error(
+            "evidence_package_request_failed",
+            "The generic public evidence package could not be fetched from the hosted source plane.",
+        )
+    if payload.get("ok") is not True:
+        error = payload.get("error")
+        code = error.get("code") if isinstance(error, dict) else None
+        message = HOSTED_EVIDENCE_ERROR_MESSAGES.get(str(code))
+        if message is not None:
+            return evidence_package_error(str(code), message)
+        return evidence_package_error(
+            "evidence_package_request_failed",
+            "The generic public evidence package could not be fetched from the hosted source plane.",
+        )
+    if payload.get("schema_version") != PACKAGE_SCHEMA_VERSION:
+        return evidence_package_error(
+            "evidence_package_schema_mismatch",
+            f"Ask Insects did not return {PACKAGE_SCHEMA_VERSION}.",
+        )
+    try:
+        validate_context_package(payload)
+    except Exception:
+        return evidence_package_error(
+            "evidence_package_invalid",
+            "The hosted source plane returned an invalid generic public evidence package.",
+        )
+    return payload
 
 
 def cli_error(error: str, *, lane: str, artifact_dir: Path) -> dict[str, object]:
@@ -197,8 +260,20 @@ def main(argv: list[str] | None = None) -> int:
     sources.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
     sources.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
-    context_package = sub.add_parser("context-package")
-    context_package.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
+    context_package = sub.add_parser(
+        "context-package",
+        help="Return the generic public insect evidence package",
+        description=(
+            "Return the generic public insect evidence package.\n"
+            f"Schema: {PACKAGE_SCHEMA_VERSION}."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    context_package.add_argument(
+        "--hosted",
+        action="store_true",
+        help="(default) fetch the package from the authenticated hosted source plane",
+    )
     context_package.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     ask = sub.add_parser("ask")
@@ -764,12 +839,24 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "context-package":
         if args.hosted:
-            payload = emit_hosted("GET", "/context-package")
+            payload = hosted_evidence_package()
+            emit(payload)
             return 0 if payload.get("ok") else 2
         try:
-            payload = build_context_package(artifact_dir=artifact_dir)
-        except (OSError, sqlite3.Error, ValueError, json.JSONDecodeError) as exc:
-            payload = cli_error(str(exc), lane="context_package", artifact_dir=artifact_dir)
+            payload = build_context_package(
+                artifact_dir=artifact_dir,
+                program_config_path=DEFAULT_PROGRAM_CONFIG,
+            )
+            if payload.get("schema_version") != PACKAGE_SCHEMA_VERSION:
+                payload = evidence_package_error(
+                    "evidence_package_schema_mismatch",
+                    f"Ask Insects did not return {PACKAGE_SCHEMA_VERSION}.",
+                )
+        except Exception:
+            payload = evidence_package_error(
+                "evidence_package_generation_failed",
+                "The generic public evidence package could not be generated.",
+            )
         emit(payload)
         return 0 if payload.get("ok") else 2
     if args.command == "ask":

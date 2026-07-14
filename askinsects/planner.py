@@ -130,7 +130,19 @@ def _is_insect_intelligence_question(question: str) -> bool:
     ):
         return True
 
-    if any(term in q for term in ("private monarch", "private ask monarch", "public ask insects")):
+    private_boundary_language = "private" in q and any(
+        term in q
+        for term in (
+            "ask insects",
+            "public evidence",
+            "public source gap",
+            "public source gaps",
+            "public gap",
+            "public gaps",
+            "separate private system",
+        )
+    )
+    if private_boundary_language:
         return True
     transfer_language = any(
         term in q

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from importlib.resources import files as resource_files
 import json
 from pathlib import Path
 import re
@@ -9,7 +10,22 @@ from askinsects.records import EvidenceRecord, Provenance
 
 
 INSECT_INTELLIGENCE_SOURCE_ID = "insect_intelligence_programs"
-DEFAULT_PROGRAM_LEDGER = Path("config/insect-intelligence-programs.json")
+_REPOSITORY_PROGRAM_LEDGER = (
+    Path(__file__).resolve().parents[2]
+    / "config"
+    / "insect-intelligence-programs.json"
+)
+DEFAULT_PROGRAM_LEDGER = (
+    _REPOSITORY_PROGRAM_LEDGER
+    if _REPOSITORY_PROGRAM_LEDGER.is_file()
+    else Path(
+        str(
+            resource_files("askinsects.resources").joinpath(
+                "insect-intelligence-programs.json"
+            )
+        )
+    )
+)
 
 REQUIRED_KNOWLEDGE_DOMAINS = {
     "sensory_world",
@@ -246,9 +262,26 @@ def _list_text(values: object, *, empty: str = "none") -> str:
 
 
 def _provenance(program_path: Path, fragment: str, retrieved_at: str) -> Provenance:
+    parts = fragment.split("/")
+    if parts == ["portfolio"]:
+        jsonpath = "$.objective"
+    else:
+        jsonpath = "$"
+        for part in parts:
+            if part.isdigit():
+                jsonpath += f"[{part}]"
+            elif re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", part):
+                jsonpath += f".{part}"
+            else:
+                raise ValueError(f"unsupported program-ledger locator segment: {part}")
+    locator_path = (
+        Path("config/insect-intelligence-programs.json")
+        if program_path == DEFAULT_PROGRAM_LEDGER
+        else program_path
+    )
     return Provenance(
         source_id=INSECT_INTELLIGENCE_SOURCE_ID,
-        locator=f"{program_path.as_posix()}#{fragment}",
+        locator=f"{locator_path.as_posix()}#jsonpath={jsonpath}",
         retrieved_at=retrieved_at,
         license="Repository program ledger",
     )

@@ -6,6 +6,7 @@ from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, replace
 import fcntl
 import hashlib
+from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
@@ -18,7 +19,7 @@ from typing import Callable
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR, build_source_index
-from .context_package import build_context_package
+from .context_package import PACKAGE_SCHEMA_VERSION, load_published_context_package
 from .index import SourceIndex
 from .sources.dryad_behavior_videos import DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, fetch_dryad_behavior_video_records
 from .sources.extracted_facts import DEFAULT_MAX_SUPPLEMENT_BYTES
@@ -119,10 +120,36 @@ def bounded_request_limit(value: object, *, default: int, maximum: int) -> int:
 class Response:
     status: int
     payload: dict[str, object]
+    headers: tuple[tuple[str, str], ...] = ()
 
 
-def json_response(status: int, payload: dict[str, object]) -> Response:
-    return Response(status=status, payload=payload)
+def json_response(
+    status: int,
+    payload: dict[str, object],
+    *,
+    headers: tuple[tuple[str, str], ...] = (),
+) -> Response:
+    return Response(status=status, payload=payload, headers=headers)
+
+
+def evidence_package_error(
+    status: int,
+    code: str,
+    message: str,
+    *,
+    headers: tuple[tuple[str, str], ...] = (),
+) -> Response:
+    return json_response(
+        status,
+        {
+            "ok": False,
+            "error": {
+                "code": code,
+                "message": message,
+            },
+        },
+        headers=headers,
+    )
 
 
 def is_authorized(headers: object, token: str) -> bool:
@@ -4277,14 +4304,47 @@ def dispatch_request(
     if not is_authorized(headers, token):
         return json_response(401, {"ok": False, "error": "unauthorized"})
 
+    route_path, query_separator, _ = path.partition("?")
+    has_query = bool(query_separator)
+    path = route_path
+
     mutation_guard = ExitStack()
     if method == "POST" and path.startswith("/ingest/"):
         mutation_guard.enter_context(ingest_mutation_lock(artifact_dir))
-    index = SourceIndex(artifact_dir / "source_index.sqlite")
     try:
+        if path == "/context-package":
+            if method != "GET":
+                return evidence_package_error(
+                    405,
+                    "method_not_allowed",
+                    "The generic public evidence package is available only through GET.",
+                    headers=(("Allow", "GET"),),
+                )
+            if has_query or payload is not None:
+                return evidence_package_error(
+                    400,
+                    "evidence_package_parameters_not_allowed",
+                    "The generic public evidence package accepts no request parameters.",
+                )
+            try:
+                package = load_published_context_package()
+                if (
+                    not isinstance(package, dict)
+                    or package.get("ok") is not True
+                    or package.get("schema_version") != PACKAGE_SCHEMA_VERSION
+                ):
+                    raise ValueError("evidence package builder returned an invalid contract")
+            except Exception:
+                return evidence_package_error(
+                    500,
+                    "evidence_package_generation_failed",
+                    "The generic public evidence package could not be generated.",
+                )
+            return json_response(200, package)
+        index = SourceIndex(artifact_dir / "source_index.sqlite")
         if method == "GET" and path == "/health":
             return json_response(200, health_payload(artifact_dir))
-        if method in {"GET", "POST"} and path in {"/summary", "/context-package", "/ask", "/search", "/sql"}:
+        if method in {"GET", "POST"} and path in {"/summary", "/ask", "/search", "/sql"}:
             ready, reason = source_index_readiness(artifact_dir)
             if not ready:
                 return source_index_unavailable_response(artifact_dir, reason)
@@ -4292,8 +4352,6 @@ def dispatch_request(
             return json_response(200, index.summary())
         if method == "GET" and path == "/sources":
             return json_response(200, {"ok": True, "sources": read_sources(artifact_dir), "artifact_dir": str(artifact_dir)})
-        if method == "GET" and path == "/context-package":
-            return json_response(200, build_context_package(artifact_dir=artifact_dir))
         if method == "POST" and path == "/ask":
             body = payload or {}
             question = str(body.get("question", ""))
@@ -4735,22 +4793,61 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
             raise ValueError("request JSON must be an object")
         return payload
 
-    def _send(self, response: Response) -> None:
-        body = json.dumps(response.payload, sort_keys=True).encode("utf-8")
+    def _send(self, response: Response, *, include_body: bool = True) -> None:
+        body = json.dumps(
+            response.payload,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ).encode("utf-8")
         self.send_response(response.status)
         self.send_header("Content-Type", "application/json")
+        for name, value in response.headers:
+            self.send_header(name, value)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Connection", "close")
         self.end_headers()
-        self.wfile.write(body)
+        if include_body:
+            self.wfile.write(body)
         self.wfile.flush()
         self.close_connection = True
 
+    def send_error(
+        self,
+        code: int,
+        message: str | None = None,
+        explain: str | None = None,
+    ) -> None:
+        if (
+            code == HTTPStatus.NOT_IMPLEMENTED
+            and getattr(self, "path", "").split("?", 1)[0] == "/context-package"
+        ):
+            method = str(getattr(self, "command", ""))
+            payload = {} if self._request_declares_body() else None
+            response = dispatch_request(
+                method,
+                self.path,
+                payload,
+                headers=self.headers,
+                artifact_dir=self.artifact_dir,
+                token=self.token,
+            )
+            self._send(response, include_body=method != "HEAD")
+            return
+        super().send_error(code, message, explain)
+
+    def _request_declares_body(self) -> bool:
+        content_length = self.headers.get("Content-Length")
+        transfer_encoding = self.headers.get("Transfer-Encoding")
+        return content_length not in {None, "", "0"} or bool(transfer_encoding)
+
     def do_GET(self) -> None:
+        route_path = self.path.split("?", 1)[0]
+        payload = {} if route_path == "/context-package" and self._request_declares_body() else None
         response = dispatch_request(
             "GET",
-            self.path.split("?", 1)[0],
-            None,
+            self.path,
+            payload,
             headers=self.headers,
             artifact_dir=self.artifact_dir,
             token=self.token,
@@ -4761,11 +4858,23 @@ class AskInsectsHandler(BaseHTTPRequestHandler):
         if not is_authorized(self.headers, self.token):
             self._send(json_response(401, {"ok": False, "error": "unauthorized"}))
             return
+        if self.path.split("?", 1)[0] == "/context-package":
+            payload = {} if self._request_declares_body() else None
+            response = dispatch_request(
+                "POST",
+                self.path,
+                payload,
+                headers=self.headers,
+                artifact_dir=self.artifact_dir,
+                token=self.token,
+            )
+            self._send(response)
+            return
         try:
             payload = self._read_payload()
             response = dispatch_request(
                 "POST",
-                self.path.split("?", 1)[0],
+                self.path,
                 payload,
                 headers=self.headers,
                 artifact_dir=self.artifact_dir,

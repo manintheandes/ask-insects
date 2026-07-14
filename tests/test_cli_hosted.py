@@ -8,6 +8,52 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from askinsects.cli import main
+from askinsects.context_package import MAX_PACKAGE_BYTES
+
+
+def generic_evidence_package_v3():
+    return {
+        "ok": True,
+        "schema_version": "ask-insects-evidence-package.v3",
+        "content_sha256": "abc123",
+        "validation_contract": {
+            "producer_linkage": "verified_in_read_only_source_index_during_build",
+            "downstream_validation": "exported_snapshot_internal_consistency_only",
+            "snapshot_authentication": "publisher_pinned_content_sha256",
+        },
+        "contexts": [
+            {
+                "id": "treated_area_contact_avoidance",
+                "endpoint_family": "treated_area_occupancy",
+                "exposure_routes": ["contact"],
+            }
+        ],
+        "evidence_records": [
+            {
+                "record_id": "public:swd:1",
+                "eligibility": {
+                    "ruleset_version": "direct-semantic-evidence.v3",
+                    "taxon": {
+                        "status": "direct_focal_taxon",
+                        "basis": [{"field_path": "payload.title"}],
+                    },
+                    "context": {
+                        "status": "direct_context",
+                        "basis": [{"field_path": "payload.abstract"}],
+                    },
+                },
+            }
+        ],
+        "selector_results": [
+            {
+                "selector_id": "contact_swd_behavior",
+                "candidate_count": 2,
+                "selected_count": 1,
+                "rejection_counts": {"taxon_not_directly_confirmed": 1},
+            }
+        ],
+        "gaps": [],
+    }
 
 
 class HostedCliTests(unittest.TestCase):
@@ -68,26 +114,197 @@ class HostedCliTests(unittest.TestCase):
     def test_context_package_uses_the_hosted_read_surface_by_default(self):
         calls = []
 
-        def fake_request(config, method, path, payload=None, timeout=120):
-            calls.append((config.url, method, path, payload, timeout))
-            return {
-                "ok": True,
-                "schema_version": "ask-insects-context-package.v1",
-                "content_sha256": "abc123",
-            }
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
+            calls.append((config.url, method, path, payload, timeout, max_response_bytes))
+            return generic_evidence_package_v3()
 
         with patch("askinsects.cli.load_config") as load_config, patch(
             "askinsects.cli.hosted_request", fake_request
-        ):
+        ), patch("askinsects.cli.build_context_package") as local_build, patch(
+            "askinsects.cli.validate_context_package"
+        ) as validate_package:
             load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
             code, output = self.run_cli("context-package")
 
         self.assertEqual(code, 0)
         self.assertEqual(
             calls[0],
-            ("https://ask-insects.example", "GET", "/context-package", None, 120),
+            (
+                "https://ask-insects.example",
+                "GET",
+                "/context-package",
+                None,
+                120,
+                MAX_PACKAGE_BYTES,
+            ),
         )
-        self.assertEqual(json.loads(output)["content_sha256"], "abc123")
+        local_build.assert_not_called()
+        validate_package.assert_called_once()
+        payload = json.loads(output)
+        self.assertEqual(payload["schema_version"], "ask-insects-evidence-package.v3")
+        self.assertEqual(payload["contexts"][0]["endpoint_family"], "treated_area_occupancy")
+        self.assertEqual(payload["contexts"][0]["exposure_routes"], ["contact"])
+        self.assertEqual(
+            payload["validation_contract"]["producer_linkage"],
+            "verified_in_read_only_source_index_during_build",
+        )
+        self.assertEqual(
+            payload["evidence_records"][0]["eligibility"]["taxon"]["status"],
+            "direct_focal_taxon",
+        )
+        self.assertEqual(
+            payload["evidence_records"][0]["eligibility"]["context"]["status"],
+            "direct_context",
+        )
+        self.assertEqual(
+            payload["selector_results"][0]["rejection_counts"],
+            {"taxon_not_directly_confirmed": 1},
+        )
+        serialized = json.dumps(payload, sort_keys=True)
+        for forbidden in ("consumer_id", "experiment_detail", "callback", "destination", "private_assay"):
+            self.assertNotIn(forbidden, serialized)
+
+    def test_context_package_hosted_failure_never_falls_back_to_local_generation(self):
+        calls = []
+
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
+            calls.append((method, path, payload, timeout, max_response_bytes))
+            return {
+                "ok": False,
+                "error": {
+                    "code": "evidence_package_generation_failed",
+                    "message": "The generic public evidence package could not be generated.",
+                },
+            }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", fake_request
+        ), patch("askinsects.cli.build_context_package") as local_build:
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli("context-package")
+
+        self.assertEqual(code, 2)
+        self.assertEqual(
+            calls,
+            [("GET", "/context-package", None, 120, MAX_PACKAGE_BYTES)],
+        )
+        local_build.assert_not_called()
+        self.assertEqual(
+            json.loads(output)["error"]["code"],
+            "evidence_package_generation_failed",
+        )
+
+    def test_context_package_hosted_failure_is_rebuilt_without_untrusted_error_text(self):
+        leaked = "/Users/josh/private/source.json Authorization: Bearer secret-token " + "x" * 5000
+
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
+            return {
+                "ok": False,
+                "error": {
+                    "code": "evidence_package_generation_failed",
+                    "message": leaked,
+                    "debug": leaked,
+                },
+            }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", fake_request
+        ), patch("askinsects.cli.build_context_package") as local_build:
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli("context-package")
+
+        self.assertEqual(code, 2)
+        local_build.assert_not_called()
+        self.assertEqual(
+            json.loads(output),
+            {
+                "ok": False,
+                "error": {
+                    "code": "evidence_package_generation_failed",
+                    "message": "The generic public evidence package could not be generated.",
+                },
+            },
+        )
+        self.assertLess(len(output), 256)
+        self.assertNotIn(leaked, output)
+        self.assertNotIn("/Users/josh", output)
+        self.assertNotIn("secret-token", output)
+
+    def test_context_package_rejects_invalid_hosted_success_without_echoing_it(self):
+        leaked = "/Users/josh/private/package.json Authorization: Bearer secret-token"
+
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
+            return {
+                "ok": True,
+                "schema_version": "ask-insects-evidence-package.v3",
+                "objective": leaked,
+            }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", fake_request
+        ), patch(
+            "askinsects.cli.validate_context_package",
+            side_effect=ValueError(leaked),
+        ):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli("context-package")
+
+        self.assertEqual(code, 2)
+        payload = json.loads(output)
+        self.assertEqual(payload["error"]["code"], "evidence_package_invalid")
+        self.assertLess(len(output), 256)
+        self.assertNotIn("/Users/josh", output)
+        self.assertNotIn("secret-token", output)
+
+    def test_context_package_rejects_a_legacy_hosted_success_without_local_fallback(self):
+        calls = []
+
+        def fake_request(
+            config, method, path, payload=None, timeout=120, max_response_bytes=None
+        ):
+            calls.append((method, path, payload, timeout, max_response_bytes))
+            return {
+                "ok": True,
+                "schema_version": "ask-insects-context-package.v1",
+                "content_sha256": "legacy-hash",
+            }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", fake_request
+        ), patch("askinsects.cli.build_context_package") as local_build:
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli("context-package")
+
+        self.assertEqual(code, 2)
+        self.assertEqual(
+            calls,
+            [("GET", "/context-package", None, 120, MAX_PACKAGE_BYTES)],
+        )
+        local_build.assert_not_called()
+        payload = json.loads(output)
+        self.assertEqual(payload["error"]["code"], "evidence_package_schema_mismatch")
+        self.assertIn("ask-insects-evidence-package.v3", payload["error"]["message"])
+        self.assertNotIn("legacy-hash", output)
+
+    def test_context_package_help_names_the_generic_v3_contract_without_private_parameters(self):
+        output = io.StringIO()
+        with redirect_stdout(output), self.assertRaises(SystemExit) as raised:
+            main(["context-package", "--help"])
+
+        self.assertEqual(raised.exception.code, 0)
+        help_text = output.getvalue()
+        self.assertIn("generic public insect evidence package", help_text)
+        self.assertIn("ask-insects-evidence-package.v3", help_text)
+        for forbidden_option in ("--consumer", "--experiment", "--callback", "--destination"):
+            self.assertNotIn(forbidden_option, help_text)
 
     def test_compact_hosted_ask_keeps_answer_and_exact_provenance_without_duplicate_rows(self):
         calls = []

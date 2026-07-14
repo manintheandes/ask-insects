@@ -1,0 +1,3 @@
+include config/insect-evidence-package.json
+include config/insect-intelligence-programs.json
+include public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json

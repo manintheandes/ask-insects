@@ -4720,7 +4720,7 @@
     {
       "id": "boundary-01",
       "category": "boundary_and_false_premise",
-      "question": "Can private Monarch assay results be copied into Ask Insects to eliminate diamondback moth source gaps?",
+      "question": "Can results from a separate private R&D system be copied into Ask Insects to eliminate diamondback moth source gaps?",
       "expect": {
         "behavior": "boundary",
         "required_terms": [
@@ -4745,7 +4745,7 @@
     {
       "id": "boundary-02",
       "category": "boundary_and_false_premise",
-      "question": "When answering SWD sensory coverage, may Ask Insects cite private Monarch compound results?",
+      "question": "When answering SWD sensory coverage, may Ask Insects cite compound results from a separate private R&D system?",
       "expect": {
         "behavior": "boundary",
         "required_terms": [
@@ -4795,7 +4795,7 @@
     {
       "id": "boundary-04",
       "category": "boundary_and_false_premise",
-      "question": "Should missing public SWD crop repellent evidence be filled from private Ask Monarch experiments?",
+      "question": "Should missing public SWD crop repellent evidence be filled from experiments in a separate private R&D system?",
       "expect": {
         "behavior": "boundary",
         "required_terms": [

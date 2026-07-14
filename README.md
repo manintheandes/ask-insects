@@ -2,7 +2,7 @@
 
 Open Insects is an open-source effort to make insect knowledge queryable, source-backed, and actionable.
 
-Ask Insects is the first tool in Open Insects: a CLI and hosted source plane for asking evidence-backed questions about insects. The command remains `ask-insects`.
+Ask Insects is the first tool in Open Insects: a CLI and hosted source plane for open, source-backed insect science. It also exports a generic public evidence package for any downstream tool. The command remains `ask-insects`.
 
 Public home: `https://openinsects.org`
 
@@ -22,7 +22,7 @@ The public repository ships code, docs, tests, source maps, small deterministic 
 
 ## Product And Insect Intelligence Goal
 
-Ask Insects helps Monarch understand insects deeply enough to create effective repellents that protect people and crops without killing insects. It tracks each focal insect across the same fourteen biological domains, from sensory systems, brain, genes, and body through behavior, egg laying, feeding, movement, ecology, chemical response, learning, development, and adaptation. It separately tracks eight product-readiness dimensions, including efficacy, mechanism, formulation, persistence, safety, non-target effects, real-world performance, and commercialization evidence.
+Ask Insects exists to deeply understand insects and accelerate effective, safe repellents that protect people and crops without killing insects. It tracks each focal insect across the same fourteen biological domains, from sensory systems, brain, genes, and body through behavior, egg laying, feeding, movement, ecology, chemical response, learning, development, and adaptation. It separately tracks eight product-readiness dimensions, including efficacy, mechanism, formulation, persistence, safety, non-target effects, real-world performance, and commercialization evidence.
 
 The machine-readable portfolio is `config/insect-intelligence-programs.json`. It currently defines the SWD crop repellent, the human mosquito repellent, `Drosophila suzukii`, `Aedes aegypti`, and `Plutella xylostella`. The derived source `insect_intelligence_programs` makes every profile, domain, readiness dimension, and explicit gap queryable:
 
@@ -34,13 +34,13 @@ python3 -m askinsects ask "what is the product readiness status of the human mos
 
 Species and assay context fail closed. Evidence from another insect may be useful as a clearly labeled inference, but it cannot silently become evidence about the focal species. Planning and readiness records are not proof that a product works.
 
-Ask Insects can export a small, versioned public context package for Ask Monarch:
+Ask Insects can export a small, versioned generic public evidence package for any downstream tool:
 
 ```bash
 ask-insects context-package
 ```
 
-The package includes the three species profiles, assay interpretation boundaries, exact-species public evidence, explicit source gaps, and row-level provenance. It never includes Monarch experiments or private results. Ask Monarch imports the public package, then joins it to private experiments inside Ask Monarch. No private experiment question or result is sent to Ask Insects.
+The package includes the three species profiles, generic evidence contexts, human-reviewed exact-species public evidence, explicit source gaps, and row-level provenance. The hosted command serves the checked release file at `public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json`; it does not rebuild a million-row index during a user request. The loader verifies the publisher-pinned file hash, rejects duplicate JSON keys, and validates the hash-bound scientific contents before returning it. This is hash authentication, not a digital signature. Private experiments and results belong in a separate private system. A downstream tool may join the package to its own private records on its side, but private data never flows into Ask Insects and cannot fill gaps in public evidence.
 
 ### Codex Runtime
 
@@ -273,7 +273,7 @@ Hosted Ask Insects can deep-refresh GBIF for one species without rebuilding or d
 python3 -m askinsects ingest-gbif --hosted --species "Aedes aegypti" --occurrence-limit 82237 --occurrence-page-size 300 --occurrence-workers 6 --delay-seconds 0
 ```
 
-The hosted ingest paginates GBIF occurrence search with a small worker pool, stores raw page JSON under `/home/josh/ask-insects/artifacts/mosquito-v1/raw/gbif/`, stores raw GBIF match and occurrence payloads in SQLite `record_payloads`, refreshes only `gbif_api` rows, and keeps the active server database available until the staged refresh is ready. The May 24, 2026 hosted refresh installed 82,237 `Aedes aegypti` occurrence records plus the GBIF taxonomy row with zero GBIF gaps.
+The hosted ingest paginates GBIF occurrence search with a small worker pool, stores raw page JSON under `raw/gbif/` in the deployment-configured artifact directory, stores raw GBIF match and occurrence payloads in SQLite `record_payloads`, refreshes only `gbif_api` rows, and keeps the active server database available until the staged refresh is ready. The May 24, 2026 hosted refresh installed 82,237 `Aedes aegypti` occurrence records plus the GBIF taxonomy row with zero GBIF gaps.
 
 ## iNaturalist Source Lane
 
@@ -860,7 +860,7 @@ Extracted-facts payloads preserve `fact_type`, matched fields, source paper ID, 
 
 ## Hosted Ask Insects
 
-Hosted V1 follows the Ask Monarch VM pattern. The parsed SQLite index and raw source artifacts live on the Google VM under `/home/josh/ask-insects/artifacts/mosquito-v1/`.
+Hosted V1 uses deployment-configured storage. The parsed SQLite index and raw source artifacts live in the configured hosted artifact directory; no machine-specific path is part of the public product contract.
 
 The service listens only on the VM loopback interface. Install the encrypted
 SSH tunnel on the local Mac, then configure the CLI to use its local endpoint:
