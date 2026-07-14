@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
+from askinsects.sources import drosophila_suzukii as drosophila_suzukii_source
 from askinsects.index import SourceIndex
 from askinsects.sources.drosophila_suzukii import (
     DROSOPHILA_SUZUKII_SOURCE_ID,
@@ -153,6 +154,20 @@ def fake_alias_literature_fetch(url: str) -> dict[str, object]:
 
 
 class DrosophilaSuzukiiSourceTests(unittest.TestCase):
+    def test_product_topic_search_terms_have_a_consumer_independent_symbol(self):
+        self.assertTrue(
+            hasattr(
+                drosophila_suzukii_source,
+                "DROSOPHILA_SUZUKII_PRODUCT_TOPIC_SEARCH_TERMS",
+            )
+        )
+        self.assertFalse(
+            hasattr(
+                drosophila_suzukii_source,
+                "DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS",
+            )
+        )
+
     def test_fetch_builds_queryable_spotted_wing_drosophila_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             result = fetch_drosophila_suzukii_records(
@@ -232,7 +247,7 @@ class DrosophilaSuzukiiSourceTests(unittest.TestCase):
             self.assertIn("abstract_alias", alias_record.payload["inclusion_paths"])
             self.assertIn("spotted wing drosophila", result.upstream_sources["openalex_literature"]["search_terms"])
 
-    def test_literature_fetch_includes_monarch_related_openalex_search_terms(self):
+    def test_literature_fetch_includes_product_topic_openalex_search_terms(self):
         calls: list[str] = []
 
         def fake_topic_literature_fetch(url: str) -> dict[str, object]:

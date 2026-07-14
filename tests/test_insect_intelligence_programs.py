@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 import json
 from pathlib import Path
+import re
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -23,9 +24,71 @@ from scripts.ingest_insect_intelligence_programs import ingest_insect_intelligen
 
 
 RETRIEVED_AT = "2026-07-13T00:00:00Z"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+PUBLIC_PRODUCT_SURFACES = (
+    "AGENTS.md",
+    "README.md",
+    "docs/source-lanes.md",
+    "docs/querying-ask-insects.md",
+    "config/source-map.yaml",
+    "config/insect-intelligence-programs.json",
+    "skills/askinsects/SKILL.md",
+    "askinsects/answer.py",
+    "askinsects/planner.py",
+    "askinsects/sources/drosophila_suzukii.py",
+)
+CONSUMER_COUPLING_PATTERNS = {
+    "named private consumer": re.compile(r"\bmonarch(?:'s)?\b", re.IGNORECASE),
+    "legacy consumer config": re.compile(r"ask-monarch-context-package", re.IGNORECASE),
+    "consumer-specific SWD symbol": re.compile(r"DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS"),
+    "private assay fields": re.compile(r"private_assay_(?:families|modes)"),
+    "private assay names": re.compile(
+        r"\b(?:contact_no_contact|dart_choice|fly_repellency_dart|fly_contact_dart|mosquito_dart|"
+        r"fly_oviposition|dbm_oviposition|arm_in_cage|spatial_affect|mosquito_post_exposure)\b"
+    ),
+    "private machine or data path": re.compile(r"(?:/home/|/Users/|file://|gs://)"),
+}
+INDEPENDENT_PUBLIC_OBJECTIVE = (
+    "Deeply understand insects and accelerate effective, safe repellents that protect people and crops "
+    "without killing insects."
+)
 
 
 class InsectIntelligenceProgramTests(unittest.TestCase):
+    def test_owned_public_product_surfaces_are_consumer_independent(self):
+        for relative_path in PUBLIC_PRODUCT_SURFACES:
+            text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+            for label, pattern in CONSUMER_COUPLING_PATTERNS.items():
+                with self.subTest(path=relative_path, coupling=label):
+                    self.assertIsNone(pattern.search(text))
+
+    def test_active_product_surfaces_state_the_generic_public_contract(self):
+        agents = (REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8")
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        skill = (REPO_ROOT / "skills/askinsects/SKILL.md").read_text(encoding="utf-8")
+
+        for label, text in (("AGENTS", agents), ("README", readme), ("skill", skill)):
+            with self.subTest(surface=label):
+                self.assertIn("public", text.lower())
+                self.assertIn("insect science", text.lower())
+                self.assertIn("generic public evidence package", text.lower())
+                self.assertIn("any downstream tool", text.lower())
+
+    def test_source_map_declares_the_generic_v2_evidence_package(self):
+        source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
+        export_block = source_map.split("      - id: ask_insects_context_package", 1)[1]
+        export_block = export_block.split("\n  - id:", 1)[0]
+
+        self.assertIn("config: config/insect-evidence-package.json", export_block)
+        self.assertIn("schema_version: ask-insects-evidence-package.v2", export_block)
+        self.assertIn("generic public insect evidence package", export_block.lower())
+        self.assertIn("any downstream tool", export_block.lower())
+
+    def test_real_ledger_uses_the_independent_public_objective(self):
+        payload = load_program_ledger(DEFAULT_PROGRAM_LEDGER)
+
+        self.assertEqual(payload["objective"], INDEPENDENT_PUBLIC_OBJECTIVE)
+
     def test_real_ledger_defines_two_products_and_three_initial_species(self):
         payload = load_program_ledger(DEFAULT_PROGRAM_LEDGER)
 
@@ -138,6 +201,14 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
                 self.assertEqual(plan.answer_shape, "insect_intelligence")
                 self.assertEqual(plan.lanes, ("insect_intelligence",))
 
+    def test_planner_routes_generic_public_private_boundary_questions(self):
+        plan = plan_question(
+            "Can Ask Insects fill a public evidence gap with experiments or results from a separate private system?"
+        )
+
+        self.assertEqual(plan.answer_shape, "insect_intelligence")
+        self.assertEqual(plan.lanes, ("insect_intelligence",))
+
     def test_planner_routes_every_non_comparison_production_eval_case_to_the_shared_lane(self):
         corpus = json.loads(
             Path("evals/ask_insects_production_path_v1.json").read_text(encoding="utf-8")
@@ -231,7 +302,7 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
             ingest_insect_intelligence_programs(artifact_dir=artifact_dir, retrieved_at=RETRIEVED_AT)
 
             private_answer = answer_question(
-                "Can the public Ask Insects path expose a private human mosquito repellent formulation while discussing readiness?",
+                "Can Ask Insects fill a public evidence gap with experiments or results from a separate private system?",
                 artifact_dir=artifact_dir,
             )
             transfer_answer = answer_question(
@@ -260,7 +331,14 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
             )
 
         self.assertIn("public evidence layer", private_answer["answer"])
-        self.assertIn("cannot expose or import private Ask Monarch", private_answer["answer"])
+        self.assertIn(
+            "Private experiments and results belong in a separate private system",
+            private_answer["answer"],
+        )
+        self.assertIn(
+            "private evidence cannot be imported to fill gaps in public evidence",
+            private_answer["answer"],
+        )
         self.assertIn("cannot be relabeled as direct focal-species evidence", transfer_answer["answer"])
         self.assertIn("explicitly labeled inference", transfer_answer["answer"])
         self.assertIn("not proof that a product works", proof_answer["answer"])

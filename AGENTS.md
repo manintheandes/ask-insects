@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Keep this repo focused on Ask Insects: the public, source-backed insect intelligence plane for Monarch's repellent work. The first product targets are spotted wing drosophila crop protection and human mosquito protection. `Aedes aegypti` is the first deep mosquito model, and diamondback moth is the next expansion proof.
+Keep this repo focused on Ask Insects: open, source-backed insect science and a generic public evidence package for any downstream tool. The objective is to deeply understand insects and accelerate effective, safe repellents that protect people and crops without killing insects. The first product targets are spotted wing drosophila crop protection and human mosquito protection. `Aedes aegypti` is the first deep mosquito model, and diamondback moth is the next expansion proof.
 
 ## Read Order
 

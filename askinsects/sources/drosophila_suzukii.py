@@ -21,7 +21,7 @@ DROSOPHILA_SUZUKII_EXACT_LITERATURE_SEARCH_TERMS = [
     DROSOPHILA_SUZUKII_COMMON_NAME,
     "spotted-wing drosophila",
 ]
-DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS = [
+DROSOPHILA_SUZUKII_PRODUCT_TOPIC_SEARCH_TERMS = [
     {"term": "Drosophila suzukii repellent", "mode": "search", "topic_group": "repellency", "confidence": "openalex_search_candidate"},
     {"term": "Drosophila suzukii repellency", "mode": "search", "topic_group": "repellency", "confidence": "openalex_search_candidate"},
     {"term": "Drosophila suzukii oviposition deterrent", "mode": "search", "topic_group": "repellency", "confidence": "openalex_search_candidate"},
@@ -64,7 +64,7 @@ DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS = [
 ]
 DROSOPHILA_SUZUKII_LITERATURE_SEARCH_TERMS: list[object] = [
     *DROSOPHILA_SUZUKII_EXACT_LITERATURE_SEARCH_TERMS,
-    *DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS,
+    *DROSOPHILA_SUZUKII_PRODUCT_TOPIC_SEARCH_TERMS,
 ]
 
 

@@ -13,8 +13,9 @@ description: >-
 
 # Ask Insects
 
-Ask Insects is Monarch's public scientific evidence layer. Its first products
-are an SWD crop repellent and a human mosquito repellent. The active species are
+Ask Insects provides open, source-backed insect science.
+It publishes a generic public evidence package for any downstream tool.
+Its first products are an SWD crop repellent and a human mosquito repellent. The active species are
 `Drosophila suzukii` and `Aedes aegypti`; diamondback moth (`Plutella
 xylostella`) is the next expansion proof.
 
@@ -57,9 +58,9 @@ or source refreshes during a normal answer.
 
 ## Boundary And Maintenance
 
-Ask Insects owns public insect evidence. Ask Monarch owns private compounds,
-assays, formulations, videos, results, decisions, and commercial work. Never
-copy private Ask Monarch evidence into Ask Insects.
+Ask Insects owns public insect evidence. Private experiments and results belong
+in a separate private system. Private evidence cannot be imported into Ask
+Insects or used to fill gaps in public evidence.
 
 Maintenance may run `python3 scripts/verify_complete.py` and `ask-insects
 setup-agent`. Source onboarding uses the `insectsource` skill.
