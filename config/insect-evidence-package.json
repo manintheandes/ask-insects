@@ -1,6 +1,6 @@
 {
   "schema_version": "ask-insects-evidence-package-config.v2",
-  "package_version": "2026-07-14.6",
+  "package_version": "2026-07-14.7",
   "last_reviewed": "2026-07-14",
   "objective": "Provide bounded public insect evidence for reusable interpretation contexts.",
   "knowledge_domains": [
