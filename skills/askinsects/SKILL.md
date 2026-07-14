@@ -3,10 +3,12 @@ name: askinsects
 description: >-
   Use when the user invokes askinsects, ask insects, @askinsects, or /askinsects,
   or asks an insect science, behavior, biology, ecology, repellent, crop-pest,
-  disease-vector, source-coverage, or public-evidence question. For a normal
-  answer, use this description without opening this file when the harness
-  permits. The first hosted command must be ask-insects ask "<the user's exact
-  question>" --json --compact. Then return final_answer verbatim.
+  disease-vector, source-coverage, public-evidence, species-profile, or portfolio
+  question. This includes adding a new insect or asking whether answer-routing
+  design must change for one. This description is the complete route. Do not
+  open this file for a normal answer. The first hosted command must be
+  ask-insects ask "<the user's exact question>" --json --compact. Then return
+  final_answer verbatim.
 ---
 
 # Ask Insects
@@ -19,7 +21,8 @@ xylostella`) is the next expansion proof.
 ## Normal Answer
 
 Do not inspect memory, Chronicle, repository docs, another skill, or the web
-before the hosted call. Use the installed command, or
+before the hosted call. Do not emit a progress update or preamble. Run the
+hosted command as the first visible action. Use the installed command, or
 `$HOME/.local/bin/ask-insects` when it is not on `PATH`:
 
 ```bash

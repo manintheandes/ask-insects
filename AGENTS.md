@@ -16,11 +16,17 @@ Keep this repo focused on Ask Insects: the public, source-backed insect intellig
 
 Do not answer insect questions from model memory when the source index can be queried. Use `ask-insects` commands or the SQLite index, cite provenance, distinguish direct evidence from cross-species inference, and report source gaps honestly.
 
-For a normal user-facing insect question, this repo instruction already contains the complete answer route. The preferred first and only operational command is `ask-insects ask "<the user's exact question>" --json --compact`. If the harness requires loading the installed skill, one installed Ask Insects skill read may occur first. No other command may precede or follow the hosted call. Do not inspect memory, Chronicle, repository docs, other skills, or any other file first. When the call returns `ok: true`, answer
+For a normal user-facing insect question, this repo instruction already contains the complete answer route. The preferred first and only operational command is `ask-insects ask "<the user's exact question>" --json --compact`. Do not load the installed skill; its description and this file already provide the complete route. No other command may precede or follow the hosted call. Do not inspect memory, Chronicle, repository docs, other skills, or any other file first. When the call returns `ok: true`, answer
 immediately without another command by returning `final_answer` verbatim.
 Do not rewrite, preface, or append to it. Preserve canonical labels such as
 `SWD crop repellent` and `Human mosquito repellent`, plus every source ID and
 locator exactly as returned.
+
+Questions about adding a new insect, species profiles, portfolio expansion, or
+whether answer-routing design must change are normal Ask Insects questions.
+Do not emit a progress update or preamble before their hosted call. Run the
+single command immediately so the complete visible answer remains under 30
+seconds.
 
 **Hosted plane is the only answer surface.** The canonical evidence lives on the hosted VM, not in the local checkout. Read commands (`ask`, `search`, `sql`, `summary`, `sources`, `health`) route to the hosted plane **by default** — you do not need (and should not rely on) a local index for answers. A bare `ask-insects sql "..."` hits hosted. The `--local` flag is a dev-only escape that warns loudly and reads the (usually empty) local index; never use it to conclude a source is "not queryable." If a source id shows zero rows locally, re-check on the hosted plane before reporting a gap.
 

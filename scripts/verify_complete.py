@@ -1562,7 +1562,9 @@ def check_production_path_evaluation() -> None:
             raise RuntimeError(f"Ask Insects skill is missing production-path guidance: {term}")
     skill_frontmatter = " ".join(skill_source.split("---", 2)[1].split())
     for term in (
-        "without opening this file when the harness permits",
+        "Do not open this file for a normal answer",
+        "adding a new insect",
+        "answer-routing design",
         "first hosted command",
         'ask-insects ask "<the user\'s exact question>" --json --compact',
         "return final_answer verbatim",
@@ -1572,8 +1574,11 @@ def check_production_path_evaluation() -> None:
     agents = " ".join((REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
     for term in (
         "preferred first and only operational command",
-        "one installed Ask Insects skill read",
+        "Do not load the installed skill",
+        "adding a new insect",
+        "answer-routing design",
         "Do not inspect memory",
+        "Do not emit a progress update",
         "answer immediately without another command",
         "Preserve canonical labels",
         "--compact",
