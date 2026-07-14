@@ -126,7 +126,7 @@ class ContextPackageTests(unittest.TestCase):
                                     "id": "swd_behavior",
                                     "species_id": "drosophila_suzukii",
                                     "source": "public_swd_behavior",
-                                    "query_any": ["avoidance", "repellent"],
+                                    "query_any": ["avoidance", "repellent", "contact"],
                                     "limit": 1,
                                     "required": True,
                                 }
@@ -159,6 +159,25 @@ class ContextPackageTests(unittest.TestCase):
         self.assertEqual(package["selector_results"][0]["selected_count"], 1)
         self.assertEqual(package["selector_results"][0]["limit"], 1)
         self.assertNotIn("public:melanogaster:1", json.dumps(package))
+
+    def test_selector_prefers_records_matching_more_declared_terms(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "public:swd:three-matches",
+                    source="public_swd_behavior",
+                    species="Drosophila suzukii",
+                    text="Repellent contact avoidance was measured directly.",
+                )
+            ]
+        )
+
+        package = self.build("2026-07-14T01:00:00Z")
+
+        self.assertEqual(
+            package["evidence_records"][0]["record_id"],
+            "public:swd:three-matches",
+        )
 
     def test_package_hash_is_stable_across_generation_times(self):
         first = self.build("2026-07-14T01:00:00Z")
