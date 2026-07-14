@@ -35,5 +35,8 @@ Source = "https://github.com/manintheandes/ask-insects"
 [tool.setuptools.packages.find]
 include = ["askinsects*", "scripts*"]
 
+[tool.setuptools.package-data]
+"askinsects.resources" = ["*.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
