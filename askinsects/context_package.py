@@ -186,35 +186,69 @@ def _species_profiles(program_records: list[dict[str, object]]) -> dict[str, str
     return profiles
 
 
-def _select_records(
+def _select_record_ids_for_group(
     conn: sqlite3.Connection,
     *,
     source: str,
     scientific_name: str,
-    query_any: list[str],
-    limit: int,
-) -> list[dict[str, object]]:
-    terms = [value.casefold() for value in query_any]
-    score = " + ".join(
-        "CASE WHEN instr(lower(r.title || ' ' || r.text), ?) > 0 THEN 1 ELSE 0 END"
-        for _ in terms
+    selectors: list[dict[str, object]],
+) -> dict[str, list[str]]:
+    prepared = [
+        (
+            str(selector["id"]),
+            [str(value).casefold() for value in selector["query_any"]],
+            int(selector["limit"]),
+        )
+        for selector in selectors
+    ]
+    score_buckets: dict[str, dict[int, list[str]]] = {
+        selector_id: {} for selector_id, _, _ in prepared
+    }
+    rows = conn.execute(
+        """
+        SELECT r.record_id, r.title, r.text
+        FROM records AS r INDEXED BY idx_records_source
+        WHERE r.source = ? AND r.species = ?
+        ORDER BY r.record_id
+        """,
+        (source, scientific_name),
     )
+    for row in rows:
+        record_id = str(row["record_id"])
+        haystack = f"{row['title']} {row['text']}".casefold()
+        for selector_id, terms, limit in prepared:
+            score = sum(term in haystack for term in terms)
+            if not score:
+                continue
+            bucket = score_buckets[selector_id].setdefault(score, [])
+            if len(bucket) < limit:
+                bucket.append(record_id)
+
+    selected: dict[str, list[str]] = {}
+    for selector_id, _, limit in prepared:
+        record_ids: list[str] = []
+        for score in sorted(score_buckets[selector_id], reverse=True):
+            record_ids.extend(score_buckets[selector_id][score])
+            if len(record_ids) >= limit:
+                break
+        selected[selector_id] = record_ids[:limit]
+    return selected
+
+
+def _records_by_id(conn: sqlite3.Connection, record_ids: list[str]) -> dict[str, dict[str, object]]:
+    if not record_ids:
+        return {}
+    placeholders = ",".join("?" for _ in record_ids)
     rows = conn.execute(
         f"""
-        SELECT candidates.*
-        FROM (
-          SELECT r.*, p.payload_json, ({score}) AS match_count
-          FROM records AS r INDEXED BY idx_records_source
-          LEFT JOIN record_payloads p ON p.record_id = r.record_id
-          WHERE r.source = ? AND r.species = ?
-        ) AS candidates
-        WHERE candidates.match_count > 0
-        ORDER BY candidates.match_count DESC, candidates.record_id
-        LIMIT ?
+        SELECT r.*, p.payload_json
+        FROM records r
+        LEFT JOIN record_payloads p ON p.record_id = r.record_id
+        WHERE r.record_id IN ({placeholders})
         """,
-        (*terms, source, scientific_name, limit),
+        record_ids,
     ).fetchall()
-    return [_export_record(row) for row in rows]
+    return {str(row["record_id"]): _export_record(row) for row in rows}
 
 
 def _context_export(context: dict[str, object], *, index: int, config: dict[str, object]) -> dict[str, object]:
@@ -259,6 +293,7 @@ def build_context_package(
         selector_results: list[dict[str, object]] = []
         gaps: list[dict[str, object]] = []
         selected_by_id: dict[str, dict[str, object]] = {}
+        selector_jobs: list[dict[str, object]] = []
         for context_index, raw_context in enumerate(contexts):
             context = dict(raw_context)
             context_id = str(context["id"])
@@ -267,51 +302,77 @@ def build_context_package(
                     raise ValueError(f"context {context_id} names unknown species profile: {species_id}")
             exported_contexts.append(_context_export(context, index=context_index, config=config))
             for selector in context["selectors"]:
-                selector_id = str(selector["id"])
                 species_id = str(selector["species_id"])
-                scientific_name = species_profiles[species_id]
-                rows = _select_records(
-                    conn,
-                    source=str(selector["source"]),
-                    scientific_name=scientific_name,
-                    query_any=list(selector["query_any"]),
-                    limit=int(selector["limit"]),
+                selector_jobs.append(
+                    {
+                        "context_id": context_id,
+                        "selector": selector,
+                        "species_id": species_id,
+                        "scientific_name": species_profiles[species_id],
+                    }
                 )
-                result = {
-                    "context_id": context_id,
-                    "selector_id": selector_id,
-                    "species_id": species_id,
-                    "scientific_name": scientific_name,
-                    "source": selector["source"],
-                    "query_any": selector["query_any"],
-                    "limit": selector["limit"],
-                    "required": selector["required"],
-                    "selected_count": len(rows),
-                    "selected_record_ids": [row["record_id"] for row in rows],
-                }
-                selector_results.append(result)
-                if not rows:
-                    gaps.append(
-                        {
-                            "gap_type": "selector_no_exact_species_records",
-                            **result,
-                        }
-                    )
-                for row in rows:
-                    record_id = str(row["record_id"])
-                    existing = selected_by_id.get(record_id)
-                    if existing is None:
-                        row["species_id"] = species_id
-                        row["context_ids"] = [context_id]
-                        row["selector_ids"] = [selector_id]
-                        selected_by_id[record_id] = row
-                    else:
-                        if existing["species_id"] != species_id:
-                            raise ValueError(f"record {record_id} was selected for more than one species")
-                        if context_id not in existing["context_ids"]:
-                            existing["context_ids"].append(context_id)
-                        if selector_id not in existing["selector_ids"]:
-                            existing["selector_ids"].append(selector_id)
+
+        grouped_jobs: dict[tuple[str, str], list[dict[str, object]]] = {}
+        for job in selector_jobs:
+            selector = job["selector"]
+            key = (str(selector["source"]), str(job["scientific_name"]))
+            grouped_jobs.setdefault(key, []).append(job)
+
+        selected_ids: dict[str, list[str]] = {}
+        records_by_id: dict[str, dict[str, object]] = {}
+        for (source, scientific_name), jobs in grouped_jobs.items():
+            group_selected = _select_record_ids_for_group(
+                conn,
+                source=source,
+                scientific_name=scientific_name,
+                selectors=[dict(job["selector"]) for job in jobs],
+            )
+            selected_ids.update(group_selected)
+            group_ids = sorted({record_id for values in group_selected.values() for record_id in values})
+            records_by_id.update(_records_by_id(conn, group_ids))
+
+        for job in selector_jobs:
+            context_id = str(job["context_id"])
+            selector = dict(job["selector"])
+            selector_id = str(selector["id"])
+            species_id = str(job["species_id"])
+            scientific_name = str(job["scientific_name"])
+            rows = [records_by_id[record_id] for record_id in selected_ids[selector_id]]
+            result = {
+                "context_id": context_id,
+                "selector_id": selector_id,
+                "species_id": species_id,
+                "scientific_name": scientific_name,
+                "source": selector["source"],
+                "query_any": selector["query_any"],
+                "limit": selector["limit"],
+                "required": selector["required"],
+                "selected_count": len(rows),
+                "selected_record_ids": [row["record_id"] for row in rows],
+            }
+            selector_results.append(result)
+            if not rows:
+                gaps.append(
+                    {
+                        "gap_type": "selector_no_exact_species_records",
+                        **result,
+                    }
+                )
+            for row in rows:
+                record_id = str(row["record_id"])
+                existing = selected_by_id.get(record_id)
+                if existing is None:
+                    row["species_id"] = species_id
+                    row["context_ids"] = [context_id]
+                    row["selector_ids"] = [selector_id]
+                    selected_by_id[record_id] = row
+                else:
+                    if existing["species_id"] != species_id:
+                        raise ValueError(f"record {record_id} was selected for more than one species")
+                    if context_id not in existing["context_ids"]:
+                        existing["context_ids"].append(context_id)
+                    if selector_id not in existing["selector_ids"]:
+                        existing["selector_ids"].append(selector_id)
         evidence_records = [selected_by_id[key] for key in sorted(selected_by_id)]
     finally:
         conn.close()
