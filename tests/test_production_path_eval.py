@@ -196,18 +196,13 @@ class ProductionPathEvalTests(unittest.TestCase):
 
                 self.assertFalse(result["ok"])
 
-    def test_one_installed_skill_read_is_allowed_but_other_commands_fail(self):
+    def test_installed_skill_reads_and_other_extra_commands_fail(self):
         execution = successful_execution()
         execution.commands.insert(
             0,
             "sed -n '1,160p' /Users/josh/.codex/skills/askinsects/SKILL.md",
         )
 
-        allowed = evaluate_case(sample_case(), execution, maximum_seconds=30)
-
-        self.assertTrue(allowed["ok"], allowed["failures"])
-
-        execution.commands.insert(0, "pwd")
         rejected = evaluate_case(sample_case(), execution, maximum_seconds=30)
 
         self.assertFalse(rejected["ok"])
@@ -216,12 +211,12 @@ class ProductionPathEvalTests(unittest.TestCase):
             rejected["failures"],
         )
 
-        execution = successful_execution()
-        execution.commands.append(
-            "cat /Users/josh/.codex/skills/askinsects/SKILL.md",
-        )
-        wrong_order = evaluate_case(sample_case(), execution, maximum_seconds=30)
-        self.assertFalse(wrong_order["ok"])
+        for command in ("pwd", "cat /Users/josh/.codex/skills/askinsects/SKILL.md"):
+            with self.subTest(command=command):
+                execution = successful_execution()
+                execution.commands.append(command)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                self.assertFalse(result["ok"])
 
     def test_full_gate_requires_every_corpus_case_on_the_unmodified_route(self):
         contract = {
