@@ -34,6 +34,14 @@ python3 -m askinsects ask "what is the product readiness status of the human mos
 
 Species and assay context fail closed. Evidence from another insect may be useful as a clearly labeled inference, but it cannot silently become evidence about the focal species. Planning and readiness records are not proof that a product works.
 
+Ask Insects can export a small, versioned public context package for Ask Monarch:
+
+```bash
+ask-insects context-package
+```
+
+The package includes the three species profiles, assay interpretation boundaries, exact-species public evidence, explicit source gaps, and row-level provenance. It never includes Monarch experiments or private results. Ask Monarch imports the public package, then joins it to private experiments inside Ask Monarch. No private experiment question or result is sent to Ask Insects.
+
 ### Codex Runtime
 
 Install or refresh the local CLI runtime and the repo-owned Ask Insects skill together:

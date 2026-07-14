@@ -133,6 +133,34 @@ class ServerTests(unittest.TestCase):
             artifact_dir=artifact_dir,
         )
 
+    def test_context_package_route_builds_from_the_hosted_index(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            expected = {
+                "ok": True,
+                "schema_version": "ask-insects-context-package.v1",
+                "content_sha256": "abc123",
+            }
+            with mock.patch.object(
+                server_module,
+                "build_context_package",
+                return_value=expected,
+                create=True,
+            ) as build:
+                response = dispatch_request(
+                    "GET",
+                    "/context-package",
+                    None,
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.payload, expected)
+        build.assert_called_once_with(artifact_dir=artifact_dir)
+
     def test_read_endpoints_reject_missing_source_index_without_creating_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir)

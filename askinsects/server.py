@@ -18,6 +18,7 @@ from typing import Callable
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR, build_source_index
+from .context_package import build_context_package
 from .index import SourceIndex
 from .sources.dryad_behavior_videos import DRYAD_BEHAVIOR_VIDEO_SOURCE_ID, fetch_dryad_behavior_video_records
 from .sources.extracted_facts import DEFAULT_MAX_SUPPLEMENT_BYTES
@@ -4288,7 +4289,7 @@ def dispatch_request(
     try:
         if method == "GET" and path == "/health":
             return json_response(200, health_payload(artifact_dir))
-        if method in {"GET", "POST"} and path in {"/summary", "/ask", "/search", "/sql"}:
+        if method in {"GET", "POST"} and path in {"/summary", "/context-package", "/ask", "/search", "/sql"}:
             ready, reason = source_index_readiness(artifact_dir)
             if not ready:
                 return source_index_unavailable_response(artifact_dir, reason)
@@ -4296,6 +4297,8 @@ def dispatch_request(
             return json_response(200, index.summary())
         if method == "GET" and path == "/sources":
             return json_response(200, {"ok": True, "sources": read_sources(artifact_dir), "artifact_dir": str(artifact_dir)})
+        if method == "GET" and path == "/context-package":
+            return json_response(200, build_context_package(artifact_dir=artifact_dir))
         if method == "POST" and path == "/ask":
             body = payload or {}
             question = str(body.get("question", ""))

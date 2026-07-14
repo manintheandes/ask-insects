@@ -355,6 +355,23 @@ class VerifyCompleteTests(unittest.TestCase):
         self.assertIn("THIRD_PARTY_DATA.md", required_files)
         verify_complete.check_open_source_boundary()
 
+    def test_verify_complete_requires_ask_monarch_context_package(self):
+        required_files = set(verify_complete.REQUIRED_FILES)
+        unit_modules = set(verify_complete.UNIT_TEST_MODULES)
+
+        self.assertIn("config/ask-monarch-context-package.json", required_files)
+        self.assertIn("askinsects/context_package.py", required_files)
+        self.assertIn("tests/test_context_package.py", required_files)
+        self.assertIn(
+            "docs/superpowers/specs/2026-07-14-ask-monarch-context-bridge-design.md",
+            required_files,
+        )
+        self.assertIn(
+            "docs/superpowers/plans/2026-07-14-ask-monarch-context-bridge.md",
+            required_files,
+        )
+        self.assertIn("tests.test_context_package", unit_modules)
+
     def test_verify_complete_requires_open_insects_public_identity(self):
         required_files = set(verify_complete.REQUIRED_FILES)
 

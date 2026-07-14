@@ -7,6 +7,7 @@ import sqlite3
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
+from .context_package import build_context_package
 from .hosted import CONFIG_PATH as HOSTED_CONFIG_PATH
 from .hosted import HostedConfig, hosted_request, load_config, save_config
 from .sources.extracted_facts import DEFAULT_MAX_SUPPLEMENT_BYTES
@@ -195,6 +196,10 @@ def main(argv: list[str] | None = None) -> int:
     sources = sub.add_parser("sources")
     sources.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
     sources.add_argument("--local", action="store_true", help=_LOCAL_HELP)
+
+    context_package = sub.add_parser("context-package")
+    context_package.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
+    context_package.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     ask = sub.add_parser("ask")
     ask.add_argument("question")
@@ -698,7 +703,7 @@ def main(argv: list[str] | None = None) -> int:
     # default answer surface: read commands route to hosted by default so an agent can
     # never silently query an empty/stale local index. `--local` is an explicit,
     # deliberate dev escape hatch for inspecting a locally-built index.
-    HOSTED_DEFAULT_READ_COMMANDS = {"health", "summary", "sources", "ask", "search", "sql"}
+    HOSTED_DEFAULT_READ_COMMANDS = {"health", "summary", "sources", "context-package", "ask", "search", "sql"}
     if args.command in HOSTED_DEFAULT_READ_COMMANDS:
         args.hosted = not getattr(args, "local", False)
 
@@ -757,6 +762,16 @@ def main(argv: list[str] | None = None) -> int:
             return 0 if payload.get("ok", True) is not False else 2
         emit({"sources": indexed_sources(artifact_dir), "artifact_dir": artifact_dir.as_posix()})
         return 0
+    if args.command == "context-package":
+        if args.hosted:
+            payload = emit_hosted("GET", "/context-package")
+            return 0 if payload.get("ok") else 2
+        try:
+            payload = build_context_package(artifact_dir=artifact_dir)
+        except (OSError, sqlite3.Error, ValueError, json.JSONDecodeError) as exc:
+            payload = cli_error(str(exc), lane="context_package", artifact_dir=artifact_dir)
+        emit(payload)
+        return 0 if payload.get("ok") else 2
     if args.command == "ask":
         if args.hosted:
             payload = hosted_request(load_config(), "POST", "/ask", {"question": args.question, "limit": args.limit})
