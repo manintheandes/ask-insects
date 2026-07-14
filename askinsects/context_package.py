@@ -17,18 +17,21 @@ ELIGIBILITY_RULESET_VERSION = "direct-semantic-evidence.v1"
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONTEXT_CONFIG = REPO_ROOT / "config/insect-evidence-package.json"
 MAX_SELECTOR_LIMIT = 25
-CONTEXT_CONFIG_FIELDS = {
-    "id",
-    "endpoint_family",
-    "exposure_routes",
-    "species_ids",
-    "required_domains",
-    "measures",
-    "does_not_establish",
-    "plausible_explanations",
-    "discriminating_evidence",
-    "selectors",
-}
+GENERIC_CONTEXT_FIELDS = frozenset(
+    {
+        "id",
+        "endpoint_family",
+        "exposure_routes",
+        "species_ids",
+        "required_domains",
+        "measures",
+        "does_not_establish",
+        "plausible_explanations",
+        "discriminating_evidence",
+    }
+)
+CONTEXT_CONFIG_FIELDS = GENERIC_CONTEXT_FIELDS | {"selectors"}
+EXPORTED_CONTEXT_FIELDS = GENERIC_CONTEXT_FIELDS | {"provenance"}
 PRIVATE_SOURCE_MARKERS = (
     "gs://monarch-videos-new",
     "/ask-monarch/",
@@ -76,6 +79,29 @@ def _require_string_list(value: object, label: str, *, allow_empty: bool = False
     return values
 
 
+def _validate_generic_context(
+    context: dict[str, object],
+    *,
+    context_id: str,
+    expected_fields: frozenset[str],
+) -> tuple[list[str], set[str]]:
+    unexpected_fields = set(context) - expected_fields
+    if unexpected_fields:
+        raise ValueError(f"context {context_id} contains unsupported fields: {sorted(unexpected_fields)}")
+    missing_fields = expected_fields - set(context)
+    if missing_fields:
+        raise ValueError(f"context {context_id} is missing fields: {sorted(missing_fields)}")
+    _require_string(context.get("endpoint_family"), f"context {context_id} endpoint_family")
+    _require_string_list(context.get("exposure_routes"), f"context {context_id} exposure_routes")
+    species_ids = _require_string_list(context.get("species_ids"), f"context {context_id} species_ids")
+    required_domains = set(
+        _require_string_list(context.get("required_domains"), f"context {context_id} required_domains")
+    )
+    for field in ("measures", "does_not_establish", "plausible_explanations", "discriminating_evidence"):
+        _require_string_list(context.get(field), f"context {context_id} {field}")
+    return species_ids, required_domains
+
+
 def _validate_config(config: dict[str, object]) -> None:
     if config.get("schema_version") != CONFIG_SCHEMA_VERSION:
         raise ValueError(f"context config schema_version must be {CONFIG_SCHEMA_VERSION}")
@@ -91,25 +117,14 @@ def _validate_config(config: dict[str, object]) -> None:
     for context_index, context in enumerate(contexts):
         context_id = _require_string(context.get("id"), f"contexts/{context_index}/id")
         context_ids.append(context_id)
-        unexpected_fields = set(context) - CONTEXT_CONFIG_FIELDS
-        if unexpected_fields:
-            raise ValueError(
-                f"context {context_id} contains unsupported fields: {sorted(unexpected_fields)}"
-            )
-        missing_fields = CONTEXT_CONFIG_FIELDS - set(context)
-        if missing_fields:
-            raise ValueError(f"context {context_id} is missing fields: {sorted(missing_fields)}")
-        _require_string(context.get("endpoint_family"), f"context {context_id} endpoint_family")
-        _require_string_list(context.get("exposure_routes"), f"context {context_id} exposure_routes")
-        _require_string_list(context.get("species_ids"), f"context {context_id} species_ids")
-        required_domains = set(
-            _require_string_list(context.get("required_domains"), f"context {context_id} required_domains")
+        species_ids, required_domains = _validate_generic_context(
+            context,
+            context_id=context_id,
+            expected_fields=CONTEXT_CONFIG_FIELDS,
         )
         unknown_domains = required_domains - domains
         if unknown_domains:
             raise ValueError(f"context {context_id} names unknown knowledge domains: {sorted(unknown_domains)}")
-        for field in ("measures", "does_not_establish", "plausible_explanations", "discriminating_evidence"):
-            _require_string_list(context.get(field), f"context {context_id} {field}")
         selectors = context.get("selectors")
         if not isinstance(selectors, list) or not all(isinstance(item, dict) for item in selectors):
             raise ValueError(f"context {context_id} selectors must be a list of objects")
@@ -120,7 +135,7 @@ def _validate_config(config: dict[str, object]) -> None:
             )
             selector_ids.append(selector_id)
             species_id = _require_string(selector.get("species_id"), f"selector {selector_id} species_id")
-            if species_id not in context["species_ids"]:
+            if species_id not in species_ids:
                 raise ValueError(f"selector {selector_id} species_id is not supported by context {context_id}")
             _require_string(selector.get("source"), f"selector {selector_id} source")
             _require_string_list(selector.get("query_any"), f"selector {selector_id} query_any")
@@ -470,12 +485,15 @@ def validate_context_package(package: dict[str, object], *, verify_hash: bool = 
 
     context_by_id = {str(context["id"]): context for context in contexts}
     for context_id, context in context_by_id.items():
-        for species_id in _require_string_list(context.get("species_ids"), f"context {context_id} species_ids"):
+        species_ids, required_domains = _validate_generic_context(
+            context,
+            context_id=context_id,
+            expected_fields=EXPORTED_CONTEXT_FIELDS,
+        )
+        for species_id in species_ids:
             if species_id not in species_profiles:
                 raise ValueError(f"context {context_id} names unknown species: {species_id}")
-        unknown_domains = set(
-            _require_string_list(context.get("required_domains"), f"context {context_id} required_domains")
-        ) - domains
+        unknown_domains = required_domains - domains
         if unknown_domains:
             raise ValueError(f"context {context_id} names unknown knowledge domains: {sorted(unknown_domains)}")
         _validate_public_provenance(context, f"context {context_id}")
