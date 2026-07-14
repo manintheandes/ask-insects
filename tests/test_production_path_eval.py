@@ -1,3 +1,4 @@
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,6 +9,7 @@ from scripts.eval_production_path import (
     ExecutionResult,
     evaluate_case,
     load_contract,
+    parse_codex_events,
     regrade_evaluation,
     run_evaluation,
 )
@@ -57,11 +59,20 @@ class ProductionPathEvalTests(unittest.TestCase):
 
         self.assertEqual(contract["contract_version"], CONTRACT_VERSION)
         self.assertEqual(contract["maximum_seconds"], 30)
-        self.assertGreaterEqual(len(contract["cases"]), 200)
+        self.assertEqual(len(contract["cases"]), 200)
         self.assertEqual(
             len({case["id"] for case in contract["cases"]}),
             len(contract["cases"]),
         )
+        boundary_questions = {
+            case["id"]: case["question"]
+            for case in contract["cases"]
+            if case["id"] in {"boundary-01", "boundary-02", "boundary-04"}
+        }
+        self.assertEqual(len(boundary_questions), 3)
+        for question in boundary_questions.values():
+            self.assertIn("separate private R&D system", question)
+            self.assertNotIn("Monarch", question)
         self.assertEqual(
             len({case["question"] for case in contract["cases"]}),
             len(contract["cases"]),
@@ -155,6 +166,23 @@ class ProductionPathEvalTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("exact question" in failure for failure in result["failures"]))
 
+    def test_question_must_be_one_exact_shell_argument(self):
+        question = str(sample_case()["question"])
+        wrong_questions = (
+            question + " please",
+            question.casefold(),
+            "prefix " + question,
+        )
+        for wrong_question in wrong_questions:
+            with self.subTest(wrong_question=wrong_question):
+                execution = successful_execution()
+                execution.commands = [
+                    f'ask-insects ask "{wrong_question}" --json --compact'
+                ]
+                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                self.assertFalse(result["ok"])
+                self.assertTrue(any("exact question" in failure for failure in result["failures"]))
+
     def test_noncompact_agent_payload_fails_the_normal_route(self):
         execution = successful_execution()
         execution.commands = [
@@ -166,23 +194,38 @@ class ProductionPathEvalTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertIn("normal Ask Insects call did not use the compact agent payload", result["failures"])
 
-    def test_memory_web_local_private_and_maintenance_fallbacks_fail(self):
-        blocked_commands = [
+    def test_any_memory_local_alternate_test_or_maintenance_command_fails(self):
+        unexpected_commands = [
             "rg diamondback /Users/josh/.codex/memories/MEMORY.md",
-            "ask-insects ask question --local",
-            "ask-monarch answer question",
+            "other-evidence-system answer question",
             "python3 scripts/verify_complete.py",
+            "python3 -m pytest tests/test_answer.py",
+            "ask-insects setup-agent",
+            "ask-insects refresh",
         ]
-        for command in blocked_commands:
+        for command in unexpected_commands:
             with self.subTest(command=command):
                 execution = successful_execution()
                 execution.commands.append(command)
                 result = evaluate_case(sample_case(), execution, maximum_seconds=30)
                 self.assertFalse(result["ok"])
+
+        question = str(sample_case()["question"])
         execution = successful_execution()
-        execution.event_types.append("web_search")
-        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
-        self.assertFalse(result["ok"])
+        execution.commands = [
+            f'ask-insects ask "{question}" --json --compact --local'
+        ]
+        local = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        self.assertFalse(local["ok"])
+        self.assertTrue(any("hosted" in failure for failure in local["failures"]))
+
+        for event_type in ("web_search", "web_open", "web.run"):
+            with self.subTest(event_type=event_type):
+                execution = successful_execution()
+                execution.event_types.append(event_type)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                self.assertFalse(result["ok"])
+                self.assertTrue(any("web" in failure for failure in result["failures"]))
 
     def test_second_ask_or_search_call_fails_the_one_call_contract(self):
         for command in (
@@ -223,6 +266,85 @@ class ProductionPathEvalTests(unittest.TestCase):
         )
         wrong_order = evaluate_case(sample_case(), execution, maximum_seconds=30)
         self.assertFalse(wrong_order["ok"])
+
+        invalid_reads = (
+            "cat skills/askinsects/SKILL.md",
+            "cat /tmp/other.md /Users/josh/.codex/skills/askinsects/SKILL.md",
+            "cat /Users/josh/.codex/skills/askinsects/SKILL.md && pwd",
+        )
+        for command in invalid_reads:
+            with self.subTest(command=command):
+                execution = successful_execution()
+                execution.commands.insert(0, command)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                self.assertFalse(result["ok"])
+
+        execution = successful_execution()
+        skill_read = "cat /Users/josh/.codex/skills/askinsects/SKILL.md"
+        execution.commands = [skill_read, skill_read, *execution.commands]
+        duplicate_reads = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        self.assertFalse(duplicate_reads["ok"])
+
+    def test_compound_or_nonstandard_ask_commands_fail_the_allowlist(self):
+        question = str(sample_case()["question"])
+        commands = (
+            f'ask-insects ask "{question}" --json --compact && pwd',
+            f'ask-insects ask "{question}" --json --compact --limit 10',
+            f'python3 -m askinsects ask "{question}" --json --compact',
+            f'ASK_INSECTS_TOKEN=secret ask-insects ask "{question}" --json --compact',
+        )
+        for command in commands:
+            with self.subTest(command=command):
+                execution = successful_execution()
+                execution.commands = [command]
+                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                self.assertFalse(result["ok"])
+
+    def test_duplicate_identical_command_events_are_not_collapsed(self):
+        command = successful_execution().commands[0]
+        stdout = "\n".join(
+            json.dumps(
+                {
+                    "type": "item.completed",
+                    "item": {"type": "command_execution", "command": command},
+                }
+            )
+            for _ in range(2)
+        )
+        _, commands, _, _ = parse_codex_events(stdout)
+
+        self.assertEqual(commands, [command, command])
+        execution = successful_execution()
+        execution.commands = commands
+        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        self.assertFalse(result["ok"])
+        self.assertTrue(any("exactly one" in failure for failure in result["failures"]))
+
+    def test_parser_preserves_all_web_shaped_item_events(self):
+        for item_type in ("web_search", "web_open", "custom_web_fetch"):
+            with self.subTest(item_type=item_type):
+                stdout = json.dumps(
+                    {
+                        "type": "item.completed",
+                        "item": {"type": item_type},
+                    }
+                )
+                _, _, event_types, _ = parse_codex_events(stdout)
+
+                self.assertIn(item_type, event_types)
+                execution = successful_execution()
+                execution.event_types = event_types
+                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                self.assertFalse(result["ok"])
+                self.assertTrue(any("web" in failure for failure in result["failures"]))
+
+    def test_evaluator_uses_a_generic_allowlist_not_a_product_blacklist(self):
+        source = (Path(__file__).parents[1] / "scripts/eval_production_path.py").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertNotIn("BLOCKED_COMMAND_TERMS", source)
+        self.assertNotIn("ask-monarch", source.casefold())
 
     def test_full_gate_requires_every_corpus_case_on_the_unmodified_route(self):
         contract = {

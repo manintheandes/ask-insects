@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+from copy import deepcopy
+import csv
+import ipaddress
 import json
 import os
 import re
+import shutil
+import sqlite3
 import subprocess
 import sys
-from pathlib import Path
-import csv
-import sqlite3
 import tempfile
+from pathlib import Path
+from urllib.parse import parse_qsl, urlsplit
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -17,6 +21,95 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 VERIFY_ARTIFACT_DIR = Path(tempfile.mkdtemp(prefix="ask-insects-verify-")) / "mosquito-v1"
 VERIFY_ENV = {**os.environ, "ASK_INSECTS_ARTIFACT_DIR": VERIFY_ARTIFACT_DIR.as_posix()}
+GENERIC_CONFIG_PATH = "config/insect-evidence-package.json"
+GENERIC_CONFIG_SCHEMA_VERSION = "ask-insects-evidence-package-config.v2"
+PUBLIC_PACKAGE_SCHEMA_VERSION = "ask-insects-evidence-package.v2"
+DIRECT_EVIDENCE_RULESET_VERSION = "direct-semantic-evidence.v1"
+PUBLIC_VALIDATION_CONTRACT = {
+    "producer_linkage": "verified_in_read_only_source_index_during_build",
+    "downstream_validation": "exported_snapshot_internal_consistency_only",
+    "snapshot_authentication": "publisher_pinned_content_sha256",
+}
+GENERIC_CONTEXT_IDS = (
+    "treated_area_contact_avoidance",
+    "treated_area_noncontact_avoidance",
+    "bounded_choice_orientation",
+    "oviposition_choice",
+    "human_landing_response",
+    "spatial_behavior",
+    "post_exposure_behavior",
+)
+GENERIC_CONFIG_CONTEXT_FIELDS = frozenset(
+    {
+        "id",
+        "endpoint_family",
+        "exposure_routes",
+        "species_ids",
+        "required_domains",
+        "measures",
+        "does_not_establish",
+        "plausible_explanations",
+        "discriminating_evidence",
+        "selectors",
+    }
+)
+PUBLIC_CONTEXT_FIELDS = (GENERIC_CONFIG_CONTEXT_FIELDS - {"selectors"}) | {"provenance"}
+PUBLIC_PACKAGE_FIELDS = frozenset(
+    {
+        "ok",
+        "schema_version",
+        "package_version",
+        "generated_at",
+        "objective",
+        "validation_contract",
+        "knowledge_domains",
+        "upstream_snapshot",
+        "contexts",
+        "program_records",
+        "evidence_records",
+        "selector_results",
+        "gaps",
+        "content_sha256",
+    }
+)
+MAX_PUBLIC_PACKAGE_BYTES = 16 * 1024 * 1024
+MAX_PUBLIC_PACKAGE_STRING_LENGTH = 100_000
+MAX_PUBLIC_PACKAGE_LIST_ITEMS = 10_000
+MAX_PUBLIC_PACKAGE_DEPTH = 20
+FORBIDDEN_FILES = ("config/ask-monarch-context-package.json",)
+ACTIVE_PUBLIC_SURFACE_DIRS = ("askinsects", "config", "skills/askinsects")
+ACTIVE_PUBLIC_SURFACE_FILES = ("pyproject.toml",)
+ACTIVE_TEXT_SUFFIXES = frozenset({".json", ".md", ".py", ".toml", ".yaml", ".yml"})
+CONSUMER_NAME_RE = re.compile(
+    r"(?i)(?:\bask[\s_-]+monarch\b|(?<![a-z0-9])(?:[a-z0-9]+_)*monarch(?:_[a-z0-9]+)*(?![a-z0-9]))"
+)
+NON_PUBLIC_LOCATOR_RE = re.compile(
+    r"(?i)(?<![a-z0-9+.-])(?!https://)[a-z][a-z0-9+.-]*://"
+    r"|(?<![a-z0-9+.-])file:/"
+)
+CREDENTIAL_KEY_TOKENS = frozenset(
+    {
+        "apikey",
+        "auth",
+        "authentication",
+        "authorization",
+        "credential",
+        "credentials",
+        "passwd",
+        "password",
+        "secret",
+        "token",
+    }
+)
+CONSUMER_KEY_TOKENS = frozenset({"consumer", "customer", "private", "tenant"})
+ABSOLUTE_FILESYSTEM_PATH_RE = re.compile(
+    r"(?i)(?:^|[\s\"'(=:])(?:/(?!/)[^\s,;]+|[a-z]:[\\/]|\\\\)"
+)
+SECRET_VALUE_RE = re.compile(
+    r"(?i)(?:\bbearer\s+[a-z0-9._~+/=-]{8,}|\b(?:ghp|sk|xox[baprs])[-_][a-z0-9_-]{12,})"
+)
+PUBLIC_URL_RE = re.compile(r"https?://[^\s<>\"']+", flags=re.IGNORECASE)
+QUERY_CREDENTIAL_KEY_TOKENS = frozenset({"key", "session", "sig", "signature"})
 
 REQUIRED_FILES = (
     "AGENTS.md",
@@ -26,7 +119,7 @@ REQUIRED_FILES = (
     "THIRD_PARTY_DATA.md",
     "pyproject.toml",
     "config/source-map.yaml",
-    "config/ask-monarch-context-package.json",
+    "config/insect-evidence-package.json",
     "config/insect-intelligence-programs.json",
     "config/mosquito-intelligence-coverage.json",
     "config/aedes-source-plane-benchmark.json",
@@ -70,7 +163,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-06-05-swd-neurobiology-olfaction-lane-design.md",
     "docs/superpowers/specs/2026-07-10-ask-insects-repellency-evidence-workflow-design.md",
     "docs/superpowers/specs/2026-07-13-dual-product-insect-intelligence-design.md",
-    "docs/superpowers/specs/2026-07-14-ask-monarch-context-bridge-design.md",
+    "docs/superpowers/specs/2026-07-14-generic-insect-evidence-package-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -107,7 +200,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-05-29-swd-biocontrol-outcome-lane.md",
     "docs/superpowers/plans/2026-07-10-ask-insects-repellency-evidence-workflow.md",
     "docs/superpowers/plans/2026-07-13-dual-product-insect-intelligence.md",
-    "docs/superpowers/plans/2026-07-14-ask-monarch-context-bridge.md",
+    "docs/superpowers/plans/2026-07-14-generic-insect-evidence-package.md",
     "evals/ask_insects_production_path_v1.json",
     "evals/repellency_comparison_v1.json",
     "askinsects/__init__.py",
@@ -638,6 +731,507 @@ def check_required_files() -> None:
     missing = [path for path in REQUIRED_FILES if not (REPO_ROOT / path).is_file()]
     if missing:
         raise RuntimeError(f"missing required file(s): {', '.join(missing)}")
+
+
+def check_forbidden_files(repo_root: Path = REPO_ROOT) -> None:
+    present = [path for path in FORBIDDEN_FILES if (repo_root / path).exists()]
+    if present:
+        raise RuntimeError(f"deleted config or file is still present: {', '.join(present)}")
+
+
+def validate_generic_evidence_config(payload: object) -> dict[str, object]:
+    if not isinstance(payload, dict):
+        raise RuntimeError("generic evidence config must be a JSON object")
+    expected_fields = {
+        "schema_version",
+        "package_version",
+        "last_reviewed",
+        "objective",
+        "knowledge_domains",
+        "contexts",
+    }
+    if set(payload) != expected_fields:
+        raise RuntimeError("generic evidence config must use exact top-level fields")
+    if payload.get("schema_version") != GENERIC_CONFIG_SCHEMA_VERSION:
+        raise RuntimeError(f"generic evidence config must use schema v2: {GENERIC_CONFIG_SCHEMA_VERSION}")
+    contexts = payload.get("contexts")
+    if not isinstance(contexts, list) or not contexts or not all(isinstance(item, dict) for item in contexts):
+        raise RuntimeError("generic evidence config contexts must be a non-empty list of objects")
+    context_ids = [str(context.get("id") or "") for context in contexts]
+    if tuple(context_ids) != GENERIC_CONTEXT_IDS:
+        raise RuntimeError("generic evidence config does not declare the complete generic context inventory")
+    for context in contexts:
+        context_id = str(context.get("id") or "<missing>")
+        if set(context) != GENERIC_CONFIG_CONTEXT_FIELDS:
+            raise RuntimeError(f"context {context_id} must use exact generic context fields")
+        for field in (
+            "endpoint_family",
+            "exposure_routes",
+            "species_ids",
+            "required_domains",
+            "measures",
+            "does_not_establish",
+            "plausible_explanations",
+            "discriminating_evidence",
+        ):
+            value = context.get(field)
+            if field == "endpoint_family":
+                valid = isinstance(value, str) and bool(value.strip())
+            else:
+                valid = isinstance(value, list) and bool(value)
+            if not valid:
+                raise RuntimeError(f"generic context {context_id} has invalid {field}")
+        selectors = context.get("selectors")
+        if not isinstance(selectors, list) or not selectors or not all(
+            isinstance(selector, dict) for selector in selectors
+        ):
+            raise RuntimeError(f"generic context {context_id} must declare selector objects")
+        for selector in selectors:
+            required = {
+                "id",
+                "species_id",
+                "context_required_term_groups",
+                "taxon_field_paths",
+                "context_field_paths",
+            }
+            if not required.issubset(selector):
+                raise RuntimeError(f"generic context {context_id} selector is missing direct-evidence fields")
+    return payload
+
+
+def check_generic_evidence_config(repo_root: Path = REPO_ROOT) -> None:
+    config_path = repo_root / GENERIC_CONFIG_PATH
+    try:
+        payload = json.loads(config_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"generic evidence config is not readable JSON: {exc}") from exc
+    validate_generic_evidence_config(payload)
+    if repo_root.resolve() == REPO_ROOT.resolve():
+        from askinsects.context_package import (
+            CONFIG_SCHEMA_VERSION,
+            DEFAULT_CONTEXT_CONFIG,
+            load_context_config,
+        )
+
+        if CONFIG_SCHEMA_VERSION != GENERIC_CONFIG_SCHEMA_VERSION:
+            raise RuntimeError("context package runtime does not declare config schema v2")
+        if DEFAULT_CONTEXT_CONFIG.resolve() != config_path.resolve():
+            raise RuntimeError("context package runtime does not load the generic config path")
+        validate_generic_evidence_config(load_context_config(config_path))
+
+
+def _active_public_surface_paths(repo_root: Path) -> list[Path]:
+    paths: set[Path] = set()
+    for relative in ACTIVE_PUBLIC_SURFACE_FILES:
+        path = repo_root / relative
+        if path.is_file():
+            paths.add(path)
+    for relative in ACTIVE_PUBLIC_SURFACE_DIRS:
+        root = repo_root / relative
+        if not root.is_dir():
+            continue
+        paths.update(
+            path
+            for path in root.rglob("*")
+            if path.is_file() and path.suffix.casefold() in ACTIVE_TEXT_SUFFIXES
+        )
+    return sorted(paths)
+
+
+def check_active_public_surfaces(repo_root: Path = REPO_ROOT) -> None:
+    offenders: list[str] = []
+    for path in _active_public_surface_paths(repo_root):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            continue
+        relative = path.relative_to(repo_root).as_posix()
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            if CONSUMER_NAME_RE.search(line):
+                offenders.append(f"{relative}:{line_number}: consumer-specific name or identifier")
+            if NON_PUBLIC_LOCATOR_RE.search(line):
+                offenders.append(f"{relative}:{line_number}: non-public locator")
+    if offenders:
+        preview = "; ".join(offenders[:12])
+        suffix = f"; and {len(offenders) - 12} more" if len(offenders) > 12 else ""
+        raise RuntimeError(f"active public surface contains consumer coupling: {preview}{suffix}")
+
+
+def _run_clean_clone_command(
+    clone_root: Path,
+    env: dict[str, str],
+    args: list[str],
+    *,
+    label: str,
+) -> None:
+    result = subprocess.run(
+        args,
+        cwd=clone_root,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise RuntimeError(f"clean public clone {label} failed: {detail}")
+
+
+def check_clean_clone_independence(repo_root: Path = REPO_ROOT) -> None:
+    tracked = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    if tracked.returncode != 0:
+        raise RuntimeError(f"clean public clone could not list tracked files: {tracked.stderr.strip()}")
+    relative_paths = [Path(value) for value in tracked.stdout.split("\0") if value]
+    if not relative_paths:
+        raise RuntimeError("clean public clone has no tracked files")
+
+    with tempfile.TemporaryDirectory(prefix="ask-insects-public-clone-") as tmpdir:
+        temp_root = Path(tmpdir)
+        clone_root = temp_root / "clone"
+        home = temp_root / "home"
+        clone_root.mkdir()
+        home.mkdir()
+        for relative in relative_paths:
+            source = repo_root / relative
+            if not source.is_file():
+                continue
+            destination = clone_root / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination, follow_symlinks=False)
+
+        env = {
+            key: value
+            for key, value in os.environ.items()
+            if key in {"LANG", "LC_ALL", "PATH", "TMPDIR"}
+        }
+        env.update(
+            {
+                "HOME": home.as_posix(),
+                "PYTHONDONTWRITEBYTECODE": "1",
+                "PYTHONNOUSERSITE": "1",
+            }
+        )
+        import_probe = """
+import os
+from pathlib import Path
+import askinsects
+from askinsects.context_package import DEFAULT_CONTEXT_CONFIG, load_context_config
+
+assert not any(key.startswith("ASK_INSECTS_") for key in os.environ)
+assert Path(askinsects.__file__).resolve().is_relative_to(Path.cwd().resolve())
+assert DEFAULT_CONTEXT_CONFIG.resolve() == (Path.cwd() / "config/insect-evidence-package.json").resolve()
+assert load_context_config()["schema_version"] == "ask-insects-evidence-package-config.v2"
+assert not (Path.cwd() / "artifacts/mosquito-v1/source_index.sqlite").exists()
+"""
+        _run_clean_clone_command(
+            clone_root,
+            env,
+            [sys.executable, "-c", import_probe],
+            label="import/config probe",
+        )
+        fixture_tests = [
+            "tests.test_context_package.ContextPackageTests.test_default_config_uses_generic_v2_contract",
+            "tests.test_context_package.ContextPackageTests.test_selector_receipt_counts_all_rejections",
+            "tests.test_context_package.ContextPackageTests.test_package_declares_producer_and_downstream_validation_boundary",
+            "tests.test_context_package.ContextPackageTests.test_validator_rejects_exported_contexts_with_private_fields",
+        ]
+        _run_clean_clone_command(
+            clone_root,
+            env,
+            [sys.executable, "-m", "unittest", "-q", *fixture_tests],
+            label="fixture-backed package tests",
+        )
+
+
+def _validate_public_value(value: object, *, path: str = "$", depth: int = 0) -> None:
+    if depth > MAX_PUBLIC_PACKAGE_DEPTH:
+        raise RuntimeError(f"public package exceeds nesting depth at {path}")
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if not isinstance(key, str):
+                raise RuntimeError(f"public package contains a non-string key at {path}")
+            if len(key) > MAX_PUBLIC_PACKAGE_STRING_LENGTH:
+                raise RuntimeError(f"public package exceeds key length at {path}")
+            if _is_credential_key(key):
+                raise RuntimeError(f"public package contains credential-shaped key at {path}.{key}")
+            if _is_consumer_key(key):
+                raise RuntimeError(f"public package contains consumer-specific key at {path}.{key}")
+            if _is_machine_bookkeeping_key(key):
+                raise RuntimeError(f"public package contains machine-local key at {path}.{key}")
+            _validate_public_value(nested, path=f"{path}.{key}", depth=depth + 1)
+        return
+    if isinstance(value, list):
+        if len(value) > MAX_PUBLIC_PACKAGE_LIST_ITEMS:
+            raise RuntimeError(f"public package list is too large at {path}")
+        for index, nested in enumerate(value):
+            _validate_public_value(nested, path=f"{path}/{index}", depth=depth + 1)
+        return
+    if isinstance(value, str):
+        if len(value) > MAX_PUBLIC_PACKAGE_STRING_LENGTH:
+            raise RuntimeError(f"public package exceeds string length at {path}")
+        if SECRET_VALUE_RE.search(value):
+            raise RuntimeError(f"public package contains a credential or bearer token at {path}")
+        if any(
+            _url_has_credentials(match.group(0).rstrip(".,);]"))
+            for match in PUBLIC_URL_RE.finditer(value)
+        ):
+            raise RuntimeError(f"public package contains a credentialed URL at {path}")
+        if NON_PUBLIC_LOCATOR_RE.search(value):
+            raise RuntimeError(f"public package contains a non-public scheme at {path}")
+        if ABSOLUTE_FILESYSTEM_PATH_RE.search(value):
+            raise RuntimeError(f"public package contains a local or private path at {path}")
+
+
+def _key_tokens(key: str) -> list[str]:
+    expanded = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", key)
+    return [token for token in re.split(r"[^A-Za-z0-9]+", expanded.casefold()) if token]
+
+
+def _is_credential_key(key: str) -> bool:
+    if key.casefold() == "snapshot_authentication":
+        return False
+    tokens = _key_tokens(key)
+    return any(token in CREDENTIAL_KEY_TOKENS for token in tokens) or any(
+        left == "api" and right == "key" for left, right in zip(tokens, tokens[1:])
+    )
+
+
+def _is_consumer_key(key: str) -> bool:
+    return bool(set(_key_tokens(key)).intersection(CONSUMER_KEY_TOKENS))
+
+
+def _is_credential_query_key(key: str) -> bool:
+    return _is_credential_key(key) or bool(
+        set(_key_tokens(key)).intersection(QUERY_CREDENTIAL_KEY_TOKENS)
+    )
+
+
+def _url_has_credentials(value: str) -> bool:
+    parsed = urlsplit(value)
+    if parsed.username is not None or parsed.password is not None:
+        return True
+    return any(
+        _is_credential_query_key(key)
+        for key, _ in parse_qsl(parsed.query, keep_blank_values=True)
+    )
+
+
+def _is_machine_bookkeeping_key(key: str) -> bool:
+    tokens = set(_key_tokens(key))
+    if key.casefold() in {"payload_json", "provenance_json"}:
+        return True
+    if "path" in tokens and tokens.intersection(
+        {"artifact", "cache", "ledger", "local", "machine", "raw"}
+    ):
+        return True
+    return bool(
+        tokens.intersection({"original", "raw", "internal"})
+        and tokens.intersection({"payload", "provenance"})
+    )
+
+
+def _canonical_public_package_bytes(value: object) -> bytes:
+    try:
+        serialized = json.dumps(
+            value,
+            allow_nan=False,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+    except (TypeError, ValueError) as exc:
+        raise RuntimeError(f"public package is not canonical JSON: {exc}") from exc
+    return serialized.encode("utf-8")
+
+
+def _validate_public_package_size(value: object) -> None:
+    if len(_canonical_public_package_bytes(value)) > MAX_PUBLIC_PACKAGE_BYTES:
+        raise RuntimeError("public evidence package exceeds package byte limit")
+
+
+def _check_producer_limit_alignment() -> None:
+    from askinsects import context_package
+
+    expected = {
+        "MAX_PACKAGE_BYTES": MAX_PUBLIC_PACKAGE_BYTES,
+        "MAX_STRING_LENGTH": MAX_PUBLIC_PACKAGE_STRING_LENGTH,
+        "MAX_LIST_ITEMS": MAX_PUBLIC_PACKAGE_LIST_ITEMS,
+        "MAX_NESTING_DEPTH": MAX_PUBLIC_PACKAGE_DEPTH,
+    }
+    mismatches = [
+        f"{name}={getattr(context_package, name, '<missing>')!r}, expected {value!r}"
+        for name, value in expected.items()
+        if getattr(context_package, name, None) != value
+    ]
+    if mismatches:
+        raise RuntimeError(
+            "completion gate resource limits do not match the producer: "
+            + "; ".join(mismatches)
+        )
+
+
+def _object_list(package: dict[str, object], field: str, *, allow_empty: bool = True) -> list[dict[str, object]]:
+    value = package.get(field)
+    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+        raise RuntimeError(f"public package {field} must be a list of objects")
+    if not allow_empty and not value:
+        raise RuntimeError(f"public package {field} must not be empty")
+    return value
+
+
+def _validate_public_https_provenance(item: dict[str, object], *, label: str) -> None:
+    provenance = item.get("provenance")
+    if not isinstance(provenance, dict):
+        raise RuntimeError(f"{label} must declare provenance")
+    source_id = provenance.get("source_id")
+    locator = provenance.get("locator")
+    if not isinstance(source_id, str) or not source_id.strip():
+        raise RuntimeError(f"{label} provenance must declare source_id")
+    if not isinstance(locator, str) or not locator.strip():
+        raise RuntimeError(f"{label} provenance must declare a stable public HTTPS locator")
+    parsed = urlsplit(locator)
+    hostname = (parsed.hostname or "").rstrip(".").casefold()
+    if (
+        parsed.scheme.casefold() != "https"
+        or not parsed.netloc
+        or parsed.username is not None
+        or parsed.password is not None
+        or not hostname
+        or hostname == "localhost"
+        or hostname.endswith((".localhost", ".local"))
+    ):
+        raise RuntimeError(f"{label} provenance is not a stable public HTTPS locator")
+    try:
+        address = ipaddress.ip_address(hostname)
+    except ValueError:
+        address = None
+    if address is not None and not address.is_global:
+        raise RuntimeError(f"{label} provenance is not a stable public HTTPS locator")
+
+
+def _validate_direct_assertion(value: object, *, label: str, status: str) -> None:
+    if not isinstance(value, dict) or value.get("status") != status:
+        readable = "direct focal taxon" if status == "direct_focal_taxon" else "direct context"
+        raise RuntimeError(f"{label} must contain a {readable} assertion")
+    basis = value.get("basis")
+    if not isinstance(basis, list) or not basis or not all(isinstance(item, dict) for item in basis):
+        raise RuntimeError(f"{label} direct assertion must contain basis objects")
+    for item in basis:
+        for field in ("field_path", "matched_term", "excerpt"):
+            if not isinstance(item.get(field), str) or not str(item[field]).strip():
+                raise RuntimeError(f"{label} direct assertion basis is missing {field}")
+
+
+def validate_public_evidence_package(
+    package: object,
+    *,
+    require_complete_contexts: bool = False,
+) -> dict[str, object]:
+    if not isinstance(package, dict):
+        raise RuntimeError("public evidence package must be a JSON object")
+    _validate_public_value(package)
+    _validate_public_package_size(package)
+    if set(package) != PUBLIC_PACKAGE_FIELDS:
+        raise RuntimeError("public evidence package must use exact top-level fields")
+    if package.get("schema_version") != PUBLIC_PACKAGE_SCHEMA_VERSION:
+        raise RuntimeError(f"public evidence package must use schema v2: {PUBLIC_PACKAGE_SCHEMA_VERSION}")
+    if package.get("validation_contract") != PUBLIC_VALIDATION_CONTRACT:
+        raise RuntimeError("public evidence package validation_contract is invalid")
+    if package.get("ok") is not True:
+        raise RuntimeError("public evidence package must report ok true")
+
+    contexts = _object_list(package, "contexts", allow_empty=False)
+    context_ids: list[str] = []
+    for context in contexts:
+        context_id = str(context.get("id") or "<missing>")
+        context_ids.append(context_id)
+        if set(context) != PUBLIC_CONTEXT_FIELDS:
+            raise RuntimeError(f"context {context_id} must use exact generic context fields")
+        _validate_public_https_provenance(context, label=f"context {context_id}")
+    if len(context_ids) != len(set(context_ids)):
+        raise RuntimeError("public evidence package context ids must be unique")
+    if require_complete_contexts and tuple(context_ids) != GENERIC_CONTEXT_IDS:
+        raise RuntimeError("public evidence package does not contain every generic context")
+
+    program_records = _object_list(package, "program_records", allow_empty=False)
+    for record in program_records:
+        record_id = str(record.get("record_id") or "<missing>")
+        _validate_public_https_provenance(record, label=f"program record {record_id}")
+
+    evidence_records = _object_list(package, "evidence_records", allow_empty=False)
+    evidence_ids: set[str] = set()
+    for record in evidence_records:
+        record_id = str(record.get("record_id") or "")
+        if not record_id or record_id in evidence_ids:
+            raise RuntimeError("public evidence package evidence record ids must be unique and non-empty")
+        evidence_ids.add(record_id)
+        _validate_public_https_provenance(record, label=f"evidence record {record_id}")
+        eligibility = record.get("eligibility")
+        if not isinstance(eligibility, dict):
+            raise RuntimeError(f"evidence record {record_id} is missing direct eligibility assertions")
+        if eligibility.get("ruleset_version") != DIRECT_EVIDENCE_RULESET_VERSION:
+            raise RuntimeError(f"evidence record {record_id} has the wrong direct-evidence ruleset")
+        _validate_direct_assertion(
+            eligibility.get("taxon"),
+            label=f"evidence record {record_id}",
+            status="direct_focal_taxon",
+        )
+        _validate_direct_assertion(
+            eligibility.get("context"),
+            label=f"evidence record {record_id}",
+            status="direct_context",
+        )
+
+    selector_results = _object_list(package, "selector_results", allow_empty=False)
+    selected_ids: set[str] = set()
+    selector_ids: set[str] = set()
+    for result in selector_results:
+        selector_id = str(result.get("selector_id") or "")
+        if not selector_id or selector_id in selector_ids:
+            raise RuntimeError("selector rejection receipts must have unique non-empty selector ids")
+        selector_ids.add(selector_id)
+        counts: dict[str, int] = {}
+        for field in ("candidate_count", "eligible_count", "selected_count"):
+            value = result.get(field)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                raise RuntimeError(f"selector {selector_id} rejection receipt has invalid {field}")
+            counts[field] = value
+        rejection_counts = result.get("rejection_counts")
+        if not isinstance(rejection_counts, dict) or any(
+            not isinstance(reason, str)
+            or not reason
+            or isinstance(count, bool)
+            or not isinstance(count, int)
+            or count <= 0
+            for reason, count in rejection_counts.items()
+        ):
+            raise RuntimeError(f"selector {selector_id} has an invalid rejection receipt")
+        if counts["candidate_count"] != counts["eligible_count"] + sum(rejection_counts.values()):
+            raise RuntimeError(f"selector {selector_id} rejection receipt is incomplete")
+        ids = result.get("selected_record_ids")
+        if (
+            not isinstance(ids, list)
+            or len(ids) != counts["selected_count"]
+            or len(ids) != len(set(ids))
+            or not all(isinstance(item, str) and item for item in ids)
+            or counts["selected_count"] > counts["eligible_count"]
+        ):
+            raise RuntimeError(f"selector {selector_id} rejection receipt has invalid selected records")
+        selected_ids.update(ids)
+    if selected_ids != evidence_ids:
+        raise RuntimeError("selector rejection receipts do not exactly cover evidence records")
+
+    _object_list(package, "gaps")
+    content_hash = package.get("content_sha256")
+    if not isinstance(content_hash, str) or re.fullmatch(r"[0-9a-f]{64}", content_hash) is None:
+        raise RuntimeError("public evidence package content_sha256 is invalid")
+    return package
 
 
 def check_open_source_boundary() -> None:
@@ -1514,6 +2108,185 @@ def check_insect_intelligence_programs() -> None:
             raise RuntimeError(f"insect-intelligence answer lacked exact ledger provenance for: {question}")
 
 
+def _seed_verification_package_records(artifact_dir: Path) -> None:
+    from askinsects.index import SourceIndex
+    from askinsects.records import EvidenceRecord, Provenance
+
+    index = SourceIndex(artifact_dir / "source_index.sqlite")
+    records = []
+    fixtures = (
+        (
+            "verify-package:aedes-landing-direct",
+            "Aedes aegypti human landing repellency response",
+            "https://doi.org/10.0000/ask-insects-public-fixture-1",
+        ),
+        (
+            "verify-package:aedes-landing-wrong-taxon",
+            "Anopheles gambiae human landing repellency response",
+            "https://doi.org/10.0000/ask-insects-public-fixture-2",
+        ),
+    )
+    for record_id, retained_title, source_url in fixtures:
+        records.append(
+            EvidenceRecord(
+                record_id=record_id,
+                lane="literature",
+                source="aedes_olfaction_literature",
+                title=retained_title,
+                text=f"Fixture candidate for Aedes aegypti: {retained_title}",
+                species="Aedes aegypti",
+                url=source_url,
+                media_url=None,
+                provenance=Provenance(
+                    source_id="aedes_olfaction_literature",
+                    locator=f"fixture#{record_id}",
+                    retrieved_at="2026-07-14T00:00:00Z",
+                    license="CC-BY-4.0",
+                    source_url=source_url,
+                ),
+                payload={"title": retained_title},
+            )
+        )
+    index.upsert_records(records)
+
+
+def _load_verification_evidence_package(artifact_dir: Path) -> dict[str, object]:
+    package_path_value = os.environ.get("ASK_INSECTS_VERIFY_PACKAGE_PATH")
+    use_hosted = os.environ.get("ASK_INSECTS_VERIFY_HOSTED_PACKAGE") == "1"
+    if package_path_value and use_hosted:
+        raise RuntimeError("configure either a package path or hosted package verification, not both")
+    if package_path_value:
+        package_path = Path(package_path_value).expanduser()
+        try:
+            package = json.loads(package_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"configured evidence package is not readable JSON: {exc}") from exc
+    elif use_hosted:
+        package = run_json(
+            [sys.executable, "-m", "askinsects", "context-package", "--hosted"]
+        )
+    else:
+        from askinsects.context_package import build_context_package
+
+        _seed_verification_package_records(artifact_dir)
+        package = build_context_package(
+            artifact_dir=artifact_dir,
+            generated_at="2026-07-14T00:00:00Z",
+        )
+    if not isinstance(package, dict):
+        raise RuntimeError("evidence package verification input must be a JSON object")
+    return package
+
+
+def _add_deep_validation_probe(package: dict[str, object]) -> None:
+    root: dict[str, object] = {}
+    cursor = root
+    for _ in range(MAX_PUBLIC_PACKAGE_DEPTH + 2):
+        child: dict[str, object] = {}
+        cursor["child"] = child
+        cursor = child
+    upstream = package.get("upstream_snapshot")
+    if not isinstance(upstream, dict):
+        raise RuntimeError("evidence package upstream_snapshot is not an object")
+    upstream["validation_probe"] = root
+
+
+def _check_context_package_validator_guards(package: dict[str, object]) -> None:
+    from askinsects.context_package import validate_context_package
+
+    probes = (
+        (
+            "unknown top-level field",
+            lambda value: value.__setitem__("unexpected_validation_probe", True),
+        ),
+        (
+            "unknown evidence-record field",
+            lambda value: value["evidence_records"][0].__setitem__(
+                "unexpected_validation_probe", True
+            ),
+        ),
+        (
+            "unknown evidence-payload field",
+            lambda value: value["evidence_records"][0]["payload"].__setitem__(
+                "unexpected_validation_probe", True
+            ),
+        ),
+        (
+            "unknown provenance field",
+            lambda value: value["evidence_records"][0]["provenance"].__setitem__(
+                "unexpected_validation_probe", True
+            ),
+        ),
+        (
+            "credential-shaped key",
+            lambda value: value["upstream_snapshot"].__setitem__("api_token", "secret"),
+        ),
+        (
+            "consumer-shaped key",
+            lambda value: value["upstream_snapshot"].__setitem__(
+                "tenant_identifier", "external-system"
+            ),
+        ),
+        (
+            "machine-local key",
+            lambda value: value["upstream_snapshot"].__setitem__(
+                "raw_artifact_path", "public-looking"
+            ),
+        ),
+        (
+            "local path",
+            lambda value: value["evidence_records"][0]["provenance"].__setitem__(
+                "locator", "file:///tmp/private/result.json"
+            ),
+        ),
+        (
+            "private-scheme provenance",
+            lambda value: value["evidence_records"][0]["provenance"].__setitem__(
+                "locator", "private://example.org/result/1"
+            ),
+        ),
+        (
+            "plain-HTTP provenance",
+            lambda value: value["evidence_records"][0]["provenance"].__setitem__(
+                "locator", "http://example.org/result/1"
+            ),
+        ),
+        (
+            "credentialed URL",
+            lambda value: value.__setitem__(
+                "objective", "See https://example.org/data?access_token=secret"
+            ),
+        ),
+        (
+            "oversized string",
+            lambda value: value.__setitem__(
+                "objective", "x" * (MAX_PUBLIC_PACKAGE_STRING_LENGTH + 1)
+            ),
+        ),
+        ("excessive nesting", _add_deep_validation_probe),
+    )
+    for label, mutate in probes:
+        invalid = deepcopy(package)
+        mutate(invalid)
+        try:
+            validate_context_package(invalid, verify_hash=False)
+        except (TypeError, ValueError):
+            continue
+        raise RuntimeError(
+            f"context package exact structural/privacy validation accepted {label}"
+        )
+
+
+def check_evidence_package(artifact_dir: Path = VERIFY_ARTIFACT_DIR) -> None:
+    from askinsects.context_package import validate_context_package
+
+    _check_producer_limit_alignment()
+    package = _load_verification_evidence_package(artifact_dir)
+    validate_context_package(package)
+    validate_public_evidence_package(package, require_complete_contexts=True)
+    _check_context_package_validator_guards(package)
+
+
 def check_production_path_evaluation() -> None:
     from scripts.eval_production_path import CONTRACT_VERSION, load_contract
 
@@ -1525,8 +2298,8 @@ def check_production_path_evaluation() -> None:
     if float(contract.get("maximum_seconds", 999)) > 30:
         raise RuntimeError("production-path evaluation must require every answer in under 30 seconds")
     cases = contract.get("cases")
-    if not isinstance(cases, list) or len(cases) < 200:
-        raise RuntimeError("production-path evaluation corpus has fewer than 200 questions")
+    if not isinstance(cases, list) or len(cases) != 200:
+        raise RuntimeError("production-path evaluation corpus must contain exactly 200 questions")
     questions = "\n".join(str(case.get("question") or "") for case in cases if isinstance(case, dict)).lower()
     for term in (
         "drosophila suzukii",
@@ -1536,10 +2309,20 @@ def check_production_path_evaluation() -> None:
         "human mosquito repellent",
         "contact and non-contact",
         "best mosquito repellent",
-        "private monarch",
+        "separate private r&d system",
     ):
         if term not in questions:
             raise RuntimeError(f"production-path evaluation corpus is missing required question coverage: {term}")
+    boundary_cases = {
+        str(case.get("id")): str(case.get("question") or "")
+        for case in cases
+        if isinstance(case, dict) and str(case.get("id")) in {"boundary-01", "boundary-02", "boundary-04"}
+    }
+    if set(boundary_cases) != {"boundary-01", "boundary-02", "boundary-04"}:
+        raise RuntimeError("production-path evaluation is missing the private-system boundary cases")
+    for case_id, question in boundary_cases.items():
+        if "separate private R&D system" not in question or CONSUMER_NAME_RE.search(question):
+            raise RuntimeError(f"production-path boundary case {case_id} is consumer-specific")
     runner = (REPO_ROOT / "scripts/eval_production_path.py").read_text(encoding="utf-8")
     for term in (
         "codex",
@@ -1552,9 +2335,13 @@ def check_production_path_evaluation() -> None:
         "locator_patterns",
         "--regrade-results",
         "regraded_source_sha256",
+        "_is_allowed_installed_skill_read",
+        "_ask_command_failure",
     ):
         if term not in runner:
             raise RuntimeError(f"production-path evaluator is missing required behavior: {term}")
+    if "BLOCKED_COMMAND_TERMS" in runner or CONSUMER_NAME_RE.search(runner):
+        raise RuntimeError("production-path evaluator must use a generic command allowlist")
     skill_source = (REPO_ROOT / "skills/askinsects/SKILL.md").read_text(encoding="utf-8")
     skill = " ".join(skill_source.split())
     for term in (
@@ -2421,6 +3208,10 @@ def check_installed_artifact_receipts() -> None:
 def main() -> int:
     try:
         check_required_files()
+        check_forbidden_files()
+        check_generic_evidence_config()
+        check_active_public_surfaces()
+        check_clean_clone_independence()
         check_open_source_boundary()
         check_public_identity()
         check_unit_tests()
@@ -2429,6 +3220,7 @@ def main() -> int:
         check_literature_source_map()
         check_mosquito_intelligence_coverage()
         check_insect_intelligence_programs()
+        check_evidence_package()
         check_production_path_evaluation()
         check_aedes_source_plane_benchmark()
         check_cli()

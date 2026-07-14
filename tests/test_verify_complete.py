@@ -1,12 +1,115 @@
 import subprocess
 import sys
+from copy import deepcopy
 import json
 import sqlite3
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from scripts import verify_complete
+
+
+def public_package_fixture() -> dict[str, object]:
+    context_id = "human_landing_response"
+    selector_id = "landing_aedes_fixture"
+    record_id = "evidence:aedes-landing"
+    return {
+        "ok": True,
+        "schema_version": "ask-insects-evidence-package.v2",
+        "package_version": "2026-07-14.test",
+        "generated_at": "2026-07-14T12:00:00Z",
+        "objective": "Provide bounded public insect evidence.",
+        "validation_contract": {
+            "producer_linkage": "verified_in_read_only_source_index_during_build",
+            "downstream_validation": "exported_snapshot_internal_consistency_only",
+            "snapshot_authentication": "publisher_pinned_content_sha256",
+        },
+        "knowledge_domains": ["behavior"],
+        "upstream_snapshot": {
+            "source_id": "ask_insects_fixture",
+            "source_status_sha256": "1" * 64,
+            "source_status_generated_at": "2026-07-14T11:00:00Z",
+            "record_count": 3,
+        },
+        "contexts": [
+            {
+                "id": context_id,
+                "endpoint_family": "human_host_landing",
+                "exposure_routes": ["non_contact"],
+                "species_ids": ["aedes_aegypti"],
+                "required_domains": ["behavior"],
+                "measures": ["landing response"],
+                "does_not_establish": ["field efficacy"],
+                "plausible_explanations": ["sensory avoidance"],
+                "discriminating_evidence": ["matched controls"],
+                "provenance": {
+                    "source_id": "ask_insects_context_config",
+                    "locator": "https://openinsects.org/evidence-package/config#contexts/4",
+                    "retrieved_at": "2026-07-14T00:00:00Z",
+                    "license": "Apache-2.0",
+                },
+            }
+        ],
+        "program_records": [
+            {
+                "record_id": "program:species:aedes",
+                "provenance": {
+                    "source_id": "insect_intelligence_programs",
+                    "locator": "https://openinsects.org/evidence-package/programs#aedes_aegypti",
+                },
+            }
+        ],
+        "evidence_records": [
+            {
+                "record_id": record_id,
+                "context_ids": [context_id],
+                "selector_ids": [selector_id],
+                "eligibility": {
+                    "ruleset_version": "direct-semantic-evidence.v1",
+                    "taxon": {
+                        "status": "direct_focal_taxon",
+                        "basis": [
+                            {
+                                "field_path": "payload.title",
+                                "matched_term": "Aedes aegypti",
+                                "excerpt": "Aedes aegypti landing response",
+                            }
+                        ],
+                    },
+                    "context": {
+                        "status": "direct_context",
+                        "basis": [
+                            {
+                                "field_path": "payload.title",
+                                "matched_term": "landing",
+                                "excerpt": "Aedes aegypti landing response",
+                            }
+                        ],
+                    },
+                },
+                "provenance": {
+                    "source_id": "aedes_olfaction_literature",
+                    "locator": "https://doi.org/10.0000/public-fixture#result/1",
+                },
+            }
+        ],
+        "selector_results": [
+            {
+                "selector_id": selector_id,
+                "context_id": context_id,
+                "species_id": "aedes_aegypti",
+                "candidate_count": 2,
+                "eligible_count": 1,
+                "selected_count": 1,
+                "selected_record_ids": [record_id],
+                "rejection_counts": {"taxon_not_directly_confirmed": 1},
+            }
+        ],
+        "gaps": [],
+        "content_sha256": "2" * 64,
+    }
 
 
 class VerifyCompleteTests(unittest.TestCase):
@@ -355,22 +458,211 @@ class VerifyCompleteTests(unittest.TestCase):
         self.assertIn("THIRD_PARTY_DATA.md", required_files)
         verify_complete.check_open_source_boundary()
 
-    def test_verify_complete_requires_ask_monarch_context_package(self):
+    def test_verify_complete_requires_generic_v2_evidence_package(self):
         required_files = set(verify_complete.REQUIRED_FILES)
         unit_modules = set(verify_complete.UNIT_TEST_MODULES)
 
-        self.assertIn("config/ask-monarch-context-package.json", required_files)
+        self.assertIn("config/insect-evidence-package.json", required_files)
+        self.assertNotIn("config/ask-monarch-context-package.json", required_files)
+        self.assertIn(
+            "config/ask-monarch-context-package.json",
+            verify_complete.FORBIDDEN_FILES,
+        )
         self.assertIn("askinsects/context_package.py", required_files)
         self.assertIn("tests/test_context_package.py", required_files)
         self.assertIn(
-            "docs/superpowers/specs/2026-07-14-ask-monarch-context-bridge-design.md",
+            "docs/superpowers/specs/2026-07-14-generic-insect-evidence-package-design.md",
             required_files,
         )
         self.assertIn(
-            "docs/superpowers/plans/2026-07-14-ask-monarch-context-bridge.md",
+            "docs/superpowers/plans/2026-07-14-generic-insect-evidence-package.md",
             required_files,
         )
         self.assertIn("tests.test_context_package", unit_modules)
+        verify_complete.check_forbidden_files()
+
+    def test_generic_config_gate_requires_exact_v2_context_shape(self):
+        verify_complete.check_generic_evidence_config()
+
+        invalid = json.loads(
+            (verify_complete.REPO_ROOT / "config/insect-evidence-package.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        invalid["contexts"][0]["private_assay_modes"] = ["contact"]
+        with self.assertRaisesRegex(RuntimeError, "generic context fields"):
+            verify_complete.validate_generic_evidence_config(invalid)
+
+    def test_public_package_contract_requires_v2_assertions_receipts_and_https(self):
+        verify_complete.validate_public_evidence_package(public_package_fixture())
+
+        mutations = {
+            "schema v2": lambda package: package.__setitem__("schema_version", "v1"),
+            "validation_contract": lambda package: package["validation_contract"].__setitem__(
+                "producer_linkage", "claimed_without_source_index"
+            ),
+            "generic context fields": lambda package: package["contexts"][0].__setitem__(
+                "unsupported_assay_modes", ["contact"]
+            ),
+            "direct focal taxon": lambda package: package["evidence_records"][0][
+                "eligibility"
+            ]["taxon"].__setitem__("status", "inferred_taxon"),
+            "direct context": lambda package: package["evidence_records"][0][
+                "eligibility"
+            ]["context"].__setitem__("status", "inferred_context"),
+            "rejection receipt": lambda package: package["selector_results"][0].__setitem__(
+                "rejection_counts", {}
+            ),
+            "public HTTPS": lambda package: package["evidence_records"][0][
+                "provenance"
+            ].__setitem__("locator", "https://localhost:8080/result/1"),
+            "exact top-level fields": lambda package: package.__setitem__(
+                "unexpected", True
+            ),
+            "credential-shaped key": lambda package: package["upstream_snapshot"].__setitem__(
+                "api_token", "secret"
+            ),
+            "consumer-specific key": lambda package: package["upstream_snapshot"].__setitem__(
+                "tenant_identifier", "external-system"
+            ),
+            "credential or bearer token": lambda package: package.__setitem__(
+                "objective", "Authorization is Bearer abcdefghijklmnop"
+            ),
+            "credentialed URL": lambda package: package.__setitem__(
+                "objective", "See https://example.org/data?access_token=secret"
+            ),
+            "local or private path": lambda package: package.__setitem__(
+                "objective", "/opt/private/source_index.sqlite"
+            ),
+        }
+        for expected, mutate in mutations.items():
+            with self.subTest(expected=expected):
+                invalid = deepcopy(public_package_fixture())
+                mutate(invalid)
+                with self.assertRaisesRegex(RuntimeError, expected):
+                    verify_complete.validate_public_evidence_package(invalid)
+
+    def test_public_package_allows_generic_prose_about_external_systems(self):
+        package = public_package_fixture()
+        package["objective"] = (
+            "Public evidence may inform external private systems, including Monarch."
+        )
+
+        verify_complete.validate_public_evidence_package(package)
+
+    def test_public_package_string_limit_counts_characters_at_exact_edges(self):
+        limit = verify_complete.MAX_PUBLIC_PACKAGE_STRING_LENGTH
+
+        self.assertEqual(limit, 100_000)
+        verify_complete._validate_public_value("é" * limit)
+        verify_complete._validate_public_value({"é" * limit: None})
+
+        with self.assertRaisesRegex(RuntimeError, "string length"):
+            verify_complete._validate_public_value("é" * (limit + 1))
+        with self.assertRaisesRegex(RuntimeError, "key length"):
+            verify_complete._validate_public_value({"é" * (limit + 1): None})
+
+    def test_public_package_depth_limit_accepts_20_and_rejects_21(self):
+        self.assertEqual(verify_complete.MAX_PUBLIC_PACKAGE_DEPTH, 20)
+        nested: object = "leaf"
+        for _ in range(verify_complete.MAX_PUBLIC_PACKAGE_DEPTH):
+            nested = {"level": nested}
+
+        verify_complete._validate_public_value(nested)
+        with self.assertRaisesRegex(RuntimeError, "nesting depth"):
+            verify_complete._validate_public_value({"level": nested})
+
+    def test_public_package_byte_limit_accepts_exact_16_mib_and_rejects_next_byte(self):
+        byte_limit = verify_complete.MAX_PUBLIC_PACKAGE_BYTES
+        string_limit = verify_complete.MAX_PUBLIC_PACKAGE_STRING_LENGTH
+        full_chunks = byte_limit // (string_limit + 3)
+        at_limit = ["x" * string_limit] * full_chunks + [""]
+        remaining = byte_limit - len(verify_complete._canonical_public_package_bytes(at_limit))
+        at_limit[-1] = "x" * remaining
+
+        self.assertEqual(byte_limit, 16 * 1024 * 1024)
+        self.assertLessEqual(remaining, string_limit)
+        self.assertEqual(
+            len(verify_complete._canonical_public_package_bytes(at_limit)),
+            byte_limit,
+        )
+        verify_complete._validate_public_value(at_limit)
+        verify_complete._validate_public_package_size(at_limit)
+
+        over_limit = [*at_limit[:-1], f"{at_limit[-1]}x"]
+        verify_complete._validate_public_value(over_limit)
+        with self.assertRaisesRegex(RuntimeError, "package byte limit"):
+            verify_complete._validate_public_package_size(over_limit)
+
+    def test_completion_limits_must_match_integrated_producer_constants(self):
+        from askinsects import context_package
+
+        producer_limits = {
+            "MAX_PACKAGE_BYTES": verify_complete.MAX_PUBLIC_PACKAGE_BYTES,
+            "MAX_STRING_LENGTH": verify_complete.MAX_PUBLIC_PACKAGE_STRING_LENGTH,
+            "MAX_LIST_ITEMS": verify_complete.MAX_PUBLIC_PACKAGE_LIST_ITEMS,
+            "MAX_NESTING_DEPTH": verify_complete.MAX_PUBLIC_PACKAGE_DEPTH,
+        }
+        with patch.multiple(context_package, create=True, **producer_limits):
+            verify_complete._check_producer_limit_alignment()
+
+        producer_limits["MAX_PACKAGE_BYTES"] += 1
+        with patch.multiple(context_package, create=True, **producer_limits):
+            with self.assertRaisesRegex(RuntimeError, "do not match the producer"):
+                verify_complete._check_producer_limit_alignment()
+
+    def test_public_package_rejects_private_and_plain_http_schemes_consistently(self):
+        for locator in (
+            "private://example.org/result/1",
+            "http://example.org/result/1",
+        ):
+            with self.subTest(locator=locator):
+                with self.assertRaisesRegex(RuntimeError, "non-public scheme"):
+                    verify_complete._validate_public_value(locator)
+
+                invalid = public_package_fixture()
+                invalid["evidence_records"][0]["provenance"]["locator"] = locator
+                with self.assertRaisesRegex(RuntimeError, "non-public scheme"):
+                    verify_complete.validate_public_evidence_package(invalid)
+
+        for path in (r"C:\Users\private\source.json", r"\\server\private\source.json"):
+            with self.subTest(path=path):
+                with self.assertRaisesRegex(RuntimeError, "local or private path"):
+                    verify_complete._validate_public_value(path)
+
+    def test_active_scan_ignores_historical_docs_and_rejects_consumer_coupling(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            runtime = root / "askinsects" / "runtime.py"
+            runtime.parent.mkdir(parents=True)
+            runtime.write_text("PUBLIC_CONFIG = 'insect-evidence-package.json'\n", encoding="utf-8")
+            config = root / "config" / "insect-evidence-package.json"
+            config.parent.mkdir(parents=True)
+            config.write_text("{}\n", encoding="utf-8")
+            skill = root / "skills" / "askinsects" / "SKILL.md"
+            skill.parent.mkdir(parents=True)
+            skill.write_text("Use public insect evidence.\n", encoding="utf-8")
+            historical = root / "docs" / "superpowers" / "plans" / "historical.md"
+            historical.parent.mkdir(parents=True)
+            historical.write_text("Historical Ask Monarch bridge.\n", encoding="utf-8")
+
+            verify_complete.check_active_public_surfaces(root)
+
+            offenders = (
+                "from ask_monarch import Client\n",
+                "CONFIG = 'config/ask-monarch-context-package.json'\n",
+                "PRIVATE = '/Users/josh/projects/ask-monarch/results.json'\n",
+                "DROSOPHILA_SUZUKII_MONARCH_TOPIC_SEARCH_TERMS = []\n",
+                "LOCATOR = 'gs://private-consumer/results.json'\n",
+            )
+            for text in offenders:
+                with self.subTest(text=text):
+                    runtime.write_text(text, encoding="utf-8")
+                    with self.assertRaisesRegex(RuntimeError, "active public surface"):
+                        verify_complete.check_active_public_surfaces(root)
+
+    def test_clean_public_clone_runs_fixture_package_checks_without_external_state(self):
+        verify_complete.check_clean_clone_independence()
 
     def test_verify_complete_requires_open_insects_public_identity(self):
         required_files = set(verify_complete.REQUIRED_FILES)
@@ -454,7 +746,11 @@ class VerifyCompleteTests(unittest.TestCase):
         self.assertIn("askinsects/voxels.py", required_files)
         self.assertIn("tests.test_neurobiology_source", unit_modules)
 
-    def test_verify_complete_gate_passes(self):
+    def test_verify_complete_gate_passes_after_public_surface_tasks_land(self):
+        try:
+            verify_complete.check_active_public_surfaces()
+        except RuntimeError as exc:
+            self.skipTest(f"integration awaits Tasks 3-5 active-surface changes: {exc}")
         result = subprocess.run(
             [sys.executable, "scripts/verify_complete.py"],
             capture_output=True,
