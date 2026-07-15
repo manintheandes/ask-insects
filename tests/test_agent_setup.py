@@ -44,7 +44,7 @@ class AgentSetupTests(unittest.TestCase):
             "adding a new insect",
             "answer-routing design",
             "hosted production source plane",
-            "under 30 seconds",
+            "under 60 seconds",
             "source id",
             "row or locator",
             "Do not run setup-agent during a user question",

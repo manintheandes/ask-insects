@@ -101,6 +101,11 @@ def cli_error(error: str, *, lane: str, artifact_dir: Path) -> dict[str, object]
 
 def _agent_final_answer(payload: dict[str, object]) -> str:
     lines = [str(payload.get("answer") or "")]
+    source_gap = payload.get("source_gap")
+    if isinstance(source_gap, dict):
+        reason = str(source_gap.get("reason") or "").strip()
+        if reason and reason.casefold() not in lines[0].casefold():
+            lines.extend(("", f"Source gap: {reason}"))
     evidence = payload.get("evidence")
     provenance_rows: list[tuple[str, str]] = []
     if isinstance(evidence, list):
@@ -122,8 +127,6 @@ def _agent_final_answer(payload: dict[str, object]) -> str:
 
 
 def compact_agent_answer(payload: dict[str, object]) -> dict[str, object]:
-    if payload.get("answer_shape") not in {"insect_intelligence", "repellency_comparison"}:
-        return payload
     return {
         "ok": payload.get("ok"),
         "answer_shape": payload.get("answer_shape"),

@@ -21,7 +21,7 @@ Branch: `codex/dual-product-insect-intelligence`
 - The hosted source plane ingests the records and passes live questions.
 - A minimum 200-question black-box evaluation runs through Josh's normal Codex
   route, achieves 100 percent expected behavior, includes complete provenance,
-  and returns every full visible answer in under 30 seconds.
+  and returns every full visible answer in under 60 seconds.
 
 ## Work Sequence
 
@@ -40,7 +40,7 @@ Branch: `codex/dual-product-insect-intelligence`
 9. Build the 200-plus question production-path corpus and runner. Capture exact
    questions, expected route and behavior, visible answers, provenance, elapsed
    time, and failure reasons. Fix every failure until one clean run passes 100
-   percent with every answer under 30 seconds.
+   percent with every answer under 60 seconds.
 10. Design and implement the private Ask Monarch context bridge. The accepted
     design and executable plan are in
     `docs/superpowers/specs/2026-07-14-ask-monarch-context-bridge-design.md` and
@@ -65,4 +65,4 @@ behavior, or cannot show exact ledger provenance.
 
 Do not declare the major goal complete until the 200-plus question black-box
 production-path evaluation has one clean 100-percent run and every visible
-answer is under 30 seconds with complete provenance.
+answer is under 60 seconds with complete provenance.

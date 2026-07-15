@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from askinsects.answer import answer_question
 from askinsects.builder import build_fixture_index, build_source_index
@@ -620,6 +621,287 @@ class AnswerTests(unittest.TestCase):
             media_gap = answer_question("show mosquito videos from Brazil", artifact_dir=artifact_dir)
             self.assertFalse(media_gap["ok"])
             self.assertEqual(media_gap["source_gap"]["lane"], "media")
+
+    def test_aedes_reference_genome_uses_canonical_source_without_fts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="ncbi:assembly:GCF_002204515.2",
+                        lane="genome_assemblies",
+                        source="ncbi_datasets_genome",
+                        title="Aedes aegypti genome assembly AaegL5.0",
+                        text=(
+                            "NCBI Datasets genome assembly AaegL5.0 "
+                            "(GCF_002204515.2) for Aedes aegypti, assembly level "
+                            "Chromosome, BioProject PRJNA318737."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_002204515.2/",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="ncbi_datasets_genome",
+                            locator=(
+                                "/Users/researcher/.local/share/ask-insects/sources/ncbi/"
+                                "GCF_002204515.2/assembly_data_report.jsonl#line/1"
+                            ),
+                            retrieved_at="2026-05-23T00:00:00Z",
+                            license="NCBI public data metadata",
+                        ),
+                    )
+                ]
+            )
+
+            with patch.object(SourceIndex, "search", side_effect=AssertionError("broad FTS must not run")):
+                answer = answer_question(
+                    "What genome assembly does Ask Insects have for Aedes aegypti?",
+                    artifact_dir=artifact_dir,
+                )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "genomics")
+            self.assertEqual(answer["evidence"][0]["source"], "ncbi_datasets_genome")
+            self.assertIn("GCF_002204515.2", answer["answer"])
+            self.assertEqual(
+                answer["evidence"][0]["provenance"]["locator"],
+                "sources/ncbi/GCF_002204515.2/assembly_data_report.jsonl#line/1",
+            )
+            self.assertNotIn("/Users/", str(answer))
+
+    def test_swd_spatial_repellency_excludes_cross_species_discovery_candidates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+
+            def candidate(record_id, text, locator, source_url):
+                return EvidenceRecord(
+                    record_id=record_id,
+                    lane="behavior",
+                    source="drosophila_suzukii_extracted_facts",
+                    title="Drosophila suzukii extracted repellency assay fact",
+                    text=text,
+                    species="Drosophila suzukii",
+                    url=source_url,
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="drosophila_suzukii_extracted_facts",
+                        locator=f"records#{record_id}",
+                        retrieved_at="2026-07-10T23:19:12Z",
+                        license="OpenAlex metadata",
+                        source_url=source_url,
+                    ),
+                    payload={
+                        "confidence": "candidate",
+                        "fact_type": "repellency_assay",
+                        "evidence_text": text,
+                        "fields": {"exposure_mode": ["spatial repellent"]},
+                        "source_provenance": {"locator": locator},
+                    },
+                )
+
+            direct = candidate(
+                "swd:repellency:direct",
+                (
+                    "Evaluation of a Push-Pull Strategy for Spotted-Wing Drosophila "
+                    "Management reports that methyl benzoate dispensers have potential "
+                    "as a spatial repellent or oviposition deterrent in blueberry."
+                ),
+                "raw/swd/title_and_abstract_spotted_wing_drosophila.json#works/W4390704870",
+                "https://openalex.org/W4390704870",
+            )
+            cross_species = candidate(
+                "swd:repellency:aedes-contamination",
+                "Transfluthrin spatial repellency was tested against Aedes aegypti.",
+                "raw/swd/search_Drosophila_suzukii_repellent.json#works/W4386779544",
+                "https://openalex.org/W4386779544",
+            )
+            index.upsert_records([cross_species, direct])
+
+            with patch.object(SourceIndex, "search", side_effect=AssertionError("broad FTS must not run")):
+                answer = answer_question(
+                    "What public evidence does Ask Insects have for non-contact repellency in spotted wing drosophila?",
+                    artifact_dir=artifact_dir,
+                )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual([row["record_id"] for row in answer["evidence"]], [direct.record_id])
+            self.assertIn("candidate", answer["answer"].lower())
+            self.assertIn("not human-verified", answer["answer"].lower())
+            self.assertNotIn("Aedes aegypti", answer["answer"])
+
+    def test_aedes_reference_brain_uses_canonical_source_without_fts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="neuro:mosquitobrains:reference-brain-download",
+                        lane="neurobiology",
+                        source="aedes_neurobiology_sources",
+                        title="Aedes aegypti reference brain download",
+                        text=(
+                            "MosquitoBrains lists a downloadable Aedes reference brain for the "
+                            "LVPib12 female strain at 1 micrometer voxel resolution."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://www.mosquitobrains.org/downloads-and-links",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_neurobiology_sources",
+                            locator=(
+                                "https://www.mosquitobrains.org/downloads-and-links"
+                                "#Aedes-Reference-Brain"
+                            ),
+                            retrieved_at="2026-05-23T00:00:00Z",
+                            license="public web page metadata",
+                        ),
+                    )
+                ]
+            )
+
+            with patch.object(SourceIndex, "search", side_effect=AssertionError("broad FTS must not run")):
+                answer = answer_question(
+                    "What downloadable Aedes aegypti reference brain data does Ask Insects have?",
+                    artifact_dir=artifact_dir,
+                )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "neurobiology")
+            self.assertEqual(answer["evidence"][0]["record_id"], "neuro:mosquitobrains:reference-brain-download")
+            self.assertIn("LVPib12", answer["answer"])
+
+    def test_swd_row_level_behavior_uses_flight_dataset_without_fts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="swd_umn_flight_assay:dataset:11299_227164",
+                        lane="behavior",
+                        source="drosophila_suzukii_umn_flight_assay_rows",
+                        title="Drosophila suzukii UMN flight behavior assay dataset",
+                        text=(
+                            "University of Minnesota dataset for Drosophila suzukii flight behavior. "
+                            "It includes 401 row-level observations from a free-flight chamber and "
+                            "a tethered flight mill."
+                        ),
+                        species="Drosophila suzukii",
+                        url="https://hdl.handle.net/11299/227164",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_umn_flight_assay_rows",
+                            locator=(
+                                "/home/service/ask-insects/artifacts/mosquito-v1/raw/"
+                                "drosophila_suzukii_umn_flight_assay_rows/item.json#item"
+                            ),
+                            retrieved_at="2026-05-29T00:00:00Z",
+                            license="CC BY-NC 3.0 US",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="swd_umn_flight_assay:row:1",
+                        lane="behavior",
+                        source="drosophila_suzukii_umn_flight_assay_rows",
+                        title="Drosophila suzukii UMN flight assay row 1: free-flight chamber",
+                        text="UMN Drosophila suzukii flight behavior row 1: free-flight chamber.",
+                        species="Drosophila suzukii",
+                        url="https://hdl.handle.net/11299/227164",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="drosophila_suzukii_umn_flight_assay_rows",
+                            locator=(
+                                "/home/service/ask-insects/artifacts/mosquito-v1/raw/"
+                                "drosophila_suzukii_umn_flight_assay_rows/"
+                                "data_archival.csv#row/1"
+                            ),
+                            retrieved_at="2026-05-29T00:00:00Z",
+                            license="CC BY-NC 3.0 US",
+                        ),
+                    ),
+                ]
+            )
+
+            with patch.object(SourceIndex, "search", side_effect=AssertionError("broad FTS must not run")):
+                answer = answer_question(
+                    "Does Ask Insects contain raw, row-level behavior data for spotted wing drosophila?",
+                    artifact_dir=artifact_dir,
+                )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "behavior")
+            self.assertEqual(answer["evidence"][0]["record_id"], "swd_umn_flight_assay:dataset:11299_227164")
+            self.assertIn("401", answer["answer"])
+            self.assertTrue(
+                any(row["provenance"]["locator"].endswith("data_archival.csv#row/1") for row in answer["evidence"])
+            )
+            self.assertNotIn("/home/", str(answer))
+
+    def test_mosquito_repellent_formulation_summary_uses_source_without_fts(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+
+            def literature_record(record_id: str, title: str, text: str) -> EvidenceRecord:
+                return EvidenceRecord(
+                    record_id=record_id,
+                    lane="literature",
+                    source="mosquito_repellent_literature",
+                    title=title,
+                    text=text,
+                    species="Aedes aegypti",
+                    url="https://doi.org/10.1000/example",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="mosquito_repellent_literature",
+                        locator=f"raw/mosquito_repellent_literature/records.json#items/{record_id}",
+                        retrieved_at="2026-07-15T00:00:00Z",
+                        license="Crossref public metadata",
+                    ),
+                )
+
+            index.upsert_records(
+                [
+                    literature_record(
+                        "formulation:1",
+                        "Picaridin lotion formulation for mosquito repellency",
+                        "Recent public mosquito repellent literature metadata for a picaridin lotion.",
+                    ),
+                    literature_record(
+                        "formulation:2",
+                        "Citronella oil microcapsules on textile",
+                        "Recent public mosquito repellent literature metadata for encapsulated citronella oil.",
+                    ),
+                    literature_record(
+                        "generic:1",
+                        "Mosquito repellent review",
+                        "A generic review without a formulation description.",
+                    ),
+                ]
+            )
+
+            with patch.object(SourceIndex, "search", side_effect=AssertionError("broad FTS must not run")):
+                answer = answer_question(
+                    "Which mosquito-repellent formulations appear in Ask Insects' recent public literature index?",
+                    artifact_dir=artifact_dir,
+                )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "literature")
+            self.assertEqual(len(answer["evidence"]), 2)
+            self.assertIn("Picaridin lotion", answer["answer"])
+            self.assertIn("Citronella oil microcapsules", answer["answer"])
+            self.assertIn("metadata-indexed candidates", answer["answer"])
+            self.assertIn("not proof", answer["answer"])
 
     def test_expression_questions_prefer_expression_omics_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
