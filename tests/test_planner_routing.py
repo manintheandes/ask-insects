@@ -33,6 +33,19 @@ class PlannerRoutingTests(unittest.TestCase):
     def test_real_geo_question_still_expression(self):
         self.assertEqual(plan_question("show GEO RNA-seq expression for Aedes aegypti").answer_shape, "expression")
 
+    def test_broad_swd_repellency_wording_routes_to_behavior(self):
+        questions = (
+            "What public evidence does Ask Insects have for non-contact repellency in spotted wing drosophila?",
+            "What spatial repellency evidence exists for Drosophila suzukii?",
+            "Is there odor-mediated avoidance evidence for SWD?",
+            "What oviposition deterrence evidence exists for spotted wing drosophila?",
+        )
+        for question in questions:
+            with self.subTest(question=question):
+                plan = plan_question(question)
+                self.assertEqual(plan.answer_shape, "behavior")
+                self.assertEqual(plan.lanes[0], "behavior")
+
 
 if __name__ == "__main__":
     unittest.main()

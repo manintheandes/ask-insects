@@ -49,7 +49,9 @@ from .sources.harvard_dataverse_suitability import HARVARD_DATAVERSE_SUITABILITY
 from .sources.insect_intelligence_programs import INSECT_INTELLIGENCE_SOURCE_ID
 from .sources.mosquito_repellent_literature import MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID
 from .sources.mosquito_repellent_external_discovery import MOSQUITO_REPELLENT_EXTERNAL_DISCOVERY_SOURCE_ID
+from .sources.ncbi_genome import NCBI_GENOME_SOURCE_ID
 from .sources.ncbi_snp_variation import NCBI_SNP_VARIATION_SOURCE_ID
+from .sources.neurobiology import NEUROBIOLOGY_SOURCE_ID
 from .sources.observation_climate import OBSERVATION_CLIMATE_SOURCE_ID
 from .sources.occurrence_ecology import OCCURRENCE_ECOLOGY_SOURCE_ID
 from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_ID
@@ -523,6 +525,19 @@ def _wants_mosquito_repellent_literature(question: str) -> bool:
     return any(term in q for term in repellent_terms) and any(term in q for term in literature_terms)
 
 
+def _wants_mosquito_repellent_formulations(question: str) -> bool:
+    q = question.lower()
+    return _wants_mosquito_repellent_literature(question) and any(
+        term in q
+        for term in (
+            "formulation",
+            "formulations",
+            "delivery format",
+            "delivery formats",
+        )
+    )
+
+
 def _wants_mosquito_repellent_external_discovery(question: str) -> bool:
     q = question.lower()
     external_terms = (
@@ -746,7 +761,27 @@ def _dryad_table_source_id(question: str) -> str:
     return "dryad_aedes_behavior_videos"
 
 
+def _public_provenance_locator(locator: str, source_id: str) -> str:
+    path_text, separator, fragment = locator.partition("#")
+    path = Path(path_text)
+    if not path.is_absolute():
+        return locator
+    parts = path.parts
+    for anchor in ("artifacts", "raw", "sources", "config", "public"):
+        if anchor in parts:
+            relative = "/".join(parts[parts.index(anchor) :])
+            break
+    else:
+        relative = f"sources/{source_id}/{path.name}"
+    return relative + (f"#{fragment}" if separator else "")
+
+
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
+    provenance = record.provenance.to_dict()
+    provenance["locator"] = _public_provenance_locator(
+        str(provenance.get("locator") or ""),
+        record.provenance.source_id,
+    )
     return {
         "record_id": record.record_id,
         "lane": record.lane,
@@ -756,7 +791,7 @@ def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
         "species": record.species,
         "url": record.url,
         "media_url": record.media_url,
-        "provenance": record.provenance.to_dict(),
+        "provenance": provenance,
     }
 
 
@@ -789,9 +824,9 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
     if plan.answer_shape == "expression":
         return f"From the Ask Insects expression omics index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "genomics":
-        return f"From the local mosquito genomics index, {records[0].title}: {records[0].text}"
+        return f"From the Ask Insects genomics index, {records[0].title}: {records[0].text}"
     if plan.answer_shape == "neurobiology":
-        return f"From the local mosquito neurobiology index, {records[0].title}: {records[0].text}"
+        return f"From the Ask Insects neurobiology index, {records[0].title}: {records[0].text}"
     if plan.answer_shape in {"behavior", "traits", "vector_competence", "resistance", "ecology", "public_health", "crop_damage", "management", "biocontrol"}:
         label = plan.answer_shape.replace("_", " ")
         return f"From the Ask Insects {label} index, {records[0].title}: {records[0].text}"
@@ -801,6 +836,74 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
 def _is_spotted_wing_question(question: str) -> bool:
     q = question.lower()
     return any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"))
+
+
+def _wants_reference_genome(question: str) -> bool:
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "genome assembly",
+            "reference assembly",
+            "reference genome",
+            "assembly accession",
+            "which assembly",
+            "what assembly",
+        )
+    )
+
+
+def _wants_aedes_reference_brain(question: str) -> bool:
+    q = question.lower()
+    if "brain" not in q:
+        return False
+    return any(
+        term in q
+        for term in (
+            "reference brain",
+            "downloadable brain",
+            "brain download",
+            "brain data",
+            "brain atlas",
+            "segmentation files",
+        )
+    )
+
+
+def _wants_swd_row_level_flight_data(question: str) -> bool:
+    if not _is_spotted_wing_question(question):
+        return False
+    q = question.lower()
+    row_level_terms = (
+        "row-level",
+        "row level",
+        "individual row",
+        "individual observation",
+        "raw behavior data",
+        "raw behavioural data",
+    )
+    return any(term in q for term in row_level_terms) and any(
+        term in q for term in ("behavior", "behaviour", "flight", "assay", "observation", "data")
+    )
+
+
+def _wants_swd_repellency_evidence(question: str) -> bool:
+    if not _is_spotted_wing_question(question):
+        return False
+    q = question.lower()
+    return any(
+        term in q
+        for term in (
+            "repellent",
+            "repellency",
+            "spatial repell",
+            "non-contact",
+            "noncontact",
+            "odor-mediated avoidance",
+            "odour-mediated avoidance",
+            "oviposition deterr",
+        )
+    )
 
 
 def _search_queries(question: str) -> list[str]:
@@ -4216,6 +4319,22 @@ def _source_records(index: SourceIndex, source: str, lanes: list[str], *, limit:
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _records_by_ids(index: SourceIndex, record_ids: list[str]) -> list[EvidenceRecord]:
+    if not record_ids:
+        return []
+    placeholders = ",".join("?" for _ in record_ids)
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"SELECT * FROM records WHERE record_id IN ({placeholders})",
+            record_ids,
+        ).fetchall()
+    records_by_id = {
+        str(row["record_id"]): EvidenceRecord.from_row(dict(row))
+        for row in rows
+    }
+    return [records_by_id[record_id] for record_id in record_ids if record_id in records_by_id]
+
+
 def _source_records_with_payload(index: SourceIndex, source: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
     if not lanes:
         return []
@@ -4237,6 +4356,80 @@ def _source_records_with_payload(index: SourceIndex, source: str, lanes: list[st
         payload = json.loads(str(row["payload_json"] or "{}"))
         records.append(replace(EvidenceRecord.from_row(dict(row)), payload=payload))
     return records
+
+
+def _direct_swd_repellency_records(index: SourceIndex, *, limit: int) -> list[EvidenceRecord]:
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE r.source = ?
+              AND r.lane = 'behavior'
+              AND lower(coalesce(json_extract(
+                    p.payload_json,
+                    '$.source_provenance.locator'
+                  ), '')) LIKE '%title_and_abstract%'
+              AND (
+                lower(coalesce(json_extract(p.payload_json, '$.evidence_text'), r.text)) LIKE '%spatial repellen%'
+                OR lower(coalesce(json_extract(p.payload_json, '$.evidence_text'), r.text)) LIKE '%non-contact repell%'
+                OR lower(coalesce(json_extract(p.payload_json, '$.evidence_text'), r.text)) LIKE '%noncontact repell%'
+                OR lower(coalesce(json_extract(p.payload_json, '$.evidence_text'), r.text)) LIKE '%oviposition deterr%'
+                OR lower(coalesce(json_extract(p.payload_json, '$.evidence_text'), r.text)) LIKE '%odor-mediated avoidance%'
+                OR lower(coalesce(json_extract(p.payload_json, '$.evidence_text'), r.text)) LIKE '%odour-mediated avoidance%'
+              )
+            ORDER BY
+              CASE json_extract(p.payload_json, '$.fact_type')
+                WHEN 'repellency_assay' THEN 0
+                WHEN 'behavior' THEN 1
+                ELSE 2
+              END,
+              r.record_id
+            LIMIT ?
+            """,
+            (DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID, limit),
+        ).fetchall()
+    records: list[EvidenceRecord] = []
+    for row in rows:
+        payload = json.loads(str(row["payload_json"] or "{}"))
+        records.append(replace(EvidenceRecord.from_row(dict(row)), payload=payload))
+    return records
+
+
+def _mosquito_repellent_formulation_records(index: SourceIndex, *, limit: int) -> list[EvidenceRecord]:
+    with index.connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT *
+            FROM records
+            WHERE source = ?
+              AND lane = 'literature'
+              AND (
+                lower(title) LIKE '%formulation%'
+                OR lower(title) LIKE '%lotion%'
+                OR lower(title) LIKE '%cream%'
+                OR lower(title) LIKE '%spray%'
+                OR lower(title) LIKE '% gel%'
+                OR lower(title) LIKE '% oil%'
+                OR lower(title) LIKE '%textile%'
+                OR lower(title) LIKE '%fiber%'
+                OR lower(title) LIKE '%microcapsul%'
+                OR lower(title) LIKE '%encapsulat%'
+                OR lower(title) LIKE '%device%'
+                OR lower(title) LIKE '% mat%'
+                OR lower(title) LIKE '%emulsion%'
+                OR lower(title) LIKE '%polymer%'
+                OR lower(title) LIKE '%wick%'
+                OR lower(title) LIKE '%dispenser%'
+                OR lower(title) LIKE '%release%'
+              )
+            ORDER BY record_id
+            LIMIT ?
+            """,
+            (MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID, limit),
+        ).fetchall()
+    return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
 def _swd_ensembl_stable_history_gap_records(index: SourceIndex, *, limit: int) -> list[EvidenceRecord]:
@@ -5759,6 +5952,136 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     coverage_summary = _source_coverage_summary_answer(index, plan, limit=limit)
     if coverage_summary is not None:
         return coverage_summary
+
+    if (
+        plan.answer_shape == "genomics"
+        and requested_species
+        and requested_species.lower() == "aedes aegypti"
+        and _wants_reference_genome(plan.question)
+    ):
+        assembly_records = [
+            record
+            for record in _source_records(
+                index,
+                NCBI_GENOME_SOURCE_ID,
+                ["genome_assemblies"],
+                limit=limit,
+            )
+            if record.species and record.species.lower() == "aedes aegypti"
+        ]
+        if not assembly_records:
+            return source_gap(
+                plan,
+                "The canonical NCBI Datasets Aedes aegypti reference-assembly source has no queryable record.",
+            )
+        return {
+            "ok": True,
+            "answer_shape": plan.answer_shape,
+            "answer": _answer_text(plan, assembly_records),
+            "evidence": [record_to_evidence(record) for record in assembly_records],
+            "source_gap": None,
+        }
+
+    if (
+        plan.answer_shape == "neurobiology"
+        and requested_species
+        and requested_species.lower() == "aedes aegypti"
+        and _wants_aedes_reference_brain(plan.question)
+    ):
+        brain_records = _records_by_ids(
+            index,
+            ["neuro:mosquitobrains:reference-brain-download"],
+        )
+        if not brain_records:
+            return source_gap(
+                plan,
+                "The canonical public MosquitoBrains Aedes aegypti reference-brain record is not queryable.",
+            )
+        return {
+            "ok": True,
+            "answer_shape": plan.answer_shape,
+            "answer": _answer_text(plan, brain_records),
+            "evidence": [record_to_evidence(record) for record in brain_records],
+            "source_gap": None,
+        }
+
+    if (
+        plan.answer_shape == "behavior"
+        and requested_species
+        and requested_species.lower() == "drosophila suzukii"
+        and _wants_swd_repellency_evidence(plan.question)
+    ):
+        repellency_records = _direct_swd_repellency_records(index, limit=limit)
+        if not repellency_records:
+            return source_gap(
+                plan,
+                "No direct-focal-species SWD non-contact, spatial-repellency, or oviposition-deterrence record passed the public evidence filter.",
+            )
+        lead = repellency_records[0]
+        return {
+            "ok": True,
+            "answer_shape": plan.answer_shape,
+            "answer": (
+                f"Ask Insects found {len(repellency_records)} direct-focal-species candidate public "
+                f"record(s) relevant to SWD non-contact or spatial repellency. {lead.text} "
+                "This is candidate machine-extracted evidence, not human-verified proof of mechanism, "
+                "commercial efficacy, product readiness, or superiority over the literature."
+            ),
+            "evidence": [record_to_evidence(record) for record in repellency_records],
+            "source_gap": None,
+        }
+
+    if plan.answer_shape == "literature" and _wants_mosquito_repellent_formulations(plan.question):
+        formulation_records = _mosquito_repellent_formulation_records(index, limit=limit)
+        if not formulation_records:
+            return source_gap(
+                plan,
+                "The public mosquito repellent literature lane has no title-level formulation or delivery-format records.",
+            )
+        titles = "; ".join(record.title for record in formulation_records)
+        return {
+            "ok": True,
+            "answer_shape": plan.answer_shape,
+            "answer": (
+                "Ask Insects' recent public mosquito repellent literature index contains "
+                f"metadata-indexed candidates describing formulations or delivery formats such as: {titles}. "
+                "These metadata candidates show what appears in the index; they are not proof that each "
+                "formulation is effective, safe, directly comparable, or commercially ready."
+            ),
+            "evidence": [record_to_evidence(record) for record in formulation_records],
+            "source_gap": None,
+        }
+
+    if (
+        plan.answer_shape == "behavior"
+        and requested_species
+        and requested_species.lower() == "drosophila suzukii"
+        and _wants_swd_row_level_flight_data(plan.question)
+    ):
+        flight_records = _records_by_ids(
+            index,
+            [
+                "swd_umn_flight_assay:dataset:11299_227164",
+                "swd_umn_flight_assay:row:1",
+            ],
+        )
+        if len(flight_records) < 2:
+            return source_gap(
+                plan,
+                "The public UMN SWD flight-assay dataset and its first row-level observation are not both queryable.",
+            )
+        return {
+            "ok": True,
+            "answer_shape": plan.answer_shape,
+            "answer": (
+                "Yes. Ask Insects has the public University of Minnesota Drosophila suzukii "
+                "flight-assay CSV parsed into 401 row-level observations from a free-flight chamber "
+                "and a tethered flight mill. This is assay-table data, not raw LabVIEW traces, "
+                "tracking coordinates, videos, or human-validated biological interpretation."
+            ),
+            "evidence": [record_to_evidence(record) for record in flight_records],
+            "source_gap": None,
+        }
 
     if (
         plan.answer_shape == "expression"

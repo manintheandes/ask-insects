@@ -77,6 +77,8 @@ def _is_insect_intelligence_question(question: str) -> bool:
             "inferred evidence",
             "filled silently",
             "from another species",
+            "covered well enough",
+            "enough coverage",
         )
     )
     if has_focal_subject and status_or_calibration:
@@ -88,6 +90,8 @@ def _is_insect_intelligence_question(question: str) -> bool:
             "evidence",
             "status",
             "missing",
+            "gap",
+            "gaps",
             "works",
             "effective",
             "efficacy",
@@ -218,6 +222,37 @@ def plan_question(question: str) -> QueryPlan:
     )
     if any(term in q for term in source_coverage_terms):
         return QueryPlan(question, "evidence", ("source_coverage",), question)
+    broad_repellency_terms = (
+        "repellency",
+        "spatial repellent",
+        "spatial repellency",
+        "non-contact repellency",
+        "noncontact repellency",
+        "odor-mediated avoidance",
+        "odour-mediated avoidance",
+        "oviposition deterrence",
+        "oviposition deterrent",
+    )
+    explicit_literature_terms = (
+        "paper",
+        "papers",
+        "literature",
+        "study",
+        "studies",
+        "article",
+        "articles",
+        "review",
+        "reviews",
+    )
+    if any(term in q for term in broad_repellency_terms) and not any(
+        term in q for term in explicit_literature_terms
+    ):
+        return QueryPlan(
+            question,
+            "behavior",
+            ("behavior", "management", "crop_damage", "neurobiology", "literature", "taxonomy"),
+            question,
+        )
     if is_spotted_wing and any(
         term in q
         for term in (

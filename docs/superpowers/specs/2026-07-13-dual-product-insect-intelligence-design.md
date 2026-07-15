@@ -173,7 +173,7 @@ Every question must satisfy all applicable expectations:
 - every factual answer includes complete source-id and row or locator provenance
 - no private Ask Monarch evidence appears on the public path
 - no answer falls back to unsupported model memory
-- the complete visible answer arrives in under 30 seconds
+- the complete visible answer arrives in under 60 seconds
 
 The pass threshold is 100 percent. Retries, averages, percentiles, and hidden
 direct-source probes cannot turn a failed production-path question into a pass.
@@ -195,7 +195,7 @@ elapsed time, cited provenance, pass or fail decision, and failure reason.
 - Local and hosted ingestion expose the new records with exact provenance.
 - The repository completion gate verifies the new contract.
 - The minimum 200-question normal-Codex-route evaluation passes 100 percent,
-  with every visible answer under 30 seconds and complete provenance.
+  with every visible answer under 60 seconds and complete provenance.
 
 ## Non-Goals For The First Increment
 

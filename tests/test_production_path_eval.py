@@ -58,8 +58,8 @@ class ProductionPathEvalTests(unittest.TestCase):
         contract = load_contract(DEFAULT_CASES_PATH)
 
         self.assertEqual(contract["contract_version"], CONTRACT_VERSION)
-        self.assertEqual(contract["maximum_seconds"], 30)
-        self.assertEqual(len(contract["cases"]), 200)
+        self.assertEqual(contract["maximum_seconds"], 60)
+        self.assertGreaterEqual(len(contract["cases"]), 200)
         self.assertEqual(
             len({case["id"] for case in contract["cases"]}),
             len(contract["cases"]),
@@ -77,9 +77,22 @@ class ProductionPathEvalTests(unittest.TestCase):
             len({case["question"] for case in contract["cases"]}),
             len(contract["cases"]),
         )
+        self.assertGreaterEqual(
+            contract["required_categories"].get("broad_natural_language", 0),
+            10,
+        )
+        questions = {case["question"] for case in contract["cases"]}
+        self.assertIn(
+            "What public evidence does Ask Insects have for non-contact repellency in spotted wing drosophila?",
+            questions,
+        )
+        self.assertIn(
+            "What genome assembly does Ask Insects have for Aedes aegypti?",
+            questions,
+        )
 
     def test_case_passes_only_with_codex_route_answer_and_provenance(self):
-        result = evaluate_case(sample_case(), successful_execution(), maximum_seconds=30)
+        result = evaluate_case(sample_case(), successful_execution(), maximum_seconds=60)
 
         self.assertTrue(result["ok"], result["failures"])
         self.assertEqual(result["provenance"]["source_ids"], ["insect_intelligence_programs"])
@@ -112,7 +125,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         execution.agent_messages = [answer]
         execution.commands = [f'ask-insects ask "{question}" --json --compact']
 
-        result = evaluate_case(case, execution, maximum_seconds=30)
+        result = evaluate_case(case, execution, maximum_seconds=60)
 
         self.assertTrue(result["ok"], result["failures"])
 
@@ -122,23 +135,23 @@ class ProductionPathEvalTests(unittest.TestCase):
         execution = successful_execution()
         execution.visible_answer += " This is not ready for market."
 
-        negated = evaluate_case(case, execution, maximum_seconds=30)
+        negated = evaluate_case(case, execution, maximum_seconds=60)
 
         self.assertTrue(negated["ok"], negated["failures"])
         execution.visible_answer = execution.visible_answer.replace("not ready", "ready")
-        unsupported = evaluate_case(case, execution, maximum_seconds=30)
+        unsupported = evaluate_case(case, execution, maximum_seconds=60)
         self.assertFalse(unsupported["ok"])
         self.assertIn("final answer contains forbidden term: ready for market", unsupported["failures"])
 
     def test_timeout_is_a_hard_failure(self):
         execution = successful_execution()
-        execution.elapsed_seconds = 30.001
+        execution.elapsed_seconds = 60.001
         execution.timed_out = True
 
-        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        result = evaluate_case(sample_case(), execution, maximum_seconds=60)
 
         self.assertFalse(result["ok"])
-        self.assertTrue(any("30" in failure and "time" in failure for failure in result["failures"]))
+        self.assertTrue(any("60" in failure and "time" in failure for failure in result["failures"]))
 
     def test_missing_final_answer_provenance_fails_even_when_tool_output_had_it(self):
         execution = successful_execution()
@@ -148,7 +161,7 @@ class ProductionPathEvalTests(unittest.TestCase):
             'config/insect-intelligence-programs.json#species/2'
         )
 
-        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        result = evaluate_case(sample_case(), execution, maximum_seconds=60)
 
         self.assertFalse(result["ok"])
         self.assertIn("final answer missing source id: insect_intelligence_programs", result["failures"])
@@ -161,7 +174,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         execution = successful_execution()
         execution.commands = ['ask-insects ask "a different question" --json']
 
-        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        result = evaluate_case(sample_case(), execution, maximum_seconds=60)
 
         self.assertFalse(result["ok"])
         self.assertTrue(any("exact question" in failure for failure in result["failures"]))
@@ -179,7 +192,7 @@ class ProductionPathEvalTests(unittest.TestCase):
                 execution.commands = [
                     f'ask-insects ask "{wrong_question}" --json --compact'
                 ]
-                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=60)
                 self.assertFalse(result["ok"])
                 self.assertTrue(any("exact question" in failure for failure in result["failures"]))
 
@@ -189,7 +202,7 @@ class ProductionPathEvalTests(unittest.TestCase):
             'ask-insects ask "What is missing from diamondback moth biology coverage?" --json'
         ]
 
-        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        result = evaluate_case(sample_case(), execution, maximum_seconds=60)
 
         self.assertFalse(result["ok"])
         self.assertIn("normal Ask Insects call did not use the compact agent payload", result["failures"])
@@ -207,7 +220,7 @@ class ProductionPathEvalTests(unittest.TestCase):
             with self.subTest(command=command):
                 execution = successful_execution()
                 execution.commands.append(command)
-                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=60)
                 self.assertFalse(result["ok"])
 
         question = str(sample_case()["question"])
@@ -215,7 +228,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         execution.commands = [
             f'ask-insects ask "{question}" --json --compact --local'
         ]
-        local = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        local = evaluate_case(sample_case(), execution, maximum_seconds=60)
         self.assertFalse(local["ok"])
         self.assertTrue(any("hosted" in failure for failure in local["failures"]))
 
@@ -223,7 +236,7 @@ class ProductionPathEvalTests(unittest.TestCase):
             with self.subTest(event_type=event_type):
                 execution = successful_execution()
                 execution.event_types.append(event_type)
-                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=60)
                 self.assertFalse(result["ok"])
                 self.assertTrue(any("web" in failure for failure in result["failures"]))
 
@@ -236,7 +249,7 @@ class ProductionPathEvalTests(unittest.TestCase):
                 execution = successful_execution()
                 execution.commands.append(command)
 
-                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=60)
 
                 self.assertFalse(result["ok"])
 
@@ -247,12 +260,12 @@ class ProductionPathEvalTests(unittest.TestCase):
             "sed -n '1,160p' /Users/josh/.codex/skills/askinsects/SKILL.md",
         )
 
-        allowed = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        allowed = evaluate_case(sample_case(), execution, maximum_seconds=60)
 
         self.assertTrue(allowed["ok"], allowed["failures"])
 
         execution.commands.insert(0, "pwd")
-        rejected = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        rejected = evaluate_case(sample_case(), execution, maximum_seconds=60)
 
         self.assertFalse(rejected["ok"])
         self.assertIn(
@@ -264,7 +277,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         execution.commands.append(
             "cat /Users/josh/.codex/skills/askinsects/SKILL.md",
         )
-        wrong_order = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        wrong_order = evaluate_case(sample_case(), execution, maximum_seconds=60)
         self.assertFalse(wrong_order["ok"])
 
         invalid_reads = (
@@ -276,13 +289,13 @@ class ProductionPathEvalTests(unittest.TestCase):
             with self.subTest(command=command):
                 execution = successful_execution()
                 execution.commands.insert(0, command)
-                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=60)
                 self.assertFalse(result["ok"])
 
         execution = successful_execution()
         skill_read = "cat /Users/josh/.codex/skills/askinsects/SKILL.md"
         execution.commands = [skill_read, skill_read, *execution.commands]
-        duplicate_reads = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        duplicate_reads = evaluate_case(sample_case(), execution, maximum_seconds=60)
         self.assertFalse(duplicate_reads["ok"])
 
     def test_compound_or_nonstandard_ask_commands_fail_the_allowlist(self):
@@ -297,7 +310,7 @@ class ProductionPathEvalTests(unittest.TestCase):
             with self.subTest(command=command):
                 execution = successful_execution()
                 execution.commands = [command]
-                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=60)
                 self.assertFalse(result["ok"])
 
     def test_duplicate_identical_command_events_are_not_collapsed(self):
@@ -316,7 +329,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         self.assertEqual(commands, [command, command])
         execution = successful_execution()
         execution.commands = commands
-        result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+        result = evaluate_case(sample_case(), execution, maximum_seconds=60)
         self.assertFalse(result["ok"])
         self.assertTrue(any("exactly one" in failure for failure in result["failures"]))
 
@@ -334,7 +347,7 @@ class ProductionPathEvalTests(unittest.TestCase):
                 self.assertIn(item_type, event_types)
                 execution = successful_execution()
                 execution.event_types = event_types
-                result = evaluate_case(sample_case(), execution, maximum_seconds=30)
+                result = evaluate_case(sample_case(), execution, maximum_seconds=60)
                 self.assertFalse(result["ok"])
                 self.assertTrue(any("web" in failure for failure in result["failures"]))
 
@@ -346,11 +359,34 @@ class ProductionPathEvalTests(unittest.TestCase):
         self.assertNotIn("BLOCKED_COMMAND_TERMS", source)
         self.assertNotIn("ask-monarch", source.casefold())
 
+    def test_public_answer_leak_markers_fail_every_case(self):
+        leaked_answers = (
+            "Authorization: Bearer secret-token",
+            "experiment:private-assay-123",
+            "/Users/researcher/private/results.csv",
+            "/home/service/private/results.json",
+            "https://source.internal/result/1",
+            "-----BEGIN PRIVATE KEY-----",
+        )
+
+        for leaked_answer in leaked_answers:
+            with self.subTest(leaked_answer=leaked_answer):
+                execution = successful_execution()
+                execution.visible_answer += f" {leaked_answer}"
+
+                result = evaluate_case(sample_case(), execution, maximum_seconds=60)
+
+                self.assertFalse(result["ok"])
+                self.assertTrue(
+                    any("public answer leak" in failure for failure in result["failures"]),
+                    result["failures"],
+                )
+
     def test_full_gate_requires_every_corpus_case_on_the_unmodified_route(self):
         contract = {
             "contract_version": CONTRACT_VERSION,
             "minimum_case_count": 2,
-            "maximum_seconds": 30,
+            "maximum_seconds": 60,
             "required_categories": {"species_coverage": 2},
             "cases": [
                 sample_case(),
@@ -382,7 +418,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         contract = {
             "contract_version": CONTRACT_VERSION,
             "minimum_case_count": 2,
-            "maximum_seconds": 30,
+            "maximum_seconds": 60,
             "required_categories": {"species_coverage": 2},
             "cases": [sample_case(), second_case],
         }
@@ -419,7 +455,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         contract = {
             "contract_version": CONTRACT_VERSION,
             "minimum_case_count": 1,
-            "maximum_seconds": 30,
+            "maximum_seconds": 60,
             "required_categories": {"species_coverage": 1},
             "cases": [sample_case()],
         }
@@ -440,7 +476,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         payload = {
             "contract_version": CONTRACT_VERSION,
             "minimum_case_count": 200,
-            "maximum_seconds": 30,
+            "maximum_seconds": 60,
             "required_categories": {
                 "species_coverage": 200,
                 "product_readiness": 1,

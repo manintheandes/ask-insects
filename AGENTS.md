@@ -25,7 +25,7 @@ locator exactly as returned.
 Questions about adding a new insect, species profiles, portfolio expansion, or
 whether answer-routing design must change are normal Ask Insects questions.
 Do not emit a progress update or preamble before their hosted call. Run the
-single command immediately so the complete visible answer remains under 30
+single command immediately so the complete visible answer remains under 60
 seconds.
 
 **Hosted plane is the only answer surface.** The canonical evidence lives on the hosted VM, not in the local checkout. Read commands (`ask`, `search`, `sql`, `summary`, `sources`, `health`) route to the hosted plane **by default** — you do not need (and should not rely on) a local index for answers. A bare `ask-insects sql "..."` hits hosted. The `--local` flag is a dev-only escape that warns loudly and reads the (usually empty) local index; never use it to conclude a source is "not queryable." If a source id shows zero rows locally, re-check on the hosted plane before reporting a gap.

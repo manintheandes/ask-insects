@@ -377,6 +377,60 @@ class HostedCliTests(unittest.TestCase):
         )
         self.assertNotIn("large duplicate detail", payload["final_answer"])
 
+    def test_compact_hosted_ask_returns_final_answer_for_genomics_and_gaps(self):
+        payloads = (
+            {
+                "ok": True,
+                "answer_shape": "genomics",
+                "answer": "AaegL5.0 is the indexed Aedes aegypti reference assembly.",
+                "evidence": [
+                    {
+                        "source": "ncbi_datasets_genome",
+                        "provenance": {
+                            "source_id": "ncbi_datasets_genome",
+                            "locator": "raw/ncbi/GCF_002204515.2/assembly_data_report.jsonl#line/1",
+                        },
+                    }
+                ],
+                "source_gap": None,
+            },
+            {
+                "ok": False,
+                "answer_shape": "behavior",
+                "answer": "I do not see enough indexed Ask Insects evidence for this question yet.",
+                "evidence": [],
+                "source_gap": {
+                    "lane": "behavior",
+                    "reason": "No direct focal-species evidence is queryable.",
+                },
+            },
+        )
+
+        for hosted_payload in payloads:
+            with self.subTest(answer_shape=hosted_payload["answer_shape"], ok=hosted_payload["ok"]):
+                with patch("askinsects.cli.load_config") as load_config, patch(
+                    "askinsects.cli.hosted_request", return_value=hosted_payload
+                ):
+                    load_config.return_value = SimpleNamespace(
+                        url="https://ask-insects.example", token="secret"
+                    )
+                    code, output = self.run_cli(
+                        "ask",
+                        "What genome assembly does Ask Insects have for Aedes aegypti?",
+                        "--json",
+                        "--compact",
+                    )
+
+                self.assertEqual(code, 0 if hosted_payload["ok"] else 2)
+                compact = json.loads(output)
+                self.assertEqual(set(compact), {"ok", "answer_shape", "final_answer"})
+                self.assertIn(hosted_payload["answer"], compact["final_answer"])
+                if hosted_payload["ok"]:
+                    self.assertIn("ncbi_datasets_genome", compact["final_answer"])
+                    self.assertIn("assembly_data_report.jsonl#line/1", compact["final_answer"])
+                else:
+                    self.assertIn("No direct focal-species evidence is queryable", compact["final_answer"])
+
     def test_hosted_insect_intelligence_ingest_sends_program_ledger(self):
         calls = []
 

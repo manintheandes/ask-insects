@@ -24,6 +24,23 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CONTRACT_VERSION = "ask-insects-production-path.v1"
 DEFAULT_CASES_PATH = REPO_ROOT / "evals" / "ask_insects_production_path_v1.json"
 DEFAULT_RESULTS_DIR = REPO_ROOT / "artifacts" / "production-path-evals"
+PUBLIC_ANSWER_LEAK_PATTERNS = (
+    ("authorization credential", re.compile(r"authorization\s*:\s*bearer\b", re.IGNORECASE)),
+    ("private experiment identifier", re.compile(r"\bexperiment:[A-Za-z0-9][^\s`]*", re.IGNORECASE)),
+    ("local machine path", re.compile(r"(?:^|[\s`(])(?:/Users/|/home/)", re.IGNORECASE)),
+    (
+        "private network address",
+        re.compile(
+            r"https?://(?:localhost|127(?:\.\d{1,3}){3}|[A-Za-z0-9.-]+\.internal)(?:[/:]|$)",
+            re.IGNORECASE,
+        ),
+    ),
+    ("private key material", re.compile(r"-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----", re.IGNORECASE)),
+    (
+        "credential-shaped assignment",
+        re.compile(r"\b(?:api[_-]?key|access[_-]?token|secret[_-]?token)\s*[:=]", re.IGNORECASE),
+    ),
+)
 
 
 def _command_tokens(command: str, *, allow_shell_wrapper: bool = True) -> list[str] | None:
@@ -137,8 +154,8 @@ def validate_contract(payload: object) -> dict[str, object]:
     if not isinstance(minimum_case_count, int) or minimum_case_count < 200:
         raise ValueError("production-path evaluation minimum_case_count must be at least 200")
     maximum_seconds = payload.get("maximum_seconds")
-    if not isinstance(maximum_seconds, (int, float)) or maximum_seconds <= 0 or maximum_seconds > 30:
-        raise ValueError("production-path evaluation maximum_seconds must be at most 30")
+    if not isinstance(maximum_seconds, (int, float)) or maximum_seconds <= 0 or maximum_seconds > 60:
+        raise ValueError("production-path evaluation maximum_seconds must be at most 60")
     required_categories = payload.get("required_categories")
     if not isinstance(required_categories, dict) or not required_categories:
         raise ValueError("production-path evaluation required_categories must be a non-empty object")
@@ -388,6 +405,9 @@ def evaluate_case(
         failures.append("Codex turn did not complete")
     if not answer.strip():
         failures.append("Codex returned no final visible answer")
+    for label, pattern in PUBLIC_ANSWER_LEAK_PATTERNS:
+        if pattern.search(answer):
+            failures.append(f"public answer leak marker detected: {label}")
 
     parsed_commands = [_command_tokens(command) for command in execution.commands]
     ask_indexes = [

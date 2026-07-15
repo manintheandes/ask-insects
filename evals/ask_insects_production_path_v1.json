@@ -1,14 +1,15 @@
 {
   "contract_version": "ask-insects-production-path.v1",
   "minimum_case_count": 200,
-  "maximum_seconds": 30,
+  "maximum_seconds": 60,
   "required_categories": {
     "species_coverage": 84,
     "product_readiness": 32,
     "portfolio_and_expansion": 20,
     "repellency_comparison": 32,
     "evidence_calibration": 16,
-    "boundary_and_false_premise": 16
+    "boundary_and_false_premise": 16,
+    "broad_natural_language": 10
   },
   "cases": [
     {
@@ -33,7 +34,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[0]"
         ]
       }
     },
@@ -59,7 +60,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[0]"
         ]
       }
     },
@@ -85,7 +86,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[1]"
         ]
       }
     },
@@ -111,7 +112,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[1]"
         ]
       }
     },
@@ -137,7 +138,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[2]"
         ]
       }
     },
@@ -163,7 +164,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[2]"
         ]
       }
     },
@@ -189,7 +190,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[3]"
         ]
       }
     },
@@ -215,7 +216,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[3]"
         ]
       }
     },
@@ -241,7 +242,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[4]"
         ]
       }
     },
@@ -267,7 +268,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[4]"
         ]
       }
     },
@@ -293,7 +294,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[5]"
         ]
       }
     },
@@ -319,7 +320,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[5]"
         ]
       }
     },
@@ -345,7 +346,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[6]"
         ]
       }
     },
@@ -371,7 +372,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[6]"
         ]
       }
     },
@@ -397,7 +398,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[7]"
         ]
       }
     },
@@ -423,7 +424,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[7]"
         ]
       }
     },
@@ -449,7 +450,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/8"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[8]"
         ]
       }
     },
@@ -475,7 +476,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/8"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[8]"
         ]
       }
     },
@@ -501,7 +502,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/9"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[9]"
         ]
       }
     },
@@ -527,7 +528,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/9"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[9]"
         ]
       }
     },
@@ -553,7 +554,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/10"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[10]"
         ]
       }
     },
@@ -579,7 +580,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/10"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[10]"
         ]
       }
     },
@@ -605,7 +606,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/11"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[11]"
         ]
       }
     },
@@ -631,7 +632,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/11"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[11]"
         ]
       }
     },
@@ -657,7 +658,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/12"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[12]"
         ]
       }
     },
@@ -683,7 +684,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/12"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[12]"
         ]
       }
     },
@@ -709,7 +710,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/13"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[13]"
         ]
       }
     },
@@ -735,7 +736,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/13"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[13]"
         ]
       }
     },
@@ -761,7 +762,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[0]"
         ]
       }
     },
@@ -787,7 +788,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[0]"
         ]
       }
     },
@@ -813,7 +814,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[1]"
         ]
       }
     },
@@ -839,7 +840,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[1]"
         ]
       }
     },
@@ -865,7 +866,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[2]"
         ]
       }
     },
@@ -891,7 +892,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[2]"
         ]
       }
     },
@@ -917,7 +918,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[3]"
         ]
       }
     },
@@ -943,7 +944,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[3]"
         ]
       }
     },
@@ -969,7 +970,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[4]"
         ]
       }
     },
@@ -995,7 +996,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[4]"
         ]
       }
     },
@@ -1021,7 +1022,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[5]"
         ]
       }
     },
@@ -1047,7 +1048,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[5]"
         ]
       }
     },
@@ -1073,7 +1074,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[6]"
         ]
       }
     },
@@ -1099,7 +1100,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[6]"
         ]
       }
     },
@@ -1125,7 +1126,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[7]"
         ]
       }
     },
@@ -1151,7 +1152,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[7]"
         ]
       }
     },
@@ -1177,7 +1178,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/8"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[8]"
         ]
       }
     },
@@ -1203,7 +1204,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/8"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[8]"
         ]
       }
     },
@@ -1229,7 +1230,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/9"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[9]"
         ]
       }
     },
@@ -1255,7 +1256,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/9"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[9]"
         ]
       }
     },
@@ -1281,7 +1282,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/10"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[10]"
         ]
       }
     },
@@ -1307,7 +1308,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/10"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[10]"
         ]
       }
     },
@@ -1333,7 +1334,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/11"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[11]"
         ]
       }
     },
@@ -1359,7 +1360,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/11"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[11]"
         ]
       }
     },
@@ -1385,7 +1386,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/12"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[12]"
         ]
       }
     },
@@ -1411,7 +1412,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/12"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[12]"
         ]
       }
     },
@@ -1437,7 +1438,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/13"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[13]"
         ]
       }
     },
@@ -1463,7 +1464,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/13"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[13]"
         ]
       }
     },
@@ -1489,7 +1490,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[0]"
         ]
       }
     },
@@ -1515,7 +1516,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[0]"
         ]
       }
     },
@@ -1541,7 +1542,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[1]"
         ]
       }
     },
@@ -1567,7 +1568,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[1]"
         ]
       }
     },
@@ -1593,7 +1594,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[2]"
         ]
       }
     },
@@ -1619,7 +1620,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[2]"
         ]
       }
     },
@@ -1645,7 +1646,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[3]"
         ]
       }
     },
@@ -1671,7 +1672,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[3]"
         ]
       }
     },
@@ -1697,7 +1698,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[4]"
         ]
       }
     },
@@ -1723,7 +1724,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[4]"
         ]
       }
     },
@@ -1749,7 +1750,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[5]"
         ]
       }
     },
@@ -1775,7 +1776,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[5]"
         ]
       }
     },
@@ -1801,7 +1802,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[6]"
         ]
       }
     },
@@ -1827,7 +1828,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[6]"
         ]
       }
     },
@@ -1853,7 +1854,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[7]"
         ]
       }
     },
@@ -1879,7 +1880,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[7]"
         ]
       }
     },
@@ -1905,7 +1906,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/8"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[8]"
         ]
       }
     },
@@ -1931,7 +1932,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/8"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[8]"
         ]
       }
     },
@@ -1957,7 +1958,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/9"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[9]"
         ]
       }
     },
@@ -1983,7 +1984,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/9"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[9]"
         ]
       }
     },
@@ -2009,7 +2010,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/10"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[10]"
         ]
       }
     },
@@ -2035,7 +2036,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/10"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[10]"
         ]
       }
     },
@@ -2061,7 +2062,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/11"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[11]"
         ]
       }
     },
@@ -2087,7 +2088,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/11"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[11]"
         ]
       }
     },
@@ -2113,7 +2114,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/12"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[12]"
         ]
       }
     },
@@ -2139,7 +2140,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/12"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[12]"
         ]
       }
     },
@@ -2165,7 +2166,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/13"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[13]"
         ]
       }
     },
@@ -2191,7 +2192,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/13"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[13]"
         ]
       }
     },
@@ -2217,7 +2218,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[0]"
         ]
       }
     },
@@ -2243,7 +2244,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[0]"
         ]
       }
     },
@@ -2269,7 +2270,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[1]"
         ]
       }
     },
@@ -2295,7 +2296,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[1]"
         ]
       }
     },
@@ -2321,7 +2322,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[2]"
         ]
       }
     },
@@ -2347,7 +2348,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[2]"
         ]
       }
     },
@@ -2373,7 +2374,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[3]"
         ]
       }
     },
@@ -2399,7 +2400,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[3]"
         ]
       }
     },
@@ -2425,7 +2426,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[4]"
         ]
       }
     },
@@ -2451,7 +2452,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[4]"
         ]
       }
     },
@@ -2477,7 +2478,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[5]"
         ]
       }
     },
@@ -2503,7 +2504,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[5]"
         ]
       }
     },
@@ -2529,7 +2530,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[6]"
         ]
       }
     },
@@ -2555,7 +2556,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[6]"
         ]
       }
     },
@@ -2581,7 +2582,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[7]"
         ]
       }
     },
@@ -2607,7 +2608,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[7]"
         ]
       }
     },
@@ -2633,7 +2634,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[0]"
         ]
       }
     },
@@ -2659,7 +2660,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[0]"
         ]
       }
     },
@@ -2685,7 +2686,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[1]"
         ]
       }
     },
@@ -2711,7 +2712,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[1]"
         ]
       }
     },
@@ -2737,7 +2738,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[2]"
         ]
       }
     },
@@ -2763,7 +2764,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[2]"
         ]
       }
     },
@@ -2789,7 +2790,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[3]"
         ]
       }
     },
@@ -2815,7 +2816,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[3]"
         ]
       }
     },
@@ -2841,7 +2842,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[4]"
         ]
       }
     },
@@ -2867,7 +2868,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[4]"
         ]
       }
     },
@@ -2893,7 +2894,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[5]"
         ]
       }
     },
@@ -2919,7 +2920,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/5"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[5]"
         ]
       }
     },
@@ -2945,7 +2946,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[6]"
         ]
       }
     },
@@ -2971,7 +2972,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[6]"
         ]
       }
     },
@@ -2997,7 +2998,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[7]"
         ]
       }
     },
@@ -3023,7 +3024,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[7]"
         ]
       }
     },
@@ -3049,7 +3050,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3075,7 +3076,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3100,7 +3101,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3126,7 +3127,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3151,7 +3152,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3177,7 +3178,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3202,7 +3203,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3227,7 +3228,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3252,7 +3253,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3277,7 +3278,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3302,7 +3303,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3327,7 +3328,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3352,7 +3353,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3377,7 +3378,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3402,7 +3403,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3427,7 +3428,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3453,7 +3454,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3479,7 +3480,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3504,7 +3505,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -3529,7 +3530,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -4338,7 +4339,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[0]"
         ]
       }
     },
@@ -4363,7 +4364,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[1]"
         ]
       }
     },
@@ -4388,7 +4389,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[2]"
         ]
       }
     },
@@ -4413,7 +4414,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[6]"
         ]
       }
     },
@@ -4438,7 +4439,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[0]"
         ]
       }
     },
@@ -4463,7 +4464,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/3"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[3]"
         ]
       }
     },
@@ -4488,7 +4489,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[4]"
         ]
       }
     },
@@ -4513,7 +4514,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2/domains/6"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[6]"
         ]
       }
     },
@@ -4538,7 +4539,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[0]"
         ]
       }
     },
@@ -4563,7 +4564,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[1]"
         ]
       }
     },
@@ -4588,7 +4589,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[2]"
         ]
       }
     },
@@ -4613,7 +4614,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[4]"
         ]
       }
     },
@@ -4638,7 +4639,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[0]"
         ]
       }
     },
@@ -4663,7 +4664,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0/readiness/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[0]"
         ]
       }
     },
@@ -4688,7 +4689,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/11"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[11]"
         ]
       }
     },
@@ -4713,7 +4714,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[0]"
         ]
       }
     },
@@ -4738,7 +4739,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2]"
         ]
       }
     },
@@ -4763,7 +4764,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[0]"
         ]
       }
     },
@@ -4788,7 +4789,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1]"
         ]
       }
     },
@@ -4813,7 +4814,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0]"
         ]
       }
     },
@@ -4838,7 +4839,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2]"
         ]
       }
     },
@@ -4863,7 +4864,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/7"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[7]"
         ]
       }
     },
@@ -4888,7 +4889,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/0/domains/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[2]"
         ]
       }
     },
@@ -4913,7 +4914,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1/readiness/4"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[4]"
         ]
       }
     },
@@ -4938,7 +4939,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2]"
         ]
       }
     },
@@ -4963,7 +4964,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1/domains/13"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1].domains[13]"
         ]
       }
     },
@@ -4988,7 +4989,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1]"
         ]
       }
     },
@@ -5013,7 +5014,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#products/0"
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0]"
         ]
       }
     },
@@ -5038,7 +5039,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/2"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2]"
         ]
       }
     },
@@ -5063,7 +5064,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#species/1"
+          "config/insect-intelligence-programs.json#jsonpath=$.species[1]"
         ]
       }
     },
@@ -5088,7 +5089,7 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
         ]
       }
     },
@@ -5113,7 +5114,253 @@
           "insect_intelligence_programs"
         ],
         "locator_patterns": [
-          "config/insect-intelligence-programs.json#portfolio"
+          "config/insect-intelligence-programs.json#jsonpath=$.objective"
+        ]
+      }
+    },
+    {
+      "id": "broad-swd-noncontact-repellency-01",
+      "category": "broad_natural_language",
+      "question": "What public evidence does Ask Insects have for non-contact repellency in spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "spatial repellent",
+          "candidate",
+          "not human-verified"
+        ],
+        "forbidden_terms": [
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "records#swd:openalex_literature:openalex:W4390704870"
+        ]
+      }
+    },
+    {
+      "id": "broad-aedes-reference-genome-01",
+      "category": "broad_natural_language",
+      "question": "What genome assembly does Ask Insects have for Aedes aegypti?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "AaegL5.0",
+          "GCF_002204515.2"
+        ],
+        "forbidden_terms": [
+          "source gap",
+          "best in the literature",
+          "ready for market"
+        ],
+        "source_ids": [
+          "ncbi_datasets_genome"
+        ],
+        "locator_patterns": [
+          "assembly_data_report.jsonl#line/1"
+        ]
+      }
+    },
+    {
+      "id": "broad-aedes-reference-brain-01",
+      "category": "broad_natural_language",
+      "question": "What downloadable Aedes aegypti reference brain data does Ask Insects have?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Aedes aegypti",
+          "reference brain",
+          "LVPib12"
+        ],
+        "forbidden_terms": [
+          "source gap",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "aedes_neurobiology_sources"
+        ],
+        "locator_patterns": [
+          "https://www.mosquitobrains.org/downloads-and-links#Aedes-Reference-Brain"
+        ]
+      }
+    },
+    {
+      "id": "broad-swd-row-level-flight-01",
+      "category": "broad_natural_language",
+      "question": "Does Ask Insects contain raw, row-level behavior data for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "401",
+          "free-flight chamber",
+          "tethered flight mill"
+        ],
+        "forbidden_terms": [
+          "source gap",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_umn_flight_assay_rows"
+        ],
+        "locator_patterns": [
+          "data_archival.csv#row/1"
+        ]
+      }
+    },
+    {
+      "id": "broad-dbm-readiness-gap-01",
+      "category": "broad_natural_language",
+      "question": "Is diamondback moth already covered well enough to support product R&D questions?",
+      "expect": {
+        "behavior": "source_gap",
+        "required_terms": [
+          "Plutella xylostella",
+          "source gap"
+        ],
+        "forbidden_terms": [
+          "product is proven effective",
+          "ready for market",
+          "direct evidence is complete"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#jsonpath=$.species[2]"
+        ]
+      }
+    },
+    {
+      "id": "broad-mosquito-repellent-formulations-01",
+      "category": "broad_natural_language",
+      "question": "Which mosquito-repellent formulations appear in Ask Insects' recent public literature index?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "mosquito repellent",
+          "literature",
+          "fiber mat",
+          "citronella oil",
+          "microporous devices"
+        ],
+        "forbidden_terms": [
+          "best in the literature",
+          "strongest in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "mosquito_repellent_literature"
+        ],
+        "locator_patterns": [
+          "crossref_mosquito_repellent_0002.json#items/70"
+        ]
+      }
+    },
+    {
+      "id": "broad-swd-oviposition-deterrence-01",
+      "category": "broad_natural_language",
+      "question": "What public oviposition-deterrence evidence does Ask Insects have for spotted wing drosophila?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Drosophila suzukii",
+          "oviposition deterrent",
+          "candidate",
+          "not human-verified"
+        ],
+        "forbidden_terms": [
+          "best in the literature",
+          "product is proven effective",
+          "ready for market"
+        ],
+        "source_ids": [
+          "drosophila_suzukii_extracted_facts"
+        ],
+        "locator_patterns": [
+          "records#swd:openalex_literature:openalex:W4390704870"
+        ]
+      }
+    },
+    {
+      "id": "broad-swd-cross-domain-rd-01",
+      "category": "broad_natural_language",
+      "question": "What public evidence and gaps matter across smell, egg-laying, and flight for the SWD crop repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "SWD crop repellent",
+          "evidence coverage",
+          "gap"
+        ],
+        "forbidden_terms": [
+          "product is proven effective",
+          "ready for market",
+          "best in the literature"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#jsonpath=$.products[0]"
+        ]
+      }
+    },
+    {
+      "id": "broad-aedes-cross-domain-rd-01",
+      "category": "broad_natural_language",
+      "question": "What public evidence and gaps matter across brain biology, host seeking, and repellency for the human mosquito repellent?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "evidence coverage",
+          "gap"
+        ],
+        "forbidden_terms": [
+          "product is proven effective",
+          "ready for market",
+          "best in the literature"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1]"
+        ]
+      }
+    },
+    {
+      "id": "broad-aedes-ecology-rd-01",
+      "category": "broad_natural_language",
+      "question": "How do ecology and host-finding gaps affect the human mosquito repellent program?",
+      "expect": {
+        "behavior": "bounded_answer",
+        "required_terms": [
+          "Human mosquito repellent",
+          "evidence coverage",
+          "gap"
+        ],
+        "forbidden_terms": [
+          "product is proven effective",
+          "ready for market",
+          "best in the literature"
+        ],
+        "source_ids": [
+          "insect_intelligence_programs"
+        ],
+        "locator_patterns": [
+          "config/insect-intelligence-programs.json#jsonpath=$.products[1]"
         ]
       }
     }

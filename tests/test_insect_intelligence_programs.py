@@ -228,6 +228,14 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
                 self.assertEqual(plan.answer_shape, "insect_intelligence")
                 self.assertEqual(plan.lanes, ("insect_intelligence",))
 
+    def test_planner_routes_plain_diamondback_moth_readiness_wording(self):
+        plan = plan_question(
+            "Is diamondback moth already covered well enough to support product R&D questions?"
+        )
+
+        self.assertEqual(plan.answer_shape, "insect_intelligence")
+        self.assertEqual(plan.lanes, ("insect_intelligence",))
+
     def test_planner_routes_generic_public_private_boundary_questions(self):
         plan = plan_question(
             "Can Ask Insects fill a public evidence gap with experiments or results from a separate private system?"
@@ -236,18 +244,61 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertEqual(plan.answer_shape, "insect_intelligence")
         self.assertEqual(plan.lanes, ("insect_intelligence",))
 
-    def test_planner_routes_every_non_comparison_production_eval_case_to_the_shared_lane(self):
+    def test_planner_routes_program_ledger_eval_cases_to_the_shared_lane(self):
         corpus = json.loads(
             Path("evals/ask_insects_production_path_v1.json").read_text(encoding="utf-8")
         )
 
         for case in corpus["cases"]:
-            if case["category"] == "repellency_comparison":
+            if case["category"] in {"repellency_comparison", "broad_natural_language"}:
                 continue
             with self.subTest(case_id=case["id"], question=case["question"]):
                 plan = plan_question(case["question"])
                 self.assertEqual(plan.answer_shape, "insect_intelligence")
                 self.assertEqual(plan.lanes, ("insect_intelligence",))
+
+    def test_broad_natural_language_eval_cases_use_their_real_answer_lanes(self):
+        corpus = json.loads(
+            Path("evals/ask_insects_production_path_v1.json").read_text(encoding="utf-8")
+        )
+        expected_shapes = {
+            "broad-swd-noncontact-repellency-01": "behavior",
+            "broad-aedes-reference-genome-01": "genomics",
+            "broad-aedes-reference-brain-01": "neurobiology",
+            "broad-swd-row-level-flight-01": "behavior",
+            "broad-dbm-readiness-gap-01": "insect_intelligence",
+            "broad-mosquito-repellent-formulations-01": "literature",
+            "broad-swd-oviposition-deterrence-01": "behavior",
+            "broad-swd-cross-domain-rd-01": "insect_intelligence",
+            "broad-aedes-cross-domain-rd-01": "insect_intelligence",
+            "broad-aedes-ecology-rd-01": "insect_intelligence",
+        }
+        broad_cases = {
+            case["id"]: case
+            for case in corpus["cases"]
+            if case["category"] == "broad_natural_language"
+        }
+
+        self.assertEqual(set(broad_cases), set(expected_shapes))
+        for case_id, expected_shape in expected_shapes.items():
+            with self.subTest(case_id=case_id, question=broad_cases[case_id]["question"]):
+                self.assertEqual(plan_question(broad_cases[case_id]["question"]).answer_shape, expected_shape)
+
+    def test_production_eval_program_locators_match_generated_records_exactly(self):
+        corpus = json.loads(
+            Path("evals/ask_insects_production_path_v1.json").read_text(encoding="utf-8")
+        )
+        canonical_locators = {
+            record.provenance.locator
+            for record in build_insect_intelligence_records(retrieved_at=RETRIEVED_AT)
+        }
+
+        for case in corpus["cases"]:
+            if INSECT_INTELLIGENCE_SOURCE_ID not in case["expect"]["source_ids"]:
+                continue
+            for locator in case["expect"]["locator_patterns"]:
+                with self.subTest(case_id=case["id"], locator=locator):
+                    self.assertIn(locator, canonical_locators)
 
     def test_plain_source_coverage_question_keeps_the_existing_coverage_lane(self):
         plan = plan_question("What is missing from Aedes source coverage?")
@@ -286,6 +337,26 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertIn("human mosquito repellent", product_answer["answer"].lower())
         self.assertIn("8", product_answer["answer"])
         self.assertGreater(product_answer["insect_intelligence"]["gap_count"], 0)
+
+    def test_plain_diamondback_moth_readiness_answer_exposes_source_gap(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            ingest_insect_intelligence_programs(artifact_dir=artifact_dir, retrieved_at=RETRIEVED_AT)
+
+            answer = answer_question(
+                "Is diamondback moth already covered well enough to support product R&D questions?",
+                artifact_dir=artifact_dir,
+            )
+
+        self.assertTrue(answer["ok"])
+        self.assertEqual(answer["answer_shape"], "insect_intelligence")
+        self.assertIn("Plutella xylostella", answer["answer"])
+        self.assertIn("source gap", answer["answer"].lower())
+        self.assertEqual(answer["evidence"][0]["source"], "insect_intelligence_programs")
+        self.assertEqual(
+            answer["evidence"][0]["provenance"]["locator"],
+            "config/insect-intelligence-programs.json#jsonpath=$.species[2]",
+        )
 
     def test_broad_program_answers_are_complete_in_the_first_call(self):
         ledger = load_program_ledger(DEFAULT_PROGRAM_LEDGER)

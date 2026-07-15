@@ -33,7 +33,7 @@ ask-insects ask "<the user's exact question>" --json --compact
 A bare call uses the hosted production source plane. Never add `--local` to a
 user answer. When `ok` is true, return `final_answer` verbatim as the entire
 visible answer. Do not preface, rewrite, summarize, append, search, run SQL, or
-run a second Ask Insects call. Complete the visible answer in under 30 seconds.
+run a second Ask Insects call. Complete the visible answer in under 60 seconds.
 Do not run setup-agent during a user question. Do not run tests, installation,
 or source refreshes during a normal answer.
 

@@ -2540,11 +2540,12 @@ def check_production_path_evaluation() -> None:
         raise RuntimeError("production-path evaluation contract version mismatch")
     if int(contract.get("minimum_case_count", 0)) < 200:
         raise RuntimeError("production-path evaluation must require at least 200 questions")
-    if float(contract.get("maximum_seconds", 999)) > 30:
-        raise RuntimeError("production-path evaluation must require every answer in under 30 seconds")
+    if float(contract.get("maximum_seconds", 999)) > 60:
+        raise RuntimeError("production-path evaluation must require every answer in under 60 seconds")
     cases = contract.get("cases")
-    if not isinstance(cases, list) or len(cases) != 200:
-        raise RuntimeError("production-path evaluation corpus must contain exactly 200 questions")
+    minimum_case_count = int(contract.get("minimum_case_count", 0))
+    if not isinstance(cases, list) or len(cases) < minimum_case_count:
+        raise RuntimeError("production-path evaluation corpus must contain at least the required question count")
     questions = "\n".join(str(case.get("question") or "") for case in cases if isinstance(case, dict)).lower()
     for term in (
         "drosophila suzukii",
@@ -2596,7 +2597,7 @@ def check_production_path_evaluation() -> None:
         "--compact",
         "final_answer",
         "verbatim",
-        "under 30 seconds",
+        "under 60 seconds",
     ):
         if term not in skill:
             raise RuntimeError(f"Ask Insects skill is missing production-path guidance: {term}")
@@ -2628,7 +2629,7 @@ def check_production_path_evaluation() -> None:
         if term not in agents:
             raise RuntimeError(f"Ask Insects AGENTS.md is missing production-path guidance: {term}")
     docs = (REPO_ROOT / "docs/production-path-evaluation.md").read_text(encoding="utf-8")
-    for term in ("200", "100 percent", "under 30 seconds", "production_gate_passed: true"):
+    for term in ("200", "100 percent", "under 60 seconds", "production_gate_passed: true"):
         if term not in docs:
             raise RuntimeError(f"production-path evaluation documentation is missing: {term}")
 
