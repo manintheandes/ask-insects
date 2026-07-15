@@ -549,6 +549,27 @@ class ServerTests(unittest.TestCase):
         self.assertTrue(response.payload["ok"])
         self.assertTrue(response.payload["index_ready"])
 
+    def test_health_reports_the_running_release_revision(self):
+        revision = "653c2fadfdd8d5d49140608be80e99d33e71f23f"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            build_fixture_index(artifact_dir=artifact_dir)
+            with mock.patch.dict(
+                server_module.os.environ,
+                {"ASK_INSECTS_RELEASE_ID": revision},
+            ):
+                response = dispatch_request(
+                    "GET",
+                    "/health",
+                    None,
+                    headers={"Authorization": "Bearer secret"},
+                    artifact_dir=artifact_dir,
+                    token="secret",
+                )
+
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.payload["runtime_revision"], revision)
+
     def test_read_endpoints_reject_missing_source_index_without_creating_db(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir)

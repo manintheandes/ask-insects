@@ -8,6 +8,7 @@ class DeployFilesTests(unittest.TestCase):
 
         self.assertIn("ASK_INSECTS_TOKEN", text)
         self.assertIn("python3 -m askinsects.server", text)
+        self.assertIn("WorkingDirectory=/home/josh/ask-insects-current", text)
         self.assertIn("/home/josh/ask-insects", text)
         self.assertIn("--host 127.0.0.1", text)
         self.assertNotIn("--host 0.0.0.0", text)
@@ -25,6 +26,18 @@ class DeployFilesTests(unittest.TestCase):
         self.assertIn("chmod 600", app)
         self.assertIn("http://127.0.0.1:8080/health", app)
         self.assertIn("/ingest/insect-intelligence-programs", app)
+
+    def test_deploy_activates_and_verifies_the_exact_git_revision(self):
+        app = Path("scripts/deploy_gce_app.sh").read_text(encoding="utf-8")
+
+        self.assertIn("git rev-parse --verify HEAD", app)
+        self.assertIn("ASK_INSECTS_RELEASE_ID", app)
+        self.assertIn("ask-insects-runtime", app)
+        self.assertIn("ask-insects-current", app)
+        self.assertIn(".deployed-revision", app)
+        self.assertIn("rm -rf /etc/systemd/system/ask-insects.service.d", app)
+        self.assertIn("systemctl show --property MainPID", app)
+        self.assertIn("/proc/\\$MAIN_PID/cwd", app)
 
     def test_private_tunnel_scripts_are_repo_owned(self):
         run = Path("scripts/run_hosted_tunnel.sh").read_text(encoding="utf-8")

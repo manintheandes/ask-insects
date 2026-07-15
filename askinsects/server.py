@@ -223,6 +223,11 @@ def health_payload(artifact_dir: Path) -> dict[str, object]:
         "artifact_dir": str(artifact_dir),
         "sources": read_sources(artifact_dir),
     }
+    runtime_revision = os.environ.get("ASK_INSECTS_RELEASE_ID", "").strip()
+    if len(runtime_revision) == 40 and all(
+        character in "0123456789abcdef" for character in runtime_revision
+    ):
+        payload["runtime_revision"] = runtime_revision
     if not ready:
         payload["error"] = "source_index_unavailable"
         payload["reason"] = reason
