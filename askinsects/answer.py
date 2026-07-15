@@ -902,6 +902,7 @@ def _wants_swd_repellency_evidence(question: str) -> bool:
             "odor-mediated avoidance",
             "odour-mediated avoidance",
             "oviposition deterr",
+            "oviposition-deterr",
         )
     )
 
@@ -6023,7 +6024,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             "answer_shape": plan.answer_shape,
             "answer": (
                 f"Ask Insects found {len(repellency_records)} direct-focal-species candidate public "
-                f"record(s) relevant to SWD non-contact or spatial repellency. {lead.text} "
+                "record(s) relevant to SWD non-contact repellency, spatial repellent evidence, "
+                f"or oviposition deterrent evidence. {lead.text} "
                 "This is candidate machine-extracted evidence, not human-verified proof of mechanism, "
                 "commercial efficacy, product readiness, or superiority over the literature."
             ),

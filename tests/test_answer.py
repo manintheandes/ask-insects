@@ -721,18 +721,26 @@ class AnswerTests(unittest.TestCase):
             )
             index.upsert_records([cross_species, direct])
 
+            questions = (
+                "What public evidence does Ask Insects have for non-contact repellency in spotted wing drosophila?",
+                "What public oviposition-deterrence evidence does Ask Insects have for spotted wing drosophila?",
+            )
             with patch.object(SourceIndex, "search", side_effect=AssertionError("broad FTS must not run")):
-                answer = answer_question(
-                    "What public evidence does Ask Insects have for non-contact repellency in spotted wing drosophila?",
-                    artifact_dir=artifact_dir,
-                )
+                for question in questions:
+                    with self.subTest(question=question):
+                        answer = answer_question(question, artifact_dir=artifact_dir)
 
-            self.assertTrue(answer["ok"])
-            self.assertEqual(answer["answer_shape"], "behavior")
-            self.assertEqual([row["record_id"] for row in answer["evidence"]], [direct.record_id])
-            self.assertIn("candidate", answer["answer"].lower())
-            self.assertIn("not human-verified", answer["answer"].lower())
-            self.assertNotIn("Aedes aegypti", answer["answer"])
+                        self.assertTrue(answer["ok"])
+                        self.assertEqual(answer["answer_shape"], "behavior")
+                        self.assertEqual(
+                            [row["record_id"] for row in answer["evidence"]],
+                            [direct.record_id],
+                        )
+                        self.assertIn("candidate", answer["answer"].lower())
+                        self.assertIn("spatial repellent", answer["answer"].lower())
+                        self.assertIn("oviposition deterrent", answer["answer"].lower())
+                        self.assertIn("not human-verified", answer["answer"].lower())
+                        self.assertNotIn("Aedes aegypti", answer["answer"])
 
     def test_aedes_reference_brain_uses_canonical_source_without_fts(self):
         with tempfile.TemporaryDirectory() as tmpdir:
