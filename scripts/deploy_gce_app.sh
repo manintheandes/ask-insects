@@ -3,8 +3,16 @@ set -euo pipefail
 
 ZONE="${ASK_INSECTS_GCP_ZONE:-us-central1-a}"
 VM="${ASK_INSECTS_VM:-ask-insects}"
-REMOTE_DIR="${ASK_INSECTS_REMOTE_DIR:-/home/josh/ask-insects}"
+DATA_DIR="${ASK_INSECTS_REMOTE_DIR:-/home/josh/ask-insects}"
+RUNTIME_ROOT="${ASK_INSECTS_REMOTE_RUNTIME_ROOT:-/home/josh/ask-insects-runtime}"
+CURRENT_LINK="${ASK_INSECTS_REMOTE_CURRENT_LINK:-/home/josh/ask-insects-current}"
 TOKEN="${ASK_INSECTS_TOKEN:?Set ASK_INSECTS_TOKEN before deploying}"
+RELEASE_ID="${ASK_INSECTS_RELEASE_ID:-$(git rev-parse --verify HEAD)}"
+if [[ "${#RELEASE_ID}" -ne 40 || "$RELEASE_ID" == *[!0-9a-f]* ]]; then
+  echo "ASK_INSECTS_RELEASE_ID must be a full lowercase Git commit SHA" >&2
+  exit 2
+fi
+RUNTIME_DIR="${RUNTIME_ROOT}-${RELEASE_ID}"
 ARCHIVE="/tmp/ask-insects-deploy.tgz"
 
 rm -f "$ARCHIVE"
@@ -25,20 +33,37 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   set -euo pipefail
   sudo apt-get update
   sudo apt-get install -y python3 python3-h5py python3-pil curl ffmpeg poppler-utils
-  mkdir -p '$REMOTE_DIR'
-  tar -xzf /tmp/ask-insects-deploy.tgz -C '$REMOTE_DIR'
-  printf 'ASK_INSECTS_TOKEN=%s\n' '$TOKEN' > '$REMOTE_DIR/.env'
-  chmod 600 '$REMOTE_DIR/.env'
-  sudo cp '$REMOTE_DIR/deploy/systemd/ask-insects.service' /etc/systemd/system/ask-insects.service
+  rm -rf '$RUNTIME_DIR'
+  mkdir -p '$RUNTIME_DIR' '$DATA_DIR'
+  tar -xzf /tmp/ask-insects-deploy.tgz -C '$RUNTIME_DIR'
+  printf '%s\n' '$RELEASE_ID' > '$RUNTIME_DIR/.deployed-revision'
+  printf 'ASK_INSECTS_TOKEN=%s\nASK_INSECTS_RELEASE_ID=%s\n' \
+    '$TOKEN' '$RELEASE_ID' > '$DATA_DIR/.env'
+  chmod 600 '$DATA_DIR/.env'
+  if [[ -e '$CURRENT_LINK' && ! -L '$CURRENT_LINK' ]]; then
+    rm -rf '$CURRENT_LINK'
+  fi
+  ln -sfn '$RUNTIME_DIR' '$CURRENT_LINK'
+  sudo cp '$RUNTIME_DIR/deploy/systemd/ask-insects.service' /etc/systemd/system/ask-insects.service
+  sudo rm -rf /etc/systemd/system/ask-insects.service.d
   sudo systemctl daemon-reload
   sudo systemctl enable ask-insects
   sudo systemctl restart ask-insects
   curl --retry 30 --retry-delay 1 --retry-connrefused --max-time 10 -fsS \
     -H 'Authorization: Bearer $TOKEN' \
-    http://127.0.0.1:8080/health >/dev/null
+    http://127.0.0.1:8080/health \
+    | python3 -c \"import json,sys; payload=json.load(sys.stdin); assert payload.get('runtime_revision') == '$RELEASE_ID'\"
+  MAIN_PID=\$(systemctl show --property MainPID --value ask-insects)
+  test -n \"\$MAIN_PID\"
+  test \"\$(readlink -f /proc/\$MAIN_PID/cwd)\" = '$RUNTIME_DIR'
+  test \"\$(cat '$RUNTIME_DIR/.deployed-revision')\" = '$RELEASE_ID'
   curl --max-time 120 -fsS -X POST \
     -H 'Authorization: Bearer $TOKEN' \
     -H 'Content-Type: application/json' \
     --data '{}' \
     http://127.0.0.1:8080/ingest/insect-intelligence-programs >/dev/null
+  curl --max-time 10 -fsS \
+    -H 'Authorization: Bearer $TOKEN' \
+    http://127.0.0.1:8080/health \
+    | python3 -c \"import json,sys; payload=json.load(sys.stdin); assert payload.get('runtime_revision') == '$RELEASE_ID'\"
 "

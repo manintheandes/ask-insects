@@ -6,8 +6,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 User=josh
-WorkingDirectory=/home/josh/ask-insects
-# ASK_INSECTS_TOKEN is loaded from this file.
+WorkingDirectory=/home/josh/ask-insects-current
+# ASK_INSECTS_TOKEN and ASK_INSECTS_RELEASE_ID are loaded from this file.
 EnvironmentFile=/home/josh/ask-insects/.env
 ExecStart=/usr/bin/python3 -m askinsects.server --host 127.0.0.1 --port 8080 --artifact-dir /home/josh/ask-insects/artifacts/mosquito-v1
 Restart=always
