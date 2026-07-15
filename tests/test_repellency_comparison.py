@@ -4,7 +4,9 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
+import askinsects.repellency as repellency_module
 from askinsects.answer import answer_question
 from askinsects.cli import render_answer
 from askinsects.index import SourceIndex
@@ -201,6 +203,46 @@ def _build_index(path: Path) -> SourceIndex:
 
 
 class RepellencyComparisonTest(unittest.TestCase):
+    def test_source_records_are_cached_until_the_index_changes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            index = _build_index(Path(tmp) / "source_index.sqlite")
+            repellency_module._cached_source_records.cache_clear()
+            with patch.object(
+                repellency_module,
+                "_read_source_records",
+                wraps=repellency_module._read_source_records,
+            ) as read_records:
+                build_repellency_comparison_answer(
+                    index,
+                    "Compare Drosophila suzukii repellency assays for oviposition deterrence.",
+                    limit=10,
+                )
+                build_repellency_comparison_answer(
+                    index,
+                    "Compare Drosophila suzukii repellency assays for oviposition deterrence.",
+                    limit=10,
+                )
+                self.assertEqual(read_records.call_count, 2)
+
+                index.upsert_records(
+                    [
+                        _record(
+                            "drosophila_suzukii_core:doi:10_1000_swd_second",
+                            source="drosophila_suzukii_core",
+                            title="A second oviposition deterrence study in Drosophila suzukii",
+                            species="Drosophila suzukii",
+                            payload={"doi": "10.1000/swd-second"},
+                        )
+                    ]
+                )
+                build_repellency_comparison_answer(
+                    index,
+                    "Compare Drosophila suzukii repellency assays for oviposition deterrence.",
+                    limit=10,
+                )
+
+            self.assertEqual(read_records.call_count, 4)
+
     def test_eval_questions_route_only_comparative_repellency_questions(self):
         self.assertEqual(
             EVAL_CASES["contract_version"], REPELLENCY_COMPARISON_CONTRACT_VERSION

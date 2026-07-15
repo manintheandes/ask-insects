@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 from collections import Counter
+from functools import lru_cache
 import json
+from pathlib import Path
 import re
 from typing import Any
 
@@ -218,7 +220,19 @@ def _record_with_payload(row: dict[str, object]) -> EvidenceRecord:
     )
 
 
-def _source_records(
+def _path_fingerprint(path: Path) -> tuple[int, int, int, int]:
+    try:
+        stat = path.stat()
+    except FileNotFoundError:
+        return (0, 0, 0, 0)
+    return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
+
+
+def _index_fingerprint(path: Path) -> tuple[int, ...]:
+    return (*_path_fingerprint(path), *_path_fingerprint(Path(f"{path}-wal")))
+
+
+def _read_source_records(
     index: SourceIndex,
     source_ids: tuple[str, ...],
     *,
@@ -254,6 +268,44 @@ def _source_records(
             params,
         ).fetchall()
     return [_record_with_payload(dict(row)) for row in rows]
+
+
+@lru_cache(maxsize=8)
+def _cached_source_records(
+    index_path: str,
+    index_fingerprint: tuple[int, ...],
+    source_ids: tuple[str, ...],
+    lanes: tuple[str, ...] | None,
+    fact_types: tuple[str, ...] | None,
+) -> tuple[EvidenceRecord, ...]:
+    del index_fingerprint
+    return tuple(
+        _read_source_records(
+            SourceIndex(Path(index_path)),
+            source_ids,
+            lanes=lanes,
+            fact_types=fact_types,
+        )
+    )
+
+
+def _source_records(
+    index: SourceIndex,
+    source_ids: tuple[str, ...],
+    *,
+    lanes: tuple[str, ...] | None = None,
+    fact_types: tuple[str, ...] | None = None,
+) -> list[EvidenceRecord]:
+    index_path = index.path.resolve()
+    return list(
+        _cached_source_records(
+            str(index_path),
+            _index_fingerprint(index_path),
+            source_ids,
+            lanes,
+            fact_types,
+        )
+    )
 
 
 def _is_source_gap(record: EvidenceRecord) -> bool:

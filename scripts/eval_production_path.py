@@ -214,6 +214,7 @@ def load_contract(path: Path = DEFAULT_CASES_PATH) -> dict[str, object]:
 def parse_codex_events(stdout_jsonl: str) -> tuple[list[str], list[str], list[str], bool]:
     agent_messages: list[str] = []
     commands: list[str] = []
+    command_item_ids: set[str] = set()
     event_types: list[str] = []
     turn_completed = False
     for line in stdout_jsonl.splitlines():
@@ -237,6 +238,11 @@ def parse_codex_events(stdout_jsonl: str) -> tuple[list[str], list[str], list[st
         if item_type == "agent_message" and isinstance(item.get("text"), str):
             agent_messages.append(str(item["text"]))
         if item_type == "command_execution" and isinstance(item.get("command"), str):
+            item_id = item.get("id")
+            if isinstance(item_id, str) and item_id:
+                if item_id in command_item_ids:
+                    continue
+                command_item_ids.add(item_id)
             commands.append(str(item["command"]))
     return agent_messages, commands, event_types, turn_completed
 
@@ -562,16 +568,29 @@ def _execution_from_saved_result(saved: dict[str, object]) -> ExecutionResult:
     for field in ("visible_answer", "stdout_jsonl", "stderr"):
         if not isinstance(saved.get(field), str):
             raise ValueError(f"saved production result has invalid {field}")
+    stdout_jsonl = str(saved["stdout_jsonl"])
+    parsed_messages, parsed_commands, parsed_event_types, parsed_turn_completed = parse_codex_events(
+        stdout_jsonl
+    )
+    if parsed_event_types:
+        list_fields["agent_messages"] = parsed_messages
+        list_fields["commands"] = parsed_commands
+        list_fields["event_types"] = parsed_event_types
+        visible_answer = parsed_messages[-1] if parsed_messages else ""
+        turn_completed = parsed_turn_completed
+    else:
+        visible_answer = str(saved["visible_answer"])
+        turn_completed = bool(saved["turn_completed"])
     return ExecutionResult(
         elapsed_seconds=float(elapsed_seconds),
         exit_code=exit_code,
         timed_out=bool(saved["timed_out"]),
-        turn_completed=bool(saved["turn_completed"]),
-        visible_answer=str(saved["visible_answer"]),
+        turn_completed=turn_completed,
+        visible_answer=visible_answer,
         agent_messages=list_fields["agent_messages"],
         commands=list_fields["commands"],
         event_types=list_fields["event_types"],
-        stdout_jsonl=str(saved["stdout_jsonl"]),
+        stdout_jsonl=stdout_jsonl,
         stderr=str(saved["stderr"]),
     )
 

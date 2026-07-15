@@ -333,6 +333,34 @@ class ProductionPathEvalTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertTrue(any("exactly one" in failure for failure in result["failures"]))
 
+    def test_started_and_completed_events_for_one_command_item_count_once(self):
+        command = successful_execution().commands[0]
+        stdout = "\n".join(
+            json.dumps(
+                {
+                    "type": event_type,
+                    "item": {
+                        "id": "item_1",
+                        "type": "command_execution",
+                        "command": command,
+                        "status": status,
+                    },
+                }
+            )
+            for event_type, status in (
+                ("item.started", "in_progress"),
+                ("item.completed", "completed"),
+            )
+        )
+
+        _, commands, _, _ = parse_codex_events(stdout)
+
+        self.assertEqual(commands, [command])
+        execution = successful_execution()
+        execution.commands = commands
+        result = evaluate_case(sample_case(), execution, maximum_seconds=60)
+        self.assertTrue(result["ok"], result["failures"])
+
     def test_parser_preserves_all_web_shaped_item_events(self):
         for item_type in ("web_search", "web_open", "custom_web_fetch"):
             with self.subTest(item_type=item_type):
@@ -450,6 +478,59 @@ class ProductionPathEvalTests(unittest.TestCase):
             source["results"][0]["commands"],
         )
         self.assertIn("regraded_at", regraded)
+
+    def test_regrade_reparses_preserved_raw_codex_events(self):
+        contract = {
+            "contract_version": CONTRACT_VERSION,
+            "minimum_case_count": 1,
+            "maximum_seconds": 60,
+            "required_categories": {"species_coverage": 1},
+            "cases": [sample_case()],
+        }
+        source = run_evaluation(contract, execute=lambda case: successful_execution())
+        result = source["results"][0]
+        command = result["commands"][0]
+        answer = result["visible_answer"]
+        result["commands"] = [command, command]
+        result["stdout_jsonl"] = "\n".join(
+            json.dumps(event)
+            for event in (
+                {"type": "thread.started"},
+                {"type": "turn.started"},
+                {
+                    "type": "item.started",
+                    "item": {
+                        "id": "item_1",
+                        "type": "command_execution",
+                        "command": command,
+                        "status": "in_progress",
+                    },
+                },
+                {
+                    "type": "item.completed",
+                    "item": {
+                        "id": "item_1",
+                        "type": "command_execution",
+                        "command": command,
+                        "status": "completed",
+                    },
+                },
+                {
+                    "type": "item.completed",
+                    "item": {"id": "item_2", "type": "agent_message", "text": answer},
+                },
+                {"type": "turn.completed"},
+            )
+        )
+        source["passed_count"] = 0
+        source["failed_count"] = 1
+        source["all_cases_passed"] = False
+        source["production_gate_passed"] = False
+
+        regraded = regrade_evaluation(contract, source)
+
+        self.assertTrue(regraded["production_gate_passed"])
+        self.assertEqual(regraded["results"][0]["commands"], [command])
 
     def test_regrade_rejects_changed_questions(self):
         contract = {
