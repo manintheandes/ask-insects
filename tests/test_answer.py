@@ -557,6 +557,58 @@ class AnswerTests(unittest.TestCase):
         self.assertNotIn("scientist_rnd", source)
         self.assertNotIn("build_scientist_rnd_answer", source)
 
+    def test_bounded_full_text_timeout_returns_an_explicit_source_gap(self):
+        def timed_out_search(index, query, lane=None, limit=10):
+            index.last_search_timed_out = True
+            return []
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            with patch.object(SourceIndex, "search", timed_out_search):
+                answer = answer_question(
+                    "How does an unfamiliar volatile alter mosquito orientation?",
+                    artifact_dir=artifact_dir,
+                )
+
+        self.assertFalse(answer["ok"])
+        self.assertIn("search budget", answer["source_gap"]["reason"].casefold())
+
+    def test_bounded_full_text_timeout_does_not_override_found_evidence(self):
+        evidence = EvidenceRecord(
+            record_id="test:volatile-orientation",
+            lane="taxonomy",
+            source="mosquito_v1_fixtures",
+            title="Mosquito volatile orientation evidence",
+            text="A mosquito orientation response was measured for an unfamiliar volatile.",
+            species="Aedes aegypti",
+            url="https://example.org/volatile-orientation",
+            media_url=None,
+            provenance=Provenance(
+                source_id="mosquito_v1_fixtures",
+                locator="test#volatile-orientation",
+                retrieved_at="2026-07-16T00:00:00Z",
+            ),
+        )
+
+        def timed_out_search_with_evidence(index, query, lane=None, limit=10):
+            index.last_search_timed_out = True
+            return [evidence]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            with patch.object(SourceIndex, "search", timed_out_search_with_evidence):
+                answer = answer_question(
+                    "How does an unfamiliar volatile alter mosquito orientation?",
+                    artifact_dir=artifact_dir,
+                )
+
+        self.assertTrue(answer["ok"])
+        self.assertEqual(answer["evidence"][0]["record_id"], evidence.record_id)
+
     def test_planner_routes_identity_evidence_action_and_gap(self):
         self.assertEqual(plan_question("what do we know about Aedes aegypti?").answer_shape, "identity")
         self.assertEqual(plan_question("show mosquito observations with images in Brazil").answer_shape, "evidence")

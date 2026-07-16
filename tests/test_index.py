@@ -62,6 +62,103 @@ class IndexTests(unittest.TestCase):
                     expected = [] if query == "OR" else ["obs:1"]
                     self.assertEqual([row.record_id for row in rows], expected)
 
+    def test_search_fails_closed_when_the_fts_budget_expires(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    sample_record(
+                        record_id=f"obs:{row}",
+                        text=f"common Aedes aegypti observation {row}",
+                    )
+                    for row in range(500)
+                ]
+            )
+
+            with mock.patch("askinsects.index.SEARCH_TIMEOUT_SECONDS", 0), mock.patch(
+                "askinsects.index.SEARCH_PROGRESS_STEPS",
+                1,
+            ):
+                rows = index.search("common", lane="observations", limit=5)
+
+            self.assertEqual(rows, [])
+            self.assertTrue(index.last_search_timed_out)
+
+    def test_search_fts_budget_resets_timeout_state_for_every_call(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([sample_record()])
+
+            index.last_search_timed_out = True
+            self.assertEqual(index.search("OR"), [])
+            self.assertFalse(index.last_search_timed_out)
+
+            index.last_search_timed_out = True
+            self.assertEqual([row.record_id for row in index.search("Brazil")], ["obs:1"])
+            self.assertFalse(index.last_search_timed_out)
+
+    def test_search_fts_budget_reraises_other_operational_errors_and_clears_handler(self):
+        class FailingConnection:
+            def __init__(self):
+                self.progress_handler_calls = []
+
+            def set_progress_handler(self, callback, steps):
+                self.progress_handler_calls.append((callback, steps))
+
+            def execute(self, _sql, _params):
+                raise sqlite3.OperationalError("database disk image is malformed")
+
+        connection = FailingConnection()
+        index = SourceIndex(Path("unused.sqlite"))
+
+        @contextmanager
+        def failing_connect():
+            yield connection
+
+        with mock.patch.object(index, "connect", failing_connect), mock.patch(
+            "askinsects.index.time.monotonic",
+            side_effect=[10.0, 100.0],
+        ):
+            with self.assertRaisesRegex(sqlite3.OperationalError, "malformed"):
+                index.search("common")
+
+        self.assertTrue(connection.progress_handler_calls)
+        self.assertTrue(callable(connection.progress_handler_calls[0][0]))
+        self.assertEqual(connection.progress_handler_calls[-1], (None, 0))
+
+    def test_search_fts_budget_clears_progress_handler_after_success(self):
+        class EmptyRows:
+            @staticmethod
+            def fetchall():
+                return []
+
+        class SuccessfulConnection:
+            def __init__(self):
+                self.progress_handler_calls = []
+
+            def set_progress_handler(self, callback, steps):
+                self.progress_handler_calls.append((callback, steps))
+
+            @staticmethod
+            def execute(_sql, _params):
+                return EmptyRows()
+
+        connection = SuccessfulConnection()
+        index = SourceIndex(Path("unused.sqlite"))
+
+        @contextmanager
+        def successful_connect():
+            yield connection
+
+        with mock.patch.object(index, "connect", successful_connect):
+            self.assertEqual(index.search("common"), [])
+
+        self.assertTrue(connection.progress_handler_calls)
+        self.assertTrue(callable(connection.progress_handler_calls[0][0]))
+        self.assertEqual(connection.progress_handler_calls[-1], (None, 0))
+
     def test_payloads_are_queryable_from_sqlite(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             db_path = Path(tmpdir) / "source_index.sqlite"

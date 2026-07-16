@@ -6751,6 +6751,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     all_records.append(record)
                     seen_record_ids.add(record.record_id)
 
+    full_text_fallback_timed_out = False
     if not all_records:
         for lane in plan.lanes:
             search_queries = (
@@ -6770,6 +6771,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
                 if query_records:
                     break
+                if index.last_search_timed_out:
+                    full_text_fallback_timed_out = True
+                    break
+            if full_text_fallback_timed_out:
+                break
+
+    if full_text_fallback_timed_out and not all_records:
+        return source_gap(
+            plan,
+            "The bounded full-text fallback exceeded its search budget before any evidence was found.",
+        )
 
     if _wants_extracted_facts(plan.question):
         extracted_source_id = _extracted_facts_source_for_question(plan.question)
