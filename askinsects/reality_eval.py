@@ -55,9 +55,13 @@ _META_MARKERS = (
     "program status",
     "what sources does ask",
 )
-_PRODUCT_META_PATTERN = re.compile(
-    r"\b(?:what does ask \S+ cover|is ask \S+ complete|what is ask \S+ missing)\b"
+_PRODUCT_REFERENCE_PATTERN = re.compile(r"\bask [a-z0-9][a-z0-9_-]*\b")
+_CATEGORY_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
+_UTC_SECOND_PATTERN = re.compile(
+    r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"
 )
+_UTC_SECOND_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+_UTC_SECOND_LENGTH = 20
 _HOLDOUT_RECEIPT_FIELDS = frozenset(
     {
         "receipt_version",
@@ -76,13 +80,15 @@ class RealityEvalError(ValueError):
 
 
 def sha256_bytes(payload: bytes) -> str:
+    if not isinstance(payload, bytes):
+        raise RealityEvalError("SHA-256 payload must be bytes")
     return hashlib.sha256(payload).hexdigest()
 
 
 def load_json_object(path: Path) -> dict[str, object]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
         raise RealityEvalError(f"could not read {path}: {exc}") from exc
     if not isinstance(payload, dict):
         raise RealityEvalError(f"{path} must contain a JSON object")
@@ -95,21 +101,70 @@ def _object(value: object, name: str) -> dict[str, Any]:
     return value
 
 
+def _same_json_value(left: object, right: object) -> bool:
+    if type(left) is not type(right):
+        return False
+    if isinstance(left, dict) and isinstance(right, dict):
+        return set(left) == set(right) and all(
+            _same_json_value(left[key], right[key]) for key in left
+        )
+    if isinstance(left, list) and isinstance(right, list):
+        return len(left) == len(right) and all(
+            _same_json_value(left_item, right_item)
+            for left_item, right_item in zip(left, right, strict=True)
+        )
+    return left == right
+
+
 def _nonempty_string(value: object, name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise RealityEvalError(f"{name} must be a nonempty string")
     return value
 
 
-def _iso_timestamp(value: object, name: str) -> str:
-    timestamp = _nonempty_string(value, name)
-    if "T" not in timestamp:
-        raise RealityEvalError(f"{name} must be an ISO-shaped timestamp")
+def _utc_second_timestamp(value: object, name: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != _UTC_SECOND_LENGTH
+        or not _UTC_SECOND_PATTERN.fullmatch(value)
+    ):
+        raise RealityEvalError(f"{name} must be a UTC second timestamp YYYY-MM-DDTHH:MM:SSZ")
     try:
-        datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        datetime.strptime(value, _UTC_SECOND_FORMAT)
     except ValueError as exc:
-        raise RealityEvalError(f"{name} must be an ISO-shaped timestamp") from exc
-    return timestamp
+        raise RealityEvalError(
+            f"{name} must be a valid UTC second timestamp YYYY-MM-DDTHH:MM:SSZ"
+        ) from exc
+    return value
+
+
+def _strict_integer(value: object, name: str, *, expected: int) -> int:
+    if type(value) is not int or value != expected:
+        raise RealityEvalError(f"{name} must be the strict integer {expected}")
+    return value
+
+
+def _finite_number(value: object, name: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise RealityEvalError(f"{name} must be a finite number")
+    try:
+        number = float(value)
+    except (OverflowError, ValueError) as exc:
+        raise RealityEvalError(f"{name} must be a finite number") from exc
+    if not math.isfinite(number):
+        raise RealityEvalError(f"{name} must be a finite number")
+    return number
+
+
+def _absolute_path(value: object, name: str) -> str:
+    path_string = _nonempty_string(value, name)
+    try:
+        is_absolute = Path(path_string).is_absolute()
+    except (OSError, ValueError) as exc:
+        raise RealityEvalError(f"{name} must be an absolute filesystem path") from exc
+    if not is_absolute:
+        raise RealityEvalError(f"{name} must be an absolute filesystem path")
+    return path_string
 
 
 def _string_list(
@@ -171,9 +226,11 @@ def _validate_case(
         field: _nonempty_string(case.get(field), f"{name}.{field}")
         for field in _CASE_STRING_FIELDS
     }
+    if not _CATEGORY_PATTERN.fullmatch(strings["category"]):
+        raise RealityEvalError(f"{name}.category must be a lowercase slug")
 
     kind = case.get("kind")
-    if kind not in QUESTION_KINDS:
+    if not isinstance(kind, str) or kind not in QUESTION_KINDS:
         raise RealityEvalError(f"{name}.kind must be one of {sorted(QUESTION_KINDS)}")
     if expected_kind is not None and kind != expected_kind:
         raise RealityEvalError(f"{name}.kind must be {expected_kind}")
@@ -188,7 +245,7 @@ def _validate_case(
     normalized = _normalized_question(strings["question"])
     if kind == "domain" and (
         any(marker in normalized for marker in _META_MARKERS)
-        or _PRODUCT_META_PATTERN.search(normalized)
+        or _PRODUCT_REFERENCE_PATTERN.search(normalized)
     ):
         raise RealityEvalError(
             f"question {strings['id']} is marked domain but asks about product coverage or status"
@@ -232,14 +289,10 @@ def _validate_cases(
 
 
 def _maximum_seconds(value: object, name: str) -> float:
-    if (
-        isinstance(value, bool)
-        or not isinstance(value, (int, float))
-        or not math.isfinite(float(value))
-        or float(value) != MAXIMUM_SECONDS
-    ):
+    maximum_seconds = _finite_number(value, name)
+    if maximum_seconds != MAXIMUM_SECONDS:
         raise RealityEvalError(f"{name} must be {int(MAXIMUM_SECONDS)}")
-    return float(value)
+    return maximum_seconds
 
 
 def validate_public_manifest(payload: object) -> dict[str, object]:
@@ -265,7 +318,7 @@ def validate_holdout_bundle(payload: object) -> dict[str, object]:
         raise RealityEvalError(f"bundle_version must be {HOLDOUT_BUNDLE_VERSION}")
     if bundle.get("target") != TARGET:
         raise RealityEvalError(f"holdout bundle target must be {TARGET}")
-    _iso_timestamp(bundle.get("created_at"), "holdout bundle.created_at")
+    _utc_second_timestamp(bundle.get("created_at"), "holdout bundle.created_at")
     _validate_cases(
         bundle.get("questions"),
         name="holdout bundle.questions",
@@ -280,7 +333,7 @@ def _json_object_from_bytes(payload: bytes, name: str) -> dict[str, object]:
         raise RealityEvalError(f"{name} must be bytes")
     try:
         value = json.loads(payload)
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+    except (UnicodeDecodeError, ValueError) as exc:
         raise RealityEvalError(f"could not parse {name}: {exc}") from exc
     if not isinstance(value, dict):
         raise RealityEvalError(f"{name} must contain a JSON object")
@@ -317,12 +370,15 @@ def validate_holdout_receipt(
         raise RealityEvalError(f"holdout receipt target must be {TARGET}")
     if receipt.get("bundle_version") != HOLDOUT_BUNDLE_VERSION:
         raise RealityEvalError(f"bundle_version must be {HOLDOUT_BUNDLE_VERSION}")
-    created_at = _iso_timestamp(receipt.get("created_at"), "holdout receipt.created_at")
-    question_count = receipt.get("question_count")
-    if type(question_count) is not int or question_count != HOLDOUT_QUESTION_COUNT:
-        raise RealityEvalError(
-            f"holdout receipt.question_count must be {HOLDOUT_QUESTION_COUNT}"
-        )
+    created_at = _utc_second_timestamp(
+        receipt.get("created_at"),
+        "holdout receipt.created_at",
+    )
+    _strict_integer(
+        receipt.get("question_count"),
+        "holdout receipt.question_count",
+        expected=HOLDOUT_QUESTION_COUNT,
+    )
     bundle_sha256 = receipt.get("bundle_sha256")
     if not isinstance(bundle_sha256, str) or not _SHA256_PATTERN.fullmatch(bundle_sha256):
         raise RealityEvalError(
@@ -412,13 +468,18 @@ def validate_results(
     payload: object,
     *,
     contract: dict[str, object],
-    contract_sha256: str,
+    contract_bytes: bytes,
 ) -> dict[str, object]:
-    validated_contract = validate_contract(contract)
+    contract_object = _object(contract, "contract")
+    parsed_contract = _json_object_from_bytes(contract_bytes, "contract bytes")
+    if not _same_json_value(contract_object, parsed_contract):
+        raise RealityEvalError("contract object does not match the exact contract bytes")
+    validated_contract = validate_contract(parsed_contract)
+
     result_doc = _object(payload, "results document")
     if result_doc.get("results_version") != RESULTS_VERSION:
         raise RealityEvalError(f"results_version must be {RESULTS_VERSION}")
-    if result_doc.get("contract_sha256") != contract_sha256:
+    if result_doc.get("contract_sha256") != sha256_bytes(contract_bytes):
         raise RealityEvalError("contract_sha256 does not match the exact contract bytes")
     if result_doc.get("target") != validated_contract["target"]:
         raise RealityEvalError("results target does not match contract target")
@@ -432,10 +493,11 @@ def validate_results(
         recording.get("recording_path"),
         "results.recording.recording_path",
     )
-    if recording.get("question_count") != QUESTION_COUNT:
-        raise RealityEvalError(
-            f"results.recording.question_count must be {QUESTION_COUNT}"
-        )
+    _strict_integer(
+        recording.get("question_count"),
+        "results.recording.question_count",
+        expected=QUESTION_COUNT,
+    )
     if recording.get("complete_answers_visible") is not True:
         raise RealityEvalError("results.recording.complete_answers_visible must be true")
     if recording.get("privacy_review") != "pass":
@@ -446,15 +508,21 @@ def validate_results(
     raw_results = result_doc.get("results")
     if not isinstance(raw_results, list):
         raise RealityEvalError("results must be a list")
+    contract_questions = validated_contract["questions"]
+    if not isinstance(contract_questions, list):
+        raise RealityEvalError("validated contract questions must be a list")
     cases = {
         str(case["id"]): case
-        for case in validated_contract["questions"]
+        for case in contract_questions
         if isinstance(case, dict)
     }
     if len(raw_results) != QUESTION_COUNT:
         raise RealityEvalError("results must contain exactly 50 unique results")
 
-    maximum_seconds = float(validated_contract["maximum_seconds"])
+    maximum_seconds = _maximum_seconds(
+        validated_contract["maximum_seconds"],
+        "contract.maximum_seconds",
+    )
     seen_ids: set[str] = set()
     for index, raw_result in enumerate(raw_results):
         result = _object(raw_result, f"results[{index}]")
@@ -468,20 +536,21 @@ def validate_results(
             raise RealityEvalError(f"result {case_id} changed the exact frozen question")
         _nonempty_string(result.get("answer"), f"result {case_id}.answer")
 
-        elapsed = result.get("elapsed_seconds")
-        if (
-            isinstance(elapsed, bool)
-            or not isinstance(elapsed, (int, float))
-            or not math.isfinite(float(elapsed))
-            or float(elapsed) < 0
-        ):
+        elapsed = _finite_number(
+            result.get("elapsed_seconds"),
+            f"result {case_id}.elapsed_seconds",
+        )
+        if elapsed < 0:
             raise RealityEvalError(
-                f"result {case_id}.elapsed_seconds must be a nonnegative number"
+                f"result {case_id}.elapsed_seconds must be a nonnegative finite number"
             )
-        if float(elapsed) >= maximum_seconds:
+        if elapsed >= maximum_seconds:
             raise RealityEvalError(f"result {case_id} exceeded the strict time limit")
-        if type(result.get("attempt")) is not int or result.get("attempt") != 1:
-            raise RealityEvalError(f"result {case_id} must preserve attempt 1")
+        _strict_integer(
+            result.get("attempt"),
+            f"result {case_id}.attempt",
+            expected=1,
+        )
         if result.get("interface_observed") != _INTERFACE:
             raise RealityEvalError(f"result {case_id} must use the codex-app interface")
         if result.get("answer_systems") != [TARGET]:
@@ -492,6 +561,37 @@ def validate_results(
             raise RealityEvalError(f"result {case_id} did not use a fresh task")
         if result.get("complete_answer_visible") is not True:
             raise RealityEvalError(f"result {case_id} did not preserve the complete answer")
+
+        route_trace = _object(
+            result.get("route_trace"),
+            f"result {case_id}.route_trace",
+        )
+        _nonempty_string(
+            route_trace.get("thread_id"),
+            f"result {case_id}.route_trace.thread_id",
+        )
+        _utc_second_timestamp(
+            route_trace.get("submitted_at"),
+            f"result {case_id}.route_trace.submitted_at",
+        )
+        _utc_second_timestamp(
+            route_trace.get("completed_at"),
+            f"result {case_id}.route_trace.completed_at",
+        )
+        _strict_integer(
+            route_trace.get("answer_command_count"),
+            f"result {case_id}.route_trace.answer_command_count",
+            expected=1,
+        )
+        if route_trace.get("hosted_route") is not True:
+            raise RealityEvalError(
+                f"result {case_id}.route_trace.hosted_route must be true"
+            )
+        _absolute_path(
+            route_trace.get("raw_trace_path"),
+            f"result {case_id}.route_trace.raw_trace_path",
+        )
+
         for field in _PASS_FIELDS:
             if result.get(field) != "pass":
                 raise RealityEvalError(f"result {case_id}.{field} must be pass")
@@ -520,14 +620,33 @@ def validate_results(
     return result_doc
 
 
-def summarize_results(results: dict[str, object]) -> dict[str, object]:
-    raw_results = results["results"]
-    assert isinstance(raw_results, list)
-    elapsed_values = sorted(float(result["elapsed_seconds"]) for result in raw_results)
-    passed_count = sum(
-        all(result.get(field) == "pass" for field in _PASS_FIELDS)
-        for result in raw_results
+def summarize_results(
+    payload: object,
+    *,
+    contract: dict[str, object],
+    contract_bytes: bytes,
+) -> dict[str, object]:
+    results = validate_results(
+        payload,
+        contract=contract,
+        contract_bytes=contract_bytes,
     )
+    raw_results = results["results"]
+    if not isinstance(raw_results, list):
+        raise RealityEvalError("validated results must be a list")
+
+    elapsed_values: list[float] = []
+    passed_count = 0
+    for index, raw_result in enumerate(raw_results):
+        result = _object(raw_result, f"validated results[{index}]")
+        elapsed_values.append(
+            _finite_number(
+                result.get("elapsed_seconds"),
+                f"validated results[{index}].elapsed_seconds",
+            )
+        )
+        passed_count += int(all(result.get(field) == "pass" for field in _PASS_FIELDS))
+    elapsed_values.sort()
     question_count = len(raw_results)
     failed_count = question_count - passed_count
     p95_index = math.ceil(0.95 * question_count) - 1

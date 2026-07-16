@@ -1,5 +1,7 @@
 import hashlib
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from copy import deepcopy
@@ -30,6 +32,9 @@ from askinsects.reality_eval import (
 
 
 CREATED_AT = "2026-07-16T12:00:00Z"
+INSTALLED_VALIDATOR = Path(
+    "/Users/josh/.codex/skills/realityeval/scripts/validate_eval.py"
+)
 MISSING = object()
 
 
@@ -108,12 +113,13 @@ def contract_bytes(contract):
     return json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
-def passing_results(contract=None, contract_hash=None):
+def passing_results(contract=None, exact_contract_bytes=None):
     contract = contract or assemble_contract(public_manifest(), holdout_bundle())
-    contract_hash = contract_hash or sha256_bytes(contract_bytes(contract))
+    if exact_contract_bytes is None:
+        exact_contract_bytes = contract_bytes(contract)
     return {
         "results_version": RESULTS_VERSION,
-        "contract_sha256": contract_hash,
+        "contract_sha256": sha256_bytes(exact_contract_bytes),
         "target": TARGET,
         "mode": "evaluation",
         "environment": "Codex desktop production route",
@@ -136,6 +142,14 @@ def passing_results(contract=None, contract_hash=None):
                 "answer_systems": [TARGET],
                 "fresh_task": True,
                 "complete_answer_visible": True,
+                "route_trace": {
+                    "thread_id": f"thread-{case['id']}",
+                    "submitted_at": "2026-07-16T12:00:00Z",
+                    "completed_at": "2026-07-16T12:00:01Z",
+                    "answer_command_count": 1,
+                    "hosted_route": True,
+                    "raw_trace_path": f"/private/tmp/realityeval/{case['id']}.json",
+                },
                 "route_verdict": "pass",
                 "content_verdict": "pass",
                 "source_verdict": "pass",
@@ -156,8 +170,12 @@ def passing_results(contract=None, contract_hash=None):
 
 def passing_result_fixture():
     contract = assemble_contract(public_manifest(), holdout_bundle())
-    digest = sha256_bytes(contract_bytes(contract))
-    return contract, digest, passing_results(contract, digest)
+    exact_contract_bytes = contract_bytes(contract)
+    return (
+        contract,
+        exact_contract_bytes,
+        passing_results(contract, exact_contract_bytes),
+    )
 
 
 def mutate_path(payload, path, value):
@@ -218,6 +236,20 @@ class RealityEvalTests(unittest.TestCase):
 
         self.assertEqual(len(validated["questions"]), HOLDOUT_QUESTION_COUNT)
         self.assertTrue(all(case["holdout"] is True for case in validated["questions"]))
+
+    def test_holdout_created_at_requires_canonical_utc_seconds(self):
+        invalid_timestamps = (
+            "2026-07-16T12:00:00.123Z",
+            "2026-07-16T12:00:00+00:00",
+            "2026-07-16T12:00:00Z\ncovert-channel",
+            "2026-02-30T12:00:00Z",
+        )
+        for created_at in invalid_timestamps:
+            with self.subTest(created_at=created_at):
+                payload = holdout_bundle()
+                payload["created_at"] = created_at
+                with self.assertRaisesRegex(RealityEvalError, "created_at"):
+                    validate_holdout_bundle(payload)
 
     def test_holdout_bundle_rejects_non_holdout_case(self):
         payload = holdout_bundle()
@@ -289,12 +321,79 @@ class RealityEvalTests(unittest.TestCase):
             "Is Ask Just complete?",
             "What is Ask Monarch missing?",
             "What is Ask Just missing?",
+            "How complete is Ask Insects?",
+            "Should this question use Ask Monarch?",
+            "Can Ask Just answer this question?",
         )
         for question in questions:
             with self.subTest(question=question):
                 payload = public_manifest()
                 payload["questions"][0]["question"] = question
                 with self.assertRaisesRegex(RealityEvalError, "coverage or status"):
+                    validate_public_manifest(payload)
+
+    def test_categories_must_be_lowercase_slugs(self):
+        invalid_categories = (
+            "Category-0",
+            " category-0",
+            "category-0 ",
+            "category_0",
+            "category--0",
+        )
+        for category in invalid_categories:
+            with self.subTest(category=category):
+                payload = public_manifest()
+                payload["questions"][0]["category"] = category
+                with self.assertRaisesRegex(RealityEvalError, "lowercase slug"):
+                    validate_public_manifest(payload)
+
+    def test_malformed_manifest_scalars_raise_reality_eval_error(self):
+        mutations = (
+            (
+                "kind-list",
+                public_manifest,
+                ("questions", 0, "kind"),
+                [],
+                validate_public_manifest,
+                "kind",
+            ),
+            (
+                "huge-timestamp",
+                holdout_bundle,
+                ("created_at",),
+                "9" * 100_000,
+                validate_holdout_bundle,
+                "created_at",
+            ),
+            (
+                "timestamp-int",
+                holdout_bundle,
+                ("created_at",),
+                10**10_000,
+                validate_holdout_bundle,
+                "created_at",
+            ),
+        )
+        for name, builder, path, value, validator, message in mutations:
+            with self.subTest(name=name):
+                payload = builder()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, message):
+                    validator(payload)
+
+    def test_maximum_seconds_rejects_nonfinite_and_overflowing_numbers(self):
+        invalid_values = (
+            True,
+            float("nan"),
+            float("inf"),
+            float("-inf"),
+            10**10_000,
+        )
+        for index, value in enumerate(invalid_values):
+            with self.subTest(case=index, value_type=type(value).__name__):
+                payload = public_manifest()
+                payload["maximum_seconds"] = value
+                with self.assertRaisesRegex(RealityEvalError, "maximum_seconds"):
                     validate_public_manifest(payload)
 
     def test_final_contract_requires_six_categories(self):
@@ -393,27 +492,53 @@ class RealityEvalTests(unittest.TestCase):
         with self.assertRaisesRegex(RealityEvalError, "exact bundle bytes"):
             validate_holdout_receipt(receipt, bundle_bytes=bundle_bytes + b"\n")
 
+    def test_holdout_receipt_rejects_fractional_and_covert_timestamps(self):
+        bundle_bytes = json.dumps(holdout_bundle(), indent=2).encode("utf-8")
+        invalid_timestamps = (
+            "2026-07-16T12:00:00.1Z",
+            "2026-07-16T12:00:00+00:00",
+            "2026-07-16T12:00:00Z hidden-data",
+        )
+        for created_at in invalid_timestamps:
+            with self.subTest(created_at=created_at):
+                receipt = build_holdout_receipt(bundle_bytes)
+                receipt["created_at"] = created_at
+                with self.assertRaisesRegex(RealityEvalError, "created_at"):
+                    validate_holdout_receipt(receipt)
+
     def test_passing_baseline_results(self):
-        contract, digest, payload = passing_result_fixture()
+        contract, exact_contract_bytes, payload = passing_result_fixture()
 
         self.assertEqual(
-            validate_results(payload, contract=contract, contract_sha256=digest),
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            ),
             payload,
         )
 
     def test_elapsed_time_equal_to_60_is_rejected(self):
-        contract, digest, payload = passing_result_fixture()
+        contract, exact_contract_bytes, payload = passing_result_fixture()
         payload["results"][0]["elapsed_seconds"] = 60.0
 
         with self.assertRaisesRegex(RealityEvalError, "strict time limit"):
-            validate_results(payload, contract=contract, contract_sha256=digest)
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            )
 
     def test_missing_recording_is_rejected(self):
-        contract, digest, payload = passing_result_fixture()
+        contract, exact_contract_bytes, payload = passing_result_fixture()
         del payload["recording"]
 
         with self.assertRaisesRegex(RealityEvalError, "recording"):
-            validate_results(payload, contract=contract, contract_sha256=digest)
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            )
 
     def test_results_reject_wrong_hash_changed_question_and_alternate_system(self):
         mutations = (
@@ -423,10 +548,33 @@ class RealityEvalTests(unittest.TestCase):
         )
         for path, value, message in mutations:
             with self.subTest(path=path):
-                contract, digest, payload = passing_result_fixture()
+                contract, exact_contract_bytes, payload = passing_result_fixture()
                 mutate_path(payload, path, value)
                 with self.assertRaisesRegex(RealityEvalError, message):
-                    validate_results(payload, contract=contract, contract_sha256=digest)
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
+
+    def test_results_bind_contract_object_to_exact_contract_bytes(self):
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+
+        with self.assertRaisesRegex(RealityEvalError, "contract_sha256"):
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes + b"\n",
+            )
+
+        mismatched_contract = deepcopy(contract)
+        mismatched_contract["questions"][0]["question"] = "Changed parsed contract"
+        with self.assertRaisesRegex(RealityEvalError, "contract.*exact contract bytes"):
+            validate_results(
+                payload,
+                contract=mismatched_contract,
+                contract_bytes=exact_contract_bytes,
+            )
 
     def test_results_reject_every_non_pass_verdict(self):
         for field in (
@@ -437,10 +585,14 @@ class RealityEvalTests(unittest.TestCase):
             "usefulness_verdict",
         ):
             with self.subTest(field=field):
-                contract, digest, payload = passing_result_fixture()
+                contract, exact_contract_bytes, payload = passing_result_fixture()
                 payload["results"][0][field] = "fail"
                 with self.assertRaisesRegex(RealityEvalError, field):
-                    validate_results(payload, contract=contract, contract_sha256=digest)
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
 
     def test_results_require_nonempty_provenance(self):
         mutations = (
@@ -449,10 +601,14 @@ class RealityEvalTests(unittest.TestCase):
         )
         for path, value in mutations:
             with self.subTest(missing=value is MISSING):
-                contract, digest, payload = passing_result_fixture()
+                contract, exact_contract_bytes, payload = passing_result_fixture()
                 mutate_path(payload, path, value)
                 with self.assertRaisesRegex(RealityEvalError, r"\.provenance"):
-                    validate_results(payload, contract=contract, contract_sha256=digest)
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
 
     def test_results_require_complete_recording_metadata(self):
         mutations = (
@@ -465,21 +621,137 @@ class RealityEvalTests(unittest.TestCase):
             (("recording", "privacy_review"), "fail", "privacy_review"),
             (("recording", "shared_with_josh"), False, "shared_with_josh"),
             (("recording", "recording_path"), MISSING, "recording_path"),
+            (("recording", "question_count"), 50.0, "question_count"),
         )
         for path, value, message in mutations:
             with self.subTest(path=path):
-                contract, digest, payload = passing_result_fixture()
+                contract, exact_contract_bytes, payload = passing_result_fixture()
                 mutate_path(payload, path, value)
                 with self.assertRaisesRegex(RealityEvalError, message):
-                    validate_results(payload, contract=contract, contract_sha256=digest)
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
+
+    def test_results_require_complete_route_trace(self):
+        mutations = (
+            (("results", 0, "route_trace"), MISSING, "route_trace"),
+            (("results", 0, "route_trace", "thread_id"), MISSING, "thread_id"),
+            (("results", 0, "route_trace", "thread_id"), "", "thread_id"),
+            (
+                ("results", 0, "route_trace", "submitted_at"),
+                MISSING,
+                "submitted_at",
+            ),
+            (
+                ("results", 0, "route_trace", "submitted_at"),
+                "2026-07-16T12:00:00.1Z",
+                "submitted_at",
+            ),
+            (
+                ("results", 0, "route_trace", "submitted_at"),
+                "2026-07-16T12:00:00+00:00",
+                "submitted_at",
+            ),
+            (
+                ("results", 0, "route_trace", "completed_at"),
+                MISSING,
+                "completed_at",
+            ),
+            (
+                ("results", 0, "route_trace", "completed_at"),
+                "2026-07-16T12:00:01Z hidden",
+                "completed_at",
+            ),
+            (
+                ("results", 0, "route_trace", "answer_command_count"),
+                MISSING,
+                "answer_command_count",
+            ),
+            (
+                ("results", 0, "route_trace", "answer_command_count"),
+                0,
+                "answer_command_count",
+            ),
+            (
+                ("results", 0, "route_trace", "answer_command_count"),
+                1.0,
+                "answer_command_count",
+            ),
+            (
+                ("results", 0, "route_trace", "answer_command_count"),
+                True,
+                "answer_command_count",
+            ),
+            (
+                ("results", 0, "route_trace", "hosted_route"),
+                MISSING,
+                "hosted_route",
+            ),
+            (
+                ("results", 0, "route_trace", "hosted_route"),
+                False,
+                "hosted_route",
+            ),
+            (
+                ("results", 0, "route_trace", "raw_trace_path"),
+                MISSING,
+                "raw_trace_path",
+            ),
+            (
+                ("results", 0, "route_trace", "raw_trace_path"),
+                "",
+                "raw_trace_path",
+            ),
+            (
+                ("results", 0, "route_trace", "raw_trace_path"),
+                "relative/trace.json",
+                "raw_trace_path",
+            ),
+        )
+        for path, value, message in mutations:
+            with self.subTest(path=path, missing=value is MISSING):
+                contract, exact_contract_bytes, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, message):
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
+
+    def test_result_numbers_fail_closed(self):
+        mutations = (
+            (("results", 0, "elapsed_seconds"), float("nan"), "elapsed_seconds"),
+            (("results", 0, "elapsed_seconds"), float("inf"), "elapsed_seconds"),
+            (("results", 0, "elapsed_seconds"), float("-inf"), "elapsed_seconds"),
+            (("results", 0, "elapsed_seconds"), 10**10_000, "elapsed_seconds"),
+            (("results", 0, "elapsed_seconds"), True, "elapsed_seconds"),
+            (("results", 0, "attempt"), 1.0, "attempt"),
+        )
+        for index, (path, value, message) in enumerate(mutations):
+            with self.subTest(case=index, path=path):
+                contract, exact_contract_bytes, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, message):
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
 
     def test_results_summary_uses_median_and_nearest_rank_p95(self):
-        payload = passing_results()
+        contract, exact_contract_bytes, payload = passing_result_fixture()
         for index, result in enumerate(payload["results"]):
             result["elapsed_seconds"] = float(index)
 
         self.assertEqual(
-            summarize_results(payload),
+            summarize_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            ),
             {
                 "question_count": 50,
                 "passed_count": 50,
@@ -489,6 +761,51 @@ class RealityEvalTests(unittest.TestCase):
                 "maximum_seconds": 49.0,
                 "reality_eval_passed": True,
             },
+        )
+
+    def test_results_summary_revalidates_before_reporting_pass(self):
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+        payload["results"][0]["content_verdict"] = "fail"
+
+        with self.assertRaisesRegex(RealityEvalError, "content_verdict"):
+            summarize_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            )
+
+    def test_installed_validator_accepts_exact_compatibility_fixture(self):
+        if not INSTALLED_VALIDATOR.exists():
+            self.skipTest(f"installed validator not found: {INSTALLED_VALIDATOR}")
+
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            contract_path = Path(temp_dir) / "contract.json"
+            results_path = Path(temp_dir) / "results.json"
+            contract_path.write_bytes(exact_contract_bytes)
+            results_path.write_bytes(
+                json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
+                    "utf-8"
+                )
+            )
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(INSTALLED_VALIDATOR),
+                    "--contract",
+                    str(contract_path),
+                    "--results",
+                    str(results_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+        self.assertEqual(
+            completed.returncode,
+            0,
+            f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}",
         )
 
 
