@@ -101,6 +101,39 @@ class ProductionPathEvalTests(unittest.TestCase):
             ["config/insect-intelligence-programs.json#species/2"],
         )
 
+    def test_retrieval_summary_without_a_substantive_answer_fails(self):
+        question = "Compare Drosophila suzukii repellency assays for oviposition deterrence."
+        case = {
+            **sample_case(),
+            "question": question,
+            "expect": {
+                "behavior": "bounded_answer",
+                "required_terms": ["Drosophila suzukii", "41", "67"],
+                "forbidden_terms": [],
+                "source_ids": ["drosophila_suzukii_extracted_facts"],
+                "locator_patterns": ["records#swd:openalex_literature:openalex:W3033781469"],
+            },
+        }
+        answer = (
+            "For Drosophila suzukii, Ask Insects found 41 structured repellency assay "
+            "facts across 67 deduplicated candidate papers. The indexed rows are ready "
+            "for a bounded comparison on the reported dimensions.\n\nSources:\n"
+            "- `drosophila_suzukii_extracted_facts`: "
+            "`records#swd:openalex_literature:openalex:W3033781469`"
+        )
+        execution = successful_execution()
+        execution.visible_answer = answer
+        execution.agent_messages = [answer]
+        execution.commands = [f'ask-insects ask "{question}" --json --compact']
+
+        result = evaluate_case(case, execution, maximum_seconds=60)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "final answer is only a retrieval summary",
+            result["failures"],
+        )
+
     def test_equivalent_species_domain_and_status_labels_are_accepted(self):
         question = "What is the sensory world evidence status for spotted wing drosophila?"
         case = {

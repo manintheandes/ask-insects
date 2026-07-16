@@ -459,6 +459,25 @@ class RepellencyComparisonTest(unittest.TestCase):
             "mosquito_repellent_literature", result["coverage"]["searched_sources"]
         )
 
+    def test_swd_comparison_answer_reports_the_actual_assay_instead_of_only_counts(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = build_repellency_comparison_answer(
+                _build_index(Path(tmp) / "source_index.sqlite"),
+                "Compare Drosophila suzukii repellency assays for oviposition deterrence.",
+                limit=10,
+            )
+
+        answer = result["answer"]
+        self.assertIn("two-choice assay", answer)
+        self.assertIn("65%", answer)
+        self.assertIn("24 hours", answer)
+        self.assertIn("n=30", answer)
+        self.assertIn("p<0.05", answer)
+        self.assertIn("candidate", answer.lower())
+        self.assertIn("cannot", answer.lower())
+        self.assertNotIn(", The", answer)
+        self.assertNotIn(", No", answer)
+
     def test_swd_comparison_rejects_query_metadata_as_subject_evidence(self):
         with tempfile.TemporaryDirectory() as tmp:
             index = _build_index(Path(tmp) / "source_index.sqlite")
