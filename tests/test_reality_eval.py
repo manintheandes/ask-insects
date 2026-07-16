@@ -201,6 +201,47 @@ class RealityEvalTests(unittest.TestCase):
             with self.assertRaisesRegex(RealityEvalError, "JSON object"):
                 load_json_object(path)
 
+    def test_load_json_object_rejects_duplicate_top_level_keys(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "duplicate-top-level.json"
+            path.write_text('{"ok":true,"ok":false}', encoding="utf-8")
+            with self.assertRaisesRegex(
+                RealityEvalError,
+                "duplicate JSON object key",
+            ):
+                load_json_object(path)
+
+    def test_holdout_bytes_reject_duplicate_nested_keys(self):
+        bundle_bytes = json.dumps(
+            holdout_bundle(),
+            separators=(",", ":"),
+        ).encode("utf-8")
+        source = b'"source_id":"public-source-holdout-00"'
+        duplicate_source = source + b"," + source
+        self.assertIn(source, bundle_bytes)
+        bundle_bytes = bundle_bytes.replace(source, duplicate_source, 1)
+        with self.assertRaisesRegex(
+            RealityEvalError,
+            "duplicate JSON object key",
+        ):
+            build_holdout_receipt(bundle_bytes)
+
+    def test_contract_bytes_reject_duplicate_nested_keys(self):
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+        rule = b'"exact_question_required":true'
+        duplicate_rule = rule + b"," + rule
+        self.assertIn(rule, exact_contract_bytes)
+        duplicate_contract_bytes = exact_contract_bytes.replace(rule, duplicate_rule, 1)
+        with self.assertRaisesRegex(
+            RealityEvalError,
+            "duplicate JSON object key",
+        ):
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=duplicate_contract_bytes,
+            )
+
     def test_valid_public_manifest(self):
         validated = validate_public_manifest(public_manifest())
 
@@ -324,6 +365,7 @@ class RealityEvalTests(unittest.TestCase):
             "How complete is Ask Insects?",
             "Should this question use Ask Monarch?",
             "Can Ask Just answer this question?",
+            "Does ASK INSECTS have evidence for this claim?",
         )
         for question in questions:
             with self.subTest(question=question):
@@ -331,6 +373,17 @@ class RealityEvalTests(unittest.TestCase):
                 payload["questions"][0]["question"] = question
                 with self.assertRaisesRegex(RealityEvalError, "coverage or status"):
                     validate_public_manifest(payload)
+
+    def test_domain_cases_allow_ordinary_ask_phrases(self):
+        questions = (
+            "How should we ask farmers to record mosquito landing observations?",
+            "When should we ask a scientist to review the assay evidence?",
+        )
+        for question in questions:
+            with self.subTest(question=question):
+                payload = public_manifest()
+                payload["questions"][0]["question"] = question
+                self.assertIs(validate_public_manifest(payload), payload)
 
     def test_categories_must_be_lowercase_slugs(self):
         invalid_categories = (
@@ -720,6 +773,46 @@ class RealityEvalTests(unittest.TestCase):
                         contract=contract,
                         contract_bytes=exact_contract_bytes,
                     )
+
+    def test_results_require_unique_route_thread_ids(self):
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+        payload["results"][1]["route_trace"]["thread_id"] = payload["results"][0][
+            "route_trace"
+        ]["thread_id"]
+
+        with self.assertRaisesRegex(RealityEvalError, r"thread_id.*unique"):
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            )
+
+    def test_results_reject_route_completion_before_submission(self):
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+        route_trace = payload["results"][0]["route_trace"]
+        route_trace["submitted_at"] = "2026-07-16T12:00:02Z"
+        route_trace["completed_at"] = "2026-07-16T12:00:01Z"
+
+        with self.assertRaisesRegex(RealityEvalError, r"completed_at.*earlier"):
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            )
+
+    def test_results_allow_equal_route_timestamps(self):
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+        route_trace = payload["results"][0]["route_trace"]
+        route_trace["completed_at"] = route_trace["submitted_at"]
+
+        self.assertIs(
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            ),
+            payload,
+        )
 
     def test_result_numbers_fail_closed(self):
         mutations = (

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import datetime
+from datetime import UTC, datetime
 import hashlib
 import json
 import math
@@ -55,7 +55,9 @@ _META_MARKERS = (
     "program status",
     "what sources does ask",
 )
-_PRODUCT_REFERENCE_PATTERN = re.compile(r"\bask [a-z0-9][a-z0-9_-]*\b")
+_PRODUCT_REFERENCE_PATTERN = re.compile(
+    r"\bask (?:insects|just|" + "mon" + r"arch)\b"
+)
 _CATEGORY_PATTERN = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 _UTC_SECOND_PATTERN = re.compile(
     r"[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z"
@@ -85,11 +87,32 @@ def sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _reject_duplicate_object_keys(
+    pairs: list[tuple[str, Any]],
+) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise RealityEvalError(f"duplicate JSON object key: {key}")
+        value[key] = item
+    return value
+
+
+def _strict_json_loads(payload: str | bytes, name: str) -> object:
+    try:
+        return json.loads(payload, object_pairs_hook=_reject_duplicate_object_keys)
+    except RealityEvalError:
+        raise
+    except (UnicodeDecodeError, ValueError, RecursionError) as exc:
+        raise RealityEvalError(f"could not parse {name}: {exc}") from exc
+
+
 def load_json_object(path: Path) -> dict[str, object]:
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        raw_payload = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError) as exc:
         raise RealityEvalError(f"could not read {path}: {exc}") from exc
+    payload = _strict_json_loads(raw_payload, str(path))
     if not isinstance(payload, dict):
         raise RealityEvalError(f"{path} must contain a JSON object")
     return payload
@@ -122,7 +145,7 @@ def _nonempty_string(value: object, name: str) -> str:
     return value
 
 
-def _utc_second_timestamp(value: object, name: str) -> str:
+def _utc_second_datetime(value: object, name: str) -> datetime:
     if (
         not isinstance(value, str)
         or len(value) != _UTC_SECOND_LENGTH
@@ -130,11 +153,17 @@ def _utc_second_timestamp(value: object, name: str) -> str:
     ):
         raise RealityEvalError(f"{name} must be a UTC second timestamp YYYY-MM-DDTHH:MM:SSZ")
     try:
-        datetime.strptime(value, _UTC_SECOND_FORMAT)
+        parsed = datetime.strptime(value, _UTC_SECOND_FORMAT)
     except ValueError as exc:
         raise RealityEvalError(
             f"{name} must be a valid UTC second timestamp YYYY-MM-DDTHH:MM:SSZ"
         ) from exc
+    return parsed.replace(tzinfo=UTC)
+
+
+def _utc_second_timestamp(value: object, name: str) -> str:
+    _utc_second_datetime(value, name)
+    assert isinstance(value, str)
     return value
 
 
@@ -331,10 +360,7 @@ def validate_holdout_bundle(payload: object) -> dict[str, object]:
 def _json_object_from_bytes(payload: bytes, name: str) -> dict[str, object]:
     if not isinstance(payload, bytes):
         raise RealityEvalError(f"{name} must be bytes")
-    try:
-        value = json.loads(payload)
-    except (UnicodeDecodeError, ValueError) as exc:
-        raise RealityEvalError(f"could not parse {name}: {exc}") from exc
+    value = _strict_json_loads(payload, name)
     if not isinstance(value, dict):
         raise RealityEvalError(f"{name} must contain a JSON object")
     return value
@@ -524,6 +550,7 @@ def validate_results(
         "contract.maximum_seconds",
     )
     seen_ids: set[str] = set()
+    seen_thread_ids: set[str] = set()
     for index, raw_result in enumerate(raw_results):
         result = _object(raw_result, f"results[{index}]")
         case_id = _nonempty_string(result.get("id"), f"results[{index}].id")
@@ -566,18 +593,27 @@ def validate_results(
             result.get("route_trace"),
             f"result {case_id}.route_trace",
         )
-        _nonempty_string(
+        thread_id = _nonempty_string(
             route_trace.get("thread_id"),
             f"result {case_id}.route_trace.thread_id",
         )
-        _utc_second_timestamp(
+        if thread_id in seen_thread_ids:
+            raise RealityEvalError(
+                f"result {case_id}.route_trace.thread_id must be unique across results"
+            )
+        seen_thread_ids.add(thread_id)
+        submitted_at = _utc_second_datetime(
             route_trace.get("submitted_at"),
             f"result {case_id}.route_trace.submitted_at",
         )
-        _utc_second_timestamp(
+        completed_at = _utc_second_datetime(
             route_trace.get("completed_at"),
             f"result {case_id}.route_trace.completed_at",
         )
+        if completed_at < submitted_at:
+            raise RealityEvalError(
+                f"result {case_id}.route_trace.completed_at cannot be earlier than submitted_at"
+            )
         _strict_integer(
             route_trace.get("answer_command_count"),
             f"result {case_id}.route_trace.answer_command_count",
