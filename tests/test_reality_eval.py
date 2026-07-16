@@ -1,10 +1,12 @@
 import hashlib
+import io
 import json
 import subprocess
 import sys
 import tempfile
 import unittest
 from copy import deepcopy
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from askinsects.reality_eval import (
@@ -355,6 +357,14 @@ def mutate_path(payload, path, value):
         cursor[path[-1]] = value
 
 
+def run_reality_cli(eval_reality, *arguments):
+    stdout = io.StringIO()
+    stderr = io.StringIO()
+    with redirect_stdout(stdout), redirect_stderr(stderr):
+        exit_code = eval_reality.main(list(arguments))
+    return exit_code, stdout.getvalue(), stderr.getvalue()
+
+
 class RealityEvalTests(unittest.TestCase):
     def test_sha256_and_json_object_helpers(self):
         payload = b'{"ok": true}'
@@ -470,6 +480,145 @@ class RealityEvalTests(unittest.TestCase):
                     if record_id in source["locator"]
                 }
                 self.assertEqual(matching_urls, expected_urls)
+
+    def test_cli_validates_freezes_assembles_and_summarizes(self):
+        from scripts import eval_reality
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            public_path = root / "public.json"
+            holdout_path = root / "holdouts.json"
+            receipt_path = root / "receipt.json"
+            contract_path = root / "contract.json"
+            results_path = root / "results.json"
+            public_path.write_text(
+                json.dumps(public_manifest()),
+                encoding="utf-8",
+            )
+            holdout_path.write_text(
+                json.dumps(holdout_bundle()),
+                encoding="utf-8",
+            )
+
+            exit_code, _, stderr = run_reality_cli(
+                eval_reality,
+                "validate-public",
+                "--public",
+                str(public_path),
+            )
+            self.assertEqual(exit_code, 0, stderr)
+
+            exit_code, _, stderr = run_reality_cli(
+                eval_reality,
+                "freeze-holdouts",
+                "--holdouts",
+                str(holdout_path),
+                "--receipt",
+                str(receipt_path),
+            )
+            self.assertEqual(exit_code, 0, stderr)
+            receipt_bytes = receipt_path.read_bytes()
+            receipt = json.loads(receipt_bytes)
+            self.assertEqual(
+                set(receipt),
+                {
+                    "receipt_version",
+                    "target",
+                    "bundle_version",
+                    "created_at",
+                    "question_count",
+                    "bundle_sha256",
+                },
+            )
+            self.assertNotIn(b"questions", receipt_bytes)
+            self.assertNotIn(b"truth_packet", receipt_bytes)
+
+            exit_code, _, stderr = run_reality_cli(
+                eval_reality,
+                "assemble",
+                "--public",
+                str(public_path),
+                "--holdouts",
+                str(holdout_path),
+                "--receipt",
+                str(receipt_path),
+                "--output",
+                str(contract_path),
+            )
+            self.assertEqual(exit_code, 0, stderr)
+
+            exit_code, _, stderr = run_reality_cli(
+                eval_reality,
+                "validate-contract",
+                "--contract",
+                str(contract_path),
+            )
+            self.assertEqual(exit_code, 0, stderr)
+
+            contract = load_json_object(contract_path)
+            results_path.write_text(
+                json.dumps(passing_results(contract, contract_path.read_bytes())),
+                encoding="utf-8",
+            )
+            exit_code, _, stderr = run_reality_cli(
+                eval_reality,
+                "validate-results",
+                "--contract",
+                str(contract_path),
+                "--results",
+                str(results_path),
+            )
+            self.assertEqual(exit_code, 0, stderr)
+
+            exit_code, stdout, stderr = run_reality_cli(
+                eval_reality,
+                "summary",
+                "--contract",
+                str(contract_path),
+                "--results",
+                str(results_path),
+            )
+            self.assertEqual(exit_code, 0, stderr)
+            self.assertTrue(json.loads(stdout)["reality_eval_passed"])
+
+    def test_cli_assemble_rejects_changed_holdout_bytes(self):
+        from scripts import eval_reality
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            public_path = root / "public.json"
+            holdout_path = root / "holdouts.json"
+            receipt_path = root / "receipt.json"
+            contract_path = root / "contract.json"
+            public_path.write_text(json.dumps(public_manifest()), encoding="utf-8")
+            holdout_path.write_text(json.dumps(holdout_bundle()), encoding="utf-8")
+            exit_code, _, stderr = run_reality_cli(
+                eval_reality,
+                "freeze-holdouts",
+                "--holdouts",
+                str(holdout_path),
+                "--receipt",
+                str(receipt_path),
+            )
+            self.assertEqual(exit_code, 0, stderr)
+
+            holdout_path.write_bytes(holdout_path.read_bytes() + b"\n")
+            exit_code, _, stderr = run_reality_cli(
+                eval_reality,
+                "assemble",
+                "--public",
+                str(public_path),
+                "--holdouts",
+                str(holdout_path),
+                "--receipt",
+                str(receipt_path),
+                "--output",
+                str(contract_path),
+            )
+
+            self.assertEqual(exit_code, 2)
+            self.assertIn("does not match the exact bundle bytes", stderr)
+            self.assertFalse(contract_path.exists())
 
     def test_public_manifest_rejects_39_and_41_cases(self):
         too_few = public_manifest()
