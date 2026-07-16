@@ -152,20 +152,29 @@ class ReviewedScienceTests(unittest.TestCase):
                     )
                 ]
             )
-            answer = build_reviewed_science_answer(
-                index,
+            catalog_path = self.write_catalog(root)
+            questions = (
                 (
                     "What sensory evidence links substrate stiffness to egg-laying "
                     "decisions in spotted-wing drosophila?"
                 ),
-                catalog_path=self.write_catalog(root),
+                "What links a stiff oviposition surface to sensory behavior in SWD?",
+                "Can SWD sense a stiffer egg-laying surface?",
+                "Do SWD females prefer the stiffest substrate when laying eggs?",
             )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(
+                        index,
+                        question,
+                        catalog_path=catalog_path,
+                    )
 
-        self.assertIsNotNone(answer)
-        assert answer is not None
-        self.assertTrue(answer["ok"])
-        self.assertIn("preferred the harder", answer["answer"])
-        self.assertIn("TRP and DEG/ENaC", answer["answer"])
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertTrue(answer["ok"])
+                    self.assertIn("preferred the harder", answer["answer"])
+                    self.assertIn("TRP and DEG/ENaC", answer["answer"])
 
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:

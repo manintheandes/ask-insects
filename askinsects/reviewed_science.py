@@ -24,9 +24,9 @@ EVALUATION_ONLY_FIELDS = frozenset(
     }
 )
 _MATCH_TOKEN_EQUIVALENTS = {
-    "stiff": "hard",
+    "stiff": "hardness",
     "stiffer": "harder",
-    "stiffest": "hardest",
+    "stiffest": "harder",
     "stiffness": "hardness",
 }
 
