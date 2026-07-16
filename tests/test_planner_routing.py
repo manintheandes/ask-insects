@@ -46,6 +46,36 @@ class PlannerRoutingTests(unittest.TestCase):
                 self.assertEqual(plan.answer_shape, "behavior")
                 self.assertEqual(plan.lanes[0], "behavior")
 
+    def test_scientific_gap_language_without_media_anchor_does_not_route_to_media(self):
+        plan = plan_question(
+            "What explains the translation gap between semi-field and field "
+            "transfluthrin results in Aedes aegypti?"
+        )
+
+        self.assertNotEqual(plan.answer_shape, "media")
+        self.assertNotEqual(plan.lanes, ("media",))
+
+    def test_media_gap_language_still_routes_to_media(self):
+        plan = plan_question("Which Aedes video gaps are still unresolved?")
+
+        self.assertEqual(plan.answer_shape, "media")
+        self.assertEqual(plan.lanes, ("media",))
+
+    def test_repository_archive_gap_language_routes_to_media(self):
+        for question in (
+            "show Dryad archive contents not decoded gaps",
+            "show Dryad Figure_S7 archive gap",
+        ):
+            with self.subTest(question=question):
+                plan = plan_question(question)
+                self.assertEqual(plan.answer_shape, "media")
+                self.assertEqual(plan.lanes, ("media",))
+
+    def test_immediate_scientific_question_does_not_match_media_substring(self):
+        plan = plan_question("What is the immediate field priority for Aedes repellency?")
+
+        self.assertNotEqual(plan.answer_shape, "media")
+
 
 if __name__ == "__main__":
     unittest.main()

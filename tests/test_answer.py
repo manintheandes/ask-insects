@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from askinsects.answer import answer_question
+from askinsects.answer import _requested_species, answer_question
 from askinsects.builder import build_fixture_index, build_source_index
 from askinsects.index import SourceIndex
 from askinsects.planner import plan_question
@@ -574,6 +574,57 @@ class AnswerTests(unittest.TestCase):
 
         self.assertFalse(answer["ok"])
         self.assertIn("search budget", answer["source_gap"]["reason"].casefold())
+
+    def test_bounded_full_text_timeout_recovers_with_a_simpler_query(self):
+        question = "How does an unfamiliar volatile alter mosquito orientation?"
+        plan = plan_question(question)
+        evidence = EvidenceRecord(
+            record_id="test:recovered-volatile-orientation",
+            lane=plan.lanes[0],
+            source="mosquito_v1_fixtures",
+            title="Recovered mosquito volatile evidence",
+            text="A mosquito orientation response was measured for a volatile.",
+            species="Aedes aegypti",
+            url="https://example.org/recovered-volatile-orientation",
+            media_url=None,
+            provenance=Provenance(
+                source_id="mosquito_v1_fixtures",
+                locator="test#recovered-volatile-orientation",
+                retrieved_at="2026-07-16T00:00:00Z",
+            ),
+        )
+
+        def timeout_then_evidence(index, query, lane=None, limit=10):
+            if query == question:
+                index.last_search_timed_out = True
+                return []
+            index.last_search_timed_out = False
+            return [evidence]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            with patch.object(
+                SourceIndex,
+                "search",
+                autospec=True,
+                side_effect=timeout_then_evidence,
+            ) as search_mock:
+                answer = answer_question(question, artifact_dir=artifact_dir)
+
+        self.assertEqual(search_mock.call_count, 2)
+        self.assertTrue(answer["ok"])
+        self.assertEqual(answer["evidence"][0]["record_id"], evidence.record_id)
+
+    def test_requested_species_recognizes_diamondback_moth_aliases(self):
+        for question in (
+            "How does Plutella xylostella respond to this odor?",
+            "How does diamondback moth respond to this odor?",
+            "How does DBM respond to this odor?",
+        ):
+            with self.subTest(question=question):
+                self.assertEqual(_requested_species(question), "Plutella xylostella")
 
     def test_bounded_full_text_timeout_does_not_override_found_evidence(self):
         question = "How does an unfamiliar volatile alter mosquito orientation?"
