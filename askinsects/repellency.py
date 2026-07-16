@@ -592,6 +592,12 @@ def _comparison_answer_scope(
     return ""
 
 
+def _apply_answer_scope(scope: str, sentence: str) -> str:
+    if not scope:
+        return sentence
+    return scope + sentence[:1].lower() + sentence[1:]
+
+
 def _unique(values: list[str]) -> list[str]:
     seen: set[str] = set()
     result: list[str] = []
@@ -935,6 +941,67 @@ def _evidence_item(record: EvidenceRecord) -> dict[str, object]:
     }
 
 
+def _clean_answer_value(value: object) -> str:
+    text = re.sub(r"<[^>]+>", "", str(value or ""))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _display_list(values: object) -> str:
+    if not isinstance(values, list):
+        return ""
+    cleaned = [_clean_answer_value(value) for value in values]
+    return ", ".join(value for value in cleaned if value)
+
+
+def _comparison_row_detail(row: dict[str, object]) -> str:
+    fields: list[str] = []
+    for label, key in (
+        ("species", "species"),
+        ("compound", "compounds"),
+        ("formulation", "formulations"),
+        ("exposure", "exposure_modes"),
+        ("assay", "assays"),
+        ("endpoint", "endpoints"),
+        ("sex", "sexes"),
+        ("life stage", "life_stages"),
+    ):
+        value = (
+            _display_list(row.get(key))
+            if isinstance(row.get(key), list)
+            else _clean_answer_value(row.get(key))
+        )
+        if value:
+            fields.append(f"{label}: {value}")
+    for label, key in (
+        ("dose", "dose"),
+        ("duration", "duration"),
+        ("outcome", "outcome"),
+        ("control", "control"),
+        ("sample size", "sample_size"),
+        ("statistics", "statistical_result"),
+    ):
+        value = _clean_answer_value(row.get(key))
+        if value:
+            fields.append(f"{label}: {value}")
+    confidence = _clean_answer_value(row.get("confidence"))
+    if confidence:
+        fields.append(f"verification: {confidence}")
+
+    evidence_text = _clean_answer_value(row.get("evidence_text"))
+    if evidence_text:
+        if len(evidence_text) > 520:
+            evidence_text = evidence_text[:517].rstrip() + "..."
+        fields.append(f"reported evidence: {evidence_text}")
+    title = _clean_answer_value(row.get("paper_title")) or _clean_answer_value(
+        row.get("title")
+    )
+    return f"- {title}: " + "; ".join(fields)
+
+
+def _comparison_row_details(rows: list[dict[str, object]]) -> str:
+    return "\n".join(_comparison_row_detail(row) for row in rows)
+
+
 def _fulltext_paper_count(
     index: SourceIndex,
     paper_key_by_record_id: dict[str, str],
@@ -1232,16 +1299,35 @@ def build_repellency_comparison_answer(
         source_gap = None
         ok = True
     else:
-        answer = (
-            f"{answer_scope}Ask Insects found {len(comparison_rows)} structured repellency assay fact(s) across "
-            f"{len(papers)} deduplicated candidate paper(s). "
-            + (
-                "The indexed rows are ready for a bounded comparison on the reported dimensions."
-                if status == "comparison_ready"
-                else "There is insufficient evidence for a defensible comparison. Reasons: "
+        if claim_type == "pairwise_comparison":
+            if status == "comparison_ready":
+                conclusion = (
+                    "The indexed evidence contains a matched pair that is ready for expert comparison, "
+                    "but Ask Insects does not automatically declare a winner."
+                )
+            else:
+                conclusion = (
+                    "The indexed evidence cannot rank the requested compounds under matched assay conditions. "
+                    "This is insufficient evidence for a winner. Reasons: "
+                    + "; ".join(reason["message"] for reason in reasons)
+                )
+        elif status == "comparison_ready":
+            conclusion = (
+                "The indexed evidence supports a bounded qualitative comparison, not a winner. "
+                "The studies cannot be ranked unless species, exposure mode, assay, endpoint, dose, "
+                "duration, outcome, and statistical evidence are aligned."
+            )
+        else:
+            conclusion = (
+                "There is insufficient evidence for a defensible comparison. Reasons: "
                 + "; ".join(reason["message"] for reason in reasons)
             )
+        answer = _apply_answer_scope(answer_scope, conclusion) + (
+            f" The index contains {len(comparison_rows)} structured repellency "
+            f"assay fact(s) across {len(papers)} deduplicated candidate paper(s)."
         )
+        if comparison_rows:
+            answer += "\n\nReported assay details:\n" + _comparison_row_details(comparison_rows[:limit])
         source_gap = None
         ok = True
 

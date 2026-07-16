@@ -833,6 +833,47 @@ def _answer_text(plan: QueryPlan, records: list[EvidenceRecord]) -> str:
     return f"I found {len(records)} indexed Ask Insects record(s)."
 
 
+def _clean_inline_answer_text(value: object) -> str:
+    text = re.sub(r"<[^>]+>", "", str(value or ""))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _bounded_answer_excerpt(value: object, *, limit: int = 520) -> str:
+    text = _clean_inline_answer_text(value)
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3].rstrip() + "..."
+
+
+def _swd_repellency_record_detail(record: EvidenceRecord) -> str:
+    text = _clean_inline_answer_text(record.text)
+    title_match = re.search(
+        r"\bfact from (.+?)\. Source record:",
+        text,
+        flags=re.IGNORECASE,
+    )
+    paper_title = (
+        _clean_inline_answer_text(title_match.group(1))
+        if title_match
+        else _clean_inline_answer_text(record.title)
+    )
+    evidence_match = re.search(r"\bEvidence:\s*(.+)$", text, flags=re.IGNORECASE)
+    detail = evidence_match.group(1) if evidence_match else text
+    return f"- {paper_title}: {_bounded_answer_excerpt(detail)}"
+
+
+def _swd_repellency_evidence_answer(records: list[EvidenceRecord]) -> str:
+    details = "\n".join(_swd_repellency_record_detail(record) for record in records)
+    return (
+        "The direct public Drosophila suzukii evidence supports several candidate "
+        "non-contact, spatial-repellent, or oviposition-deterrence approaches:\n"
+        f"{details}\n\n"
+        "These records span different compounds, formulations, crops, assays, and endpoints. "
+        "They are candidate machine-extracted evidence, not human-verified proof of mechanism, "
+        "commercial efficacy, product readiness, or superiority over the literature."
+    )
+
+
 def _is_spotted_wing_question(question: str) -> bool:
     q = question.lower()
     return any(term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila", "swd"))
@@ -6018,17 +6059,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 plan,
                 "No direct-focal-species SWD non-contact, spatial-repellency, or oviposition-deterrence record passed the public evidence filter.",
             )
-        lead = repellency_records[0]
         return {
             "ok": True,
             "answer_shape": plan.answer_shape,
-            "answer": (
-                f"Ask Insects found {len(repellency_records)} direct-focal-species candidate public "
-                "record(s) relevant to SWD non-contact repellency, spatial repellent evidence, "
-                f"or oviposition deterrent evidence. {lead.text} "
-                "This is candidate machine-extracted evidence, not human-verified proof of mechanism, "
-                "commercial efficacy, product readiness, or superiority over the literature."
-            ),
+            "answer": _swd_repellency_evidence_answer(repellency_records),
             "evidence": [record_to_evidence(record) for record in repellency_records],
             "source_gap": None,
         }
@@ -6045,8 +6079,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             "ok": True,
             "answer_shape": plan.answer_shape,
             "answer": (
-                "Ask Insects' recent public mosquito repellent literature index contains "
-                f"metadata-indexed candidates describing formulations or delivery formats such as: {titles}. "
+                "The recent public mosquito repellent literature index contains these "
+                f"metadata-indexed candidates describing formulations or delivery formats: {titles}. "
                 "These metadata candidates show what appears in the index; they are not proof that each "
                 "formulation is effective, safe, directly comparable, or commercially ready."
             ),

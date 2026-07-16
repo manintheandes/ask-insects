@@ -388,6 +388,19 @@ def _contains_forbidden_claim(answer: str, term: str) -> bool:
     return False
 
 
+def _is_retrieval_summary_only(answer: str) -> bool:
+    body = re.split(r"\n+Sources:\s*", answer, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+    patterns = (
+        r"(?:For .+?,\s*)?Ask Insects found \d+ structured repellency assay fact(?:\(s\)|s)? "
+        r"across \d+ deduplicated candidate paper(?:\(s\)|s)?\. "
+        r"The indexed rows are ready for a bounded comparison on the reported dimensions\.",
+        r"I found \d+ indexed Ask Insects evidence record(?:\(s\)|s)? matching the question\.",
+        r"I found \d+ indexed Ask Insects media record(?:\(s\)|s)?\.",
+        r"I found \d+ indexed Ask Insects record(?:\(s\)|s)?\.",
+    )
+    return any(re.fullmatch(pattern, body, flags=re.IGNORECASE) for pattern in patterns)
+
+
 def evaluate_case(
     case: dict[str, object],
     execution: ExecutionResult,
@@ -411,6 +424,8 @@ def evaluate_case(
         failures.append("Codex turn did not complete")
     if not answer.strip():
         failures.append("Codex returned no final visible answer")
+    if _is_retrieval_summary_only(answer):
+        failures.append("final answer is only a retrieval summary")
     for label, pattern in PUBLIC_ANSWER_LEAK_PATTERNS:
         if pattern.search(answer):
             failures.append(f"public answer leak marker detected: {label}")
