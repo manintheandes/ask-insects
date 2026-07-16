@@ -176,6 +176,36 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIn("preferred the harder", answer["answer"])
                     self.assertIn("TRP and DEG/ENaC", answer["answer"])
 
+    def test_recovery_reversibility_paraphrases_select_habituation_topic(self):
+        record_id = "swd:openalex_literature:openalex:W3199560580"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator="raw/swd.json#works/W3199560580",
+                    )
+                ]
+            )
+            questions = (
+                "What would a recovery phase after odor removal tell us about whether an SWD avoidance effect is reversible?",
+                "How should I test the reversibility of SWD avoidance once the volatile is gone?",
+                "Does SWD avoidance return to baseline after the odor source is removed?",
+                "Would SWD avoidance rebound after repellent washout?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertTrue(answer["ok"])
+                    self.assertIn("Compare naive and pre-exposed flies", answer["answer"])
+                    self.assertIn("does not prove long-term field persistence", answer["answer"])
+
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
