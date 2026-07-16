@@ -16,6 +16,7 @@ HOLDOUT_BUNDLE_VERSION = "ask-insects-reality-holdouts.v1"
 HOLDOUT_RECEIPT_VERSION = "ask-insects-reality-holdout-receipt.v1"
 CONTRACT_VERSION = "realityeval.v1"
 RESULTS_VERSION = "realityeval-results.v1"
+EVALUATOR_VERSION = "ask-insects-reality-evaluator.v1"
 TARGET = "ask-insects"
 PUBLIC_QUESTION_COUNT = 40
 HOLDOUT_QUESTION_COUNT = 10
@@ -75,6 +76,20 @@ _HOLDOUT_RECEIPT_FIELDS = frozenset(
     }
 )
 _SHA256_PATTERN = re.compile(r"[0-9a-f]{64}")
+_GIT_COMMIT_PATTERN = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})")
+_RUN_MANIFEST_FIELDS = frozenset(
+    {
+        "repository_commit",
+        "installed_skill_sha256",
+        "hosted_revision",
+        "public_corpus_sha256",
+        "holdout_receipt_sha256",
+        "evaluator_version",
+        "unchanged_run_started_at",
+        "unchanged_run_finished_at",
+    }
+)
+_SCIENTIFIC_JUDGE = "independent-source-review"
 
 
 class RealityEvalError(ValueError):
@@ -490,6 +505,155 @@ def validate_contract(payload: object) -> dict[str, object]:
     return contract
 
 
+def _lowercase_sha256(value: object, name: str) -> str:
+    if not isinstance(value, str) or not _SHA256_PATTERN.fullmatch(value):
+        raise RealityEvalError(f"{name} must be a lowercase 64-hex SHA-256")
+    return value
+
+
+def _json_sha256(value: object) -> str:
+    try:
+        payload = json.dumps(
+            value,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=True,
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError, RecursionError) as exc:
+        raise RealityEvalError(f"could not fingerprint JSON value: {exc}") from exc
+    return sha256_bytes(payload)
+
+
+def _validate_run_manifest(
+    value: object,
+    *,
+    revision: str,
+) -> tuple[datetime, datetime]:
+    manifest = _object(value, "results.run_manifest")
+    if set(manifest) != _RUN_MANIFEST_FIELDS:
+        raise RealityEvalError(
+            f"results.run_manifest keys must be exactly {sorted(_RUN_MANIFEST_FIELDS)}"
+        )
+
+    repository_commit = manifest.get("repository_commit")
+    if (
+        not isinstance(repository_commit, str)
+        or not _GIT_COMMIT_PATTERN.fullmatch(repository_commit)
+    ):
+        raise RealityEvalError(
+            "results.run_manifest.repository_commit must be a lowercase 40- or 64-hex Git commit"
+        )
+    _lowercase_sha256(
+        manifest.get("installed_skill_sha256"),
+        "results.run_manifest.installed_skill_sha256",
+    )
+    hosted_revision = _nonempty_string(
+        manifest.get("hosted_revision"),
+        "results.run_manifest.hosted_revision",
+    )
+    _lowercase_sha256(
+        manifest.get("public_corpus_sha256"),
+        "results.run_manifest.public_corpus_sha256",
+    )
+    _lowercase_sha256(
+        manifest.get("holdout_receipt_sha256"),
+        "results.run_manifest.holdout_receipt_sha256",
+    )
+    if manifest.get("evaluator_version") != EVALUATOR_VERSION:
+        raise RealityEvalError(
+            f"results.run_manifest.evaluator_version must be {EVALUATOR_VERSION}"
+        )
+    started_at = _utc_second_datetime(
+        manifest.get("unchanged_run_started_at"),
+        "results.run_manifest.unchanged_run_started_at",
+    )
+    finished_at = _utc_second_datetime(
+        manifest.get("unchanged_run_finished_at"),
+        "results.run_manifest.unchanged_run_finished_at",
+    )
+    if finished_at < started_at:
+        raise RealityEvalError(
+            "results.run_manifest unchanged run finished earlier than it started"
+        )
+    if revision != hosted_revision:
+        raise RealityEvalError(
+            "results.revision must match results.run_manifest.hosted_revision"
+        )
+    return started_at, finished_at
+
+
+def _truth_packet_claims(truth_packet: dict[str, Any]) -> list[str]:
+    claims: list[str] = []
+    for field in (
+        "required_claims",
+        "forbidden_claims",
+        "reasoning_boundaries",
+    ):
+        values = truth_packet[field]
+        if not isinstance(values, list):
+            raise RealityEvalError(f"validated truth_packet.{field} must be a list")
+        claims.extend(str(value) for value in values)
+    return claims
+
+
+def _validate_scientific_grade(
+    value: object,
+    *,
+    case_id: str,
+    truth_packet: dict[str, Any],
+) -> None:
+    grade = _object(value, f"result {case_id}.scientific_grade")
+    if grade.get("judge") != _SCIENTIFIC_JUDGE:
+        raise RealityEvalError(
+            f"result {case_id}.scientific_grade.judge must be {_SCIENTIFIC_JUDGE}"
+        )
+    truth_packet_sha256 = _lowercase_sha256(
+        grade.get("truth_packet_sha256"),
+        f"result {case_id}.scientific_grade.truth_packet_sha256",
+    )
+    if truth_packet_sha256 != _json_sha256(truth_packet):
+        raise RealityEvalError(
+            f"result {case_id}.scientific_grade.truth_packet_sha256 does not match the frozen truth packet"
+        )
+
+    raw_checks = grade.get("claim_checks")
+    if not isinstance(raw_checks, list) or not raw_checks:
+        raise RealityEvalError(
+            f"result {case_id}.scientific_grade.claim_checks must be a nonempty list"
+        )
+    checked_claims: list[str] = []
+    for index, raw_check in enumerate(raw_checks):
+        check = _object(
+            raw_check,
+            f"result {case_id}.scientific_grade.claim_checks[{index}]",
+        )
+        checked_claims.append(
+            _nonempty_string(
+                check.get("claim"),
+                f"result {case_id}.scientific_grade.claim_checks[{index}].claim",
+            )
+        )
+        if check.get("verdict") != "pass":
+            raise RealityEvalError(
+                f"result {case_id}.scientific_grade.claim_checks[{index}].verdict must be pass"
+            )
+        _nonempty_string(
+            check.get("evidence"),
+            f"result {case_id}.scientific_grade.claim_checks[{index}].evidence",
+        )
+
+    expected_claims = _truth_packet_claims(truth_packet)
+    if (
+        len(checked_claims) != len(expected_claims)
+        or len(checked_claims) != len(set(checked_claims))
+        or set(checked_claims) != set(expected_claims)
+    ):
+        raise RealityEvalError(
+            f"result {case_id}.scientific_grade.claim_checks do not cover the frozen truth packet exactly"
+        )
+
+
 def validate_results(
     payload: object,
     *,
@@ -512,10 +676,14 @@ def validate_results(
     if result_doc.get("mode") != validated_contract["mode"]:
         raise RealityEvalError("results mode does not match contract mode")
     _nonempty_string(result_doc.get("environment"), "results.environment")
-    _nonempty_string(result_doc.get("revision"), "results.revision")
+    revision = _nonempty_string(result_doc.get("revision"), "results.revision")
+    run_started_at, run_finished_at = _validate_run_manifest(
+        result_doc.get("run_manifest"),
+        revision=revision,
+    )
 
     recording = _object(result_doc.get("recording"), "results.recording")
-    _nonempty_string(
+    _absolute_path(
         recording.get("recording_path"),
         "results.recording.recording_path",
     )
@@ -559,9 +727,14 @@ def validate_results(
         if case_id in seen_ids:
             raise RealityEvalError(f"results contains duplicate id {case_id}")
         seen_ids.add(case_id)
-        if result.get("question") != cases[case_id]["question"]:
+        case = cases[case_id]
+        if result.get("question") != case["question"]:
             raise RealityEvalError(f"result {case_id} changed the exact frozen question")
         _nonempty_string(result.get("answer"), f"result {case_id}.answer")
+        truth_packet = _object(
+            case.get("truth_packet"),
+            f"contract case {case_id}.truth_packet",
+        )
 
         elapsed = _finite_number(
             result.get("elapsed_seconds"),
@@ -614,6 +787,14 @@ def validate_results(
             raise RealityEvalError(
                 f"result {case_id}.route_trace.completed_at cannot be earlier than submitted_at"
             )
+        if submitted_at < run_started_at:
+            raise RealityEvalError(
+                f"result {case_id}.route_trace.submitted_at is before the unchanged run"
+            )
+        if completed_at > run_finished_at:
+            raise RealityEvalError(
+                f"result {case_id}.route_trace.completed_at is after the unchanged run"
+            )
         _strict_integer(
             route_trace.get("answer_command_count"),
             f"result {case_id}.route_trace.answer_command_count",
@@ -632,22 +813,50 @@ def validate_results(
             if result.get(field) != "pass":
                 raise RealityEvalError(f"result {case_id}.{field} must be pass")
         _nonempty_string(result.get("judge_evidence"), f"result {case_id}.judge_evidence")
+        _validate_scientific_grade(
+            result.get("scientific_grade"),
+            case_id=case_id,
+            truth_packet=truth_packet,
+        )
 
         provenance = result.get("provenance")
         if not isinstance(provenance, list) or not provenance:
             raise RealityEvalError(f"result {case_id}.provenance must be a nonempty list")
+        actual_provenance: list[tuple[str, str]] = []
         for provenance_index, raw_item in enumerate(provenance):
             item = _object(
                 raw_item,
                 f"result {case_id}.provenance[{provenance_index}]",
             )
-            _nonempty_string(
-                item.get("source_id"),
-                f"result {case_id}.provenance[{provenance_index}].source_id",
+            actual_provenance.append(
+                (
+                    _nonempty_string(
+                        item.get("source_id"),
+                        f"result {case_id}.provenance[{provenance_index}].source_id",
+                    ),
+                    _nonempty_string(
+                        item.get("locator"),
+                        f"result {case_id}.provenance[{provenance_index}].locator",
+                    ),
+                )
             )
-            _nonempty_string(
-                item.get("locator"),
-                f"result {case_id}.provenance[{provenance_index}].locator",
+
+        truth_sources = truth_packet.get("sources")
+        if not isinstance(truth_sources, list):
+            raise RealityEvalError(
+                f"contract case {case_id}.truth_packet.sources must be a list"
+            )
+        expected_provenance = {
+            (str(source["source_id"]), str(source["locator"]))
+            for source in truth_sources
+            if isinstance(source, dict)
+        }
+        if (
+            len(actual_provenance) != len(set(actual_provenance))
+            or set(actual_provenance) != expected_provenance
+        ):
+            raise RealityEvalError(
+                f"result {case_id}.provenance must match the frozen truth packet sources exactly"
             )
 
     missing = set(cases) - seen_ids

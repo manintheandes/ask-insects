@@ -282,6 +282,33 @@ def contract_bytes(contract):
     return json.dumps(contract, sort_keys=True, separators=(",", ":")).encode("utf-8")
 
 
+def truth_packet_sha256(case):
+    payload = json.dumps(
+        case["truth_packet"],
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return sha256_bytes(payload)
+
+
+def passing_claim_checks(case):
+    truth_packet = case["truth_packet"]
+    claims = (
+        truth_packet["required_claims"]
+        + truth_packet["forbidden_claims"]
+        + truth_packet["reasoning_boundaries"]
+    )
+    evidence = truth_packet["sources"][0]["locator"]
+    return [
+        {
+            "claim": claim,
+            "verdict": "pass",
+            "evidence": evidence,
+        }
+        for claim in claims
+    ]
+
+
 def passing_results(contract=None, exact_contract_bytes=None):
     contract = contract or assemble_contract(public_manifest(), holdout_bundle())
     if exact_contract_bytes is None:
@@ -292,7 +319,17 @@ def passing_results(contract=None, exact_contract_bytes=None):
         "target": TARGET,
         "mode": "evaluation",
         "environment": "Codex desktop production route",
-        "revision": "revision-123",
+        "revision": "hosted-revision-123",
+        "run_manifest": {
+            "repository_commit": "a" * 40,
+            "installed_skill_sha256": "b" * 64,
+            "hosted_revision": "hosted-revision-123",
+            "public_corpus_sha256": "c" * 64,
+            "holdout_receipt_sha256": "d" * 64,
+            "evaluator_version": "ask-insects-reality-evaluator.v1",
+            "unchanged_run_started_at": "2026-07-16T11:59:00Z",
+            "unchanged_run_finished_at": "2026-07-16T12:01:00Z",
+        },
         "recording": {
             "recording_path": "/private/tmp/reality-eval-recording.mov",
             "question_count": QUESTION_COUNT,
@@ -325,11 +362,17 @@ def passing_results(contract=None, exact_contract_bytes=None):
                 "privacy_verdict": "pass",
                 "usefulness_verdict": "pass",
                 "judge_evidence": "The independent source supports the answer.",
+                "scientific_grade": {
+                    "judge": "independent-source-review",
+                    "truth_packet_sha256": truth_packet_sha256(case),
+                    "claim_checks": passing_claim_checks(case),
+                },
                 "provenance": [
                     {
-                        "source_id": f"source-{case['id']}",
-                        "locator": f"records#{case['id']}",
+                        "source_id": source["source_id"],
+                        "locator": source["locator"],
                     }
+                    for source in case["truth_packet"]["sources"]
                 ],
             }
             for index, case in enumerate(contract["questions"])
@@ -941,6 +984,209 @@ class RealityEvalTests(unittest.TestCase):
             ),
             payload,
         )
+
+    def test_results_require_complete_unchanged_run_manifest(self):
+        mutations = (
+            (("run_manifest",), MISSING, "run_manifest"),
+            (
+                ("run_manifest", "repository_commit"),
+                MISSING,
+                "repository_commit",
+            ),
+            (
+                ("run_manifest", "repository_commit"),
+                "not-a-commit",
+                "repository_commit",
+            ),
+            (
+                ("run_manifest", "installed_skill_sha256"),
+                "B" * 64,
+                "installed_skill_sha256",
+            ),
+            (
+                ("run_manifest", "hosted_revision"),
+                "",
+                "hosted_revision",
+            ),
+            (
+                ("run_manifest", "public_corpus_sha256"),
+                "c" * 63,
+                "public_corpus_sha256",
+            ),
+            (
+                ("run_manifest", "holdout_receipt_sha256"),
+                "d" * 63,
+                "holdout_receipt_sha256",
+            ),
+            (
+                ("run_manifest", "evaluator_version"),
+                "realityeval.v0",
+                "evaluator_version",
+            ),
+            (
+                ("run_manifest", "unchanged_run_started_at"),
+                "2026-07-16T11:59:00.1Z",
+                "unchanged_run_started_at",
+            ),
+            (
+                ("run_manifest", "unchanged_run_finished_at"),
+                "2026-07-16T12:01:00+00:00",
+                "unchanged_run_finished_at",
+            ),
+            (("revision",), "different-revision", "hosted_revision"),
+        )
+        for path, value, message in mutations:
+            with self.subTest(path=path, missing=value is MISSING):
+                contract, exact_contract_bytes, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, message):
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
+
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+        payload["run_manifest"]["unexpected"] = "covert data"
+        with self.assertRaisesRegex(RealityEvalError, "run_manifest keys"):
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            )
+
+    def test_results_reject_invalid_run_window_or_out_of_window_trace(self):
+        mutations = (
+            (
+                ("run_manifest", "unchanged_run_finished_at"),
+                "2026-07-16T11:58:59Z",
+                "finished.*earlier",
+            ),
+            (
+                ("results", 0, "route_trace", "submitted_at"),
+                "2026-07-16T11:58:59Z",
+                "before the unchanged run",
+            ),
+            (
+                ("results", 0, "route_trace", "completed_at"),
+                "2026-07-16T12:01:01Z",
+                "after the unchanged run",
+            ),
+        )
+        for path, value, message in mutations:
+            with self.subTest(path=path):
+                contract, exact_contract_bytes, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, message):
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
+
+    def test_results_require_independent_complete_scientific_grade(self):
+        mutations = (
+            (("results", 0, "scientific_grade"), MISSING, "scientific_grade"),
+            (
+                ("results", 0, "scientific_grade", "judge"),
+                "ask-insects",
+                "independent-source-review",
+            ),
+            (
+                ("results", 0, "scientific_grade", "truth_packet_sha256"),
+                "0" * 64,
+                "truth_packet_sha256",
+            ),
+            (
+                ("results", 0, "scientific_grade", "claim_checks"),
+                MISSING,
+                "claim_checks",
+            ),
+            (
+                ("results", 0, "scientific_grade", "claim_checks"),
+                [],
+                "claim_checks",
+            ),
+            (
+                (
+                    "results",
+                    0,
+                    "scientific_grade",
+                    "claim_checks",
+                    0,
+                    "verdict",
+                ),
+                "fail",
+                "verdict",
+            ),
+            (
+                (
+                    "results",
+                    0,
+                    "scientific_grade",
+                    "claim_checks",
+                    0,
+                    "evidence",
+                ),
+                "",
+                "evidence",
+            ),
+            (
+                (
+                    "results",
+                    0,
+                    "scientific_grade",
+                    "claim_checks",
+                    0,
+                    "claim",
+                ),
+                "Changed scientific claim",
+                "frozen truth packet",
+            ),
+        )
+        for path, value, message in mutations:
+            with self.subTest(path=path, missing=value is MISSING):
+                contract, exact_contract_bytes, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, message):
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
+
+    def test_results_provenance_must_match_frozen_truth_packet_sources(self):
+        mutations = (
+            (
+                ("results", 0, "provenance", 0, "source_id"),
+                "unfrozen-source",
+            ),
+            (
+                ("results", 0, "provenance", 0, "locator"),
+                "records#unfrozen",
+            ),
+        )
+        for path, value in mutations:
+            with self.subTest(path=path):
+                contract, exact_contract_bytes, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, "truth packet sources"):
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
+
+    def test_results_recording_path_must_be_absolute(self):
+        contract, exact_contract_bytes, payload = passing_result_fixture()
+        payload["recording"]["recording_path"] = "relative/demo.mov"
+
+        with self.assertRaisesRegex(RealityEvalError, "absolute"):
+            validate_results(
+                payload,
+                contract=contract,
+                contract_bytes=exact_contract_bytes,
+            )
 
     def test_elapsed_time_equal_to_60_is_rejected(self):
         contract, exact_contract_bytes, payload = passing_result_fixture()
