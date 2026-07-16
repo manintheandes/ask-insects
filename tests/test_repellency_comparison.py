@@ -217,6 +217,9 @@ class RepellencyComparisonTest(unittest.TestCase):
                     "Compare Drosophila suzukii repellency assays for oviposition deterrence.",
                     limit=10,
                 )
+                wal_path = Path(f"{index.path}-wal")
+                wal_path.touch()
+                self.assertEqual(wal_path.stat().st_size, 0)
                 build_repellency_comparison_answer(
                     index,
                     "Compare Drosophila suzukii repellency assays for oviposition deterrence.",

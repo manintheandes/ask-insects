@@ -225,6 +225,8 @@ def _path_fingerprint(path: Path) -> tuple[int, int, int, int]:
         stat = path.stat()
     except FileNotFoundError:
         return (0, 0, 0, 0)
+    if stat.st_size == 0:
+        return (0, 0, 0, 0)
     return (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
 
 
