@@ -383,8 +383,11 @@ class SourceIndex:
                     """,
                     params,
                 ).fetchall()
-            except sqlite3.OperationalError:
-                if not deadline_interrupted_search:
+            except sqlite3.OperationalError as exc:
+                if (
+                    not deadline_interrupted_search
+                    or getattr(exc, "sqlite_errorcode", None) != sqlite3.SQLITE_INTERRUPT
+                ):
                     raise
                 self.last_search_timed_out = True
                 rows = []

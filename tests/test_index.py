@@ -5,7 +5,7 @@ from pathlib import Path
 import sqlite3
 from unittest import mock
 
-from askinsects.index import SourceIndex, ensure_read_only_sql
+from askinsects.index import SEARCH_TIMEOUT_SECONDS, SourceIndex, ensure_read_only_sql
 from askinsects.records import EvidenceRecord, Provenance
 
 
@@ -85,6 +85,9 @@ class IndexTests(unittest.TestCase):
             self.assertEqual(rows, [])
             self.assertTrue(index.last_search_timed_out)
 
+    def test_search_fts_budget_is_eight_seconds(self):
+        self.assertEqual(SEARCH_TIMEOUT_SECONDS, 8.0)
+
     def test_search_fts_budget_resets_timeout_state_for_every_call(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -101,32 +104,45 @@ class IndexTests(unittest.TestCase):
 
     def test_search_fts_budget_reraises_other_operational_errors_and_clears_handler(self):
         class FailingConnection:
-            def __init__(self):
+            def __init__(self, error):
+                self.error = error
+                self.deadline_expired = False
                 self.progress_handler_calls = []
 
             def set_progress_handler(self, callback, steps):
                 self.progress_handler_calls.append((callback, steps))
 
             def execute(self, _sql, _params):
-                raise sqlite3.OperationalError("database disk image is malformed")
+                self.deadline_expired = bool(self.progress_handler_calls[-1][0]())
+                raise self.error
 
-        connection = FailingConnection()
-        index = SourceIndex(Path("unused.sqlite"))
+        coded_error = sqlite3.OperationalError("deadline observed but not an interrupt")
+        coded_error.sqlite_errorcode = sqlite3.SQLITE_BUSY
+        errors = [
+            ("non_interrupt_code", coded_error),
+            ("missing_error_code", sqlite3.OperationalError("deadline observed but not an interrupt")),
+        ]
 
-        @contextmanager
-        def failing_connect():
-            yield connection
+        for label, error in errors:
+            with self.subTest(label=label):
+                connection = FailingConnection(error)
+                index = SourceIndex(Path("unused.sqlite"))
 
-        with mock.patch.object(index, "connect", failing_connect), mock.patch(
-            "askinsects.index.time.monotonic",
-            side_effect=[10.0, 100.0],
-        ):
-            with self.assertRaisesRegex(sqlite3.OperationalError, "malformed"):
-                index.search("common")
+                @contextmanager
+                def failing_connect():
+                    yield connection
 
-        self.assertTrue(connection.progress_handler_calls)
-        self.assertTrue(callable(connection.progress_handler_calls[0][0]))
-        self.assertEqual(connection.progress_handler_calls[-1], (None, 0))
+                with mock.patch.object(index, "connect", failing_connect), mock.patch(
+                    "askinsects.index.time.monotonic",
+                    side_effect=[10.0, 100.0],
+                ):
+                    with self.assertRaisesRegex(sqlite3.OperationalError, "not an interrupt"):
+                        index.search("common")
+
+                self.assertTrue(connection.deadline_expired)
+                self.assertFalse(index.last_search_timed_out)
+                self.assertTrue(callable(connection.progress_handler_calls[0][0]))
+                self.assertEqual(connection.progress_handler_calls[-1], (None, 0))
 
     def test_search_fts_budget_clears_progress_handler_after_success(self):
         class EmptyRows:

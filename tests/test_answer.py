@@ -576,9 +576,13 @@ class AnswerTests(unittest.TestCase):
         self.assertIn("search budget", answer["source_gap"]["reason"].casefold())
 
     def test_bounded_full_text_timeout_does_not_override_found_evidence(self):
+        question = "How does an unfamiliar volatile alter mosquito orientation?"
+        plan = plan_question(question)
+        self.assertGreaterEqual(len(plan.lanes), 2)
+
         evidence = EvidenceRecord(
             record_id="test:volatile-orientation",
-            lane="taxonomy",
+            lane=plan.lanes[0],
             source="mosquito_v1_fixtures",
             title="Mosquito volatile orientation evidence",
             text="A mosquito orientation response was measured for an unfamiliar volatile.",
@@ -592,20 +596,34 @@ class AnswerTests(unittest.TestCase):
             ),
         )
 
-        def timed_out_search_with_evidence(index, query, lane=None, limit=10):
+        def evidence_then_timeout(index, query, lane=None, limit=10):
+            if lane == plan.lanes[0]:
+                index.last_search_timed_out = False
+                return [evidence]
+            self.assertEqual(lane, plan.lanes[1])
             index.last_search_timed_out = True
-            return [evidence]
+            return []
 
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
             index = SourceIndex(artifact_dir / "source_index.sqlite")
             index.initialize()
-            with patch.object(SourceIndex, "search", timed_out_search_with_evidence):
+            with patch.object(
+                SourceIndex,
+                "search",
+                autospec=True,
+                side_effect=evidence_then_timeout,
+            ) as search_mock:
                 answer = answer_question(
-                    "How does an unfamiliar volatile alter mosquito orientation?",
+                    question,
                     artifact_dir=artifact_dir,
                 )
 
+        self.assertEqual(search_mock.call_count, 2)
+        self.assertEqual(
+            [search_call.kwargs["lane"] for search_call in search_mock.call_args_list],
+            list(plan.lanes[:2]),
+        )
         self.assertTrue(answer["ok"])
         self.assertEqual(answer["evidence"][0]["record_id"], evidence.record_id)
 
