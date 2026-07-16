@@ -138,6 +138,35 @@ class ReviewedScienceTests(unittest.TestCase):
             },
         )
 
+    def test_substrate_stiffness_paraphrase_selects_texture_topic(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            index = SourceIndex(root / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        "study:texture",
+                        source_id="drosophila_suzukii_core",
+                        locator="raw/swd.json#works/W3037850025",
+                    )
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                (
+                    "What sensory evidence links substrate stiffness to egg-laying "
+                    "decisions in spotted-wing drosophila?"
+                ),
+                catalog_path=self.write_catalog(root),
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertTrue(answer["ok"])
+        self.assertIn("preferred the harder", answer["answer"])
+        self.assertIn("TRP and DEG/ENaC", answer["answer"])
+
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
