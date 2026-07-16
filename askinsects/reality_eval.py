@@ -51,12 +51,12 @@ _PASS_FIELDS = (
     "usefulness_verdict",
 )
 _META_MARKERS = (
-    "what does ask insects cover",
     "coverage status",
     "program status",
     "what sources does ask",
-    "is ask insects complete",
-    "what is ask insects missing",
+)
+_PRODUCT_META_PATTERN = re.compile(
+    r"\b(?:what does ask \S+ cover|is ask \S+ complete|what is ask \S+ missing)\b"
 )
 _HOLDOUT_RECEIPT_FIELDS = frozenset(
     {
@@ -186,7 +186,10 @@ def _validate_case(
         raise RealityEvalError(f"{name}.holdout must be {expected}")
 
     normalized = _normalized_question(strings["question"])
-    if kind == "domain" and any(marker in normalized for marker in _META_MARKERS):
+    if kind == "domain" and (
+        any(marker in normalized for marker in _META_MARKERS)
+        or _PRODUCT_META_PATTERN.search(normalized)
+    ):
         raise RealityEvalError(
             f"question {strings['id']} is marked domain but asks about product coverage or status"
         )

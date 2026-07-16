@@ -30,6 +30,7 @@ from askinsects.reality_eval import (
 
 
 CREATED_AT = "2026-07-16T12:00:00Z"
+MISSING = object()
 
 
 def truth_packet(case_id):
@@ -153,6 +154,22 @@ def passing_results(contract=None, contract_hash=None):
     }
 
 
+def passing_result_fixture():
+    contract = assemble_contract(public_manifest(), holdout_bundle())
+    digest = sha256_bytes(contract_bytes(contract))
+    return contract, digest, passing_results(contract, digest)
+
+
+def mutate_path(payload, path, value):
+    cursor = payload
+    for component in path[:-1]:
+        cursor = cursor[component]
+    if value is MISSING:
+        del cursor[path[-1]]
+    else:
+        cursor[path[-1]] = value
+
+
 class RealityEvalTests(unittest.TestCase):
     def test_sha256_and_json_object_helpers(self):
         payload = b'{"ok": true}'
@@ -264,13 +281,21 @@ class RealityEvalTests(unittest.TestCase):
             assemble_contract(public, holdouts)
 
     def test_domain_cases_reject_product_meta_questions(self):
-        payload = public_manifest()
-        payload["questions"][0]["question"] = (
-            "What does Ask Insects cover for Aedes aegypti?"
+        questions = (
+            "What does Ask Insects cover for Aedes aegypti?",
+            "What does Ask Monarch cover?",
+            "What does Ask Just cover?",
+            "Is Ask Monarch complete?",
+            "Is Ask Just complete?",
+            "What is Ask Monarch missing?",
+            "What is Ask Just missing?",
         )
-
-        with self.assertRaisesRegex(RealityEvalError, "coverage or status"):
-            validate_public_manifest(payload)
+        for question in questions:
+            with self.subTest(question=question):
+                payload = public_manifest()
+                payload["questions"][0]["question"] = question
+                with self.assertRaisesRegex(RealityEvalError, "coverage or status"):
+                    validate_public_manifest(payload)
 
     def test_final_contract_requires_six_categories(self):
         contract = assemble_contract(public_manifest(), holdout_bundle())
@@ -369,9 +394,7 @@ class RealityEvalTests(unittest.TestCase):
             validate_holdout_receipt(receipt, bundle_bytes=bundle_bytes + b"\n")
 
     def test_passing_baseline_results(self):
-        contract = assemble_contract(public_manifest(), holdout_bundle())
-        digest = sha256_bytes(contract_bytes(contract))
-        payload = passing_results(contract, digest)
+        contract, digest, payload = passing_result_fixture()
 
         self.assertEqual(
             validate_results(payload, contract=contract, contract_sha256=digest),
@@ -379,22 +402,76 @@ class RealityEvalTests(unittest.TestCase):
         )
 
     def test_elapsed_time_equal_to_60_is_rejected(self):
-        contract = assemble_contract(public_manifest(), holdout_bundle())
-        digest = sha256_bytes(contract_bytes(contract))
-        payload = passing_results(contract, digest)
+        contract, digest, payload = passing_result_fixture()
         payload["results"][0]["elapsed_seconds"] = 60.0
 
         with self.assertRaisesRegex(RealityEvalError, "strict time limit"):
             validate_results(payload, contract=contract, contract_sha256=digest)
 
     def test_missing_recording_is_rejected(self):
-        contract = assemble_contract(public_manifest(), holdout_bundle())
-        digest = sha256_bytes(contract_bytes(contract))
-        payload = passing_results(contract, digest)
+        contract, digest, payload = passing_result_fixture()
         del payload["recording"]
 
         with self.assertRaisesRegex(RealityEvalError, "recording"):
             validate_results(payload, contract=contract, contract_sha256=digest)
+
+    def test_results_reject_wrong_hash_changed_question_and_alternate_system(self):
+        mutations = (
+            (("contract_sha256",), "0" * 64, "contract_sha256"),
+            (("results", 0, "question"), "Changed question", "exact frozen question"),
+            (("results", 0, "answer_systems"), ["ask-monarch"], "alternate answer"),
+        )
+        for path, value, message in mutations:
+            with self.subTest(path=path):
+                contract, digest, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, message):
+                    validate_results(payload, contract=contract, contract_sha256=digest)
+
+    def test_results_reject_every_non_pass_verdict(self):
+        for field in (
+            "route_verdict",
+            "content_verdict",
+            "source_verdict",
+            "privacy_verdict",
+            "usefulness_verdict",
+        ):
+            with self.subTest(field=field):
+                contract, digest, payload = passing_result_fixture()
+                payload["results"][0][field] = "fail"
+                with self.assertRaisesRegex(RealityEvalError, field):
+                    validate_results(payload, contract=contract, contract_sha256=digest)
+
+    def test_results_require_nonempty_provenance(self):
+        mutations = (
+            (("results", 0, "provenance"), MISSING),
+            (("results", 0, "provenance"), []),
+        )
+        for path, value in mutations:
+            with self.subTest(missing=value is MISSING):
+                contract, digest, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, r"\.provenance"):
+                    validate_results(payload, contract=contract, contract_sha256=digest)
+
+    def test_results_require_complete_recording_metadata(self):
+        mutations = (
+            (("recording", "question_count"), 49, "question_count"),
+            (
+                ("recording", "complete_answers_visible"),
+                False,
+                "complete_answers_visible",
+            ),
+            (("recording", "privacy_review"), "fail", "privacy_review"),
+            (("recording", "shared_with_josh"), False, "shared_with_josh"),
+            (("recording", "recording_path"), MISSING, "recording_path"),
+        )
+        for path, value, message in mutations:
+            with self.subTest(path=path):
+                contract, digest, payload = passing_result_fixture()
+                mutate_path(payload, path, value)
+                with self.assertRaisesRegex(RealityEvalError, message):
+                    validate_results(payload, contract=contract, contract_sha256=digest)
 
     def test_results_summary_uses_median_and_nearest_rank_p95(self):
         payload = passing_results()
