@@ -345,7 +345,21 @@
       "match": {
         "phrases": ["volatile is removed", "pre-exposed flies", "washout time"],
         "required_any": [
-          ["habituation", "pre exposure", "pre-exposure", "washout", "persists", "disappears"],
+          [
+            "habituation",
+            "pre exposure",
+            "pre-exposure",
+            "washout",
+            "persists",
+            "persistence",
+            "disappears",
+            "reversible",
+            "reversibility",
+            "returns to baseline",
+            "return to baseline",
+            "rebounds",
+            "rebound"
+          ],
           ["volatile", "removed", "recovery", "avoidance", "repellent"]
         ],
         "optional": ["octenol", "2 pentylfuran", "geosmin", "larval exposure"]
