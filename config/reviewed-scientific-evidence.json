@@ -240,6 +240,22 @@
       "source_record_ids": ["openalex:W2344416877"]
     },
     {
+      "id": "aedes-sensory-detection-versus-behavioral-avoidance",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 40,
+        "phrases": ["sensory detection versus behavior", "detect but not avoid", "neural response without avoidance", "olfactory response and behavior"],
+        "required_any": [
+          ["detect", "detection", "sense", "sensory", "smell", "olfactory response", "neural response", "antennal response", "electrophysiology", "eag"],
+          ["avoid", "avoidance", "behavioral response", "behavioural response", "repel", "repellent", "choice"],
+          ["versus", "rather than", "distinguish", "tell whether", "separate", "without", "but"]
+        ],
+        "optional": ["candidate", "receptor", "orco", "calcium", "neuron", "no response", "fail"]
+      },
+      "answer": "Measure detection and avoidance independently at the same delivered dose. First test peripheral or central sensory responses with a solvent blank, a known-odor positive control, and a candidate dose-response; an electroantennogram is a broad antennal measure, so single-sensillum or calcium recordings may be needed to localize a response. Separately, use a non-contact choice, flight, or landing assay and record approach, occupancy, exit, and landing while also measuring locomotion, knockdown, survival, and recovery. An intact neural response without avoidance shows detection without demonstrated aversive behavior; it can also reflect a response below the behavioral threshold or the wrong context. No measured neural response plus no avoidance is only consistent with failure of the measured pathway if the positive controls and movement remain intact; it is not proof that every sensory route failed. For causality, disrupt the candidate receptor or pathway in a matched genetic background and rescue it, then repeat both neural and behavioral tests. The cited Aedes aegypti study illustrates the logic: pure transfluthrin repelled females in a non-contact hand-in-cage assay at 1 ppm without an electroantennogram signal, and repellency persisted in orco mutants but fell in sodium-channel kdr mutants. DEET showed a different Orco-dependent pattern. Thus a behavioral effect, antennal signal, receptor response, or mutation alone cannot establish the whole detection-to-avoidance mechanism.",
+      "source_record_ids": ["openalex:W3179105761"]
+    },
+    {
       "id": "aedes-human-metabolite-correlations",
       "species_ids": ["aedes_aegypti"],
       "match": {

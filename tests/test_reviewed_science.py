@@ -382,6 +382,11 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("mechanical shock", "10 pairings", "2-minute", "24 hours"),
             ),
             (
+                "What measurements separate sensory detection of a mosquito repellent from the later decision to avoid it in female Aedes aegypti?",
+                "openalex:W3179105761",
+                ("electroantennogram", "positive control", "non-contact", "1 ppm", "orco", "sodium-channel"),
+            ),
+            (
                 "Which adult, egg, larval, feeding, and crop-damage measurements should a diamondback moth repellent study track?",
                 "insect_intelligence_programs:species:plutella_xylostella:domain:life_cycle_development",
                 ("exact-species behavior", "life-cycle", "crop-state"),
