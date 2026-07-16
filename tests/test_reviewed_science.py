@@ -402,6 +402,11 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("20%", "42-55%", "dawn and dusk", "low fly"),
             ),
             (
+                "Which measurements distinguish a directional SWD odor response from general locomotor suppression?",
+                "swd:openalex_literature:openalex:W4213332511",
+                ("heading", "upwind", "clean air", "speed", "immobility", "mating"),
+            ),
+            (
                 "Should I interpret SWD adult oviposition choices as protein-to-carbohydrate preference, or as substrate hardness?",
                 "swd_traits:pubmed:28592264",
                 ("lower protein", "not nutritional composition", "hardness"),
