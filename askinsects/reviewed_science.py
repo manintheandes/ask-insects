@@ -23,6 +23,12 @@ EVALUATION_ONLY_FIELDS = frozenset(
         "why_realistic",
     }
 )
+_MATCH_TOKEN_EQUIVALENTS = {
+    "stiff": "hard",
+    "stiffer": "harder",
+    "stiffest": "hardest",
+    "stiffness": "hardness",
+}
 
 
 class ReviewedScienceError(ValueError):
@@ -182,7 +188,8 @@ def load_reviewed_science_catalog(path: Path | None = None) -> dict[str, object]
 
 
 def _normalize(value: str) -> str:
-    return " ".join(re.findall(r"[a-z0-9]+", value.casefold()))
+    tokens = re.findall(r"[a-z0-9]+", value.casefold())
+    return " ".join(_MATCH_TOKEN_EQUIVALENTS.get(token, token) for token in tokens)
 
 
 def _contains(normalized_question: str, value: str) -> bool:
