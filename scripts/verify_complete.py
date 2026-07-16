@@ -169,6 +169,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-07-10-ask-insects-repellency-evidence-workflow-design.md",
     "docs/superpowers/specs/2026-07-13-dual-product-insect-intelligence-design.md",
     "docs/superpowers/specs/2026-07-14-generic-insect-evidence-package-design.md",
+    "docs/superpowers/specs/2026-07-16-ask-insects-reality-eval-integration-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -206,7 +207,11 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-07-10-ask-insects-repellency-evidence-workflow.md",
     "docs/superpowers/plans/2026-07-13-dual-product-insect-intelligence.md",
     "docs/superpowers/plans/2026-07-14-generic-insect-evidence-package.md",
+    "docs/superpowers/plans/2026-07-15-broad-natural-language-production-readiness.md",
+    "docs/superpowers/plans/2026-07-16-ask-insects-reality-eval-integration.md",
     "evals/ask_insects_production_path_v1.json",
+    "evals/ask_insects_reality_eval_public_v1.json",
+    "evals/ask_insects_reality_eval_holdout_receipt_v1.json",
     "evals/repellency_comparison_v1.json",
     "askinsects/__init__.py",
     "askinsects/__main__.py",
@@ -220,6 +225,7 @@ REQUIRED_FILES = (
     "askinsects/planner.py",
     "askinsects/records.py",
     "askinsects/repellency.py",
+    "askinsects/reality_eval.py",
     "askinsects/server.py",
     "askinsects/voxels.py",
     "askinsects/sources/__init__.py",
@@ -347,6 +353,7 @@ REQUIRED_FILES = (
     "scripts/ingest_mosquito_repellent_external_discovery.py",
     "scripts/ingest_literature_depth.py",
     "scripts/eval_production_path.py",
+    "scripts/eval_reality.py",
     "scripts/eval_repellency_comparison.py",
     "scripts/ingest_insect_intelligence_programs.py",
     "scripts/ingest_uniprot_proteins.py",
@@ -473,6 +480,7 @@ REQUIRED_FILES = (
     "tests/test_ingest_literature_depth.py",
     "tests/test_repellency_comparison.py",
     "tests/test_production_path_eval.py",
+    "tests/test_reality_eval.py",
     "tests/test_agent_setup.py",
     "tests/test_insect_intelligence_programs.py",
     "tests/test_context_package.py",
@@ -625,6 +633,7 @@ UNIT_TEST_MODULES = (
     "tests.test_literature_depth_profiles",
     "tests.test_ingest_literature_depth",
     "tests.test_repellency_comparison",
+    "tests.test_reality_eval",
     "tests.test_insect_intelligence_programs",
     "tests.test_context_package",
     "tests.test_wheel_resources",
@@ -2532,106 +2541,112 @@ def check_evidence_package(artifact_dir: Path = VERIFY_ARTIFACT_DIR) -> None:
     _check_context_package_validator_guards(package)
 
 
-def check_production_path_evaluation() -> None:
-    from scripts.eval_production_path import CONTRACT_VERSION, load_contract
+def check_reality_evaluation() -> None:
+    from askinsects.reality_eval import (
+        PUBLIC_QUESTION_COUNT,
+        load_json_object,
+        validate_holdout_receipt,
+        validate_public_manifest,
+    )
 
-    contract = load_contract(REPO_ROOT / "evals/ask_insects_production_path_v1.json")
-    if contract.get("contract_version") != CONTRACT_VERSION:
-        raise RuntimeError("production-path evaluation contract version mismatch")
-    if int(contract.get("minimum_case_count", 0)) < 200:
-        raise RuntimeError("production-path evaluation must require at least 200 questions")
-    if float(contract.get("maximum_seconds", 999)) > 60:
-        raise RuntimeError("production-path evaluation must require every answer in under 60 seconds")
-    cases = contract.get("cases")
-    minimum_case_count = int(contract.get("minimum_case_count", 0))
-    if not isinstance(cases, list) or len(cases) < minimum_case_count:
-        raise RuntimeError("production-path evaluation corpus must contain at least the required question count")
-    questions = "\n".join(str(case.get("question") or "") for case in cases if isinstance(case, dict)).lower()
-    for term in (
-        "drosophila suzukii",
-        "aedes",
-        "diamondback moth",
-        "swd crop repellent",
-        "human mosquito repellent",
-        "contact and non-contact",
-        "best mosquito repellent",
-        "separate private r&d system",
+    public_path = REPO_ROOT / "evals/ask_insects_reality_eval_public_v1.json"
+    public_manifest = validate_public_manifest(load_json_object(public_path))
+    public_questions = public_manifest.get("questions")
+    if (
+        not isinstance(public_questions, list)
+        or len(public_questions) != PUBLIC_QUESTION_COUNT
     ):
-        if term not in questions:
-            raise RuntimeError(f"production-path evaluation corpus is missing required question coverage: {term}")
-    boundary_cases = {
-        str(case.get("id")): str(case.get("question") or "")
-        for case in cases
-        if isinstance(case, dict) and str(case.get("id")) in {"boundary-01", "boundary-02", "boundary-04"}
-    }
-    if set(boundary_cases) != {"boundary-01", "boundary-02", "boundary-04"}:
-        raise RuntimeError("production-path evaluation is missing the private-system boundary cases")
-    for case_id, question in boundary_cases.items():
-        if "separate private R&D system" not in question or CONSUMER_NAME_RE.search(question):
-            raise RuntimeError(f"production-path boundary case {case_id} is consumer-specific")
-    runner = (REPO_ROOT / "scripts/eval_production_path.py").read_text(encoding="utf-8")
-    for term in (
-        "codex",
-        "--ephemeral",
-        "ask-insects",
-        "--compact",
-        "maximum_seconds",
-        "production_gate_passed",
-        "visible_answer",
-        "locator_patterns",
-        "--regrade-results",
-        "regraded_source_sha256",
-        "_is_allowed_installed_skill_read",
-        "_ask_command_failure",
+        raise RuntimeError("Reality Eval public manifest must contain exactly 40 cases")
+
+    receipt_path = (
+        REPO_ROOT / "evals/ask_insects_reality_eval_holdout_receipt_v1.json"
+    )
+    validate_holdout_receipt(load_json_object(receipt_path))
+
+    cli_source = (REPO_ROOT / "scripts/eval_reality.py").read_text(encoding="utf-8")
+    for subcommand in (
+        "validate-public",
+        "freeze-holdouts",
+        "assemble",
+        "validate-contract",
+        "validate-results",
+        "summary",
     ):
-        if term not in runner:
-            raise RuntimeError(f"production-path evaluator is missing required behavior: {term}")
-    if "BLOCKED_COMMAND_TERMS" in runner or CONSUMER_NAME_RE.search(runner):
-        raise RuntimeError("production-path evaluator must use a generic command allowlist")
-    skill_source = (REPO_ROOT / "skills/askinsects/SKILL.md").read_text(encoding="utf-8")
-    skill = " ".join(skill_source.split())
-    for term in (
-        "Do not inspect memory",
-        "run a second Ask Insects call",
-        "write every cited locator in full",
-        "--compact",
-        "final_answer",
-        "verbatim",
-        "under 60 seconds",
+        if f'"{subcommand}"' not in cli_source:
+            raise RuntimeError(
+                f"Reality Eval CLI is missing required subcommand: {subcommand}"
+            )
+
+    installed_skill = Path.home() / ".codex/skills/realityeval/SKILL.md"
+    if Path.home().name == "josh" and not installed_skill.is_file():
+        raise RuntimeError(
+            f"installed Reality Eval skill is missing on Josh's machine: {installed_skill}"
+        )
+
+    normal_answer_modules = (
+        "askinsects/__main__.py",
+        "askinsects/answer.py",
+        "askinsects/cli.py",
+        "askinsects/hosted.py",
+        "askinsects/planner.py",
+        "askinsects/server.py",
+    )
+    forbidden_eval_dependencies = (
+        "ask_insects_reality_eval",
+        "ask_insects_production_path_v1",
+        "scripts.eval_reality",
+        "scripts.eval_production_path",
+        "scientist_questions",
+        "scientist_demo",
+    )
+    for relative_path in normal_answer_modules:
+        source = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+        for forbidden in forbidden_eval_dependencies:
+            if forbidden in source:
+                raise RuntimeError(
+                    f"normal answer module {relative_path} depends on evaluation data: {forbidden}"
+                )
+
+    authoritative_docs = (
+        "AGENTS.md",
+        "README.md",
+        "docs/production-path-evaluation.md",
+        "docs/superpowers/specs/2026-07-13-dual-product-insect-intelligence-design.md",
+        "docs/superpowers/plans/2026-07-15-broad-natural-language-production-readiness.md",
+    )
+    required_phrases = (
+        "exactly 50",
+        "10 sealed holdouts",
+        "real Codex app",
+        "optional regression",
+    )
+    forbidden_phrases = (
+        "minimum 200-question",
+        "20-question demonstration",
+    )
+    for relative_path in authoritative_docs:
+        text = (REPO_ROOT / relative_path).read_text(encoding="utf-8")
+        for phrase in required_phrases:
+            if phrase not in text:
+                raise RuntimeError(
+                    f"authoritative Reality Eval document {relative_path} is missing: {phrase}"
+                )
+        for phrase in forbidden_phrases:
+            if phrase in text:
+                raise RuntimeError(
+                    f"authoritative Reality Eval document {relative_path} retains stale gate language: {phrase}"
+                )
+
+    docs = (REPO_ROOT / "docs/production-path-evaluation.md").read_text(
+        encoding="utf-8"
+    )
+    if (
+        "Repository verification does not substitute for the private passing"
+        not in docs
     ):
-        if term not in skill:
-            raise RuntimeError(f"Ask Insects skill is missing production-path guidance: {term}")
-    skill_frontmatter = " ".join(skill_source.split("---", 2)[1].split())
-    for term in (
-        "Do not open this file for a normal answer",
-        "adding a new insect",
-        "answer-routing design",
-        "first hosted command",
-        'ask-insects ask "<the user\'s exact question>" --json --compact',
-        "return final_answer verbatim",
-    ):
-        if term not in skill_frontmatter:
-            raise RuntimeError(f"Ask Insects skill description is missing direct-route guidance: {term}")
-    agents = " ".join((REPO_ROOT / "AGENTS.md").read_text(encoding="utf-8").split())
-    for term in (
-        "preferred first and only operational command",
-        "Do not load the installed skill",
-        "adding a new insect",
-        "answer-routing design",
-        "Do not inspect memory",
-        "Do not emit a progress update",
-        "answer immediately without another command",
-        "Preserve canonical labels",
-        "--compact",
-        "final_answer",
-        "verbatim",
-    ):
-        if term not in agents:
-            raise RuntimeError(f"Ask Insects AGENTS.md is missing production-path guidance: {term}")
-    docs = (REPO_ROOT / "docs/production-path-evaluation.md").read_text(encoding="utf-8")
-    for term in ("200", "100 percent", "under 60 seconds", "production_gate_passed: true"):
-        if term not in docs:
-            raise RuntimeError(f"production-path evaluation documentation is missing: {term}")
+        raise RuntimeError(
+            "Reality Eval documentation must state that repository checks do not replace the private passing artifact and recording"
+        )
 
 
 def check_aedes_source_plane_benchmark() -> None:
@@ -3467,7 +3482,7 @@ def main() -> int:
         check_mosquito_intelligence_coverage()
         check_insect_intelligence_programs()
         check_evidence_package()
-        check_production_path_evaluation()
+        check_reality_evaluation()
         check_aedes_source_plane_benchmark()
         check_cli()
         installed_db = REPO_ROOT / "artifacts/mosquito-v1/source_index.sqlite"
@@ -3480,7 +3495,10 @@ def main() -> int:
             raise RuntimeError(f"missing SQLite artifact: {installed_db}")
     except Exception as exc:
         return fail(str(exc))
-    print("verify_complete ok")
+    print(
+        "verify_complete ok; repository verification does not substitute for "
+        "the private passing Reality Eval artifact and recording"
+    )
     return 0
 
 

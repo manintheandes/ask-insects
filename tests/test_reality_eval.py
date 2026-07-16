@@ -524,6 +524,42 @@ class RealityEvalTests(unittest.TestCase):
                 }
                 self.assertEqual(matching_urls, expected_urls)
 
+    def test_authoritative_docs_name_one_reality_eval_gate(self):
+        root = Path(__file__).parents[1]
+        paths = (
+            root / "AGENTS.md",
+            root / "README.md",
+            root / "docs" / "production-path-evaluation.md",
+            root
+            / "docs"
+            / "superpowers"
+            / "specs"
+            / "2026-07-13-dual-product-insect-intelligence-design.md",
+            root
+            / "docs"
+            / "superpowers"
+            / "plans"
+            / "2026-07-15-broad-natural-language-production-readiness.md",
+        )
+        required_phrases = (
+            "exactly 50",
+            "10 sealed holdouts",
+            "real Codex app",
+            "optional regression",
+        )
+        forbidden_phrases = (
+            "minimum 200-question",
+            "20-question demonstration",
+        )
+
+        for path in paths:
+            with self.subTest(path=path):
+                text = path.read_text(encoding="utf-8")
+                for phrase in required_phrases:
+                    self.assertIn(phrase, text)
+                for phrase in forbidden_phrases:
+                    self.assertNotIn(phrase, text)
+
     def test_cli_validates_freezes_assembles_and_summarizes(self):
         from scripts import eval_reality
 

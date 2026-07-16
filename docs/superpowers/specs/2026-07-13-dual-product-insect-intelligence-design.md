@@ -155,33 +155,26 @@ hidden during interpretation. It succeeds only if the added insect knowledge
 improves explanations or reveals important missing context more often than the
 current Ask Monarch baseline.
 
-## Production-Path Evaluation Gate
+## Reality Eval Gate
 
-The major goal cannot be declared complete from unit tests, direct SQL, a local
-CLI, or a small hand-picked demonstration. It requires a minimum 200-question
-black-box evaluation through Josh's normal Codex route:
+The authoritative completion gate asks exactly 50 natural questions through
+normal Codex: 40 public development cases and 10 sealed holdouts. Every question
+uses a fresh task in the real Codex app and follows this production route:
 
-`Josh's question -> installed Ask Insects skill -> hosted production source plane -> visible Codex answer`
+`Josh's question -> installed Ask Insects skill -> hosted production source plane -> complete visible Codex answer`
 
-Every question must satisfy all applicable expectations:
+Only the first answer counts, and every complete answer must arrive in strictly
+under 60 seconds. Independent review must pass accuracy, sources, relevance,
+completeness, usefulness, privacy, and exact provenance. It must also preserve
+the focal species, life stage, assay context, uncertainty, inference,
+disagreement, and verified source gaps.
 
-- the intended Ask Insects route and subject are selected
-- factual claims match the expected evidence or expected source gap
-- focal species and assay context are correct
-- direct evidence, inference, disagreement, uncertainty, and missing knowledge
-  are labeled correctly
-- every factual answer includes complete source-id and row or locator provenance
-- no private Ask Monarch evidence appears on the public path
-- no answer falls back to unsupported model memory
-- the complete visible answer arrives in under 60 seconds
-
-The pass threshold is 100 percent. Retries, averages, percentiles, and hidden
-direct-source probes cannot turn a failed production-path question into a pass.
-The corpus must include SWD, Aedes and mosquito, diamondback moth, both product
-programs, cross-species comparisons, disagreements, unknowns, false premises,
-repellency comparisons, product-readiness questions, and expected source gaps.
-Each run must preserve the exact question, expected behavior, visible answer,
-elapsed time, cited provenance, pass or fail decision, and failure reason.
+The threshold is 50 of 50 on one unchanged repository commit, installed skill,
+and hosted revision. Any failure ends the run. A general repair is made, an
+independent evaluator creates new holdouts, and the full counted run starts
+again. The passing run must be recorded in full and shared with Josh. Unit
+tests, direct SQL, local CLI calls, smoke subsets, and the legacy 210-case suite
+are optional regression coverage, not completion evidence.
 
 ## Acceptance Criteria For The First Increment
 
@@ -194,8 +187,9 @@ elapsed time, cited provenance, pass or fail decision, and failure reason.
 - Existing Aedes and SWD coverage tests remain green.
 - Local and hosted ingestion expose the new records with exact provenance.
 - The repository completion gate verifies the new contract.
-- The minimum 200-question normal-Codex-route evaluation passes 100 percent,
-  with every visible answer under 60 seconds and complete provenance.
+- Reality Eval passes all 50 first answers through normal Codex under the
+  60-second limit, with independent grading, complete provenance, 10 sealed
+  holdouts, and a reviewed recording from the real Codex app.
 
 ## Non-Goals For The First Increment
 

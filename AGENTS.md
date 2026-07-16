@@ -34,6 +34,15 @@ Normal user questions must not run repository tests, install or refresh skills, 
 
 ## Completion Gate
 
+The authoritative Reality Eval asks exactly 50 natural questions through
+normal Codex: 40 public development cases and 10 sealed holdouts. Every first,
+complete answer must arrive in under 60 seconds and pass independent review for
+accuracy, sources, relevance, completeness, usefulness, privacy, and exact
+provenance. Any failure requires a general repair, new holdouts, and a fresh
+counted run. The complete passing run must be recorded in the real Codex app
+and shared with Josh. The legacy 210-case suite is optional regression
+coverage, not completion evidence.
+
 Run:
 
 ```bash
