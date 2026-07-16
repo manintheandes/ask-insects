@@ -351,6 +351,120 @@ class ReviewedScienceTests(unittest.TestCase):
             )
         )
 
+    def test_repaired_science_topics_answer_neighboring_research_questions(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        record_ids = sorted(
+            {
+                record_id
+                for topic in catalog["topics"]
+                for record_id in topic["source_record_ids"]
+            }
+        )
+        cases = (
+            (
+                "Which fermentation chemicals and tested concentration ranges separated SWD from D. melanogaster in Y-tube and EAG assays?",
+                "swd:openalex_literature:openalex:W4365509323",
+                ("2-phenylethanol", "0.01-0.1%", "1-10%", "0.1-1%"),
+            ),
+            (
+                "Which missing evidence would show SWD resistance is heritable rather than learned after pre-exposure?",
+                "swd:openalex_literature:openalex:W3199560580",
+                ("cross-resistance", "behavioral-tolerance", "field-frequency"),
+            ),
+            (
+                "How should I connect fewer SWD eggs with later larval survival and marketable yield across different fruit ripeness states?",
+                "swd_pubmed_literature:pubmed:39769586",
+                ("fruit condition", "ripeness"),
+            ),
+            (
+                "How was Aedes aversive odor learning trained and when was memory tested?",
+                "openalex:W4315621418",
+                ("mechanical shock", "10 pairings", "2-minute", "24 hours"),
+            ),
+            (
+                "Which adult, egg, larval, feeding, and crop-damage measurements should a diamondback moth repellent study track?",
+                "insect_intelligence_programs:species:plutella_xylostella:domain:life_cycle_development",
+                ("exact-species behavior", "life-cycle", "crop-state"),
+            ),
+            (
+                "Does a caprylic-capric acid blend reduce SWD egg laying, and has anyone isolated an airborne effect from substrate contact?",
+                "swd:openalex_literature:openalex:W4386466923",
+                ("99%", "64%", "caprylic", "capric", "spatial", "contact"),
+            ),
+            (
+                "When commensal growth is present, does SWD oviposition differ on 1% and 3% agar?",
+                "swd:openalex_literature:openalex:W3124252639",
+                ("1% agar", "3% agar", "no significant preference or aversion"),
+            ),
+            (
+                "What did SWD raspberry trials show about 1-octen-3-ol aerosol puffers versus passive vials and release schedules?",
+                "swd:openalex_literature:openalex:W3046652911",
+                ("20%", "42-55%", "dawn and dusk", "low fly"),
+            ),
+            (
+                "Should I interpret SWD adult oviposition choices as protein-to-carbohydrate preference, or as substrate hardness?",
+                "swd_traits:pubmed:28592264",
+                ("lower protein", "not nutritional composition", "hardness"),
+            ),
+            (
+                "Why did transfluthrin look better in large-cage Aedes trials than in open-field landing collections?",
+                "openalex:W4399119561",
+                ("negligible", "50-60%", "moderate pyrethroid resistance", "15 g"),
+            ),
+            (
+                "Can we transfer an Anopheles DEET response to Aedes, or are close-range repellent responses species-specific?",
+                "openalex:W3013059076",
+                ("lemongrass", "PMD", "eugenol", "DEET", "0.5 cm", "30 seconds"),
+            ),
+            (
+                "Do Aedes aegypti populations from different African environments have the same human-odor preference?",
+                "openalex:W3044645851",
+                ("27", "83%", "dry-season", "human population density"),
+            ),
+            (
+                "Does thermal infrared alone drive Aedes host seeking, and which antennal sensors are involved?",
+                "openalex:W4401794442",
+                ("34 C", "CO2", "human odor", "TRPA1", "opsins"),
+            ),
+            (
+                "Should a diamondback moth release schedule follow period and timeless expression or measured adult locomotor activity?",
+                "swd:openalex_literature:openalex:W4407297126",
+                ("period", "timeless", "temperature-driven", "light-suppressed"),
+            ),
+            (
+                "For diamondback moth, how should I separate citronella effects on larval movement, feeding, mortality, adult oviposition, and field abundance?",
+                "swd:openalex_literature:openalex:W4387738540",
+                ("3 and 4 mL/L", "100%", "48 hours", "Diadegma"),
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            for question, expected_record_id, expected_fragments in cases:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertTrue(answer["ok"])
+                    self.assertIn(
+                        expected_record_id,
+                        {item["record_id"] for item in answer["evidence"]},
+                    )
+                    for fragment in expected_fragments:
+                        self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
     def test_normal_answer_path_prefers_reviewed_science_when_it_matches(self):
         reviewed = {
             "ok": True,

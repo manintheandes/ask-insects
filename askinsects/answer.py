@@ -1923,9 +1923,15 @@ def _asks_for_still_images(question: str) -> bool:
 
 
 def _requested_species(question: str) -> str | None:
-    if any(term in question.lower() for term in ("spotted wing drosophila", "spotted-wing drosophila", "drosophila suzukii", "swd")):
+    q = question.lower()
+    if any(term in q for term in ("spotted wing drosophila", "spotted-wing drosophila", "drosophila suzukii", "swd")):
         return "Drosophila suzukii"
-    species_match = re.search(r"\b(Aedes|Culex|Anopheles|Drosophila)\s+[a-z]+\b", question, flags=re.IGNORECASE)
+    if (
+        any(term in q for term in ("plutella xylostella", "diamondback moth", "diamond back moth"))
+        or re.search(r"\bdbm\b", q)
+    ):
+        return "Plutella xylostella"
+    species_match = re.search(r"\b(Aedes|Culex|Anopheles|Drosophila|Plutella)\s+[a-z]+\b", question, flags=re.IGNORECASE)
     if not species_match:
         return None
     return species_match.group(0)
@@ -6757,6 +6763,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
 
     full_text_fallback_timed_out = False
+    post_timeout_searches = 0
+    post_timeout_search_budget = 2
+    fallback_budget_exhausted = False
     if not all_records:
         for lane in plan.lanes:
             search_queries = (
@@ -6765,6 +6774,11 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 else _search_queries(plan.search_query)
             )
             for search_query in search_queries:
+                if full_text_fallback_timed_out:
+                    if post_timeout_searches >= post_timeout_search_budget:
+                        fallback_budget_exhausted = True
+                        break
+                    post_timeout_searches += 1
                 query_limit = max(limit * 20, 50) if plan.answer_shape == "public_health" else limit
                 if plan.answer_shape == "behavior" and _is_spotted_wing_question(plan.question) and "flight" in plan.question.lower():
                     query_limit = max(limit * 100, 100)
@@ -6778,8 +6792,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     break
                 if index.last_search_timed_out:
                     full_text_fallback_timed_out = True
-                    break
-            if full_text_fallback_timed_out:
+                    if all_records:
+                        break
+            if fallback_budget_exhausted or (full_text_fallback_timed_out and all_records):
                 break
 
     if full_text_fallback_timed_out and not all_records:

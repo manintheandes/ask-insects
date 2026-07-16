@@ -389,13 +389,13 @@ def plan_question(question: str) -> QueryPlan:
         "codec",
         "duration",
         "resolution",
-        "gap",
-        "gaps",
-        "failed",
-        "failure",
-        "discovery",
     )
-    if any(term in q for term in video_media_terms):
+    repository_archive_gap = (
+        any(term in q for term in ("dryad", "figshare", "zenodo", "mendeley"))
+        and bool(re.search(r"\barchives?\b", q))
+        and bool(re.search(r"\bgaps?\b|\bfailed\b|\bfailure\b", q))
+    )
+    if any(term in q for term in video_media_terms) or re.search(r"\bmedia\b", q) or repository_archive_gap:
         return QueryPlan(question, "media", ("media",), question)
     if any(
         term in q

@@ -39,13 +39,43 @@
       "match": {
         "phrases": ["microbial growth", "microbes on fruit", "microbial oviposition"],
         "required_any": [
-          ["microbe", "microbes", "microbial", "bacteria", "yeast"],
+          ["microbe", "microbes", "microbial", "bacteria", "yeast", "commensal"],
           ["egg", "eggs", "oviposition", "lay", "laying"]
         ],
         "optional": ["hardness", "harder", "substrate", "texture", "attract", "deter", "avoid"]
       },
-      "answer": "In the cited artificial-substrate assay, microbial growth discouraged Drosophila suzukii oviposition but increased egg laying in the two comparison Drosophila species. Substrate hardness changed the response, indicating an interaction between mechanosensory and chemosensory information. The result is specific to the tested microbial inoculum and substrate. It does not mean every fruit microbe repels SWD in crops, and the experiment did not identify the responsible microbial molecule.",
+      "answer": "In the cited artificial-substrate assay, Drosophila suzukii laid fewer eggs on soft 1% agar with visible commensal microbial growth than on the matched uninoculated substrate. On hard 3% agar, it showed no significant preference or aversion to microbial growth. The hardness-dependent change implicates an interaction between mechanosensory and chemosensory information; it does not identify the responsible microbial molecule or show that every fruit microbe deters SWD in crops. To isolate the interaction, cross microbial treatment with matched agar hardness instead of changing microbes and texture together.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3124252639"]
+    },
+    {
+      "id": "swd-coconut-fatty-acid-oviposition",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 30,
+        "phrases": ["coconut free fatty acid", "fatty acid blend", "caprylic and capric"],
+        "required_any": [
+          ["coconut free fatty acid", "cffa", "caprylic", "capric", "octanoic acid", "decanoic acid"],
+          ["egg", "eggs", "oviposition", "deterrent", "lay", "laying"]
+        ],
+        "optional": ["blend", "20 mg", "raspberry", "spatial", "contact", "airborne"]
+      },
+      "answer": "Coconut free fatty acid (CFFA) deterred SWD oviposition dose-dependently in laboratory two-choice tests, with a 99% reduction at 20 mg versus solvent control, and field raspberries treated at 20 mg received 64% fewer eggs. Caprylic and capric acids were active components; at the ratio and concentrations present in CFFA, their two-component blend was about as effective as the full mixture, while either acid alone was less effective. These egg-count assays do not isolate spatial avoidance from contact, substrate chemistry, or post-contact oviposition deterrence. Resolve mode with a no-contact assay using measured airborne concentration, followed separately by treated-substrate choice, total egg output, activity, survival, and field fruit endpoints.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W4386466923"]
+    },
+    {
+      "id": "swd-nutrition-versus-oviposition-texture",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 30,
+        "phrases": ["protein-to-carbohydrate", "protein carbohydrate", "nutritional composition"],
+        "required_any": [
+          ["nutrition", "nutritional", "protein", "carbohydrate", "protein-to-carbohydrate", "p:c"],
+          ["oviposition", "egg", "eggs", "hardness", "texture", "substrate"]
+        ],
+        "optional": ["larva", "larvae", "adult", "biarmipes", "choice", "specialist"]
+      },
+      "answer": "The cited comparison separates larval nutrition from adult oviposition. Drosophila suzukii larvae performed better at lower protein concentrations and consumed less protein-rich diets than Drosophila biarmipes. Adults differed in oviposition preference for substrate hardness, but not nutritional composition. The study therefore supports broader use of ripening and softer food niches, not an adult protein-to-carbohydrate oviposition mechanism. In product assays, manipulate texture and nutrition independently and keep larval performance, larval intake, adult egg allocation, and total fecundity as separate endpoints.",
+      "source_record_ids": ["swd_traits:pubmed:28592264"]
     },
     {
       "id": "swd-density-host-quality",
@@ -72,7 +102,7 @@
         ],
         "optional": ["y tube", "electroantennogram", "eag", "volatile", "volatiles"]
       },
-      "answer": "Drosophila melanogaster preferred high concentrations of the tested fermentation-associated chemicals more strongly than Drosophila suzukii. Mated females preferred higher concentrations more than virgins only in the D. melanogaster comparison reported by this study. The mating-state result therefore cannot be assigned to SWD. Preserve the tested chemical, concentration, Y-tube choice, and electroantennogram endpoints; the study does not show that all fermentation volatiles repel SWD.",
+      "answer": "The study tested 2-phenylethanol at 0.01-0.1%, ethanol at 1-10%, and acetic acid at 0.1-1%. In Y-tube choices, Drosophila melanogaster favored the higher tested concentrations more strongly, whereas Drosophila suzukii tended toward lower concentrations. Electroantennogram responses measured antennal detection separately from choice. Mated females favored higher concentrations more than virgins only in the D. melanogaster comparison, so that mating-state result cannot be assigned to SWD. Keep chemical identity, concentration, Y-tube behavior, and electroantennogram response separate; the study does not show that all fermentation volatiles repel SWD.",
       "source_record_ids": ["swd:openalex_literature:openalex:W4365509323"]
     },
     {
@@ -387,12 +417,12 @@
       "match": {
         "phrases": ["windy crop canopy", "still-air chamber", "field plume"],
         "required_any": [
-          ["windy", "wind", "canopy", "field", "still air", "still-air"],
+          ["windy", "wind", "canopy", "field", "still air", "still-air", "raspberry", "trial", "trials"],
           ["volatile", "release", "plume", "puffer", "dispenser"]
         ],
         "optional": ["source spacing", "placement", "foliage", "temperature", "timing"]
       },
-      "answer": "A crop canopy adds airflow, source spacing and placement, foliage, temperature, timing, and changing release-rate effects that a still-air chamber does not estimate. In raspberries, automated octenol puffers reduced oviposition and outperformed passive vial dispensers; dawn-and-dusk release performed similarly to continuous release in that study. Larger-scale placement and perimeter strategies still required research. The result is specific to that crop, compound, year, pressure, and delivery method.",
+      "answer": "A crop canopy adds airflow, source spacing and placement, foliage, temperature, timing, and changing release-rate effects that a still-air chamber does not estimate. In 2016 raspberry plots, automated 1-octen-3-ol puffers reduced SWD oviposition by 20% versus controls. In 2017, puffers were 42-55% more effective than passive vials, and dawn and dusk release performed similarly to continuous daytime release. No placement difference was detected, but low fly abundance limited that comparison, so larger-scale perimeter and placement trials remain necessary. These results are specific to the tested crop, compound, years, pressure, and delivery methods.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3046652911"]
     },
     {
@@ -423,7 +453,7 @@
         ],
         "optional": ["washout", "common garden", "selection", "unexposed generation"]
       },
-      "answer": "Habituation is supported by a within-individual or within-generation decline after nonreinforced exposure that recovers after sufficient washout. Inherited resistance requires a persistent phenotype in offspring raised without exposure and ideally a selection response or genetic association. The SWD study found no habituation to octenol or 2-pentylfuran under its conditions, but it did not test inherited resistance. Use common-garden and unexposed-generation designs to separate learning, parental effects, and inheritance; longitudinal and field-frequency evidence remains missing.",
+      "answer": "Habituation is supported by a within-individual or within-generation decline after nonreinforced exposure that recovers after sufficient washout. Inherited resistance requires a persistent phenotype in offspring raised without exposure and ideally a selection response or genetic association. The SWD study found no habituation to octenol or 2-pentylfuran under its conditions, but it did not test inherited resistance. Use common-garden and unexposed-generation designs to separate learning, parental effects, and inheritance. Longitudinal, cross-resistance, behavioral-tolerance, and field-frequency evidence remains missing.",
       "source_record_ids": [
         "swd:openalex_literature:openalex:W3199560580",
         "insect_intelligence_programs:species:drosophila_suzukii:knowledge-gap:adaptation_resistance:1"
@@ -433,6 +463,7 @@
       "id": "swd-stage-to-market-loss",
       "species_ids": ["drosophila_suzukii"],
       "match": {
+        "priority": 30,
         "phrases": ["marketable crop loss", "surviving larvae", "eggs to yield"],
         "required_any": [
           ["egg", "eggs", "oviposition"],
@@ -440,7 +471,7 @@
         ],
         "optional": ["hatch", "emergence", "damage", "decay", "rejected fruit", "economic"]
       },
-      "answer": "Measure eggs per fruit, hatch or larval establishment, pupation or adult emergence, fruit damage and decay, rejected fruit, marketable yield, and economic loss using consistent fruit denominators. The push-pull field work measured fewer pupae emerging from treated raspberries, while the cherry study shows that pupation and survival vary among cultivars. Every prevented egg would not necessarily have become a damaging larva, and pupal emergence alone does not quantify marketable loss. A replicated marketable-yield and operational-fit package remains missing.",
+      "answer": "Measure eggs per fruit, hatch or larval establishment, pupation or adult emergence, fruit damage and decay, rejected fruit, marketable yield, and economic loss using consistent fruit denominators. Record cultivar, fruit condition, and ripeness because firmness, sugar, color, pupation, and survival can change across those states. The push-pull field work measured fewer pupae emerging from treated raspberries, while the cherry study found cultivar- and ripeness-associated differences. Every prevented egg would not necessarily have become a damaging larva, and pupal emergence alone does not quantify marketable loss. A replicated marketable-yield and operational-fit package remains missing.",
       "source_record_ids": [
         "swd:openalex_literature:openalex:W4411730655",
         "swd_pubmed_literature:pubmed:39769586",
@@ -490,7 +521,7 @@
         ],
         "optional": ["dopamine", "aversive", "habituation", "sensitization", "persistence"]
       },
-      "answer": "Aedes aegypti can acquire aversive responses to odorants salient to mammalian hosts, with dopamine signaling implicated in that olfactory learning. This supports controlling prior odor, handling, and host experience in repellent studies. It does not show learning to every repellent or persistence under product use. Learned host-odor associations, innate repellency, habituation, sensitization, and toxic impairment must remain separate explanations.",
+      "answer": "Female Aedes aegypti were trained individually with a 60-second odor presentation whose final 30 seconds were paired with a mechanical shock. They received 10 pairings separated by a 2-minute interval and were tested 24 hours later in a Y-maze. Trained Aedes avoided the mammalian-associated odorants 1-octen-3-ol and hexanoic acid but did not show the same learned change for the floral odor linalool; dopamine signaling was implicated in this olfactory learning. This does not show learning to every repellent or persistence under product use. Learned association, innate repellency, habituation, sensitization, and toxic impairment remain separate explanations.",
       "source_record_ids": ["openalex:W4315621418"]
     },
     {
@@ -506,6 +537,66 @@
       },
       "answer": "The transfluthrin study observed markedly different spatial and contact responses between a laboratory Aedes aegypti strain and a field population. Separate selection for permethrin or thymol resistance changed longevity, blood-feeding avidity, egg output, and development in dose- and state-dependent ways. Report and test strain or population, genotype or resistance phenotype, age, mating, and feeding state across more than one relevant background. Do not assume one colony represents the species or that insecticide resistance always changes repellency in one direction.",
       "source_record_ids": ["openalex:W3048721146", "openalex:W4413344516"]
+    },
+    {
+      "id": "aedes-transfluthrin-field-translation",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 30,
+        "phrases": ["transfluthrin field", "semi-field transfluthrin", "large-cage transfluthrin"],
+        "required_any": [
+          ["transfluthrin"],
+          ["field", "semi field", "semi-field", "large cage", "large-cage", "landing", "translation"]
+        ],
+        "optional": ["emanator", "wild", "resistance", "dose", "vapor", "vapour", "protection"]
+      },
+      "answer": "Two full-field experiments found negligible reductions in human landing by wild Aedes aegypti, whereas large-cage semi-field tests found about 50-60% landing reduction across the tested doses, collection methods, placements, and mosquito sources. The authors judged moderate pyrethroid resistance unlikely to explain the field shortfall. The endpoint was landing, not bites, infection, or disease, and potential inhalation exposure was a concern at the highest 15 g loading. For translation, give the open-field result precedence and repeat matched field landing and biting tests with measured vapor exposure, weather, airflow, placement, population background, and safety monitoring.",
+      "source_record_ids": ["openalex:W4399119561"]
+    },
+    {
+      "id": "aedes-species-specific-repellent-response",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 25,
+        "phrases": ["species-specific repellent", "species specific response", "transfer an Anopheles response"],
+        "required_any": [
+          ["species-specific", "species specific", "extrapolate", "transfer", "anopheles", "culex"],
+          ["repellent", "repellency", "deet", "pmd", "lemongrass", "eugenol"]
+        ],
+        "optional": ["aedes", "close range", "close-range", "odor alone", "human odor", "receptor"]
+      },
+      "answer": "In the close-proximity odor assay, Aedes aegypti and Culex quinquefasciatus were repelled to varying degrees by lemongrass oil, PMD, eugenol, and DEET, while Anopheles coluzzii responded to lemongrass oil and PMD but not eugenol or DEET. Each test used one resting female, filter paper about 0.5 cm away, and a 30 seconds observation window. This is direct odor-only, close-range movement evidence, not human-odor masking, landing, biting, or protection time. Do not transfer an Anopheles result to Aedes or infer a universal receptor; test the intended Aedes population at the intended vapor exposure, then confirm host-seeking and protection endpoints.",
+      "source_record_ids": ["openalex:W3013059076"]
+    },
+    {
+      "id": "aedes-population-human-host-preference",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 25,
+        "phrases": ["human-odor preference", "human versus animal odor", "African populations"],
+        "required_any": [
+          ["population", "populations", "geographic", "africa", "african", "dry season", "urbanization"],
+          ["human odor", "human-odor", "animal odor", "host preference", "human biting", "human-biting"]
+        ],
+        "optional": ["ancestry", "density", "ecology", "variation", "city", "climate"]
+      },
+      "answer": "Aedes aegypti did not show one universal host preference across the 27 sub-Saharan African collection sites: laboratory odor-choice behavior varied widely among populations. In the final ecological model, dry-season intensity and regional human population density explained 83% of the geographic variation, and human preference was associated with shared human-specialist ancestry. Those predictors are associations, not proof that either factor alone causes preference. Repellent development should include multiple relevant populations and keep laboratory human-versus-animal odor choice separate from field blood meals, landing, and biting.",
+      "source_record_ids": ["openalex:W3044645851"]
+    },
+    {
+      "id": "aedes-thermal-infrared-integration",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 30,
+        "phrases": ["thermal infrared", "infrared host seeking", "radiant heat"],
+        "required_any": [
+          ["thermal infrared", "infrared", "radiant heat", "radiant energy", "ir"],
+          ["host", "host seeking", "host-seeking", "heat", "cue", "sensor", "trpa1", "opsin"]
+        ],
+        "optional": ["34 c", "carbon dioxide", "co2", "human odor", "antenna", "convective"]
+      },
+      "answer": "Female Aedes aegypti showed the strongest preference for a roughly 34 C infrared source when carbon dioxide (CO2) and human odor were also present. Infrared, CO2, or human odor alone produced little host-seeking in this assay. TRPA1 at the antennal tip was required for infrared detection, and two co-expressed opsins supported responses at lower radiant intensities. The study separates radiant infrared from conductive or convective heat, and it measured female host-seeking rather than biting or human protection. Infrared is therefore a plausible component of host location, not a validated stand-alone repellent target or proof that blocking it alone protects people.",
+      "source_record_ids": ["openalex:W4401794442"]
     },
     {
       "id": "aedes-dose-release-exposure-reporting",
@@ -596,7 +687,7 @@
         ],
         "optional": ["orientation", "landing", "oviposition", "feeding", "yield", "quality"]
       },
-      "answer": "Start with an assay ladder that separately measures adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, and marketable yield or quality. This is a product-design inference, not current evidence that one endpoint is most predictive in Plutella xylostella. The source plane lacks exact-species life-cycle, reproduction, feeding, and crop-state evidence needed to validate that ordering. Adult avoidance alone cannot establish reduced crop damage.",
+      "answer": "Start with an assay ladder that separately measures adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, and marketable yield or quality. This is a product-design inference, not current evidence that one endpoint is most predictive in Plutella xylostella. The source plane lacks exact-species behavior, life-cycle, reproduction, feeding, and crop-state evidence needed to validate that ordering. Adult avoidance alone cannot establish reduced crop damage.",
       "source_record_ids": [
         "insect_intelligence_programs:species:plutella_xylostella:domain:life_cycle_development",
         "insect_intelligence_programs:species:plutella_xylostella:domain:reproduction_oviposition"
@@ -618,6 +709,36 @@
         "insect_intelligence_programs:species:plutella_xylostella:domain:behavior",
         "insect_intelligence_programs:species:plutella_xylostella:domain:chemical_responses_metabolism"
       ]
+    },
+    {
+      "id": "dbm-diel-release-timing",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 30,
+        "phrases": ["diel timing", "clock gene timing", "adult locomotor activity"],
+        "required_any": [
+          ["diel", "circadian", "period", "timeless", "time of day", "light", "temperature"],
+          ["locomotor", "activity", "release", "schedule", "timing", "application"]
+        ],
+        "optional": ["roth", "entrained", "free running", "free-running", "field", "repellent"]
+      },
+      "answer": "In the ROTH Plutella xylostella strain, period and timeless transcripts showed rhythms under entrained and free-running conditions, but measured adult locomotor activity was temperature-driven and light-suppressed rather than coupled to those clock-gene rhythms. A release schedule should therefore be tested against actual adult activity under the intended light and temperature pattern, not selected from transcript peaks alone. This laboratory strain does not establish field timing across populations, seasons, canopy conditions, or weather, so molecular and locomotor endpoints must remain separate and field timing needs direct validation.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W4407297126"]
+    },
+    {
+      "id": "dbm-citronella-endpoint-separation",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 35,
+        "phrases": ["citronella endpoints", "citronella oil", "citronella field"],
+        "required_any": [
+          ["citronella", "lemongrass"],
+          ["repellent", "repellency", "movement", "feeding", "mortality", "oviposition", "egg", "field", "abundance"]
+        ],
+        "optional": ["cabbage", "larva", "larvae", "concentration", "diadegma", "natural enemy"]
+      },
+      "answer": "The study reported several distinct citronella endpoints in Plutella xylostella: larval movement in a filter-paper assay, feeding-related effects on treated cabbage, oviposition inhibition, mortality, and season-long field population counts. In the filter-paper assay, 3 and 4 mL/L produced 100% reported repellency at 48 hours; mortality was measured separately through 120 hours, so neither value should be treated as pure spatial repellency. Lower field abundance also cannot be assigned to repellency alone. Separate no-contact choice, treated-leaf feeding, survival or knockdown, adult oviposition, and crop damage. The reported Diadegma eucerophaga field observation is study- and species-specific, not general natural-enemy safety proof.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W4387738540"]
     },
     {
       "id": "dbm-first-baseline-experiment",
