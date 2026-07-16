@@ -9,6 +9,7 @@ import sqlite3
 from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
 from .planner import QueryPlan, plan_question
+from .reviewed_science import build_reviewed_science_answer
 from .records import EvidenceRecord
 from .repellency import build_repellency_comparison_answer, is_repellency_comparison_question
 from .sources.aedes_deep_sources import (
@@ -5976,6 +5977,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     if not _index_ready(index):
         return source_gap(plan, "The Ask Insects source index has not been built yet.")
 
+    reviewed_science = build_reviewed_science_answer(index, question)
+    if reviewed_science is not None:
+        return reviewed_science
+
     if is_repellency_comparison_question(plan.question):
         return build_repellency_comparison_answer(index, plan.question, limit=limit)
 
@@ -6751,6 +6756,7 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     all_records.append(record)
                     seen_record_ids.add(record.record_id)
 
+    full_text_fallback_timed_out = False
     if not all_records:
         for lane in plan.lanes:
             search_queries = (
@@ -6770,6 +6776,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                     seen_record_ids.add(record.record_id)
                 if query_records:
                     break
+                if index.last_search_timed_out:
+                    full_text_fallback_timed_out = True
+                    break
+            if full_text_fallback_timed_out:
+                break
+
+    if full_text_fallback_timed_out and not all_records:
+        return source_gap(
+            plan,
+            "The bounded full-text fallback exceeded its search budget before any evidence was found.",
+        )
 
     if _wants_extracted_facts(plan.question):
         extracted_source_id = _extracted_facts_source_for_question(plan.question)

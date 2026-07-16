@@ -12,7 +12,10 @@ RESOURCE_PACKAGE = "askinsects.resources"
 CONFIG_RESOURCES = (
     ROOT / "config" / "insect-evidence-package.json",
     ROOT / "config" / "insect-intelligence-programs.json",
+    ROOT / "config" / "reviewed-scientific-evidence.json",
 )
+
+
 def canonical_resource_files() -> tuple[Path, ...]:
     context_config = json.loads(CONFIG_RESOURCES[0].read_text(encoding="utf-8"))
     package_version = context_config.get("package_version")

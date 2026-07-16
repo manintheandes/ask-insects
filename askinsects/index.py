@@ -73,6 +73,9 @@ WRITE_SQL_KEYWORDS = {
     "vacuum",
 }
 
+SEARCH_TIMEOUT_SECONDS = 8.0
+SEARCH_PROGRESS_STEPS = 1_000
+
 
 def _strip_sql_literals_and_comments(sql: str) -> str:
     return re.sub(
@@ -136,6 +139,7 @@ def _fts_prefix_query(query: str) -> str | None:
 class SourceIndex:
     def __init__(self, path: Path):
         self.path = Path(path)
+        self.last_search_timed_out = False
 
     @contextmanager
     def connect(self) -> Iterator[sqlite3.Connection]:
@@ -339,6 +343,7 @@ class SourceIndex:
         conn.execute("DELETE FROM records WHERE source=?", (source,))
 
     def search(self, query: str, lane: str | None = None, limit: int = 10) -> list[EvidenceRecord]:
+        self.last_search_timed_out = False
         match = _fts_prefix_query(query)
         if not match:
             return []
@@ -356,18 +361,38 @@ class SourceIndex:
             params.append(lane)
         params.append(limit)
         with self.connect() as conn:
-            rows = conn.execute(
-                f"""
-                SELECT r.*
-                FROM records_fts f
-                JOIN records r ON r.record_id = f.record_id
-                WHERE records_fts MATCH ?
-                {lane_filter}
-                ORDER BY {preferred_source_order} bm25(records_fts)
-                LIMIT ?
-                """,
-                params,
-            ).fetchall()
+            deadline = time.monotonic() + SEARCH_TIMEOUT_SECONDS
+            deadline_interrupted_search = False
+
+            def deadline_expired() -> bool:
+                nonlocal deadline_interrupted_search
+                deadline_interrupted_search = time.monotonic() >= deadline
+                return deadline_interrupted_search
+
+            conn.set_progress_handler(deadline_expired, SEARCH_PROGRESS_STEPS)
+            try:
+                rows = conn.execute(
+                    f"""
+                    SELECT r.*
+                    FROM records_fts f
+                    JOIN records r ON r.record_id = f.record_id
+                    WHERE records_fts MATCH ?
+                    {lane_filter}
+                    ORDER BY {preferred_source_order} bm25(records_fts)
+                    LIMIT ?
+                    """,
+                    params,
+                ).fetchall()
+            except sqlite3.OperationalError as exc:
+                if (
+                    not deadline_interrupted_search
+                    or getattr(exc, "sqlite_errorcode", None) != sqlite3.SQLITE_INTERRUPT
+                ):
+                    raise
+                self.last_search_timed_out = True
+                rows = []
+            finally:
+                conn.set_progress_handler(None, 0)
         return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
     def search_literature_fulltext(self, query: str, limit: int = 10) -> list[EvidenceRecord]:

@@ -227,20 +227,31 @@ python3 -m askinsects ask "show Drosophila suzukii videos" --json
 python3 -m askinsects ask "show spotted wing drosophila motion evidence" --json
 ```
 
-## Production-Path Evaluation
+## Reality Eval
 
-The final answer gate is a minimum 200-question black-box run through Josh's normal
-Codex route, the installed Ask Insects skill, and the hosted production source
-plane. It requires 100 percent expected behavior, exact provenance in every
-visible answer, and a complete answer in under 60 seconds.
+The authoritative completion gate asks exactly 50 natural questions through
+normal Codex: 40 public development cases and 10 sealed holdouts. Every first,
+complete answer must arrive in under 60 seconds and pass independent review for
+accuracy, sources, relevance, completeness, usefulness, privacy, and exact
+provenance. Any failure requires a general repair, new holdouts, and a fresh
+counted run. The complete passing run must be recorded in the real Codex app
+and shared with Josh.
 
 ```bash
-python3 scripts/eval_production_path.py
+python3 scripts/eval_reality.py validate-public
+python3 scripts/eval_reality.py validate-results \
+  --contract artifacts/reality-evals/final/contract.json \
+  --results artifacts/reality-evals/final/results.json
+python3 scripts/eval_reality.py summary \
+  --contract artifacts/reality-evals/final/contract.json \
+  --results artifacts/reality-evals/final/results.json
 ```
 
-See `docs/production-path-evaluation.md` for the corpus, failure rules, result
-artifact, and non-gating smoke command. `scripts/verify_complete.py` validates
-the evaluator but does not substitute for the live minimum 200-question run.
+See `docs/production-path-evaluation.md` for the freeze, assembly, failure, and
+recording rules. The legacy 210-case evaluator remains optional regression
+coverage. It is not completion evidence. `scripts/verify_complete.py` checks
+the repository contract, but it does not substitute for the private passing
+artifact and reviewed recording.
 
 ## Quick Start
 

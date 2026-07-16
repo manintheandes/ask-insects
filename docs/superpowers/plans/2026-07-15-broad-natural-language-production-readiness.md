@@ -3,6 +3,9 @@
 Date: 2026-07-15
 Branch: `codex/ask-insects-router-60s`
 
+Gate status: the corpus-size rule in the original plan is superseded by Reality
+Eval. The legacy 210-case suite remains optional regression coverage.
+
 ## Objective
 
 Make the hosted `ask-insects ask` route reliable for the ordinary questions
@@ -21,7 +24,7 @@ seconds without retries or route substitution.
    after the answer layer fell back to a full-text search for the common phrase
    `Aedes aegypti` across the million-row index. An indexed source-and-lane
    lookup returned the assembly in under one second.
-3. The existing 200-question corpus is dominated by deterministic program
+3. The legacy deterministic corpus is dominated by program
    ledger questions. It does not prove that broad R&D questions use the right
    lane or finish on time.
 4. `--compact` only emits `final_answer` for two answer shapes, although the
@@ -40,18 +43,21 @@ seconds without retries or route substitution.
   source IDs, and exact locators, including source-gap responses.
 - No Ask Monarch source, private experiment, compound, video, result, or
   decision can appear on the public answer path.
-- The production contract uses the user-approved strict limit of less than 60
-  seconds and contains at least 200 cases, including blind broad-language R&D
-  questions for SWD, Aedes, diamondback moth, repellency, neurobiology,
-  behavior, oviposition, ecology, genomics, and cross-domain reasoning.
+- The authoritative gate asks exactly 50 natural questions through normal
+  Codex: 40 public development cases and 10 sealed holdouts. Each first,
+  complete answer uses a fresh task in the real Codex app and arrives in
+  strictly under 60 seconds.
+- Independent review passes accuracy, sources, relevance, completeness,
+  usefulness, privacy, and exact provenance for every answer.
 - Live grading does not preflight, retry, rephrase, or substitute SQL/search for
   the normal hosted `ask` route. Direct source queries are allowed only after
   the visible answer, as independent grading evidence.
 - Targeted tests, the full suite, and `python3 scripts/verify_complete.py` pass.
 - The fix is merged, deployed, installed locally, and verified against the live
   hosted plane.
-- One saved full black-box run reports 100 percent expected behavior, complete
-  provenance, no private-data leakage, and every response under 60 seconds.
+- One unchanged 50-question run reports 100 percent expected behavior,
+  complete provenance, no private-data leakage, and every response under 60
+  seconds. The complete recording is reviewed and shared with Josh.
 
 ## Work Sequence
 
@@ -63,16 +69,17 @@ seconds without retries or route substitution.
    wording that distinguishes candidate extraction from verified efficacy.
 4. Make the compact response contract uniform across every answer shape and
    source gap.
-5. Extend the production corpus with representative broad natural-language
-   questions and require that the normal route remain the only answer path.
+5. Build and independently source-grade 40 public natural-language questions,
+   then have a separate evaluator create 10 private holdouts.
 6. Run focused tests, then the full repository completion gate.
 7. Deploy the hosted application and refresh the installed CLI and skill.
 8. Run live smoke cases for the original failures plus representative source
    gaps and privacy-boundary questions.
-9. Run the complete production-path corpus without retries. Save the exact
-   questions, visible answers, commands, timings, provenance, and grades.
-10. Fix every failure and repeat the full run until one fresh run passes every
-    case. Prior failed runs remain preserved as evidence.
+9. Run exactly 50 questions in fresh normal Codex tasks without retries. Save
+   the exact questions, complete visible answers, commands, timings,
+   provenance, independent grades, and real Codex app recording.
+10. Fix every general failure, replace the holdouts, and repeat the full run
+    until one fresh run passes every case. Prior failed runs remain preserved.
 
 ## Release Rule
 
@@ -80,3 +87,5 @@ Do not ship or complete the goal if direct SQL is the only fast path, if a
 generic question can still fall into taxonomy, if an SWD answer silently uses
 another species, if compact output lacks provenance, if any private Monarch
 data appears, or if a production-path case reaches 60 seconds.
+The legacy 210-case runner may support optional regression work, but it cannot
+complete the goal.

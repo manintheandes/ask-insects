@@ -53,6 +53,28 @@ sources:
         command: ask-insects context-package
         boundary: Generic public insect evidence package for any downstream tool; private experiments and results belong in a separate private system and cannot fill gaps in public evidence
         provenance_required: true
+  - id: reviewed_scientific_evidence
+    name: Human-reviewed scientific answer catalog
+    source_type: derived_repo_catalog
+    boundary: General natural-language routing and bounded scientific interpretations for public SWD, Aedes aegypti, and diamondback moth evidence; each topic cites existing indexed public records and fails closed when any required record is absent; evaluation questions, case ids, holdouts, private experiments, and private results are forbidden
+    query_plane: reviewed_topic_match_to_exact_sqlite_record_ids
+    artifact_dir: artifacts/mosquito-v1
+    input_catalog: config/reviewed-scientific-evidence.json
+    answer_module: askinsects/reviewed_science.py
+    lanes:
+      - reviewed_science
+    provenance_required: true
+    live_fetch: derived_from_repo_catalog_and_existing_index
+    source_contract:
+      source_grade_now:
+        - human_reviewed_bounded_interpretations
+        - exact_original_record_provenance
+        - species_and_topic_paraphrase_matching
+        - source_gap_when_any_required_record_is_missing
+      not_claimed:
+        - private_company_experiments_or_results
+        - evaluation_case_specific_routing
+        - unreviewed_mechanistic_or_commercial_claims
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
     source_type: public_api_composite
