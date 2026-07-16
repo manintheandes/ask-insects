@@ -1,7 +1,7 @@
 {
-  "bundle_sha256": "9c6390f40f2e0d844a25dd96d77b9c0ec2a5de9daa85040c12e01f19639d4e28",
+  "bundle_sha256": "d16a29cfd4b7bc474b169dffcdda69d41342d2bacbedd1b94a263b377c346db8",
   "bundle_version": "ask-insects-reality-holdouts.v1",
-  "created_at": "2026-07-16T22:00:44Z",
+  "created_at": "2026-07-16T23:21:20Z",
   "question_count": 10,
   "receipt_version": "ask-insects-reality-holdout-receipt.v1",
   "target": "ask-insects"
