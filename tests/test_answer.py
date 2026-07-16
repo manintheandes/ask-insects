@@ -550,6 +550,13 @@ def who_malaria_threats_record(record_id, text):
 
 
 class AnswerTests(unittest.TestCase):
+    def test_normal_answer_path_does_not_import_an_evaluation_answer_module(self):
+        source = (Path(__file__).parents[1] / "askinsects" / "answer.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertNotIn("scientist_rnd", source)
+        self.assertNotIn("build_scientist_rnd_answer", source)
+
     def test_planner_routes_identity_evidence_action_and_gap(self):
         self.assertEqual(plan_question("what do we know about Aedes aegypti?").answer_shape, "identity")
         self.assertEqual(plan_question("show mosquito observations with images in Brazil").answer_shape, "evidence")
