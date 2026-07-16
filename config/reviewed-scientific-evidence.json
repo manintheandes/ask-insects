@@ -426,6 +426,24 @@
       "source_record_ids": ["swd:openalex_literature:openalex:W3046652911"]
     },
     {
+      "id": "swd-directed-flight-versus-motor-suppression",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 35,
+        "phrases": ["flight orientation", "odor plume", "upwind flight", "motor suppression"],
+        "required_any": [
+          ["flight", "orientation", "plume", "trajectory", "upwind", "directional", "leave"],
+          ["slow", "slowing", "speed", "locomotor", "motor", "knockdown", "impairment", "activity", "toxicity"]
+        ],
+        "optional": ["heading", "turning", "occupancy", "re-entry", "reentry", "recovery", "mated", "virgin"]
+      },
+      "answer": "Distinguish directed orientation from general motor suppression with separate behavioral and locomotor controls. In the odor plume, measure heading and upwind or downwind movement, turn and exit angle, time inside the plume or treated zone, crosswind displacement, re-entry, and source approach or contact. In matched clean air without the odor plume, measure flight speed, total distance, immobility, takeoff or flight propensity, knockdown, survival, and recovery after exposure. A selective change in trajectory or plume occupancy with preserved locomotion supports an orientation effect; slowing in both plume and clean-air settings supports impairment instead. Randomize side and order, blind tracking, match airflow, solvent, and release rate, and standardize age, sex, mating, feeding, and circadian state. The cited wind-tunnel study directly measured takeoff, upwind flight, and source contact in virgin, starved female SWD, while the locomotor study showed that activity varies strongly with mating state and daylight. Together they support the endpoint design, but they do not establish that any candidate volatile is a repellent.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W4213332511",
+        "swd_olfaction_literature:pubmed:26486360"
+      ]
+    },
+    {
       "id": "swd-crop-and-nontarget-safety",
       "species_ids": ["drosophila_suzukii"],
       "match": {

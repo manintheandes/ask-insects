@@ -7,7 +7,8 @@ description: >-
   question. This includes adding a new insect or asking whether answer-routing
   design must change for one. This description is the complete route. Do not
   open this file for a normal answer. The first hosted command must be
-  ask-insects ask "<the user's exact question>" --json --compact. Then return
+  ask-insects ask "<the user's exact question>" --json --compact. If it yields
+  a session ID, continue that process with write_stdin until exit. Then return
   final_answer verbatim.
 ---
 
@@ -29,6 +30,9 @@ hosted command as the first visible action. Use the installed command, or
 ```bash
 ask-insects ask "<the user's exact question>" --json --compact
 ```
+
+A command may yield a session ID before it finishes. Continue that same process with
+`write_stdin` until exit. Never discard a yielded command or issue another Ask Insects command.
 
 A bare call uses the hosted production source plane. Never add `--local` to a
 user answer. When `ok` is true, return `final_answer` verbatim as the entire
