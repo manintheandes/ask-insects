@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_RESOURCES = (
     REPO_ROOT / "config" / "insect-evidence-package.json",
     REPO_ROOT / "config" / "insect-intelligence-programs.json",
+    REPO_ROOT / "config" / "reviewed-scientific-evidence.json",
 )
 PACKAGE_VERSION = json.loads(CONFIG_RESOURCES[0].read_text(encoding="utf-8"))[
     "package_version"
@@ -157,6 +158,10 @@ class WheelResourceTests(unittest.TestCase):
                         load_context_config,
                         load_published_context_package,
                     )
+                    from askinsects.reviewed_science import (
+                        default_reviewed_science_catalog,
+                        load_reviewed_science_catalog,
+                    )
                     from askinsects.sources.insect_intelligence_programs import (
                         DEFAULT_PROGRAM_LEDGER,
                         load_program_ledger,
@@ -188,6 +193,11 @@ class WheelResourceTests(unittest.TestCase):
                         raise SystemExit("installed context config did not load")
                     if load_program_ledger(DEFAULT_PROGRAM_LEDGER)["schema_version"] != "insect-intelligence-programs.v1":
                         raise SystemExit("installed program ledger did not load")
+                    reviewed = load_reviewed_science_catalog()
+                    if default_reviewed_science_catalog().name != "reviewed-scientific-evidence.json":
+                        raise SystemExit("installed reviewed science default is wrong")
+                    if reviewed["schema_version"] != "ask-insects-reviewed-science.v1":
+                        raise SystemExit("installed reviewed science catalog did not load")
                     published = load_published_context_package()
                     if published["package_version"] != "2026-07-14.7":
                         raise SystemExit("installed published release did not load")

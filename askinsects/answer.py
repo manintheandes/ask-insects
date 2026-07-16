@@ -9,6 +9,7 @@ import sqlite3
 from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
 from .planner import QueryPlan, plan_question
+from .reviewed_science import build_reviewed_science_answer
 from .records import EvidenceRecord
 from .repellency import build_repellency_comparison_answer, is_repellency_comparison_question
 from .sources.aedes_deep_sources import (
@@ -5975,6 +5976,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     index = SourceIndex(Path(artifact_dir) / "source_index.sqlite")
     if not _index_ready(index):
         return source_gap(plan, "The Ask Insects source index has not been built yet.")
+
+    reviewed_science = build_reviewed_science_answer(index, question)
+    if reviewed_science is not None:
+        return reviewed_science
 
     if is_repellency_comparison_question(plan.question):
         return build_repellency_comparison_answer(index, plan.question, limit=limit)

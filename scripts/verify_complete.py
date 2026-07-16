@@ -125,6 +125,7 @@ REQUIRED_FILES = (
     "config/source-map.yaml",
     "config/insect-evidence-package.json",
     "config/insect-intelligence-programs.json",
+    "config/reviewed-scientific-evidence.json",
     "public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json",
     "config/mosquito-intelligence-coverage.json",
     "config/aedes-source-plane-benchmark.json",
@@ -225,6 +226,7 @@ REQUIRED_FILES = (
     "askinsects/planner.py",
     "askinsects/records.py",
     "askinsects/repellency.py",
+    "askinsects/reviewed_science.py",
     "askinsects/reality_eval.py",
     "askinsects/server.py",
     "askinsects/voxels.py",
@@ -633,6 +635,7 @@ UNIT_TEST_MODULES = (
     "tests.test_literature_depth_profiles",
     "tests.test_ingest_literature_depth",
     "tests.test_repellency_comparison",
+    "tests.test_reviewed_science",
     "tests.test_reality_eval",
     "tests.test_insect_intelligence_programs",
     "tests.test_context_package",
@@ -2541,6 +2544,52 @@ def check_evidence_package(artifact_dir: Path = VERIFY_ARTIFACT_DIR) -> None:
     _check_context_package_validator_guards(package)
 
 
+def check_reviewed_scientific_evidence() -> None:
+    from askinsects.reviewed_science import load_reviewed_science_catalog
+
+    catalog_path = REPO_ROOT / "config/reviewed-scientific-evidence.json"
+    catalog = load_reviewed_science_catalog(catalog_path)
+    topics = catalog.get("topics")
+    if not isinstance(topics, list) or len(topics) < 40:
+        raise RuntimeError(
+            "reviewed scientific evidence catalog must contain at least 40 topics"
+        )
+
+    catalog_text = catalog_path.read_text(encoding="utf-8")
+    public_manifest = json.loads(
+        (REPO_ROOT / "evals/ask_insects_reality_eval_public_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    for case in public_manifest.get("questions", []):
+        question = case.get("question") if isinstance(case, dict) else None
+        if isinstance(question, str) and question in catalog_text:
+            raise RuntimeError(
+                "reviewed scientific evidence catalog contains an exact evaluation question"
+            )
+
+    source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
+    source_docs = (REPO_ROOT / "docs/source-lanes.md").read_text(encoding="utf-8")
+    for required in (
+        "reviewed_scientific_evidence",
+        "config/reviewed-scientific-evidence.json",
+        "source_gap_when_any_required_record_is_missing",
+    ):
+        if required not in source_map:
+            raise RuntimeError(
+                f"config/source-map.yaml is missing reviewed-science term: {required}"
+            )
+    for required in (
+        "reviewed_scientific_evidence",
+        "config/reviewed-scientific-evidence.json",
+        "fails closed",
+    ):
+        if required not in source_docs:
+            raise RuntimeError(
+                f"docs/source-lanes.md is missing reviewed-science term: {required}"
+            )
+
+
 def check_reality_evaluation() -> None:
     from askinsects.reality_eval import (
         PUBLIC_QUESTION_COUNT,
@@ -2589,6 +2638,7 @@ def check_reality_evaluation() -> None:
         "askinsects/cli.py",
         "askinsects/hosted.py",
         "askinsects/planner.py",
+        "askinsects/reviewed_science.py",
         "askinsects/server.py",
     )
     forbidden_eval_dependencies = (
@@ -3482,6 +3532,7 @@ def main() -> int:
         check_mosquito_intelligence_coverage()
         check_insect_intelligence_programs()
         check_evidence_package()
+        check_reviewed_scientific_evidence()
         check_reality_evaluation()
         check_aedes_source_plane_benchmark()
         check_cli()
