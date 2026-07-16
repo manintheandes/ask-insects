@@ -36,6 +36,173 @@ INSTALLED_VALIDATOR = Path(
     "/Users/josh/.codex/skills/realityeval/scripts/validate_eval.py"
 )
 MISSING = object()
+DEFAULT_PUBLIC_MANIFEST = (
+    Path(__file__).parents[1]
+    / "evals"
+    / "ask_insects_reality_eval_public_v1.json"
+)
+EXPECTED_PUBLIC_QUESTIONS = (
+    (
+        "swd-texture-01",
+        "How does fruit texture influence where Drosophila suzukii females lay eggs, and what sensory mechanism is implicated?",
+    ),
+    (
+        "swd-microbes-02",
+        "Do microbes on fruit attract or deter SWD oviposition, and does substrate hardness change that response?",
+    ),
+    (
+        "swd-density-03",
+        "How do adult density and host quality change spotted wing drosophila egg-laying behavior?",
+    ),
+    (
+        "swd-fermentation-04",
+        "How do fermentation volatile concentration and mating state affect drosophilid preference, and what is actually known for SWD?",
+    ),
+    (
+        "swd-meja-dose-05",
+        "What does methyl jasmonate's dose-response tell us about the risk that a low dose attracts SWD instead of repelling it?",
+    ),
+    (
+        "swd-choice-confounds-06",
+        "If treated fruit gets fewer SWD eggs, how do we separate true oviposition choice from mortality, reduced activity, mating, or fecundity?",
+    ),
+    (
+        "swd-choice-controls-07",
+        "Which controls are essential in a two-choice SWD oviposition assay?",
+    ),
+    (
+        "swd-olfactometer-08",
+        "Can a Y-tube or planar olfactometer result prove crop protection or reduced egg laying in SWD?",
+    ),
+    (
+        "swd-fruit-condition-09",
+        "How should fruit ripeness, skin hardness, injury, and moisture be controlled in an SWD repellent assay?",
+    ),
+    (
+        "swd-crop-followup-10",
+        "What follow-up measurements connect SWD oviposition deterrence to actual crop protection?",
+    ),
+    (
+        "aedes-host-cues-11",
+        "Which sensory cues does Aedes aegypti combine to find a human, and which cues are still proven after repellent exposure?",
+    ),
+    (
+        "aedes-bloodmeal-state-12",
+        "What does the public evidence say about internal-state control of Aedes aegypti host seeking after a blood meal?",
+    ),
+    (
+        "aedes-npylr1-13",
+        "Is NPYLR1 proven to be required for post-blood-meal suppression of Aedes aegypti host seeking?",
+    ),
+    (
+        "aedes-human-metabolites-14",
+        "What evidence links human metabolic differences to Aedes aegypti attraction, and is it causal?",
+    ),
+    (
+        "aedes-contact-spatial-15",
+        "How do we distinguish spatial repellency from contact irritancy in Aedes aegypti?",
+    ),
+    (
+        "aedes-vapor-toxicity-16",
+        "How can we tell whether apparent vapor repellency in Aedes aegypti is actually knockdown or toxicity?",
+    ),
+    (
+        "aedes-environment-17",
+        "Which airflow, plume, temperature, and humidity controls are needed in an Aedes spatial-repellency assay?",
+    ),
+    (
+        "aedes-occupancy-bites-18",
+        "Does reduced chamber occupancy prove fewer human landings or bites by Aedes aegypti?",
+    ),
+    (
+        "aedes-recovery-19",
+        "What should be measured after Aedes repellent exposure to separate temporary knockdown, recovery, and mortality?",
+    ),
+    (
+        "aedes-controlled-release-20",
+        "What does controlled-release citronella evidence show about duration, and what does it not prove about human protection?",
+    ),
+    (
+        "swd-receptors-21",
+        "How strong is the evidence that specific odorant or ionotropic receptors drive SWD avoidance, rather than merely responding to an odor?",
+    ),
+    (
+        "swd-visual-confound-22",
+        "Could visual contrast or fruit color confound an SWD assay intended to measure odor-mediated repellency?",
+    ),
+    (
+        "swd-recovery-habituation-23",
+        "After a volatile is removed, what recovery measurements would show whether SWD avoidance persists, habituates, or rapidly disappears?",
+    ),
+    (
+        "swd-state-confounds-24",
+        "How could age, mating status, hunger, or prior egg laying change an SWD repellent result?",
+    ),
+    (
+        "swd-field-plume-25",
+        "What changes when an SWD volatile that works in a still-air chamber is moved into a windy crop canopy?",
+    ),
+    (
+        "swd-safety-26",
+        "Which non-target and crop-safety measurements should accompany an SWD repellent field trial?",
+    ),
+    (
+        "swd-resistance-27",
+        "What evidence would distinguish learned habituation from inherited resistance to an SWD repellent?",
+    ),
+    (
+        "swd-crop-loss-28",
+        "Which endpoints connect fewer SWD eggs on fruit to fewer surviving larvae and less marketable crop loss?",
+    ),
+    (
+        "aedes-multimodal-cues-29",
+        "How redundant are carbon dioxide, human odor, heat, humidity, and visual cues during Aedes aegypti host seeking?",
+    ),
+    (
+        "aedes-circadian-30",
+        "How should time of day and mosquito circadian state be controlled in a human-repellent assay?",
+    ),
+    (
+        "aedes-learning-31",
+        "Can prior odor or host experience change how Aedes aegypti responds to a repellent?",
+    ),
+    (
+        "aedes-population-variation-32",
+        "How much can mosquito population, genotype, age, or insecticide-resistance background change a repellent result?",
+    ),
+    (
+        "aedes-dose-release-33",
+        "How should dose, evaporation rate, air concentration, and distance be reported for an Aedes spatial repellent?",
+    ),
+    (
+        "aedes-arm-in-cage-34",
+        "What can an arm-in-cage landing assay establish, and what can it not establish about actual bite prevention?",
+    ),
+    (
+        "aedes-durability-35",
+        "Which sweat, washing, abrasion, sunlight, and temperature tests are needed to estimate how long a skin repellent protects a person?",
+    ),
+    (
+        "aedes-repellent-resistance-36",
+        "How do we distinguish physiological resistance to a mosquito repellent from ordinary behavioral avoidance or reduced sensitivity?",
+    ),
+    (
+        "dbm-host-cues-37",
+        "Which plant cues guide diamondback moth host finding and egg laying, and which evidence is direct for Plutella xylostella?",
+    ),
+    (
+        "dbm-endpoints-38",
+        "For diamondback moth, which life stage and crop-damage endpoints should a repellent program measure first?",
+    ),
+    (
+        "dbm-cross-species-39",
+        "What can SWD or mosquito spatial-repellency evidence legitimately suggest for diamondback moth, and what must be tested directly?",
+    ),
+    (
+        "dbm-gap-experiment-40",
+        "Before screening diamondback moth repellents, what is the most important public-evidence gap to close and what experiment would close it?",
+    ),
+)
 
 
 def truth_packet(case_id):
@@ -248,6 +415,61 @@ class RealityEvalTests(unittest.TestCase):
         self.assertEqual(len(validated["questions"]), PUBLIC_QUESTION_COUNT)
         self.assertTrue(all(case["holdout"] is False for case in validated["questions"]))
         self.assertTrue(all(case["kind"] == "domain" for case in validated["questions"]))
+
+    def test_canonical_public_manifest_is_realistic_and_complete(self):
+        manifest = load_json_object(DEFAULT_PUBLIC_MANIFEST)
+        validate_public_manifest(manifest)
+        questions = manifest["questions"]
+
+        self.assertEqual(len(questions), 40)
+        self.assertTrue(all(case["kind"] == "domain" for case in questions))
+        self.assertTrue(all(case["holdout"] is False for case in questions))
+        self.assertGreaterEqual(len({case["category"] for case in questions}), 6)
+        self.assertEqual(
+            {(case["id"], case["question"]) for case in questions},
+            set(EXPECTED_PUBLIC_QUESTIONS),
+        )
+        self.assertEqual(len({case["question"] for case in questions}), 40)
+        product_names = ("ask insects", "ask monarch", "ask just")
+        self.assertTrue(
+            all(
+                all(name not in case["question"].casefold() for name in product_names)
+                for case in questions
+            )
+        )
+        self.assertTrue(
+            all(case["truth_packet"]["sources"] for case in questions)
+        )
+
+    def test_canonical_public_manifest_pins_verified_public_artifacts(self):
+        manifest = load_json_object(DEFAULT_PUBLIC_MANIFEST)
+        sources = [
+            source
+            for case in manifest["questions"]
+            for source in case["truth_packet"]["sources"]
+        ]
+        expected_urls_by_record = {
+            "W2344416877": {"https://doi.org/10.48496/m467-t235"},
+            "W4225097850": {
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC9046260/"
+            },
+            "W4401794442": {
+                "https://www.nature.com/articles/s41586-024-07848-5"
+            },
+            "W4403603462": {
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC11494009/"
+            },
+            "39769586": {"https://pubmed.ncbi.nlm.nih.gov/39769586/"},
+        }
+
+        for record_id, expected_urls in expected_urls_by_record.items():
+            with self.subTest(record_id=record_id):
+                matching_urls = {
+                    source["public_url"]
+                    for source in sources
+                    if record_id in source["locator"]
+                }
+                self.assertEqual(matching_urls, expected_urls)
 
     def test_public_manifest_rejects_39_and_41_cases(self):
         too_few = public_manifest()
