@@ -4899,7 +4899,7 @@ class AnswerTests(unittest.TestCase):
             )
 
             answer = answer_question(
-                "What dengue infection rate evidence exists for Aedes aegypti?",
+                "What dengue vector competence assay evidence exists for Aedes aegypti?",
                 artifact_dir=artifact_dir,
             )
 
@@ -4907,6 +4907,84 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(
                 answer["evidence"][0]["record_id"],
                 "assay_candidate:vector_competence:openalex:WDENV:direct",
+            )
+
+    def test_vector_competence_rate_questions_require_structured_outcome_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="assay_candidate:vector_competence:openalex:WDENV:candidate",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti vector competence assay candidate: dengue virus",
+                        text="A literature candidate mentions dengue infection rate but has no parsed outcome row.",
+                        species="Aedes aegypti",
+                        url="https://example.org/dengue",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="records#openalex:WDENV",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC-BY",
+                        ),
+                        payload={
+                            "source_record_source": "aedes_literature_openalex",
+                            "pathogen": "dengue virus",
+                            "assay_fields": {"infection": ["infection rate"]},
+                        },
+                    )
+                ]
+            )
+
+            answer = answer_question(
+                "What dengue infection rate evidence exists for Aedes aegypti?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertFalse(answer["ok"])
+            self.assertEqual(answer["source_gap"]["lane"], "vector_competence")
+            self.assertIn("infection rate", answer["source_gap"]["reason"])
+
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="assay_table:vector_competence:WDENV:row1",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti parsed vector competence table row: dengue virus",
+                        text="Parsed table row: dengue infection rate 80% at 14 days post infection.",
+                        species="Aedes aegypti",
+                        url="https://example.org/dengue-table",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="aedes_extracted_facts#row1;records#openalex:WDENV;row#1",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC-BY",
+                        ),
+                        payload={
+                            "confidence": "parsed_table_schema_validated",
+                            "pathogen": "dengue virus",
+                            "metric_fields": ["infection"],
+                            "table_row": {"infection rate": "80%", "timepoint": "14 dpi"},
+                        },
+                    )
+                ]
+            )
+
+            structured_answer = answer_question(
+                "What dengue infection rate evidence exists for Aedes aegypti?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(structured_answer["ok"], structured_answer)
+            self.assertEqual(
+                structured_answer["evidence"][0]["record_id"],
+                "assay_table:vector_competence:WDENV:row1",
             )
 
     def test_supplement_table_questions_prefer_extracted_facts(self):

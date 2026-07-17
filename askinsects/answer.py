@@ -4102,7 +4102,13 @@ def _extracted_fact_grain_rank(question: str, record: EvidenceRecord) -> int:
 def _vector_competence_assay_grain_rank(question: str, record: EvidenceRecord) -> int:
     if record.source != "aedes_vector_competence_assays":
         return 3
-    if _wants_extracted_facts(question) and record.record_id.startswith("assay_table:vector_competence:"):
+    wants_structured_outcome = any(
+        payload_key.startswith("metric_fields:")
+        for _, payload_key in _requested_vector_competence_measurements(question)
+    )
+    if (
+        _wants_extracted_facts(question) or wants_structured_outcome
+    ) and record.record_id.startswith("assay_table:vector_competence:"):
         return 0
     if record.record_id.startswith("assay_candidate:vector_competence:"):
         return 1
@@ -4145,6 +4151,13 @@ def _requested_vector_competence_measurements(question: str) -> list[tuple[str, 
         )
     ):
         requested.append(("post-infection timepoint", "timepoint_values"))
+    if not _wants_extracted_facts(question):
+        if any(term in q for term in ("infection rate", "infection prevalence")):
+            requested.append(("infection rate", "metric_fields:infection"))
+        if any(term in q for term in ("dissemination rate", "dissemination prevalence")):
+            requested.append(("dissemination rate", "metric_fields:dissemination"))
+        if any(term in q for term in ("transmission rate", "transmission efficiency")):
+            requested.append(("transmission rate", "metric_fields:transmission"))
     return list(dict.fromkeys(requested))
 
 
@@ -4174,9 +4187,28 @@ def _missing_vector_competence_measurements(
     with index.connect() as conn:
         for label, payload_key in requested:
             pathogen_clause = ""
-            params: list[object] = [f"$.{payload_key}"]
+            params: list[object] = []
             if pathogen:
                 pathogen_clause = "AND lower(json_extract(p.payload_json, '$.pathogen')) = lower(?)"
+            if payload_key.startswith("metric_fields:"):
+                metric = payload_key.partition(":")[2]
+                measurement_clause = """
+                  AND json_extract(p.payload_json, '$.confidence') = 'parsed_table_schema_validated'
+                  AND EXISTS (
+                    SELECT 1
+                    FROM json_each(coalesce(json_extract(p.payload_json, '$.metric_fields'), '[]'))
+                    WHERE value = ?
+                  )
+                """
+                params.append(metric)
+            else:
+                payload_path = f"$.{payload_key}"
+                measurement_clause = """
+                  AND json_type(p.payload_json, ?) = 'array'
+                  AND json_array_length(json_extract(p.payload_json, ?)) > 0
+                """
+                params.extend([payload_path, payload_path])
+            if pathogen:
                 params.append(pathogen)
             row = conn.execute(
                 f"""
@@ -4188,11 +4220,10 @@ def _missing_vector_competence_measurements(
                     json_extract(p.payload_json, '$.source_record_source') = 'aedes_literature_openalex'
                     OR json_extract(p.payload_json, '$.confidence') = 'parsed_table_schema_validated'
                   )
-                  AND json_type(p.payload_json, ?) = 'array'
-                  AND json_array_length(json_extract(p.payload_json, ?)) > 0
+                  {measurement_clause}
                   {pathogen_clause}
                 """,
-                [params[0], params[0], *params[1:]],
+                params,
             ).fetchone()
             if row is None or int(row["n"] or 0) == 0:
                 missing.append(label)
@@ -5097,7 +5128,11 @@ def _vector_competence_assay_records(index: SourceIndex, question: str, *, limit
         )
     ):
         return []
-    if _wants_extracted_facts(question):
+    wants_structured_outcome = any(
+        payload_key.startswith("metric_fields:")
+        for _, payload_key in _requested_vector_competence_measurements(question)
+    )
+    if _wants_extracted_facts(question) or wants_structured_outcome:
         with index.connect() as conn:
             rows = conn.execute(
                 """
