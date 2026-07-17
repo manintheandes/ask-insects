@@ -6,7 +6,7 @@ For a normal user-facing insect question, the route is already decided. Do not s
 
 When the command is run through `functions.exec`, begin its JavaScript with `// @exec: {"yield_time_ms": 30000, "max_output_tokens": 20000}`. If the wrapper reports `Script running with cell ID`, call `functions.wait` on that same cell until the command completes. This is continuation of the first answer command, not a second command. Never answer from a yielded placeholder.
 
-The checked-in `.codex/config.toml` sets trusted Ask Insects tasks to low reasoning because normal answers are latency-sensitive hosted lookups. Do not raise that project default without rerunning the complete Reality Eval. Select a higher effort explicitly for complex implementation work when needed.
+The checked-in `.codex/config.toml` uses a small, fast Codex model at low reasoning because normal answers are latency-sensitive hosted lookups and the model only needs to invoke the hosted route and return its answer. Do not raise that project default without rerunning the complete Reality Eval. Select a larger model or higher effort explicitly for complex implementation work when needed.
 
 Questions about adding a new insect, species profiles, portfolio expansion, or whether answer-routing design must change are normal Ask Insects questions. Do not emit a progress update or preamble before their hosted call. Run the single command immediately so the complete visible answer remains under 60 seconds.
 
