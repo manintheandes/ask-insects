@@ -570,6 +570,22 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("adult orientation", "egg hatch", "leaf damage"),
             ),
             (
+                "If a diamondback moth compound reduces landings for 10 minutes but moth activity returns by 30 minutes, what measurements would distinguish temporary spatial avoidance from toxicity?",
+                "dbm:openalex:W4387738540",
+                (
+                    "fewer landings alone does not prove spatial avoidance",
+                    "non-contact and contact arms",
+                    "recovery",
+                    "delayed mortality",
+                    "R&D recommendation",
+                ),
+            ),
+            (
+                "How do I tell whether reduced alighting by Plutella xylostella followed by recovery is repellency or reversible knockdown?",
+                "dbm:openalex:W1994548084",
+                ("clean-air locomotion", "knockdown", "same moths", "10-to-30-minute"),
+            ),
+            (
                 "Does a caprylic-capric acid blend reduce SWD egg laying, and has anyone isolated an airborne effect from substrate contact?",
                 "swd:openalex_literature:openalex:W4386466923",
                 ("99%", "64%", "caprylic", "capric", "spatial", "contact"),
