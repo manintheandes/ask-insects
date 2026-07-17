@@ -496,10 +496,19 @@ class ReviewedScienceTests(unittest.TestCase):
                     )
                 ]
             )
-            with patch(
-                "askinsects.answer.build_reviewed_science_answer",
-                return_value=reviewed,
-            ) as builder:
+            with (
+                patch.object(
+                    SourceIndex,
+                    "summary",
+                    side_effect=AssertionError(
+                        "normal answers must not scan the full index"
+                    ),
+                ),
+                patch(
+                    "askinsects.answer.build_reviewed_science_answer",
+                    return_value=reviewed,
+                ) as builder,
+            ):
                 answer = answer_question(
                     "Could an unfamiliar insect respond to this stimulus?",
                     artifact_dir=artifact_dir,
