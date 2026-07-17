@@ -769,6 +769,24 @@
       ]
     },
     {
+      "id": "dbm-spatial-avoidance-versus-toxicity",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 50,
+        "phrases": ["temporary spatial avoidance", "spatial avoidance from toxicity", "avoidance versus toxicity"],
+        "required_any": [
+          ["landing", "landings", "alighting", "avoidance", "repellent", "repellency", "spatial"],
+          ["toxicity", "toxic", "mortality", "knockdown", "recovery", "recover", "activity returns"]
+        ],
+        "optional": ["non contact", "non-contact", "contact", "movement", "locomotion", "30 minutes", "delayed mortality"]
+      },
+      "answer": "A return to normal activity at 30 minutes rules out neither reversible knockdown nor delayed mortality, and fewer landings alone does not prove spatial avoidance. Use matched non-contact and contact arms with carrier-only controls and a measured dose or release rate. In the non-contact arm, measure approach, landing, zone occupancy, exit, flight or walking speed, total distance, and immobility over time. During and after exposure, record knockdown separately, then follow the same moths for recovery at pre-specified intervals and delayed mortality such as 24 hours. A selective reduction in approach or landing with preserved clean-air locomotion, no knockdown, and no excess mortality supports temporary spatial avoidance; general slowing, immobility, knockdown, or death supports toxic impairment. Direct Plutella xylostella host-finding work separately measured flying and alighting, while the citronella study kept movement, feeding, oviposition, mortality, and field abundance as distinct endpoints. Neither source tested this exact candidate or 10-to-30-minute recovery design, so the proposed measurement set is an R&D recommendation rather than evidence that the compound is an effective repellent.",
+      "source_record_ids": [
+        "dbm:openalex:W1994548084",
+        "dbm:openalex:W4387738540"
+      ]
+    },
+    {
       "id": "dbm-diel-release-timing",
       "species_ids": ["plutella_xylostella"],
       "match": {
