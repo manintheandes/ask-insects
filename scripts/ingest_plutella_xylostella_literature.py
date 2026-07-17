@@ -89,6 +89,7 @@ def ingest_plutella_xylostella_literature(
         retrieved_at=retrieved,
         raw_artifacts=result.raw_artifacts,
         persist_gap_records=True,
+        preserve_existing_fts=True,
     )
     _update_metadata(
         artifact_dir,

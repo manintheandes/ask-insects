@@ -37,6 +37,7 @@ def ingest_human_repellent_testing_guidance(
         gaps=[],
         retrieved_at=retrieved,
         persist_gap_records=True,
+        preserve_existing_fts=True,
     )
     installed_record_count = int(outcome["record_count"])
     with index.connect() as connection:

@@ -141,11 +141,24 @@ class PlutellaXylostellaLiteratureSourceTests(unittest.TestCase):
                     fetch_json=partial_fetch,
                     retrieved_at="2026-07-18T00:00:00Z",
                 )
+                recovered = ingest_plutella_xylostella_literature(
+                    artifact_dir=artifact_dir,
+                    fetch_json=complete_fetch,
+                    retrieved_at="2026-07-19T00:00:00Z",
+                )
             index = SourceIndex(artifact_dir / "source_index.sqlite")
             retained = index.sql(
                 "select record_id from records where record_id like 'dbm:openalex:%'",
                 limit=20,
             )
+            with index.connect() as connection:
+                searchable_count = int(
+                    connection.execute(
+                        "select count(*) as n from records_fts f "
+                        "join records r on r.record_id=f.record_id where r.source=?",
+                        (PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID,),
+                    ).fetchone()["n"]
+                )
             status = json.loads(
                 (artifact_dir / "source_status.json").read_text(encoding="utf-8")
             )
@@ -155,18 +168,24 @@ class PlutellaXylostellaLiteratureSourceTests(unittest.TestCase):
         self.assertFalse(failed_refresh["ok"])
         self.assertFalse(failed_refresh["complete"])
         self.assertTrue(failed_refresh["preserved_existing"])
+        self.assertTrue(recovered["ok"])
+        self.assertTrue(recovered["complete"])
         self.assertEqual(len(retained), len(PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS))
         self.assertEqual(
+            searchable_count,
+            len(PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS),
+        )
+        self.assertEqual(
             status["source_counts"][PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID],
-            failed_refresh["record_count"],
+            recovered["record_count"],
         )
         self.assertEqual(
             status["record_count"],
-            failed_refresh["record_count"],
+            recovered["record_count"],
         )
         self.assertEqual(
             status["lanes"]["literature"],
-            failed_refresh["record_count"],
+            recovered["record_count"],
         )
 
 
