@@ -12,12 +12,21 @@ RID = "2026-05-30T00:00:00Z"
 SRC = "demo_source"
 
 
-def _rec(rid, *, atom="row", lane="ecology", text="x"):
+def _rec(
+    rid,
+    *,
+    atom="row",
+    lane="ecology",
+    text="x",
+    url=None,
+    locator=None,
+    payload_version=None,
+):
     return EvidenceRecord(
         record_id=rid, lane=lane, source=SRC, title="t", text=text,
-        species="Aedes aegypti", url=None, media_url=None,
-        provenance=Provenance(source_id=SRC, locator=rid, retrieved_at=RID),
-        payload={"atom_type": atom},
+        species="Aedes aegypti", url=url, media_url=None,
+        provenance=Provenance(source_id=SRC, locator=locator or rid, retrieved_at=RID),
+        payload={"atom_type": atom, "version": payload_version},
     )
 
 
@@ -33,7 +42,13 @@ class RunSourceIngestTests(unittest.TestCase):
             idx = _index(tmp)
             idx.upsert_records(
                 [
-                    _rec(f"{SRC}:row:1", text="existingtoken"),
+                    _rec(
+                        f"{SRC}:row:1",
+                        text="existingtoken",
+                        url="https://example.org/old",
+                        locator="source#old",
+                        payload_version="old",
+                    ),
                     _rec(f"{SRC}:row:stale", text="staletoken"),
                 ]
             )
@@ -52,7 +67,13 @@ class RunSourceIngestTests(unittest.TestCase):
                     artifact_dir=Path(tmp),
                     source_id=SRC,
                     records=[
-                        _rec(f"{SRC}:row:1", text="updatedtoken"),
+                        _rec(
+                            f"{SRC}:row:1",
+                            text="updatedtoken",
+                            url="https://example.org/new",
+                            locator="source#new",
+                            payload_version="new",
+                        ),
                         _rec(f"{SRC}:row:2", text="newtoken"),
                     ],
                     gaps=[],
@@ -73,9 +94,26 @@ class RunSourceIngestTests(unittest.TestCase):
             self.assertEqual(idx.search("staletoken"), [])
             self.assertEqual(
                 idx.sql(
-                    f"select text from records where record_id='{SRC}:row:1'"
+                    "select text, url, "
+                    "json_extract(provenance_json, '$.locator') as locator "
+                    f"from records where record_id='{SRC}:row:1'"
                 ),
-                [{"text": "existingtoken"}],
+                [
+                    {
+                        "text": "existingtoken",
+                        "url": "https://example.org/new",
+                        "locator": "source#new",
+                    }
+                ],
+            )
+            self.assertEqual(
+                idx.sql(
+                    "select json_extract(payload_json, '$.version') as version, "
+                    "json_extract(provenance_json, '$.locator') as locator "
+                    "from record_payloads "
+                    f"where record_id='{SRC}:row:1'"
+                ),
+                [{"version": "new", "locator": "source#new"}],
             )
             self.assertEqual(
                 idx.sql(

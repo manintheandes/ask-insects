@@ -254,6 +254,65 @@ class SourceIndex:
                             chunk,
                         )
 
+                    existing = [
+                        record
+                        for record in records
+                        if record.record_id in existing_incoming
+                    ]
+                    for chunk in _record_chunks(existing):
+                        rows = [record.to_row() for record in chunk]
+                        conn.executemany(
+                            """
+                            UPDATE records
+                            SET url=?, media_url=?, provenance_json=?
+                            WHERE record_id=? AND source=?
+                            """,
+                            [
+                                (
+                                    row["url"],
+                                    row["media_url"],
+                                    row["provenance_json"],
+                                    row["record_id"],
+                                    source,
+                                )
+                                for row in rows
+                            ],
+                        )
+                        empty_payload_ids = [
+                            record.record_id
+                            for record in chunk
+                            if record.payload is None
+                        ]
+                        if empty_payload_ids:
+                            placeholders = ",".join("?" for _ in empty_payload_ids)
+                            conn.execute(
+                                f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})",
+                                empty_payload_ids,
+                            )
+                        conn.executemany(
+                            """
+                            INSERT INTO record_payloads (
+                              record_id, source, lane, payload_json, provenance_json
+                            ) VALUES (?, ?, ?, ?, ?)
+                            ON CONFLICT(record_id) DO UPDATE SET
+                              source=excluded.source,
+                              lane=excluded.lane,
+                              payload_json=excluded.payload_json,
+                              provenance_json=excluded.provenance_json
+                            """,
+                            [
+                                (
+                                    record.record_id,
+                                    record.source,
+                                    record.lane,
+                                    json.dumps(record.payload, sort_keys=True),
+                                    json.dumps(record.provenance.to_dict(), sort_keys=True),
+                                )
+                                for record in chunk
+                                if record.payload is not None
+                            ],
+                        )
+
                     missing = [
                         record
                         for record in records
