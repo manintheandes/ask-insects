@@ -176,6 +176,43 @@ class VectorCompetenceAssaySourceTests(unittest.TestCase):
             self.assertEqual(record.payload["table_row"]["Viral strain (dose provided)"], "DENV-1 (10 7 FFU/mL)")
             self.assertIn("aedes_extracted_facts#extracted_fact:vector_competence:openalex:WTABLE1:row3", record.provenance.locator)
 
+    def test_build_vector_competence_assay_records_ignores_derived_literature_rows(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            write_assay_literature_fixture(artifact_dir)
+            SourceIndex(artifact_dir / "source_index.sqlite").upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="extracted_fact:supplement_audit:openalex:WVC1",
+                        lane="literature",
+                        source="aedes_extracted_facts",
+                        title="Aedes aegypti dengue vector competence supplement audit",
+                        text=(
+                            "Internal supplement audit row mentioning infection rate, transmission rate, "
+                            "viral dose, and oral infection."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://example.org/audit",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_extracted_facts",
+                            locator="records#openalex:WVC1;supplement-audit",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="test",
+                        ),
+                    )
+                ]
+            )
+
+            result = build_vector_competence_assay_records(
+                artifact_dir,
+                retrieved_at="2026-05-24T00:00:00Z",
+            )
+
+            self.assertEqual(result.source_record_count, 1)
+            self.assertEqual(result.candidate_count, 1)
+            self.assertTrue(all("supplement_audit" not in record.record_id for record in result.records))
+
     def test_build_vector_competence_assay_records_records_gap_when_empty(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

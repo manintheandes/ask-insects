@@ -147,11 +147,21 @@ def _candidate_rows(conn: sqlite3.Connection) -> tuple[list[AssayCandidate], int
         SELECT record_id, title, text, species, url, source, provenance_json
         FROM records
         WHERE lane='literature'
+          AND source='aedes_literature_openalex'
         ORDER BY record_id
         """
     ).fetchall()
     literature_by_id = {str(row["record_id"]): row for row in literature_rows}
-    fulltext_total_count = int(conn.execute("SELECT count(*) FROM literature_fulltext_units").fetchone()[0])
+    fulltext_total_count = int(
+        conn.execute(
+            """
+            SELECT count(*)
+            FROM literature_fulltext_units u
+            JOIN records r ON r.record_id = u.record_id
+            WHERE r.source='aedes_literature_openalex'
+            """
+        ).fetchone()[0]
+    )
     all_pathogen_terms = [term for terms in PATHOGEN_TERMS.values() for term in terms]
     pathogen_query = _fts_or_query(all_pathogen_terms)
     all_context_terms = list(ASSAY_CONTEXT_TERMS) + [term for terms in ASSAY_FIELD_TERMS.values() for term in terms]
@@ -164,7 +174,9 @@ def _candidate_rows(conn: sqlite3.Connection) -> tuple[list[AssayCandidate], int
                   u.unit_id, u.record_id, u.unit_index, u.text, u.url, u.license, u.provenance_json
                 FROM literature_fulltext_fts f
                 JOIN literature_fulltext_units u ON u.unit_id = f.unit_id
+                JOIN records r ON r.record_id = u.record_id
                 WHERE literature_fulltext_fts MATCH ?
+                  AND r.source='aedes_literature_openalex'
                 ORDER BY u.record_id, u.unit_index
                 """,
                 (f"({pathogen_query}) AND ({context_query})",),
@@ -172,9 +184,11 @@ def _candidate_rows(conn: sqlite3.Connection) -> tuple[list[AssayCandidate], int
         except sqlite3.Error:
             fulltext_rows = conn.execute(
                 """
-                SELECT unit_id, record_id, unit_index, text, url, license, provenance_json
-                FROM literature_fulltext_units
-                ORDER BY record_id, unit_index
+                SELECT u.unit_id, u.record_id, u.unit_index, u.text, u.url, u.license, u.provenance_json
+                FROM literature_fulltext_units u
+                JOIN records r ON r.record_id = u.record_id
+                WHERE r.source='aedes_literature_openalex'
+                ORDER BY u.record_id, u.unit_index
                 """
             ).fetchall()
     else:

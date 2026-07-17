@@ -4109,6 +4109,100 @@ def _vector_competence_assay_grain_rank(question: str, record: EvidenceRecord) -
     return 2
 
 
+def _requested_vector_competence_measurements(question: str) -> list[tuple[str, str]]:
+    q = question.lower()
+    requested: list[tuple[str, str]] = []
+    if re.search(r"\b(?:dose|dosage|viral tit(?:er|re)|blood[- ]meal tit(?:er|re)|pfu|ffu|tcid50|moi)\b", q):
+        requested.append(("oral infection dose", "dose_values"))
+    if any(
+        term in q
+        for term in (
+            "exposure duration",
+            "exposure time",
+            "feeding duration",
+            "feeding time",
+            "blood meal duration",
+            "blood-meal duration",
+            "oral exposure duration",
+            "oral exposure time",
+        )
+    ):
+        requested.append(("oral exposure duration", "exposure_duration_values"))
+    if any(term in q for term in ("temperature", "thermal condition", "thermal conditions")):
+        requested.append(("assay temperature", "temperature_values"))
+    if any(
+        term in q
+        for term in (
+            "days post infection",
+            "days after infection",
+            "post-infection time",
+            "post infection time",
+            "assay timepoint",
+            "assay time point",
+            "sampling timepoint",
+            "sampling time point",
+            "extrinsic incubation period",
+        )
+    ):
+        requested.append(("post-infection timepoint", "timepoint_values"))
+    return list(dict.fromkeys(requested))
+
+
+def _named_vector_competence_pathogen(question: str) -> str | None:
+    q = question.lower()
+    labels = {
+        "dengue": "dengue virus",
+        "zika": "Zika virus",
+        "chikungunya": "chikungunya virus",
+        "yellow fever": "yellow fever virus",
+        "west nile": "West Nile virus",
+        "mayaro": "Mayaro virus",
+    }
+    return next((label for term, label in labels.items() if term in q), None)
+
+
+def _missing_vector_competence_measurements(
+    index: SourceIndex,
+    question: str,
+) -> tuple[list[str], list[str]]:
+    requested = _requested_vector_competence_measurements(question)
+    if not requested:
+        return [], []
+
+    pathogen = _named_vector_competence_pathogen(question)
+    missing: list[str] = []
+    with index.connect() as conn:
+        for label, payload_key in requested:
+            pathogen_clause = ""
+            params: list[object] = [f"$.{payload_key}"]
+            if pathogen:
+                pathogen_clause = "AND lower(json_extract(p.payload_json, '$.pathogen')) = lower(?)"
+                params.append(pathogen)
+            row = conn.execute(
+                f"""
+                SELECT count(*) AS n
+                FROM record_payloads p
+                WHERE p.source = 'aedes_vector_competence_assays'
+                  AND p.lane = 'vector_competence'
+                  AND (
+                    json_extract(p.payload_json, '$.source_record_source') = 'aedes_literature_openalex'
+                    OR json_extract(p.payload_json, '$.confidence') = 'parsed_table_schema_validated'
+                  )
+                  AND json_type(p.payload_json, ?) = 'array'
+                  AND json_array_length(json_extract(p.payload_json, ?)) > 0
+                  {pathogen_clause}
+                """,
+                [params[0], params[0], *params[1:]],
+            ).fetchone()
+            if row is None or int(row["n"] or 0) == 0:
+                missing.append(label)
+    return [label for label, _ in requested], missing
+
+
+def _is_valid_vector_competence_assay_record(record: EvidenceRecord) -> bool:
+    return not record.record_id.startswith("assay_candidate:vector_competence:extracted_fact:")
+
+
 def _prioritize_named_source_records(question: str, records: list[EvidenceRecord]) -> list[EvidenceRecord]:
     q = question.lower()
     locator_terms = [match.lower() for match in re.findall(r"\bW\d{6,}\b", question, flags=re.IGNORECASE)]
@@ -5028,9 +5122,16 @@ def _vector_competence_assay_records(index: SourceIndex, question: str, *, limit
         question,
         limit=max(limit * 20, 50),
     )
+    records = [record for record in records if _is_valid_vector_competence_assay_record(record)]
     if records:
         return _prioritize_named_source_records(question, records)[:limit]
-    return _source_records(index, "aedes_vector_competence_assays", ["vector_competence"], limit=limit)
+    records = _source_records(
+        index,
+        "aedes_vector_competence_assays",
+        ["vector_competence"],
+        limit=max(limit * 20, 50),
+    )
+    return [record for record in records if _is_valid_vector_competence_assay_record(record)][:limit]
 
 
 def _video_atom_records(index: SourceIndex, question: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
@@ -6567,6 +6668,23 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "vector_competence":
+        requested_measurements, missing_measurements = _missing_vector_competence_measurements(
+            index,
+            plan.question,
+        )
+        if missing_measurements:
+            pathogen = _named_vector_competence_pathogen(plan.question) or "the requested pathogen"
+            missing_text = ", ".join(missing_measurements)
+            requested_text = ", ".join(requested_measurements)
+            return source_gap(
+                plan,
+                (
+                    "The structured Aedes vector-competence lane has no queryable values for "
+                    f"{missing_text} for {pathogen}. It therefore cannot support a conclusion about "
+                    f"how the requested measurements ({requested_text}) affect vector competence. "
+                    "Nearby paper metadata and assay-candidate mentions are not treated as measurements."
+                ),
+            )
         for record in _vector_competence_assay_records(index, plan.question, limit=limit):
             if record.record_id in seen_record_ids:
                 continue
