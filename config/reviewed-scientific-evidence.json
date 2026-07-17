@@ -44,7 +44,7 @@
         ],
         "optional": ["hardness", "harder", "substrate", "texture", "attract", "deter", "avoid"]
       },
-      "answer": "In the cited artificial-substrate assay, Drosophila suzukii laid fewer eggs on soft 1% agar with visible commensal microbial growth than on the matched uninoculated substrate. On hard 3% agar, it showed no significant preference or aversion to microbial growth. The hardness-dependent change implicates an interaction between mechanosensory and chemosensory information; it does not identify the responsible microbial molecule or show that every fruit microbe deters SWD in crops. To isolate the interaction, cross microbial treatment with matched agar hardness instead of changing microbes and texture together.",
+      "answer": "In the cited artificial-substrate assay, Drosophila suzukii laid fewer eggs on soft 1% agar with visible commensal microbial growth than on the matched uninoculated substrate. By contrast, Drosophila melanogaster and Drosophila biarmipes preferred the microbe-rich soft substrate and laid more eggs there. On hard 3% agar, D. suzukii showed no significant preference or aversion to microbial growth. The hardness-dependent change implicates an interaction between mechanosensory and chemosensory information; it does not identify the responsible microbial molecule or show that every fruit microbe deters SWD in crops. To isolate the interaction, cross microbial treatment with matched agar hardness instead of changing microbes and texture together.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3124252639"]
     },
     {
@@ -658,7 +658,7 @@
         ],
         "optional": ["formulation", "source age", "chamber volume", "ventilation", "sampling method"]
       },
-      "answer": "Report active ingredient and formulation, applied mass and area, source age, evaporation or release rate over time, chamber volume and ventilation, the air-sampling method and measured airborne concentration when available, and source-to-mosquito distance. Applied mass is not interchangeable with milligrams per cubic meter without validated release and transport measurements. Keep source loading, emission, transport, measured exposure, distance, and behavior separate, with time, temperature, humidity, and airflow attached to every concentration.",
+      "answer": "Report active ingredient and formulation, applied mass and area, source age, evaporation or release rate over time, chamber volume and ventilation, the air-sampling method and measured airborne concentration when available, and source-to-mosquito distance. Applied mass is not interchangeable with milligrams per cubic meter without validated release and transport measurements. Keep source loading, emission, transport, measured exposure, distance, and behavior separate, with time, temperature, humidity, and airflow attached to every concentration. The public product-readiness record still identifies carrier, concentration, spatial-delivery, and release-rate evidence as incomplete.",
       "source_record_ids": [
         "openalex:W3048721146",
         "insect_intelligence_programs:product:human_mosquito_repellent:readiness:formulation_delivery"
