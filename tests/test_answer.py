@@ -4744,6 +4744,12 @@ class AnswerTests(unittest.TestCase):
                             retrieved_at="2026-05-24T00:00:00Z",
                             license="OpenAlex metadata",
                         ),
+                        payload={
+                            "source_record_source": "aedes_literature_openalex",
+                            "pathogen": "Zika virus",
+                            "assay_fields": {"infection": ["infection"]},
+                            "dose_values": [],
+                        },
                     ),
                     EvidenceRecord(
                         record_id="assay_candidate:vector_competence:WVC1:abc",
@@ -4760,6 +4766,19 @@ class AnswerTests(unittest.TestCase):
                             retrieved_at="2026-05-24T00:00:00Z",
                             license="CC-BY",
                         ),
+                        payload={
+                            "source_record_source": "aedes_literature_openalex",
+                            "pathogen": "Zika virus",
+                            "assay_fields": {
+                                "infection": ["infection"],
+                                "dissemination": ["dissemination"],
+                                "transmission": ["transmission"],
+                                "dose": ["viral dose"],
+                                "temperature": ["temperature"],
+                            },
+                            "dose_values": ["10^6 PFU"],
+                            "temperature_values": ["28 C"],
+                        },
                     ),
                 ]
             )
@@ -4770,6 +4789,125 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "vector_competence")
             self.assertEqual(answer["evidence"][0]["source"], "aedes_vector_competence_assays")
             self.assertEqual(answer["evidence"][0]["record_id"], "assay_candidate:vector_competence:WVC1:abc")
+
+    def test_vector_competence_effect_questions_fail_closed_when_a_requested_measurement_is_absent(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="assay_candidate:vector_competence:openalex:WDENV:direct",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti vector competence assay candidate: dengue virus",
+                        text=(
+                            "Structured assay-candidate extraction for dengue virus. "
+                            "Dose values: 10^7 FFU."
+                        ),
+                        species="Aedes aegypti",
+                        url="https://example.org/dengue",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="records#openalex:WDENV",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC-BY",
+                        ),
+                        payload={
+                            "source_record_source": "aedes_literature_openalex",
+                            "pathogen": "dengue virus",
+                            "assay_fields": {"dose": ["viral dose"], "infection": ["infection rate"]},
+                            "dose_values": ["10^7 FFU"],
+                        },
+                    ),
+                    EvidenceRecord(
+                        record_id="assay_candidate:vector_competence:extracted_fact:supplement_audit:WDENV:audit",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti vector competence assay candidate: dengue virus",
+                        text="Internal supplement audit row that mentions a 20 minute exposure.",
+                        species="Aedes aegypti",
+                        url="https://example.org/audit",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="records#extracted_fact:supplement_audit:WDENV",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="test",
+                        ),
+                        payload={
+                            "source_record_source": "aedes_extracted_facts",
+                            "pathogen": "dengue virus",
+                            "dose_values": ["10^7 FFU"],
+                            "exposure_duration_values": ["20 minutes"],
+                        },
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "How do oral infection dose and exposure duration affect dengue vector competence in Aedes aegypti?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertFalse(answer["ok"])
+            self.assertEqual(answer["source_gap"]["lane"], "vector_competence")
+            self.assertIn("oral exposure duration", answer["source_gap"]["reason"])
+            self.assertIn("not treated as measurements", answer["source_gap"]["reason"])
+
+    def test_vector_competence_questions_ignore_derived_supplement_audit_candidates(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    EvidenceRecord(
+                        record_id="assay_candidate:vector_competence:extracted_fact:supplement_audit:WDENV:audit",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti vector competence assay candidate: dengue virus",
+                        text="Internal supplement audit bookkeeping row.",
+                        species="Aedes aegypti",
+                        url="https://example.org/audit",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="records#extracted_fact:supplement_audit:WDENV",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                        ),
+                    ),
+                    EvidenceRecord(
+                        record_id="assay_candidate:vector_competence:openalex:WDENV:direct",
+                        lane="vector_competence",
+                        source="aedes_vector_competence_assays",
+                        title="Aedes aegypti vector competence assay candidate: dengue virus",
+                        text="Direct literature candidate with dengue infection-rate evidence.",
+                        species="Aedes aegypti",
+                        url="https://example.org/dengue",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="aedes_vector_competence_assays",
+                            locator="records#openalex:WDENV",
+                            retrieved_at="2026-05-24T00:00:00Z",
+                            license="CC-BY",
+                        ),
+                    ),
+                ]
+            )
+
+            answer = answer_question(
+                "What dengue infection rate evidence exists for Aedes aegypti?",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"], answer)
+            self.assertEqual(
+                answer["evidence"][0]["record_id"],
+                "assay_candidate:vector_competence:openalex:WDENV:direct",
+            )
 
     def test_supplement_table_questions_prefer_extracted_facts(self):
         from scripts.ingest_extracted_facts import ingest_extracted_facts
