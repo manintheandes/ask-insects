@@ -44,17 +44,16 @@ class AgentSetupTests(unittest.TestCase):
             "yields a session ID",
             "continue the same process",
             "write_stdin",
-            "Script running with cell ID",
-            "functions.wait",
-            "same cell",
+            "The shell command must begin with `ask-insects` and end with `--answer-only`",
+            "Do not add comments, timing directives, or wrapper text to the shell command",
             "uses a small, fast Codex model at low reasoning",
-            '// @exec: {"yield_time_ms": 30000, "max_output_tokens": 20000}',
             "not a second command",
             "Preserve canonical labels",
             "stdout",
             "verbatim",
         ):
             self.assertIn(term, text)
+        self.assertNotIn("// @exec:", source)
 
     def test_repo_skill_encodes_current_product_and_answer_contract(self):
         source = (REPO_SKILL_DIR / "SKILL.md").read_text(encoding="utf-8")
@@ -82,6 +81,7 @@ class AgentSetupTests(unittest.TestCase):
             "functions.wait",
             "Continue that same process",
             "Never discard a yielded command",
+            "Do not add comments, timing directives, or wrapper text to the shell command",
             "write every cited locator in full",
             "--answer-only",
             "stdout",

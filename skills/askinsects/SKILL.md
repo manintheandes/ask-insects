@@ -7,7 +7,7 @@ description: >-
   question. This includes adding a new insect or asking whether answer-routing
   design must change for one. This description is the complete route. Do not
   open this file for a normal answer. The first hosted command must be
-  ask-insects ask "<the user's exact question>" --answer-only. If it yields
+  ask-insects ask "<the user's exact question>" --answer-only. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
   a session ID, continue with write_stdin until exit. If the wrapper reports a cell ID,
   call functions.wait on that same cell until exit. Then return stdout verbatim.
 ---
@@ -30,7 +30,7 @@ hosted command as the first visible action. Use the installed command, or
 ask-insects ask "<the user's exact question>" --answer-only
 ```
 
-When using `functions.exec`, begin with `// @exec: {"yield_time_ms": 30000, "max_output_tokens": 20000}`.
+The shell command must contain only the displayed Ask Insects command. Do not add comments, timing directives, or wrapper text to the shell command.
 A command may yield a session ID or report `Script running with cell ID`. Continue that same process with
 `write_stdin` for the session or `functions.wait` on the same cell until exit. Never discard a yielded command or issue another Ask Insects command.
 
