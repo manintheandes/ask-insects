@@ -4344,10 +4344,13 @@ def _index_ready(index: SourceIndex) -> bool:
     if not index.path.exists():
         return False
     try:
-        index.summary()
+        with index.connect() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'records'"
+            ).fetchone()
     except sqlite3.Error:
         return False
-    return True
+    return row is not None
 
 
 def _source_records(index: SourceIndex, source: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
