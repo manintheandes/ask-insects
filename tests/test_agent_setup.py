@@ -32,7 +32,7 @@ class AgentSetupTests(unittest.TestCase):
             "Do not inspect memory",
             "Chronicle",
             "Do not emit a progress update",
-            "answer immediately without another command",
+            "Return it immediately and verbatim without another reasoning turn or command",
             "yields a session ID",
             "continue the same process",
             "write_stdin",
@@ -42,7 +42,7 @@ class AgentSetupTests(unittest.TestCase):
             '// @exec: {"yield_time_ms": 30000, "max_output_tokens": 20000}',
             "not a second command",
             "Preserve canonical labels",
-            "final_answer",
+            "stdout",
             "verbatim",
         ):
             self.assertIn(term, text)
@@ -74,8 +74,8 @@ class AgentSetupTests(unittest.TestCase):
             "Continue that same process",
             "Never discard a yielded command",
             "write every cited locator in full",
-            "--compact",
-            "final_answer",
+            "--answer-only",
+            "stdout",
             "verbatim",
         ):
             self.assertIn(term, text)
@@ -88,12 +88,12 @@ class AgentSetupTests(unittest.TestCase):
             "adding a new insect",
             "answer-routing design",
             "first hosted command",
-            'ask-insects ask "<the user\'s exact question>" --json --compact',
+            'ask-insects ask "<the user\'s exact question>" --answer-only',
             "If it yields a session ID",
             "write_stdin until exit",
             "cell ID",
             "functions.wait",
-            "return final_answer verbatim",
+            "return stdout verbatim",
         ):
             self.assertIn(term, frontmatter)
 

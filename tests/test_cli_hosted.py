@@ -377,6 +377,42 @@ class HostedCliTests(unittest.TestCase):
         )
         self.assertNotIn("large duplicate detail", payload["final_answer"])
 
+    def test_answer_only_hosted_ask_prints_the_complete_answer_without_json(self):
+        hosted_payload = {
+            "ok": True,
+            "answer_shape": "reviewed_science",
+            "answer": "Hold airflow, plume structure, temperature, and humidity constant.",
+            "evidence": [
+                {
+                    "source": "aedes_environment_controls",
+                    "provenance": {
+                        "source_id": "aedes_environment_controls",
+                        "locator": "artifacts/mosquito-v1/raw/literature/environment.json#record/1",
+                    },
+                }
+            ],
+        }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", return_value=hosted_payload
+        ):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ask",
+                "Which environmental controls matter in an Aedes chamber assay?",
+                "--answer-only",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            output,
+            "Hold airflow, plume structure, temperature, and humidity constant.\n\n"
+            "Sources:\n"
+            "- `aedes_environment_controls`: "
+            "`artifacts/mosquito-v1/raw/literature/environment.json#record/1`\n",
+        )
+        self.assertFalse(output.lstrip().startswith("{"))
+
     def test_compact_hosted_ask_returns_final_answer_for_genomics_and_gaps(self):
         payloads = (
             {

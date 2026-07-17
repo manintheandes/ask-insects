@@ -723,7 +723,7 @@ git commit -m "docs: make reality eval the completion gate"
 
 Record current repository commit, installed Ask Insects skill SHA-256, hosted
 health response/revision, and public manifest SHA-256. Confirm the installed
-normal route uses one hosted `ask-insects ask "$QUESTION" --json --compact`
+normal route uses one hosted `ask-insects ask "$QUESTION" --answer-only`
 call.
 
 - [ ] **Step 2: Ask all 40 public questions through fresh Codex tasks**
