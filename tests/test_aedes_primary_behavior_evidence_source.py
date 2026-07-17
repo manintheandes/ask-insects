@@ -35,6 +35,9 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
         table = next(record for record in records if record.record_id.endswith("table8"))
         self.assertIn("4.0 +/- 0.0 hours", table.text)
         self.assertIn("0.3 +/- 0.5 hours", table.text)
+        self.assertIn("Table 8 labels N=6", table.text)
+        self.assertIn("three participants", table.text)
+        self.assertIn("sample size is unresolved", table.text)
         self.assertTrue(table.provenance.locator.endswith("#life-13-00141-t008"))
         for record in records:
             with self.subTest(record_id=record.record_id):
