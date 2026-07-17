@@ -703,6 +703,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "If an Aedes aegypti female's abdomen is experimentally distended without blood, would reduced host seeking prove that blood chemistry caused the suppression?",
+                "aedes_primary_behavior:pubmed:544697",
+                (
+                    "immediate inhibition",
+                    "abdominal stretch receptors",
+                    "haemolymph-borne",
+                    "at least two experimentally distinct processes",
+                ),
+            ),
+            (
                 "Is NPYLR1 required for post-blood-meal host-seeking suppression in Aedes aegypti?",
                 "aedes_primary_behavior:pmc:PMC3794971",
                 ("null mutants", "not required"),
