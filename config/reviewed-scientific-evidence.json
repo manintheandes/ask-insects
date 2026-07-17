@@ -681,6 +681,39 @@
       ]
     },
     {
+      "id": "aedes-human-subject-preparation",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "species_may_be_implicit": true,
+        "priority": 40,
+        "phrases": [
+          "participant conditions",
+          "subject preparation",
+          "preparation of subjects",
+          "standardized before exposure",
+          "volunteer preparation controls"
+        ],
+        "required_any": [
+          ["participant", "participants", "subject", "subjects", "volunteer", "volunteers", "human"],
+          ["condition", "conditions", "prepare", "preparation", "standardize", "standardized", "before exposure"],
+          ["epa", "guidance", "arm in cage", "arm-in-cage", "repellent efficacy", "human skin"]
+        ],
+        "optional": [
+          "official guidance",
+          "r&d",
+          "alcohol",
+          "tobacco",
+          "scented",
+          "washing",
+          "perspiration",
+          "cross-contamination",
+          "covariates"
+        ]
+      },
+      "answer": "Official EPA guidance for human-skin repellent trials says to wash the test limbs with unscented detergent, rinse, and dry them; avoid alcohol, tobacco, and scented products for at least twelve hours before and throughout the test; avoid activities that increase perspiration; and avoid abrading, rubbing, touching, or wetting the treated area. It also says to prevent cross-contamination and apply a consistent standard dose with uniform coverage. These are participant-preparation and treatment-integrity controls, not proof that all person-to-person differences in mosquito attraction have been removed. Tracking diet beyond alcohol, sleep, medication, menstrual or pregnancy status, baseline attractiveness, or skin microbiome may be useful R&D design choices when scientifically and ethically justified, but this cited section does not require them or establish how to stratify them. Pre-specify any such covariates and report them as study-design decisions rather than EPA requirements.",
+      "source_record_ids": ["human_repellent_guidance:epa:810.3700"]
+    },
+    {
       "id": "aedes-arm-in-cage-meaning",
       "species_ids": ["aedes_aegypti"],
       "match": {
