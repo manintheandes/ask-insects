@@ -13,9 +13,17 @@ from askinsects.agent_setup import REPO_SKILL_DIR, install_askinsects_skill, ski
 
 class AgentSetupTests(unittest.TestCase):
     def test_repo_instructions_make_the_hosted_call_the_first_normal_action(self):
-        text = " ".join(Path("AGENTS.md").read_text(encoding="utf-8").split())
+        source = Path("AGENTS.md").read_text(encoding="utf-8")
+        text = " ".join(source.split())
+
+        self.assertLess(
+            source.index("## Normal Question Fast Path"),
+            source.index("## Read Order"),
+        )
 
         for term in (
+            "Do not spend a reasoning turn deciding how to route it",
+            "As the first action",
             "preferred first and only operational command",
             "the user's exact question",
             "Do not load the installed skill",

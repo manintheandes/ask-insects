@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 
 from .index import SourceIndex
+from .provenance import public_provenance_locator
 from .records import EvidenceRecord
 
 
@@ -264,6 +265,11 @@ def _records_by_ids(index: SourceIndex, record_ids: list[str]) -> list[EvidenceR
 
 
 def _record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
+    provenance = record.provenance.to_dict()
+    provenance["locator"] = public_provenance_locator(
+        str(provenance.get("locator") or ""),
+        record.provenance.source_id,
+    )
     return {
         "record_id": record.record_id,
         "lane": record.lane,
@@ -273,7 +279,7 @@ def _record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
         "species": record.species,
         "url": record.url,
         "media_url": record.media_url,
-        "provenance": record.provenance.to_dict(),
+        "provenance": provenance,
     }
 
 
