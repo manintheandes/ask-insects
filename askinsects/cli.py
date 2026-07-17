@@ -115,6 +115,19 @@ def _public_source_url(item: dict[str, object], provenance: dict[str, object]) -
     return ""
 
 
+def _clean_source_title(value: object) -> str:
+    title = html.unescape(str(value or "").strip())
+    title = re.sub(
+        r"</?(?!sub\b|sup\b)[^>]+>",
+        " ",
+        title,
+        flags=re.IGNORECASE,
+    )
+    title = re.sub(r"</?(?:sub|sup)\b[^>]*>", "", title, flags=re.IGNORECASE)
+    title = re.sub(r"\s+", " ", title).strip()
+    return re.sub(r"\s+([,.;:!?%)\]}])", r"\1", title)
+
+
 def _exact_provenance_rows(
     payload: dict[str, object],
 ) -> tuple[list[tuple[str, str, str, str]], list[str]]:
@@ -135,8 +148,7 @@ def _exact_provenance_rows(
             continue
         source_id = str(provenance.get("source_id") or item.get("source") or "").strip()
         locator = str(provenance.get("locator") or "").strip()
-        title = html.unescape(str(item.get("title") or "").strip())
-        title = re.sub(r"<[^>]+>", "", title).strip()
+        title = _clean_source_title(item.get("title"))
         source_url = _public_source_url(item, provenance)
         missing = [
             label

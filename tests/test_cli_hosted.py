@@ -418,6 +418,46 @@ class HostedCliTests(unittest.TestCase):
         )
         self.assertFalse(output.lstrip().startswith("{"))
 
+    def test_answer_only_preserves_word_boundaries_around_title_markup(self):
+        hosted_payload = {
+            "ok": True,
+            "answer_shape": "reviewed_science",
+            "answer": "Visual and odor cues can interact.",
+            "evidence": [
+                {
+                    "source": "drosophila_suzukii_core",
+                    "title": (
+                        "Olfactory Cues From Host- and Non-host Plant Odor Influence the "
+                        "Behavioral Responses of Adult<i>Drosophila suzukii</i>"
+                        "(Diptera: Drosophilidae) to Visual Cues"
+                    ),
+                    "url": "https://doi.org/10.1093/ee/nvab004",
+                    "provenance": {
+                        "source_id": "drosophila_suzukii_core",
+                        "locator": "raw/openalex.json#works/W3132534524",
+                    },
+                }
+            ],
+        }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", return_value=hosted_payload
+        ):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ask",
+                "Could visual contrast confound an SWD odor assay?",
+                "--answer-only",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertIn(
+            "Adult Drosophila suzukii (Diptera: Drosophilidae)",
+            output,
+        )
+        self.assertNotIn("AdultDrosophila", output)
+        self.assertNotIn("suzukii(Diptera", output)
+
     def test_answer_only_uses_provenance_source_url_when_record_url_is_missing(self):
         hosted_payload = {
             "ok": True,

@@ -333,10 +333,71 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertTrue(answer["ok"])
         self.assertIn("airflow direction and speed", answer["answer"])
         self.assertIn("temperature and relative humidity", answer["answer"])
+        self.assertIn("R&D design recommendations", answer["answer"])
+        self.assertIn("does not provide a universal standard", answer["answer"])
         self.assertEqual(
             {item["record_id"] for item in answer["evidence"]},
             set(record_ids),
         )
+
+    def test_repaired_aedes_topics_label_inference_recommendations_and_source_gaps(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        record_ids = sorted(
+            {
+                record_id
+                for topic in catalog["topics"]
+                for record_id in topic["source_record_ids"]
+            }
+        )
+        cases = (
+            (
+                "What phases of host-seeking suppression are reported after an Aedes blood meal?",
+                ("summarizes earlier work", "cannot independently verify", "R&D recommendation"),
+            ),
+            (
+                "Did the nanostructured citronella paper directly measure volatile release rate?",
+                ("did not directly measure", "inferred prolonged release", "skin permeation"),
+            ),
+            (
+                "Is humidity directly proven to be redundant with heat and odor during Aedes host seeking?",
+                ("source gap", "does not contain a direct primary measurement", "not established"),
+            ),
+            (
+                "How should our volatile Aedes repellent program report source loading and exposure?",
+                ("R&D reporting recommendation", "not chemically measured", "did not directly measure"),
+            ),
+            (
+                "Does a standard complete-protection-time test establish durability after UV and sweat?",
+                ("does not establish", "source gap", "R&D challenge design"),
+            ),
+            (
+                "When can we call reduced Aedes repellent sensitivity inherited resistance?",
+                ("operational decision rule", "not a universal definition", "cannot be assumed equivalent"),
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answers = [build_reviewed_science_answer(index, question) for question, _ in cases]
+
+        for (question, expected_fragments), answer in zip(cases, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                for fragment in expected_fragments:
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
 
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -611,7 +672,8 @@ class ReviewedScienceTests(unittest.TestCase):
                     "airborne concentration",
                     "source-to-mosquito distance",
                     "skin permeation",
-                    "measured air exposure",
+                    "did not directly measure",
+                    "R&D reporting recommendation",
                 ),
             ),
             (
@@ -708,32 +770,31 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "What controls Aedes host seeking after a blood meal, and is there a proven universal 24-hour phase?",
-                "aedes_primary_behavior:pubmed:544697",
+                "aedes_primary_behavior:pmc:PMC3794971",
                 (
-                    "immediate inhibition",
-                    "haemolymph-borne",
+                    "summarizes earlier work",
+                    "abdominal-distention-associated",
                     "three days",
-                    "universal 24-hour duration",
+                    "universal 24-hour phase",
                 ),
             ),
             (
                 "After an Aedes aegypti female feeds, is abdominal swelling the whole reason she stops seeking hosts for the next 24 hours?",
-                "aedes_primary_behavior:pubmed:544697",
+                "aedes_primary_behavior:pmc:PMC3794971",
                 (
-                    "immediate inhibition",
-                    "haemolymph-borne",
+                    "summarizes earlier work",
+                    "oocyte-development-associated",
                     "three days",
-                    "universal 24-hour duration",
+                    "universal 24-hour phase",
                 ),
             ),
             (
                 "If an Aedes aegypti female's abdomen is experimentally distended without blood, would reduced host seeking prove that blood chemistry caused the suppression?",
-                "aedes_primary_behavior:pubmed:544697",
+                "aedes_primary_behavior:pmc:PMC3794971",
                 (
-                    "immediate inhibition",
-                    "abdominal stretch receptors",
-                    "haemolymph-borne",
-                    "at least two experimentally distinct processes",
+                    "abdominal-distention-associated",
+                    "oocyte-development-associated",
+                    "cannot independently verify",
                 ),
             ),
             (
