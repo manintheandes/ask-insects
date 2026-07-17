@@ -226,22 +226,27 @@ class ReviewedScienceTests(unittest.TestCase):
                     for record_id in record_ids
                 ]
             )
-            answer = build_reviewed_science_answer(
-                index,
+            questions = (
                 "For an SWD choice assay, what controls separate odor repellency "
                 "from solvent, airflow, or impaired locomotion?",
+                "In a two-arm SWD odor test, how should I control the carrier and air "
+                "stream and verify that lower treated-side occupancy is avoidance "
+                "rather than motor suppression?",
             )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
 
-        self.assertIsNotNone(answer)
-        assert answer is not None
-        self.assertTrue(answer["ok"])
-        self.assertIn("solvent", answer["answer"].lower())
-        self.assertIn("airflow", answer["answer"].lower())
-        self.assertIn("locomot", answer["answer"].lower())
-        self.assertEqual(
-            {item["record_id"] for item in answer["evidence"]},
-            set(record_ids),
-        )
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertTrue(answer["ok"])
+                    self.assertIn("carrier", answer["answer"].lower())
+                    self.assertIn("airflow", answer["answer"].lower())
+                    self.assertIn("locomot", answer["answer"].lower())
+                    self.assertEqual(
+                        {item["record_id"] for item in answer["evidence"]},
+                        set(record_ids),
+                    )
 
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
