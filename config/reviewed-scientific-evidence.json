@@ -156,6 +156,7 @@
       "id": "swd-olfactometer-claim-boundary",
       "species_ids": ["drosophila_suzukii"],
       "match": {
+        "species_may_be_implicit": true,
         "phrases": ["Y-tube", "Y tube", "planar olfactometer"],
         "required_any": [
           ["y tube", "y-tube", "olfactometer"],
@@ -269,10 +270,13 @@
           ["metabolite", "metabolites", "metabolic", "metabolomic"],
           ["attraction", "attractive", "bite", "causal", "causality"]
         ],
-        "optional": ["histidine", "fatty acid", "monoacylglycerol", "cohort", "150"]
+        "optional": ["histidine", "fatty acid", "monoacylglycerol", "cohort", "150", "donor", "donors", "sampling day"]
       },
-      "answer": "A 150-person cohort showed differential Aedes aegypti attraction and preliminary models in which measured blood metabolites contributed to explained variation. Histidine-pathway metabolites were negatively correlated with attraction, while long-chain fatty acids and monoacylglycerols were positively correlated. These are associations, not proof that changing a metabolite changes attraction. Blood metabolites must also be separated from skin emissions, receptor responses, and the many other factors that affect host choice.",
-      "source_record_ids": ["openalex:W2584379108"]
+      "answer": "A 150-person cohort showed differential Aedes aegypti attraction and preliminary models in which measured blood metabolites contributed to explained variation. Histidine-pathway metabolites were negatively correlated with attraction, while long-chain fatty acids and monoacylglycerols were positively correlated. These are associations, not proof that changing a metabolite changes attraction. For repellent assays, treat donor identity and sampling day as design variables: repeat collections, balance donor order across treatments, include multiple donors, and use donor as a blocking or repeated-measures factor. Keep blood metabolites separate from skin emissions, receptor responses, odor-sample choice, landing, and biting. A separate human-odor study found stable attraction differences across repeated samples from the same people over months to years; that supports repeated donor sampling but still does not make the metabolite correlations causal.",
+      "source_record_ids": [
+        "openalex:W2584379108",
+        "aedes_olfaction_literature:pubmed:36261039"
+      ]
     },
     {
       "id": "aedes-contact-versus-spatial",
