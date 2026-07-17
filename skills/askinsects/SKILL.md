@@ -7,9 +7,9 @@ description: >-
   question. This includes adding a new insect or asking whether answer-routing
   design must change for one. This description is the complete route. Do not
   open this file for a normal answer. The first hosted command must be
-  ask-insects ask "<the user's exact question>" --json --compact. If it yields
+  ask-insects ask "<the user's exact question>" --answer-only. If it yields
   a session ID, continue with write_stdin until exit. If the wrapper reports a cell ID,
-  call functions.wait on that same cell until exit. Then return final_answer verbatim.
+  call functions.wait on that same cell until exit. Then return stdout verbatim.
 ---
 # Ask Insects
 
@@ -27,7 +27,7 @@ hosted command as the first visible action. Use the installed command, or
 `$HOME/.local/bin/ask-insects` when it is not on `PATH`:
 
 ```bash
-ask-insects ask "<the user's exact question>" --json --compact
+ask-insects ask "<the user's exact question>" --answer-only
 ```
 
 When using `functions.exec`, begin with `// @exec: {"yield_time_ms": 30000, "max_output_tokens": 20000}`.
@@ -35,8 +35,8 @@ A command may yield a session ID or report `Script running with cell ID`. Contin
 `write_stdin` for the session or `functions.wait` on the same cell until exit. Never discard a yielded command or issue another Ask Insects command.
 
 A bare call uses the hosted production source plane. Never add `--local` to a
-user answer. When `ok` is true, return `final_answer` verbatim as the entire
-visible answer. Do not preface, rewrite, summarize, append, search, run SQL, or
+user answer. Stdout is already the complete sourced answer. Return it verbatim
+as the entire visible answer without another reasoning turn. Do not preface, rewrite, summarize, append, search, run SQL, or
 run a second Ask Insects call. Complete the visible answer in under 60 seconds.
 Do not run setup-agent during a user question. Do not run tests, installation,
 or source refreshes during a normal answer.

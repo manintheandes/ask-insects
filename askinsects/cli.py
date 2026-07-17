@@ -288,6 +288,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Keep the complete answer and exact provenance while omitting duplicate agent-irrelevant detail",
     )
+    ask.add_argument(
+        "--answer-only",
+        action="store_true",
+        help="Print the complete answer and exact provenance without a JSON wrapper",
+    )
     ask.add_argument("--hosted", action="store_true", help="(default) query the hosted plane")
     ask.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
@@ -877,7 +882,9 @@ def main(argv: list[str] | None = None) -> int:
                     lane=str(gap.get("lane", "mosquito_v1")),
                     artifact_dir=artifact_dir,
                 )
-        if args.json:
+        if args.answer_only:
+            print(_agent_final_answer(payload))
+        elif args.json:
             emit(compact_agent_answer(payload) if args.compact else payload)
         elif args.hosted and "answer" not in payload:
             emit(payload)

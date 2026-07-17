@@ -106,13 +106,16 @@ def _ask_command_failure(command: str, question: str) -> str | None:
     arguments = tokens[2:]
     if "--local" in arguments:
         return "normal Ask Insects call was not a hosted call"
-    allowed_flags = {"--compact", "--hosted", "--json"}
-    positionals = [argument for argument in arguments if argument not in allowed_flags]
+    allowed_flags = {"--answer-only", "--hosted"}
+    legacy_flags = {"--compact", "--json"}
+    positionals = [
+        argument for argument in arguments if argument not in allowed_flags | legacy_flags
+    ]
     if positionals != [question]:
         return "first ask-insects call did not preserve the user's exact question"
-    if arguments.count("--compact") != 1:
-        return "normal Ask Insects call did not use the compact agent payload"
-    if arguments.count("--json") != 1 or arguments.count("--hosted") > 1:
+    if arguments.count("--answer-only") != 1:
+        return "normal Ask Insects call did not use the answer-only production payload"
+    if arguments.count("--hosted") > 1:
         return "normal Ask Insects call was not the exact hosted allowlisted command"
     if any(argument.startswith("-") and argument not in allowed_flags for argument in arguments):
         return "normal Ask Insects call was not the exact hosted allowlisted command"

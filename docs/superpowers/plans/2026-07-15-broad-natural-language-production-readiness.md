@@ -27,9 +27,9 @@ seconds without retries or route substitution.
 3. The legacy deterministic corpus is dominated by program
    ledger questions. It does not prove that broad R&D questions use the right
    lane or finish on time.
-4. `--compact` only emits `final_answer` for two answer shapes, although the
-   installed Codex route expects a ready-to-display `final_answer` for every
-   successful question.
+4. The legacy `--json --compact` route required Codex to parse and recopy a
+   `final_answer`. The production route now emits ready-to-display stdout for
+   every successful question with `--answer-only`.
 
 ## Acceptance Criteria
 
@@ -39,8 +39,8 @@ seconds without retries or route substitution.
   as direct SWD evidence.
 - Aedes reference-genome and assembly questions use the indexed
   `ncbi_datasets_genome` source directly and do not invoke broad species FTS.
-- Every `ask-insects ask --json --compact` response has `final_answer`, exact
-  source IDs, and exact locators, including source-gap responses.
+- Every `ask-insects ask --answer-only` response is ready-to-display stdout
+  with exact source IDs and exact locators, including source-gap responses.
 - No Ask Monarch source, private experiment, compound, video, result, or
   decision can appear on the public answer path.
 - The authoritative gate asks exactly 50 natural questions through normal

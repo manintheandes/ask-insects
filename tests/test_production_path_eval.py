@@ -46,7 +46,7 @@ def successful_execution() -> ExecutionResult:
         turn_completed=True,
         visible_answer=answer,
         agent_messages=[answer],
-        commands=[f'/bin/zsh -lc \'ask-insects ask "{question}" --json --compact\''],
+        commands=[f'/bin/zsh -lc \'ask-insects ask "{question}" --answer-only\''],
         event_types=["thread.started", "turn.started", "turn.completed"],
         stdout_jsonl="",
         stderr="",
@@ -124,7 +124,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         execution = successful_execution()
         execution.visible_answer = answer
         execution.agent_messages = [answer]
-        execution.commands = [f'ask-insects ask "{question}" --json --compact']
+        execution.commands = [f'ask-insects ask "{question}" --answer-only']
 
         result = evaluate_case(case, execution, maximum_seconds=60)
 
@@ -156,7 +156,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         execution = successful_execution()
         execution.visible_answer = answer
         execution.agent_messages = [answer]
-        execution.commands = [f'ask-insects ask "{question}" --json --compact']
+        execution.commands = [f'ask-insects ask "{question}" --answer-only']
 
         result = evaluate_case(case, execution, maximum_seconds=60)
 
@@ -223,13 +223,13 @@ class ProductionPathEvalTests(unittest.TestCase):
             with self.subTest(wrong_question=wrong_question):
                 execution = successful_execution()
                 execution.commands = [
-                    f'ask-insects ask "{wrong_question}" --json --compact'
+                    f'ask-insects ask "{wrong_question}" --answer-only'
                 ]
                 result = evaluate_case(sample_case(), execution, maximum_seconds=60)
                 self.assertFalse(result["ok"])
                 self.assertTrue(any("exact question" in failure for failure in result["failures"]))
 
-    def test_noncompact_agent_payload_fails_the_normal_route(self):
+    def test_non_answer_only_payload_fails_the_normal_route(self):
         execution = successful_execution()
         execution.commands = [
             'ask-insects ask "What is missing from diamondback moth biology coverage?" --json'
@@ -238,7 +238,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         result = evaluate_case(sample_case(), execution, maximum_seconds=60)
 
         self.assertFalse(result["ok"])
-        self.assertIn("normal Ask Insects call did not use the compact agent payload", result["failures"])
+        self.assertIn("normal Ask Insects call did not use the answer-only production payload", result["failures"])
 
     def test_any_memory_local_alternate_test_or_maintenance_command_fails(self):
         unexpected_commands = [
@@ -259,7 +259,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         question = str(sample_case()["question"])
         execution = successful_execution()
         execution.commands = [
-            f'ask-insects ask "{question}" --json --compact --local'
+            f'ask-insects ask "{question}" --answer-only --local'
         ]
         local = evaluate_case(sample_case(), execution, maximum_seconds=60)
         self.assertFalse(local["ok"])
@@ -334,10 +334,10 @@ class ProductionPathEvalTests(unittest.TestCase):
     def test_compound_or_nonstandard_ask_commands_fail_the_allowlist(self):
         question = str(sample_case()["question"])
         commands = (
-            f'ask-insects ask "{question}" --json --compact && pwd',
-            f'ask-insects ask "{question}" --json --compact --limit 10',
-            f'python3 -m askinsects ask "{question}" --json --compact',
-            f'ASK_INSECTS_TOKEN=secret ask-insects ask "{question}" --json --compact',
+            f'ask-insects ask "{question}" --answer-only && pwd',
+            f'ask-insects ask "{question}" --answer-only --limit 10',
+            f'python3 -m askinsects ask "{question}" --answer-only',
+            f'ASK_INSECTS_TOKEN=secret ask-insects ask "{question}" --answer-only',
         )
         for command in commands:
             with self.subTest(command=command):
@@ -487,7 +487,7 @@ class ProductionPathEvalTests(unittest.TestCase):
         def execution_for(case: dict[str, object]) -> ExecutionResult:
             execution = successful_execution()
             execution.commands = [
-                f'/bin/zsh -lc \'ask-insects ask "{case["question"]}" --json --compact\''
+                f'/bin/zsh -lc \'ask-insects ask "{case["question"]}" --answer-only\''
             ]
             return execution
 
