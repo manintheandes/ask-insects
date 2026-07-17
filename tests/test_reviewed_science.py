@@ -340,6 +340,55 @@ class ReviewedScienceTests(unittest.TestCase):
             set(record_ids),
         )
 
+    def test_aedes_human_subject_preparation_routes_to_official_guidance(self):
+        record_id = "human_repellent_guidance:epa:810.3700"
+        questions = (
+            "For an Aedes aegypti arm-in-cage repellent assay, which participant "
+            "conditions should be standardized before exposure, and which parts "
+            "are official guidance versus my R&D interpretation?",
+            "Which volunteer preparation controls does EPA require before a "
+            "human-skin mosquito repellent efficacy test?",
+            "What should we standardize in subjects before an arm in cage trial, "
+            "and which extra covariates would be our study-design choices rather "
+            "than EPA rules?",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="human_repellent_testing_guidance",
+                        locator=(
+                            "https://www.epa.gov/system/files/documents/2023-12/"
+                            "1d.-oppts-810.3700-guidelines-july-7-2010.pdf#page=11"
+                        ),
+                    )
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {record_id},
+                )
+                for fragment in (
+                    "unscented detergent",
+                    "at least twelve hours",
+                    "official EPA guidance",
+                    "R&D design choices",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
     def test_repaired_aedes_topics_label_inference_recommendations_and_source_gaps(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         record_ids = sorted(
