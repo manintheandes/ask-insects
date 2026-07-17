@@ -654,7 +654,8 @@
         "phrases": ["evaporation rate", "air concentration", "source-to-mosquito distance"],
         "required_any": [
           ["dose", "mass", "loading"],
-          ["evaporation", "release rate", "air concentration", "airborne concentration", "distance"]
+          ["evaporation", "release rate", "air concentration", "airborne concentration", "distance", "exposure", "delivery", "plume"],
+          ["repellent", "spatial", "volatile", "airborne", "plume", "formulation"]
         ],
         "optional": ["formulation", "source age", "chamber volume", "ventilation", "sampling method"]
       },
