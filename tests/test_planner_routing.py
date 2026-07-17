@@ -76,6 +76,19 @@ class PlannerRoutingTests(unittest.TestCase):
 
         self.assertNotEqual(plan.answer_shape, "media")
 
+    def test_scientific_exposure_duration_does_not_route_to_media(self):
+        plan = plan_question(
+            "How do oral infection dose and exposure duration affect dengue "
+            "vector competence in Aedes aegypti?"
+        )
+
+        self.assertEqual(plan.answer_shape, "vector_competence")
+        self.assertEqual(plan.lanes[0], "vector_competence")
+        self.assertEqual(
+            plan_question("Show the duration of this Aedes video").answer_shape,
+            "media",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

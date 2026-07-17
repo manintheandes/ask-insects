@@ -367,8 +367,6 @@ def plan_question(question: str) -> QueryPlan:
         "frame manifest",
         "fps",
         "codec",
-        "duration",
-        "resolution",
     )
     if any(term in q for term in image_media_terms) and not any(term in q for term in video_specific_terms):
         return QueryPlan(question, "evidence", ("observations", "media", "literature"), question)
@@ -387,8 +385,6 @@ def plan_question(question: str) -> QueryPlan:
         "frame manifest",
         "fps",
         "codec",
-        "duration",
-        "resolution",
     )
     repository_archive_gap = (
         any(term in q for term in ("dryad", "figshare", "zenodo", "mendeley"))
