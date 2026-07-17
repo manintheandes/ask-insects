@@ -125,6 +125,30 @@ sources:
         - product_specific_durability
         - universal_regulatory_acceptance
         - chemical_retention_as_a_substitute_for_bite_protection
+  - id: aedes_primary_behavior_evidence
+    name: Exact primary Aedes host-seeking and citronella evidence
+    source_type: human_reviewed_primary_studies_and_table
+    boundary: Four exact primary-source records covering immediate abdominal-distention inhibition after a blood meal, humoral inhibition during oocyte maturation, NPYLR1 functional and genetic evidence, and formulation-specific citronella protection times from Table 8; claims are limited to the experiments and values reported by those sources
+    query_plane: deterministic_reviewed_records_to_sqlite_literature
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_aedes_primary_behavior_evidence.py
+    upstream_sources:
+      - sciencedirect_primary_abstracts
+      - ncbi_pmc_primary_articles
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: release_refresh_static_exact_records
+    source_contract:
+      source_grade_now:
+        - exact_original_title
+        - exact_public_url
+        - exact_abstract_or_table_locator
+        - human_reviewed_claim_boundary
+      not_claimed:
+        - universal_24_hour_post_blood_meal_phase
+        - npylr1_as_the_sole_required_post_blood_meal_mechanism
+        - citronella_duration_beyond_the_reported_formulations_and_conditions
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
     source_type: public_api_composite

@@ -682,6 +682,31 @@ class ReviewedScienceTests(unittest.TestCase):
                 "dbm:openalex:W4387738540",
                 ("3 and 4 mL/L", "100%", "48 hours", "Diadegma"),
             ),
+            (
+                "What controls Aedes host seeking after a blood meal, and is there a proven universal 24-hour phase?",
+                "aedes_primary_behavior:pubmed:544697",
+                (
+                    "immediate inhibition",
+                    "haemolymph-borne",
+                    "three days",
+                    "universal 24-hour duration",
+                ),
+            ),
+            (
+                "Is NPYLR1 required for post-blood-meal host-seeking suppression in Aedes aegypti?",
+                "aedes_primary_behavior:pmc:PMC3794971",
+                ("null mutants", "not required"),
+            ),
+            (
+                "How long did the controlled-release citronella formulation protect people in the Aedes study?",
+                "aedes_primary_behavior:pmc:PMC9866038:table8",
+                ("4.0 +/- 0.0 hours", "0.3 +/- 0.5 hours", "six volunteers"),
+            ),
+            (
+                "What direct plant-cue evidence identifies antennally active host volatiles in diamondback moth before repellent screening?",
+                "dbm:openalex:W4409241407",
+                ("eight", "antennal responses", "field trapping", "does not prove"),
+            ),
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:

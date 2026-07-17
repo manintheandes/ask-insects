@@ -555,7 +555,18 @@ class RealityEvalTests(unittest.TestCase):
             for source in case["truth_packet"]["sources"]
         ]
         expected_urls_by_record = {
-            "W2344416877": {"https://doi.org/10.48496/m467-t235"},
+            "0022191079900738": {
+                "https://doi.org/10.1016/0022-1910(79)90073-8"
+            },
+            "0022191079900489": {
+                "https://doi.org/10.1016/0022-1910(79)90048-9"
+            },
+            "PMC3794971": {
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC3794971/"
+            },
+            "PMC9866038": {
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC9866038/"
+            },
             "W4225097850": {
                 "https://pmc.ncbi.nlm.nih.gov/articles/PMC9046260/"
             },
@@ -566,6 +577,9 @@ class RealityEvalTests(unittest.TestCase):
                 "https://pmc.ncbi.nlm.nih.gov/articles/PMC11494009/"
             },
             "39769586": {"https://pubmed.ncbi.nlm.nih.gov/39769586/"},
+            "W4409241407": {
+                "https://doi.org/10.1021/acs.jafc.5c03182"
+            },
         }
 
         for record_id, expected_urls in expected_urls_by_record.items():

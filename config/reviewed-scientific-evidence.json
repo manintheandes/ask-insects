@@ -224,8 +224,12 @@
         ],
         "optional": ["abdominal distension", "neuropeptide", "egg laying", "time since feeding"]
       },
-      "answer": "Female Aedes aegypti normally suppress host seeking for several days after a blood meal and resume after the gonotrophic cycle or egg laying. The evidence distinguishes an early roughly 24-hour abdominal-distension effect from later humoral or neuropeptide-associated suppression. Standardize feeding status and time since feeding in repellent assays. These temporal observations do not show that one receptor explains the whole post-feeding state or that one time point represents the entire cycle.",
-      "source_record_ids": ["openalex:W2344416877"]
+      "answer": "Female Aedes aegypti suppress host seeking through at least two experimentally distinct processes after a blood meal. One primary study showed immediate inhibition from abdominal distention and implicated anterior abdominal stretch receptors, but it did not establish a universal 24-hour duration. A second study found a haemolymph-borne inhibitory factor during oocyte development, and later genetic work describes three days of post-blood-meal suppression while treating Head Peptide-I as a candidate signal. Standardize feeding status, time since feeding, abdominal distention, egg-development state, and mating or insemination state in repellent assays. These studies do not show that one receptor or one post-feeding time point explains the entire gonotrophic cycle.",
+      "source_record_ids": [
+        "aedes_primary_behavior:pubmed:544697",
+        "aedes_primary_behavior:pubmed:469272",
+        "aedes_primary_behavior:pmc:PMC3794971"
+      ]
     },
     {
       "id": "aedes-npylr1-necessity",
@@ -240,7 +244,7 @@
         "optional": ["null mutant", "host seeking", "blood meal", "redundant signaling"]
       },
       "answer": "No. NPYLR1 responded to Head Peptide-I, but NPYLR1 null mutants still showed normal post-blood-meal host-seeking suppression. In that study NPYLR1 was therefore not required in vivo, which supports redundant signaling rather than a single-receptor mechanism. Ligand or receptor activation is not the same as genetic necessity, and this result should not be confused with later work on NPYLR7 agonists.",
-      "source_record_ids": ["openalex:W2344416877"]
+      "source_record_ids": ["aedes_primary_behavior:pmc:PMC3794971"]
     },
     {
       "id": "aedes-sensory-detection-versus-behavioral-avoidance",
@@ -357,8 +361,8 @@
         ],
         "optional": ["skin permeation", "free oil", "10 percent", "human protection"]
       },
-      "answer": "In the cited Aedes aegypti test, the optimized 10 percent citronella nanostructured-lipid formulation extended measured repellency to about four hours compared with free oil. The study also measured release and skin permeation. It does not show that every controlled-release citronella formulation protects for four hours, nor does it establish durability through sweat, washing, abrasion, varied climates, natural use, or prevention of mosquito-borne disease.",
-      "source_record_ids": ["openalex:W4313493759"]
+      "answer": "Table 8 of the cited Aedes aegypti study reports a mean protection time of 4.0 +/- 0.0 hours in six volunteers for F3, a 10 percent total citronella formulation containing a 1:1 mixture of free oil and citronella-loaded nanostructured lipid carrier. F1, 10 percent free citronella oil in the same oil-in-water emulsion base, averaged 0.3 +/- 0.5 hours. The study also measured release and skin permeation. It does not show that every controlled-release citronella formulation protects for four hours, nor does it establish durability through sweat, washing, abrasion, varied climates, natural use, or prevention of mosquito-borne disease.",
+      "source_record_ids": ["aedes_primary_behavior:pmc:PMC9866038:table8"]
     },
     {
       "id": "swd-receptor-causality",
@@ -831,6 +835,7 @@
       "source_record_ids": [
         "dbm:openalex:W1994548084",
         "dbm:openalex:W2114561940",
+        "dbm:openalex:W4409241407",
         "dbm:openalex:W4387738540",
         "dbm:openalex:W4391482378"
       ]
