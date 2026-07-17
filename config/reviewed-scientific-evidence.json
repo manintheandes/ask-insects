@@ -306,12 +306,12 @@
       "id": "aedes-spatial-environment-controls",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["airflow controls", "plume controls", "spatial-repellency assay"],
+        "phrases": ["airflow controls", "plume controls", "spatial-repellency assay", "air plume", "microclimate"],
         "required_any": [
           ["airflow", "plume", "humidity", "temperature", "ventilation"],
-          ["control", "controls", "assay", "monitor", "measure"]
+          ["control", "controls", "assay", "monitor", "measure", "standardize", "standardized", "chamber", "test", "testing", "experiment"]
         ],
-        "optional": ["solvent", "direction", "speed", "still air", "randomize", "reverse"]
+        "optional": ["airborne", "air plume", "microclimate", "occupancy", "solvent", "direction", "speed", "still air", "randomize", "reverse"]
       },
       "answer": "Use a matched solvent or untreated chamber, define and monitor airflow direction and speed, sample the plume or air concentration where possible, and hold and report temperature and relative humidity. Randomize or reverse treatment side and keep still-air conclusions separate from directional-flow conclusions. Applied dose is not the same as airborne exposure, and a still-air chamber cannot automatically represent an occupied room or outdoor setting. Product-specific carrier, release-rate, application, and delivery evidence remains incomplete.",
       "source_record_ids": [
