@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from askinsects.index import SourceIndex
 from askinsects.sources.plutella_xylostella_literature import (
@@ -117,20 +119,35 @@ class PlutellaXylostellaLiteratureSourceTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
-            installed = ingest_plutella_xylostella_literature(
-                artifact_dir=artifact_dir,
-                fetch_json=complete_fetch,
-                retrieved_at=RETRIEVED_AT,
-            )
-            failed_refresh = ingest_plutella_xylostella_literature(
-                artifact_dir=artifact_dir,
-                fetch_json=partial_fetch,
-                retrieved_at="2026-07-18T00:00:00Z",
-            )
+            with (
+                patch.object(
+                    SourceIndex,
+                    "summary",
+                    side_effect=AssertionError("full index summary is not allowed"),
+                ),
+                patch.object(
+                    SourceIndex,
+                    "sql",
+                    side_effect=AssertionError("broad index SQL is not allowed"),
+                ),
+            ):
+                installed = ingest_plutella_xylostella_literature(
+                    artifact_dir=artifact_dir,
+                    fetch_json=complete_fetch,
+                    retrieved_at=RETRIEVED_AT,
+                )
+                failed_refresh = ingest_plutella_xylostella_literature(
+                    artifact_dir=artifact_dir,
+                    fetch_json=partial_fetch,
+                    retrieved_at="2026-07-18T00:00:00Z",
+                )
             index = SourceIndex(artifact_dir / "source_index.sqlite")
             retained = index.sql(
                 "select record_id from records where record_id like 'dbm:openalex:%'",
                 limit=20,
+            )
+            status = json.loads(
+                (artifact_dir / "source_status.json").read_text(encoding="utf-8")
             )
 
         self.assertTrue(installed["ok"])
@@ -139,6 +156,18 @@ class PlutellaXylostellaLiteratureSourceTests(unittest.TestCase):
         self.assertFalse(failed_refresh["complete"])
         self.assertTrue(failed_refresh["preserved_existing"])
         self.assertEqual(len(retained), len(PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS))
+        self.assertEqual(
+            status["source_counts"][PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID],
+            failed_refresh["record_count"],
+        )
+        self.assertEqual(
+            status["record_count"],
+            failed_refresh["record_count"],
+        )
+        self.assertEqual(
+            status["lanes"]["literature"],
+            failed_refresh["record_count"],
+        )
 
 
 if __name__ == "__main__":

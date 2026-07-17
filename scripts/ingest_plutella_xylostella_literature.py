@@ -10,7 +10,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now
+from askinsects.incremental_metadata import update_source_metadata_incrementally
 from askinsects.index import SourceIndex
 from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.plutella_xylostella_literature import (
@@ -20,12 +21,6 @@ from askinsects.sources.plutella_xylostella_literature import (
 )
 
 
-def _read_json(path: Path, default: object) -> object:
-    if not path.exists():
-        return default
-    return json.loads(path.read_text(encoding="utf-8"))
-
-
 def _update_metadata(
     artifact_dir: Path,
     *,
@@ -33,18 +28,21 @@ def _update_metadata(
     outcome: dict[str, object],
     result,
 ) -> None:
+    installed_record_count = int(outcome["record_count"])
     index = SourceIndex(artifact_dir / "source_index.sqlite")
-    summary = index.summary()
-    source_counts = {
-        row["source"]: int(row["n"])
-        for row in index.sql(
-            "select source, count(*) as n from records group by source order by source",
-            limit=4000,
-        )
-    }
+    with index.connect() as connection:
+        installed_lane_counts = {
+            str(row["lane"]): int(row["n"])
+            for row in connection.execute(
+                "select lane, count(*) as n from records where source=? group by lane",
+                (PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID,),
+            ).fetchall()
+        }
     source_payload = {
         "source": PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID,
-        "record_count": source_counts.get(PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID, 0),
+        "lane": "literature",
+        "lane_counts": installed_lane_counts,
+        "record_count": installed_record_count,
         "required_work_count": len(PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS),
         "requested_urls": result.requested_urls,
         "raw_artifacts": result.raw_artifacts,
@@ -54,26 +52,14 @@ def _update_metadata(
         "preserved_existing": bool(outcome["preserved_existing"]),
         "method": "exact OpenAlex work IDs with direct Plutella xylostella confirmation",
     }
-    for filename in ("source_status.json", "source_receipt.json"):
-        path = artifact_dir / filename
-        payload = _read_json(path, {})
-        if not isinstance(payload, dict):
-            payload = {}
-        sources = payload.get("sources")
-        if isinstance(sources, dict):
-            sources[PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID] = source_payload
-        else:
-            if not isinstance(sources, list):
-                sources = []
-            if PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID not in sources:
-                sources.append(PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID)
-        payload["sources"] = sources
-        payload["source_counts"] = source_counts
-        payload["record_count"] = summary["record_count"]
-        payload["species_count"] = summary["species_count"]
-        payload["lanes"] = summary["lanes"]
-        payload[PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID] = source_payload
-        write_json(path, payload)
+    update_source_metadata_incrementally(
+        artifact_dir,
+        source_id=PLUTELLA_XYLOSTELLA_LITERATURE_SOURCE_ID,
+        default_lane="literature",
+        installed_record_count=installed_record_count,
+        installed_lane_counts=installed_lane_counts,
+        source_payload=source_payload,
+    )
 
 
 def ingest_plutella_xylostella_literature(
