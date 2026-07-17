@@ -172,6 +172,101 @@ class SourceIndex:
             for chunk in _record_chunks(records):
                 self._upsert_records(conn, chunk, update_fts=update_fts)
 
+    def upsert_records_preserving_existing_fts(
+        self, records: list[EvidenceRecord]
+    ) -> None:
+        """Insert missing rows while leaving already-indexed rows unchanged."""
+
+        if not records:
+            return
+        with self.connect() as conn:
+            existing_ids: set[str] = set()
+            record_ids = [record.record_id for record in records]
+            for chunk in _chunks(record_ids):
+                placeholders = ",".join("?" for _ in chunk)
+                rows = conn.execute(
+                    f"SELECT record_id FROM records WHERE record_id IN ({placeholders})",
+                    chunk,
+                ).fetchall()
+                existing_ids.update(str(row["record_id"]) for row in rows)
+            missing = [record for record in records if record.record_id not in existing_ids]
+            for chunk in _record_chunks(missing):
+                self._upsert_records(conn, chunk, update_fts=True)
+
+    def replace_source_records_preserving_existing_fts(
+        self,
+        source: str,
+        records: list[EvidenceRecord],
+    ) -> None:
+        """Replace a bounded source without rewriting existing FTS rows."""
+
+        attempts = 4
+        for attempt in range(attempts):
+            try:
+                with self.connect() as conn:
+                    if conn.execute(
+                        "SELECT 1 FROM literature_fulltext_units WHERE source=? LIMIT 1",
+                        (source,),
+                    ).fetchone():
+                        raise ValueError(
+                            "FTS-preserving replacement does not support full-text units"
+                        )
+
+                    incoming_ids = [record.record_id for record in records]
+                    existing_incoming: dict[str, str] = {}
+                    for chunk in _chunks(incoming_ids):
+                        placeholders = ",".join("?" for _ in chunk)
+                        rows = conn.execute(
+                            f"SELECT record_id, source FROM records "
+                            f"WHERE record_id IN ({placeholders})",
+                            chunk,
+                        ).fetchall()
+                        existing_incoming.update(
+                            {str(row["record_id"]): str(row["source"]) for row in rows}
+                        )
+                    conflicting_ids = sorted(
+                        record_id
+                        for record_id, existing_source in existing_incoming.items()
+                        if existing_source != source
+                    )
+                    if conflicting_ids:
+                        raise ValueError(
+                            "incoming record IDs already belong to another source: "
+                            + ", ".join(conflicting_ids)
+                        )
+
+                    existing_source_ids = {
+                        str(row["record_id"])
+                        for row in conn.execute(
+                            "SELECT record_id FROM records WHERE source=?",
+                            (source,),
+                        ).fetchall()
+                    }
+                    stale_ids = existing_source_ids - set(incoming_ids)
+                    for chunk in _chunks(sorted(stale_ids)):
+                        placeholders = ",".join("?" for _ in chunk)
+                        conn.execute(
+                            f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})",
+                            chunk,
+                        )
+                        conn.execute(
+                            f"DELETE FROM records WHERE record_id IN ({placeholders})",
+                            chunk,
+                        )
+
+                    missing = [
+                        record
+                        for record in records
+                        if record.record_id not in existing_incoming
+                    ]
+                    for chunk in _record_chunks(missing):
+                        self._upsert_records(conn, chunk, update_fts=True)
+                return
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc).lower() or attempt == attempts - 1:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
+
     def upsert_fulltext_units(self, units: list[FullTextUnit]) -> None:
         with self.connect() as conn:
             self._upsert_fulltext_units(conn, units)

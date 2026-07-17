@@ -66,18 +66,31 @@ class HumanRepellentTestingGuidanceSourceTests(unittest.TestCase):
                     artifact_dir=artifact_dir,
                     retrieved_at="2026-07-17T00:00:00Z",
                 )
+                repeated = ingest_human_repellent_testing_guidance(
+                    artifact_dir=artifact_dir,
+                    retrieved_at="2026-07-18T00:00:00Z",
+                )
             index = SourceIndex(artifact_dir / "source_index.sqlite")
             with index.connect() as connection:
                 rows = connection.execute(
                     "select title, url from records where source=? order by record_id",
                     (HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,),
                 ).fetchall()
+                searchable_count = int(
+                    connection.execute(
+                        "select count(*) as n from records_fts f "
+                        "join records r on r.record_id=f.record_id where r.source=?",
+                        (HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,),
+                    ).fetchone()["n"]
+                )
             status = json.loads(
                 (artifact_dir / "source_status.json").read_text(encoding="utf-8")
             )
 
         self.assertTrue(result["ok"])
+        self.assertTrue(repeated["ok"])
         self.assertEqual(len(rows), 3)
+        self.assertEqual(searchable_count, 3)
         self.assertTrue(all(row["title"] for row in rows))
         self.assertTrue(all(str(row["url"]).startswith("https://") for row in rows))
         self.assertEqual(

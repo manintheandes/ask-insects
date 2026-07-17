@@ -80,6 +80,7 @@ def persist_source_gaps(
     *,
     retrieved_at: str,
     default_lane: str = "source_coverage",
+    preserve_existing_fts: bool = False,
 ) -> int:
     """Upsert ``source_gap`` records for ``source_id`` into the index.
 
@@ -89,5 +90,8 @@ def persist_source_gaps(
         source_id, gaps, retrieved_at=retrieved_at, default_lane=default_lane
     )
     if records:
-        index.upsert_records(records)
+        if preserve_existing_fts:
+            index.upsert_records_preserving_existing_fts(records)
+        else:
+            index.upsert_records(records)
     return len(records)

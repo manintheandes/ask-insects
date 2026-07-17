@@ -1,6 +1,8 @@
 import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
+from unittest import mock
 
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
@@ -10,9 +12,9 @@ RID = "2026-05-30T00:00:00Z"
 SRC = "demo_source"
 
 
-def _rec(rid, *, atom="row", lane="ecology"):
+def _rec(rid, *, atom="row", lane="ecology", text="x"):
     return EvidenceRecord(
-        record_id=rid, lane=lane, source=SRC, title="t", text="x",
+        record_id=rid, lane=lane, source=SRC, title="t", text=text,
         species="Aedes aegypti", url=None, media_url=None,
         provenance=Provenance(source_id=SRC, locator=rid, retrieved_at=RID),
         payload={"atom_type": atom},
@@ -26,6 +28,67 @@ def _index(tmp):
 
 
 class RunSourceIngestTests(unittest.TestCase):
+    def test_preserving_existing_fts_indexes_new_ids_without_fts_deletes(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            idx = _index(tmp)
+            idx.upsert_records(
+                [
+                    _rec(f"{SRC}:row:1", text="existingtoken"),
+                    _rec(f"{SRC}:row:stale", text="staletoken"),
+                ]
+            )
+            statements: list[str] = []
+            original_connect = idx.connect
+
+            @contextmanager
+            def traced_connect():
+                with original_connect() as connection:
+                    connection.set_trace_callback(statements.append)
+                    yield connection
+
+            with mock.patch.object(idx, "connect", traced_connect):
+                out = run_source_ingest(
+                    index=idx,
+                    artifact_dir=Path(tmp),
+                    source_id=SRC,
+                    records=[
+                        _rec(f"{SRC}:row:1", text="updatedtoken"),
+                        _rec(f"{SRC}:row:2", text="newtoken"),
+                    ],
+                    gaps=[],
+                    retrieved_at=RID,
+                    preserve_existing_fts=True,
+                )
+
+            self.assertTrue(out["ok"])
+            self.assertFalse(
+                any(
+                    statement.lstrip().upper().startswith("DELETE FROM RECORDS_FTS")
+                    for statement in statements
+                )
+            )
+            self.assertEqual(len(idx.search("existingtoken")), 1)
+            self.assertEqual(idx.search("updatedtoken"), [])
+            self.assertEqual(len(idx.search("newtoken")), 1)
+            self.assertEqual(idx.search("staletoken"), [])
+            self.assertEqual(
+                idx.sql(
+                    f"select text from records where record_id='{SRC}:row:1'"
+                ),
+                [{"text": "existingtoken"}],
+            )
+            self.assertEqual(
+                idx.sql(
+                    "select f.record_id, count(*) as n from records_fts f "
+                    "join records r on r.record_id=f.record_id "
+                    "group by f.record_id order by f.record_id"
+                ),
+                [
+                    {"record_id": f"{SRC}:row:1", "n": 1},
+                    {"record_id": f"{SRC}:row:2", "n": 1},
+                ],
+            )
+
     def test_success_persists_records_and_gaps_and_reports_ok(self):
         with tempfile.TemporaryDirectory() as tmp:
             idx = _index(tmp)

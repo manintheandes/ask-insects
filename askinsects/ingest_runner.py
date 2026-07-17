@@ -34,6 +34,7 @@ def run_source_ingest(
     extra_status: dict | None = None,
     update_status_files: bool = True,
     persist_gap_records: bool = True,
+    preserve_existing_fts: bool = False,
 ) -> dict:
     """Single safe persistence path for every ingest script.
 
@@ -48,9 +49,20 @@ def run_source_ingest(
     non_gap = [r for r in records if not _is_gap_record(r)]
     refresh_failed = not non_gap
     if not refresh_failed:
-        index.replace_source_records(source_id, records)
+        if preserve_existing_fts:
+            index.replace_source_records_preserving_existing_fts(
+                source_id, records
+            )
+        else:
+            index.replace_source_records(source_id, records)
     if persist_gap_records:
-        persist_source_gaps(index, source_id, gaps, retrieved_at=retrieved_at)
+        persist_source_gaps(
+            index,
+            source_id,
+            gaps,
+            retrieved_at=retrieved_at,
+            preserve_existing_fts=preserve_existing_fts,
+        )
     installed = _source_count(index, source_id)
     preserved_existing = refresh_failed and installed > 0
     return {
