@@ -48,6 +48,8 @@ class AgentSetupTests(unittest.TestCase):
             "Do not add comments, timing directives, or wrapper text to the shell command",
             "uses a reliable Codex routing model at low reasoning",
             "not a second command",
+            "Never call image generation",
+            "unless the user explicitly asks for a visual",
             "Preserve canonical labels",
             "stdout",
             "verbatim",
@@ -75,6 +77,8 @@ class AgentSetupTests(unittest.TestCase):
             "Do not inspect memory",
             "Do not emit a progress update",
             "run a second Ask Insects call",
+            "Never call image generation",
+            "unless the user explicitly asks for a visual",
             "yield a session ID",
             "write_stdin",
             "cell ID",
@@ -102,6 +106,7 @@ class AgentSetupTests(unittest.TestCase):
             "write_stdin until exit",
             "cell ID",
             "functions.wait",
+            "Never call image generation",
             "return stdout verbatim",
         ):
             self.assertIn(term, frontmatter)

@@ -9,7 +9,8 @@ description: >-
   open this file for a normal answer. The first hosted command must be
   ask-insects ask "<the user's exact question>" --answer-only. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
   a session ID, continue with write_stdin until exit. If the wrapper reports a cell ID,
-  call functions.wait on that same cell until exit. Then return stdout verbatim.
+  call functions.wait on that same cell until exit. Never call image generation or
+  another visual helper unless the user explicitly asks for a visual. Then return stdout verbatim.
 ---
 # Ask Insects
 
@@ -62,9 +63,7 @@ or source refreshes during a normal answer.
 
 ## Boundary And Maintenance
 
-Ask Insects owns public insect evidence. Private experiments and results belong
-in a separate private system. Private evidence cannot be imported into Ask
-Insects or used to fill gaps in public evidence.
+Ask Insects owns public insect evidence. Private experiments and results belong in a separate private system and cannot fill gaps in public evidence.
 
 Maintenance may run `python3 scripts/verify_complete.py` and `ask-insects
 setup-agent`. Source onboarding uses the `insectsource` skill.
