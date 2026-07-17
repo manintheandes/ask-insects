@@ -308,12 +308,13 @@
       "id": "aedes-spatial-environment-controls",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["airflow controls", "plume controls", "spatial-repellency assay", "air plume", "microclimate"],
+        "priority": 4,
+        "phrases": ["environmental controls", "environment controls", "airflow controls", "plume controls", "spatial-repellency assay", "air plume", "microclimate"],
         "required_any": [
-          ["airflow", "plume", "humidity", "temperature", "ventilation"],
+          ["environment", "environmental", "airflow", "plume", "humidity", "temperature", "ventilation"],
           ["control", "controls", "assay", "monitor", "measure", "standardize", "standardized", "chamber", "test", "testing", "experiment"]
         ],
-        "optional": ["airborne", "air plume", "microclimate", "occupancy", "solvent", "direction", "speed", "still air", "randomize", "reverse"]
+        "optional": ["airborne", "air plume", "microclimate", "occupancy", "solvent", "direction", "speed", "still air", "randomize", "reverse", "carrier", "delivery", "unsupported", "source gap"]
       },
       "answer": "The cited transfluthrin study directly supports matched treated and untreated chambers, recording temperature and relative humidity, separating contact from non-contact exposure, and keeping behavior, knockdown, and mortality distinct. It also says the actual airborne concentration at test time was not chemically measured. The paper does not provide a universal standard for airflow direction and speed, plume sampling, side reversal, or every occupied-room and outdoor setting. For a new product assay, define and monitor airflow direction and speed, sample the plume or air concentration where possible, randomize or reverse treatment side, and keep carrier, release rate, geometry, and measured exposure explicit. Those are R&D design recommendations, not requirements established by this one paper; keep still-air conclusions separate from directional-flow conclusions. The cited public evidence does not provide one complete product-specific carrier, release-rate, application-method, and delivery package, so that remains a source gap rather than a basis for filling those details by inference.",
       "source_record_ids": ["openalex:W3048721146"]

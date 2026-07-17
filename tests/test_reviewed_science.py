@@ -258,6 +258,44 @@ class ReviewedScienceTests(unittest.TestCase):
                         answer["answer"].casefold(),
                     )
 
+    def test_aedes_environment_control_paraphrases_use_reviewed_source_gap(self):
+        record_id = "openalex:W3048721146"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator="raw/aedes.json#works/W3048721146",
+                    )
+                ]
+            )
+            questions = (
+                "What environmental controls belong in an Aedes vapor assay, and which "
+                "carrier and delivery details are still unsupported by the cited evidence?",
+                "Which Aedes vapor-assay environment variables and carrier-delivery "
+                "details need to be standardized?",
+                "In an Aedes airborne chamber test, what should we control about the "
+                "environment and what formulation exposure details remain unknown?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertTrue(answer["ok"])
+                    self.assertEqual(answer["evidence"][0]["record_id"], record_id)
+                    for fragment in (
+                        "recording temperature and relative humidity",
+                        "define and monitor airflow direction and speed",
+                        "carrier, release-rate, application-method, and delivery package",
+                        "source gap",
+                    ):
+                        self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
     def test_swd_choice_controls_cover_solvent_airflow_and_locomotor_confounds(self):
         record_ids = (
             "swd:openalex_literature:openalex:W4411730655",
