@@ -409,7 +409,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
-                "Which dose, release, plume, and distance measurements are still missing from a complete Aedes spatial-repellent package?",
+                "For a volatile Aedes repellent, which measurements keep applied dose separate from mosquito exposure, and which formulation-delivery evidence is still incomplete?",
                 "insect_intelligence_programs:product:human_mosquito_repellent:readiness:formulation_delivery",
                 (
                     "applied mass",
