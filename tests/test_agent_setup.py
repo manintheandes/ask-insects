@@ -36,6 +36,10 @@ class AgentSetupTests(unittest.TestCase):
             "yields a session ID",
             "continue the same process",
             "write_stdin",
+            "Script running with cell ID",
+            "functions.wait",
+            "same cell",
+            '// @exec: {"yield_time_ms": 30000, "max_output_tokens": 20000}',
             "not a second command",
             "Preserve canonical labels",
             "final_answer",
@@ -65,6 +69,8 @@ class AgentSetupTests(unittest.TestCase):
             "run a second Ask Insects call",
             "yield a session ID",
             "write_stdin",
+            "cell ID",
+            "functions.wait",
             "Continue that same process",
             "Never discard a yielded command",
             "write every cited locator in full",
@@ -85,6 +91,8 @@ class AgentSetupTests(unittest.TestCase):
             'ask-insects ask "<the user\'s exact question>" --json --compact',
             "If it yields a session ID",
             "write_stdin until exit",
+            "cell ID",
+            "functions.wait",
             "return final_answer verbatim",
         ):
             self.assertIn(term, frontmatter)

@@ -265,6 +265,40 @@ class ReviewedScienceTests(unittest.TestCase):
                         all(not locator.startswith("/") for locator in locators)
                     )
 
+    def test_aedes_microclimate_chamber_paraphrase_selects_environment_controls(self):
+        record_ids = (
+            "openalex:W3048721146",
+            "insect_intelligence_programs:product:human_mosquito_repellent:readiness:formulation_delivery",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator=f"raw/aedes.json#records/{position}",
+                    )
+                    for position, record_id in enumerate(record_ids)
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                "When testing an airborne Aedes repellent, how should I standardize "
+                "the air plume and microclimate so chamber occupancy is interpretable?",
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertTrue(answer["ok"])
+        self.assertIn("airflow direction and speed", answer["answer"])
+        self.assertIn("temperature and relative humidity", answer["answer"])
+        self.assertEqual(
+            {item["record_id"] for item in answer["evidence"]},
+            set(record_ids),
+        )
+
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

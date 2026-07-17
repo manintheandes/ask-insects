@@ -8,10 +8,9 @@ description: >-
   design must change for one. This description is the complete route. Do not
   open this file for a normal answer. The first hosted command must be
   ask-insects ask "<the user's exact question>" --json --compact. If it yields
-  a session ID, continue that process with write_stdin until exit. Then return
-  final_answer verbatim.
+  a session ID, continue with write_stdin until exit. If the wrapper reports a cell ID,
+  call functions.wait on that same cell until exit. Then return final_answer verbatim.
 ---
-
 # Ask Insects
 
 Ask Insects provides open, source-backed insect science.
@@ -31,8 +30,9 @@ hosted command as the first visible action. Use the installed command, or
 ask-insects ask "<the user's exact question>" --json --compact
 ```
 
-A command may yield a session ID before it finishes. Continue that same process with
-`write_stdin` until exit. Never discard a yielded command or issue another Ask Insects command.
+When using `functions.exec`, begin with `// @exec: {"yield_time_ms": 30000, "max_output_tokens": 20000}`.
+A command may yield a session ID or report `Script running with cell ID`. Continue that same process with
+`write_stdin` for the session or `functions.wait` on the same cell until exit. Never discard a yielded command or issue another Ask Insects command.
 
 A bare call uses the hosted production source plane. Never add `--local` to a
 user answer. When `ok` is true, return `final_answer` verbatim as the entire
