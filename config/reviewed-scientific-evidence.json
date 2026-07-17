@@ -224,12 +224,8 @@
         ],
         "optional": ["abdominal distension", "abdominal swelling", "swelling", "neuropeptide", "egg laying", "time since feeding", "24 hours"]
       },
-      "answer": "Female Aedes aegypti suppress host seeking through at least two experimentally distinct processes after a blood meal. One primary study showed immediate inhibition from abdominal distention and implicated anterior abdominal stretch receptors, but it did not establish a universal 24-hour duration. A second study found a haemolymph-borne inhibitory factor during oocyte development, and later genetic work describes three days of post-blood-meal suppression while treating Head Peptide-I as a candidate signal. Standardize feeding status, time since feeding, abdominal distention, egg-development state, and mating or insemination state in repellent assays. These studies do not show that one receptor or one post-feeding time point explains the entire gonotrophic cycle.",
-      "source_record_ids": [
-        "aedes_primary_behavior:pubmed:544697",
-        "aedes_primary_behavior:pubmed:469272",
-        "aedes_primary_behavior:pmc:PMC3794971"
-      ]
+      "answer": "The accessible 2013 genetic study summarizes earlier work as two post-blood-meal phases: an initial abdominal-distention-associated inhibition and a later oocyte-development-associated humoral inhibition. It also describes roughly three days of suppression and treats Head Peptide-I as a candidate signal, while showing that NPYLR1 is not required. Ask Insects cannot independently verify the methods of the two 1979 studies from the currently linked open evidence, so these are reported as the 2013 paper's summary, not as re-verified primary results. Standardizing feeding status, time since feeding, abdominal distention, egg-development state, and mating or insemination state is an R&D recommendation, not a universal protocol established by that paper. The evidence does not establish one receptor or a universal 24-hour phase across the gonotrophic cycle.",
+      "source_record_ids": ["aedes_primary_behavior:pmc:PMC3794971"]
     },
     {
       "id": "aedes-npylr1-necessity",
@@ -318,7 +314,7 @@
         ],
         "optional": ["airborne", "air plume", "microclimate", "occupancy", "solvent", "direction", "speed", "still air", "randomize", "reverse"]
       },
-      "answer": "Use a matched solvent or untreated chamber, define and monitor airflow direction and speed, sample the plume or air concentration where possible, and hold and report temperature and relative humidity. Randomize or reverse treatment side and keep still-air conclusions separate from directional-flow conclusions. The cited transfluthrin study separated exposure concentrations, contact and non-contact conditions, behavioral outcomes, knockdown, and mortality; it did not make applied dose interchangeable with airborne exposure or make a still-air chamber representative of every occupied room or outdoor setting. Carrier, release rate, geometry, and measured exposure therefore remain explicit variables in each new product assay.",
+      "answer": "The cited transfluthrin study directly supports matched treated and untreated chambers, recording temperature and relative humidity, separating contact from non-contact exposure, and keeping behavior, knockdown, and mortality distinct. It also says the actual airborne concentration at test time was not chemically measured. The paper does not provide a universal standard for airflow direction and speed, plume sampling, side reversal, or every occupied-room and outdoor setting. For a new product assay, define and monitor airflow direction and speed, sample the plume or air concentration where possible, randomize or reverse treatment side, and keep carrier, release rate, geometry, and measured exposure explicit. Those are R&D design recommendations, not requirements established by this one paper; keep still-air conclusions separate from directional-flow conclusions.",
       "source_record_ids": ["openalex:W3048721146"]
     },
     {
@@ -361,7 +357,7 @@
         ],
         "optional": ["skin permeation", "free oil", "10 percent", "human protection"]
       },
-      "answer": "Table 8 of the cited Aedes aegypti study reports a mean protection time of 4.0 +/- 0.0 hours in six volunteers for F3, a 10 percent total citronella formulation containing a 1:1 mixture of free oil and citronella-loaded nanostructured lipid carrier. F1, 10 percent free citronella oil in the same oil-in-water emulsion base, averaged 0.3 +/- 0.5 hours. The study also measured release and skin permeation. It does not show that every controlled-release citronella formulation protects for four hours, nor does it establish durability through sweat, washing, abrasion, varied climates, natural use, or prevention of mosquito-borne disease.",
+      "answer": "Table 8 of the cited Aedes aegypti study reports a mean protection time of 4.0 +/- 0.0 hours in six volunteers for F3, a 10 percent total citronella formulation containing a 1:1 mixture of free oil and citronella-loaded nanostructured lipid carrier. F1, 10 percent free citronella oil in the same oil-in-water emulsion base, averaged 0.3 +/- 0.5 hours. The study measured skin permeation and thermal properties, but it did not directly measure volatile release rate. The authors inferred prolonged release from the formulation, thermal behavior, permeation and mass-balance evidence, and efficacy. It does not show that every controlled-release citronella formulation protects for four hours, nor does it establish durability through sweat, washing, abrasion, varied climates, natural use, or prevention of mosquito-borne disease.",
       "source_record_ids": ["aedes_primary_behavior:pmc:PMC9866038:table8"]
     },
     {
@@ -542,7 +538,7 @@
         ],
         "optional": ["thermal infrared", "rhodopsin", "blood feeding", "navigation"]
       },
-      "answer": "Aedes aegypti host seeking is multimodal, but the cues are not fully interchangeable. Direct evidence supports integration of carbon dioxide, human odor, and thermal infrared, while visual contrast, close-range moisture, and convective heat contribute at different stages. Removing two visual rhodopsins abolished vision-guided target attraction while leaving odor tracking normal. Carbon dioxide and a blood meal also changed visual tracking, so cue weighting depends on physiological state and assay geometry. Distinguish activation, long-range orientation, landing, and biting.",
+      "answer": "Aedes aegypti host seeking is multimodal, but the cues are not fully interchangeable. The cited primary studies directly support integration of carbon dioxide, human odor, and thermal infrared; they also show that removing two visual rhodopsins abolished vision-guided target attraction while leaving odor tracking normal, and that carbon dioxide and a blood meal changed visual tracking. The cited set does not contain a direct primary measurement of humidity or close-range moisture in this cue combination. That is a source gap, so the degree to which humidity is redundant with odor, vision, or heat is not established here. Cue weighting depends on physiological state and assay geometry; distinguish activation, long-range orientation, landing, and biting.",
       "source_record_ids": [
         "openalex:W4401794442",
         "openalex:W3187681115",
@@ -678,7 +674,7 @@
         ],
         "optional": ["formulation", "source age", "chamber volume", "ventilation", "sampling method"]
       },
-      "answer": "Report active ingredient and formulation, applied mass and area, source age, evaporation or release rate over time, chamber volume and ventilation, the air-sampling method and measured airborne concentration when available, and source-to-mosquito distance. Applied mass is not interchangeable with milligrams per cubic meter without validated release and transport measurements. The transfluthrin study separated tested concentrations and behavioral or toxic endpoints, while the controlled-release citronella study measured formulation release and skin permeation as well as repellency duration. Neither study licenses substituting source loading for measured air exposure. Keep loading, emission, transport, measured concentration, distance, and behavior separate, with time, temperature, humidity, and airflow attached to each measurement.",
+      "answer": "The transfluthrin paper reported starting paper concentrations but says the actual concentration at test time was not chemically measured. The citronella paper measured protection time, thermal properties, and skin permeation, but it did not directly measure volatile release rate or chamber air concentration. Those findings support keeping source loading separate from measured mosquito exposure, but neither paper supplies a universal reporting standard. As an R&D reporting recommendation, record active ingredient and formulation, applied mass and area, source age, evaporation or release rate over time when measured, chamber volume and ventilation, air-sampling method and airborne concentration when measured, source-to-mosquito distance, time, temperature, humidity, and airflow. Keep loading, emission, transport, measured concentration, distance, and behavior separate; do not convert applied mass to milligrams per cubic meter without validated release and transport measurements.",
       "source_record_ids": [
         "openalex:W3048721146",
         "openalex:W4313493759"
@@ -711,9 +707,8 @@
         ],
         "optional": ["temperature", "rubbing", "water exposure", "active ingredient", "landing", "bite"]
       },
-      "answer": "WHO and EPA guidance standardize efficacy and complete-protection-time testing, but EPA's baseline subject controls explicitly avoid perspiration, abrasion, rubbing, touching, and wetting the treated area. Those baseline tests therefore do not establish protection after those stresses. Use separate, pre-specified challenge arms for standardized sweat or water exposure, washing and drying cycles, rubbing or abrasion, ultraviolet or sunlight exposure, and relevant hot and cool temperatures, each with an unchallenged time-matched control. Repeat landing or bite protection after every challenge and measure retained active ingredient or release as a supporting endpoint, not a substitute for protection. The wash-in and wash-off review specifically identifies water, sweat, temperature, and abrasion as durability and reapplication factors. This challenge matrix is a product-development recommendation; the sources do not provide a universal validated protocol for every stress combination.",
+      "answer": "EPA guidance standardizes efficacy and complete-protection-time testing, but its baseline subject controls explicitly avoid perspiration, abrasion, rubbing, touching, and wetting the treated area. A baseline complete-protection-time test therefore does not establish protection after those stresses. The wash-in and wash-off review identifies water, sweat, temperature, and abrasion as durability and reapplication factors. These sources do not provide a validated sunlight or ultraviolet challenge protocol or a universal multi-stress matrix; that is a source gap. For product R&D, a challenge design could use separate, pre-specified sweat or water, washing and drying, rubbing or abrasion, exploratory sunlight or ultraviolet, and relevant temperature arms, each with an unchallenged time-matched control. That is an R&D challenge design, not a source-standardized protocol. Repeat landing or bite protection after each challenge and use retained active ingredient or release only as supporting evidence.",
       "source_record_ids": [
-        "human_repellent_guidance:who:2009.4",
         "human_repellent_guidance:epa:810.3700",
         "human_repellent_guidance:pubmed:26811157"
       ]
@@ -729,7 +724,7 @@
         ],
         "optional": ["selection response", "common garden", "kdr", "pyrethroid", "marker"]
       },
-      "answer": "Physiological resistance requires a repeatable inherited reduction in effect under standardized dose or air concentration, ideally supported by selection response, common-garden offspring, and physiological or genetic evidence. Ordinary avoidance is the intended behavioral response; reduced sensitivity is a phenotype but is not automatically inherited resistance. Pyrethroid kdr status did not eliminate clothing repellency in one comparison, while thymol selection produced lasting life-history changes. Insecticide resistance and repellent response therefore cannot be assumed equivalent across compounds, formulations, routes, populations, or doses.",
+      "answer": "The two cited studies do not supply a universal definition of physiological resistance to a repellent. As an operational decision rule for product R&D, do not call reduced sensitivity resistance unless a standardized dose or air concentration produces a repeatable inherited reduction in effect, ideally supported by selection response, common-garden offspring, and physiological or genetic evidence. That is an R&D decision rule, not a universal definition established by these papers. Ordinary avoidance is the intended behavioral response, and reduced sensitivity is a phenotype that is not automatically inherited resistance. In the narrow cited examples, pyrethroid kdr status did not eliminate clothing repellency, while thymol selection produced lasting life-history changes. Insecticide resistance and repellent response cannot be assumed equivalent across compounds, formulations, routes, populations, or doses.",
       "source_record_ids": ["openalex:W4413344516", "openalex:W4299723530"]
     },
     {

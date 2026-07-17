@@ -32,8 +32,8 @@ def build_human_repellent_testing_guidance_records(
                 "perspiration and abrading, rubbing, touching, or wetting the treated area, so "
                 "the baseline protocol does not itself establish performance after those stresses."
             ),
-            "url": "https://nepis.epa.gov/Exe/ZyPURL.cgi?Dockey=P100LBO3.TXT",
-            "locator": "https://nepis.epa.gov/Exe/ZyPURL.cgi?Dockey=P100LBO3.TXT#OPPTS-810.3700-subject-preparation-and-complete-protection-time",
+            "url": "https://www.epa.gov/system/files/documents/2023-12/1d.-oppts-810.3700-guidelines-july-7-2010.pdf",
+            "locator": "https://www.epa.gov/system/files/documents/2023-12/1d.-oppts-810.3700-guidelines-july-7-2010.pdf#page=11",
             "license": "United States government publication",
             "source_kind": "official_guideline",
         },

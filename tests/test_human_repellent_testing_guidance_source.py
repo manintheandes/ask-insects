@@ -47,6 +47,18 @@ class HumanRepellentTestingGuidanceSourceTests(unittest.TestCase):
                 self.assertNotIn("config/", record.provenance.locator)
                 self.assertEqual(record.provenance.source_url, record.url)
 
+        epa = next(
+            record
+            for record in records
+            if record.record_id == "human_repellent_guidance:epa:810.3700"
+        )
+        self.assertEqual(
+            epa.url,
+            "https://www.epa.gov/system/files/documents/2023-12/"
+            "1d.-oppts-810.3700-guidelines-july-7-2010.pdf",
+        )
+        self.assertEqual(epa.provenance.locator, f"{epa.url}#page=11")
+
     def test_ingest_installs_the_three_exact_guidance_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
