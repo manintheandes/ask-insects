@@ -10,19 +10,14 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now, write_json
+from askinsects.builder import DEFAULT_ARTIFACT_DIR, utc_now
+from askinsects.incremental_metadata import update_source_metadata_incrementally
 from askinsects.index import SourceIndex
 from askinsects.ingest_runner import run_source_ingest
 from askinsects.sources.human_repellent_testing_guidance import (
     HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,
     build_human_repellent_testing_guidance_records,
 )
-
-
-def _read_json(path: Path, default: object) -> object:
-    if not path.exists():
-        return default
-    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def ingest_human_repellent_testing_guidance(
@@ -43,41 +38,32 @@ def ingest_human_repellent_testing_guidance(
         retrieved_at=retrieved,
         persist_gap_records=True,
     )
-    summary = index.summary()
-    source_counts = {
-        row["source"]: int(row["n"])
-        for row in index.sql(
-            "select source, count(*) as n from records group by source order by source",
-            limit=4000,
-        )
-    }
+    installed_record_count = int(outcome["record_count"])
+    with index.connect() as connection:
+        installed_lane_counts = {
+            str(row["lane"]): int(row["n"])
+            for row in connection.execute(
+                "select lane, count(*) as n from records where source=? group by lane",
+                (HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,),
+            ).fetchall()
+        }
     source_payload = {
         "source": HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,
-        "record_count": source_counts.get(HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID, 0),
+        "lane": "guidance",
+        "lane_counts": installed_lane_counts,
+        "record_count": installed_record_count,
         "retrieved_at": retrieved,
         "refresh_failed": bool(outcome["refresh_failed"]),
         "method": "reviewed exact official guidance and peer-reviewed source URLs",
     }
-    for filename in ("source_status.json", "source_receipt.json"):
-        path = artifact_dir / filename
-        payload = _read_json(path, {})
-        if not isinstance(payload, dict):
-            payload = {}
-        sources = payload.get("sources")
-        if isinstance(sources, dict):
-            sources[HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID] = source_payload
-        else:
-            if not isinstance(sources, list):
-                sources = []
-            if HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID not in sources:
-                sources.append(HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID)
-        payload["sources"] = sources
-        payload["source_counts"] = source_counts
-        payload["record_count"] = summary["record_count"]
-        payload["species_count"] = summary["species_count"]
-        payload["lanes"] = summary["lanes"]
-        payload[HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID] = source_payload
-        write_json(path, payload)
+    update_source_metadata_incrementally(
+        artifact_dir,
+        source_id=HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,
+        default_lane="guidance",
+        installed_record_count=installed_record_count,
+        installed_lane_counts=installed_lane_counts,
+        source_payload=source_payload,
+    )
     return {**outcome, "artifact_dir": artifact_dir.as_posix()}
 
 

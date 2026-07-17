@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from askinsects.index import SourceIndex
 from askinsects.sources.human_repellent_testing_guidance import (
@@ -48,21 +50,42 @@ class HumanRepellentTestingGuidanceSourceTests(unittest.TestCase):
     def test_ingest_installs_the_three_exact_guidance_records(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
-            result = ingest_human_repellent_testing_guidance(
-                artifact_dir=artifact_dir,
-                retrieved_at="2026-07-17T00:00:00Z",
-            )
+            with (
+                patch.object(
+                    SourceIndex,
+                    "summary",
+                    side_effect=AssertionError("full index summary is not allowed"),
+                ),
+                patch.object(
+                    SourceIndex,
+                    "sql",
+                    side_effect=AssertionError("broad index SQL is not allowed"),
+                ),
+            ):
+                result = ingest_human_repellent_testing_guidance(
+                    artifact_dir=artifact_dir,
+                    retrieved_at="2026-07-17T00:00:00Z",
+                )
             index = SourceIndex(artifact_dir / "source_index.sqlite")
             with index.connect() as connection:
                 rows = connection.execute(
                     "select title, url from records where source=? order by record_id",
                     (HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,),
                 ).fetchall()
+            status = json.loads(
+                (artifact_dir / "source_status.json").read_text(encoding="utf-8")
+            )
 
         self.assertTrue(result["ok"])
         self.assertEqual(len(rows), 3)
         self.assertTrue(all(row["title"] for row in rows))
         self.assertTrue(all(str(row["url"]).startswith("https://") for row in rows))
+        self.assertEqual(
+            status["source_counts"][HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID],
+            3,
+        )
+        self.assertEqual(status["record_count"], 3)
+        self.assertEqual(status["lanes"]["guidance"], 3)
 
 
 if __name__ == "__main__":
