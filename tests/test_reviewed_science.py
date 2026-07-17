@@ -206,6 +206,43 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIn("Compare naive and pre-exposed flies", answer["answer"])
                     self.assertIn("does not prove long-term field persistence", answer["answer"])
 
+    def test_swd_choice_controls_cover_solvent_airflow_and_locomotor_confounds(self):
+        record_ids = (
+            "swd:openalex_literature:openalex:W4411730655",
+            "swd:openalex_literature:openalex:W4213332511",
+            "swd_olfaction_literature:pubmed:26486360",
+            "swd:openalex_literature:openalex:W3199560580",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator=f"raw/swd.json#works/{record_id.rsplit(':', 1)[-1]}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                "For an SWD choice assay, what controls separate odor repellency "
+                "from solvent, airflow, or impaired locomotion?",
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertTrue(answer["ok"])
+        self.assertIn("solvent", answer["answer"].lower())
+        self.assertIn("airflow", answer["answer"].lower())
+        self.assertIn("locomot", answer["answer"].lower())
+        self.assertEqual(
+            {item["record_id"] for item in answer["evidence"]},
+            set(record_ids),
+        )
+
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

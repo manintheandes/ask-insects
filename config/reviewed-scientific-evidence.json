@@ -144,8 +144,13 @@
         ],
         "optional": ["solvent", "side", "rotate", "total eggs", "no choice", "oviposition"]
       },
-      "answer": "Use a matched untreated or solvent control, randomize or rotate treatment side, run independent biological replicates, and standardize fly age, mating and feeding state plus substrate condition. Add total eggs or a matched no-choice endpoint so reallocation between sides is not mistaken for suppression of overall oviposition. More eggs on the control side does not rule out toxicity or reduced fecundity, and a two-choice laboratory result does not prove field efficacy.",
-      "source_record_ids": ["swd:openalex_literature:openalex:W4411730655"]
+      "answer": "Use both a matched untreated control and a solvent-only control. Match airflow direction and speed, ventilation, source position, and release rate between sides; run a clean-air sham, randomize or reverse treatment side and order, and use independent biological replicates. To distinguish directed odor avoidance from impaired movement, separately measure heading or zone choice alongside flight or walking speed, total distance, immobility, takeoff, knockdown, survival, and recovery in matched clean air. Preserve total eggs or a matched no-choice fecundity endpoint so reallocation between sides is not mistaken for reduced oviposition. Standardize age, sex, mating, feeding, prior egg laying, substrate condition, and circadian time. Selective orientation away from the odor with normal clean-air locomotion supports repellency; slowing or immobility in both settings supports impairment instead. A two-choice laboratory result still does not prove field crop protection.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W4411730655",
+        "swd:openalex_literature:openalex:W4213332511",
+        "swd_olfaction_literature:pubmed:26486360",
+        "swd:openalex_literature:openalex:W3199560580"
+      ]
     },
     {
       "id": "swd-olfactometer-claim-boundary",
