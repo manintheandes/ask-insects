@@ -401,13 +401,13 @@
       "origin": "scientist-rd-workflow",
       "holdout": false,
       "why_realistic": "Blood-feeding state can change host-seeking enough to confound repellent assays.",
-      "expected_behavior": "Describe the time-dependent suppression and distinguish early abdominal-distension effects from later humoral or neuropeptide signaling.",
-      "truth_source": "Independent review of the NPYLR1 functional paper, PMCID PMC3794971, and its hosted dissertation record.",
+      "expected_behavior": "Distinguish immediate abdominal-distention inhibition from oocyte-development and candidate neuropeptide signaling without assigning an unsupported fixed duration to the early phase.",
+      "truth_source": "Independent review of the two 1979 primary host-seeking studies and the NPYLR1 functional paper, PMCID PMC3794971.",
       "truth_packet": {
         "required_claims": [
-          "Female Aedes aegypti normally suppress host seeking for multiple days after a blood meal and resume after the gonotrophic cycle or egg laying.",
-          "Evidence distinguishes an early approximately 24-hour abdominal-distension effect from later humoral or neuropeptide-associated suppression.",
-          "Assays should standardize feeding status and time since feeding."
+          "Primary Aedes aegypti studies distinguish immediate abdominal-distention inhibition from a haemolymph-borne inhibitory factor during oocyte development.",
+          "Later genetic work describes three days of post-blood-meal suppression and treats Head Peptide-I as a candidate signal without proving that NPYLR1 alone is required.",
+          "Assays should standardize feeding status, time since feeding, abdominal distention, egg-development state, and mating or insemination state."
         ],
         "forbidden_claims": [
           "One receptor alone explains the entire post-blood-meal state.",
@@ -419,11 +419,25 @@
         ],
         "sources": [
           {
-            "title": "The Neuropeptide Regulation of Host-Seeking Behavior in Aedes aegypti Mosquitoes",
-            "source_id": "aedes_literature_openalex",
-            "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_008.json#works/W2344416877",
-            "public_url": "https://doi.org/10.48496/m467-t235",
-            "supports": "The hosted dissertation covers host seeking through the gonotrophic cycle and describes early distension and later humoral hypotheses."
+            "title": "Abdominal distention terminates subsequent host-seeking behaviour of Aedes aegypti following a blood meal",
+            "source_id": "aedes_primary_behavior_evidence",
+            "locator": "https://www.sciencedirect.com/science/article/abs/pii/0022191079900738#preview-section-abstract",
+            "public_url": "https://doi.org/10.1016/0022-1910(79)90073-8",
+            "supports": "The primary study establishes immediate host-seeking inhibition from abdominal distention and implicates anterior abdominal stretch receptors without assigning a universal 24-hour duration."
+          },
+          {
+            "title": "Humoral inhibition of host-seeking in Aedes aegypti during oöcyte maturation",
+            "source_id": "aedes_primary_behavior_evidence",
+            "locator": "https://www.sciencedirect.com/science/article/abs/pii/0022191079900489#preview-section-abstract",
+            "public_url": "https://doi.org/10.1016/0022-1910(79)90048-9",
+            "supports": "The primary study separates egg development from a blood meal and implicates a haemolymph-borne inhibitory factor during oocyte maturation."
+          },
+          {
+            "title": "Functional and Genetic Characterization of Neuropeptide Y-Like Receptors in Aedes aegypti",
+            "source_id": "aedes_primary_behavior_evidence",
+            "locator": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3794971/#abstract1",
+            "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3794971/",
+            "supports": "The genetic study describes three days of post-blood-meal suppression, identifies Head Peptide-I as a candidate signal, and shows that NPYLR1 was not required for the in-vivo behavioral inhibition."
           }
         ]
       }
@@ -437,7 +451,7 @@
       "holdout": false,
       "why_realistic": "Target selection requires distinguishing receptor binding from an in-vivo requirement for behavior.",
       "expected_behavior": "Answer no and explain the binding-versus-necessity distinction using the null-mutant result.",
-      "truth_source": "Independent review of PMCID PMC3794971 and hosted OpenAlex work W2344416877.",
+      "truth_source": "Independent review of the exact NPYLR1 primary paper, PMCID PMC3794971.",
       "truth_packet": {
         "required_claims": [
           "NPYLR1 can respond to Head Peptide-I, but NPYLR1 null mutants still showed normal post-blood-meal host-seeking suppression.",
@@ -453,11 +467,11 @@
         ],
         "sources": [
           {
-            "title": "The Neuropeptide Regulation of Host-Seeking Behavior in Aedes aegypti Mosquitoes",
-            "source_id": "aedes_literature_openalex",
-            "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_008.json#works/W2344416877",
-            "public_url": "https://doi.org/10.48496/m467-t235",
-            "supports": "The hosted dissertation reports that NPYLR1 null mutants retained normal host-seeking suppression after a blood meal."
+            "title": "Functional and Genetic Characterization of Neuropeptide Y-Like Receptors in Aedes aegypti",
+            "source_id": "aedes_primary_behavior_evidence",
+            "locator": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3794971/#abstract1",
+            "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3794971/",
+            "supports": "The primary paper reports that NPYLR1 null mutants retained normal host-seeking suppression after a blood meal despite NPYLR1 responding to Head Peptide-I."
           }
         ]
       }
@@ -680,7 +694,7 @@
       "truth_source": "Independent review of PMCID PMC9866038 and DOI 10.3390/life13010141.",
       "truth_packet": {
         "required_claims": [
-          "In the cited Aedes aegypti test, the optimized 10 percent citronella nanostructured-lipid formulation extended measured repellency to about four hours compared with the free-oil formulation.",
+          "In Table 8 of the cited Aedes aegypti test, F3 averaged 4.0 +/- 0.0 hours of protection in six volunteers, while F1 free citronella oil in the same emulsion base averaged 0.3 +/- 0.5 hours.",
           "The study also measured release and skin permeation, but it did not establish protection duration across sweat, washing, abrasion, varied climates, or natural disease transmission."
         ],
         "forbidden_claims": [
@@ -694,10 +708,10 @@
         "sources": [
           {
             "title": "Development of a Nanotechnology Matrix-Based Citronella Oil Insect Repellent to Obtain a Prolonged Effect and Evaluation of the Safety and Efficacy",
-            "source_id": "aedes_literature_openalex",
-            "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_030.json#works/W4313493759",
+            "source_id": "aedes_primary_behavior_evidence",
+            "locator": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9866038/#life-13-00141-t008",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9866038/",
-            "supports": "The study compared free and nanocarrier citronella formulations, measured release and permeation, and reported formulation-specific Aedes protection time."
+            "supports": "Table 8 reports the exact formulation-specific Aedes protection times for F1 and F3 in six volunteers; the paper separately reports release and permeation measurements."
           }
         ]
       }
@@ -1485,7 +1499,7 @@
       "holdout": false,
       "why_realistic": "A new screening program needs one high-information experiment before committing to a compound library.",
       "expected_behavior": "Correct the stale premise that general DBM host-finding evidence is absent, identify the candidate-specific contact-versus-non-contact causal chain as the next high-value gap, and propose a controlled experiment.",
-      "truth_source": "Independent review of exact DBM host-finding, oviposition, citronella, and field-damage studies.",
+      "truth_source": "Independent review of exact DBM host-finding, antennal-response, oviposition, citronella, and field-damage studies.",
       "truth_packet": {
         "required_claims": [
           "The general host-finding baseline is not absent: direct Plutella studies already link Brassica odor to orientation and landing, measure oviposition, and connect field treatments to adult, larval, and damage endpoints.",
@@ -1514,6 +1528,13 @@
             "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W2114561940.json#jsonpath=$.work",
             "public_url": "https://doi.org/10.1093/jisesa/ieu113",
             "supports": "Direct DBM evidence already links host odor orientation, landing, mixed cropping, fecundity, and oviposition."
+          },
+          {
+            "title": "Electrophysiological Responses and Field Attractants of Plutella xylostella Adults to Volatiles from Brassica oleracea",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W4409241407.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1021/acs.jafc.5c03182",
+            "supports": "The 2025 study identifies eight antennally active broccoli volatiles and tests blended attractants in field traps; it supports that baseline claim without making it a repellency result."
           },
           {
             "title": "The effectiveness of citronella oil to control main pest on cabbage Plutella xylostella in the field",

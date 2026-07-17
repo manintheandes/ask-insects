@@ -155,6 +155,8 @@ Hosted Ask Insects uses the same source lanes. The difference is location: parse
 
 `human_repellent_testing_guidance` maps the exact WHO human-skin mosquito-repellent guideline, US EPA OPPTS 810.3700, and the PubMed-indexed wash-in and wash-off review. Its records point directly to the original public guidance page, EPA document, or PubMed abstract. The lane supports durability test design and interpretation boundaries; it does not provide product-specific protection-time evidence.
 
+`aedes_primary_behavior_evidence` maps four human-reviewed primary-source records to their original abstract, article, or table. It separates immediate abdominal-distention inhibition from humoral inhibition during oocyte maturation, preserves the NPYLR1 null-mutant boundary, and cites the exact citronella protection-time values in Table 8. The lane does not infer a universal 24-hour post-blood-meal phase or extend one formulation study to general human-protection durability.
+
 Hosted GBIF and iNaturalist ingests stage a copy of the active artifact directory, fetch into the staging copy, replace only the matching source rows in SQLite, write receipts, and activate the staged directory only after the refresh succeeds. This keeps the old server database readable during long pulls.
 
 ## Genomics
