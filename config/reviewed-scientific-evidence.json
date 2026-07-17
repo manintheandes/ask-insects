@@ -618,6 +618,21 @@
       "source_record_ids": ["openalex:W3044645851"]
     },
     {
+      "id": "aedes-individual-human-odor-attractiveness",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 40,
+        "phrases": ["skin-derived carboxylic acids", "human odor donors", "mosquito magnet"],
+        "required_any": [
+          ["human odor", "human-odor", "skin odor", "skin-odor", "body odor", "odor donor", "odor donors", "people", "person"],
+          ["carboxylic acid", "carboxylic acids", "skin acid", "skin acids", "individual attraction", "donor consistency", "attractiveness", "attraction differences"]
+        ],
+        "optional": ["nylon", "stocking", "months", "years", "validation cohort", "ionotropic receptor", "ionotropic-receptor", "ir8a", "ir25a", "ir76b", "mutant", "mutants"]
+      },
+      "answer": "Female Aedes aegypti showed stable, large differences in attraction to odor collected on nylon sleeves worn by the same people repeatedly over months to years. More-attractive donors tended to have higher abundances of several skin-derived carboxylic acids, and a separate validation cohort reproduced the overall association while retaining individual exceptions. Mosquitoes lacking ionotropic-receptor co-receptors showed lower overall attraction to human odor but still distinguished relatively high- from low-attractiveness donors, so those receptors and acids do not by themselves explain the whole preference. Treat donor identity and sampling day as assay variables: repeat collections, balance donor order, include multiple donors, and keep odor-sample choice separate from landing, biting, and protection endpoints. The acid result is an association, not proof that one acid causes the complete phenotype or that changing it will create an effective repellent.",
+      "source_record_ids": ["aedes_olfaction_literature:pubmed:36261039"]
+    },
+    {
       "id": "aedes-thermal-infrared-integration",
       "species_ids": ["aedes_aegypti"],
       "match": {

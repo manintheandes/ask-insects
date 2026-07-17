@@ -617,6 +617,48 @@ class AnswerTests(unittest.TestCase):
         self.assertTrue(answer["ok"])
         self.assertEqual(answer["evidence"][0]["record_id"], evidence.record_id)
 
+    def test_multi_clause_literature_fallback_rejects_weak_constraint_coverage(self):
+        question = (
+            "What do repeated human odor samples, skin acids, and receptor mutants "
+            "tell us about stable differences in female Aedes aegypti attraction?"
+        )
+        weak_record = EvidenceRecord(
+            record_id="test:weak-human-attraction",
+            lane="literature",
+            source="mosquito_v1_fixtures",
+            title="Mosquito attraction metadata",
+            text="A metadata record mentioning human attraction.",
+            species="Aedes aegypti",
+            url="https://example.org/weak-human-attraction",
+            media_url=None,
+            provenance=Provenance(
+                source_id="mosquito_v1_fixtures",
+                locator="test#weak-human-attraction",
+                retrieved_at="2026-07-16T00:00:00Z",
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            with (
+                patch(
+                    "askinsects.answer.build_reviewed_science_answer",
+                    return_value=None,
+                ),
+                patch.object(SourceIndex, "search", return_value=[weak_record]),
+                patch.object(
+                    SourceIndex,
+                    "search_literature_fulltext",
+                    return_value=[],
+                ),
+            ):
+                answer = answer_question(question, artifact_dir=artifact_dir)
+
+        self.assertFalse(answer["ok"])
+        self.assertIn("constraints", answer["source_gap"]["reason"].casefold())
+
     def test_requested_species_recognizes_diamondback_moth_aliases(self):
         for question in (
             "How does Plutella xylostella respond to this odor?",

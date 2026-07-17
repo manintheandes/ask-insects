@@ -88,6 +88,45 @@ class IndexTests(unittest.TestCase):
     def test_search_fts_budget_is_eight_seconds(self):
         self.assertEqual(SEARCH_TIMEOUT_SECONDS, 8.0)
 
+    def test_search_literature_fulltext_fails_closed_when_budget_expires(self):
+        from askinsects.sources.literature import FullTextUnit
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            provenance = Provenance(
+                source_id="aedes_literature_openalex",
+                locator="raw/literature/page.json#W1",
+                retrieved_at="2026-05-23T00:00:00Z",
+            )
+            index.upsert_records(
+                [sample_record(record_id="openalex:W1", lane="literature")]
+            )
+            index.upsert_fulltext_units(
+                [
+                    FullTextUnit(
+                        unit_id=f"openalex:W1:fulltext:{row}",
+                        record_id="openalex:W1",
+                        source="aedes_literature_openalex",
+                        unit_index=row,
+                        text=f"common mosquito odor evidence unit {row}",
+                        url="https://example.org/fulltext",
+                        license="CC BY",
+                        provenance=provenance,
+                    )
+                    for row in range(500)
+                ]
+            )
+
+            with mock.patch("askinsects.index.SEARCH_TIMEOUT_SECONDS", 0), mock.patch(
+                "askinsects.index.SEARCH_PROGRESS_STEPS",
+                1,
+            ):
+                rows = index.search_literature_fulltext("common", limit=5)
+
+            self.assertEqual(rows, [])
+            self.assertTrue(index.last_search_timed_out)
+
     def test_search_fts_budget_resets_timeout_state_for_every_call(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
