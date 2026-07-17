@@ -625,6 +625,30 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("heading", "upwind", "clean air", "speed", "immobility", "mating"),
             ),
             (
+                "Our flight mill logged one spotted wing drosophila traveling 283 meters in 24 hours, while most flies never initiated flight. Can we use 283 meters as the minimum width of a crop-repellent buffer, or what does the free-flight comparison actually let us infer?",
+                "swd:openalex_literature:openalex:W4290861466",
+                (
+                    "No.",
+                    "401 adults",
+                    "15.7%",
+                    "18.0%",
+                    "13.4%",
+                    "283.03 m",
+                    "not a design distance",
+                ),
+            ),
+            (
+                "Can the longest tethered SWD flight define field treatment spacing, or does the free-flight chamber show that the assay changes the result?",
+                "swd:openalex_literature:openalex:W4290861466",
+                (
+                    "one Drosophila suzukii",
+                    "14.0%",
+                    "36.7 seconds",
+                    "11.7 seconds",
+                    "mark-release-recapture",
+                ),
+            ),
+            (
                 "Should I interpret SWD adult oviposition choices as protein-to-carbohydrate preference, or as substrate hardness?",
                 "swd_traits:pubmed:28592264",
                 ("lower protein", "not nutritional composition", "hardness"),

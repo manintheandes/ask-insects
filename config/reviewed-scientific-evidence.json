@@ -1,6 +1,6 @@
 {
   "schema_version": "ask-insects-reviewed-science.v1",
-  "last_reviewed": "2026-07-16",
+  "last_reviewed": "2026-07-17",
   "species": [
     {
       "id": "drosophila_suzukii",
@@ -469,6 +469,21 @@
         "swd:openalex_literature:openalex:W4213332511",
         "swd_olfaction_literature:pubmed:26486360"
       ]
+    },
+    {
+      "id": "swd-laboratory-flight-to-field-translation",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 45,
+        "phrases": ["flight mill", "tethered flight", "free-flight comparison", "flight distance"],
+        "required_any": [
+          ["flight mill", "tethered", "free flight", "free-flight", "flight distance", "flight capacity", "283 meter", "283 meters", "283 m"],
+          ["field", "buffer", "width", "spacing", "dispersal", "infer", "inference", "compare", "comparison", "translate"]
+        ],
+        "optional": ["initiated flight", "propensity", "crop", "repellent", "plume", "maximum", "minimum"]
+      },
+      "answer": "No. The 283.03 m result is the maximum distance recorded from one Drosophila suzukii that flew on a tethered flight mill during an approximately 24-hour laboratory assay; it is not a measured field dispersal distance, plume reach, or crop-protection threshold. Across both apparatuses, the study tested 401 adults and only 15.7% initiated flight: 18.0% in the free-flight chamber and 13.4% on the tethered mill. Apparatus changed behavior. Summer morphs were reported as 14.0% more likely to initiate flight in the chamber than on the mill, and mean first-flight duration was 36.7 seconds in free flight versus 11.7 seconds on the mill. The defensible inference is that tethering and assay geometry materially affect estimated flight propensity and duration, so a single mill maximum cannot define even a minimum field buffer. Set buffer width from direct field evidence that measures movement or mark-release-recapture, plume concentration and persistence across the crop edge, immigration, and fruit infestation or damage at candidate distances. Until those measurements exist, 283.03 m is a laboratory capacity outlier, not a design distance.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W4290861466"]
     },
     {
       "id": "swd-crop-and-nontarget-safety",
