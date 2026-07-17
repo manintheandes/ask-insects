@@ -217,12 +217,12 @@
       "id": "aedes-blood-meal-internal-state",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["blood meal", "post-blood-meal", "internal state"],
+        "phrases": ["blood meal", "post-blood-meal", "internal state", "after feeding", "female feeds", "seeking hosts"],
         "required_any": [
-          ["blood meal", "bloodmeal", "blood fed", "blood-fed"],
-          ["host seeking", "suppression", "suppress", "internal state", "gonotrophic"]
+          ["blood meal", "bloodmeal", "blood fed", "blood-fed", "feeds", "after feeding"],
+          ["host seeking", "seeking hosts", "seek hosts", "stops seeking", "suppression", "suppress", "internal state", "gonotrophic"]
         ],
-        "optional": ["abdominal distension", "neuropeptide", "egg laying", "time since feeding"]
+        "optional": ["abdominal distension", "abdominal swelling", "swelling", "neuropeptide", "egg laying", "time since feeding", "24 hours"]
       },
       "answer": "Female Aedes aegypti suppress host seeking through at least two experimentally distinct processes after a blood meal. One primary study showed immediate inhibition from abdominal distention and implicated anterior abdominal stretch receptors, but it did not establish a universal 24-hour duration. A second study found a haemolymph-borne inhibitory factor during oocyte development, and later genetic work describes three days of post-blood-meal suppression while treating Head Peptide-I as a candidate signal. Standardize feeding status, time since feeding, abdominal distention, egg-development state, and mating or insemination state in repellent assays. These studies do not show that one receptor or one post-feeding time point explains the entire gonotrophic cycle.",
       "source_record_ids": [

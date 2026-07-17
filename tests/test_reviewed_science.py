@@ -693,6 +693,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "After an Aedes aegypti female feeds, is abdominal swelling the whole reason she stops seeking hosts for the next 24 hours?",
+                "aedes_primary_behavior:pubmed:544697",
+                (
+                    "immediate inhibition",
+                    "haemolymph-borne",
+                    "three days",
+                    "universal 24-hour duration",
+                ),
+            ),
+            (
                 "Is NPYLR1 required for post-blood-meal host-seeking suppression in Aedes aegypti?",
                 "aedes_primary_behavior:pmc:PMC3794971",
                 ("null mutants", "not required"),
