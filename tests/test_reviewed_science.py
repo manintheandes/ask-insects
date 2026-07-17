@@ -206,6 +206,45 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIn("Compare naive and pre-exposed flies", answer["answer"])
                     self.assertIn("does not prove long-term field persistence", answer["answer"])
 
+    def test_aedes_spatial_repellency_is_separated_from_knockdown_and_mortality(self):
+        record_id = "openalex:W3048721146"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator="raw/aedes.json#works/W3048721146",
+                    )
+                ]
+            )
+            questions = (
+                "If transfluthrin-treated material reduces Aedes aegypti landings, "
+                "what measurements would tell me whether I am seeing spatial "
+                "repellency, knockdown, or mortality?",
+                "How should I separate airborne Aedes avoidance from knockdown and toxicity?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertEqual(answer["evidence"][0]["record_id"], record_id)
+                    for fragment in (
+                        "paired non-contact",
+                        "mesh barrier",
+                        "1-minute intervals",
+                        "30 minutes",
+                        "contact excitation",
+                        "escaped and remaining",
+                        "24-hour mortality",
+                        "knockdown can suppress escape",
+                    ):
+                        self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
     def test_swd_choice_controls_cover_solvent_airflow_and_locomotor_confounds(self):
         record_ids = (
             "swd:openalex_literature:openalex:W4411730655",

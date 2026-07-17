@@ -292,14 +292,14 @@
       "id": "aedes-vapor-avoidance-versus-toxicity",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["vapor repellency", "airborne repellency", "vapor-active"],
+        "phrases": ["vapor repellency", "airborne repellency", "spatial repellency", "vapor-active"],
         "required_any": [
           ["vapor", "vapour", "airborne", "spatial"],
           ["knockdown", "toxicity", "toxic", "mortality", "impaired"]
         ],
         "optional": ["avoidance", "occupancy", "escape", "voluntary", "recovery"]
       },
-      "answer": "Measure behavioral avoidance separately from knockdown and delayed mortality at the same dose and exposure duration. The cited transfluthrin study recorded spatial escape, contact escape, knockdown, and 24-hour mortality, showing why escape alone is insufficient. Reduced occupancy is not evidence of voluntary repellency if mosquitoes are impaired. Keep voluntary movement, locomotor impairment, reversible knockdown, and death as separate outcomes.",
+      "answer": "Use paired non-contact treatment and carrier-only control chambers with a mesh barrier that prevents surface contact. Record escape at 1-minute intervals for 30 minutes and compare escape-time curves; that is the direct behavioral measure of spatial avoidance in the cited assay. Run a matched contact format to separate contact excitation from the non-contact response. At 30 minutes, record knockdown separately among escaped and remaining mosquitoes, then follow recovery and 24-hour mortality. Interpret fewer landings or less escape as repellency only when non-contact avoidance occurs while mosquitoes remain behaviorally capable: knockdown can suppress escape and mimic a behavioral reduction. Keep spatial avoidance, contact excitation, reversible knockdown, and death as separate endpoints.",
       "source_record_ids": ["openalex:W3048721146"]
     },
     {
