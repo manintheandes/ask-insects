@@ -1,0 +1,2 @@
+# Normal Ask Insects questions are one hosted lookup and are latency-sensitive.
+model_reasoning_effort = "low"

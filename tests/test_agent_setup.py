@@ -6,12 +6,19 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import tomllib
 import unittest
 
 from askinsects.agent_setup import REPO_SKILL_DIR, install_askinsects_skill, skill_manifest
 
 
 class AgentSetupTests(unittest.TestCase):
+    def test_project_defaults_normal_questions_to_low_reasoning(self):
+        config = tomllib.loads(Path(".codex/config.toml").read_text(encoding="utf-8"))
+
+        self.assertEqual(config["model_reasoning_effort"], "low")
+        self.assertNotIn("model", config)
+
     def test_repo_instructions_make_the_hosted_call_the_first_normal_action(self):
         source = Path("AGENTS.md").read_text(encoding="utf-8")
         text = " ".join(source.split())
@@ -39,6 +46,7 @@ class AgentSetupTests(unittest.TestCase):
             "Script running with cell ID",
             "functions.wait",
             "same cell",
+            "sets trusted Ask Insects tasks to low reasoning",
             '// @exec: {"yield_time_ms": 30000, "max_output_tokens": 20000}',
             "not a second command",
             "Preserve canonical labels",
