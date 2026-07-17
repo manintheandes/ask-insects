@@ -239,12 +239,18 @@ class ReviewedScienceTests(unittest.TestCase):
                         "mesh barrier",
                         "1-minute intervals",
                         "30 minutes",
+                        "greater non-contact escape",
+                        "reduced escape can indicate knockdown",
                         "contact excitation",
                         "escaped and remaining",
                         "24-hour mortality",
                         "knockdown can suppress escape",
                     ):
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                    self.assertNotIn(
+                        "less escape as repellency",
+                        answer["answer"].casefold(),
+                    )
 
     def test_swd_choice_controls_cover_solvent_airflow_and_locomotor_confounds(self):
         record_ids = (
@@ -335,6 +341,8 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertIn("temperature and relative humidity", answer["answer"])
         self.assertIn("R&D design recommendations", answer["answer"])
         self.assertIn("does not provide a universal standard", answer["answer"])
+        self.assertIn("complete product-specific", answer["answer"])
+        self.assertIn("source gap", answer["answer"])
         self.assertEqual(
             {item["record_id"] for item in answer["evidence"]},
             set(record_ids),
@@ -413,11 +421,22 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "How should our volatile Aedes repellent program report source loading and exposure?",
-                ("R&D reporting recommendation", "not chemically measured", "did not directly measure"),
+                (
+                    "R&D reporting recommendation",
+                    "not chemically measured",
+                    "did not directly measure",
+                    "complete product-specific package",
+                    "source gap",
+                ),
             ),
             (
                 "Does a standard complete-protection-time test establish durability after UV and sweat?",
-                ("does not establish", "source gap", "R&D challenge design"),
+                (
+                    "WHO and EPA",
+                    "does not establish",
+                    "source gap",
+                    "R&D challenge design",
+                ),
             ),
             (
                 "When can we call reduced Aedes repellent sensitivity inherited resistance?",
@@ -854,7 +873,13 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "How long did the controlled-release citronella formulation protect people in the Aedes study?",
                 "aedes_primary_behavior:pmc:PMC9866038:table8",
-                ("4.0 +/- 0.0 hours", "0.3 +/- 0.5 hours", "six volunteers"),
+                (
+                    "4.0 +/- 0.0 hours",
+                    "0.3 +/- 0.5 hours",
+                    "Table 8 labels N=6",
+                    "Methods says that four formulations were evaluated on three participants",
+                    "sample size is unresolved",
+                ),
             ),
             (
                 "What direct plant-cue evidence identifies antennally active host volatiles in diamondback moth before repellent screening?",

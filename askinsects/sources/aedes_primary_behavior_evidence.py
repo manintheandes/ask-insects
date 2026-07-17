@@ -80,12 +80,15 @@ def build_aedes_primary_behavior_evidence_records(
                 "and Efficacy"
             ),
             "text": (
-                "Table 8 reports Aedes aegypti protection time for six volunteers. "
+                "Table 8 labels N=6 for its Aedes aegypti protection-time results, while "
+                "Methods says that four formulations were evaluated on three participants; "
+                "the human sample size is unresolved. "
                 "F3, a 10 percent total citronella oil formulation containing a 1:1 "
                 "mixture of free oil and citronella-loaded nanostructured lipid "
                 "carrier, averaged 4.0 +/- 0.0 hours. F1, 10 percent free citronella "
                 "oil in the same oil-in-water emulsion base, averaged 0.3 +/- 0.5 "
-                "hours. The paper also reports release and skin-permeation work."
+                "hours. The paper also reports thermal, mass-balance, and skin-permeation "
+                "work, but it does not directly measure volatile release rate."
             ),
             "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9866038/",
             "locator": (
