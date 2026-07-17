@@ -399,7 +399,27 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "When commensal growth is present, does SWD oviposition differ on 1% and 3% agar?",
                 "swd:openalex_literature:openalex:W3124252639",
-                ("1% agar", "3% agar", "no significant preference or aversion"),
+                (
+                    "1% agar",
+                    "3% agar",
+                    "Drosophila melanogaster",
+                    "Drosophila biarmipes",
+                    "laid more eggs",
+                    "no significant preference or aversion",
+                ),
+            ),
+            (
+                "Which dose, release, plume, and distance measurements are still missing from a complete Aedes spatial-repellent package?",
+                "insect_intelligence_programs:product:human_mosquito_repellent:readiness:formulation_delivery",
+                (
+                    "applied mass",
+                    "release rate",
+                    "airborne concentration",
+                    "source-to-mosquito distance",
+                    "carrier",
+                    "spatial-delivery",
+                    "incomplete",
+                ),
             ),
             (
                 "What did SWD raspberry trials show about 1-octen-3-ol aerosol puffers versus passive vials and release schedules?",
