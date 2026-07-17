@@ -15,7 +15,7 @@
     "title": "Seeded Aedes aegypti observation fixture in Brazil",
     "text": "A repo-local seeded observation fixture represents Aedes aegypti in Brazil for parser and answer-contract testing; it is not an external iNaturalist citation.",
     "species": "Aedes aegypti",
-    "url": null,
+    "url": "https://github.com/manintheandes/ask-insects/blob/45d43b02d3dc34ac5354252da5dceefacc321f3e/data/fixtures/mosquito_records.json#obs-aedes-aegypti-brazil-image",
     "media_url": null,
     "license": "repo-authored"
   },
@@ -65,7 +65,7 @@
     "title": "Culex pipiens inspection next steps",
     "text": "For Culex pipiens, inspect local observation seasonality, nearby standing-water habitat, and literature about bird-associated host choice before making intervention claims.",
     "species": "Culex pipiens",
-    "url": "docs/source-lanes.md#action-notes",
+    "url": "https://github.com/manintheandes/ask-insects/blob/45d43b02d3dc34ac5354252da5dceefacc321f3e/docs/source-lanes.md#action-notes",
     "media_url": null,
     "license": "repo-authored"
   }

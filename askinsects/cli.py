@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import argparse
+import html
 import json
 from pathlib import Path
+import re
 import sqlite3
 
 from .answer import answer_question
@@ -99,6 +101,84 @@ def cli_error(error: str, *, lane: str, artifact_dir: Path) -> dict[str, object]
     }
 
 
+def _public_source_url(item: dict[str, object], provenance: dict[str, object]) -> str:
+    for candidate in (
+        item.get("url"),
+        provenance.get("source_url"),
+        item.get("media_url"),
+    ):
+        source_url = str(candidate or "").strip()
+        if re.fullmatch(r"10\.\S+/\S+", source_url, flags=re.IGNORECASE):
+            source_url = f"https://doi.org/{source_url}"
+        if source_url.startswith(("https://", "http://")):
+            return source_url
+    return ""
+
+
+def _exact_provenance_rows(
+    payload: dict[str, object],
+) -> tuple[list[tuple[str, str, str, str]], list[str]]:
+    evidence = payload.get("evidence")
+    provenance_rows: list[tuple[str, str, str, str]] = []
+    issues: list[str] = []
+    if not isinstance(evidence, list) or not evidence:
+        if payload.get("ok") is True:
+            issues.append("the successful answer has no evidence records")
+        return provenance_rows, issues
+    for index, item in enumerate(evidence):
+        if not isinstance(item, dict):
+            issues.append(f"evidence item {index + 1} is not a source record")
+            continue
+        provenance = item.get("provenance")
+        if not isinstance(provenance, dict):
+            issues.append(f"evidence item {index + 1} has no provenance")
+            continue
+        source_id = str(provenance.get("source_id") or item.get("source") or "").strip()
+        locator = str(provenance.get("locator") or "").strip()
+        title = html.unescape(str(item.get("title") or "").strip())
+        title = re.sub(r"<[^>]+>", "", title).strip()
+        source_url = _public_source_url(item, provenance)
+        missing = [
+            label
+            for label, value in (
+                ("title", title),
+                ("public URL", source_url),
+                ("source ID", source_id),
+                ("locator", locator),
+            )
+            if not value
+        ]
+        if missing:
+            record_id = str(item.get("record_id") or source_id or index + 1)
+            issues.append(f"{record_id} is missing {', '.join(missing)}")
+            continue
+        row = (title, source_url, source_id, locator)
+        if row not in provenance_rows:
+            provenance_rows.append(row)
+    return provenance_rows, issues
+
+
+def _enforce_exact_answer_sources(payload: dict[str, object]) -> dict[str, object]:
+    if payload.get("ok") is not True:
+        return payload
+    _, issues = _exact_provenance_rows(payload)
+    if not issues:
+        return payload
+    return {
+        "ok": False,
+        "answer_shape": payload.get("answer_shape"),
+        "answer": "I do not see enough exact original-source evidence for this answer yet.",
+        "evidence": [],
+        "source_gap": {
+            "lane": "provenance",
+            "reason": (
+                "Every successful Ask Insects answer requires the exact source title, "
+                "public URL, source ID, and atomic locator. " + "; ".join(issues)
+            ),
+        },
+    }
+
+
 def _agent_final_answer(payload: dict[str, object]) -> str:
     lines = [str(payload.get("answer") or "")]
     source_gap = payload.get("source_gap")
@@ -106,23 +186,17 @@ def _agent_final_answer(payload: dict[str, object]) -> str:
         reason = str(source_gap.get("reason") or "").strip()
         if reason and reason.casefold() not in lines[0].casefold():
             lines.extend(("", f"Source gap: {reason}"))
-    evidence = payload.get("evidence")
-    provenance_rows: list[tuple[str, str]] = []
-    if isinstance(evidence, list):
-        for item in evidence:
-            if not isinstance(item, dict):
-                continue
-            provenance = item.get("provenance")
-            if not isinstance(provenance, dict):
-                continue
-            source_id = str(provenance.get("source_id") or item.get("source") or "").strip()
-            locator = str(provenance.get("locator") or "").strip()
-            pair = (source_id, locator)
-            if source_id and locator and pair not in provenance_rows:
-                provenance_rows.append(pair)
+    provenance_rows, _ = _exact_provenance_rows(payload)
     if provenance_rows:
         lines.extend(("", "Sources:"))
-        lines.extend(f"- `{source_id}`: `{locator}`" for source_id, locator in provenance_rows)
+        for title, source_url, source_id, locator in provenance_rows:
+            safe_title = title.replace("[", "\\[").replace("]", "\\]")
+            if source_url.startswith(("https://", "http://")):
+                lines.append(f"- [{safe_title}]({source_url})")
+            else:
+                lines.append(f"- {safe_title}")
+            lines.append(f"  Source ID: `{source_id}`")
+            lines.append(f"  Locator: `{locator}`")
     return "\n".join(lines)
 
 
@@ -882,6 +956,7 @@ def main(argv: list[str] | None = None) -> int:
                     lane=str(gap.get("lane", "mosquito_v1")),
                     artifact_dir=artifact_dir,
                 )
+        payload = _enforce_exact_answer_sources(payload)
         if args.answer_only:
             print(_agent_final_answer(payload))
         elif args.json:

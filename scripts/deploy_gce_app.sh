@@ -40,6 +40,10 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   printf 'ASK_INSECTS_TOKEN=%s\nASK_INSECTS_RELEASE_ID=%s\n' \
     '$TOKEN' '$RELEASE_ID' > '$DATA_DIR/.env'
   chmod 600 '$DATA_DIR/.env'
+  python3 '$RUNTIME_DIR/scripts/ingest_plutella_xylostella_literature.py' \
+    --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
+  python3 '$RUNTIME_DIR/scripts/ingest_human_repellent_testing_guidance.py' \
+    --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
   if [[ -e '$CURRENT_LINK' && ! -L '$CURRENT_LINK' ]]; then
     rm -rf '$CURRENT_LINK'
   fi

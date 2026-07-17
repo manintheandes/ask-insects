@@ -1,0 +1,69 @@
+from __future__ import annotations
+
+from pathlib import Path
+import tempfile
+import unittest
+
+from askinsects.index import SourceIndex
+from askinsects.sources.human_repellent_testing_guidance import (
+    HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,
+    build_human_repellent_testing_guidance_records,
+)
+from scripts.ingest_human_repellent_testing_guidance import (
+    ingest_human_repellent_testing_guidance,
+)
+
+
+class HumanRepellentTestingGuidanceSourceTests(unittest.TestCase):
+    def test_records_point_to_exact_original_guidance_and_review_sources(self):
+        records = build_human_repellent_testing_guidance_records(
+            retrieved_at="2026-07-17T00:00:00Z"
+        )
+
+        self.assertEqual(len(records), 3)
+        self.assertEqual(
+            {record.record_id for record in records},
+            {
+                "human_repellent_guidance:who:2009.4",
+                "human_repellent_guidance:epa:810.3700",
+                "human_repellent_guidance:pubmed:26811157",
+            },
+        )
+        for record in records:
+            with self.subTest(record_id=record.record_id):
+                self.assertEqual(
+                    record.source,
+                    HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,
+                )
+                self.assertEqual(
+                    record.provenance.source_id,
+                    HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,
+                )
+                self.assertTrue(record.title)
+                self.assertTrue(str(record.url).startswith("https://"))
+                self.assertTrue(record.provenance.locator.startswith("https://"))
+                self.assertNotIn("config/", record.provenance.locator)
+                self.assertEqual(record.provenance.source_url, record.url)
+
+    def test_ingest_installs_the_three_exact_guidance_records(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            result = ingest_human_repellent_testing_guidance(
+                artifact_dir=artifact_dir,
+                retrieved_at="2026-07-17T00:00:00Z",
+            )
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            with index.connect() as connection:
+                rows = connection.execute(
+                    "select title, url from records where source=? order by record_id",
+                    (HUMAN_REPELLENT_TESTING_GUIDANCE_SOURCE_ID,),
+                ).fetchall()
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(all(row["title"] for row in rows))
+        self.assertTrue(all(str(row["url"]).startswith("https://") for row in rows))
+
+
+if __name__ == "__main__":
+    unittest.main()

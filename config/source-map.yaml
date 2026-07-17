@@ -46,10 +46,10 @@ sources:
       - id: ask_insects_context_package
         config: config/insect-evidence-package.json
         schema_version: ask-insects-evidence-package.v3
-        package_version: 2026-07-14.7
-        release_artifact: public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json
-        release_artifact_sha256: e1a5a85fac387cfe55bb390fa29bd4d2c833086c125eb0d8938756c30f6e175d
-        release_content_sha256: 48f4013118f9f32ea4466790d0e4ff266db12d21c3a476c185986e85fbde8d55
+        package_version: 2026-07-17.1
+        release_artifact: public/evidence-packages/ask-insects-evidence-package-2026-07-17.1.json
+        release_artifact_sha256: 0020d1407c11b3284dc631ffc62a05d30dbbe0ed7840c31c7096ca23b57ac6d4
+        release_content_sha256: 7efdaa6f9713d8afd7d32402c4522eca3f445945531f5fad8c28b83a748541aa
         command: ask-insects context-package
         boundary: Generic public insect evidence package for any downstream tool; private experiments and results belong in a separate private system and cannot fill gaps in public evidence
         provenance_required: true
@@ -75,6 +75,56 @@ sources:
         - private_company_experiments_or_results
         - evaluation_case_specific_routing
         - unreviewed_mechanistic_or_commercial_claims
+  - id: plutella_xylostella_literature
+    name: Exact reviewed Plutella xylostella literature
+    source_type: public_api_metadata_curated_exact_works
+    boundary: Seven human-reviewed OpenAlex works that directly name Plutella xylostella or diamondback moth and cover host-finding olfaction and vision, Brassica volatiles and antennal responses, host choice and oviposition, semiochemical choice and field management, intercropping VOCs and crop damage, citronella laboratory and field endpoints, and adult diel locomotor behavior; each record preserves its original title, DOI, OpenAlex work ID, saved raw response, and exact focal-species label
+    query_plane: exact_openalex_work_ids_to_sqlite_literature_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/plutella_xylostella_literature
+    ingest_script: scripts/ingest_plutella_xylostella_literature.py
+    upstream_sources:
+      - openalex_exact_work_api
+      - original_doi_landing_pages
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: release_refresh_bounded
+    source_contract:
+      source_grade_now:
+        - exact_species_confirmed_in_title_or_abstract
+        - exact_original_title_and_doi
+        - saved_raw_openalex_work_response
+        - dedicated_plutella_xylostella_species_and_source_labels
+      not_claimed:
+        - complete_diamondback_moth_literature_coverage
+        - product_specific_repellent_efficacy
+        - unreviewed_cross_species_transfer
+  - id: human_repellent_testing_guidance
+    name: Exact human mosquito-repellent testing guidance and durability sources
+    source_type: reviewed_official_guidance_and_peer_reviewed_source
+    boundary: Exact WHO human-skin mosquito-repellent efficacy guidance, exact US EPA OPPTS 810.3700 human-skin repellent performance guidance, and the peer-reviewed PubMed-indexed wash-in and wash-off review, with stable original URLs and section or abstract locators; these sources support test design and durability boundaries, not product-specific protection claims
+    query_plane: reviewed_original_urls_to_sqlite_guidance_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_human_repellent_testing_guidance.py
+    upstream_sources:
+      - who_guideline
+      - us_epa_oppts_810_3700
+      - ncbi_pubmed
+    lanes:
+      - guidance
+    provenance_required: true
+    live_fetch: release_refresh_static_exact_urls
+    source_contract:
+      source_grade_now:
+        - exact_original_title
+        - exact_public_url
+        - exact_section_or_abstract_locator
+        - official_or_peer_reviewed_source_kind
+      not_claimed:
+        - product_specific_durability
+        - universal_regulatory_acceptance
+        - chemical_retention_as_a_substitute_for_bite_protection
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
     source_type: public_api_composite

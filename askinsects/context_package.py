@@ -59,11 +59,11 @@ DEFAULT_PUBLISHED_PACKAGE = _repository_or_packaged_resource(
     REPO_ROOT
     / "public"
     / "evidence-packages"
-    / "ask-insects-evidence-package-2026-07-14.7.json",
-    "ask-insects-evidence-package-2026-07-14.7.json",
+    / "ask-insects-evidence-package-2026-07-17.1.json",
+    "ask-insects-evidence-package-2026-07-17.1.json",
 )
 DEFAULT_PUBLISHED_PACKAGE_SHA256 = (
-    "e1a5a85fac387cfe55bb390fa29bd4d2c833086c125eb0d8938756c30f6e175d"
+    "0020d1407c11b3284dc631ffc62a05d30dbbe0ed7840c31c7096ca23b57ac6d4"
 )
 MAX_SELECTOR_LIMIT = 25
 MAX_SELECTOR_CANDIDATE_FRONTIER = 2_000
@@ -79,19 +79,19 @@ MAX_LIST_ITEMS = 10_000
 MAX_NESTING_DEPTH = 20
 PUBLIC_PROGRAM_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "c50c5715739214b59c1138d7b002c8f395be30ee/"
+    "45d43b02d3dc34ac5354252da5dceefacc321f3e/"
     "config/insect-intelligence-programs.json"
 )
 PUBLIC_CONTEXT_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "bcedc5a11f8b5dc474272254815ba8361111b16c/"
+    "96f4ec9821f2b57bd1ae03689d24065c24ce9b6f/"
     "config/insect-evidence-package.json"
 )
 PUBLIC_PROGRAM_CONFIG_SHA256 = (
-    "4952fe18397ffdc62036bdd62d68ffab5eb2b28b85cd1bcc565f539222867138"
+    "ceb0819081672494afbf91afa097a5077720eb90c357d84fde55e498f82ee792"
 )
 PUBLIC_CONTEXT_CONFIG_SHA256 = (
-    "a64203951ad771d7b5d6b6b8b59f58641a23c28e92a329152cd4dc891b91a0a0"
+    "d0c61ac1aa7b891958b1b730932cc174c2f301f432c7cae8f951abd5f878103a"
 )
 PACKAGE_FIELDS = frozenset(
     {

@@ -186,10 +186,10 @@ class WheelResourceTests(unittest.TestCase):
                         "context": "insect-evidence-package.json",
                         "program": "insect-intelligence-programs.json",
                         "program_ledger": "insect-intelligence-programs.json",
-                        "published": "ask-insects-evidence-package-2026-07-14.7.json",
+                        "published": "ask-insects-evidence-package-2026-07-17.1.json",
                     }:
                         raise SystemExit(f"installed defaults are wrong: {defaults!r}")
-                    if load_context_config()["package_version"] != "2026-07-14.7":
+                    if load_context_config()["package_version"] != "2026-07-17.1":
                         raise SystemExit("installed context config did not load")
                     if load_program_ledger(DEFAULT_PROGRAM_LEDGER)["schema_version"] != "insect-intelligence-programs.v1":
                         raise SystemExit("installed program ledger did not load")
@@ -199,7 +199,7 @@ class WheelResourceTests(unittest.TestCase):
                     if reviewed["schema_version"] != "ask-insects-reviewed-science.v1":
                         raise SystemExit("installed reviewed science catalog did not load")
                     published = load_published_context_package()
-                    if published["package_version"] != "2026-07-14.7":
+                    if published["package_version"] != "2026-07-17.1":
                         raise SystemExit("installed published release did not load")
                     print(json.dumps({"digests": actual, "defaults": defaults}, sort_keys=True))
                     """

@@ -28,6 +28,7 @@
         ],
         "sources": [
           {
+            "title": "Identification of potential mechanosensitive ion channels involved in texture discrimination during Drosophila suzukii egg-laying behaviour",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_005.json#works/W3037850025;upstream_source=openalex_literature;upstream_record_id=openalex:W3037850025",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/32596943/",
@@ -61,6 +62,7 @@
         ],
         "sources": [
           {
+            "title": "Drosophila suzukii avoidance of microbes in oviposition choice",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_005.json#works/W3124252639;upstream_source=openalex_literature;upstream_record_id=openalex:W3124252639",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/33614092/",
@@ -94,6 +96,7 @@
         ],
         "sources": [
           {
+            "title": "Plasticity in Oviposition Site Selection Behavior in Drosophila suzukii in Relation to Adult Density and Host Distribution and Quality",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_005.json#works/W3171171860;upstream_source=openalex_literature;upstream_record_id=openalex:W3171171860",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/34114635/",
@@ -127,6 +130,7 @@
         ],
         "sources": [
           {
+            "title": "Comparison of Preference for Chemicals Associated with Fruit Fermentation between Drosophila melanogaster and Drosophila suzukii and between Virgin and Mated D. melanogaster",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_003.json#works/W4365509323;upstream_source=openalex_literature;upstream_record_id=openalex:W4365509323",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/37103197/",
@@ -160,6 +164,7 @@
         ],
         "sources": [
           {
+            "title": "Dose-dependent effect of methyl jasmonate on Drosophila suzukii",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_001.json#works/W4413971464;upstream_source=openalex_literature;upstream_record_id=openalex:W4413971464",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/40862496/",
@@ -193,6 +198,7 @@
         ],
         "sources": [
           {
+            "title": "Does Habituation Affect the Efficacy of Semiochemical Oviposition Repellents Developed Against Drosophila suzukii?",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_004.json#works/W3199560580;upstream_source=openalex_literature;upstream_record_id=openalex:W3199560580",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/34532743/",
@@ -226,6 +232,7 @@
         ],
         "sources": [
           {
+            "title": "Oviposition deterrent as a component of a push-pull management approach for Drosophila suzukii",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_001.json#works/W4411730655;upstream_source=openalex_literature;upstream_record_id=openalex:W4411730655",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/40576950/",
@@ -259,6 +266,7 @@
         ],
         "sources": [
           {
+            "title": "Dose-dependent effect of methyl jasmonate on Drosophila suzukii",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_001.json#works/W4413971464;upstream_source=openalex_literature;upstream_record_id=openalex:W4413971464",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/40862496/",
@@ -292,6 +300,7 @@
         ],
         "sources": [
           {
+            "title": "Mind the Wound! Fruit Injury Ranks Higher than, and Interacts with, Heterospecific Cues for Drosophila suzukii Oviposition",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_005.json#works/W3163892682;upstream_source=openalex_literature;upstream_record_id=openalex:W3163892682",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/34065090/",
@@ -326,16 +335,11 @@
         ],
         "sources": [
           {
+            "title": "Oviposition deterrent as a component of a push-pull management approach for Drosophila suzukii",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_001.json#works/W4411730655;upstream_source=openalex_literature;upstream_record_id=openalex:W4411730655",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/40576950/",
             "supports": "The field comparison measured pupae emerging from treated and control raspberries."
-          },
-          {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[6]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The public readiness record identifies replicated crop damage, marketable yield, persistence, and operational fit as missing evidence."
           }
         ]
       }
@@ -366,18 +370,21 @@
         ],
         "sources": [
           {
+            "title": "Thermal infrared directs host-seeking behaviour in Aedes aegypti mosquitoes",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_017.json#works/W4401794442",
             "public_url": "https://www.nature.com/articles/s41586-024-07848-5",
             "supports": "The study directly tested integration of carbon dioxide, human odor, and thermal infrared and describes visual, moisture, and convective-heat cues at other ranges."
           },
           {
+            "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_041.json#works/W3187681115",
             "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
             "supports": "The study directly separated vision-guided target attraction from odor tracking using rhodopsin mutants."
           },
           {
+            "title": "In the arm-in-cage test, topical repellents activate mosquitoes to disengage upon contact instead of repelling them at distance",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_016.json#works/W4403603462",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11494009/",
@@ -412,6 +419,7 @@
         ],
         "sources": [
           {
+            "title": "The Neuropeptide Regulation of Host-Seeking Behavior in Aedes aegypti Mosquitoes",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_008.json#works/W2344416877",
             "public_url": "https://doi.org/10.48496/m467-t235",
@@ -445,6 +453,7 @@
         ],
         "sources": [
           {
+            "title": "The Neuropeptide Regulation of Host-Seeking Behavior in Aedes aegypti Mosquitoes",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_008.json#works/W2344416877",
             "public_url": "https://doi.org/10.48496/m467-t235",
@@ -479,6 +488,7 @@
         ],
         "sources": [
           {
+            "title": "Why Mosquitoes Bite Some People More Than Others: Metabolic Correlates of Human Attraction in Aedes aegypti",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_008.json#works/W2584379108",
             "public_url": "https://doi.org/10.48496/hx68-5360",
@@ -512,6 +522,7 @@
         ],
         "sources": [
           {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_049.json#works/W3048721146",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7423148/",
@@ -545,6 +556,7 @@
         ],
         "sources": [
           {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_049.json#works/W3048721146",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7423148/",
@@ -579,16 +591,11 @@
         ],
         "sources": [
           {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_049.json#works/W3048721146",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7423148/",
             "supports": "The study reports defined transfluthrin concentrations, matched non-contact and contact chambers, controlled test conditions, and separate behavioral and toxic outcomes."
-          },
-          {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[2]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The public readiness record identifies carrier, concentration, spatial delivery, and release-rate evidence as a current source gap."
           }
         ]
       }
@@ -618,6 +625,7 @@
         ],
         "sources": [
           {
+            "title": "In the arm-in-cage test, topical repellents activate mosquitoes to disengage upon contact instead of repelling them at distance",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_016.json#works/W4403603462",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11494009/",
@@ -651,6 +659,7 @@
         ],
         "sources": [
           {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_049.json#works/W3048721146",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7423148/",
@@ -684,6 +693,7 @@
         ],
         "sources": [
           {
+            "title": "Development of a Nanotechnology Matrix-Based Citronella Oil Insect Repellent to Obtain a Prolonged Effect and Evaluation of the Safety and Efficacy",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_030.json#works/W4313493759",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9866038/",
@@ -700,28 +710,43 @@
       "origin": "scientist-rd-workflow",
       "holdout": false,
       "why_realistic": "Mechanism claims influence compound selection and the design of resistance monitoring.",
-      "expected_behavior": "Distinguish receptor presence or response from causal receptor-to-avoidance evidence and state the current product-specific validation gap.",
-      "truth_source": "Independent review of the public SWD mode-of-action readiness record and its declared evidence boundary.",
+      "expected_behavior": "Distinguish receptor annotation and odor response from causal receptor-to-behavior evidence, and report exactly what the direct SWD studies establish for avoidance, attraction, and egg laying.",
+      "truth_source": "Independent review of three exact SWD receptor and avoidance papers.",
       "truth_packet": {
         "required_claims": [
-          "Expression, sequence, docking, or electrophysiological response can identify a candidate receptor but cannot alone prove that it drives avoidance behavior.",
-          "Causal support requires receptor perturbation or a comparably selective intervention linked to a behavioral loss or change under the same compound and assay.",
-          "The source plane explicitly lacks product-compound receptor-to-behavior validation in the intended assay and crop context."
+          "The receptor-family study identifies candidate SWD odorant and gustatory receptors but does not prove that one causes avoidance.",
+          "The avoidance study measures SWD behavioral responses to odorants but does not selectively perturb a specific SWD receptor to establish necessity.",
+          "The 2026 receptor-perturbation study establishes causal receptor involvement in attraction to ripe fruit for two receptors, while finding those receptors dispensable for egg-laying preference; it does not establish receptor causality for a crop-repellent avoidance response."
         ],
         "forbidden_claims": [
           "A receptor that responds to an odor is proven to cause avoidance.",
           "Candidate chemoreceptor records prove the product mechanism."
         ],
         "reasoning_boundaries": [
-          "Separate candidate, response, necessity, sufficiency, and field relevance.",
-          "Treat cross-species receptor evidence as inference unless directly tested in SWD."
+          "Separate receptor annotation, physiological response, behavioral association, necessity, sufficiency, avoidance, attraction, and oviposition.",
+          "Require the same compound, receptor perturbation, focal behavior, species, and assay before claiming receptor-to-avoidance causality."
         ],
         "sources": [
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[1]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The public readiness record limits current SWD receptor evidence to hypotheses and identifies product-compound receptor-to-behavior validation as missing."
+            "title": "The making of a pest: Insights from the evolution of chemosensory receptor families in a pestiferous and invasive fly, Drosophila suzukii",
+            "source_id": "drosophila_suzukii_olfaction_literature",
+            "locator": "artifacts/mosquito-v1/raw/drosophila_suzukii_olfaction_literature/pubmed_esummary_0002.json#result/27530109",
+            "public_url": "https://pubmed.ncbi.nlm.nih.gov/27530109/",
+            "supports": "This comparative study annotates SWD chemosensory receptor families and identifies evolutionary candidates without establishing receptor-to-avoidance causality."
+          },
+          {
+            "title": "Conservation of Olfactory Avoidance in Drosophila Species and Identification of Repellents for Drosophila suzukii",
+            "source_id": "drosophila_suzukii_olfaction_literature",
+            "locator": "artifacts/mosquito-v1/raw/drosophila_suzukii_olfaction_literature/pubmed_esummary_0003.json#result/26098542",
+            "public_url": "https://pubmed.ncbi.nlm.nih.gov/26098542/",
+            "supports": "This paper directly measures odor avoidance across Drosophila species, including SWD, but does not prove necessity of a specific SWD receptor for the measured avoidance."
+          },
+          {
+            "title": "Receptor sequence divergence, gain, loss, duplication, and neofunctionalization drive olfactory adaptation in Drosophila suzukii",
+            "source_id": "drosophila_suzukii_core",
+            "locator": "artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_001.json#works/W7140305653;upstream_source=openalex_literature;upstream_record_id=openalex:W7140305653",
+            "public_url": "https://doi.org/10.1073/pnas.2529586123",
+            "supports": "This study perturbs specific receptors and distinguishes causal attraction to ripe fruit from egg-laying preference; it does not demonstrate causal avoidance to a crop-repellent candidate."
           }
         ]
       }
@@ -751,6 +776,7 @@
         ],
         "sources": [
           {
+            "title": "Olfactory Cues From Host- and Non-host Plant Odor Influence the Behavioral Responses of Adult Drosophila suzukii to Visual Cues",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_005.json#works/W3132534524;upstream_source=openalex_literature;upstream_record_id=openalex:W3132534524",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/33590858/",
@@ -785,6 +811,7 @@
         ],
         "sources": [
           {
+            "title": "Does Habituation Affect the Efficacy of Semiochemical Oviposition Repellents Developed Against Drosophila suzukii?",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_004.json#works/W3199560580;upstream_source=openalex_literature;upstream_record_id=openalex:W3199560580",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/34532743/",
@@ -819,6 +846,7 @@
         ],
         "sources": [
           {
+            "title": "Sex-Dependent Effects of the Microbiome on Foraging and Locomotion in Drosophila suzukii",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_005.json#works/W3161910963;upstream_source=openalex_literature;upstream_record_id=openalex:W3161910963",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/34040592/",
@@ -853,6 +881,7 @@
         ],
         "sources": [
           {
+            "title": "Automated aerosol puffers effectively deliver 1-octen-3-ol, an oviposition antagonist useful against spotted-wing drosophila",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_005.json#works/W3046652911;upstream_source=openalex_literature;upstream_record_id=openalex:W3046652911",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/32738015/",
@@ -887,16 +916,11 @@
         ],
         "sources": [
           {
+            "title": "Contributions of GABA Receptors for the Activities of Pectis brevipedunculata Essential Oil against Drosophila suzukii and Pollinator Bees",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_002.json#works/W4397009635;upstream_source=openalex_literature;upstream_record_id=openalex:W4397009635",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/38794461/",
             "supports": "The study directly compared feeding toxicity and diet consumption in SWD and two pollinator bee species for one essential oil."
-          },
-          {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[5]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The public readiness record lists product-specific non-target effects at intended exposure as missing."
           }
         ]
       }
@@ -927,16 +951,11 @@
         ],
         "sources": [
           {
+            "title": "Does Habituation Affect the Efficacy of Semiochemical Oviposition Repellents Developed Against Drosophila suzukii?",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_004.json#works/W3199560580;upstream_source=openalex_literature;upstream_record_id=openalex:W3199560580",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/34532743/",
             "supports": "The study directly tested pre-exposure across adult and larval stages for candidate oviposition repellents."
-          },
-          {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[0].domains[13].gaps[0]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The public knowledge-gap record states that repellent-relevant longitudinal resistance and behavioral-tolerance evidence is missing."
           }
         ]
       }
@@ -967,22 +986,18 @@
         ],
         "sources": [
           {
+            "title": "Oviposition deterrent as a component of a push-pull management approach for Drosophila suzukii",
             "source_id": "drosophila_suzukii_core",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_001.json#works/W4411730655;upstream_source=openalex_literature;upstream_record_id=openalex:W4411730655",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/40576950/",
             "supports": "The field study measured pupae emerging from treated and control raspberries."
           },
           {
+            "title": "Oviposition Preference and Developmental Performance of Drosophila suzukii on Different Cherry Cultivars",
             "source_id": "drosophila_suzukii_pubmed_literature",
             "locator": "/home/josh/ask-insects/artifacts/mosquito-v1/raw/drosophila_suzukii_pubmed_literature/pubmed_esummary_0002.json#result/39769586",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/39769586/",
             "supports": "The cherry-cultivar study found significant differences in SWD pupation and survival rates among cultivars."
-          },
-          {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.products[0].readiness[6]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The public readiness record identifies crop damage and marketable yield as missing field-performance evidence."
           }
         ]
       }
@@ -1013,18 +1028,21 @@
         ],
         "sources": [
           {
+            "title": "Thermal infrared directs host-seeking behaviour in Aedes aegypti mosquitoes",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_017.json#works/W4401794442",
             "public_url": "https://www.nature.com/articles/s41586-024-07848-5",
             "supports": "The study directly tested carbon dioxide, human odor, and thermal infrared together and distinguishes moisture and convective heat as close-range host cues."
           },
           {
+            "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_041.json#works/W3187681115",
             "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
             "supports": "The genetic study separated vision-guided target attraction from intact odor tracking."
           },
           {
+            "title": "Carbon dioxide and blood-feeding shift visual cue tracking during navigation in Aedes aegypti mosquitoes",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_033.json#works/W4297252092",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/36166270/",
@@ -1058,6 +1076,7 @@
         ],
         "sources": [
           {
+            "title": "Impact of disabled circadian clock on yellow fever mosquito Aedes aegypti fitness and behaviors",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_035.json#works/W4225097850",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9046260/",
@@ -1091,6 +1110,7 @@
         ],
         "sources": [
           {
+            "title": "Neuromodulation and differential learning across mosquito species",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_030.json#works/W4315621418",
             "public_url": "https://pubmed.ncbi.nlm.nih.gov/36629098/",
@@ -1125,12 +1145,14 @@
         ],
         "sources": [
           {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_049.json#works/W3048721146",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7423148/",
             "supports": "The study directly compared laboratory and field Aedes aegypti behavioral responses to transfluthrin."
           },
           {
+            "title": "Changes in the life history traits in Aedes aegypti selected for resistance to permethrin and thymol, a spatial repellent",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_008.json#works/W4413344516",
             "public_url": "https://doi.org/10.1371/journal.pone.0329776",
@@ -1165,16 +1187,11 @@
         ],
         "sources": [
           {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_049.json#works/W3048721146",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7423148/",
             "supports": "The study reports compound-specific exposure concentrations and separates dose-response behavioral and toxic endpoints."
-          },
-          {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[2]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The public readiness record identifies concentration, spatial delivery, and release-rate evidence as missing from a product package."
           }
         ]
       }
@@ -1205,6 +1222,7 @@
         ],
         "sources": [
           {
+            "title": "In the arm-in-cage test, topical repellents activate mosquitoes to disengage upon contact instead of repelling them at distance",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_016.json#works/W4403603462",
             "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC11494009/",
@@ -1221,13 +1239,13 @@
       "origin": "scientist-rd-workflow",
       "holdout": false,
       "why_realistic": "Laboratory protection time can fail under ordinary human activity and environmental exposure.",
-      "expected_behavior": "Propose a controlled challenge matrix, pair chemical retention with bite protection, and state that the source plane lacks a validated product-specific durability package.",
-      "truth_source": "Independent review of the public persistence-reapplication gap record and its stated real-use evidence boundary.",
+      "expected_behavior": "Use exact WHO, EPA, and peer-reviewed sources to distinguish standardized baseline protection time from a proposed real-use durability challenge matrix.",
+      "truth_source": "Independent review of exact WHO and EPA guidance plus the PubMed-indexed wash-in and wash-off review.",
       "truth_packet": {
         "required_claims": [
-          "Test repeated standardized sweating or water exposure, defined washing and drying cycles, controlled rubbing or abrasion, ultraviolet or sunlight exposure, and relevant hot and cool temperatures against an unchallenged time-matched control.",
-          "Measure both retained active ingredient or release and repeated landing or bite protection after each challenge.",
-          "The public product record explicitly lacks product-specific protection-time evidence under heat, sweat, abrasion, airflow, and realistic use."
+          "WHO and EPA provide standardized efficacy and complete-protection-time methods, while EPA baseline subject controls avoid perspiration, abrasion, rubbing, touching, and wetting of treated skin.",
+          "A real-use durability program should test pre-specified sweat or water exposure, washing and drying, rubbing or abrasion, ultraviolet or sunlight exposure, and relevant temperatures against unchallenged time-matched controls, then repeat landing or bite protection.",
+          "Chemical retention or release is a supporting endpoint and cannot substitute for behavioral protection; the challenge matrix is a product-development recommendation rather than a universally validated protocol for every stress combination."
         ],
         "forbidden_claims": [
           "Initial arm-in-cage protection time establishes durability after real use.",
@@ -1239,10 +1257,25 @@
         ],
         "sources": [
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.products[1].readiness[3]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The public readiness record identifies heat, sweat, abrasion, airflow, and realistic-use protection-time evidence as a current gap."
+            "title": "WHO Guidelines for efficacy testing of mosquito repellents for human skin",
+            "source_id": "human_repellent_testing_guidance",
+            "locator": "https://www.who.int/publications/i/item/WHO-HTM-NTD-WHOPES-2009.4#overview",
+            "public_url": "https://www.who.int/publications/i/item/WHO-HTM-NTD-WHOPES-2009.4",
+            "supports": "WHO provides standardized laboratory and field procedures, application-rate methods, and efficacy evaluation for human-skin mosquito repellents."
+          },
+          {
+            "title": "US EPA OPPTS 810.3700: Insect Repellents to be Applied to Human Skin",
+            "source_id": "human_repellent_testing_guidance",
+            "locator": "https://nepis.epa.gov/Exe/ZyPURL.cgi?Dockey=P100LBO3.TXT#OPPTS-810.3700-subject-preparation-and-complete-protection-time",
+            "public_url": "https://nepis.epa.gov/Exe/ZyPURL.cgi?Dockey=P100LBO3.TXT",
+            "supports": "EPA defines complete protection time and instructs baseline subjects to avoid perspiration, abrasion, rubbing, touching, and wetting of the treated area."
+          },
+          {
+            "title": "Percutaneous penetration and pharmacodynamics: Wash-in and wash-off of sunscreen and insect repellent",
+            "source_id": "human_repellent_testing_guidance",
+            "locator": "https://pubmed.ncbi.nlm.nih.gov/26811157/#abstract",
+            "public_url": "https://pubmed.ncbi.nlm.nih.gov/26811157/",
+            "supports": "The peer-reviewed review identifies water, sweat, temperature, and abrasion as factors relevant to repellent durability and reapplication."
           }
         ]
       }
@@ -1273,12 +1306,14 @@
         ],
         "sources": [
           {
+            "title": "Changes in the life history traits in Aedes aegypti selected for resistance to permethrin and thymol, a spatial repellent",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_008.json#works/W4413344516",
             "public_url": "https://doi.org/10.1371/journal.pone.0329776",
             "supports": "The study selected Aedes aegypti with permethrin or thymol and measured persistent biological changes relevant to resistance interpretation."
           },
           {
+            "title": "Pyrethroid insecticides maintain repellent effect on knock-down resistant populations of Aedes aegypti mosquitoes",
             "source_id": "aedes_literature_openalex",
             "locator": "/Users/josh/.local/share/ask-insects/main/artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_048.json#works/W4299723530",
             "public_url": "https://doi.org/10.17615/1p7n-3x92",
@@ -1295,34 +1330,43 @@
       "origin": "scientist-rd-workflow",
       "holdout": false,
       "why_realistic": "Diamondback moth is the next crop-pest expansion, so scientists need to know what can already be answered without borrowing another species' biology.",
-      "expected_behavior": "Return a precise source gap rather than importing other insects' host-cue claims, and name the missing direct sensory and host-finding lanes.",
-      "truth_source": "Independent audit of the hosted species-boundary records and the public portfolio configuration.",
+      "expected_behavior": "Name the direct Plutella xylostella host-finding, oviposition, antennal-response, and field-attraction evidence without importing another species' biology or overstating cue causality.",
+      "truth_source": "Independent review of three exact primary diamondback-moth studies.",
       "truth_packet": {
         "required_claims": [
-          "The current source plane has no exact-species Plutella xylostella sensory or feeding and host-finding lane, so it cannot yet give a source-backed list of direct plant cues.",
-          "The missing direct evidence includes Brassica host cues, adult orientation, larval feeding, and crop-state effects.",
-          "Evidence from SWD, mosquitoes, or other moths must be labeled as inference and cannot answer which cues are direct for Plutella xylostella."
+          "Direct Plutella xylostella evidence shows that volatile plant cues support host orientation and landing, while visual or plant-position context also affects host finding.",
+          "A host-choice study found orientation to Brassicaceae plant odor versus clean air, no preference among three host odors presented together, and reduced oviposition under mixed cropping.",
+          "A 2025 study identified eight broccoli volatiles that elicited antennal responses and found a three-component field attractant blend, but antennal response or trap attraction does not by itself prove control of egg laying."
         ],
         "forbidden_claims": [
           "Another insect's plant-cue evidence is direct diamondback moth evidence.",
-          "The source plane currently has comprehensive diamondback moth sensory coverage."
+          "Every antennally active Brassica volatile is proven to guide oviposition or repel diamondback moth."
         ],
         "reasoning_boundaries": [
-          "Fail closed at the exact-species boundary.",
-          "Distinguish public literature that may exist from evidence currently mapped and queryable in the product."
+          "Keep odor detection, orientation, vision, landing, trap attraction, and oviposition as separate endpoints.",
+          "Label only the cited Plutella xylostella studies as direct focal-species evidence."
         ],
         "sources": [
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[8]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The hosted portfolio record declares the exact-species feeding and host-finding lane a source gap and names Brassica cues and adult orientation as missing."
+            "title": "The roles of olfaction and vision in host-plant finding by the diamondback moth, Plutella xylostella",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W1994548084.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
+            "supports": "The study directly tests olfactory, visual, plant-position, and host-versus-nonhost effects on female DBM host finding and landing."
           },
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[0]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The hosted portfolio record declares that no exact-species sensory source lane is queryable."
+            "title": "Host Selection Behavior and the Fecundity of Plutella xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W2114561940.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1093/jisesa/ieu113",
+            "supports": "The paper directly measures host odor orientation, landing, mixed-cropping behavior, fecundity, and oviposition in Plutella xylostella."
+          },
+          {
+            "title": "Electrophysiological Responses and Field Attractants of Plutella xylostella Adults to Volatiles from Brassica oleracea",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W4409241407.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1021/acs.jafc.5c03182",
+            "supports": "The study identifies eight antennally active broccoli volatiles and tests blended attractants in field traps."
           }
         ]
       }
@@ -1335,17 +1379,17 @@
       "origin": "scientist-rd-workflow",
       "holdout": false,
       "why_realistic": "The team needs an initial assay ladder that connects adult behavior to the larval stage that damages a crop.",
-      "expected_behavior": "Give a clearly labeled program-design inference while disclosing that the direct life-cycle, behavior, and oviposition source lanes are absent.",
-      "truth_source": "Independent audit of the hosted diamondback moth life-cycle, behavior, reproduction, and feeding gap records.",
+      "expected_behavior": "Recommend an endpoint ladder while grounding each layer in direct Plutella studies and stating that the literature does not establish one universal predictor of marketable yield.",
+      "truth_source": "Independent review of exact DBM host-choice, semiochemical, intercropping, larval-density, and crop-damage studies.",
       "truth_packet": {
         "required_claims": [
-          "A first assay ladder should separately measure adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, and marketable yield or quality.",
-          "This ordering is product-design inference, not a current source-backed finding about which endpoint is most predictive in Plutella xylostella.",
-          "The source plane currently lacks exact-species life-cycle, behavior, reproduction, feeding, and crop-state evidence needed to validate the ladder."
+          "A repellent program should separately measure adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, and marketable yield or quality.",
+          "Direct Plutella studies separately measure adult choice and landing, oviposition, adult and larval density, leaf damage, field populations, and beneficial insects, demonstrating why those layers cannot be collapsed.",
+          "The endpoint ordering is a product-development design; the cited studies do not prove that one early endpoint universally predicts marketable yield."
         ],
         "forbidden_claims": [
           "Adult avoidance alone proves reduced diamondback moth crop damage.",
-          "The current source plane has direct evidence ranking these endpoints."
+          "The cited studies establish one universally best or sufficient endpoint."
         ],
         "reasoning_boundaries": [
           "Separate adult behavioral prevention from larval crop damage.",
@@ -1353,16 +1397,25 @@
         ],
         "sources": [
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[5]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The hosted portfolio record declares exact-species egg, larval, pupal, adult, and development evidence a source gap."
+            "title": "Host Selection Behavior and the Fecundity of Plutella xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W2114561940.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1093/jisesa/ieu113",
+            "supports": "This direct DBM study measures adult behavior, host selection, fecundity, and oviposition."
           },
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[7]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The hosted portfolio record declares direct host-choice, egg-laying, and oviposition-deterrence evidence a source gap."
+            "title": "Intercropping organic broccoli with Rhododendron tomentosum and Fagopyrum esculentum: a test of bottom-up and top-down strategies for reducing herbivory",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W4391482378.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1007/s11829-023-10033-6",
+            "supports": "This field study separately counts DBM adults, larvae, and leaf damage and measures companion-plant volatiles."
+          },
+          {
+            "title": "A semiochemical attract-and-kill formulation to manage diamondback moth (Lepidoptera: Plutellidae)",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W4413460540.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1093/jee/toaf193",
+            "supports": "This study links a four-choice adult assay to field DBM population and natural-enemy outcomes while preserving those endpoints separately."
           }
         ]
       }
@@ -1375,13 +1428,13 @@
       "origin": "scientist-rd-workflow",
       "holdout": false,
       "why_realistic": "The next species program should reuse assay logic without importing unsupported biology.",
-      "expected_behavior": "Permit transfer of experimental principles only, then enumerate the direct Plutella tests required by the current evidence gaps.",
-      "truth_source": "Independent audit of the hosted diamondback moth sensory, behavior, movement, and chemical-response boundaries.",
+      "expected_behavior": "Permit transfer of experimental principles only, acknowledge the direct DBM evidence now available, and identify what remains candidate-specific and must be tested in Plutella.",
+      "truth_source": "Independent review of exact SWD, Aedes, and focal-species DBM studies.",
       "truth_packet": {
         "required_claims": [
-          "SWD and mosquito work can suggest assay principles such as separating contact from non-contact exposure, measuring dose and plume, using matched controls, and following behavior with reproduction and damage endpoints.",
-          "Plutella xylostella must be tested directly for host cue use, life-stage and sex response, orientation and landing, oviposition, larval feeding and damage, dose response, toxicity, field plume behavior, and persistence.",
-          "The current source plane has no exact-species behavior, movement, or chemical-response lane, so no cross-species efficacy conclusion is supported."
+          "SWD and Aedes work can suggest assay principles such as separating contact from non-contact exposure, measuring dose and plume, using matched controls, and following behavior with reproduction and damage endpoints, but cannot transfer efficacy.",
+          "Direct Plutella studies already provide focal-species adult choice, host-location, oviposition, adult and larval density, and leaf-damage endpoints.",
+          "Each candidate must still be tested directly in Plutella for non-contact orientation, contact effects, sex and life-stage response, oviposition, larval feeding and damage, dose response, toxicity, field plume behavior, and persistence."
         ],
         "forbidden_claims": [
           "A volatile that repels SWD or Aedes will repel diamondback moth.",
@@ -1389,20 +1442,36 @@
         ],
         "reasoning_boundaries": [
           "Transfer methods and hypotheses, not outcomes.",
-          "Require exact species, sex, life stage, host plant, exposure mode, and endpoint before claiming direct evidence."
+          "Keep SWD and Aedes sources labeled as method analogies and DBM sources labeled as focal-species evidence."
         ],
         "sources": [
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[6]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The hosted portfolio record declares direct Plutella landing, orientation, feeding, avoidance, and assay-behavior evidence absent."
+            "title": "Oviposition deterrent as a component of a push-pull management approach for Drosophila suzukii",
+            "source_id": "drosophila_suzukii_core",
+            "locator": "artifacts/mosquito-v1/raw/drosophila_suzukii/literature/Drosophila_suzukii_title_and_abstract_Drosophila_suzukii_openalex_page_001.json#works/W4411730655;upstream_source=openalex_literature;upstream_record_id=openalex:W4411730655",
+            "public_url": "https://pubmed.ncbi.nlm.nih.gov/40576950/",
+            "supports": "The SWD paper provides a method analogy connecting oviposition deterrence to pupal emergence and field push-pull treatment."
           },
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[12]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The hosted portfolio record declares direct repellents, attractants, deterrents, metabolism, and assay outcomes absent."
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
+            "source_id": "aedes_literature_openalex",
+            "locator": "artifacts/mosquito-v1/raw/literature/Aedes_aegypti_openalex_page_049.json#works/W3048721146",
+            "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7423148/",
+            "supports": "The mosquito paper provides a method analogy for separating spatial behavior, contact response, knockdown, mortality, concentration, and population background."
+          },
+          {
+            "title": "A semiochemical attract-and-kill formulation to manage diamondback moth (Lepidoptera: Plutellidae)",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W4413460540.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1093/jee/toaf193",
+            "supports": "This focal-species study directly measures DBM adult choice and field population outcomes."
+          },
+          {
+            "title": "Intercropping organic broccoli with Rhododendron tomentosum and Fagopyrum esculentum: a test of bottom-up and top-down strategies for reducing herbivory",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W4391482378.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1007/s11829-023-10033-6",
+            "supports": "This focal-species field study directly measures adult density, larval density, leaf damage, and plant volatiles."
           }
         ]
       }
@@ -1415,34 +1484,50 @@
       "origin": "scientist-rd-workflow",
       "holdout": false,
       "why_realistic": "A new screening program needs one high-information experiment before committing to a compound library.",
-      "expected_behavior": "Choose the direct host-finding and oviposition baseline as a defensible priority, label the prioritization as inference, and propose a controlled experiment that closes the mapped gaps.",
-      "truth_source": "Independent audit of the hosted diamondback moth host-finding, behavior, and reproduction gap records.",
+      "expected_behavior": "Correct the stale premise that general DBM host-finding evidence is absent, identify the candidate-specific contact-versus-non-contact causal chain as the next high-value gap, and propose a controlled experiment.",
+      "truth_source": "Independent review of exact DBM host-finding, oviposition, citronella, and field-damage studies.",
       "truth_packet": {
         "required_claims": [
-          "The highest-leverage current gap is a direct Plutella xylostella baseline linking Brassica host cues and adult orientation to female oviposition, because those exact-species lanes are absent.",
-          "A useful closing experiment would use mated females in a randomized, replicated wind-tunnel or olfactometer choice with host odor and visual controls, followed by matched no-choice and choice oviposition on standardized Brassica plants while recording activity, survival, total eggs, and later larval damage.",
-          "The priority and design are reasoned recommendations, not existing direct evidence that this is the only valid first experiment."
+          "The general host-finding baseline is not absent: direct Plutella studies already link Brassica odor to orientation and landing, measure oviposition, and connect field treatments to adult, larval, and damage endpoints.",
+          "Before broad repellent screening, a high-value product gap is a focal-species assay that separates non-contact avoidance from contact feeding inhibition, knockdown, or mortality and carries the same exposure into oviposition and larval-damage follow-up.",
+          "A useful experiment uses randomized replicated airflow, odor-only, contact-only, solvent, airflow, and activity controls, followed by matched choice and no-choice oviposition and measurements of survival, eggs, larval establishment, feeding damage, and release rate; this is an R&D recommendation, not a proven target."
         ],
         "forbidden_claims": [
-          "The source plane already identifies a proven diamondback moth repellent target.",
-          "A mosquito or SWD assay can substitute for direct Plutella validation."
+          "The source plane has no direct diamondback moth host-finding or oviposition evidence.",
+          "A mosquito or SWD result can substitute for direct Plutella candidate validation."
         ],
         "reasoning_boundaries": [
-          "State the mapped source gap before proposing the experiment.",
-          "Keep assay orientation, oviposition, toxicity, and crop damage as separate endpoints."
+          "Correct stale source-gap premises when exact focal-species evidence is available.",
+          "Keep orientation, contact effects, oviposition, toxicity, larval establishment, crop damage, and release rate as separate endpoints."
         ],
         "sources": [
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[8].gaps[0]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The hosted gap record names Brassica host cues, adult orientation, larval feeding, and crop-state evidence as missing."
+            "title": "The roles of olfaction and vision in host-plant finding by the diamondback moth, Plutella xylostella",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W1994548084.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
+            "supports": "Direct DBM evidence already establishes host-location roles for olfactory, visual, and plant-position cues."
           },
           {
-            "source_id": "insect_intelligence_programs",
-            "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[2].domains[7].gaps[0]",
-            "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
-            "supports": "The hosted gap record names mating, fecundity, host choice, egg laying, and oviposition-deterrence evidence as missing."
+            "title": "Host Selection Behavior and the Fecundity of Plutella xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W2114561940.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1093/jisesa/ieu113",
+            "supports": "Direct DBM evidence already links host odor orientation, landing, mixed cropping, fecundity, and oviposition."
+          },
+          {
+            "title": "The effectiveness of citronella oil to control main pest on cabbage Plutella xylostella in the field",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W4387738540.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.4081/jear.2023.11751",
+            "supports": "The citronella study mixes movement, feeding, oviposition, mortality, and field abundance endpoints, motivating explicit mechanism separation."
+          },
+          {
+            "title": "Intercropping organic broccoli with Rhododendron tomentosum and Fagopyrum esculentum: a test of bottom-up and top-down strategies for reducing herbivory",
+            "source_id": "plutella_xylostella_literature",
+            "locator": "artifacts/mosquito-v1/raw/plutella_xylostella_literature/W4391482378.json#jsonpath=$.work",
+            "public_url": "https://doi.org/10.1007/s11829-023-10033-6",
+            "supports": "The field study demonstrates separate adult, larval, volatile, and leaf-damage endpoints that a candidate-specific experiment should preserve."
           }
         ]
       }

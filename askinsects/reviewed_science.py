@@ -30,6 +30,9 @@ _MATCH_TOKEN_EQUIVALENTS = {
     "stiffest": "harder",
     "stiffness": "hardness",
 }
+FORBIDDEN_SCIENTIFIC_SOURCE_PREFIXES = (
+    "insect_intelligence_programs:",
+)
 
 
 class ReviewedScienceError(ValueError):
@@ -159,10 +162,18 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
             topic["answer"]
         ).strip():
             raise ReviewedScienceError(f"topic {topic_id}.answer must be non-empty")
-        _strings(
+        source_record_ids = _strings(
             topic.get("source_record_ids"),
             f"topic {topic_id}.source_record_ids",
         )
+        if any(
+            record_id.startswith(FORBIDDEN_SCIENTIFIC_SOURCE_PREFIXES)
+            for record_id in source_record_ids
+        ):
+            raise ReviewedScienceError(
+                f"topic {topic_id} must cite an original scientific or official source; "
+                "the internal insect-intelligence program ledger cannot substitute for evidence"
+            )
 
 
 def _objects_as_string_groups(value: object, label: str) -> list[list[str]]:
@@ -283,6 +294,18 @@ def _record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
     }
 
 
+def _has_original_public_url(record: EvidenceRecord) -> bool:
+    candidates = (record.url, record.provenance.source_url)
+    return any(
+        isinstance(value, str)
+        and bool(
+            value.startswith(("https://", "http://"))
+            or re.fullmatch(r"10\.\S+/\S+", value, flags=re.IGNORECASE)
+        )
+        for value in candidates
+    )
+
+
 def build_reviewed_science_answer(
     index: SourceIndex,
     question: str,
@@ -324,6 +347,26 @@ def build_reviewed_science_answer(
                 "reason": (
                     "The reviewed source record set is incomplete: "
                     + ", ".join(missing)
+                ),
+            },
+        }
+    invalid_original_sources = [
+        record.record_id
+        for record in records
+        if record.provenance.source_id == "insect_intelligence_programs"
+        or not _has_original_public_url(record)
+    ]
+    if invalid_original_sources:
+        return {
+            "ok": False,
+            "answer_shape": "reviewed_science",
+            "answer": "I do not see enough exact original-source evidence for this reviewed scientific topic yet.",
+            "evidence": [],
+            "source_gap": {
+                "lane": "reviewed_science",
+                "reason": (
+                    "Every reviewed scientific claim requires an original public source URL; "
+                    "invalid records: " + ", ".join(invalid_original_sources)
                 ),
             },
         }

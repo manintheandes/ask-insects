@@ -149,6 +149,25 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertIn("knowledge_gap", atom_types)
         self.assertIn("readiness_gap", atom_types)
         self.assertTrue(all(record.provenance.locator.startswith("config/insect-intelligence-programs.json#") for record in records))
+        self.assertTrue(
+            all(
+                str(record.provenance.source_url).startswith("https://github.com/")
+                for record in records
+            )
+        )
+
+    def test_repo_relative_default_ledger_keeps_public_source_url(self):
+        records = build_insect_intelligence_records(
+            Path("config/insect-intelligence-programs.json"),
+            retrieved_at=RETRIEVED_AT,
+        )
+
+        self.assertTrue(
+            all(
+                str(record.provenance.source_url).startswith("https://github.com/")
+                for record in records
+            )
+        )
 
     def test_every_program_record_locator_resolves_to_one_source_value(self):
         ledger = load_program_ledger(DEFAULT_PROGRAM_LEDGER)
@@ -206,10 +225,30 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
 
         self.assertEqual(len(domain_records), len(REQUIRED_KNOWLEDGE_DOMAINS))
         self.assertGreaterEqual(len(gap_records), len(REQUIRED_KNOWLEDGE_DOMAINS))
+        direct_domains = {
+            "sensory_world",
+            "life_cycle_development",
+            "behavior",
+            "reproduction_oviposition",
+            "feeding_host_finding",
+            "movement_flight_navigation",
+            "learning_memory_internal_state",
+            "ecology_interactions",
+            "chemical_responses_metabolism",
+        }
         for record in domain_records:
-            self.assertEqual(record.payload["status"], "source_gap")
-            self.assertEqual(record.payload["evidence_scope"], "none")
-            self.assertEqual(record.payload["current_sources"], [])
+            domain = record.payload["domain"]
+            if domain in direct_domains:
+                self.assertEqual(record.payload["status"], "partial_source_grade")
+                self.assertEqual(record.payload["evidence_scope"], "direct")
+                self.assertEqual(
+                    record.payload["current_sources"],
+                    ["plutella_xylostella_literature"],
+                )
+            else:
+                self.assertEqual(record.payload["status"], "source_gap")
+                self.assertEqual(record.payload["evidence_scope"], "none")
+                self.assertEqual(record.payload["current_sources"], [])
             self.assertNotIn("Aedes", record.text)
             self.assertNotIn("Drosophila", record.text)
 
@@ -405,7 +444,7 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
                 artifact_dir=artifact_dir,
             )
             transfer_answer = answer_question(
-                "Can Aedes evidence be relabeled as direct diamondback moth evidence?",
+                "Can evidence from another species be relabeled as direct Aedes evidence?",
                 artifact_dir=artifact_dir,
             )
             proof_answer = answer_question(

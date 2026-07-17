@@ -36,7 +36,7 @@ _CASE_STRING_FIELDS = (
     "expected_behavior",
     "truth_source",
 )
-_TRUTH_SOURCE_FIELDS = ("source_id", "locator", "public_url", "supports")
+_TRUTH_SOURCE_FIELDS = ("title", "source_id", "locator", "public_url", "supports")
 _REQUIRED_RULES = (
     "exact_question_required",
     "first_attempt_only",
@@ -251,6 +251,22 @@ def _validate_truth_packet(value: object, name: str) -> dict[str, Any]:
         source = _object(raw_source, f"{name}.sources[{index}]")
         for field in _TRUTH_SOURCE_FIELDS:
             _nonempty_string(source.get(field), f"{name}.sources[{index}].{field}")
+        source_id = str(source["source_id"])
+        locator = str(source["locator"])
+        public_url = str(source["public_url"])
+        if (
+            source_id == "insect_intelligence_programs"
+            or "config/insect-intelligence-programs.json" in locator
+            or "config/insect-intelligence-programs.json" in public_url
+        ):
+            raise RealityEvalError(
+                f"{name}.sources[{index}] must cite an original scientific or official source; "
+                "the internal program ledger cannot count as scientific provenance"
+            )
+        if not public_url.startswith(("https://", "http://")):
+            raise RealityEvalError(
+                f"{name}.sources[{index}].public_url must be an HTTP(S) original source URL"
+            )
     return truth_packet
 
 
@@ -730,7 +746,7 @@ def validate_results(
         case = cases[case_id]
         if result.get("question") != case["question"]:
             raise RealityEvalError(f"result {case_id} changed the exact frozen question")
-        _nonempty_string(result.get("answer"), f"result {case_id}.answer")
+        answer = _nonempty_string(result.get("answer"), f"result {case_id}.answer")
         truth_packet = _object(
             case.get("truth_packet"),
             f"contract case {case_id}.truth_packet",
@@ -822,24 +838,34 @@ def validate_results(
         provenance = result.get("provenance")
         if not isinstance(provenance, list) or not provenance:
             raise RealityEvalError(f"result {case_id}.provenance must be a nonempty list")
-        actual_provenance: list[tuple[str, str]] = []
+        actual_provenance: list[tuple[str, str, str, str]] = []
         for provenance_index, raw_item in enumerate(provenance):
             item = _object(
                 raw_item,
                 f"result {case_id}.provenance[{provenance_index}]",
             )
-            actual_provenance.append(
-                (
-                    _nonempty_string(
-                        item.get("source_id"),
-                        f"result {case_id}.provenance[{provenance_index}].source_id",
-                    ),
-                    _nonempty_string(
-                        item.get("locator"),
-                        f"result {case_id}.provenance[{provenance_index}].locator",
-                    ),
-                )
+            title = _nonempty_string(
+                item.get("title"),
+                f"result {case_id}.provenance[{provenance_index}].title",
             )
+            source_id = _nonempty_string(
+                item.get("source_id"),
+                f"result {case_id}.provenance[{provenance_index}].source_id",
+            )
+            locator = _nonempty_string(
+                item.get("locator"),
+                f"result {case_id}.provenance[{provenance_index}].locator",
+            )
+            public_url = _nonempty_string(
+                item.get("public_url"),
+                f"result {case_id}.provenance[{provenance_index}].public_url",
+            )
+            if not public_url.startswith(("https://", "http://")):
+                raise RealityEvalError(
+                    f"result {case_id}.provenance[{provenance_index}].public_url "
+                    "must be an HTTP(S) original source URL"
+                )
+            actual_provenance.append((title, source_id, locator, public_url))
 
         truth_sources = truth_packet.get("sources")
         if not isinstance(truth_sources, list):
@@ -847,7 +873,12 @@ def validate_results(
                 f"contract case {case_id}.truth_packet.sources must be a list"
             )
         expected_provenance = {
-            (str(source["source_id"]), str(source["locator"]))
+            (
+                str(source["title"]),
+                str(source["source_id"]),
+                str(source["locator"]),
+                str(source["public_url"]),
+            )
             for source in truth_sources
             if isinstance(source, dict)
         }
@@ -858,6 +889,18 @@ def validate_results(
             raise RealityEvalError(
                 f"result {case_id}.provenance must match the frozen truth packet sources exactly"
             )
+        for title, source_id, locator, public_url in actual_provenance:
+            for field_name, value in (
+                ("title", title),
+                ("source_id", source_id),
+                ("locator", locator),
+                ("public_url", public_url),
+            ):
+                if value not in answer:
+                    raise RealityEvalError(
+                        f"result {case_id} must show provenance {field_name} "
+                        "in the complete visible answer"
+                    )
 
     missing = set(cases) - seen_ids
     if missing:
