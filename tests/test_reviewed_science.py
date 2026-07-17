@@ -221,9 +221,15 @@ class ReviewedScienceTests(unittest.TestCase):
                     evidence_record(
                         record_id,
                         source_id="drosophila_suzukii_core",
-                        locator=f"raw/swd.json#works/{record_id.rsplit(':', 1)[-1]}",
+                        locator=(
+                            "/Users/josh/.local/share/ask-insects/main/artifacts/"
+                            "mosquito-v1/raw/swd.json#works/"
+                            f"{record_id.rsplit(':', 1)[-1]}"
+                            if position == 0
+                            else f"raw/swd.json#works/{record_id.rsplit(':', 1)[-1]}"
+                        ),
                     )
-                    for record_id in record_ids
+                    for position, record_id in enumerate(record_ids)
                 ]
             )
             questions = (
@@ -246,6 +252,17 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertEqual(
                         {item["record_id"] for item in answer["evidence"]},
                         set(record_ids),
+                    )
+                    locators = [
+                        item["provenance"]["locator"]
+                        for item in answer["evidence"]
+                    ]
+                    self.assertIn(
+                        "artifacts/mosquito-v1/raw/swd.json#works/W4411730655",
+                        locators,
+                    )
+                    self.assertTrue(
+                        all(not locator.startswith("/") for locator in locators)
                     )
 
     def test_new_species_and_topic_require_data_only(self):

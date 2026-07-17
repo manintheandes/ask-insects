@@ -9,6 +9,7 @@ import sqlite3
 from .builder import DEFAULT_ARTIFACT_DIR
 from .index import SourceIndex
 from .planner import QueryPlan, plan_question
+from .provenance import public_provenance_locator
 from .reviewed_science import build_reviewed_science_answer
 from .records import EvidenceRecord
 from .repellency import build_repellency_comparison_answer, is_repellency_comparison_question
@@ -765,24 +766,9 @@ def _dryad_table_source_id(question: str) -> str:
     return "dryad_aedes_behavior_videos"
 
 
-def _public_provenance_locator(locator: str, source_id: str) -> str:
-    path_text, separator, fragment = locator.partition("#")
-    path = Path(path_text)
-    if not path.is_absolute():
-        return locator
-    parts = path.parts
-    for anchor in ("artifacts", "raw", "sources", "config", "public"):
-        if anchor in parts:
-            relative = "/".join(parts[parts.index(anchor) :])
-            break
-    else:
-        relative = f"sources/{source_id}/{path.name}"
-    return relative + (f"#{fragment}" if separator else "")
-
-
 def record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
     provenance = record.provenance.to_dict()
-    provenance["locator"] = _public_provenance_locator(
+    provenance["locator"] = public_provenance_locator(
         str(provenance.get("locator") or ""),
         record.provenance.source_id,
     )
