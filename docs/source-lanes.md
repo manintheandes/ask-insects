@@ -151,6 +151,10 @@ VectorByte abundance rows cite saved VecDyn provider metadata and `vecdyncsv` pa
 
 Hosted Ask Insects uses the same source lanes. The difference is location: parsed artifacts live in the deployment-configured hosted artifact directory, and the local CLI asks the hosted API to ingest or query those artifacts.
 
+`plutella_xylostella_literature` is the first dedicated diamondback-moth literature lane. It fetches seven fixed, human-reviewed OpenAlex work IDs that directly name `Plutella xylostella` or diamondback moth, stores each raw work response, and indexes the record with the correct species and source labels. It covers direct host-finding olfaction and vision, Brassica volatile responses, host choice and oviposition, semiochemical choice, field population and crop-damage endpoints, citronella endpoints, and diel locomotor behavior. These works were previously discoverable only as false-positive candidates inside SWD or Aedes searches. The dedicated lane corrects that classification without treating the seven papers as complete DBM literature coverage.
+
+`human_repellent_testing_guidance` maps the exact WHO human-skin mosquito-repellent guideline, US EPA OPPTS 810.3700, and the PubMed-indexed wash-in and wash-off review. Its records point directly to the original public guidance page, EPA document, or PubMed abstract. The lane supports durability test design and interpretation boundaries; it does not provide product-specific protection-time evidence.
+
 Hosted GBIF and iNaturalist ingests stage a copy of the active artifact directory, fetch into the staging copy, replace only the matching source rows in SQLite, write receipts, and activate the staged directory only after the refresh succeeds. This keeps the old server database readable during long pulls.
 
 ## Genomics

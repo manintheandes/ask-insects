@@ -214,6 +214,7 @@ def truth_packet(case_id):
         "reasoning_boundaries": ["Separate observation from mechanism."],
         "sources": [
             {
+                "title": f"Original public source for {case_id}",
                 "source_id": f"public-source-{case_id}",
                 "locator": f"records#{case_id}",
                 "public_url": f"https://example.org/sources/{case_id}",
@@ -341,7 +342,20 @@ def passing_results(contract=None, exact_contract_bytes=None):
             {
                 "id": case["id"],
                 "question": case["question"],
-                "answer": f"Complete source-backed answer for {case['id']}.",
+                "answer": (
+                    f"Complete source-backed answer for {case['id']}.\n"
+                    + "\n".join(
+                        "\n".join(
+                            (
+                                source["title"],
+                                source["public_url"],
+                                source["source_id"],
+                                source["locator"],
+                            )
+                        )
+                        for source in case["truth_packet"]["sources"]
+                    )
+                ),
                 "elapsed_seconds": index / 10,
                 "attempt": 1,
                 "interface_observed": "codex-app",
@@ -369,8 +383,10 @@ def passing_results(contract=None, exact_contract_bytes=None):
                 },
                 "provenance": [
                     {
+                        "title": source["title"],
                         "source_id": source["source_id"],
                         "locator": source["locator"],
+                        "public_url": source["public_url"],
                     }
                     for source in case["truth_packet"]["sources"]
                 ],
@@ -493,6 +509,43 @@ class RealityEvalTests(unittest.TestCase):
         self.assertTrue(
             all(case["truth_packet"]["sources"] for case in questions)
         )
+        scientific_sources = [
+            source
+            for case in questions
+            for source in case["truth_packet"]["sources"]
+        ]
+        self.assertTrue(all(source["title"] for source in scientific_sources))
+        self.assertTrue(
+            all(
+                source["source_id"] != "insect_intelligence_programs"
+                for source in scientific_sources
+            )
+        )
+        self.assertTrue(
+            all(
+                "config/insect-intelligence-programs.json"
+                not in source["locator"]
+                for source in scientific_sources
+            )
+        )
+
+    def test_public_manifest_rejects_internal_program_rows_as_scientific_sources(self):
+        manifest = public_manifest()
+        source = manifest["questions"][0]["truth_packet"]["sources"][0]
+        source.update(
+            {
+                "title": "Ask Insects program ledger",
+                "source_id": "insect_intelligence_programs",
+                "locator": "config/insect-intelligence-programs.json#jsonpath=$.species[0]",
+                "public_url": "https://github.com/manintheandes/ask-insects/blob/main/config/insect-intelligence-programs.json",
+            }
+        )
+
+        with self.assertRaisesRegex(
+            RealityEvalError,
+            "original scientific or official source",
+        ):
+            validate_public_manifest(manifest)
 
     def test_canonical_public_manifest_pins_verified_public_artifacts(self):
         manifest = load_json_object(DEFAULT_PUBLIC_MANIFEST)

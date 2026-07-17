@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import tempfile
@@ -307,7 +308,6 @@ class ReviewedScienceTests(unittest.TestCase):
     def test_aedes_microclimate_chamber_paraphrase_selects_environment_controls(self):
         record_ids = (
             "openalex:W3048721146",
-            "insect_intelligence_programs:product:human_mosquito_repellent:readiness:formulation_delivery",
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -389,6 +389,42 @@ class ReviewedScienceTests(unittest.TestCase):
             path = self.write_catalog(Path(tmpdir), payload)
             with self.assertRaisesRegex(ReviewedScienceError, "evaluation coupling"):
                 load_reviewed_science_catalog(path)
+
+    def test_catalog_rejects_internal_program_rows_as_scientific_evidence(self):
+        payload = catalog_payload()
+        payload["topics"][0]["source_record_ids"] = [
+            "insect_intelligence_programs:product:swd_crop_repellent:readiness:mode_of_action"
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = self.write_catalog(Path(tmpdir), payload)
+            with self.assertRaisesRegex(
+                ReviewedScienceError,
+                "original scientific or official source",
+            ):
+                load_reviewed_science_catalog(path)
+
+    def test_reviewed_answer_rejects_record_without_original_public_url(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            index = SourceIndex(root / "source_index.sqlite")
+            index.initialize()
+            record = evidence_record(
+                "study:texture",
+                source_id="drosophila_suzukii_core",
+                locator="raw/swd.json#works/W3037850025",
+            )
+            index.upsert_records([replace(record, url=None)])
+
+            answer = build_reviewed_science_answer(
+                index,
+                "How does SWD fruit texture affect egg laying?",
+                catalog_path=self.write_catalog(root),
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertFalse(answer["ok"])
+        self.assertIn("original public source URL", answer["source_gap"]["reason"])
 
     def test_specific_topic_priority_beats_broader_overlapping_topic(self):
         payload = catalog_payload()
@@ -511,7 +547,7 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "Which missing evidence would show SWD resistance is heritable rather than learned after pre-exposure?",
                 "swd:openalex_literature:openalex:W3199560580",
-                ("cross-resistance", "behavioral-tolerance", "field-frequency"),
+                ("cross-resistance", "common-garden", "field phenotype frequencies"),
             ),
             (
                 "How should I connect fewer SWD eggs with later larval survival and marketable yield across different fruit ripeness states?",
@@ -530,8 +566,8 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "Which adult, egg, larval, feeding, and crop-damage measurements should a diamondback moth repellent study track?",
-                "insect_intelligence_programs:species:plutella_xylostella:domain:life_cycle_development",
-                ("exact-species behavior", "life-cycle", "crop-state"),
+                "dbm:openalex:W2114561940",
+                ("adult orientation", "egg hatch", "leaf damage"),
             ),
             (
                 "Does a caprylic-capric acid blend reduce SWD egg laying, and has anyone isolated an airborne effect from substrate contact?",
@@ -552,15 +588,14 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "For a volatile Aedes repellent, which measurements keep applied dose separate from mosquito exposure, and which formulation-delivery evidence is still incomplete?",
-                "insect_intelligence_programs:product:human_mosquito_repellent:readiness:formulation_delivery",
+                "openalex:W4313493759",
                 (
                     "applied mass",
                     "release rate",
                     "airborne concentration",
                     "source-to-mosquito distance",
-                    "carrier",
-                    "spatial-delivery",
-                    "incomplete",
+                    "skin permeation",
+                    "measured air exposure",
                 ),
             ),
             (
@@ -623,12 +658,12 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "Should a diamondback moth release schedule follow period and timeless expression or measured adult locomotor activity?",
-                "swd:openalex_literature:openalex:W4407297126",
+                "dbm:openalex:W4407297126",
                 ("period", "timeless", "temperature-driven", "light-suppressed"),
             ),
             (
                 "For diamondback moth, how should I separate citronella effects on larval movement, feeding, mortality, adult oviposition, and field abundance?",
-                "swd:openalex_literature:openalex:W4387738540",
+                "dbm:openalex:W4387738540",
                 ("3 and 4 mL/L", "100%", "48 hours", "Diadegma"),
             ),
         )

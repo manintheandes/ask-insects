@@ -26,6 +26,8 @@ class DeployFilesTests(unittest.TestCase):
         self.assertIn("chmod 600", app)
         self.assertIn("http://127.0.0.1:8080/health", app)
         self.assertIn("/ingest/insect-intelligence-programs", app)
+        self.assertIn("ingest_plutella_xylostella_literature.py", app)
+        self.assertIn("ingest_human_repellent_testing_guidance.py", app)
 
     def test_deploy_activates_and_verifies_the_exact_git_revision(self):
         app = Path("scripts/deploy_gce_app.sh").read_text(encoding="utf-8")

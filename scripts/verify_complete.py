@@ -228,6 +228,8 @@ REQUIRED_FILES = (
     "askinsects/repellency.py",
     "askinsects/reviewed_science.py",
     "askinsects/reality_eval.py",
+    "askinsects/sources/human_repellent_testing_guidance.py",
+    "askinsects/sources/plutella_xylostella_literature.py",
     "askinsects/server.py",
     "askinsects/voxels.py",
     "askinsects/sources/__init__.py",
@@ -358,6 +360,8 @@ REQUIRED_FILES = (
     "scripts/eval_reality.py",
     "scripts/eval_repellency_comparison.py",
     "scripts/ingest_insect_intelligence_programs.py",
+    "scripts/ingest_human_repellent_testing_guidance.py",
+    "scripts/ingest_plutella_xylostella_literature.py",
     "scripts/ingest_uniprot_proteins.py",
     "scripts/ingest_wolbachia_interventions.py",
     "scripts/ingest_vectorbyte_traits.py",
@@ -485,6 +489,8 @@ REQUIRED_FILES = (
     "tests/test_reality_eval.py",
     "tests/test_agent_setup.py",
     "tests/test_insect_intelligence_programs.py",
+    "tests/test_human_repellent_testing_guidance_source.py",
+    "tests/test_plutella_xylostella_literature_source.py",
     "tests/test_context_package.py",
     "tests/test_uniprot_proteins_source.py",
     "tests/test_wolbachia_interventions_source.py",
@@ -638,6 +644,8 @@ UNIT_TEST_MODULES = (
     "tests.test_reviewed_science",
     "tests.test_reality_eval",
     "tests.test_insect_intelligence_programs",
+    "tests.test_human_repellent_testing_guidance_source",
+    "tests.test_plutella_xylostella_literature_source",
     "tests.test_context_package",
     "tests.test_wheel_resources",
     "tests.test_uniprot_proteins_source",
@@ -2574,6 +2582,10 @@ def check_reviewed_scientific_evidence() -> None:
         "reviewed_scientific_evidence",
         "config/reviewed-scientific-evidence.json",
         "source_gap_when_any_required_record_is_missing",
+        "plutella_xylostella_literature",
+        "scripts/ingest_plutella_xylostella_literature.py",
+        "human_repellent_testing_guidance",
+        "scripts/ingest_human_repellent_testing_guidance.py",
     ):
         if required not in source_map:
             raise RuntimeError(
@@ -2583,6 +2595,9 @@ def check_reviewed_scientific_evidence() -> None:
         "reviewed_scientific_evidence",
         "config/reviewed-scientific-evidence.json",
         "fails closed",
+        "plutella_xylostella_literature",
+        "human_repellent_testing_guidance",
+        "original public guidance page",
     ):
         if required not in source_docs:
             raise RuntimeError(

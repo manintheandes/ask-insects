@@ -10,6 +10,10 @@ from askinsects.records import EvidenceRecord, Provenance
 
 
 INSECT_INTELLIGENCE_SOURCE_ID = "insect_intelligence_programs"
+PUBLIC_PROGRAM_LEDGER_URL = (
+    "https://github.com/manintheandes/ask-insects/blob/main/"
+    "config/insect-intelligence-programs.json"
+)
 _REPOSITORY_PROGRAM_LEDGER = (
     Path(__file__).resolve().parents[2]
     / "config"
@@ -284,6 +288,7 @@ def _provenance(program_path: Path, fragment: str, retrieved_at: str) -> Provena
         locator=f"{locator_path.as_posix()}#jsonpath={jsonpath}",
         retrieved_at=retrieved_at,
         license="Repository program ledger",
+        source_url=PUBLIC_PROGRAM_LEDGER_URL if program_path == DEFAULT_PROGRAM_LEDGER else None,
     )
 
 

@@ -331,6 +331,7 @@ class HostedCliTests(unittest.TestCase):
                     "source": "mosquito_repellent_external_discovery_extracted_facts",
                     "species": "Culicidae",
                     "title": "Candidate assay fact",
+                    "url": "https://doi.org/10.1000/candidate-assay-fact",
                     "text": "large duplicate detail",
                     "provenance": {
                         "source_id": "mosquito_repellent_external_discovery_extracted_facts",
@@ -385,6 +386,8 @@ class HostedCliTests(unittest.TestCase):
             "evidence": [
                 {
                     "source": "aedes_environment_controls",
+                    "title": "Direct measurements of transfluthrin effects on Aedes aegypti",
+                    "url": "10.1186/s13071-020-04271-3",
                     "provenance": {
                         "source_id": "aedes_environment_controls",
                         "locator": "artifacts/mosquito-v1/raw/literature/environment.json#record/1",
@@ -408,10 +411,48 @@ class HostedCliTests(unittest.TestCase):
             output,
             "Hold airflow, plume structure, temperature, and humidity constant.\n\n"
             "Sources:\n"
-            "- `aedes_environment_controls`: "
-            "`artifacts/mosquito-v1/raw/literature/environment.json#record/1`\n",
+            "- [Direct measurements of transfluthrin effects on Aedes aegypti]"
+            "(https://doi.org/10.1186/s13071-020-04271-3)\n"
+            "  Source ID: `aedes_environment_controls`\n"
+            "  Locator: `artifacts/mosquito-v1/raw/literature/environment.json#record/1`\n",
         )
         self.assertFalse(output.lstrip().startswith("{"))
+
+    def test_answer_only_uses_provenance_source_url_when_record_url_is_missing(self):
+        hosted_payload = {
+            "ok": True,
+            "answer_shape": "reviewed_science",
+            "answer": "The exact paper is identified below.",
+            "evidence": [
+                {
+                    "source": "plutella_xylostella_literature",
+                    "title": "The roles of olfaction and vision in host-plant finding",
+                    "url": None,
+                    "provenance": {
+                        "source_id": "plutella_xylostella_literature",
+                        "locator": "artifacts/mosquito-v1/raw/plutella/W1994548084.json#jsonpath=$.work",
+                        "source_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
+                    },
+                }
+            ],
+        }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", return_value=hosted_payload
+        ):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ask",
+                "Which cues guide diamondback moth host finding?",
+                "--answer-only",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertIn(
+            "[The roles of olfaction and vision in host-plant finding]"
+            "(https://doi.org/10.1111/j.1365-3032.2006.00499.x)",
+            output,
+        )
 
     def test_compact_hosted_ask_returns_final_answer_for_genomics_and_gaps(self):
         payloads = (
@@ -422,6 +463,8 @@ class HostedCliTests(unittest.TestCase):
                 "evidence": [
                     {
                         "source": "ncbi_datasets_genome",
+                        "title": "Aedes aegypti strain LVP_AGWG genome assembly AaegL5.0",
+                        "url": "https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_002204515.2/",
                         "provenance": {
                             "source_id": "ncbi_datasets_genome",
                             "locator": "raw/ncbi/GCF_002204515.2/assembly_data_report.jsonl#line/1",
@@ -466,6 +509,43 @@ class HostedCliTests(unittest.TestCase):
                     self.assertIn("assembly_data_report.jsonl#line/1", compact["final_answer"])
                 else:
                     self.assertIn("No direct focal-species evidence is queryable", compact["final_answer"])
+
+    def test_compact_hosted_ask_fails_closed_without_exact_source_identity(self):
+        hosted_payload = {
+            "ok": True,
+            "answer_shape": "literature",
+            "answer": "This unsupported answer must not be returned as a success.",
+            "evidence": [
+                {
+                    "source": "generic_literature_lane",
+                    "provenance": {
+                        "source_id": "generic_literature_lane",
+                        "locator": "raw/search-result.json#record/1",
+                    },
+                }
+            ],
+            "source_gap": None,
+        }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", return_value=hosted_payload
+        ):
+            load_config.return_value = SimpleNamespace(
+                url="https://ask-insects.example", token="secret"
+            )
+            code, output = self.run_cli(
+                "ask",
+                "What does the exact paper show?",
+                "--json",
+                "--compact",
+            )
+
+        self.assertEqual(code, 2)
+        compact = json.loads(output)
+        self.assertFalse(compact["ok"])
+        self.assertNotIn("unsupported answer", compact["final_answer"])
+        self.assertIn("exact source title", compact["final_answer"])
+        self.assertIn("public URL", compact["final_answer"])
 
     def test_hosted_insect_intelligence_ingest_sends_program_ledger(self):
         calls = []

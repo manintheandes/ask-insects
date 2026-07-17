@@ -193,10 +193,7 @@
         "optional": ["egg", "eggs", "larva", "larvae", "pupa", "pupae", "oviposition"]
       },
       "answer": "Follow eggs with larval or pupal emergence, fruit infestation or damage, and marketable yield or loss in replicated field conditions. The cited push-pull study found fewer pupae emerging from treated raspberries, which is stronger than an egg-only endpoint. It still does not provide the complete package of crop damage, marketable yield, persistence, and operational fit needed for a commercial crop-protection claim.",
-      "source_record_ids": [
-        "swd:openalex_literature:openalex:W4411730655",
-        "insect_intelligence_programs:product:swd_crop_repellent:readiness:field_or_human_use_performance"
-      ]
+      "source_record_ids": ["swd:openalex_literature:openalex:W4411730655"]
     },
     {
       "id": "aedes-host-cues-after-exposure",
@@ -317,11 +314,8 @@
         ],
         "optional": ["airborne", "air plume", "microclimate", "occupancy", "solvent", "direction", "speed", "still air", "randomize", "reverse"]
       },
-      "answer": "Use a matched solvent or untreated chamber, define and monitor airflow direction and speed, sample the plume or air concentration where possible, and hold and report temperature and relative humidity. Randomize or reverse treatment side and keep still-air conclusions separate from directional-flow conclusions. Applied dose is not the same as airborne exposure, and a still-air chamber cannot automatically represent an occupied room or outdoor setting. Product-specific carrier, release-rate, application, and delivery evidence remains incomplete.",
-      "source_record_ids": [
-        "openalex:W3048721146",
-        "insect_intelligence_programs:product:human_mosquito_repellent:readiness:formulation_delivery"
-      ]
+      "answer": "Use a matched solvent or untreated chamber, define and monitor airflow direction and speed, sample the plume or air concentration where possible, and hold and report temperature and relative humidity. Randomize or reverse treatment side and keep still-air conclusions separate from directional-flow conclusions. The cited transfluthrin study separated exposure concentrations, contact and non-contact conditions, behavioral outcomes, knockdown, and mortality; it did not make applied dose interchangeable with airborne exposure or make a still-air chamber representative of every occupied room or outdoor setting. Carrier, release rate, geometry, and measured exposure therefore remain explicit variables in each new product assay.",
+      "source_record_ids": ["openalex:W3048721146"]
     },
     {
       "id": "aedes-occupancy-versus-bites",
@@ -377,8 +371,12 @@
         ],
         "optional": ["causal", "expression", "docking", "electrophysiology", "perturbation"]
       },
-      "answer": "Expression, sequence, docking, or electrophysiological response can identify a candidate receptor, but none alone proves that the receptor drives avoidance. Causal support requires receptor perturbation or a comparably selective intervention linked to behavioral loss or change with the same compound and assay. Keep candidate, response, necessity, sufficiency, and field relevance separate. Ask Insects still lacks product-compound receptor-to-behavior validation in the intended SWD assay and crop context.",
-      "source_record_ids": ["insect_intelligence_programs:product:swd_crop_repellent:readiness:mode_of_action"]
+      "answer": "The evidence is mixed and endpoint-specific. The 2016 receptor-family paper annotated and compared SWD odorant and gustatory receptors, which identifies candidates but does not establish that one receptor causes avoidance. The 2015 avoidance study measured SWD behavior to several odorants, but it did not perturb a specific SWD receptor to prove necessity. The 2026 PNAS study did perform receptor perturbations and found two receptors required for attraction to ripe fruit, while those receptors were dispensable for egg-laying preference; that is causal attraction evidence, not causal repellent avoidance. A specific receptor can be said to drive SWD avoidance only when a selective perturbation changes avoidance to the same compound in the same behavioral assay, with locomotion and toxicity controlled. None of these sources establishes that full chain for a crop-repellent candidate.",
+      "source_record_ids": [
+        "swd_olfaction_literature:pubmed:27530109",
+        "swd_olfaction_literature:pubmed:26098542",
+        "swd:openalex_literature:openalex:W7140305653"
+      ]
     },
     {
       "id": "swd-visual-olfactory-confound",
@@ -479,11 +477,8 @@
         ],
         "optional": ["residue", "worker", "soil", "aquatic", "predator", "parasitoid"]
       },
-      "answer": "At the intended formulation and dose, measure crop phytotoxicity and quality, residues and worker exposure, pollinator and beneficial-arthropod survival and behavior, and relevant soil or aquatic exposure. The cited feeding study compared SWD with two pollinator bee species, but greater tolerance in those bees does not establish field safety for a different repellent, formulation, route, crop, or dose. Product-specific crop, worker, pollinator, predator, parasitoid, soil, aquatic, and beneficial-insect evidence remains a public source gap.",
-      "source_record_ids": [
-        "swd:openalex_literature:openalex:W4397009635",
-        "insect_intelligence_programs:product:swd_crop_repellent:readiness:non_target_ecological_effects"
-      ]
+      "answer": "At the intended formulation and dose, measure crop phytotoxicity and quality, residues and worker exposure, pollinator and beneficial-arthropod survival and behavior, and relevant soil or aquatic exposure. The cited feeding study compared SWD with two pollinator bee species, but greater tolerance in those bees does not establish field safety for a different repellent, formulation, route, crop, or dose. That study also does not measure crop injury, field exposure, predators, parasitoids, soil organisms, aquatic organisms, or worker exposure, so each remains a separate test requirement rather than an inferred safety result.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W4397009635"]
     },
     {
       "id": "swd-habituation-versus-inherited-resistance",
@@ -496,11 +491,8 @@
         ],
         "optional": ["washout", "common garden", "selection", "unexposed generation"]
       },
-      "answer": "Habituation is supported by a within-individual or within-generation decline after nonreinforced exposure that recovers after sufficient washout. Inherited resistance requires a persistent phenotype in offspring raised without exposure and ideally a selection response or genetic association. The SWD study found no habituation to octenol or 2-pentylfuran under its conditions, but it did not test inherited resistance. Use common-garden and unexposed-generation designs to separate learning, parental effects, and inheritance. Longitudinal, cross-resistance, behavioral-tolerance, and field-frequency evidence remains missing.",
-      "source_record_ids": [
-        "swd:openalex_literature:openalex:W3199560580",
-        "insect_intelligence_programs:species:drosophila_suzukii:knowledge-gap:adaptation_resistance:1"
-      ]
+      "answer": "Habituation is supported by a within-individual or within-generation decline after nonreinforced exposure that recovers after sufficient washout. Inherited resistance requires a persistent phenotype in offspring raised without exposure and ideally a selection response or genetic association. The cited SWD study found no habituation to octenol or 2-pentylfuran under its adult and larval pre-exposure conditions, but it did not rear unexposed offspring, select lines across generations, measure cross-resistance, or estimate field phenotype frequencies. Use common-garden offspring and unexposed-generation designs to separate learning, parental effects, and inheritance.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W3199560580"]
     },
     {
       "id": "swd-stage-to-market-loss",
@@ -514,11 +506,10 @@
         ],
         "optional": ["hatch", "emergence", "damage", "decay", "rejected fruit", "economic"]
       },
-      "answer": "Measure eggs per fruit, hatch or larval establishment, pupation or adult emergence, fruit damage and decay, rejected fruit, marketable yield, and economic loss using consistent fruit denominators. Record cultivar, fruit condition, and ripeness because firmness, sugar, color, pupation, and survival can change across those states. The push-pull field work measured fewer pupae emerging from treated raspberries, while the cherry study found cultivar- and ripeness-associated differences. Every prevented egg would not necessarily have become a damaging larva, and pupal emergence alone does not quantify marketable loss. A replicated marketable-yield and operational-fit package remains missing.",
+      "answer": "Measure eggs per fruit, hatch or larval establishment, pupation or adult emergence, fruit damage and decay, rejected fruit, marketable yield, and economic loss using consistent fruit denominators. Record cultivar, fruit condition, and ripeness because firmness, sugar, color, pupation, and survival can change across those states. The push-pull field work measured fewer pupae emerging from treated raspberries, while the cherry study found cultivar- and ripeness-associated differences. Every prevented egg would not necessarily have become a damaging larva, and neither cited study by itself supplies the full egg-to-market-loss chain, so marketable yield and economic loss must be measured directly rather than inferred from pupal emergence.",
       "source_record_ids": [
         "swd:openalex_literature:openalex:W4411730655",
-        "swd_pubmed_literature:pubmed:39769586",
-        "insect_intelligence_programs:product:swd_crop_repellent:readiness:field_or_human_use_performance"
+        "swd_pubmed_literature:pubmed:39769586"
       ]
     },
     {
@@ -668,10 +659,10 @@
         ],
         "optional": ["formulation", "source age", "chamber volume", "ventilation", "sampling method"]
       },
-      "answer": "Report active ingredient and formulation, applied mass and area, source age, evaporation or release rate over time, chamber volume and ventilation, the air-sampling method and measured airborne concentration when available, and source-to-mosquito distance. Applied mass is not interchangeable with milligrams per cubic meter without validated release and transport measurements. Keep source loading, emission, transport, measured exposure, distance, and behavior separate, with time, temperature, humidity, and airflow attached to every concentration. The public product-readiness record still identifies carrier, concentration, spatial-delivery, and release-rate evidence as incomplete.",
+      "answer": "Report active ingredient and formulation, applied mass and area, source age, evaporation or release rate over time, chamber volume and ventilation, the air-sampling method and measured airborne concentration when available, and source-to-mosquito distance. Applied mass is not interchangeable with milligrams per cubic meter without validated release and transport measurements. The transfluthrin study separated tested concentrations and behavioral or toxic endpoints, while the controlled-release citronella study measured formulation release and skin permeation as well as repellency duration. Neither study licenses substituting source loading for measured air exposure. Keep loading, emission, transport, measured concentration, distance, and behavior separate, with time, temperature, humidity, and airflow attached to each measurement.",
       "source_record_ids": [
         "openalex:W3048721146",
-        "insect_intelligence_programs:product:human_mosquito_repellent:readiness:formulation_delivery"
+        "openalex:W4313493759"
       ]
     },
     {
@@ -701,8 +692,12 @@
         ],
         "optional": ["temperature", "rubbing", "water exposure", "active ingredient", "landing", "bite"]
       },
-      "answer": "Use repeated standardized sweating or water exposure, defined washing and drying cycles, controlled rubbing or abrasion, ultraviolet or sunlight exposure, and relevant hot and cool temperatures, each compared with an unchallenged time-matched control. Measure both retained active ingredient or release and repeated landing or bite protection after every challenge. Initial arm-in-cage protection time does not establish real-use durability, and chemical remaining on skin does not automatically mean behavioral protection remains. Product-specific evidence under heat, sweat, abrasion, airflow, and realistic use is still missing.",
-      "source_record_ids": ["insect_intelligence_programs:product:human_mosquito_repellent:readiness:persistence_reapplication"]
+      "answer": "WHO and EPA guidance standardize efficacy and complete-protection-time testing, but EPA's baseline subject controls explicitly avoid perspiration, abrasion, rubbing, touching, and wetting the treated area. Those baseline tests therefore do not establish protection after those stresses. Use separate, pre-specified challenge arms for standardized sweat or water exposure, washing and drying cycles, rubbing or abrasion, ultraviolet or sunlight exposure, and relevant hot and cool temperatures, each with an unchallenged time-matched control. Repeat landing or bite protection after every challenge and measure retained active ingredient or release as a supporting endpoint, not a substitute for protection. The wash-in and wash-off review specifically identifies water, sweat, temperature, and abrasion as durability and reapplication factors. This challenge matrix is a product-development recommendation; the sources do not provide a universal validated protocol for every stress combination.",
+      "source_record_ids": [
+        "human_repellent_guidance:who:2009.4",
+        "human_repellent_guidance:epa:810.3700",
+        "human_repellent_guidance:pubmed:26811157"
+      ]
     },
     {
       "id": "aedes-physiological-repellent-resistance",
@@ -729,10 +724,11 @@
         ],
         "optional": ["direct evidence", "guide", "sensory", "feeding"]
       },
-      "answer": "Source gap: the current Ask Insects source plane has no exact-species Plutella xylostella sensory or feeding and host-finding lane, so it cannot yet provide a source-backed list of direct plant cues. Missing direct evidence includes Brassica host cues, adult orientation, larval feeding, and crop-state effects. Evidence from SWD, mosquitoes, or other moths can generate hypotheses but cannot be relabeled as direct diamondback moth evidence.",
+      "answer": "Direct Plutella xylostella evidence shows that flying females use volatile plant cues to locate and land on hosts, while plant position and host-versus-nonhost identity also affect alighting in mixed crops. In a separate choice study, females oriented to Brassicaceae plant odor versus clean air but did not distinguish among three host species when all odors were presented together; mixed cropping reduced oviposition. A 2025 study identified eight broccoli volatiles that elicited antennal responses: benzaldehyde, limonene, phenylacetaldehyde, acetophenone, linalool, 2-phenylethyl alcohol, methyl salicylate, and methyl 2-methoxybenzoate. Field trapping supported a 3-component blend of limonene, 2-phenylethyl alcohol, and methyl 2-methoxybenzoate. Antennal response or trap attraction does not prove that a compound guides egg laying, and host finding should keep odor, vision, landing, and oviposition as separate endpoints.",
       "source_record_ids": [
-        "insect_intelligence_programs:species:plutella_xylostella:domain:feeding_host_finding",
-        "insect_intelligence_programs:species:plutella_xylostella:domain:sensory_world"
+        "dbm:openalex:W1994548084",
+        "dbm:openalex:W2114561940",
+        "dbm:openalex:W4409241407"
       ]
     },
     {
@@ -746,10 +742,11 @@
         ],
         "optional": ["orientation", "landing", "oviposition", "feeding", "yield", "quality"]
       },
-      "answer": "Start with an assay ladder that separately measures adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, and marketable yield or quality. This is a product-design inference, not current evidence that one endpoint is most predictive in Plutella xylostella. The source plane lacks exact-species behavior, life-cycle, reproduction, feeding, and crop-state evidence needed to validate that ordering. Adult avoidance alone cannot establish reduced crop damage.",
+      "answer": "Start with an assay ladder that separately measures adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, and marketable yield or quality. Direct Plutella xylostella studies already demonstrate why the layers cannot be collapsed: one measured host orientation, landing, and egg laying; another separately counted adults, larvae, and leaf damage in broccoli; and the semiochemical study linked a four-choice adult assay to field population and beneficial-insect counts. Those sources do not show that one early endpoint universally predicts marketable yield. The proposed order is a product-development design, and adult avoidance alone cannot establish reduced crop damage.",
       "source_record_ids": [
-        "insect_intelligence_programs:species:plutella_xylostella:domain:life_cycle_development",
-        "insect_intelligence_programs:species:plutella_xylostella:domain:reproduction_oviposition"
+        "dbm:openalex:W2114561940",
+        "dbm:openalex:W4391482378",
+        "dbm:openalex:W4413460540"
       ]
     },
     {
@@ -763,10 +760,12 @@
         ],
         "optional": ["contact", "non contact", "plume", "oviposition", "larval feeding"]
       },
-      "answer": "SWD and mosquito work can transfer assay principles and hypotheses: separate contact from non-contact exposure, measure dose and plume, use matched controls, and follow behavior with reproduction and damage endpoints. It cannot transfer efficacy. Evidence from another insect cannot be relabeled as direct focal-species evidence; it must remain explicitly labeled inference. Plutella xylostella must be tested directly for host-cue use, sex and life-stage response, orientation and landing, oviposition, larval feeding and damage, dose response, toxicity, field plume behavior, and persistence. The current source plane has no exact-species behavior, movement, or chemical-response lane.",
+      "answer": "SWD and mosquito work can transfer assay principles and hypotheses: separate contact from non-contact exposure, measure dose and plume, use matched controls, and follow behavior with reproduction and damage endpoints. It cannot transfer efficacy. Direct Plutella xylostella studies already provide adult choice, host-location, oviposition, field population, larval-density, and leaf-damage endpoints, so a DBM program should build on those rather than claim the species is unstudied. The candidate repellent must still be tested directly in Plutella for non-contact orientation, contact effects, sex and life-stage response, oviposition, larval feeding and damage, dose response, toxicity, field plume behavior, and persistence. Keep the SWD and Aedes papers labeled as method analogies and the DBM papers labeled as focal-species evidence.",
       "source_record_ids": [
-        "insect_intelligence_programs:species:plutella_xylostella:domain:behavior",
-        "insect_intelligence_programs:species:plutella_xylostella:domain:chemical_responses_metabolism"
+        "swd:openalex_literature:openalex:W4411730655",
+        "openalex:W3048721146",
+        "dbm:openalex:W4413460540",
+        "dbm:openalex:W4391482378"
       ]
     },
     {
@@ -782,7 +781,7 @@
         "optional": ["roth", "entrained", "free running", "free-running", "field", "repellent"]
       },
       "answer": "In the ROTH Plutella xylostella strain, period and timeless transcripts showed rhythms under entrained and free-running conditions, but measured adult locomotor activity was temperature-driven and light-suppressed rather than coupled to those clock-gene rhythms. A release schedule should therefore be tested against actual adult activity under the intended light and temperature pattern, not selected from transcript peaks alone. This laboratory strain does not establish field timing across populations, seasons, canopy conditions, or weather, so molecular and locomotor endpoints must remain separate and field timing needs direct validation.",
-      "source_record_ids": ["swd:openalex_literature:openalex:W4407297126"]
+      "source_record_ids": ["dbm:openalex:W4407297126"]
     },
     {
       "id": "dbm-citronella-endpoint-separation",
@@ -797,7 +796,7 @@
         "optional": ["cabbage", "larva", "larvae", "concentration", "diadegma", "natural enemy"]
       },
       "answer": "The study reported several distinct citronella endpoints in Plutella xylostella: larval movement in a filter-paper assay, feeding-related effects on treated cabbage, oviposition inhibition, mortality, and season-long field population counts. In the filter-paper assay, 3 and 4 mL/L produced 100% reported repellency at 48 hours; mortality was measured separately through 120 hours, so neither value should be treated as pure spatial repellency. Lower field abundance also cannot be assigned to repellency alone. Separate no-contact choice, treated-leaf feeding, survival or knockdown, adult oviposition, and crop damage. The reported Diadegma eucerophaga field observation is study- and species-specific, not general natural-enemy safety proof.",
-      "source_record_ids": ["swd:openalex_literature:openalex:W4387738540"]
+      "source_record_ids": ["dbm:openalex:W4387738540"]
     },
     {
       "id": "dbm-first-baseline-experiment",
@@ -810,10 +809,12 @@
         ],
         "optional": ["brassica", "wind tunnel", "olfactometer", "mated female", "larval damage"]
       },
-      "answer": "Source gap: the highest-leverage missing evidence is a direct Plutella xylostella baseline linking Brassica host cues and adult orientation to female oviposition. A useful closing experiment would use mated females in a randomized, replicated wind-tunnel or olfactometer choice with host-odor and visual controls, followed by matched no-choice and choice oviposition on standardized Brassica plants. Record activity, survival, total eggs, and later larval damage separately. This priority and design are reasoned recommendations, not evidence of a proven target or the only valid first experiment.",
+      "answer": "The general host-finding baseline is not the missing step: direct Plutella xylostella studies already link Brassica odors to orientation and landing, measure oviposition, identify antennally active host volatiles, and connect field treatments to adults, larvae, and leaf damage. Before broad repellent screening, the highest-leverage product gap is a focal-species assay that separates non-contact avoidance from contact feeding inhibition, knockdown, or mortality and then carries the same exposure into oviposition and larval-damage follow-up. Use mated females in a randomized, replicated airflow assay with odor-only, contact-only, solvent, airflow, and activity controls; then test matched choice and no-choice oviposition on standardized Brassica plants and measure survival, eggs, larval establishment, feeding damage, and release rate. This prioritization is an R&D recommendation, not evidence that one candidate already works.",
       "source_record_ids": [
-        "insect_intelligence_programs:species:plutella_xylostella:knowledge-gap:feeding_host_finding:1",
-        "insect_intelligence_programs:species:plutella_xylostella:knowledge-gap:reproduction_oviposition:1"
+        "dbm:openalex:W1994548084",
+        "dbm:openalex:W2114561940",
+        "dbm:openalex:W4387738540",
+        "dbm:openalex:W4391482378"
       ]
     }
   ]
