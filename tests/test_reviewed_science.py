@@ -226,6 +226,12 @@ class ReviewedScienceTests(unittest.TestCase):
                 "what measurements would tell me whether I am seeing spatial "
                 "repellency, knockdown, or mortality?",
                 "How should I separate airborne Aedes avoidance from knockdown and toxicity?",
+                "In a non-contact transfluthrin escape chamber, does less Aedes escape "
+                "mean stronger repellency, or could it mean knockdown?",
+                "Could a lower Aedes aegypti exit rate under noncontact airborne exposure "
+                "reflect locomotor impairment instead of weak avoidance?",
+                "If more treated Aedes remain in a non-contact chamber, should I call that "
+                "repellency or possible knockdown?",
             )
             for question in questions:
                 with self.subTest(question=question):
