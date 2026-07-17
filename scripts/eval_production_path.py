@@ -427,6 +427,8 @@ def evaluate_case(
         failures.append("Codex turn did not complete")
     if not answer.strip():
         failures.append("Codex returned no final visible answer")
+    if len(execution.agent_messages) > 1:
+        failures.append("normal answer emitted commentary before the final answer")
     if _is_retrieval_summary_only(answer):
         failures.append("final answer is only a retrieval summary")
     for label, pattern in PUBLIC_ANSWER_LEAK_PATTERNS:

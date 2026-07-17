@@ -39,6 +39,7 @@ class AgentSetupTests(unittest.TestCase):
             "Do not inspect memory",
             "Chronicle",
             "Do not emit a progress update",
+            "exactly one visible assistant message",
             "Return it immediately and verbatim without another reasoning turn or command",
             "yields a session ID",
             "continue the same process",

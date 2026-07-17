@@ -101,6 +101,21 @@ class ProductionPathEvalTests(unittest.TestCase):
             ["config/insect-intelligence-programs.json#species/2"],
         )
 
+    def test_commentary_before_the_full_answer_fails(self):
+        execution = successful_execution()
+        execution.agent_messages = [
+            "I am routing this through Ask Insects.",
+            execution.visible_answer,
+        ]
+
+        result = evaluate_case(sample_case(), execution, maximum_seconds=60)
+
+        self.assertFalse(result["ok"])
+        self.assertIn(
+            "normal answer emitted commentary before the final answer",
+            result["failures"],
+        )
+
     def test_retrieval_summary_without_a_substantive_answer_fails(self):
         question = "Compare Drosophila suzukii repellency assays for oviposition deterrence."
         case = {
