@@ -6715,8 +6715,9 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 plan,
                 (
                     "The structured Aedes vector-competence lane has no queryable values for "
-                    f"{missing_text} for {pathogen}. It therefore cannot support a conclusion about "
-                    f"how the requested measurements ({requested_text}) affect vector competence. "
+                    f"{missing_text} for {pathogen}. It therefore cannot answer the requested "
+                    f"measurement question ({requested_text}) or support a comparison or effect claim "
+                    "from those fields. "
                     "Nearby paper metadata and assay-candidate mentions are not treated as measurements."
                 ),
             )

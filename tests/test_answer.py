@@ -4948,6 +4948,7 @@ class AnswerTests(unittest.TestCase):
             self.assertFalse(answer["ok"])
             self.assertEqual(answer["source_gap"]["lane"], "vector_competence")
             self.assertIn("infection rate", answer["source_gap"]["reason"])
+            self.assertIn("cannot answer the requested measurement question", answer["source_gap"]["reason"])
 
             index.upsert_records(
                 [
