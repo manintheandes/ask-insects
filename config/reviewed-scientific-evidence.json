@@ -217,9 +217,9 @@
       "id": "aedes-blood-meal-internal-state",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["blood meal", "post-blood-meal", "internal state", "after feeding", "female feeds", "seeking hosts"],
+        "phrases": ["blood meal", "post-blood-meal", "internal state", "after feeding", "female feeds", "seeking hosts", "distended without blood", "experimentally distended"],
         "required_any": [
-          ["blood meal", "bloodmeal", "blood fed", "blood-fed", "feeds", "after feeding"],
+          ["blood meal", "bloodmeal", "blood fed", "blood-fed", "feeds", "after feeding", "distended without blood", "experimentally distended", "saline enema"],
           ["host seeking", "seeking hosts", "seek hosts", "stops seeking", "suppression", "suppress", "internal state", "gonotrophic"]
         ],
         "optional": ["abdominal distension", "abdominal swelling", "swelling", "neuropeptide", "egg laying", "time since feeding", "24 hours"]
