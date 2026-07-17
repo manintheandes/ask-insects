@@ -494,6 +494,16 @@ class ReviewedScienceTests(unittest.TestCase):
         )
         cases = (
             (
+                "How should I interpret a Y-tube or planar olfactometer result "
+                "before claiming crop protection from a repellent?",
+                "swd:openalex_literature:openalex:W4413971464",
+                (
+                    "orientation or choice",
+                    "does not by itself measure egg laying",
+                    "direct crop and damage outcomes",
+                ),
+            ),
+            (
                 "Which fermentation chemicals and tested concentration ranges separated SWD from D. melanogaster in Y-tube and EAG assays?",
                 "swd:openalex_literature:openalex:W4365509323",
                 ("2-phenylethanol", "0.01-0.1%", "1-10%", "0.1-1%"),
@@ -597,6 +607,18 @@ class ReviewedScienceTests(unittest.TestCase):
                     "validation cohort",
                     "ionotropic-receptor",
                     "association",
+                ),
+            ),
+            (
+                "What evidence shows that human metabolic differences change "
+                "Aedes aegypti attraction, and how should we control for donor effects?",
+                "aedes_olfaction_literature:pubmed:36261039",
+                (
+                    "150-person cohort",
+                    "associations",
+                    "donor identity",
+                    "sampling day",
+                    "include multiple donors",
                 ),
             ),
             (
