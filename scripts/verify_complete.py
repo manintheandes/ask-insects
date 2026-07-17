@@ -127,6 +127,7 @@ REQUIRED_FILES = (
     "config/insect-intelligence-programs.json",
     "config/reviewed-scientific-evidence.json",
     "public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json",
+    "public/evidence-packages/ask-insects-evidence-package-2026-07-17.1.json",
     "config/mosquito-intelligence-coverage.json",
     "config/aedes-source-plane-benchmark.json",
     "data/fixtures/mosquito_records.json",
@@ -977,9 +978,9 @@ assert Path(askinsects.__file__).resolve().is_relative_to(Path.cwd().resolve())
 assert DEFAULT_CONTEXT_CONFIG.resolve() == (Path.cwd() / "config/insect-evidence-package.json").resolve()
 assert load_context_config()["schema_version"] == "ask-insects-evidence-package-config.v2"
 assert DEFAULT_PUBLISHED_PACKAGE.resolve() == (
-    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json"
+    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-17.1.json"
 ).resolve()
-assert load_published_context_package()["package_version"] == "2026-07-14.7"
+assert load_published_context_package()["package_version"] == "2026-07-17.1"
 assert not (Path.cwd() / "artifacts/mosquito-v1/source_index.sqlite").exists()
 """
         _run_clean_clone_command(
@@ -1353,10 +1354,10 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
             "sha256": PUBLIC_PROGRAM_CONFIG_SHA256,
         },
     }
-    if package.get("package_version") != "2026-07-14.7":
+    if package.get("package_version") != "2026-07-17.1":
         raise RuntimeError("published evidence package has the wrong release version")
     if package.get("content_sha256") != (
-        "48f4013118f9f32ea4466790d0e4ff266db12d21c3a476c185986e85fbde8d55"
+        "7efdaa6f9713d8afd7d32402c4522eca3f445945531f5fad8c28b83a748541aa"
     ):
         raise RuntimeError("published evidence package has the wrong content hash")
     if hashlib.sha256(DEFAULT_PUBLISHED_PACKAGE.read_bytes()).hexdigest() != (
@@ -1430,7 +1431,7 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
     source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
     source_map_terms = (
         PUBLIC_PACKAGE_SCHEMA_VERSION,
-        "2026-07-14.7",
+        "2026-07-17.1",
         DEFAULT_PUBLISHED_PACKAGE.relative_to(REPO_ROOT).as_posix(),
         DEFAULT_PUBLISHED_PACKAGE_SHA256,
         str(package["content_sha256"]),

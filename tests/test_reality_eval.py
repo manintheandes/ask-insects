@@ -1247,6 +1247,10 @@ class RealityEvalTests(unittest.TestCase):
     def test_results_provenance_must_match_frozen_truth_packet_sources(self):
         mutations = (
             (
+                ("results", 0, "provenance", 0, "title"),
+                "Unfrozen source title",
+            ),
+            (
                 ("results", 0, "provenance", 0, "source_id"),
                 "unfrozen-source",
             ),
@@ -1254,12 +1258,35 @@ class RealityEvalTests(unittest.TestCase):
                 ("results", 0, "provenance", 0, "locator"),
                 "records#unfrozen",
             ),
+            (
+                ("results", 0, "provenance", 0, "public_url"),
+                "https://example.org/sources/unfrozen",
+            ),
         )
         for path, value in mutations:
             with self.subTest(path=path):
                 contract, exact_contract_bytes, payload = passing_result_fixture()
                 mutate_path(payload, path, value)
                 with self.assertRaisesRegex(RealityEvalError, "truth packet sources"):
+                    validate_results(
+                        payload,
+                        contract=contract,
+                        contract_bytes=exact_contract_bytes,
+                    )
+
+    def test_results_must_show_every_exact_source_field_in_visible_answer(self):
+        for field in ("title", "source_id", "locator", "public_url"):
+            with self.subTest(field=field):
+                contract, exact_contract_bytes, payload = passing_result_fixture()
+                value = payload["results"][0]["provenance"][0][field]
+                payload["results"][0]["answer"] = payload["results"][0][
+                    "answer"
+                ].replace(value, "[citation field omitted]")
+
+                with self.assertRaisesRegex(
+                    RealityEvalError,
+                    f"show provenance {field}",
+                ):
                     validate_results(
                         payload,
                         contract=contract,

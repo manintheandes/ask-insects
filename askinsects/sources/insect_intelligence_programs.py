@@ -11,7 +11,8 @@ from askinsects.records import EvidenceRecord, Provenance
 
 INSECT_INTELLIGENCE_SOURCE_ID = "insect_intelligence_programs"
 PUBLIC_PROGRAM_LEDGER_URL = (
-    "https://github.com/manintheandes/ask-insects/blob/main/"
+    "https://github.com/manintheandes/ask-insects/blob/"
+    "45d43b02d3dc34ac5354252da5dceefacc321f3e/"
     "config/insect-intelligence-programs.json"
 )
 _REPOSITORY_PROGRAM_LEDGER = (
@@ -278,9 +279,12 @@ def _provenance(program_path: Path, fragment: str, retrieved_at: str) -> Provena
                 jsonpath += f".{part}"
             else:
                 raise ValueError(f"unsupported program-ledger locator segment: {part}")
+    is_default_program_ledger = (
+        program_path.resolve() == DEFAULT_PROGRAM_LEDGER.resolve()
+    )
     locator_path = (
         Path("config/insect-intelligence-programs.json")
-        if program_path == DEFAULT_PROGRAM_LEDGER
+        if is_default_program_ledger
         else program_path
     )
     return Provenance(
@@ -288,7 +292,7 @@ def _provenance(program_path: Path, fragment: str, retrieved_at: str) -> Provena
         locator=f"{locator_path.as_posix()}#jsonpath={jsonpath}",
         retrieved_at=retrieved_at,
         license="Repository program ledger",
-        source_url=PUBLIC_PROGRAM_LEDGER_URL if program_path == DEFAULT_PROGRAM_LEDGER else None,
+        source_url=PUBLIC_PROGRAM_LEDGER_URL if is_default_program_ledger else None,
     )
 
 

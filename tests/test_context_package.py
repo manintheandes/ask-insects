@@ -203,7 +203,7 @@ class ContextPackageTests(unittest.TestCase):
             config["schema_version"],
             "ask-insects-evidence-package-config.v2",
         )
-        self.assertEqual(config["package_version"], "2026-07-14.7")
+        self.assertEqual(config["package_version"], "2026-07-17.1")
         contexts = config["contexts"]
         self.assertEqual(
             [context["id"] for context in contexts],
@@ -1055,7 +1055,7 @@ class ContextPackageTests(unittest.TestCase):
         serialized = json.dumps(package, sort_keys=True).casefold()
 
         self.assertEqual(package["schema_version"], "ask-insects-evidence-package.v3")
-        self.assertEqual(package["package_version"], "2026-07-14.7")
+        self.assertEqual(package["package_version"], "2026-07-17.1")
         self.assertEqual(len(package["evidence_records"]), 22)
         self.assertEqual(len(package["gaps"]), 11)
         self.assertEqual(len(package["program_records"]), 122)

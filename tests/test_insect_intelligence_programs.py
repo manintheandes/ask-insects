@@ -156,6 +156,19 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
             )
         )
 
+    def test_repo_relative_default_ledger_keeps_public_source_url(self):
+        records = build_insect_intelligence_records(
+            Path("config/insect-intelligence-programs.json"),
+            retrieved_at=RETRIEVED_AT,
+        )
+
+        self.assertTrue(
+            all(
+                str(record.provenance.source_url).startswith("https://github.com/")
+                for record in records
+            )
+        )
+
     def test_every_program_record_locator_resolves_to_one_source_value(self):
         ledger = load_program_ledger(DEFAULT_PROGRAM_LEDGER)
         records = build_insect_intelligence_records(retrieved_at=RETRIEVED_AT)
