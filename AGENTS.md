@@ -6,7 +6,7 @@ For a normal user-facing insect question, the route is already decided. Do not s
 
 The shell command must begin with `ask-insects` and end with `--answer-only`. Do not add comments, timing directives, or wrapper text to the shell command. If the execution tool returns a continuation handle, continue that same process until it exits; never issue the Ask Insects command again.
 
-The checked-in `.codex/config.toml` uses a small, fast Codex model at low reasoning because normal answers are latency-sensitive hosted lookups and the model only needs to invoke the hosted route and return its answer. Do not raise that project default without rerunning the complete Reality Eval. Select a larger model or higher effort explicitly for complex implementation work when needed.
+The checked-in `.codex/config.toml` uses a reliable Codex routing model at low reasoning because normal answers are latency-sensitive hosted lookups and the model only needs to invoke the hosted route and return its answer. Do not change that project default without rerunning the complete Reality Eval. Select a higher effort explicitly for complex implementation work when needed.
 
 Questions about adding a new insect, species profiles, portfolio expansion, or whether answer-routing design must change are normal Ask Insects questions. Do not emit a progress update or preamble before their hosted call. Run the single command immediately so the complete visible answer remains under 60 seconds.
 
