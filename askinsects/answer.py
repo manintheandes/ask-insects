@@ -85,6 +85,9 @@ LITERATURE_QUERY_STOPWORDS = {
     "with",
 }
 
+LITERATURE_METADATA_QUERY_BUDGET = 3
+LITERATURE_FULLTEXT_QUERY_BUDGET = 2
+
 RESISTANCE_MARKER_QUERY_TERMS = {
     alias.lower()
     for spec in MARKER_SPECS
@@ -1971,13 +1974,83 @@ def _literature_topical_tokens(question: str, species: str | None) -> set[str]:
         tokens -= {token.lower() for token in re.findall(r"[A-Za-z][A-Za-z0-9]+", species)}
     tokens -= LITERATURE_QUERY_STOPWORDS
     tokens -= {"mosquito", "mosquitoes"}
+    tokens -= {
+        "are",
+        "available",
+        "can",
+        "could",
+        "database",
+        "did",
+        "do",
+        "found",
+        "had",
+        "has",
+        "have",
+        "how",
+        "index",
+        "indexed",
+        "is",
+        "show",
+        "showed",
+        "shows",
+        "tell",
+        "us",
+        "was",
+        "were",
+        "will",
+        "would",
+    }
     return {token for token in tokens if not token.isdigit()}
+
+
+def _constraint_token(value: str) -> str:
+    token = value.casefold()
+    if token.endswith("ies") and len(token) > 4:
+        return token[:-3] + "y"
+    if token.endswith("s") and not token.endswith("ss") and len(token) > 4:
+        return token[:-1]
+    return token
+
+
+def _literature_constraint_matches(
+    record: EvidenceRecord,
+    topical_tokens: set[str],
+) -> set[str]:
+    record_tokens = {
+        _constraint_token(token)
+        for token in re.findall(r"[A-Za-z][A-Za-z0-9]+", f"{record.title}\n{record.text}")
+    }
+    return {
+        token
+        for token in topical_tokens
+        if _constraint_token(token) in record_tokens
+    }
+
+
+def _rank_literature_by_constraint_coverage(
+    records: list[EvidenceRecord],
+    topical_tokens: set[str],
+) -> list[EvidenceRecord]:
+    if not topical_tokens:
+        return records
+    minimum_matches = 3 if len(topical_tokens) >= 6 else 2 if len(topical_tokens) >= 3 else 1
+    scored = [
+        (len(_literature_constraint_matches(record, topical_tokens)), index, record)
+        for index, record in enumerate(records)
+    ]
+    return [
+        record
+        for matches, _, record in sorted(scored, key=lambda item: (-item[0], item[1]))
+        if matches >= minimum_matches
+    ]
 
 
 def _fulltext_literature_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
     records: list[EvidenceRecord] = []
     seen_record_ids: set[str] = set()
-    for search_query in _fulltext_literature_search_queries(question):
+    for search_query in _fulltext_literature_search_queries(question)[
+        :LITERATURE_FULLTEXT_QUERY_BUDGET
+    ]:
         query_limit = max(limit * 20, 50) if _wants_literature_fulltext(question) else limit
         query_records = index.search_literature_fulltext(search_query, limit=query_limit)
         if any(term in question.lower() for term in ("figure", "fig.", "caption")):
@@ -1996,6 +2069,8 @@ def _fulltext_literature_records(index: SourceIndex, question: str, *, limit: in
             if len(records) >= limit:
                 break
         if query_records:
+            break
+        if index.last_search_timed_out:
             break
     return records
 
@@ -6776,6 +6851,8 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
                 if plan.answer_shape == "literature" and lane == "literature"
                 else _search_queries(plan.search_query)
             )
+            if plan.answer_shape == "literature" and lane == "literature":
+                search_queries = search_queries[:LITERATURE_METADATA_QUERY_BUDGET]
             for search_query in search_queries:
                 if full_text_fallback_timed_out:
                     if post_timeout_searches >= post_timeout_search_budget:
@@ -6879,13 +6956,22 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             ]
         topical_tokens = _literature_topical_tokens(plan.question, species)
         if topical_tokens:
-            literature_records = [
-                record for record in literature_records if _record_matches_any_token(record, topical_tokens)
-            ]
+            literature_records = _rank_literature_by_constraint_coverage(
+                literature_records,
+                topical_tokens,
+            )
         if not literature_records:
             literature_records = _fulltext_literature_records(index, plan.question, limit=limit)
+            if topical_tokens:
+                literature_records = _rank_literature_by_constraint_coverage(
+                    literature_records,
+                    topical_tokens,
+                )
         if not literature_records:
-            return source_gap(plan, "The Ask Insects index has no matching literature metadata or full-text records.")
+            return source_gap(
+                plan,
+                "The bounded literature search found no records covering enough of the question's scientific constraints.",
+            )
         all_records = literature_records
 
     if plan.answer_shape == "genomics":

@@ -396,33 +396,54 @@ class SourceIndex:
         return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
     def search_literature_fulltext(self, query: str, limit: int = 10) -> list[EvidenceRecord]:
+        self.last_search_timed_out = False
         match = _fts_prefix_query(query)
         if not match:
             return []
         with self.connect() as conn:
-            rows = conn.execute(
-                """
-                SELECT
-                  u.unit_id,
-                  u.record_id AS paper_record_id,
-                  u.source,
-                  u.unit_index,
-                  u.text,
-                  u.url AS fulltext_url,
-                  u.license AS fulltext_license,
-                  u.provenance_json AS fulltext_provenance_json,
-                  r.title AS paper_title,
-                  r.species AS paper_species,
-                  r.url AS paper_url
-                FROM literature_fulltext_fts f
-                JOIN literature_fulltext_units u ON u.unit_id = f.unit_id
-                LEFT JOIN records r ON r.record_id = u.record_id
-                WHERE literature_fulltext_fts MATCH ?
-                ORDER BY bm25(literature_fulltext_fts)
-                LIMIT ?
-                """,
-                (match, limit),
-            ).fetchall()
+            deadline = time.monotonic() + SEARCH_TIMEOUT_SECONDS
+            deadline_interrupted_search = False
+
+            def deadline_expired() -> bool:
+                nonlocal deadline_interrupted_search
+                deadline_interrupted_search = time.monotonic() >= deadline
+                return deadline_interrupted_search
+
+            conn.set_progress_handler(deadline_expired, SEARCH_PROGRESS_STEPS)
+            try:
+                rows = conn.execute(
+                    """
+                    SELECT
+                      u.unit_id,
+                      u.record_id AS paper_record_id,
+                      u.source,
+                      u.unit_index,
+                      u.text,
+                      u.url AS fulltext_url,
+                      u.license AS fulltext_license,
+                      u.provenance_json AS fulltext_provenance_json,
+                      r.title AS paper_title,
+                      r.species AS paper_species,
+                      r.url AS paper_url
+                    FROM literature_fulltext_fts f
+                    JOIN literature_fulltext_units u ON u.unit_id = f.unit_id
+                    LEFT JOIN records r ON r.record_id = u.record_id
+                    WHERE literature_fulltext_fts MATCH ?
+                    ORDER BY bm25(literature_fulltext_fts)
+                    LIMIT ?
+                    """,
+                    (match, limit),
+                ).fetchall()
+            except sqlite3.OperationalError as exc:
+                if (
+                    not deadline_interrupted_search
+                    or getattr(exc, "sqlite_errorcode", None) != sqlite3.SQLITE_INTERRUPT
+                ):
+                    raise
+                self.last_search_timed_out = True
+                rows = []
+            finally:
+                conn.set_progress_handler(None, 0)
         records: list[EvidenceRecord] = []
         for row in rows:
             payload = dict(row)

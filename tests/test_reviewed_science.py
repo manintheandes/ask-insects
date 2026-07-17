@@ -437,6 +437,17 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("34 C", "CO2", "human odor", "TRPA1", "opsins"),
             ),
             (
+                "When the same people provide skin-odor samples repeatedly, what do donor consistency, carboxylic acids, and ionotropic-receptor mutants tell us about why female Aedes differ in attraction?",
+                "aedes_olfaction_literature:pubmed:36261039",
+                (
+                    "months to years",
+                    "carboxylic acids",
+                    "validation cohort",
+                    "ionotropic-receptor",
+                    "association",
+                ),
+            ),
+            (
                 "Should a diamondback moth release schedule follow period and timeless expression or measured adult locomotor activity?",
                 "swd:openalex_literature:openalex:W4407297126",
                 ("period", "timeless", "temperature-driven", "light-suppressed"),
