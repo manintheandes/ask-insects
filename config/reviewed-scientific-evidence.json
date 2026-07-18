@@ -780,12 +780,37 @@
       "id": "dbm-direct-host-cue-gap",
       "species_ids": ["plutella_xylostella"],
       "match": {
-        "phrases": ["plant cues", "host finding", "Brassica host cues"],
+        "phrases": [
+          "plant cues",
+          "host finding",
+          "Brassica host cues",
+          "isothiocyanate",
+          "leaf-surface wax",
+          "leaf surface wax",
+          "phylloplane wax",
+          "epicuticular wax"
+        ],
         "required_any": [
-          ["plant", "host", "brassica", "crop"],
+          [
+            "plant",
+            "host",
+            "brassica",
+            "crop",
+            "leaf",
+            "wax",
+            "isothiocyanate"
+          ],
           ["cue", "cues", "host finding", "egg laying", "oviposition", "orientation"]
         ],
-        "optional": ["direct evidence", "guide", "sensory", "feeding"]
+        "optional": [
+          "direct evidence",
+          "guide",
+          "sensory",
+          "feeding",
+          "volatile",
+          "surface",
+          "phylloplane"
+        ]
       },
       "answer": "Direct Plutella xylostella evidence separates host finding from egg laying. Flying females use volatile plant cues to locate and land on hosts, while plant position and host-versus-nonhost identity also affect alighting. Direct oviposition tests found the isothiocyanates iberin and sulforaphane to be the most active volatile stimulants and also found activity in non-volatile plant fractions. Surface-choice experiments found more eggs on reduced-wax or herbicide-treated plants and on glossy rather than waxy strains, implicating epicuticular wax, although visual, chemical, and tactile mechanisms were not isolated. A separate study found that larva-induced host-plant volatiles attracted adult females for oviposition. Another study identified eight broccoli volatiles that elicited antennal responses: benzaldehyde, limonene, phenylacetaldehyde, acetophenone, linalool, 2-phenylethyl alcohol, methyl salicylate, and methyl 2-methoxybenzoate; field trapping supported a three-component blend. Antennal response, field trapping, attraction, landing, and egg deposition are not interchangeable endpoints, and antennal activity does not prove that a compound guides egg laying. Keep odor, vision, surface contact, landing, and oviposition separate when selecting or rejecting a cue.",
       "source_record_ids": [

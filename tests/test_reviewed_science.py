@@ -736,6 +736,50 @@ class ReviewedScienceTests(unittest.TestCase):
             {item["record_id"] for item in answer["evidence"]},
         )
 
+    def test_dbm_host_cue_topic_matches_chemistry_and_surface_wording(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topic = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "dbm-direct-host-cue-gap"
+        )
+        questions = (
+            "What evidence separates volatile isothiocyanate effects from "
+            "leaf-surface wax effects on diamondback moth egg laying?",
+            "How do phylloplane wax and isothiocyanates affect Plutella "
+            "xylostella oviposition?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="plutella_xylostella_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in topic["source_record_ids"]
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertIn("iberin", answer["answer"].casefold())
+                self.assertIn("epicuticular wax", answer["answer"].casefold())
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    set(topic["source_record_ids"]),
+                )
+
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
