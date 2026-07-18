@@ -286,6 +286,11 @@ class ReviewedScienceTests(unittest.TestCase):
                 "An Aedes mosquito lands on treated skin and leaves before "
                 "probing. What does that show about contact deterrence versus "
                 "repellency before landing?",
+                "Aedes approaches and lands normally, then disengages after its "
+                "tarsi touch treated skin. Which evidence is pre-contact and "
+                "which is post-contact?",
+                "If an Aedes aegypti skin treatment leaves approaches unchanged but lowers "
+                "probing after contact, can we call it distance repellency?",
             )
             answers = [
                 build_reviewed_science_answer(index, question)
@@ -307,6 +312,53 @@ class ReviewedScienceTests(unittest.TestCase):
                     "multiple brief skin contacts",
                     "paired excito-repellency design",
                     "prevent contact with a barrier",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_dbm_antennal_field_blend_paraphrases_preserve_endpoint_boundary(self):
+        record_ids = (
+            "dbm:openalex:W4409241407",
+            "dbm:openalex:W2114561940",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="plutella_xylostella_literature",
+                        locator=f"raw/dbm.json#works/{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            questions = (
+                "DBM antennae respond to a Brassica volatile blend and field "
+                "traps catch adults. Does that prove reduced oviposition or crop injury?",
+                "Can an antennally active broccoli odor blend with higher trap "
+                "catch predict egg laying and leaf damage in Plutella xylostella?",
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    [item["record_id"] for item in answer["evidence"]],
+                    list(record_ids),
+                )
+                for fragment in (
+                    "antennal detection",
+                    "adult field attraction",
+                    "three-component blend",
+                    "cannot substitute",
+                    "eggs, larvae, leaf damage",
                 ):
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
 

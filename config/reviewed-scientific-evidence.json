@@ -283,14 +283,14 @@
       "id": "aedes-contact-versus-spatial",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["spatial repellency", "distance repellency", "repellency before landing", "contact deterrence", "contact irritancy", "contact excitation", "brief skin contact", "topical repellent"],
+        "phrases": ["spatial repellency", "distance repellency", "repellency before landing", "contact deterrence", "contact irritancy", "contact excitation", "brief skin contact", "brief skin contacts", "topical repellent"],
         "required_any": [
-          ["spatial", "distance", "non contact", "non-contact", "pre contact", "pre-contact", "before contact", "before landing", "before touching"],
+          ["spatial", "distance", "non contact", "non-contact", "pre contact", "pre-contact", "before contact", "before landing", "before touching", "approach", "approaches", "approaching"],
           ["contact", "touch", "touches", "touching", "topical", "irritancy", "excitation", "escape"]
         ],
         "optional": ["distinguish", "excito repellency", "knockdown", "mortality", "skin", "landing", "bite", "bites", "biting"]
       },
-      "answer": "No. If mosquitoes briefly touch treated skin before bites decline, the result does not prove repellency at a distance because physical contact already occurred. In the cited tracking study, topical repellents reduced bites even though mosquitoes made multiple brief skin contacts; that separates contact from biting but does not identify whether the post-contact effect was irritancy, taste-mediated deterrence, or another mechanism. Operationally, spatial repellency is movement away or reduced entry without physical contact, while contact irritancy is locomotor excitation or escape after touching treatment. A paired excito-repellency design separates non-contact and contact exposure and should also record knockdown and mortality. To establish a distance effect, prevent contact with a barrier and measure entry, orientation, landing, or escape before any touch, alongside a matched contact arm. Escape from a contact chamber does not prove spatial repellency, and reduced bites or landings alone do not establish an olfactory mechanism.",
+      "answer": "If mosquitoes briefly touch treated skin before bites decline, the result does not prove repellency at a distance because physical contact already occurred. In the cited tracking study, topical repellents reduced bites even though mosquitoes made multiple brief skin contacts; that separates contact from biting but does not identify whether the post-contact effect was irritancy, taste-mediated deterrence, or another mechanism. Operationally, spatial repellency is movement away or reduced entry without physical contact, while contact irritancy is locomotor excitation or escape after touching treatment. A paired excito-repellency design separates non-contact and contact exposure and should also record knockdown and mortality. To establish a distance effect, prevent contact with a barrier and measure entry, orientation, landing, or escape before any touch, alongside a matched contact arm. Escape from a contact chamber does not prove spatial repellency, and reduced bites or landings alone do not establish an olfactory mechanism.",
       "source_record_ids": [
         "openalex:W4403603462",
         "openalex:W3048721146"
@@ -777,6 +777,31 @@
       "source_record_ids": [
         "aedes_primary_behavior:plosntds:e0003726",
         "openalex:W4299723530"
+      ]
+    },
+    {
+      "id": "dbm-antennal-field-blend-endpoints",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 60,
+        "phrases": [
+          "antennally active blend",
+          "field attractant blend",
+          "three-component blend",
+          "three-volatile blend",
+          "three volatile blend"
+        ],
+        "required_any": [
+          ["broccoli", "brassica", "volatile", "volatiles", "blend"],
+          ["antenna", "antennae", "antennal", "electrophysiology", "field trap", "field traps", "trapping", "trap catch"],
+          ["egg", "eggs", "oviposition", "damage", "crop protection", "predict"]
+        ],
+        "optional": ["fewer", "less", "landing", "larva", "larvae", "yield"]
+      },
+      "answer": "The evidence supports antennal detection and adult field attraction, not crop protection. The cited 2025 Plutella xylostella study identified eight broccoli volatiles that elicited antennal responses and found a three-component blend that attracted adults in field traps. It did not show that the blend reduced egg laying, larval establishment, feeding damage, or yield loss. A separate direct host-choice study measured orientation, landing, fecundity, and oviposition as distinct outcomes, which is why antennal response and trap catch cannot substitute for reproductive or crop endpoints. Test the blend in randomized choice and no-choice oviposition assays and then in matched field plots that separately count adults, eggs, larvae, leaf damage, and marketable yield. Until those downstream outcomes improve, the blend is a candidate attractant rather than a demonstrated crop repellent or crop-protection treatment.",
+      "source_record_ids": [
+        "dbm:openalex:W4409241407",
+        "dbm:openalex:W2114561940"
       ]
     },
     {
