@@ -258,6 +258,55 @@ class ReviewedScienceTests(unittest.TestCase):
                         answer["answer"].casefold(),
                     )
 
+    def test_topical_contact_does_not_route_to_a_spatial_source_gap(self):
+        record_ids = (
+            "openalex:W4403603462",
+            "openalex:W3048721146",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator=f"raw/aedes.json#works/{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            questions = (
+                "If mosquitoes touch a topical treatment and then do not bite, "
+                "does that prove Aedes repellency at a distance?",
+                "Can fewer Aedes bites after brief skin contact establish "
+                "spatial repellency before contact?",
+                "Does a topical Aedes repellent that works after touching skin "
+                "prove a non-contact effect?",
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    [item["record_id"] for item in answer["evidence"]],
+                    list(record_ids),
+                )
+                for fragment in (
+                    "does not prove repellency at a distance",
+                    "physical contact already occurred",
+                    "multiple brief skin contacts",
+                    "paired excito-repellency design",
+                    "prevent contact with a barrier",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
     def test_aedes_environment_control_paraphrases_use_reviewed_source_gap(self):
         record_id = "openalex:W3048721146"
         with tempfile.TemporaryDirectory() as tmpdir:

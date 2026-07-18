@@ -283,15 +283,18 @@
       "id": "aedes-contact-versus-spatial",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["spatial repellency", "contact irritancy", "contact excitation"],
+        "phrases": ["spatial repellency", "distance repellency", "contact irritancy", "contact excitation", "brief skin contact", "topical repellent"],
         "required_any": [
-          ["spatial", "non contact", "non-contact"],
-          ["contact", "irritancy", "excitation", "escape"]
+          ["spatial", "distance", "non contact", "non-contact", "before contact"],
+          ["contact", "touch", "touches", "touching", "topical", "irritancy", "excitation", "escape"]
         ],
-        "optional": ["distinguish", "excito repellency", "knockdown", "mortality"]
+        "optional": ["distinguish", "excito repellency", "knockdown", "mortality", "skin", "landing", "bite", "bites", "biting"]
       },
-      "answer": "Operationally, spatial repellency is movement away or reduced entry without physical contact, while contact irritancy is locomotor excitation or escape after touching treatment. A paired excito-repellency design separates non-contact and contact exposure and should also record knockdown and mortality. Escape from a contact chamber does not prove spatial repellency, and reduced landing alone does not establish an olfactory mechanism.",
-      "source_record_ids": ["openalex:W3048721146"]
+      "answer": "No. If mosquitoes briefly touch treated skin before bites decline, the result does not prove repellency at a distance because physical contact already occurred. In the cited tracking study, topical repellents reduced bites even though mosquitoes made multiple brief skin contacts; that separates contact from biting but does not identify whether the post-contact effect was irritancy, taste-mediated deterrence, or another mechanism. Operationally, spatial repellency is movement away or reduced entry without physical contact, while contact irritancy is locomotor excitation or escape after touching treatment. A paired excito-repellency design separates non-contact and contact exposure and should also record knockdown and mortality. To establish a distance effect, prevent contact with a barrier and measure entry, orientation, landing, or escape before any touch, alongside a matched contact arm. Escape from a contact chamber does not prove spatial repellency, and reduced bites or landings alone do not establish an olfactory mechanism.",
+      "source_record_ids": [
+        "openalex:W4403603462",
+        "openalex:W3048721146"
+      ]
     },
     {
       "id": "aedes-vapor-avoidance-versus-toxicity",
