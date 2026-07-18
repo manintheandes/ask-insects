@@ -555,17 +555,25 @@ class ReviewedScienceTests(unittest.TestCase):
                     for record_id in expected_record_ids
                 ]
             )
-            answer = build_reviewed_science_answer(
-                index,
+            questions = (
                 "What controls Aedes aegypti host seeking after a blood meal?",
+                "What did the original experiments using saline and blood enemas "
+                "show about the two stages of Aedes aegypti host-seeking "
+                "suppression after a meal?",
             )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
 
-        self.assertIsNotNone(answer)
-        assert answer is not None
-        self.assertEqual(
-            {item["record_id"] for item in answer["evidence"]},
-            expected_record_ids,
-        )
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    expected_record_ids,
+                )
 
     def test_dbm_cross_species_answer_cites_direct_oviposition_evidence(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
