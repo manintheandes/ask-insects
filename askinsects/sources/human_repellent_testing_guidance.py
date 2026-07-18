@@ -19,7 +19,10 @@ def build_human_repellent_testing_guidance_records(
                 "single-dose evaluation, and comparable protection measurements."
             ),
             "url": "https://www.who.int/publications/i/item/WHO-HTM-NTD-WHOPES-2009.4",
-            "locator": "https://www.who.int/publications/i/item/WHO-HTM-NTD-WHOPES-2009.4#overview",
+            "locator": (
+                "https://iris.who.int/server/api/core/bitstreams/"
+                "bf0c03d6-ccf4-428d-a299-23c6a74b2b04/content#page=15"
+            ),
             "license": "CC BY-NC-SA 3.0 IGO",
             "source_kind": "official_guideline",
         },

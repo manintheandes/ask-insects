@@ -52,6 +52,16 @@ class HumanRepellentTestingGuidanceSourceTests(unittest.TestCase):
             for record in records
             if record.record_id == "human_repellent_guidance:epa:810.3700"
         )
+        who = next(
+            record
+            for record in records
+            if record.record_id == "human_repellent_guidance:who:2009.4"
+        )
+        self.assertEqual(
+            who.provenance.locator,
+            "https://iris.who.int/server/api/core/bitstreams/"
+            "bf0c03d6-ccf4-428d-a299-23c6a74b2b04/content#page=15",
+        )
         self.assertEqual(
             epa.url,
             "https://www.epa.gov/system/files/documents/2023-12/"
