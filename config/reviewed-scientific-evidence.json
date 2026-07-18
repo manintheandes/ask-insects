@@ -396,9 +396,9 @@
           ["visual", "color", "colour", "contrast"],
           ["odor", "odour", "olfactory", "repellency", "assay", "confound"]
         ],
-        "optional": ["trap", "match", "hide", "randomize", "multimodal"]
+        "optional": ["trap", "match", "hide", "randomize", "multimodal", "dispenser", "emitter", "cartridge", "clear", "transparent"]
       },
-      "answer": "Yes. Drosophila suzukii showed color preferences, and the preferred visual cue changed with the accompanying odor in the cited study. An odor-focused assay should visually match treatment and control or hide the source while randomizing positions. The source measured trap-oriented responses, not oviposition, so it does not prove an egg-laying effect. Vision and olfaction should be treated as interacting modalities rather than independent additive cues.",
+      "answer": "Repeat the comparison: visually match treatment and control, or hide the source hardware while randomizing positions. Drosophila suzukii showed color preferences, and the preferred visual cue changed with the accompanying odor in the cited study. The source measured trap-oriented responses, not oviposition, so it does not prove an egg-laying effect. Vision and olfaction should be treated as interacting modalities rather than independent additive cues.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3132534524"]
     },
     {

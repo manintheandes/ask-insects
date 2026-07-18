@@ -25,6 +25,12 @@ EVALUATION_ONLY_FIELDS = frozenset(
     }
 )
 _MATCH_TOKEN_EQUIVALENTS = {
+    "colored": "color",
+    "coloring": "color",
+    "colors": "color",
+    "coloured": "color",
+    "colouring": "color",
+    "colours": "color",
     "stiff": "hardness",
     "stiffer": "harder",
     "stiffest": "harder",
