@@ -134,6 +134,26 @@
       "source_record_ids": ["swd:openalex_literature:openalex:W3199560580"]
     },
     {
+      "id": "swd-spatial-avoidance-vs-delayed-oviposition",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "phrases": ["delayed egg-laying", "delayed egg laying", "spatial avoidance"],
+        "required_any": [
+          ["egg", "eggs", "egg-laying", "egg laying", "oviposition"],
+          ["spatial avoidance", "spatial repellency", "spatial repellent", "repellent screen", "repellency assay"],
+          ["distinguish", "separate", "delayed", "versus", "vs"]
+        ],
+        "optional": ["screen", "assay", "endpoint", "time course", "non-contact", "no-contact", "locomotion", "total eggs"]
+      },
+      "answer": "Measure orientation and egg laying as separate endpoints on separate timelines. In a non-contact airflow arena, prevent surface contact and record approach, heading, entry, zone occupancy, exit, dwell time, speed, distance, and immobility at fixed intervals. In parallel contact-permitted choice and no-choice oviposition assays, count both egg allocation and total eggs over time, then move flies to clean untreated substrate and measure post-exposure catch-up. An immediate directional shift away from the odor with normal locomotion before egg laying supports spatial avoidance. Normal approach and occupancy followed by later egg deposition, reduced total egg output, or catch-up after odor removal supports delayed or suppressed oviposition instead. Use carrier and airflow shams, reverse treatment side, randomize order, and standardize age, mating, feeding, prior egg laying, substrate, and circadian time. Track knockdown, survival, and recovery separately so motor impairment is not mislabeled as repellency. This measurement chain distinguishes the endpoints; it does not by itself prove field crop protection.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W4411730655",
+        "swd:openalex_literature:openalex:W4213332511",
+        "swd_olfaction_literature:pubmed:26486360",
+        "swd:openalex_literature:openalex:W3199560580"
+      ]
+    },
+    {
       "id": "swd-two-choice-controls",
       "species_ids": ["drosophila_suzukii"],
       "match": {
