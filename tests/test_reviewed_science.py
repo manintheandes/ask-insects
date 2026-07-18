@@ -456,7 +456,13 @@ class ReviewedScienceTests(unittest.TestCase):
         cases = (
             (
                 "What phases of host-seeking suppression are reported after an Aedes blood meal?",
-                ("summarizes earlier work", "cannot independently verify", "R&D recommendation"),
+                (
+                    "two 1979 primary studies",
+                    "saline enemas",
+                    "blood enemas",
+                    "haemolymph transfer",
+                    "R&D recommendation",
+                ),
             ),
             (
                 "Did the nanostructured citronella paper directly measure volatile release rate?",
@@ -464,7 +470,12 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "Is humidity directly proven to be redundant with heat and odor during Aedes host seeking?",
-                ("source gap", "does not contain a direct primary measurement", "not established"),
+                (
+                    "close-range moisture",
+                    "do not directly manipulate humidity or moisture",
+                    "source gap",
+                    "not established",
+                ),
             ),
             (
                 "How should our volatile Aedes repellent program report source loading and exposure?",
@@ -516,6 +527,45 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertTrue(answer["ok"])
                 for fragment in expected_fragments:
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_blood_meal_state_answer_cites_both_primary_1979_studies(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topic = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "aedes-blood-meal-internal-state"
+        )
+        expected_record_ids = {
+            "aedes_primary_behavior:pubmed:544697",
+            "aedes_primary_behavior:pubmed:469272",
+            "aedes_primary_behavior:pmc:PMC3794971",
+        }
+        self.assertEqual(set(topic["source_record_ids"]), expected_record_ids)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_primary_behavior_evidence",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in expected_record_ids
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                "What controls Aedes aegypti host seeking after a blood meal?",
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertEqual(
+            {item["record_id"] for item in answer["evidence"]},
+            expected_record_ids,
+        )
 
     def test_dbm_cross_species_answer_cites_direct_oviposition_evidence(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
@@ -789,8 +839,9 @@ class ReviewedScienceTests(unittest.TestCase):
                 "How redundant are carbon dioxide, human odor, heat, humidity, and visual cues during Aedes aegypti host seeking?",
                 "openalex:W4401794442",
                 (
+                    "close-range moisture",
                     "convective body heat",
-                    "close range (less than 10 cm)",
+                    "less than 10 cm",
                     "thermal infrared",
                     "mid-range directional cue",
                     "source gap",
@@ -951,31 +1002,32 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "What controls Aedes host seeking after a blood meal, and is there a proven universal 24-hour phase?",
-                "aedes_primary_behavior:pmc:PMC3794971",
+                "aedes_primary_behavior:pubmed:544697",
                 (
-                    "summarizes earlier work",
-                    "abdominal-distention-associated",
+                    "two 1979 primary studies",
+                    "saline enemas",
+                    "blood enemas",
                     "three days",
                     "universal 24-hour phase",
                 ),
             ),
             (
                 "After an Aedes aegypti female feeds, is abdominal swelling the whole reason she stops seeking hosts for the next 24 hours?",
-                "aedes_primary_behavior:pmc:PMC3794971",
+                "aedes_primary_behavior:pubmed:469272",
                 (
-                    "summarizes earlier work",
-                    "oocyte-development-associated",
+                    "oocyte maturation",
+                    "haemolymph transfer",
                     "three days",
                     "universal 24-hour phase",
                 ),
             ),
             (
                 "If an Aedes aegypti female's abdomen is experimentally distended without blood, would reduced host seeking prove that blood chemistry caused the suppression?",
-                "aedes_primary_behavior:pmc:PMC3794971",
+                "aedes_primary_behavior:pubmed:544697",
                 (
-                    "abdominal-distention-associated",
-                    "oocyte-development-associated",
-                    "cannot independently verify",
+                    "saline enemas",
+                    "anterior distention",
+                    "blood enemas",
                 ),
             ),
             (
