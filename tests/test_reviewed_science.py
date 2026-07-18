@@ -764,12 +764,37 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "Which missing evidence would show SWD resistance is heritable rather than learned after pre-exposure?",
                 "swd:openalex_literature:openalex:W3199560580",
-                ("cross-resistance", "common-garden", "field phenotype frequencies"),
+                (
+                    "did not test genetic association",
+                    "rear unexposed offspring",
+                    "select lines across generations",
+                    "cross-resistance",
+                    "field phenotype frequencies",
+                    "common-garden",
+                ),
             ),
             (
                 "How should I connect fewer SWD eggs with later larval survival and marketable yield across different fruit ripeness states?",
                 "swd_pubmed_literature:pubmed:39769586",
-                ("fruit condition", "ripeness"),
+                (
+                    "overripe fruit",
+                    "cultivar differences in pupation",
+                    "did not compare developmental outcomes across ripeness states",
+                    "marketable yield",
+                    "economic loss",
+                    "operational fit",
+                ),
+            ),
+            (
+                "How redundant are carbon dioxide, human odor, heat, humidity, and visual cues during Aedes aegypti host seeking?",
+                "openalex:W4401794442",
+                (
+                    "convective body heat",
+                    "close range (less than 10 cm)",
+                    "thermal infrared",
+                    "mid-range directional cue",
+                    "source gap",
+                ),
             ),
             (
                 "How was Aedes aversive odor learning trained and when was memory tested?",
