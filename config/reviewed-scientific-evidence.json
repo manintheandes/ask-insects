@@ -88,7 +88,7 @@
         ],
         "optional": ["quality", "distribution", "per female", "unfamiliar", "unnatural"]
       },
-      "answer": "Both adult density and substrate quality affected Drosophila suzukii oviposition in the cited laboratory experiments, but substrate quality had the larger effect. Social interactions could increase oviposition, especially on unfamiliar or unnatural substrates. Total eggs, eggs per female, and egg distribution among hosts are different outcomes and should not be collapsed. These laboratory density and substrate effects do not directly predict field infestation.",
+      "answer": "Both adult density and host quality changed Drosophila suzukii oviposition in the cited laboratory experiments. Whole raspberries supported substantially more oviposition than lower-quality raspberry agar. On whole raspberries, eggs per female declined as female density increased; on raspberry agar, intermediate densities produced the highest per-female oviposition. Male density did not significantly change oviposition on whole raspberries, whereas the response to male density on agar was nonlinear. Total eggs, eggs per female, and egg distribution among hosts are different outcomes and should not be collapsed. These laboratory density and substrate effects do not directly predict field infestation.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3171171860"]
     },
     {
@@ -437,7 +437,7 @@
         ],
         "optional": ["feeding state", "microbiome", "gravid", "foraging", "standardize"]
       },
-      "answer": "The cited SWD study found lower food seeking in virgin females than in mated gravid females and linked reduced female foraging activity with lower oviposition in microbiome-deprived flies. Age, mating, feeding or starvation, microbiome, and prior egg-laying history should therefore be standardized, blocked, or tested deliberately rather than pooled. The source does not give measured effect sizes for every state in that list, so age and prior-oviposition effects should not be inferred from mating-state evidence alone.",
+      "answer": "The cited SWD study used 5- to 10-day-old adults and compared fed flies with flies deprived of food for 15 hours; starvation-induced locomotion increased activity. It also found lower food seeking in virgin females than in mated gravid females and linked reduced female foraging with lower oviposition in microbiome-deprived flies. These direct results show that hunger, mating state, gravidity, and microbiome can change the behavioral baseline against which a repellent is judged. Age could change reproductive maturity, and prior egg laying could change remaining egg load and oviposition motivation, but this paper did not experimentally measure either effect. Standardize, block, or deliberately vary age, mating, feeding, microbiome, and prior egg-laying history, and do not infer unmeasured age or prior-oviposition effect sizes from the mating-state result.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3161910963"]
     },
     {
@@ -576,8 +576,11 @@
         ],
         "optional": ["dopamine", "aversive", "habituation", "sensitization", "persistence"]
       },
-      "answer": "Female Aedes aegypti were trained individually with a 60-second odor presentation whose final 30 seconds were paired with a mechanical shock. They received 10 pairings separated by a 2-minute interval and were tested 24 hours later in a Y-maze. Trained Aedes avoided the mammalian-associated odorants 1-octen-3-ol and hexanoic acid but did not show the same learned change for the floral odor linalool; dopamine signaling was implicated in this olfactory learning. This does not show learning to every repellent or persistence under product use. Learned association, innate repellency, habituation, sensitization, and toxic impairment remain separate explanations.",
-      "source_record_ids": ["openalex:W4315621418"]
+      "answer": "Yes, under specific laboratory conditions. In one direct repellent study, previous DEET exposure was followed by reduced behavioral repellency when Aedes aegypti were tested three hours later, together with a reduced electroantennogram response to DEET. A separate associative learning study trained females with 10 pairings of a 60-second odor presentation and mechanical shock separated by 2-minute intervals, then found learned avoidance of mammalian-associated odorants 24 hours later, but not the same change for the floral odor linalool. The DEET result is short-term pre-exposure evidence, while the shock experiment is associative learning. The DEET result does not establish long-term persistence or field product failure, and the learning experiment does not show learning to every repellent. Habituation, sensitization, learned association, innate repellency, and toxic impairment remain separate explanations.",
+      "source_record_ids": [
+        "aedes_primary_behavior:pmc:PMC3577799",
+        "openalex:W4315621418"
+      ]
     },
     {
       "id": "aedes-population-and-state-variation",
@@ -590,7 +593,7 @@
         ],
         "optional": ["field population", "laboratory colony", "mating", "feeding state", "life history"]
       },
-      "answer": "The transfluthrin study observed markedly different spatial and contact responses between a laboratory Aedes aegypti strain and a field population. Separate selection for permethrin or thymol resistance changed longevity, blood-feeding avidity, egg output, and development in dose- and state-dependent ways. Report and test strain or population, genotype or resistance phenotype, age, mating, and feeding state across more than one relevant background. Do not assume one colony represents the species or that insecticide resistance always changes repellency in one direction.",
+      "answer": "Population background can change a result enough to reverse the practical interpretation. At the same 0.00852% initial transfluthrin loading on paper, non-contact escape was 5.0% in the laboratory USDA strain and 54.9% in the field NON population. That is one assay and one population comparison; the loading is the initial paper loading, not a measured airborne concentration at the mosquito. A separate resistance-selection study found changes in longevity, blood-feeding avidity, egg output, and development, but it does not quantify repellent response by age, genotype, or resistance state. Report and test population, genotype or resistance phenotype, age, mating, and feeding state across relevant backgrounds. Do not assume one colony represents the species or that insecticide resistance changes repellency in one fixed direction.",
       "source_record_ids": ["openalex:W3048721146", "openalex:W4413344516"]
     },
     {
@@ -731,8 +734,11 @@
         ],
         "optional": ["contact", "probing", "distance", "field", "protection time"]
       },
-      "answer": "An arm-in-cage assay can estimate landing or bite protection under its stated dose, mosquito density, exposure intervals, subject, and cage conditions. It does not by itself establish distance repellency, field performance, disease prevention, or durability through sweat, washing, abrasion, and weather. In tracking experiments, four topical repellents reduced bites while mosquitoes still made brief skin contacts, so no bite does not mean no approach or contact. Preserve landing, contact, probing, and bite definitions.",
-      "source_record_ids": ["openalex:W4403603462"]
+      "answer": "A landing-only arm-in-cage endpoint can establish reduced landings under the stated dose, mosquito density, exposure interval, participant, and cage conditions. It does not establish fewer probes or blood meals unless those outcomes are separately measured, and it does not by itself establish distance repellency, field performance, disease prevention, or durability through sweat, washing, abrasion, and weather. EPA guidance requires the study to define and score the chosen endpoint consistently. In tracking experiments, four topical repellents reduced bites while mosquitoes still made brief skin contact, so no bite does not mean no approach or contact. Preserve landing, contact, probing, biting, and blood feeding as separate endpoints.",
+      "source_record_ids": [
+        "human_repellent_guidance:epa:810.3700",
+        "openalex:W4403603462"
+      ]
     },
     {
       "id": "aedes-skin-repellent-durability",
@@ -764,8 +770,11 @@
         ],
         "optional": ["selection response", "common garden", "kdr", "pyrethroid", "marker"]
       },
-      "answer": "The two cited studies do not supply a universal definition of physiological resistance to a repellent. As an operational decision rule for product R&D, do not call reduced sensitivity resistance unless a standardized dose or air concentration produces a repeatable inherited reduction in effect, ideally supported by selection response, common-garden offspring, and physiological or genetic evidence. That is an R&D decision rule, not a universal definition established by these papers. Ordinary avoidance is the intended behavioral response, and reduced sensitivity is a phenotype that is not automatically inherited resistance. In the narrow cited examples, pyrethroid kdr status did not eliminate clothing repellency, while thymol selection produced lasting life-history changes. Insecticide resistance and repellent response cannot be assumed equivalent across compounds, formulations, routes, populations, or doses.",
-      "source_record_ids": ["openalex:W4413344516", "openalex:W4299723530"]
+      "answer": "First separate three levels: ordinary avoidance is the intended behavioral response; reduced sensitivity is a measured behavioral phenotype; and physiological resistance requires evidence of an altered physiological mechanism. As an operational decision rule, require repeatable reduced sensitivity at a standardized dose or air concentration plus inheritance evidence before calling the phenotype inherited resistance; this is not a universal definition. Heritable behavioral insensitivity does not by itself prove an altered physiological mechanism because behavioral sensitivity can also be inherited. In the direct transfluthrin study, selective mating over nine generations produced an insensitive SRA- line, the decline was significant by generation F4, and an experimental cross between SRA- females and wild-type males restored spatial-repellent sensitivity and insecticide susceptibility. The association with reduced insecticide susceptibility supports a link, but altered uptake, metabolism, target-site action, or neural processing would need direct measurement before naming a physiological mechanism. A separate clothing study also shows why kdr or insecticide-resistance status cannot automatically be equated with repellent failure. Insecticide resistance and repellent response cannot be assumed equivalent across compounds, formulations, routes, populations, or doses.",
+      "source_record_ids": [
+        "aedes_primary_behavior:plosntds:e0003726",
+        "openalex:W4299723530"
+      ]
     },
     {
       "id": "dbm-direct-host-cue-gap",
@@ -778,11 +787,14 @@
         ],
         "optional": ["direct evidence", "guide", "sensory", "feeding"]
       },
-      "answer": "Direct Plutella xylostella evidence shows that flying females use volatile plant cues to locate and land on hosts, while plant position and host-versus-nonhost identity also affect alighting in mixed crops. In a separate choice study, females oriented to Brassicaceae plant odor versus clean air but did not distinguish among three host species when all odors were presented together; mixed cropping reduced oviposition. A 2025 study identified eight broccoli volatiles that elicited antennal responses: benzaldehyde, limonene, phenylacetaldehyde, acetophenone, linalool, 2-phenylethyl alcohol, methyl salicylate, and methyl 2-methoxybenzoate. Field trapping supported a 3-component blend of limonene, 2-phenylethyl alcohol, and methyl 2-methoxybenzoate. Antennal response or trap attraction does not prove that a compound guides egg laying, and host finding should keep odor, vision, landing, and oviposition as separate endpoints.",
+      "answer": "Direct Plutella xylostella evidence separates host finding from egg laying. Flying females use volatile plant cues to locate and land on hosts, while plant position and host-versus-nonhost identity also affect alighting. Direct oviposition tests found the isothiocyanates iberin and sulforaphane to be the most active volatile stimulants and also found activity in non-volatile plant fractions. Surface-choice experiments found more eggs on reduced-wax or herbicide-treated plants and on glossy rather than waxy strains, implicating epicuticular wax, although visual, chemical, and tactile mechanisms were not isolated. A separate study found that larva-induced host-plant volatiles attracted adult females for oviposition. Another study identified eight broccoli volatiles that elicited antennal responses: benzaldehyde, limonene, phenylacetaldehyde, acetophenone, linalool, 2-phenylethyl alcohol, methyl salicylate, and methyl 2-methoxybenzoate; field trapping supported a three-component blend. Antennal response, field trapping, attraction, landing, and egg deposition are not interchangeable endpoints, and antennal activity does not prove that a compound guides egg laying. Keep odor, vision, surface contact, landing, and oviposition separate when selecting or rejecting a cue.",
       "source_record_ids": [
         "dbm:openalex:W1994548084",
         "dbm:openalex:W2114561940",
-        "dbm:openalex:W4409241407"
+        "dbm:openalex:W4409241407",
+        "dbm:openalex:W1996826081",
+        "dbm:openalex:W2164349268",
+        "dbm:openalex:W3093961030"
       ]
     },
     {
