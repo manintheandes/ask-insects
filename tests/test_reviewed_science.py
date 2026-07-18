@@ -1156,6 +1156,27 @@ class ReviewedScienceTests(unittest.TestCase):
         )
         cases = (
             (
+                "A red-colored emitter and a transparent sham produced different SWD side choices. What repeat would isolate odor repellency from the hardware's visual cue?",
+                "swd:openalex_literature:openalex:W3132534524",
+                (
+                    "color preferences",
+                    "changed with the accompanying odor",
+                    "visually match treatment and control",
+                    "randomizing positions",
+                    "not oviposition",
+                ),
+            ),
+            (
+                "Our coloured volatile cartridge is visible to spotted wing drosophila but the control is clear. How should we rerun the assay before calling it an olfactory effect?",
+                "swd:openalex_literature:openalex:W3132534524",
+                (
+                    "color preferences",
+                    "hide the source",
+                    "randomizing positions",
+                    "interacting modalities",
+                ),
+            ),
+            (
                 "How should I interpret a Y-tube or planar olfactometer result "
                 "before claiming crop protection from a repellent?",
                 "swd:openalex_literature:openalex:W4413971464",
