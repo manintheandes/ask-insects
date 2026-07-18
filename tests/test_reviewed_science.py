@@ -575,6 +575,24 @@ class ReviewedScienceTests(unittest.TestCase):
                     expected_record_ids,
                 )
 
+    def test_blood_meal_state_answers_do_not_overclaim_mechanism(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topics = {topic["id"]: topic for topic in catalog["topics"]}
+        blood_meal_answer = topics["aedes-blood-meal-internal-state"]["answer"]
+        npylr1_answer = topics["aedes-npylr1-necessity"]["answer"]
+
+        self.assertNotIn(
+            "anterior distention was more effective",
+            blood_meal_answer.casefold(),
+        )
+        self.assertIn("does not distinguish", npylr1_answer.casefold())
+        self.assertIn("redundant signaling", npylr1_answer.casefold())
+        self.assertIn("different unknown receptor", npylr1_answer.casefold())
+        self.assertNotIn(
+            "supports redundant signaling rather than",
+            npylr1_answer.casefold(),
+        )
+
     def test_failed_public_science_cases_are_complete_and_cite_direct_evidence(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         topics = {topic["id"]: topic for topic in catalog["topics"]}
@@ -1263,14 +1281,20 @@ class ReviewedScienceTests(unittest.TestCase):
                 "aedes_primary_behavior:pubmed:544697",
                 (
                     "saline enemas",
-                    "anterior distention",
                     "blood enemas",
+                    "does not establish one receptor",
                 ),
             ),
             (
                 "Is NPYLR1 required for post-blood-meal host-seeking suppression in Aedes aegypti?",
                 "aedes_primary_behavior:pmc:PMC3794971",
-                ("null mutants", "not required"),
+                (
+                    "null mutants",
+                    "not required",
+                    "does not distinguish",
+                    "redundant signaling",
+                    "different unknown receptor",
+                ),
             ),
             (
                 "How long did the controlled-release citronella formulation protect people in the Aedes study?",

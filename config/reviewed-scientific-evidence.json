@@ -224,7 +224,7 @@
         ],
         "optional": ["abdominal distension", "abdominal swelling", "swelling", "neuropeptide", "egg laying", "time since feeding", "24 hours"]
       },
-      "answer": "Two 1979 primary studies support distinct post-blood-meal processes. The abdominal-distention study found that a replete blood meal and saline enemas immediately inhibited host seeking; anterior distention was more effective than posterior distention, implicating anterior stretch receptors. The oocyte-maturation study separated egg development from feeding by using blood enemas; females that developed eggs were inhibited during oocyte maturation, and surgical manipulation plus haemolymph transfer implicated a circulating inhibitory factor. A 2013 genetic study describes roughly three days of suppression, treats Head Peptide-I as a candidate signal, and shows that NPYLR1 is not required. Standardizing feeding status, time since feeding, abdominal distention, egg-development state, and mating or insemination state is an R&D recommendation, not a universal protocol established by these studies. The evidence does not establish one receptor or a universal 24-hour phase across the gonotrophic cycle.",
+      "answer": "Two 1979 primary studies support distinct post-blood-meal processes. The abdominal-distention study found that a replete blood meal and saline enemas immediately inhibited host seeking. The oocyte-maturation study separated egg development from feeding by using blood enemas; females that developed eggs were inhibited during oocyte maturation, and surgical manipulation plus haemolymph transfer implicated a circulating inhibitory factor. A 2013 genetic study describes roughly three days of suppression, treats Head Peptide-I as a candidate signal, and shows that NPYLR1 is not required. Standardizing feeding status, time since feeding, abdominal distention, egg-development state, and mating or insemination state is an R&D recommendation, not a universal protocol established by these studies. The evidence does not establish one receptor, the anatomical location of a distention sensor, or a universal 24-hour phase across the gonotrophic cycle.",
       "source_record_ids": [
         "aedes_primary_behavior:pubmed:544697",
         "aedes_primary_behavior:pubmed:469272",
@@ -243,7 +243,7 @@
         ],
         "optional": ["null mutant", "host seeking", "blood meal", "redundant signaling"]
       },
-      "answer": "No. NPYLR1 responded to Head Peptide-I, but NPYLR1 null mutants still showed normal post-blood-meal host-seeking suppression. In that study NPYLR1 was therefore not required in vivo, which supports redundant signaling rather than a single-receptor mechanism. Ligand or receptor activation is not the same as genetic necessity, and this result should not be confused with later work on NPYLR7 agonists.",
+      "answer": "No. NPYLR1 responded to Head Peptide-I, but NPYLR1 null mutants still showed normal post-blood-meal host-seeking suppression. In that study NPYLR1 was therefore not required in vivo. The result does not distinguish redundant signaling through other receptors from signaling through a different unknown receptor. Ligand or receptor activation is not the same as genetic necessity, and this result should not be confused with later work on NPYLR7 agonists.",
       "source_record_ids": ["aedes_primary_behavior:pmc:PMC3794971"]
     },
     {
