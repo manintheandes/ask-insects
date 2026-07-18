@@ -12,6 +12,75 @@ class QueryPlan:
     search_query: str
 
 
+def _is_swd_repellency_science_question(question: str) -> bool:
+    q = question.lower()
+    is_spotted_wing = any(
+        term in q
+        for term in (
+            "drosophila suzukii",
+            "spotted wing drosophila",
+            "spotted-wing drosophila",
+        )
+    ) or bool(re.search(r"\bswd\b", q))
+    if not is_spotted_wing:
+        return False
+
+    program_ledger_terms = (
+        "product readiness",
+        "readiness status",
+        "evidence status",
+        "evidence is still missing",
+        "evidence still missing",
+        "missing",
+        "gap",
+        "gaps",
+        "source gap",
+        "source gaps",
+        "coverage",
+        "portfolio",
+        "product program",
+        "commercialization",
+        "private",
+        "already proven",
+        "proven effective",
+        "unverified",
+    )
+    if any(term in q for term in program_ledger_terms):
+        return False
+
+    repellency_terms = (
+        "repellent",
+        "repellency",
+        "spatial avoid",
+        "non-contact",
+        "noncontact",
+        "odor-mediated avoid",
+        "odour-mediated avoid",
+        "oviposition deterr",
+    )
+    experiment_terms = (
+        "assay",
+        "screen",
+        "endpoint",
+        "measure",
+        "distinguish",
+        "separate",
+        "delayed",
+        "time course",
+        "egg-laying",
+        "egg laying",
+        "oviposition",
+        "spatial avoid",
+        "non-contact",
+        "noncontact",
+        "odor-mediated avoid",
+        "odour-mediated avoid",
+    )
+    return any(term in q for term in repellency_terms) and any(
+        term in q for term in experiment_terms
+    )
+
+
 def _is_insect_intelligence_question(question: str) -> bool:
     q = question.lower()
     established_terms = (
@@ -193,6 +262,13 @@ def plan_question(question: str) -> QueryPlan:
         term in q for term in ("drosophila suzukii", "spotted wing drosophila", "spotted-wing drosophila")
     ) or bool(re.search(r"\bswd\b", q))
     evidence_label_count = sum(term in q for term in ("direct", "inferred", "unverified"))
+    if _is_swd_repellency_science_question(q):
+        return QueryPlan(
+            question,
+            "behavior",
+            ("behavior", "management", "crop_damage", "neurobiology", "literature", "taxonomy"),
+            question,
+        )
     if _is_insect_intelligence_question(q) or ("evidence" in q and evidence_label_count >= 2):
         return QueryPlan(question, "insect_intelligence", ("insect_intelligence",), question)
     if (

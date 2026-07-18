@@ -39,12 +39,24 @@ class PlannerRoutingTests(unittest.TestCase):
             "What spatial repellency evidence exists for Drosophila suzukii?",
             "Is there odor-mediated avoidance evidence for SWD?",
             "What oviposition deterrence evidence exists for spotted wing drosophila?",
+            "In an SWD crop-repellent screen, what evidence would distinguish delayed egg-laying from true spatial avoidance?",
         )
         for question in questions:
             with self.subTest(question=question):
                 plan = plan_question(question)
                 self.assertEqual(plan.answer_shape, "behavior")
                 self.assertEqual(plan.lanes[0], "behavior")
+
+    def test_swd_product_readiness_wording_stays_on_program_ledger(self):
+        questions = (
+            "What is the product readiness status of the SWD crop repellent?",
+            "What evidence is still missing for mode of action in the SWD crop repellent?",
+        )
+        for question in questions:
+            with self.subTest(question=question):
+                plan = plan_question(question)
+                self.assertEqual(plan.answer_shape, "insect_intelligence")
+                self.assertEqual(plan.lanes, ("insect_intelligence",))
 
     def test_scientific_gap_language_without_media_anchor_does_not_route_to_media(self):
         plan = plan_question(

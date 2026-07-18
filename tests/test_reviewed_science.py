@@ -207,6 +207,44 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIn("Compare naive and pre-exposed flies", answer["answer"])
                     self.assertIn("does not prove long-term field persistence", answer["answer"])
 
+    def test_swd_delayed_oviposition_is_separated_from_spatial_avoidance(self):
+        record_ids = (
+            "swd:openalex_literature:openalex:W4411730655",
+            "swd:openalex_literature:openalex:W4213332511",
+            "swd_olfaction_literature:pubmed:26486360",
+            "swd:openalex_literature:openalex:W3199560580",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator=f"raw/swd.json#records/{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                "In an SWD crop-repellent screen, what evidence would distinguish delayed egg-laying from true spatial avoidance?",
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertTrue(answer["ok"])
+        self.assertEqual(answer["answer_shape"], "reviewed_science")
+        self.assertEqual(
+            {item["record_id"] for item in answer["evidence"]},
+            set(record_ids),
+        )
+        self.assertIn("separate endpoints on separate timelines", answer["answer"])
+        self.assertIn("normal locomotion", answer["answer"])
+        self.assertIn("post-exposure catch-up", answer["answer"])
+        self.assertIn("does not by itself prove field crop protection", answer["answer"])
+
     def test_aedes_spatial_repellency_is_separated_from_knockdown_and_mortality(self):
         record_id = "openalex:W3048721146"
         with tempfile.TemporaryDirectory() as tmpdir:
