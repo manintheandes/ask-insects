@@ -383,6 +383,9 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertTrue(answer["ok"])
         self.assertIn("airflow direction and speed", answer["answer"])
         self.assertIn("temperature and relative humidity", answer["answer"])
+        self.assertIn("remaining on those papers", answer["answer"])
+        self.assertIn("chamber-air concentration", answer["answer"])
+        self.assertIn("not the paper's named treated-paper residue limitation", answer["answer"])
         self.assertIn("R&D design recommendations", answer["answer"])
         self.assertIn("does not provide a universal standard", answer["answer"])
         self.assertIn("complete product-specific", answer["answer"])
@@ -467,7 +470,10 @@ class ReviewedScienceTests(unittest.TestCase):
                 "How should our volatile Aedes repellent program report source loading and exposure?",
                 (
                     "R&D reporting recommendation",
-                    "not chemically measured",
+                    "not chemically determined",
+                    "remaining on those papers",
+                    "chamber-air concentration",
+                    "retained source mass",
                     "did not directly measure",
                     "complete product-specific package",
                     "source gap",
@@ -510,6 +516,44 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertTrue(answer["ok"])
                 for fragment in expected_fragments:
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_dbm_cross_species_answer_cites_direct_oviposition_evidence(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topic = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "dbm-cross-species-transfer-boundary"
+        )
+        oviposition_record_id = "dbm:openalex:W2114561940"
+        self.assertIn(oviposition_record_id, topic["source_record_ids"])
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="plutella_xylostella_literature",
+                        locator=f"raw/plutella/{record_id.rsplit(':', 1)[-1]}.json#jsonpath=$.work",
+                    )
+                    for record_id in topic["source_record_ids"]
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                "What can SWD or mosquito spatial-repellency evidence legitimately "
+                "suggest for diamondback moth, and what must be tested directly?",
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertTrue(answer["ok"])
+        self.assertIn("oviposition", answer["answer"])
+        self.assertIn(
+            oviposition_record_id,
+            {item["record_id"] for item in answer["evidence"]},
+        )
 
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
