@@ -22,7 +22,7 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
             retrieved_at="2026-07-17T00:00:00Z"
         )
 
-        self.assertEqual(len(records), 4)
+        self.assertEqual(len(records), 6)
         self.assertEqual(
             {record.record_id for record in records},
             {
@@ -30,6 +30,8 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
                 "aedes_primary_behavior:pubmed:469272",
                 "aedes_primary_behavior:pmc:PMC3794971",
                 "aedes_primary_behavior:pmc:PMC9866038:table8",
+                "aedes_primary_behavior:pmc:PMC3577799",
+                "aedes_primary_behavior:plosntds:e0003726",
             },
         )
         table = next(record for record in records if record.record_id.endswith("table8"))
@@ -39,6 +41,16 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
         self.assertIn("three participants", table.text)
         self.assertIn("sample size is unresolved", table.text)
         self.assertTrue(table.provenance.locator.endswith("#life-13-00141-t008"))
+        prior_deet = next(
+            record for record in records if record.record_id.endswith("PMC3577799")
+        )
+        self.assertIn("three hours", prior_deet.text)
+        self.assertIn("electroantennogram", prior_deet.text)
+        heritable_transfluthrin = next(
+            record for record in records if record.record_id.endswith("e0003726")
+        )
+        self.assertIn("nine generations", heritable_transfluthrin.text)
+        self.assertIn("experimental cross", heritable_transfluthrin.text)
         for record in records:
             with self.subTest(record_id=record.record_id):
                 self.assertEqual(
@@ -98,16 +110,16 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
 
         self.assertTrue(result["ok"])
         self.assertTrue(repeated["ok"])
-        self.assertEqual(len(rows), 4)
-        self.assertEqual(searchable_count, 4)
+        self.assertEqual(len(rows), 6)
+        self.assertEqual(searchable_count, 6)
         self.assertTrue(all(row["title"] for row in rows))
         self.assertTrue(all(str(row["url"]).startswith("https://") for row in rows))
         self.assertEqual(
             status["source_counts"][AEDES_PRIMARY_BEHAVIOR_EVIDENCE_SOURCE_ID],
-            4,
+            6,
         )
-        self.assertEqual(status["record_count"], 4)
-        self.assertEqual(status["lanes"]["literature"], 4)
+        self.assertEqual(status["record_count"], 6)
+        self.assertEqual(status["lanes"]["literature"], 6)
 
 
 if __name__ == "__main__":

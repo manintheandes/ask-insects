@@ -575,6 +575,129 @@ class ReviewedScienceTests(unittest.TestCase):
                     expected_record_ids,
                 )
 
+    def test_failed_public_science_cases_are_complete_and_cite_direct_evidence(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topics = {topic["id"]: topic for topic in catalog["topics"]}
+        cases = (
+            (
+                "How do adult density and host quality change spotted wing drosophila egg-laying behavior?",
+                "swd-density-host-quality",
+                (
+                    "whole raspberries",
+                    "declined as female density increased",
+                    "intermediate densities",
+                    "male density did not significantly change",
+                    "nonlinear",
+                ),
+            ),
+            (
+                "How could age, mating status, hunger, or prior egg laying change an SWD repellent result?",
+                "swd-physiological-state-confounds",
+                (
+                    "15 hours",
+                    "starvation-induced locomotion",
+                    "virgin",
+                    "gravid",
+                    "reproductive maturity",
+                    "remaining egg load",
+                ),
+            ),
+            (
+                "Can prior odor or host experience change how Aedes aegypti responds to a repellent?",
+                "aedes-olfactory-learning",
+                (
+                    "previous DEET exposure",
+                    "three hours",
+                    "electroantennogram",
+                    "associative learning",
+                    "does not establish long-term",
+                ),
+            ),
+            (
+                "How much can mosquito population, genotype, age, or insecticide-resistance background change a repellent result?",
+                "aedes-population-and-state-variation",
+                (
+                    "5.0%",
+                    "54.9%",
+                    "0.00852%",
+                    "does not quantify",
+                    "do not assume",
+                ),
+            ),
+            (
+                "What can an arm-in-cage landing assay establish, and what can it not establish about actual bite prevention?",
+                "aedes-arm-in-cage-meaning",
+                (
+                    "landing-only",
+                    "does not establish fewer probes or blood meals",
+                    "separately measured",
+                    "contact",
+                ),
+            ),
+            (
+                "How do we distinguish physiological resistance to a mosquito repellent from ordinary behavioral avoidance or reduced sensitivity?",
+                "aedes-physiological-repellent-resistance",
+                (
+                    "heritable behavioral insensitivity",
+                    "does not by itself prove",
+                    "altered physiological mechanism",
+                    "nine generations",
+                    "experimental cross",
+                ),
+            ),
+            (
+                "Which plant cues guide diamondback moth host finding and egg laying, and which evidence is direct for Plutella xylostella?",
+                "dbm-direct-host-cue-gap",
+                (
+                    "iberin",
+                    "sulforaphane",
+                    "non-volatile",
+                    "epicuticular wax",
+                    "more eggs",
+                    "larva-induced",
+                ),
+            ),
+        )
+        required_record_ids = sorted(
+            {
+                record_id
+                for _, topic_id, _ in cases
+                for record_id in topics[topic_id]["source_record_ids"]
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in required_record_ids
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question, _, _ in cases
+            ]
+
+        for (question, topic_id, fragments), answer in zip(
+            cases, answers, strict=True
+        ):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    set(topics[topic_id]["source_record_ids"]),
+                )
+                for fragment in fragments:
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
     def test_dbm_cross_species_answer_cites_direct_oviposition_evidence(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         topic = next(

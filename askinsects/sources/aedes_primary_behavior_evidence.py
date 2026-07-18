@@ -73,6 +73,52 @@ def build_aedes_primary_behavior_evidence_records(
             "source_kind": "peer_reviewed_primary_study",
         },
         {
+            "record_id": "aedes_primary_behavior:pmc:PMC3577799",
+            "title": (
+                "Aedes aegypti Mosquitoes Exhibit Decreased Repellency by DEET "
+                "following Previous Exposure"
+            ),
+            "text": (
+                "The primary study exposed female Aedes aegypti to DEET and tested "
+                "them again three hours later. Previously exposed mosquitoes showed "
+                "reduced behavioral repellency and a reduced electroantennogram "
+                "response to DEET. This establishes a short-term effect under the "
+                "tested laboratory conditions, not long-term persistence or field "
+                "product failure."
+            ),
+            "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3577799/",
+            "locator": (
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC3577799/#abstract1"
+            ),
+            "license": "CC BY",
+            "source_kind": "peer_reviewed_primary_study",
+        },
+        {
+            "record_id": "aedes_primary_behavior:plosntds:e0003726",
+            "title": (
+                "Insensitivity to the Spatial Repellent Action of Transfluthrin in "
+                "Aedes aegypti: A Heritable Trait Associated with Decreased "
+                "Insecticide Susceptibility"
+            ),
+            "text": (
+                "The primary study selectively mated spatial-repellent responders "
+                "and nonresponders over nine generations. Behavioral insensitivity "
+                "in the SRA- line was significant by generation F4, and an "
+                "experimental cross between SRA- females and wild-type males restored "
+                "spatial-repellent sensitivity and insecticide susceptibility. The "
+                "phenotype was associated with reduced insecticide susceptibility, "
+                "but heritable behavior alone does not identify an altered uptake, "
+                "metabolic, target-site, or neural mechanism."
+            ),
+            "url": "https://doi.org/10.1371/journal.pntd.0003726",
+            "locator": (
+                "https://journals.plos.org/plosntds/article?id="
+                "10.1371/journal.pntd.0003726#sec012"
+            ),
+            "license": "CC BY",
+            "source_kind": "peer_reviewed_primary_study",
+        },
+        {
             "record_id": "aedes_primary_behavior:pmc:PMC9866038:table8",
             "title": (
                 "Development of a Nanotechnology Matrix-Based Citronella Oil Insect "

@@ -25,6 +25,9 @@ PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS = (
     "W4391482378",  # intercropping, VOCs, adults, larvae, and crop damage
     "W4387738540",  # citronella laboratory and field endpoints
     "W4407297126",  # adult diel locomotor behavior
+    "W1996826081",  # isothiocyanates that stimulate oviposition
+    "W2164349268",  # phylloplane waxiness and oviposition
+    "W3093961030",  # larva-induced plant volatiles and female attraction
 )
 
 
