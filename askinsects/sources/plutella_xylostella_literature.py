@@ -28,6 +28,9 @@ PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS = (
     "W1996826081",  # isothiocyanates that stimulate oviposition
     "W2164349268",  # phylloplane waxiness and oviposition
     "W3093961030",  # larva-induced plant volatiles and female attraction
+    "W2141627881",  # Mikania oil repellency and oviposition deterrence
+    "W4383535925",  # Angelica extract behavior, oviposition, and toxicity
+    "W4393189143",  # non-host oils, olfaction, field traps, and oviposition
 )
 
 
