@@ -39,12 +39,15 @@ def openalex_work(work_id: str) -> dict[str, object]:
 
 
 class PlutellaXylostellaLiteratureSourceTests(unittest.TestCase):
-    def test_curated_work_set_includes_direct_oviposition_chemistry_and_surface_cues(self):
+    def test_curated_work_set_includes_direct_cues_and_repellent_assays(self):
         self.assertTrue(
             {
                 "W1996826081",
                 "W2164349268",
                 "W3093961030",
+                "W2141627881",
+                "W4383535925",
+                "W4393189143",
             }.issubset(set(PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS))
         )
 

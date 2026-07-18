@@ -655,6 +655,8 @@ class ReviewedScienceTests(unittest.TestCase):
                     "epicuticular wax",
                     "more eggs",
                     "larva-induced",
+                    "Y-tube olfactory assay",
+                    "did not measure landing or egg deposition",
                 ),
             ),
         )
@@ -775,10 +777,70 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertTrue(answer["ok"])
                 self.assertIn("iberin", answer["answer"].casefold())
                 self.assertIn("epicuticular wax", answer["answer"].casefold())
+                self.assertIn("y-tube olfactory assay", answer["answer"].casefold())
+                self.assertIn(
+                    "did not measure landing or egg deposition",
+                    answer["answer"].casefold(),
+                )
+                self.assertNotIn(
+                    "attracted adult females for oviposition",
+                    answer["answer"].casefold(),
+                )
                 self.assertEqual(
                     {item["record_id"] for item in answer["evidence"]},
                     set(topic["source_record_ids"]),
                 )
+
+    def test_dbm_gap_answer_acknowledges_direct_repellent_work_and_quantifies_exposure(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topic = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "dbm-first-baseline-experiment"
+        )
+        direct_repellent_records = {
+            "dbm:openalex:W2141627881",
+            "dbm:openalex:W4383535925",
+            "dbm:openalex:W4393189143",
+            "dbm:openalex:W4387738540",
+        }
+        self.assertTrue(direct_repellent_records.issubset(topic["source_record_ids"]))
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="plutella_xylostella_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in topic["source_record_ids"]
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                "Before screening diamondback moth repellents, what is the most "
+                "important public-evidence gap to close and what experiment would close it?",
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertTrue(answer["ok"])
+        for fragment in (
+            "direct studies already report",
+            "airborne concentration at the moth",
+            "known DBM-active positive control",
+            "do not label a volatile-treated surface contact-only",
+            "marketable yield or quality",
+            "release rate alone is not airborne concentration",
+        ):
+            self.assertIn(fragment.casefold(), answer["answer"].casefold())
+        self.assertEqual(
+            {item["record_id"] for item in answer["evidence"]},
+            set(topic["source_record_ids"]),
+        )
 
     def test_new_species_and_topic_require_data_only(self):
         with tempfile.TemporaryDirectory() as tmpdir:
