@@ -283,9 +283,9 @@
       "id": "aedes-contact-versus-spatial",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["spatial repellency", "distance repellency", "contact irritancy", "contact excitation", "brief skin contact", "topical repellent"],
+        "phrases": ["spatial repellency", "distance repellency", "repellency before landing", "contact deterrence", "contact irritancy", "contact excitation", "brief skin contact", "topical repellent"],
         "required_any": [
-          ["spatial", "distance", "non contact", "non-contact", "before contact"],
+          ["spatial", "distance", "non contact", "non-contact", "pre contact", "pre-contact", "before contact", "before landing", "before touching"],
           ["contact", "touch", "touches", "touching", "topical", "irritancy", "excitation", "escape"]
         ],
         "optional": ["distinguish", "excito repellency", "knockdown", "mortality", "skin", "landing", "bite", "bites", "biting"]

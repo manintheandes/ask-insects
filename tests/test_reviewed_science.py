@@ -283,6 +283,9 @@ class ReviewedScienceTests(unittest.TestCase):
                 "spatial repellency before contact?",
                 "Does a topical Aedes repellent that works after touching skin "
                 "prove a non-contact effect?",
+                "An Aedes mosquito lands on treated skin and leaves before "
+                "probing. What does that show about contact deterrence versus "
+                "repellency before landing?",
             )
             answers = [
                 build_reviewed_science_answer(index, question)
