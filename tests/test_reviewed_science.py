@@ -3013,6 +3013,66 @@ class ReviewedScienceTests(unittest.TestCase):
                         item["provenance"]["locator"].casefold(),
                     )
 
+    def test_unnamed_swd_dose_reversal_routes_to_exact_meja_evidence(self):
+        from askinsects.cli import compact_agent_answer
+
+        record_id = "swd:openalex_literature:openalex:W4413971464"
+        questions = (
+            "Our unnamed SWD volatile pulls flies toward it at a low loading and "
+            "pushes them away at a higher loading. What laboratory series should "
+            "we run before translating it to a field rate?",
+            "For spotted wing drosophila, how should we bracket a source-mass "
+            "series after seeing attraction below and repellency above, and which "
+            "exposure units must we measure?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            answers = [
+                answer_question(question, artifact_dir=artifact_dir)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertTrue(answer["ok"])
+                self.assertEqual(answer["answer_shape"], "reviewed_science")
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {record_id},
+                )
+                self.assertIn("bracket", answer["answer"].casefold())
+                self.assertIn("separate carrier-controlled", answer["answer"].casefold())
+                self.assertIn("release rate", answer["answer"].casefold())
+                self.assertIn("air concentration", answer["answer"].casefold())
+                final_answer = compact_agent_answer(answer)["final_answer"]
+                self.assertIn(
+                    "[Dose-dependent effect of methyl jasmonate on Drosophila "
+                    "suzukii (Matsumura) (Diptera: Drosophilidae)]"
+                    "(https://doi.org/10.1017/S0007485325100369)",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Source ID: `doi:10.1017/s0007485325100369`",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Locator: `Abstract: two-choice cage and two-choice planar "
+                    "olfactometer",
+                    final_answer,
+                )
+
     def test_catalog_preserves_exact_title_and_complete_figure_locator(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         provenance = {
@@ -3058,6 +3118,35 @@ class ReviewedScienceTests(unittest.TestCase):
             "Table 1; Results: Field Test 1, Laboratory Choice Tests 1-2, "
             "Laboratory No-Choice Test, and Figure 4; Discussion: unresolved "
             "spatial- versus contact-mediated mode",
+        )
+
+        density = provenance["swd:openalex_literature:openalex:W3171171860"]
+        self.assertEqual(
+            density["title"],
+            "Plasticity in Oviposition Site Selection Behavior in Drosophila "
+            "suzukii (Diptera: Drosophilidae) in Relation to Adult Density and "
+            "Host Distribution and Quality",
+        )
+
+        yeast = provenance["swd:openalex_literature:openalex:W4213332511"]
+        self.assertEqual(
+            yeast["title"],
+            "Hanseniaspora uvarum Attracts Drosophila suzukii (Diptera: "
+            "Drosophilidae) With High Specificity",
+        )
+        self.assertEqual(
+            yeast["locator"],
+            "Methods: virgin 3-6-day-old females starved for 24 hours; Results: "
+            "wind-tunnel takeoff-plus-upwind-flight response and source contact",
+        )
+
+        fruit_injury = provenance[
+            "swd:openalex_literature:openalex:W3163892682"
+        ]
+        self.assertEqual(
+            fruit_injury["title"],
+            "Mind the Wound!-Fruit Injury Ranks Higher than, and Interacts with, "
+            "Heterospecific Cues for Drosophila suzukii Oviposition",
         )
 
         vision = provenance["openalex:W3187681115"]
