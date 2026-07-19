@@ -1249,6 +1249,44 @@ class ReviewedScienceTests(unittest.TestCase):
             ):
                 load_reviewed_science_catalog(path)
 
+    def test_catalog_rejects_source_provenance_for_an_unlisted_record(self):
+        payload = catalog_payload()
+        payload["topics"][0]["source_provenance"] = [
+            {
+                "record_id": "study:not-listed",
+                "title": "Primary study",
+                "public_url": "https://doi.org/10.1000/example",
+                "source_id": "doi:10.1000/example",
+                "locator": "Methods 2",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = self.write_catalog(Path(tmpdir), payload)
+            with self.assertRaisesRegex(
+                ReviewedScienceError,
+                "unknown source records",
+            ):
+                load_reviewed_science_catalog(path)
+
+    def test_catalog_rejects_non_public_source_provenance_url(self):
+        payload = catalog_payload()
+        payload["topics"][0]["source_provenance"] = [
+            {
+                "record_id": "study:texture",
+                "title": "Primary study",
+                "public_url": "raw/paper.pdf",
+                "source_id": "doi:10.1000/example",
+                "locator": "Methods 2",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = self.write_catalog(Path(tmpdir), payload)
+            with self.assertRaisesRegex(
+                ReviewedScienceError,
+                "public HTTP",
+            ):
+                load_reviewed_science_catalog(path)
+
     def test_reviewed_answer_rejects_record_without_original_public_url(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -1978,6 +2016,88 @@ class ReviewedScienceTests(unittest.TestCase):
 
         self.assertEqual(answer, reviewed)
         builder.assert_called_once()
+
+    def test_swd_exclusion_net_questions_use_the_reviewed_operating_envelope(self):
+        record_id = "swd:openalex_literature:openalex:W4408117270"
+        record = EvidenceRecord(
+            record_id=record_id,
+            lane="literature",
+            source="drosophila_suzukii_core",
+            title=(
+                "The Efficacy of Protective Nets Against Drosophila suzukii: "
+                "The Effect of Temperature, Airflow, and Pest Morphology"
+            ),
+            text="Primary study metadata and abstract.",
+            species="Drosophila suzukii",
+            url="10.3390/insects16030253",
+            media_url=None,
+            provenance=Provenance(
+                source_id="drosophila_suzukii_core",
+                locator=(
+                    "raw/drosophila_suzukii/literature/page_002.json"
+                    "#works/W4408117270"
+                ),
+                retrieved_at=RETRIEVED_AT,
+                license="OpenAlex metadata",
+            ),
+        )
+        questions = (
+            "Can an SWD exclusion net qualified in still air be used in a fan-ventilated berry tunnel?",
+            "What hot-weather and airflow envelope should we challenge before deploying mesh against spotted wing drosophila?",
+            "Our Drosophila suzukii screen worked with cool-reared flies; what must change before a windy field test?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([record])
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for answer in answers:
+            self.assertIsNotNone(answer)
+            assert answer is not None
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "reviewed_science")
+            self.assertIn("Do not qualify", answer["answer"])
+            self.assertIn("not experimentally controlled", answer["answer"])
+            self.assertIn("were associated with lower efficacy", answer["answer"])
+            self.assertIn("did not establish a controlled temperature effect", answer["answer"])
+            self.assertIn(
+                "a monotonic difference between 1.5 and 3.0 m/s",
+                answer["answer"],
+            )
+            self.assertEqual(
+                [item["record_id"] for item in answer["evidence"]],
+                [record_id],
+            )
+            evidence = answer["evidence"][0]
+            self.assertEqual(
+                evidence["url"],
+                "https://doi.org/10.3390/insects16030253",
+            )
+            self.assertEqual(
+                evidence["provenance"]["source_id"],
+                "doi:10.3390/insects16030253",
+            )
+            self.assertEqual(
+                evidence["provenance"]["locator"],
+                "Methods 2.1-2.2; Results 3.1 and 3.3; "
+                "Tables 1-3 and 6-8; Conclusion 5",
+            )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([record])
+            unrelated = build_reviewed_science_answer(
+                index,
+                "Should I use an exclusion net to keep birds out of blueberries?",
+            )
+
+        self.assertIsNone(unrelated)
 
 
 if __name__ == "__main__":

@@ -69,6 +69,7 @@ sources:
       source_grade_now:
         - human_reviewed_bounded_interpretations
         - exact_original_record_provenance
+        - claim_level_primary_source_overrides
         - species_and_topic_paraphrase_matching
         - source_gap_when_any_required_record_is_missing
       not_claimed:

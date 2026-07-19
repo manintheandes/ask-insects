@@ -185,6 +185,36 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
                 f"topic {topic_id} must cite an original scientific or official source; "
                 "the internal insect-intelligence program ledger cannot substitute for evidence"
             )
+        source_provenance = _objects(
+            topic.get("source_provenance", []),
+            f"topic {topic_id}.source_provenance",
+        )
+        provenance_record_ids: list[str] = []
+        for source_index, source in enumerate(source_provenance):
+            label = f"topic {topic_id}.source_provenance[{source_index}]"
+            record_id = str(source.get("record_id") or "").strip()
+            title = str(source.get("title") or "").strip()
+            public_url = str(source.get("public_url") or "").strip()
+            source_id = str(source.get("source_id") or "").strip()
+            locator = str(source.get("locator") or "").strip()
+            if not all((record_id, title, source_id, locator)):
+                raise ReviewedScienceError(
+                    f"{label} requires record_id, title, source_id, and locator"
+                )
+            if not public_url.startswith(("https://", "http://")):
+                raise ReviewedScienceError(
+                    f"{label}.public_url must be a public HTTP(S) URL"
+                )
+            provenance_record_ids.append(record_id)
+        if len(provenance_record_ids) != len(set(provenance_record_ids)):
+            raise ReviewedScienceError(
+                f"topic {topic_id}.source_provenance record_ids must be unique"
+            )
+        unknown_provenance_ids = set(provenance_record_ids).difference(source_record_ids)
+        if unknown_provenance_ids:
+            raise ReviewedScienceError(
+                f"topic {topic_id}.source_provenance references unknown source records"
+            )
 
 
 def _objects_as_string_groups(value: object, label: str) -> list[list[str]]:
@@ -291,20 +321,32 @@ def _records_by_ids(index: SourceIndex, record_ids: list[str]) -> list[EvidenceR
     return [by_id[record_id] for record_id in record_ids if record_id in by_id]
 
 
-def _record_to_evidence(record: EvidenceRecord) -> dict[str, object]:
+def _record_to_evidence(
+    record: EvidenceRecord,
+    source_provenance: dict[str, object] | None = None,
+) -> dict[str, object]:
     provenance = record.provenance.to_dict()
-    provenance["locator"] = public_provenance_locator(
-        str(provenance.get("locator") or ""),
-        record.provenance.source_id,
-    )
+    title = record.title
+    url = record.url
+    if source_provenance:
+        title = str(source_provenance["title"]).strip()
+        url = str(source_provenance["public_url"]).strip()
+        provenance["source_id"] = str(source_provenance["source_id"]).strip()
+        provenance["locator"] = str(source_provenance["locator"]).strip()
+        provenance["source_url"] = url
+    else:
+        provenance["locator"] = public_provenance_locator(
+            str(provenance.get("locator") or ""),
+            record.provenance.source_id,
+        )
     return {
         "record_id": record.record_id,
         "lane": record.lane,
         "source": record.source,
-        "title": record.title,
+        "title": title,
         "text": record.text,
         "species": record.species,
-        "url": record.url,
+        "url": url,
         "media_url": record.media_url,
         "provenance": provenance,
     }
@@ -386,10 +428,20 @@ def build_reviewed_science_answer(
                 ),
             },
         }
+    source_provenance = {
+        str(item["record_id"]): item
+        for item in _objects(
+            topic.get("source_provenance", []),
+            "topic source_provenance",
+        )
+    }
     return {
         "ok": True,
         "answer_shape": "reviewed_science",
         "answer": str(topic["answer"]).strip(),
-        "evidence": [_record_to_evidence(record) for record in records],
+        "evidence": [
+            _record_to_evidence(record, source_provenance.get(record.record_id))
+            for record in records
+        ],
         "source_gap": None,
     }
