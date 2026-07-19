@@ -46,10 +46,10 @@ sources:
       - id: ask_insects_context_package
         config: config/insect-evidence-package.json
         schema_version: ask-insects-evidence-package.v3
-        package_version: 2026-07-17.1
-        release_artifact: public/evidence-packages/ask-insects-evidence-package-2026-07-17.1.json
-        release_artifact_sha256: 0020d1407c11b3284dc631ffc62a05d30dbbe0ed7840c31c7096ca23b57ac6d4
-        release_content_sha256: 7efdaa6f9713d8afd7d32402c4522eca3f445945531f5fad8c28b83a748541aa
+        package_version: 2026-07-19.1
+        release_artifact: public/evidence-packages/ask-insects-evidence-package-2026-07-19.1.json
+        release_artifact_sha256: 89612f5e27879432d9ab13078d5d8ed61517f5cbf85c25a03ad7d81e55484637
+        release_content_sha256: 9c92d249f29b783d2ed3fdfca33db1eed65715a8e5d1179ebdeed024a2925c50
         command: ask-insects context-package
         boundary: Generic public insect evidence package for any downstream tool; private experiments and results belong in a separate private system and cannot fill gaps in public evidence
         provenance_required: true

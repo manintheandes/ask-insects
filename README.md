@@ -40,7 +40,7 @@ Ask Insects can export a small, versioned generic public evidence package for an
 ask-insects context-package
 ```
 
-The package includes the three species profiles, generic evidence contexts, human-reviewed exact-species public evidence, explicit source gaps, and row-level provenance. The hosted command serves the checked release file at `public/evidence-packages/ask-insects-evidence-package-2026-07-17.1.json`; it does not rebuild a million-row index during a user request. The loader verifies the publisher-pinned file hash, rejects duplicate JSON keys, and validates the hash-bound scientific contents before returning it. This is hash authentication, not a digital signature. Private experiments and results belong in a separate private system. A downstream tool may join the package to its own private records on its side, but private data never flows into Ask Insects and cannot fill gaps in public evidence.
+The package includes the three species profiles, generic evidence contexts, human-reviewed exact-species public evidence, explicit source gaps, and row-level provenance. The hosted command serves the checked release file at `public/evidence-packages/ask-insects-evidence-package-2026-07-19.1.json`; it does not rebuild a million-row index during a user request. The loader verifies the publisher-pinned file hash, rejects duplicate JSON keys, and validates the hash-bound scientific contents before returning it. This is hash authentication, not a digital signature. Private experiments and results belong in a separate private system. A downstream tool may join the package to its own private records on its side, but private data never flows into Ask Insects and cannot fill gaps in public evidence.
 
 ### Codex Runtime
 
