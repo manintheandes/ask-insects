@@ -3149,6 +3149,83 @@ class ReviewedScienceTests(unittest.TestCase):
             "Heterospecific Cues for Drosophila suzukii Oviposition",
         )
 
+        exact_titles = {
+            "aedes_primary_behavior:pubmed:469272": (
+                "Humoral inhibition of host-seeking in Aedes aegypti during "
+                "oöcyte maturation"
+            ),
+            "openalex:W3048721146": (
+                "Behavioral responses to transfluthrin by Aedes aegypti, "
+                "Anopheles minimus, Anopheles harrisoni, and Anopheles dirus "
+                "(Diptera: Culicidae)"
+            ),
+            "swd:openalex_literature:openalex:W3132534524": (
+                "Olfactory Cues From Host- and Non-host Plant Odor Influence the "
+                "Behavioral Responses of Adult Drosophila suzukii (Diptera: "
+                "Drosophilidae) to Visual Cues"
+            ),
+            "swd:openalex_literature:openalex:W4397009635": (
+                "Contributions of γ-Aminobutyric Acid (GABA) Receptors for the "
+                "Activities of Pectis brevipedunculata Essential Oil against "
+                "Drosophila suzukii and Pollinator Bees"
+            ),
+            "human_repellent_guidance:epa:810.3700": (
+                "Product Performance Test Guidelines OPPTS 810.3700: Insect "
+                "Repellents to be Applied to Human Skin"
+            ),
+            "human_repellent_guidance:who:2009.4": (
+                "Guidelines for efficacy testing of mosquito repellents for "
+                "human skin"
+            ),
+            "dbm:openalex:W2114561940": (
+                "Host Selection Behavior and the Fecundity of Plutella "
+                "xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants"
+            ),
+            "dbm:openalex:W2164349268": (
+                "Oviposition by Plutella xylostella (Lepidoptera: Plutellidae) "
+                "and Effects of Phylloplane Waxiness"
+            ),
+            "dbm:openalex:W4413460540": (
+                "A semiochemical attract-and-kill formulation to manage "
+                "diamondback moth (Lepidoptera: Plutellidae)"
+            ),
+            "dbm:openalex:W4393189143": (
+                "Inhibition Effect of Non-Host Plant Volatile Extracts on "
+                "Reproductive Behaviors in the Diamondback Moth Plutella "
+                "xylostella (Linnaeus)"
+            ),
+        }
+        for record_id, title in exact_titles.items():
+            with self.subTest(record_id=record_id):
+                self.assertEqual(provenance[record_id]["title"], title)
+
+        self.assertEqual(
+            provenance["aedes_primary_behavior:pmc:PMC3577799"]["locator"],
+            "Abstract and Results: behavioral insensitivity and reduced "
+            "electroantennogram response three hours after DEET pre-exposure; "
+            "odor and host-stimulus control experiments",
+        )
+        self.assertEqual(
+            provenance["dbm:openalex:W2141627881"]["locator"],
+            "Abstract and Results: airflow repellency and oviposition-deterrence "
+            "endpoints for Mikania micrantha essential oil and five volatile "
+            "compounds",
+        )
+
+        durability = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "aedes-skin-repellent-durability"
+        )
+        self.assertEqual(
+            durability["source_record_ids"],
+            [
+                "human_repellent_guidance:who:2009.4",
+                "human_repellent_guidance:epa:810.3700",
+            ],
+        )
+        self.assertNotIn("wash-in", durability["answer"].casefold())
+
         vision = provenance["openalex:W3187681115"]
         self.assertIn("Figures 1-3", vision["locator"])
         self.assertIn("Supplementary Figures S1-S3", vision["locator"])
