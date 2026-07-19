@@ -1,6 +1,492 @@
 {
   "schema_version": "ask-insects-reviewed-science.v1",
   "last_reviewed": "2026-07-19",
+  "require_exact_source_provenance": true,
+  "source_provenance": [
+    {
+      "record_id": "aedes_olfaction_literature:pubmed:36261039",
+      "title": "Differential mosquito attraction to humans is associated with skin-derived carboxylic acid levels",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/36261039/",
+      "source_id": "pubmed:36261039",
+      "locator": "Abstract and Results: repeated nylon-sleeve odor-choice assays, stable donor rankings, skin carboxylic-acid abundance, and ionotropic-receptor co-receptor mutants"
+    },
+    {
+      "record_id": "aedes_primary_behavior:plosntds:e0003726",
+      "title": "Insensitivity to the Spatial Repellent Action of Transfluthrin in Aedes aegypti: A Heritable Trait Associated with Decreased Insecticide Susceptibility",
+      "public_url": "https://doi.org/10.1371/journal.pntd.0003726",
+      "source_id": "doi:10.1371/journal.pntd.0003726",
+      "locator": "Abstract and Results: nine generations of selective mating, significant sensitivity decline by F4, the F9 insensitive line, and restoration after crossing with wild type"
+    },
+    {
+      "record_id": "aedes_primary_behavior:pmc:PMC3577799",
+      "title": "Aedes aegypti Mosquitoes Exhibit Decreased Repellency by DEET following Previous Exposure",
+      "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3577799/",
+      "source_id": "pmc:PMC3577799",
+      "locator": "Abstract and Results: reduced DEET avoidance after prior exposure, odor specificity, and recovery by the following day"
+    },
+    {
+      "record_id": "aedes_primary_behavior:pmc:PMC9866038:table8",
+      "title": "Development of a Nanotechnology Matrix-Based Citronella Oil Insect Repellent to Obtain a Prolonged Effect and Evaluation of the Safety and Efficacy",
+      "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9866038/",
+      "source_id": "pmc:PMC9866038",
+      "locator": "Table 8: complete-protection times and efficacy of citronella formulations in the arm-in-cage assay"
+    },
+    {
+      "record_id": "aedes_primary_behavior:pubmed:469272",
+      "title": "Humoral inhibition of host-seeking in Aedes aegypti during oocyte maturation",
+      "public_url": "https://doi.org/10.1016/0022-1910(79)90048-9",
+      "source_id": "doi:10.1016/0022-1910(79)90048-9",
+      "locator": "Abstract: blood-enema, oocyte-maturation, surgical-manipulation, and haemolymph-transfer experiments separating humoral inhibition from feeding"
+    },
+    {
+      "record_id": "aedes_primary_behavior:pubmed:544697",
+      "title": "Abdominal distention terminates subsequent host-seeking behaviour of Aedes aegypti following a blood meal",
+      "public_url": "https://doi.org/10.1016/0022-1910(79)90073-8",
+      "source_id": "doi:10.1016/0022-1910(79)90073-8",
+      "locator": "Abstract: immediate host-seeking inhibition after a replete blood meal and after saline-enema abdominal distention"
+    },
+    {
+      "record_id": "dbm:openalex:W1994548084",
+      "title": "The roles of olfaction and vision in host-plant finding by the diamondback moth, Plutella xylostella",
+      "public_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
+      "source_id": "doi:10.1111/j.1365-3032.2006.00499.x",
+      "locator": "Abstract and Results: odor-guided host orientation, visual plant position, alighting, and oviposition measured as distinct outcomes"
+    },
+    {
+      "record_id": "dbm:openalex:W1996826081",
+      "title": "Isothiocyanates Stimulating Oviposition by the Diamondback Moth, Plutella xylostella",
+      "public_url": "https://doi.org/10.1007/s10886-006-9036-9",
+      "source_id": "doi:10.1007/s10886-006-9036-9",
+      "locator": "Abstract and Results: volatile and nonvolatile oviposition stimulants, including iberin and sulforaphane"
+    },
+    {
+      "record_id": "dbm:openalex:W2114561940",
+      "title": "Host Selection Behavior and the Fecundity of Plutella xylostella on Multiple Host Plants",
+      "public_url": "https://doi.org/10.1093/jisesa/ieu113",
+      "source_id": "doi:10.1093/jisesa/ieu113",
+      "locator": "Abstract and Results: host orientation, landing, oviposition, and fecundity measured separately across host plants"
+    },
+    {
+      "record_id": "dbm:openalex:W2141627881",
+      "title": "Repellent and oviposition deterrent activities of the essential oil from Mikania micrantha and its compounds on Plutella xylostella",
+      "public_url": "https://doi.org/10.1111/j.1744-7917.2004.tb00178.x",
+      "source_id": "doi:10.1111/j.1744-7917.2004.tb00178.x",
+      "locator": "Abstract and Results: Y-tube repellency, oviposition deterrence, and toxicity endpoints for Mikania micrantha oil and components"
+    },
+    {
+      "record_id": "dbm:openalex:W2164349268",
+      "title": "Oviposition by Plutella xylostella and Effects of Phylloplane Waxiness",
+      "public_url": "https://doi.org/10.1603/0022-0493-93.4.1152",
+      "source_id": "doi:10.1603/0022-0493-93.4.1152",
+      "locator": "Abstract and Results: egg allocation on reduced-wax, herbicide-treated, glossy, and waxy plant surfaces"
+    },
+    {
+      "record_id": "dbm:openalex:W3093961030",
+      "title": "Diamondback Moth Larvae Trigger Host Plant Volatiles that Lure Its Adult Females for Oviposition",
+      "public_url": "https://doi.org/10.3390/insects11110725",
+      "source_id": "doi:10.3390/insects11110725",
+      "locator": "Abstract and Results: Y-tube attraction of adult females to larva-induced host-plant volatiles"
+    },
+    {
+      "record_id": "dbm:openalex:W4383535925",
+      "title": "Behavioral, Electrophysiological, and Toxicological Responses of Plutella xylostella to Extracts from Angelica pubescens",
+      "public_url": "https://doi.org/10.3390/insects14070613",
+      "source_id": "doi:10.3390/insects14070613",
+      "locator": "Abstract and Results: olfactometer behavior, antennal responses, and toxicity reported as separate endpoints"
+    },
+    {
+      "record_id": "dbm:openalex:W4387738540",
+      "title": "The effectiveness of citronella oil to control main pest on cabbage Plutella xylostella in the field",
+      "public_url": "https://doi.org/10.4081/jear.2023.11751",
+      "source_id": "doi:10.4081/jear.2023.11751",
+      "locator": "Methods and Results: filter-paper larval position, later adult egg output, mortality through 120 hours, and field larval abundance"
+    },
+    {
+      "record_id": "dbm:openalex:W4391482378",
+      "title": "Intercropping organic broccoli with Rhododendron tomentosum and Fagopyrum esculentum: a test of bottom-up and top-down strategies for reducing herbivory",
+      "public_url": "https://doi.org/10.1007/s11829-023-10033-6",
+      "source_id": "doi:10.1007/s11829-023-10033-6",
+      "locator": "Abstract and Results: adult moths, larvae, and broccoli leaf damage measured as separate field outcomes"
+    },
+    {
+      "record_id": "dbm:openalex:W4393189143",
+      "title": "Inhibition Effect of Non-Host Plant Volatile Extracts on Reproductive Behaviors in the Diamondback Moth Plutella xylostella",
+      "public_url": "https://doi.org/10.3390/insects15040227",
+      "source_id": "doi:10.3390/insects15040227",
+      "locator": "Abstract and Results: non-host volatile extracts tested for adult orientation, mating, and oviposition responses"
+    },
+    {
+      "record_id": "dbm:openalex:W4407297126",
+      "title": "Adult Diel Locomotor Behaviour in the Agricultural Pest Plutella xylostella Reflects Temperature-Driven and Light-Repressed Regulation Rather than Coupling to Circadian Clock Gene Rhythms",
+      "public_url": "https://doi.org/10.3390/insects16020182",
+      "source_id": "doi:10.3390/insects16020182",
+      "locator": "Abstract and Results: period and timeless transcript rhythms contrasted with temperature-driven and light-suppressed adult locomotion"
+    },
+    {
+      "record_id": "dbm:openalex:W4409241407",
+      "title": "Electrophysiological Responses and Field Attractants of Plutella xylostella Adults to Volatiles from Brassica oleracea",
+      "public_url": "https://doi.org/10.1021/acs.jafc.5c03182",
+      "source_id": "doi:10.1021/acs.jafc.5c03182",
+      "locator": "Abstract and Results: eight antennally active broccoli volatiles and field trapping with a three-component blend"
+    },
+    {
+      "record_id": "dbm:openalex:W4413460540",
+      "title": "A semiochemical attract-and-kill formulation to manage diamondback moth",
+      "public_url": "https://doi.org/10.1093/jee/toaf193",
+      "source_id": "doi:10.1093/jee/toaf193",
+      "locator": "Abstract: four-choice adult attraction and field counts of diamondback moth and beneficial insects"
+    },
+    {
+      "record_id": "human_repellent_guidance:epa:810.3700",
+      "title": "US EPA OPPTS 810.3700: Insect Repellents to be Applied to Human Skin",
+      "public_url": "https://www.epa.gov/system/files/documents/2023-12/1d.-oppts-810.3700-guidelines-july-7-2010.pdf",
+      "source_id": "epa:oppts-810.3700",
+      "locator": "Paragraphs (v), (ix), and (x): efficacy endpoints, subject preparation, treatment, and complete protection time"
+    },
+    {
+      "record_id": "human_repellent_guidance:pubmed:26811157",
+      "title": "Percutaneous penetration and pharmacodynamics: Wash-in and wash-off of sunscreen and insect repellent",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/26811157/",
+      "source_id": "pubmed:26811157",
+      "locator": "Abstract and review sections on water, sweat, temperature, and abrasion as durability and reapplication factors"
+    },
+    {
+      "record_id": "human_repellent_guidance:who:2009.4",
+      "title": "WHO Guidelines for efficacy testing of mosquito repellents for human skin",
+      "public_url": "https://www.who.int/publications/i/item/WHO-HTM-NTD-WHOPES-2009.4",
+      "source_id": "who:WHO-HTM-NTD-WHOPES-2009.4",
+      "locator": "Laboratory and field efficacy procedures: application rate, single-dose evaluation, and complete protection time"
+    },
+    {
+      "record_id": "openalex:W2584379108",
+      "title": "Why Mosquitoes Bite Some People More Than Others: Metabolic Correlates of Human Attraction in Aedes aegypti",
+      "public_url": "https://doi.org/10.48496/hx68-5360",
+      "source_id": "doi:10.48496/hx68-5360",
+      "locator": "Abstract: 150-subject uniport-olfactometer cohort, three attraction clusters, and blood-metabolite correlations"
+    },
+    {
+      "record_id": "openalex:W3013059076",
+      "title": "Insect repellents mediate species-specific olfactory behaviours in mosquitoes",
+      "public_url": "https://doi.org/10.1186/s12936-020-03206-8",
+      "source_id": "doi:10.1186/s12936-020-03206-8",
+      "locator": "Abstract and Methods: close-proximity odor assay comparing lemongrass oil, PMD, eugenol, and DEET across three mosquito species"
+    },
+    {
+      "record_id": "openalex:W3044645851",
+      "title": "Climate and Urbanization Drive Mosquito Preference for Humans",
+      "public_url": "https://doi.org/10.1016/j.cub.2020.06.092",
+      "source_id": "doi:10.1016/j.cub.2020.06.092",
+      "locator": "Abstract and Results: odor-choice behavior across 27 sub-Saharan African populations and the ecological model of human preference"
+    },
+    {
+      "record_id": "openalex:W3048721146",
+      "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
+      "public_url": "https://doi.org/10.1371/journal.pone.0237353",
+      "source_id": "doi:10.1371/journal.pone.0237353",
+      "locator": "Methods and Results: treated-paper loading, contact and non-contact chambers, escape, knockdown, mortality, and post-exposure behavior by species and population"
+    },
+    {
+      "record_id": "openalex:W3179105761",
+      "title": "Sodium channel activation underlies transfluthrin repellency in Aedes aegypti",
+      "public_url": "https://doi.org/10.1371/journal.pntd.0009546",
+      "source_id": "doi:10.1371/journal.pntd.0009546",
+      "locator": "Abstract and Results: non-contact hand-in-cage landings, whole-antenna recordings, orco mutants, and sodium-channel kdr mutants"
+    },
+    {
+      "record_id": "openalex:W4297252092",
+      "title": "Carbon dioxide and blood-feeding shift visual cue tracking during navigation in Aedes aegypti mosquitoes",
+      "public_url": "https://doi.org/10.1098/rsbl.2022.0270",
+      "source_id": "doi:10.1098/rsbl.2022.0270",
+      "locator": "Abstract and Results: visual-target tracking before and after carbon-dioxide exposure and blood feeding"
+    },
+    {
+      "record_id": "openalex:W4299723530",
+      "title": "Pyrethroid insecticides maintain repellent effect on knock-down resistant populations of Aedes aegypti mosquitoes",
+      "public_url": "https://doi.org/10.17615/1p7n-3x92",
+      "source_id": "doi:10.17615/1p7n-3x92",
+      "locator": "Abstract: arm-in-cage landings, blood meals, and mortality for pyrethroid-sensitive and kdr-resistant populations on treated clothing"
+    },
+    {
+      "record_id": "openalex:W4313493759",
+      "title": "Development of a Nanotechnology Matrix-Based Citronella Oil Insect Repellent to Obtain a Prolonged Effect and Evaluation of the Safety and Efficacy",
+      "public_url": "https://doi.org/10.3390/life13010141",
+      "source_id": "doi:10.3390/life13010141",
+      "locator": "Abstract, thermal and skin-permeation methods, and Table 8 arm-in-cage complete-protection times"
+    },
+    {
+      "record_id": "openalex:W4315621418",
+      "title": "Neuromodulation and differential learning across mosquito species",
+      "public_url": "https://doi.org/10.1098/rspb.2022.2118",
+      "source_id": "doi:10.1098/rspb.2022.2118",
+      "locator": "Abstract and Results: species-specific aversive olfactory learning and dopamine-pathway manipulation"
+    },
+    {
+      "record_id": "openalex:W4399119561",
+      "title": "Entomological assessment of hessian fabric transfluthrin vapour emanators for protecting against outdoor-biting Aedes aegypti in coastal Tanzania",
+      "public_url": "https://doi.org/10.1371/journal.pone.0299722",
+      "source_id": "doi:10.1371/journal.pone.0299722",
+      "locator": "Abstract and Results: semi-field landing reductions contrasted with two full-field experiments using wild Aedes aegypti"
+    },
+    {
+      "record_id": "openalex:W4401794442",
+      "title": "Thermal infrared directs host-seeking behaviour in Aedes aegypti mosquitoes",
+      "public_url": "https://doi.org/10.1038/s41586-024-07848-5",
+      "source_id": "doi:10.1038/s41586-024-07848-5",
+      "locator": "Abstract and Results: infrared, carbon dioxide, and human-odor combinations plus TRPA1 and opsin perturbations"
+    },
+    {
+      "record_id": "openalex:W4403603462",
+      "title": "In the arm-in-cage test, topical repellents activate mosquitoes to disengage upon contact instead of repelling them at distance",
+      "public_url": "https://doi.org/10.1038/s41598-024-74518-x",
+      "source_id": "doi:10.1038/s41598-024-74518-x",
+      "locator": "Abstract and Results: tracked approach, skin contact, disengagement, and bites for four topical repellents"
+    },
+    {
+      "record_id": "openalex:W4413344516",
+      "title": "Changes in the life history traits in Aedes aegypti selected for resistance to permethrin and thymol, a spatial repellent",
+      "public_url": "https://doi.org/10.1371/journal.pone.0329776",
+      "source_id": "doi:10.1371/journal.pone.0329776",
+      "locator": "Abstract and Results: longevity, blood-feeding avidity, egg output, and development after permethrin or thymol resistance selection"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3037850025",
+      "title": "Identification of potential mechanosensitive ion channels involved in texture discrimination during Drosophila suzukii egg-laying behaviour",
+      "public_url": "https://doi.org/10.1111/imb.12654",
+      "source_id": "doi:10.1111/imb.12654",
+      "locator": "Abstract: harder-texture oviposition preference and its abolition by drugs targeting TRP and DEG/ENaC channel families"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3046652911",
+      "title": "Automated aerosol puffers effectively deliver 1-octen-3-ol, an oviposition antagonist useful against spotted-wing drosophila",
+      "public_url": "https://doi.org/10.1002/ps.6028",
+      "source_id": "doi:10.1002/ps.6028",
+      "locator": "Abstract and Results: 2016 and 2017 raspberry field trials comparing aerosol puffers, passive vials, release timing, and placement"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3124252639",
+      "title": "Drosophila suzukii avoidance of microbes in oviposition choice",
+      "public_url": "https://doi.org/10.1098/rsos.201601",
+      "source_id": "doi:10.1098/rsos.201601",
+      "locator": "Abstract and Results: commensal-microbe oviposition choices on soft and hard substrates across three Drosophila species"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3132534524",
+      "title": "Olfactory Cues From Host- and Non-host Plant Odor Influence the Behavioral Responses of Adult Drosophila suzukii to Visual Cues",
+      "public_url": "https://doi.org/10.1093/ee/nvab004",
+      "source_id": "doi:10.1093/ee/nvab004",
+      "locator": "Abstract and Results: seven-, four-, and two-choice tests of color with yeast, blueberry, and beta-cyclocitral odors"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3163892682",
+      "title": "Mind the Wound! Fruit Injury Ranks Higher than, and Interacts with, Heterospecific Cues for Drosophila suzukii Oviposition",
+      "public_url": "https://doi.org/10.3390/insects12050424",
+      "source_id": "doi:10.3390/insects12050424",
+      "locator": "Abstract and Results: two-way oviposition choices among intact, wounded, infested, and heterospecific-exposed blueberries"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3171171860",
+      "title": "Plasticity in Oviposition Site Selection Behavior in Drosophila suzukii in Relation to Adult Density and Host Distribution and Quality",
+      "public_url": "https://doi.org/10.1093/jee/toab108",
+      "source_id": "doi:10.1093/jee/toab108",
+      "locator": "Abstract and Results: total and per-female oviposition across female density, male density, whole raspberries, and raspberry agar"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W4213332511",
+      "title": "Hanseniaspora uvarum Attracts Drosophila suzukii With High Specificity",
+      "public_url": "https://doi.org/10.1093/jee/toac029",
+      "source_id": "doi:10.1093/jee/toac029",
+      "locator": "Abstract and Results: wind-tunnel takeoff-plus-upwind-flight response and source contact in virgin starved females"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W4290861466",
+      "title": "Comparing Drosophila suzukii flight behavior using free-flight and tethered flight assays",
+      "public_url": "https://doi.org/10.1111/eea.13222",
+      "source_id": "doi:10.1111/eea.13222",
+      "locator": "Abstract and Results: 401-adult flight initiation, first-flight duration, morph-by-apparatus effects, and the maximum tethered-flight distance"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W4365509323",
+      "title": "Comparison of Preference for Chemicals Associated with Fruit Fermentation between Drosophila melanogaster and Drosophila suzukii and between Virgin and Mated D. melanogaster",
+      "public_url": "https://doi.org/10.3390/insects14040382",
+      "source_id": "doi:10.3390/insects14040382",
+      "locator": "Abstract and Results: concentration series for 2-phenylethanol, ethanol, and acetic acid in Y-tube and electroantennogram assays"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W4386466923",
+      "title": "A 2-component blend of coconut oil-derived fatty acids as an oviposition deterrent against Drosophila suzukii",
+      "public_url": "https://doi.org/10.1093/jee/toad092",
+      "source_id": "doi:10.1093/jee/toad092",
+      "locator": "Methods, Results, and tables: full CFFA, caprylic acid, capric acid, and two-component blend across laboratory, no-choice raspberry, and field endpoints"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W4397009635",
+      "title": "Contributions of gamma-Aminobutyric Acid Receptors for the Activities of Pectis brevipedunculata Essential Oil against Drosophila suzukii and Pollinator Bees",
+      "public_url": "https://doi.org/10.3390/plants13101392",
+      "source_id": "doi:10.3390/plants13101392",
+      "locator": "Abstract and Results: feeding toxicity and diet consumption in SWD, Apis mellifera, and Partamona helleri"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W7140305653",
+      "title": "Receptor sequence divergence, gain, loss, duplication, and neofunctionalization drive olfactory adaptation in Drosophila suzukii",
+      "public_url": "https://doi.org/10.1073/pnas.2529586123",
+      "source_id": "doi:10.1073/pnas.2529586123",
+      "locator": "Abstract and Results: receptor perturbations required for ripe-fruit attraction but dispensable for egg-laying preference"
+    },
+    {
+      "record_id": "swd_olfaction_literature:pubmed:26098542",
+      "title": "Conservation of Olfactory Avoidance in Drosophila Species and Identification of Repellents for Drosophila suzukii",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/26098542/",
+      "source_id": "pubmed:26098542",
+      "locator": "Abstract and Results: comparative behavioral avoidance screen across Drosophila species without receptor perturbation"
+    },
+    {
+      "record_id": "swd_olfaction_literature:pubmed:26486360",
+      "title": "The sexually dimorphic behaviour of adult Drosophila suzukii: elevated female locomotor activity and loss of siesta is a post-mating response",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/26486360/",
+      "source_id": "pubmed:26486360",
+      "locator": "Abstract and Results: sex, mating state, and daylight effects on adult locomotor activity"
+    },
+    {
+      "record_id": "swd_olfaction_literature:pubmed:27530109",
+      "title": "The making of a pest: Insights from the evolution of chemosensory receptor families in a pestiferous and invasive fly, Drosophila suzukii",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/27530109/",
+      "source_id": "pubmed:27530109",
+      "locator": "Abstract and Results: comparative annotation and evolution of odorant and gustatory receptor families"
+    },
+    {
+      "record_id": "swd_olfaction_literature:pubmed:29668908",
+      "title": "Comparative Antennal and Behavioral Responses of Summer and Winter Morph Drosophila suzukii to Ecologically Relevant Volatiles",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/29668908/",
+      "source_id": "pubmed:29668908",
+      "locator": "Abstract and Results: summer- versus winter-morph electroantennograms and no-choice behavior for isoamyl acetate, acetic acid, geosmin, and bornyl acetate"
+    },
+    {
+      "record_id": "swd_olfaction_literature:pubmed:30379809",
+      "title": "Recording and reproducing the diurnal oviposition rhythms of wild populations of the soft- and stone-fruit pest Drosophila suzukii",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/30379809/",
+      "source_id": "pubmed:30379809",
+      "locator": "Abstract and Results: hourly oviposition under constant, light-temperature cycle, and August and October field conditions"
+    },
+    {
+      "record_id": "swd_pubmed_literature:pubmed:39769586",
+      "title": "Oviposition Preference and Developmental Performance of Drosophila suzukii on Different Cherry Cultivars",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/39769586/",
+      "source_id": "pubmed:39769586",
+      "locator": "Abstract and Table 1: cultivar-specific oviposition, hatching, pupation, and survival outcomes"
+    },
+    {
+      "record_id": "swd_traits:pubmed:28592264",
+      "title": "Adaptation to new nutritional environments: larval performance, foraging decisions, and adult oviposition choices in Drosophila suzukii",
+      "public_url": "https://pubmed.ncbi.nlm.nih.gov/28592264/",
+      "source_id": "pubmed:28592264",
+      "locator": "Abstract and Results: larval protein performance and intake separated from adult oviposition choices for nutrition and substrate hardness"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W4413971464",
+      "title": "Dose-dependent effect of methyl jasmonate on Drosophila suzukii (Matsumura) (Diptera: Drosophilidae)",
+      "public_url": "https://doi.org/10.1017/S0007485325100369",
+      "source_id": "doi:10.1017/s0007485325100369",
+      "locator": "Abstract: two-choice cage and two-choice planar olfactometer; oviposition deterrence above 1287.5 micrograms per filter paper; RD50 values; 309.0 micrograms repellent and 3.86-15.45 micrograms attractive"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W4411730655",
+      "title": "Oviposition deterrent as a component of a push-pull management approach for Drosophila suzukii",
+      "public_url": "https://doi.org/10.1093/ee/nvaf057",
+      "source_id": "doi:10.1093/ee/nvaf057",
+      "locator": "Abstract and field raspberry methods/results; laboratory choice and no-choice assays; Figure 5 pupae emerging from ripening and sentinel raspberries under control, pull, push, and push-pull treatments"
+    },
+    {
+      "record_id": "aedes_primary_behavior:pmc:PMC3794971",
+      "title": "Functional and Genetic Characterization of Neuropeptide Y-Like Receptors in Aedes aegypti",
+      "public_url": "https://doi.org/10.1371/journal.pntd.0002486",
+      "source_id": "doi:10.1371/journal.pntd.0002486",
+      "locator": "Results: NPYLR1 response to Head Peptide-I and sNPFs; NPYLR1 null-mutant host-seeking suppression experiment and conclusion that NPYLR1 is not required in vivo"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3199560580",
+      "title": "Does Habituation Affect the Efficacy of Semiochemical Oviposition Repellents Developed Against Drosophila suzukii?",
+      "public_url": "https://doi.org/10.1093/ee/nvab099",
+      "source_id": "doi:10.1093/ee/nvab099",
+      "locator": "Abstract: adult female and larval pre-exposure; 24, 48, or 72 hour adult exposures; two-choice gated trap capture, survival, and oviposition endpoints; octenol, geosmin, and 2-pentylfuran results"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3161910963",
+      "title": "Sex-Dependent Effects of the Microbiome on Foraging and Locomotion in Drosophila suzukii",
+      "public_url": "https://doi.org/10.3389/fmicb.2021.656406",
+      "source_id": "doi:10.3389/fmicb.2021.656406",
+      "locator": "Abstract and Results/Discussion: axenic and conventional females and males; starvation-induced locomotion; virgin versus mated gravid female food seeking; oviposition and fruit-preference results"
+    },
+    {
+      "record_id": "openalex:W3187681115",
+      "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
+      "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
+      "source_id": "doi:10.1016/j.cub.2021.07.003",
+      "locator": "Results and Discussion; Figure 1 cage assay and Figure 2 wind-tunnel assay: op1 and op2 single mutants, op1 and op2 double-mutant target attraction, odor tracking, phototaxis, optomotor, and ERG results"
+    },
+    {
+      "record_id": "openalex:W4225097850",
+      "title": "Impact of disabled circadian clock on yellow fever mosquito Aedes aegypti fitness and behaviors",
+      "public_url": "https://doi.org/10.1038/s41598-022-10825-5",
+      "source_id": "doi:10.1038/s41598-022-10825-5",
+      "locator": "Abstract and Results: AeCyc knockout and clock-gene expression; locomotor activity, host-odor response, blood-feeding, egg-hatching, development, survival, and mating phenotypes"
+    },
+    {
+      "record_id": "dbm:openalex:W4285394072",
+      "title": "Odorant Receptor PxylOR11 Mediates Repellency of Plutella xylostella to Aromatic Volatiles",
+      "public_url": "https://doi.org/10.3389/fphys.2022.938555",
+      "source_id": "doi:10.3389/fphys.2022.938555",
+      "locator": "Abstract: antennal tissue expression; Xenopus oocyte responses to three aromatic compounds; electroantennograms; female dual-choice bioassays"
+    },
+    {
+      "record_id": "dbm:openalex:W4392755518",
+      "title": "An odorant receptor mediates the avoidance of Plutella xylostella against parasitoid",
+      "public_url": "https://doi.org/10.1186/s12915-024-01862-9",
+      "source_id": "doi:10.1186/s12915-024-01862-9",
+      "locator": "Abstract Results and Conclusions: PxylOR16 response to heptanal; larval and adult avoidance; CRISPR/Cas9 knockout; parasitoid cuticular-volatile origin"
+    },
+    {
+      "record_id": "dbm:openalex:W2754278786",
+      "title": "Identification of Genes Involved in Chemoreception in Plutella xylostella by Antennal Transcriptome Analysis",
+      "public_url": "https://doi.org/10.1038/s41598-017-11646-7",
+      "source_id": "doi:10.1038/s41598-017-11646-7",
+      "locator": "Abstract: adult male and female antennal transcriptomes; counts for six chemoreception gene families; sex-biased and tissue-specific RT-PCR expression results"
+    },
+    {
+      "record_id": "dbm:openalex:W2289612981",
+      "title": "Behavioral Avoidance - Will Physiological Insecticide Resistance Level of Insect Strains Affect Their Oviposition and Movement Responses?",
+      "public_url": "https://doi.org/10.1371/journal.pone.0149994",
+      "source_id": "doi:10.1371/journal.pone.0149994",
+      "locator": "Abstract Methods, Results, and Conclusions: two resistant strains; gamma-cyhalothrin and spinetoram choice assays; female oviposition and larval movement or avoidance"
+    },
+    {
+      "record_id": "dbm:openalex:W2119258755",
+      "title": "A heterozygous moth genome provides insights into herbivory and detoxification",
+      "public_url": "https://doi.org/10.1038/ng.2524",
+      "source_id": "doi:10.1038/ng.2524",
+      "locator": "Abstract: 18,071 protein-coding genes, 1,412 unique genes, and expansions associated with perception, plant-defense detoxification, and insecticide resistance"
+    },
+    {
+      "record_id": "dbm:openalex:W3022069165",
+      "title": "Variation among 532 genomes unveils the origin and evolutionary history of a global insect herbivore",
+      "public_url": "https://doi.org/10.1038/s41467-020-16178-9",
+      "source_id": "doi:10.1038/s41467-020-16178-9",
+      "locator": "Abstract: 532 genomes from 114 populations and selection signatures in metabolic and signaling pathways"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W4408117270",
+      "title": "The Efficacy of Protective Nets Against Drosophila suzukii: The Effect of Temperature, Airflow, and Pest Morphology",
+      "public_url": "https://doi.org/10.3390/insects16030253",
+      "source_id": "doi:10.3390/insects16030253",
+      "locator": "Methods 2.1-2.2; Results 3.1 and 3.3; Tables 1-3 and 6-8; Conclusion 5"
+    },
+    {
+      "record_id": "swd:openalex_literature:openalex:W3036207020",
+      "title": "Spatial distribution of spotted-wing drosophila and other insects in fruit of a sweet cherry orchard",
+      "public_url": "https://doi.org/10.4039/tce.2020.41",
+      "source_id": "doi:10.4039/tce.2020.41",
+      "locator": "Abstract: five cultivars over seven weeks; interior and border rows; top/bottom by north/south canopy; low-, later-, and high-density distribution and aggregation results"
+    }
+  ],
   "species": [
     {
       "id": "drosophila_suzukii",
