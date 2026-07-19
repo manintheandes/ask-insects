@@ -3024,6 +3024,9 @@ class ReviewedScienceTests(unittest.TestCase):
             "For spotted wing drosophila, how should we bracket a source-mass "
             "series after seeing attraction at lower source masses and repellency "
             "at higher source masses, and which exposure units must we measure?",
+            "Our SWD assay shows that an unnamed odor draws flies at lower source "
+            "loads but pushes them away at higher source loads. What dose series "
+            "and exposure measurements should we run next?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
