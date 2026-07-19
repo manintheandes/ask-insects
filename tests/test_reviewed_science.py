@@ -1319,10 +1319,24 @@ class ReviewedScienceTests(unittest.TestCase):
                 (
                     "overripe fruit",
                     "cultivar differences in pupation",
+                    "Table 1 shows pupation rates of 0.80-0.87",
+                    "abstract instead reports pupation up to 0.89",
+                    "0.51-0.62",
                     "did not compare developmental outcomes across ripeness states",
                     "marketable yield",
                     "economic loss",
                     "operational fit",
+                ),
+            ),
+            (
+                "Which endpoints connect fewer SWD eggs on fruit to fewer surviving larvae and less marketable crop loss?",
+                "swd_pubmed_literature:pubmed:39769586",
+                (
+                    "Table 1 shows pupation rates of 0.80-0.87",
+                    "abstract instead reports pupation up to 0.89",
+                    "0.51-0.62",
+                    "fewer pupae",
+                    "marketable yield",
                 ),
             ),
             (
@@ -1358,9 +1372,21 @@ class ReviewedScienceTests(unittest.TestCase):
                 (
                     "fewer landings alone does not prove spatial avoidance",
                     "non-contact and contact arms",
+                    "measure feeding or consumption directly",
+                    "did not directly measure consumption",
                     "recovery",
                     "delayed mortality",
                     "R&D recommendation",
+                ),
+            ),
+            (
+                "A diamondback moth candidate reduces landings, but normal activity returns within 30 minutes. What study would separate temporary spatial avoidance, reversible knockdown, and delayed toxicity?",
+                "dbm:openalex:W4387738540",
+                (
+                    "measure feeding or consumption directly",
+                    "did not directly measure consumption",
+                    "same moths",
+                    "delayed mortality",
                 ),
             ),
             (
@@ -1371,7 +1397,29 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "Does a caprylic-capric acid blend reduce SWD egg laying, and has anyone isolated an airborne effect from substrate contact?",
                 "swd:openalex_literature:openalex:W4386466923",
-                ("99%", "64%", "caprylic", "capric", "spatial", "contact"),
+                (
+                    "99%",
+                    "64%",
+                    "larvae and pupae",
+                    "not from direct egg counts",
+                    "component choice assays likewise counted recovered larvae and pupae",
+                    "caprylic",
+                    "capric",
+                    "spatial",
+                    "contact",
+                ),
+            ),
+            (
+                "We're deciding whether coconut free fatty acid should be developed as an airborne SWD repellent or as an oviposition deterrent on fruit. What do the existing egg-count results establish, and which experiment would resolve the mode of action?",
+                "swd:openalex_literature:openalex:W4386466923",
+                (
+                    "reported CFFA as an oviposition deterrent",
+                    "larvae and pupae",
+                    "not from direct egg counts",
+                    "later no-choice comparison counted eggs directly",
+                    "no-contact",
+                    "total egg output",
+                ),
             ),
             (
                 "When commensal growth is present, does SWD oviposition differ on 1% and 3% agar?",
@@ -1407,6 +1455,23 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Which measurements distinguish a directional SWD odor response from general locomotor suppression?",
                 "swd:openalex_literature:openalex:W4213332511",
                 ("heading", "upwind", "clean air", "speed", "immobility", "mating"),
+            ),
+            (
+                "In an SWD wind-tunnel screen, how can we tell whether a volatile redirects flight rather than broadly suppressing movement, and which matched controls should the protocol include?",
+                "swd:openalex_literature:openalex:W4213332511",
+                (
+                    "heading",
+                    "upwind",
+                    "clean air",
+                    "match airflow, solvent, and release rate",
+                    "blind tracking",
+                    "do not establish that any candidate volatile is a repellent",
+                ),
+            ),
+            (
+                "How would you distinguish plume-guided SWD flight redirection from a volatile that suppresses movement throughout the tunnel?",
+                "swd:openalex_literature:openalex:W4213332511",
+                ("plume occupancy", "clean air", "locomotion", "randomize", "circadian"),
             ),
             (
                 "Our flight mill logged one spotted wing drosophila traveling 283 meters in 24 hours, while most flies never initiated flight. Can we use 283 meters as the minimum width of a crop-repellent buffer, or what does the free-flight comparison actually let us infer?",
@@ -1488,7 +1553,13 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "For diamondback moth, how should I separate citronella effects on larval movement, feeding, mortality, adult oviposition, and field abundance?",
                 "dbm:openalex:W4387738540",
-                ("3 and 4 mL/L", "100%", "48 hours", "Diadegma"),
+                (
+                    "larval positions",
+                    "later egg output",
+                    "did not directly measure food consumption",
+                    "mortality",
+                    "Diadegma",
+                ),
             ),
             (
                 "What controls Aedes host seeking after a blood meal, and is there a proven universal 24-hour phase?",
