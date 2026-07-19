@@ -493,6 +493,10 @@ class ReviewedScienceTests(unittest.TestCase):
                 "details need to be standardized?",
                 "In an Aedes airborne chamber test, what should we control about the "
                 "environment and what formulation exposure details remain unknown?",
+                "For an Aedes spatial-repellency chamber, what airflow and temperature "
+                "details should I record so another lab can reproduce the exposure?",
+                "Which daytime window, microclimate measurements, and plume details "
+                "should be reported for a reproducible Aedes non-contact chamber assay?",
             )
             for question in questions:
                 with self.subTest(question=question):
@@ -503,12 +507,28 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertTrue(answer["ok"])
                     self.assertEqual(answer["evidence"][0]["record_id"], record_id)
                     for fragment in (
-                        "recording temperature and relative humidity",
+                        "at the beginning of each 30-minute trial",
+                        "09:00-16:30",
+                        "does not publish the numeric assay-room",
+                        "25 +/- 2 C",
+                        "rearing conditions, not measured assay-room set points",
+                        "2.8 mL",
+                        "14.7 x 17.5 cm",
                         "define and monitor airflow direction and speed",
-                        "carrier, release-rate, application-method, and delivery package",
-                        "source gap",
+                        "airborne-exposure measurement gap",
+                        "applied loading alone as airborne dose",
                     ):
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+            unrelated = build_reviewed_science_answer(
+                index,
+                "How does regional humidity affect Aedes aegypti field abundance?",
+            )
+            if unrelated is not None:
+                self.assertNotIn(
+                    record_id,
+                    {item["record_id"] for item in unrelated["evidence"]},
+                )
 
     def test_swd_choice_controls_cover_solvent_airflow_and_locomotor_confounds(self):
         record_ids = (
@@ -668,14 +688,17 @@ class ReviewedScienceTests(unittest.TestCase):
         assert answer is not None
         self.assertTrue(answer["ok"])
         self.assertIn("airflow direction and speed", answer["answer"])
-        self.assertIn("temperature and relative humidity", answer["answer"])
+        self.assertIn("at the beginning of each 30-minute trial", answer["answer"])
+        self.assertIn("09:00-16:30", answer["answer"])
+        self.assertIn("does not publish the numeric assay-room", answer["answer"])
+        self.assertIn("rearing conditions, not measured assay-room set points", answer["answer"])
+        self.assertIn("2.8 mL", answer["answer"])
+        self.assertIn("14.7 x 17.5 cm", answer["answer"])
         self.assertIn("remaining on those papers", answer["answer"])
         self.assertIn("chamber-air concentration", answer["answer"])
         self.assertIn("not the paper's named treated-paper residue limitation", answer["answer"])
         self.assertIn("R&D design recommendations", answer["answer"])
-        self.assertIn("does not provide a universal standard", answer["answer"])
-        self.assertIn("complete product-specific", answer["answer"])
-        self.assertIn("source gap", answer["answer"])
+        self.assertIn("applied loading alone as airborne dose", answer["answer"])
         self.assertEqual(
             {item["record_id"] for item in answer["evidence"]},
             set(record_ids),
