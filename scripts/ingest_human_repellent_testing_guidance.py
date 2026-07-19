@@ -37,7 +37,6 @@ def ingest_human_repellent_testing_guidance(
         gaps=[],
         retrieved_at=retrieved,
         persist_gap_records=True,
-        preserve_existing_fts=True,
     )
     installed_record_count = int(outcome["record_count"])
     with index.connect() as connection:
@@ -55,7 +54,7 @@ def ingest_human_repellent_testing_guidance(
         "record_count": installed_record_count,
         "retrieved_at": retrieved,
         "refresh_failed": bool(outcome["refresh_failed"]),
-        "method": "reviewed exact official guidance and peer-reviewed source URLs",
+        "method": "reviewed exact official guidance URLs",
     }
     update_source_metadata_incrementally(
         artifact_dir,

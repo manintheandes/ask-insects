@@ -12,7 +12,7 @@ def build_human_repellent_testing_guidance_records(
     sources = (
         {
             "record_id": "human_repellent_guidance:who:2009.4",
-            "title": "WHO Guidelines for efficacy testing of mosquito repellents for human skin",
+            "title": "Guidelines for efficacy testing of mosquito repellents for human skin",
             "text": (
                 "WHO/HTM/NTD/WHOPES/2009.4 provides standardized laboratory and field "
                 "procedures for human-skin mosquito-repellent efficacy, application rate, "
@@ -28,7 +28,7 @@ def build_human_repellent_testing_guidance_records(
         },
         {
             "record_id": "human_repellent_guidance:epa:810.3700",
-            "title": "US EPA OPPTS 810.3700: Insect Repellents to be Applied to Human Skin",
+            "title": "Product Performance Test Guidelines OPPTS 810.3700: Insect Repellents to be Applied to Human Skin",
             "text": (
                 "US EPA OPPTS 810.3700 defines complete protection time and human-subject "
                 "efficacy testing. Its subject-preparation controls direct participants to avoid "
@@ -39,19 +39,6 @@ def build_human_repellent_testing_guidance_records(
             "locator": "https://www.epa.gov/system/files/documents/2023-12/1d.-oppts-810.3700-guidelines-july-7-2010.pdf#page=11",
             "license": "United States government publication",
             "source_kind": "official_guideline",
-        },
-        {
-            "record_id": "human_repellent_guidance:pubmed:26811157",
-            "title": "Percutaneous penetration and pharmacodynamics: Wash-in and wash-off of sunscreen and insect repellent",
-            "text": (
-                "This review identifies water, sweat, temperature, and abrasion as natural and "
-                "physical factors relevant to repellent durability and reapplication, while "
-                "separating retained or absorbed chemistry from behavioral protection."
-            ),
-            "url": "https://pubmed.ncbi.nlm.nih.gov/26811157/",
-            "locator": "https://pubmed.ncbi.nlm.nih.gov/26811157/#abstract",
-            "license": "NCBI PubMed metadata; source terms apply",
-            "source_kind": "peer_reviewed_review",
         },
     )
     return [

@@ -22,7 +22,7 @@
       "title": "Aedes aegypti Mosquitoes Exhibit Decreased Repellency by DEET following Previous Exposure",
       "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3577799/",
       "source_id": "pmc:PMC3577799",
-      "locator": "Abstract and Results: reduced DEET avoidance after prior exposure, odor specificity, and recovery by the following day"
+      "locator": "Abstract and Results: behavioral insensitivity and reduced electroantennogram response three hours after DEET pre-exposure; odor and host-stimulus control experiments"
     },
     {
       "record_id": "aedes_primary_behavior:pmc:PMC9866038:table8",
@@ -33,7 +33,7 @@
     },
     {
       "record_id": "aedes_primary_behavior:pubmed:469272",
-      "title": "Humoral inhibition of host-seeking in Aedes aegypti during oocyte maturation",
+      "title": "Humoral inhibition of host-seeking in Aedes aegypti during oöcyte maturation",
       "public_url": "https://doi.org/10.1016/0022-1910(79)90048-9",
       "source_id": "doi:10.1016/0022-1910(79)90048-9",
       "locator": "Abstract: blood-enema, oocyte-maturation, surgical-manipulation, and haemolymph-transfer experiments separating humoral inhibition from feeding"
@@ -61,7 +61,7 @@
     },
     {
       "record_id": "dbm:openalex:W2114561940",
-      "title": "Host Selection Behavior and the Fecundity of Plutella xylostella on Multiple Host Plants",
+      "title": "Host Selection Behavior and the Fecundity of Plutella xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants",
       "public_url": "https://doi.org/10.1093/jisesa/ieu113",
       "source_id": "doi:10.1093/jisesa/ieu113",
       "locator": "Abstract and Results: host orientation, landing, oviposition, and fecundity measured separately across host plants"
@@ -71,11 +71,11 @@
       "title": "Repellent and oviposition deterrent activities of the essential oil from Mikania micrantha and its compounds on Plutella xylostella",
       "public_url": "https://doi.org/10.1111/j.1744-7917.2004.tb00178.x",
       "source_id": "doi:10.1111/j.1744-7917.2004.tb00178.x",
-      "locator": "Abstract and Results: Y-tube repellency, oviposition deterrence, and toxicity endpoints for Mikania micrantha oil and components"
+      "locator": "Abstract and Results: airflow repellency and oviposition-deterrence endpoints for Mikania micrantha essential oil and five volatile compounds"
     },
     {
       "record_id": "dbm:openalex:W2164349268",
-      "title": "Oviposition by Plutella xylostella and Effects of Phylloplane Waxiness",
+      "title": "Oviposition by Plutella xylostella (Lepidoptera: Plutellidae) and Effects of Phylloplane Waxiness",
       "public_url": "https://doi.org/10.1603/0022-0493-93.4.1152",
       "source_id": "doi:10.1603/0022-0493-93.4.1152",
       "locator": "Abstract and Results: egg allocation on reduced-wax, herbicide-treated, glossy, and waxy plant surfaces"
@@ -110,7 +110,7 @@
     },
     {
       "record_id": "dbm:openalex:W4393189143",
-      "title": "Inhibition Effect of Non-Host Plant Volatile Extracts on Reproductive Behaviors in the Diamondback Moth Plutella xylostella",
+      "title": "Inhibition Effect of Non-Host Plant Volatile Extracts on Reproductive Behaviors in the Diamondback Moth Plutella xylostella (Linnaeus)",
       "public_url": "https://doi.org/10.3390/insects15040227",
       "source_id": "doi:10.3390/insects15040227",
       "locator": "Abstract and Results: non-host volatile extracts tested for adult orientation, mating, and oviposition responses"
@@ -131,28 +131,21 @@
     },
     {
       "record_id": "dbm:openalex:W4413460540",
-      "title": "A semiochemical attract-and-kill formulation to manage diamondback moth",
+      "title": "A semiochemical attract-and-kill formulation to manage diamondback moth (Lepidoptera: Plutellidae)",
       "public_url": "https://doi.org/10.1093/jee/toaf193",
       "source_id": "doi:10.1093/jee/toaf193",
       "locator": "Abstract: four-choice adult attraction and field counts of diamondback moth and beneficial insects"
     },
     {
       "record_id": "human_repellent_guidance:epa:810.3700",
-      "title": "US EPA OPPTS 810.3700: Insect Repellents to be Applied to Human Skin",
+      "title": "Product Performance Test Guidelines OPPTS 810.3700: Insect Repellents to be Applied to Human Skin",
       "public_url": "https://www.epa.gov/system/files/documents/2023-12/1d.-oppts-810.3700-guidelines-july-7-2010.pdf",
       "source_id": "epa:oppts-810.3700",
       "locator": "Paragraphs (v), (ix), and (x): efficacy endpoints, subject preparation, treatment, and complete protection time"
     },
     {
-      "record_id": "human_repellent_guidance:pubmed:26811157",
-      "title": "Percutaneous penetration and pharmacodynamics: Wash-in and wash-off of sunscreen and insect repellent",
-      "public_url": "https://pubmed.ncbi.nlm.nih.gov/26811157/",
-      "source_id": "pubmed:26811157",
-      "locator": "Abstract and review sections on water, sweat, temperature, and abrasion as durability and reapplication factors"
-    },
-    {
       "record_id": "human_repellent_guidance:who:2009.4",
-      "title": "WHO Guidelines for efficacy testing of mosquito repellents for human skin",
+      "title": "Guidelines for efficacy testing of mosquito repellents for human skin",
       "public_url": "https://www.who.int/publications/i/item/WHO-HTM-NTD-WHOPES-2009.4",
       "source_id": "who:WHO-HTM-NTD-WHOPES-2009.4",
       "locator": "Laboratory and field efficacy procedures: application rate, single-dose evaluation, and complete protection time"
@@ -180,7 +173,7 @@
     },
     {
       "record_id": "openalex:W3048721146",
-      "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus",
+      "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus (Diptera: Culicidae)",
       "public_url": "https://doi.org/10.1371/journal.pone.0237353",
       "source_id": "doi:10.1371/journal.pone.0237353",
       "locator": "Methods and Results: treated-paper loading, contact and non-contact chambers, escape, knockdown, mortality, and post-exposure behavior by species and population"
@@ -271,31 +264,31 @@
     },
     {
       "record_id": "swd:openalex_literature:openalex:W3132534524",
-      "title": "Olfactory Cues From Host- and Non-host Plant Odor Influence the Behavioral Responses of Adult Drosophila suzukii to Visual Cues",
+      "title": "Olfactory Cues From Host- and Non-host Plant Odor Influence the Behavioral Responses of Adult Drosophila suzukii (Diptera: Drosophilidae) to Visual Cues",
       "public_url": "https://doi.org/10.1093/ee/nvab004",
       "source_id": "doi:10.1093/ee/nvab004",
       "locator": "Abstract and Results: seven-, four-, and two-choice tests of color with yeast, blueberry, and beta-cyclocitral odors"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W3163892682",
-      "title": "Mind the Wound! Fruit Injury Ranks Higher than, and Interacts with, Heterospecific Cues for Drosophila suzukii Oviposition",
+      "title": "Mind the Wound!-Fruit Injury Ranks Higher than, and Interacts with, Heterospecific Cues for Drosophila suzukii Oviposition",
       "public_url": "https://doi.org/10.3390/insects12050424",
       "source_id": "doi:10.3390/insects12050424",
       "locator": "Abstract and Results: two-way oviposition choices among intact, wounded, infested, and heterospecific-exposed blueberries"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W3171171860",
-      "title": "Plasticity in Oviposition Site Selection Behavior in Drosophila suzukii in Relation to Adult Density and Host Distribution and Quality",
+      "title": "Plasticity in Oviposition Site Selection Behavior in Drosophila suzukii (Diptera: Drosophilidae) in Relation to Adult Density and Host Distribution and Quality",
       "public_url": "https://doi.org/10.1093/jee/toab108",
       "source_id": "doi:10.1093/jee/toab108",
       "locator": "Abstract and Results: total and per-female oviposition across female density, male density, whole raspberries, and raspberry agar"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W4213332511",
-      "title": "Hanseniaspora uvarum Attracts Drosophila suzukii With High Specificity",
+      "title": "Hanseniaspora uvarum Attracts Drosophila suzukii (Diptera: Drosophilidae) With High Specificity",
       "public_url": "https://doi.org/10.1093/jee/toac029",
       "source_id": "doi:10.1093/jee/toac029",
-      "locator": "Abstract and Results: wind-tunnel takeoff-plus-upwind-flight response and source contact in virgin starved females"
+      "locator": "Methods: virgin 3-6-day-old females starved for 24 hours; Results: wind-tunnel takeoff-plus-upwind-flight response and source contact"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W4290861466",
@@ -320,7 +313,7 @@
     },
     {
       "record_id": "swd:openalex_literature:openalex:W4397009635",
-      "title": "Contributions of gamma-Aminobutyric Acid Receptors for the Activities of Pectis brevipedunculata Essential Oil against Drosophila suzukii and Pollinator Bees",
+      "title": "Contributions of γ-Aminobutyric Acid (GABA) Receptors for the Activities of Pectis brevipedunculata Essential Oil against Drosophila suzukii and Pollinator Bees",
       "public_url": "https://doi.org/10.3390/plants13101392",
       "source_id": "doi:10.3390/plants13101392",
       "locator": "Abstract and Results: feeding toxicity and diet consumption in SWD, Apis mellifera, and Partamona helleri"
@@ -634,7 +627,35 @@
         ],
         "optional": ["filter paper", "planar olfactometer", "artificial fruit", "low dose"]
       },
-      "answer": "Methyl jasmonate was not uniformly repellent. In the cited planar olfactometer, 309.0 micrograms per filter paper was repellent, while 3.86 to 15.45 micrograms per filter paper was attractive. In a separate two-choice cage, doses above 1287.5 micrograms per filter paper reduced oviposition by more than 90 percent on artificial fruits. Applied mass per filter paper is not measured air concentration or a crop application rate, and neither endpoint by itself proves field crop protection.",
+      "answer": "Methyl jasmonate was not uniformly repellent. In the cited planar olfactometer, 309.0 micrograms per filter paper was repellent, while 3.86 to 15.45 micrograms per filter paper was attractive. In a separate two-choice cage, doses above 1287.5 micrograms per filter paper reduced oviposition by more than 90 percent on artificial fruits. Run separate carrier-controlled, log-spaced series for the two endpoints: bracket the orientation reversal from below 3.86 through 309.0 micrograms per filter paper, and bracket the oviposition transition around 1287.5 micrograms per filter paper in the cage assay. Measure release rate and air concentration over time before translating either result beyond its apparatus. Applied mass per filter paper is not measured air concentration or a crop application rate, and neither endpoint by itself proves field crop protection.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W4413971464"],
+      "source_provenance": [
+        {
+          "record_id": "swd:openalex_literature:openalex:W4413971464",
+          "title": "Dose-dependent effect of methyl jasmonate on Drosophila suzukii (Matsumura) (Diptera: Drosophilidae)",
+          "public_url": "https://doi.org/10.1017/S0007485325100369",
+          "source_id": "doi:10.1017/s0007485325100369",
+          "locator": "Abstract: two-choice cage and two-choice planar olfactometer; oviposition deterrence above 1287.5 micrograms per filter paper; RD50 values; 309.0 micrograms repellent and 3.86-15.45 micrograms attractive"
+        }
+      ]
+    },
+    {
+      "id": "swd-described-dose-reversal",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 25,
+        "phrases": ["dose reversal", "source loading", "source mass", "field exposure", "field rate"],
+        "required_any": [
+          ["low dose", "lower dose", "small dose", "low concentration", "lower concentration", "low amount", "lower amount", "low loading", "lower loading", "low source loading", "low source mass", "lower source mass", "lower source masses"],
+          ["high dose", "higher dose", "large dose", "high concentration", "higher concentration", "high amount", "higher amount", "high loading", "higher loading", "high source loading", "high source mass", "higher source mass", "higher source masses"],
+          ["attract", "attraction", "attractive"],
+          ["repel", "repellent", "repellency"],
+          ["dose", "concentration", "amount", "loading", "source mass", "filter paper", "field rate"]
+        ],
+        "excluded_any": ["methyl jasmonate", "meja"],
+        "optional": ["series", "bracket", "release rate", "air concentration", "field", "crop"]
+      },
+      "answer": "The relevant published SWD benchmark for this low-to-high reversal is methyl jasmonate. In the cited planar olfactometer, 3.86 to 15.45 micrograms per filter paper was attractive, while 309.0 micrograms per filter paper was repellent. In a separate two-choice cage, doses above 1287.5 micrograms per filter paper reduced oviposition by more than 90 percent on artificial fruits. Run separate carrier-controlled, log-spaced series for the two endpoints: bracket the orientation reversal from below 3.86 through 309.0 micrograms per filter paper, and bracket the oviposition transition around 1287.5 micrograms per filter paper in the cage assay. Measure release rate and air concentration over time before translating either result beyond its apparatus. Applied mass per filter paper is not measured air concentration or a crop application rate, and neither endpoint by itself proves field crop protection.",
       "source_record_ids": ["swd:openalex_literature:openalex:W4413971464"],
       "source_provenance": [
         {
@@ -1399,11 +1420,10 @@
         ],
         "optional": ["temperature", "rubbing", "water exposure", "active ingredient", "landing", "bite"]
       },
-      "answer": "WHO and EPA guidance provide standardized baseline efficacy and complete-protection-time methods for human-skin repellents. EPA's baseline subject controls explicitly avoid perspiration, abrasion, rubbing, touching, and wetting the treated area, so a baseline test does not establish protection after those stresses. The wash-in and wash-off review identifies water, sweat, temperature, and abrasion as durability and reapplication factors. These sources do not provide a validated sunlight or ultraviolet challenge protocol or a universal multi-stress matrix; that is a source gap. For product R&D, a challenge design could use separate, pre-specified sweat or water, washing and drying, rubbing or abrasion, exploratory sunlight or ultraviolet, and relevant temperature arms, each with an unchallenged time-matched control. That is an R&D challenge design, not a source-standardized protocol. Repeat landing or bite protection after each challenge; retained active ingredient or measured release is supporting evidence and cannot substitute for behavioral protection.",
+      "answer": "WHO and EPA guidance provide standardized baseline efficacy and complete-protection-time methods for human-skin repellents. EPA's baseline subject controls explicitly avoid perspiration, abrasion, rubbing, touching, and wetting the treated area, so a baseline test does not establish protection after those stresses. The cited official guidance does not provide a validated sunlight or ultraviolet challenge protocol or a universal multi-stress durability matrix; that is a source gap. For product R&D, a challenge design could use separate, pre-specified sweat or water, washing and drying, rubbing or abrasion, exploratory sunlight or ultraviolet, and relevant temperature arms, each with an unchallenged time-matched control. That is an R&D challenge design, not a source-standardized protocol. Repeat landing or bite protection after each challenge; retained active ingredient or measured release is supporting evidence and cannot substitute for behavioral protection.",
       "source_record_ids": [
         "human_repellent_guidance:who:2009.4",
-        "human_repellent_guidance:epa:810.3700",
-        "human_repellent_guidance:pubmed:26811157"
+        "human_repellent_guidance:epa:810.3700"
       ]
     },
     {

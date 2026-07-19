@@ -102,16 +102,15 @@ sources:
         - product_specific_repellent_efficacy
         - unreviewed_cross_species_transfer
   - id: human_repellent_testing_guidance
-    name: Exact human mosquito-repellent testing guidance and durability sources
-    source_type: reviewed_official_guidance_and_peer_reviewed_source
-    boundary: Exact WHO human-skin mosquito-repellent efficacy guidance, exact US EPA OPPTS 810.3700 human-skin repellent performance guidance, and the peer-reviewed PubMed-indexed wash-in and wash-off review, with stable original URLs and section or abstract locators; these sources support test design and durability boundaries, not product-specific protection claims
+    name: Exact human mosquito-repellent testing guidance
+    source_type: reviewed_official_guidance
+    boundary: Exact WHO human-skin mosquito-repellent efficacy guidance and exact US EPA OPPTS 810.3700 human-skin repellent performance guidance, with stable original URLs and section locators; these sources support baseline test design and durability boundaries, not product-specific protection claims or a validated real-use stress protocol
     query_plane: reviewed_original_urls_to_sqlite_guidance_records
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_human_repellent_testing_guidance.py
     upstream_sources:
       - who_guideline
       - us_epa_oppts_810_3700
-      - ncbi_pubmed
     lanes:
       - guidance
     provenance_required: true

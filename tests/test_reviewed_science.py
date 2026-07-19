@@ -3013,6 +3013,128 @@ class ReviewedScienceTests(unittest.TestCase):
                         item["provenance"]["locator"].casefold(),
                     )
 
+    def test_unnamed_swd_dose_reversal_routes_to_exact_meja_evidence(self):
+        from askinsects.cli import compact_agent_answer
+
+        record_id = "swd:openalex_literature:openalex:W4413971464"
+        questions = (
+            "Our unnamed SWD volatile is attractive at a low loading and repellent "
+            "at a higher loading. What laboratory series should "
+            "we run before translating it to a field rate?",
+            "For spotted wing drosophila, how should we bracket a source-mass "
+            "series after seeing attraction at lower source masses and repellency "
+            "at higher source masses, and which exposure units must we measure?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            answers = [
+                answer_question(question, artifact_dir=artifact_dir)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertTrue(answer["ok"])
+                self.assertEqual(answer["answer_shape"], "reviewed_science")
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {record_id},
+                )
+                self.assertIn("bracket", answer["answer"].casefold())
+                self.assertIn("separate carrier-controlled", answer["answer"].casefold())
+                self.assertIn("release rate", answer["answer"].casefold())
+                self.assertIn("air concentration", answer["answer"].casefold())
+                final_answer = compact_agent_answer(answer)["final_answer"]
+                self.assertIn(
+                    "[Dose-dependent effect of methyl jasmonate on Drosophila "
+                    "suzukii (Matsumura) (Diptera: Drosophilidae)]"
+                    "(https://doi.org/10.1017/S0007485325100369)",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Source ID: `doi:10.1017/s0007485325100369`",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Locator: `Abstract: two-choice cage and two-choice planar "
+                    "olfactometer",
+                    final_answer,
+                )
+
+        negative_questions = (
+            "For SWD, a volatile source below the canopy pulled flies toward it, "
+            "while one above the crop pushed them away. How should we measure the "
+            "spatial response?",
+            "For SWD, attraction occurred below the canopy and repellency above "
+            "the crop during field exposure.",
+            "How should source-to-fly distance and field exposure be reported for "
+            "an SWD repellent tested at one high loading?",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            negative_answers = [
+                build_reviewed_science_answer(index, question)
+                for question in negative_questions
+            ]
+
+        for question, answer in zip(
+            negative_questions, negative_answers, strict=True
+        ):
+            with self.subTest(question=question):
+                if answer is not None:
+                    self.assertNotIn(
+                        record_id,
+                        {item["record_id"] for item in answer["evidence"]},
+                    )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            named_answer = build_reviewed_science_answer(
+                index,
+                "Why is methyl jasmonate attractive at a low dose but repellent "
+                "at a higher dose in SWD?",
+            )
+
+        self.assertIsNotNone(named_answer)
+        assert named_answer is not None
+        self.assertTrue(
+            named_answer["answer"].startswith(
+                "Methyl jasmonate was not uniformly repellent."
+            )
+        )
+
     def test_catalog_preserves_exact_title_and_complete_figure_locator(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         provenance = {
@@ -3059,6 +3181,112 @@ class ReviewedScienceTests(unittest.TestCase):
             "Laboratory No-Choice Test, and Figure 4; Discussion: unresolved "
             "spatial- versus contact-mediated mode",
         )
+
+        density = provenance["swd:openalex_literature:openalex:W3171171860"]
+        self.assertEqual(
+            density["title"],
+            "Plasticity in Oviposition Site Selection Behavior in Drosophila "
+            "suzukii (Diptera: Drosophilidae) in Relation to Adult Density and "
+            "Host Distribution and Quality",
+        )
+
+        yeast = provenance["swd:openalex_literature:openalex:W4213332511"]
+        self.assertEqual(
+            yeast["title"],
+            "Hanseniaspora uvarum Attracts Drosophila suzukii (Diptera: "
+            "Drosophilidae) With High Specificity",
+        )
+        self.assertEqual(
+            yeast["locator"],
+            "Methods: virgin 3-6-day-old females starved for 24 hours; Results: "
+            "wind-tunnel takeoff-plus-upwind-flight response and source contact",
+        )
+
+        fruit_injury = provenance[
+            "swd:openalex_literature:openalex:W3163892682"
+        ]
+        self.assertEqual(
+            fruit_injury["title"],
+            "Mind the Wound!-Fruit Injury Ranks Higher than, and Interacts with, "
+            "Heterospecific Cues for Drosophila suzukii Oviposition",
+        )
+
+        exact_titles = {
+            "aedes_primary_behavior:pubmed:469272": (
+                "Humoral inhibition of host-seeking in Aedes aegypti during "
+                "oöcyte maturation"
+            ),
+            "openalex:W3048721146": (
+                "Behavioral responses to transfluthrin by Aedes aegypti, "
+                "Anopheles minimus, Anopheles harrisoni, and Anopheles dirus "
+                "(Diptera: Culicidae)"
+            ),
+            "swd:openalex_literature:openalex:W3132534524": (
+                "Olfactory Cues From Host- and Non-host Plant Odor Influence the "
+                "Behavioral Responses of Adult Drosophila suzukii (Diptera: "
+                "Drosophilidae) to Visual Cues"
+            ),
+            "swd:openalex_literature:openalex:W4397009635": (
+                "Contributions of γ-Aminobutyric Acid (GABA) Receptors for the "
+                "Activities of Pectis brevipedunculata Essential Oil against "
+                "Drosophila suzukii and Pollinator Bees"
+            ),
+            "human_repellent_guidance:epa:810.3700": (
+                "Product Performance Test Guidelines OPPTS 810.3700: Insect "
+                "Repellents to be Applied to Human Skin"
+            ),
+            "human_repellent_guidance:who:2009.4": (
+                "Guidelines for efficacy testing of mosquito repellents for "
+                "human skin"
+            ),
+            "dbm:openalex:W2114561940": (
+                "Host Selection Behavior and the Fecundity of Plutella "
+                "xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants"
+            ),
+            "dbm:openalex:W2164349268": (
+                "Oviposition by Plutella xylostella (Lepidoptera: Plutellidae) "
+                "and Effects of Phylloplane Waxiness"
+            ),
+            "dbm:openalex:W4413460540": (
+                "A semiochemical attract-and-kill formulation to manage "
+                "diamondback moth (Lepidoptera: Plutellidae)"
+            ),
+            "dbm:openalex:W4393189143": (
+                "Inhibition Effect of Non-Host Plant Volatile Extracts on "
+                "Reproductive Behaviors in the Diamondback Moth Plutella "
+                "xylostella (Linnaeus)"
+            ),
+        }
+        for record_id, title in exact_titles.items():
+            with self.subTest(record_id=record_id):
+                self.assertEqual(provenance[record_id]["title"], title)
+
+        self.assertEqual(
+            provenance["aedes_primary_behavior:pmc:PMC3577799"]["locator"],
+            "Abstract and Results: behavioral insensitivity and reduced "
+            "electroantennogram response three hours after DEET pre-exposure; "
+            "odor and host-stimulus control experiments",
+        )
+        self.assertEqual(
+            provenance["dbm:openalex:W2141627881"]["locator"],
+            "Abstract and Results: airflow repellency and oviposition-deterrence "
+            "endpoints for Mikania micrantha essential oil and five volatile "
+            "compounds",
+        )
+
+        durability = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "aedes-skin-repellent-durability"
+        )
+        self.assertEqual(
+            durability["source_record_ids"],
+            [
+                "human_repellent_guidance:who:2009.4",
+                "human_repellent_guidance:epa:810.3700",
+            ],
+        )
+        self.assertNotIn("wash-in", durability["answer"].casefold())
 
         vision = provenance["openalex:W3187681115"]
         self.assertIn("Figures 1-3", vision["locator"])
