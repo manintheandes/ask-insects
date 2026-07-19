@@ -514,14 +514,17 @@
       "id": "swd-field-plume-delivery",
       "species_ids": ["drosophila_suzukii"],
       "match": {
+        "priority": 45,
+        "species_may_be_implicit": true,
         "phrases": ["windy crop canopy", "still-air chamber", "field plume"],
         "required_any": [
           ["windy", "wind", "canopy", "field", "still air", "still-air", "raspberry", "trial", "trials"],
-          ["volatile", "release", "plume", "puffer", "dispenser"]
+          ["volatile", "release", "plume", "puffer", "puffers", "dispenser", "vial", "vials"],
+          ["swd", "spotted wing", "drosophila suzukii", "raspberry", "1 octen 3 ol", "octenol"]
         ],
-        "optional": ["source spacing", "placement", "foliage", "temperature", "timing"]
+        "optional": ["source spacing", "placement", "foliage", "temperature", "timing", "total dose", "delivery method", "passive"]
       },
-      "answer": "A crop canopy adds airflow, source spacing and placement, foliage, temperature, timing, and changing release-rate effects that a still-air chamber does not estimate. In 2016 raspberry plots, automated 1-octen-3-ol puffers reduced SWD oviposition by 20% versus controls. In 2017, puffers were 42-55% more effective than passive vials, and dawn and dusk release performed similarly to continuous daytime release. No placement difference was detected, but low fly abundance limited that comparison, so larger-scale perimeter and placement trials remain necessary. These results are specific to the tested crop, compound, years, pressure, and delivery methods.",
+      "answer": "A crop canopy adds airflow, source spacing and placement, foliage, temperature, timing, and changing release-rate effects that a still-air chamber does not estimate. In 2016 raspberry plots, automated 1-octen-3-ol puffers reduced SWD oviposition by 20% versus controls. In 2017, puffers were 42-55% more effective than passive vials, and dawn and dusk release performed similarly to continuous daytime release. No placement difference was detected, but low fly abundance limited that comparison, so larger-scale perimeter and placement trials remain necessary. The comparison shows that the tested delivery methods differed in outcome under those field conditions. It does not isolate total emitted dose, release rate, airborne concentration at the flies, or another delivery feature as the causal driver. These results are specific to the tested crop, compound, years, pressure, and delivery methods.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3046652911"]
     },
     {
