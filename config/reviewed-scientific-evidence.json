@@ -4,6 +4,13 @@
   "require_exact_source_provenance": true,
   "source_provenance": [
     {
+      "record_id": "swd_primary_field:doi:10.1016/j.cropro.2019.05.033",
+      "title": "Evaluation of hop (Humulus lupulus) as a repellent for the management of Drosophila suzukii",
+      "public_url": "https://doi.org/10.1016/j.cropro.2019.05.033",
+      "source_id": "doi:10.1016/j.cropro.2019.05.033",
+      "locator": "Abstract; Results sections 3.1-3.3; Discussion and conclusion, pp. 4-5; Figures 1-2"
+    },
+    {
       "record_id": "aedes_olfaction_literature:pubmed:36261039",
       "title": "Differential mosquito attraction to humans is associated with skin-derived carboxylic acid levels",
       "public_url": "https://pubmed.ncbi.nlm.nih.gov/36261039/",
@@ -1989,6 +1996,48 @@
           "source_id": "doi:10.3390/insects16030253",
           "locator": "Methods 2.1-2.2; Results 3.1 and 3.3; Tables 1-3 and 6-8; Conclusion 5"
         }
+      ]
+    },
+    {
+      "id": "swd-hop-greenhouse-field-translation",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 70,
+        "phrases": [
+          "hop pellet",
+          "hop-pellet",
+          "Humulus lupulus",
+          "soil-applied pellets",
+          "greenhouse to field"
+        ],
+        "required_any": [
+          ["hop", "hop pellet", "hop pellets", "hop-pellet", "hop-pellets", "Humulus lupulus", "HOP00"],
+          ["greenhouse", "greenhouse cage", "cage", "cages", "confined", "short cage", "small-scale", "small scale"],
+          ["field", "commercial", "advance", "qualify", "deploy", "push program", "stopping rule", "stop me"]
+        ],
+        "optional": [
+          "larval infestation",
+          "larvae in fruit",
+          "raspberry",
+          "raspberries",
+          "blackberry",
+          "blackberries",
+          "soil applied",
+          "unchanged formulation",
+          "release rate",
+          "canopy",
+          "wind",
+          "persistence"
+        ],
+        "excluded_any": [
+          "brewing quality",
+          "beer bitterness",
+          "human mosquito"
+        ]
+      },
+      "answer": "Do not advance the unchanged soil-applied hop-pellet formulation into a commercial SWD push program from the greenhouse result alone. In the 24-hour greenhouse cage study, HOP00 significantly reduced larval infestation relative to the untreated control, while HOP03 and HOP07 produced moderate but nonsignificant reductions; thymol and 1-octen-3-ol positive controls also reduced infestation. The controlled raspberry field trial did not reproduce a significant reduction for hop or for the dispenser-applied positive controls. Later commercial raspberry and blackberry trials found no significant reduction in larvae in fruit or trapped-fly density in hop-treated plots. Treat release rate, plume and upper-canopy coverage, persistence, wind dilution, and hop-variety headspace as formulation and exposure variables to measure, not as proven explanations for the field failure. The next gate should be a replicated field trial that measures delivered exposure and uses larvae in fruit as the primary efficacy endpoint, with trap counts kept separate. Stop advancing the unchanged formulation if it again fails to reduce larvae in fruit under the predefined field conditions, even if cage avoidance or adult trap counts look favorable. The study associated several headspace compounds with greenhouse efficacy but did not establish that any one compound caused repellency.",
+      "source_record_ids": [
+        "swd_primary_field:doi:10.1016/j.cropro.2019.05.033"
       ]
     },
     {

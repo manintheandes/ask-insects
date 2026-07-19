@@ -157,6 +157,8 @@ Hosted Ask Insects uses the same source lanes. The difference is location: parse
 
 `aedes_primary_behavior_evidence` maps four human-reviewed primary-source records to their original abstract, article, or table. It separates immediate abdominal-distention inhibition from humoral inhibition during oocyte maturation, preserves the NPYLR1 null-mutant boundary, and cites the exact citronella protection-time values in Table 8. The lane does not infer a universal 24-hour post-blood-meal phase or extend one formulation study to general human-protection durability.
 
+`swd_primary_field_evidence` maps the exact primary hop-pellet greenhouse-to-field study to its public DOI and full-text manuscript. It preserves the 24-hour cage result, the controlled raspberry field failure, the commercial raspberry and blackberry results, the larvae-in-fruit and trap-count endpoints, and the distinction between measured results and proposed explanations such as wind dilution or inadequate canopy coverage. It does not treat greenhouse efficacy, headspace associations, or hypothesized field-failure mechanisms as commercial proof or causality.
+
 Hosted GBIF and iNaturalist ingests stage a copy of the active artifact directory, fetch into the staging copy, replace only the matching source rows in SQLite, write receipts, and activate the staged directory only after the refresh succeeds. This keeps the old server database readable during long pulls.
 
 ## Genomics

@@ -3138,6 +3138,91 @@ class ReviewedScienceTests(unittest.TestCase):
             )
         )
 
+    def test_hop_greenhouse_result_routes_to_exact_field_translation_evidence(self):
+        from askinsects.cli import compact_agent_answer
+        from askinsects.sources.swd_primary_field_evidence import (
+            build_swd_primary_field_evidence_records,
+        )
+
+        questions = (
+            "A hop-pellet treatment cut SWD larval infestation in our greenhouse "
+            "cages. Should I advance the same soil-applied pellets into a commercial "
+            "raspberry push program, and what result would stop me?",
+            "Humulus lupulus reduced spotted wing drosophila infestation in a short "
+            "cage assay. What field evidence and stopping rule should govern a "
+            "raspberry or blackberry trial?",
+            "Can a confined-cage SWD result with hop pellets qualify the unchanged "
+            "formulation for commercial field use?",
+        )
+        negative_questions = (
+            "Which hop cultivar has the highest alpha-acid percentage for brewing?",
+            "How should I measure generic greenhouse humidity in an SWD colony?",
+            "Does a raspberry aroma attract SWD in an olfactometer?",
+            "Did hop pellets reduce SWD infestation in the greenhouse cage?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                build_swd_primary_field_evidence_records(
+                    retrieved_at="2026-07-19T00:00:00Z"
+                )
+            )
+            answers = [
+                answer_question(question, artifact_dir=artifact_dir)
+                for question in questions
+            ]
+            negatives = [
+                build_reviewed_science_answer(index, question)
+                for question in negative_questions
+            ]
+
+        expected_record_id = (
+            "swd_primary_field:doi:10.1016/j.cropro.2019.05.033"
+        )
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertTrue(answer["ok"])
+                self.assertEqual(answer["answer_shape"], "reviewed_science")
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {expected_record_id},
+                )
+                for fragment in (
+                    "do not advance",
+                    "24-hour",
+                    "commercial raspberry and blackberry",
+                    "larvae in fruit",
+                    "stop",
+                ):
+                    self.assertIn(fragment, answer["answer"].casefold())
+                final_answer = compact_agent_answer(answer)["final_answer"]
+                self.assertIn(
+                    "[Evaluation of hop (Humulus lupulus) as a repellent for the "
+                    "management of Drosophila suzukii]"
+                    "(https://doi.org/10.1016/j.cropro.2019.05.033)",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Source ID: `doi:10.1016/j.cropro.2019.05.033`",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Locator: `Abstract; Results sections 3.1-3.3; Discussion and "
+                    "conclusion, pp. 4-5; Figures 1-2`",
+                    final_answer,
+                )
+
+        for question, answer in zip(negative_questions, negatives, strict=True):
+            with self.subTest(question=question):
+                if answer is not None:
+                    self.assertNotIn(
+                        expected_record_id,
+                        {item["record_id"] for item in answer["evidence"]},
+                    )
+
     def test_catalog_preserves_exact_title_and_complete_figure_locator(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         provenance = {
