@@ -514,6 +514,9 @@ class ReviewedScienceTests(unittest.TestCase):
                         "rearing conditions, not measured assay-room set points",
                         "2.8 mL",
                         "14.7 x 17.5 cm",
+                        "solvent-and-carrier vehicle control",
+                        "1.91:0.95",
+                        "room temperature on aluminium foil",
                         "define and monitor airflow direction and speed",
                         "airborne-exposure measurement gap",
                         "applied loading alone as airborne dose",
@@ -694,6 +697,9 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertIn("rearing conditions, not measured assay-room set points", answer["answer"])
         self.assertIn("2.8 mL", answer["answer"])
         self.assertIn("14.7 x 17.5 cm", answer["answer"])
+        self.assertIn("solvent-and-carrier vehicle control", answer["answer"])
+        self.assertIn("1.91:0.95", answer["answer"])
+        self.assertIn("room temperature on aluminium foil", answer["answer"])
         self.assertIn("remaining on those papers", answer["answer"])
         self.assertIn("chamber-air concentration", answer["answer"])
         self.assertIn("not the paper's named treated-paper residue limitation", answer["answer"])
