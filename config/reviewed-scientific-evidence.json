@@ -313,10 +313,10 @@
     },
     {
       "record_id": "swd:openalex_literature:openalex:W4386466923",
-      "title": "A 2-component blend of coconut oil-derived fatty acids as an oviposition deterrent against Drosophila suzukii",
+      "title": "A 2-component blend of coconut oil-derived fatty acids as an oviposition deterrent against Drosophila suzukii (Drosophilidae: Diptera)",
       "public_url": "https://doi.org/10.1093/jee/toad092",
       "source_id": "doi:10.1093/jee/toad092",
-      "locator": "Methods, Results, and tables: full CFFA, caprylic acid, capric acid, and two-component blend across laboratory, no-choice raspberry, and field endpoints"
+      "locator": "Methods: Laboratory Choice Test 1, Laboratory No-Choice Test, and Table 1; Results: Field Test 1, Laboratory Choice Tests 1-2, Laboratory No-Choice Test, and Figure 4; Discussion: unresolved spatial- versus contact-mediated mode"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W4397009635",
@@ -355,10 +355,10 @@
     },
     {
       "record_id": "swd_olfaction_literature:pubmed:29668908",
-      "title": "Comparative Antennal and Behavioral Responses of Summer and Winter Morph Drosophila suzukii to Ecologically Relevant Volatiles",
+      "title": "Comparative Antennal and Behavioral Responses of Summer and Winter Morph Drosophila suzukii (Diptera: Drosophilidae) to Ecologically Relevant Volatiles",
       "public_url": "https://pubmed.ncbi.nlm.nih.gov/29668908/",
       "source_id": "pubmed:29668908",
-      "locator": "Abstract and Results: summer- versus winter-morph electroantennograms and no-choice behavior for isoamyl acetate, acetic acid, geosmin, and bornyl acetate"
+      "locator": "Abstract: female summer- and winter-morph electroantennogram responses to six volatiles; no-choice behavior for geosmin and bornyl acetate; geosmin T-maze aversion"
     },
     {
       "record_id": "swd_olfaction_literature:pubmed:30379809",
