@@ -1362,6 +1362,50 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("electroantennogram", "positive control", "non-contact", "1 ppm", "orco", "sodium-channel"),
             ),
             (
+                "Why can transfluthrin reduce Aedes aegypti landings when a whole-antenna EAG shows no signal, and what evidence points to sodium channels?",
+                "openalex:W3179105761",
+                (
+                    "20 ng/cm2",
+                    "DEET, 1-octen-3-ol, and lactic acid",
+                    "No locomotor abnormality",
+                    "orco-null",
+                    "S989P and V1016G",
+                    "1S-cis",
+                    "laboratory landing",
+                    "did not measure airborne concentration",
+                ),
+            ),
+            (
+                "Does an absent antennal response to pure transfluthrin mean Aedes failed to sense it, or do Orco, kdr, and stereoisomer experiments support the observed repellency through another pathway?",
+                "openalex:W3179105761",
+                (
+                    "does not exclude a response in individual antennal neurons",
+                    "KDR:ROCK",
+                    "sodium-channel-dependent principal mechanism",
+                    "Three tested commercial transfluthrin products behaved differently",
+                    "unknown background differences",
+                ),
+            ),
+            (
+                "Why does Aedes aegypti show transfluthrin-mediated landing suppression despite a null antennal field potential, and how do Orco deletion and kdr substitutions constrain the mechanism?",
+                "openalex:W3179105761",
+                (
+                    "99.2-99.9% purity",
+                    "another sensory organ",
+                    "applied to the lower net",
+                    "without requiring intact Orco-mediated odorant-receptor signaling",
+                ),
+            ),
+            (
+                "Aedes females still shun transfluthrin near a hand although their antennal field potential is silent. Which channel perturbations identify the responsible route?",
+                "openalex:W3179105761",
+                (
+                    "mutant mosquito sodium channel was less sensitive",
+                    "1S-cis isomer",
+                    "complete detection-to-avoidance pathway",
+                ),
+            ),
+            (
                 "Which adult, egg, larval, feeding, and crop-damage measurements should a diamondback moth repellent study track?",
                 "dbm:openalex:W2114561940",
                 ("adult orientation", "egg hatch", "leaf damage"),
@@ -1646,6 +1690,30 @@ class ReviewedScienceTests(unittest.TestCase):
                     )
                     for fragment in expected_fragments:
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_transfluthrin_mechanism_matcher_rejects_unrelated_aedes_sensory_questions(self):
+        record_id = "openalex:W3179105761"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator="raw/aedes.json#works/W3179105761",
+                    )
+                ]
+            )
+            questions = (
+                "Can Aedes aegypti smell human odor but avoid DEET?",
+                "Does Aedes aegypti detect heat but avoid a visual target?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNone(answer)
 
     def test_normal_answer_path_prefers_reviewed_science_when_it_matches(self):
         reviewed = {
