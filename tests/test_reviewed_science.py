@@ -2045,6 +2045,7 @@ class ReviewedScienceTests(unittest.TestCase):
             "Can an SWD exclusion net qualified in still air be used in a fan-ventilated berry tunnel?",
             "What hot-weather and airflow envelope should we challenge before deploying mesh against spotted wing drosophila?",
             "Our Drosophila suzukii screen worked with cool-reared flies; what must change before a windy field test?",
+            "Which airflow and heat conditions should I vary before treating an SWD exclusion screen as reliable outside a laboratory passage assay?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
