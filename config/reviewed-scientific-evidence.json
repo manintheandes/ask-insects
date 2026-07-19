@@ -855,6 +855,234 @@
       ]
     },
     {
+      "id": "dbm-odorant-receptor-evidence",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 65,
+        "phrases": [
+          "odorant receptor evidence",
+          "functionally tested odorant receptors",
+          "chemoreception genes",
+          "odor detection mechanism"
+        ],
+        "required_any": [
+          [
+            "odorant receptor",
+            "odorant receptors",
+            "chemoreception",
+            "chemosensory",
+            "odor detection",
+            "olfactory receptor",
+            "olfactory receptors"
+          ],
+          [
+            "evidence",
+            "functional",
+            "function",
+            "ligand",
+            "ligands",
+            "mechanism",
+            "respond",
+            "response",
+            "tested",
+            "shown"
+          ]
+        ],
+        "optional": [
+          "direct",
+          "gene",
+          "genes",
+          "repellent",
+          "repellency",
+          "avoidance",
+          "not prove"
+        ]
+      },
+      "answer": "Three kinds of direct Plutella xylostella evidence are available. First, adult antennal transcriptomes catalogued 54 odorant receptors, 16 ionotropic receptors, 7 gustatory receptors, 15 chemosensory proteins, 24 odorant-binding proteins, and 2 sensory-neuron membrane proteins, with some sex-biased and tissue-specific expression. That is a candidate inventory, not functional proof. Second, PxylOR11 responded to benzyl alcohol, salicylaldehyde, and phenylacetaldehyde in Xenopus oocytes; the same compounds elicited antennal responses and repelled females in dual-choice assays. Those linked molecular, physiological, and behavioral measurements support a role for PxylOR11, but the study did not use a receptor knockout and did not test field crop protection. Third, PxylOR16 responded sensitively to heptanal, larvae and adults avoided heptanal, and CRISPR/Cas9 knockout confirmed that the receptor mediates that avoidance. The heptanal was traced to cuticular volatiles of the parasitoid Cotesia vestalis, not to a host plant. Neither receptor study established a dose-to-plume-to-yield chain, population-wide reliability, persistence under field weather, or commercial repellent efficacy.",
+      "source_record_ids": [
+        "dbm:openalex:W2754278786",
+        "dbm:openalex:W4285394072",
+        "dbm:openalex:W4392755518"
+      ],
+      "source_provenance": [
+        {
+          "record_id": "dbm:openalex:W2754278786",
+          "title": "Identification of Genes Involved in Chemoreception in Plutella xyllostella by Antennal Transcriptome Analysis",
+          "public_url": "https://doi.org/10.1038/s41598-017-11646-7",
+          "source_id": "doi:10.1038/s41598-017-11646-7",
+          "locator": "Abstract: adult male and female antennal transcriptomes; counts for six chemoreception gene families; sex-biased and tissue-specific RT-PCR expression results"
+        },
+        {
+          "record_id": "dbm:openalex:W4285394072",
+          "title": "Odorant Receptor PxylOR11 Mediates Repellency of Plutella xylostella to Aromatic Volatiles",
+          "public_url": "https://doi.org/10.3389/fphys.2022.938555",
+          "source_id": "doi:10.3389/fphys.2022.938555",
+          "locator": "Abstract: antennal tissue expression; Xenopus oocyte responses to three aromatic compounds; electroantennograms; female dual-choice bioassays"
+        },
+        {
+          "record_id": "dbm:openalex:W4392755518",
+          "title": "An odorant receptor mediates the avoidance of Plutella xylostella against parasitoid",
+          "public_url": "https://doi.org/10.1186/s12915-024-01862-9",
+          "source_id": "doi:10.1186/s12915-024-01862-9",
+          "locator": "Abstract Results and Conclusions: PxylOR16 response to heptanal; larval and adult avoidance; CRISPR/Cas9 knockout; parasitoid cuticular-volatile origin"
+        }
+      ]
+    },
+    {
+      "id": "dbm-resistance-linked-behavior",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 65,
+        "phrases": [
+          "resistance-linked behavior",
+          "physiological resistance and behavioral avoidance",
+          "resistant-strain behavior",
+          "resistant strain behavior"
+        ],
+        "required_any": [
+          [
+            "resistance",
+            "physiological resistance",
+            "resistant strain",
+            "resistant strains",
+            "insecticide-resistant",
+            "insecticide resistant"
+          ],
+          [
+            "behavior",
+            "behavioral avoidance",
+            "avoidance",
+            "movement",
+            "oviposition",
+            "egg laying",
+            "life stage",
+            "mechanism"
+          ]
+        ],
+        "optional": [
+          "gamma-cyhalothrin",
+          "spinetoram",
+          "female",
+          "larva",
+          "larvae",
+          "selection pressure"
+        ]
+      },
+      "answer": "The direct DBM study compared two strains with different levels of physiological insecticide resistance and measured behavior separately in females and larvae. In three-choice oviposition assays, females from the single-resistance strain laid more eggs on water-treated leaves than on leaves with complete gamma-cyhalothrin or spinetoram coverage. Females from the double-resistance strain avoided complete gamma-cyhalothrin coverage but did not change oviposition in response to spinetoram. Single-resistance larvae increased movement and avoided treated leaf areas for both insecticides, whereas double-resistance larvae decreased movement and did not avoid the treated areas. The result is compound-, strain-, and life-stage-specific. It supports the conclusion that physiological resistance level and behavioral avoidance can vary independently and may not share the same selection pressures. It does not identify the sensory receptor, neural circuit, genetic variant, or metabolic mechanism responsible for the behavior, and it does not show that greater physiological resistance always produces more or less avoidance in field populations.",
+      "source_record_ids": ["dbm:openalex:W2289612981"],
+      "source_provenance": [
+        {
+          "record_id": "dbm:openalex:W2289612981",
+          "title": "Behavioral Avoidance - Will Physiological Insecticide Resistance Level of Insect Strains Affect Their Oviposition and Movement Responses?",
+          "public_url": "https://doi.org/10.1371/journal.pone.0149994",
+          "source_id": "doi:10.1371/journal.pone.0149994",
+          "locator": "Abstract Methods, Results, and Conclusions: two resistant strains; gamma-cyhalothrin and spinetoram choice assays; female oviposition and larval movement or avoidance"
+        }
+      ]
+    },
+    {
+      "id": "dbm-chemosensory-resistance-synthesis",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 100,
+        "phrases": [
+          "odorant receptors and resistance",
+          "chemoreception genes and resistance",
+          "molecular odor detection and resistant strains",
+          "chemosensory and resistance evidence",
+          "sensory genes and behavioral resistance"
+        ],
+        "required_any": [
+          [
+            "odorant receptor",
+            "odorant receptors",
+            "chemoreception",
+            "chemoreception genes",
+            "chemosensory",
+            "chemosensory genes",
+            "odor detection",
+            "olfactory receptor",
+            "olfactory receptors",
+            "sensory genes"
+          ],
+          [
+            "resistance",
+            "resistance-related behavior",
+            "resistance related behavior",
+            "resistant strain",
+            "resistant strains",
+            "insecticide-resistant",
+            "insecticide resistant",
+            "physiological resistance",
+            "behavioral avoidance"
+          ]
+        ],
+        "optional": [
+          "direct evidence",
+          "functional evidence",
+          "movement",
+          "egg laying",
+          "oviposition",
+          "uncertainty",
+          "uncertainties",
+          "do not establish"
+        ]
+      },
+      "answer": "Direct Plutella xylostella evidence supports several different layers, which should not be collapsed into one mechanism. An adult antennal transcriptome identified 54 odorant receptors, 16 ionotropic receptors, 7 gustatory receptors, 15 chemosensory proteins, 24 odorant-binding proteins, and 2 sensory-neuron membrane proteins; sex-biased and tissue-specific expression makes these candidates, but the transcriptome alone does not identify their ligands or prove their behavioral functions. PxylOR11 has direct functional evidence: it was antennally enriched, responded to benzyl alcohol, salicylaldehyde, and phenylacetaldehyde in Xenopus oocytes, and those compounds produced antennal responses and repelled females in dual-choice tests. PxylOR16 has stronger causal evidence for one cue: it responded sensitively to heptanal, larvae and adults avoided heptanal, and CRISPR/Cas9 knockout confirmed that PxylOR16 mediates the avoidance; the study traced heptanal to a parasitoid wasp rather than a host plant. Resistance-related behavior is a separate result. In choice assays with two physiologically resistant DBM strains, oviposition and larval movement or avoidance differed by strain, life stage, and whether leaves carried gamma-cyhalothrin or spinetoram. That study concluded that physiological resistance and behavioral avoidance need not share the same selection pressures; it does not establish that PxylOR11, PxylOR16, or another chemoreceptor caused the resistant-strain behavior. Genome studies add context by identifying expanded perception and detoxification gene families and population-level selection signatures, but they do not identify a causal repellent-resistance locus. Important uncertainties remain: receptor and strain effects need dose-response and population replication; laboratory avoidance has not established durable field crop protection; and no cited study links a chemoreceptor variant through airborne exposure, egg laying, larval establishment, crop damage, and yield. These are direct DBM findings and explicit gaps, not evidence that a receptor target or volatile is already a commercial repellent.",
+      "source_record_ids": [
+        "dbm:openalex:W2754278786",
+        "dbm:openalex:W4285394072",
+        "dbm:openalex:W4392755518",
+        "dbm:openalex:W2289612981",
+        "dbm:openalex:W2119258755",
+        "dbm:openalex:W3022069165"
+      ],
+      "source_provenance": [
+        {
+          "record_id": "dbm:openalex:W2754278786",
+          "title": "Identification of Genes Involved in Chemoreception in Plutella xyllostella by Antennal Transcriptome Analysis",
+          "public_url": "https://doi.org/10.1038/s41598-017-11646-7",
+          "source_id": "doi:10.1038/s41598-017-11646-7",
+          "locator": "Abstract: adult male and female antennal transcriptomes; counts for six chemoreception gene families; sex-biased and tissue-specific RT-PCR expression results"
+        },
+        {
+          "record_id": "dbm:openalex:W4285394072",
+          "title": "Odorant Receptor PxylOR11 Mediates Repellency of Plutella xylostella to Aromatic Volatiles",
+          "public_url": "https://doi.org/10.3389/fphys.2022.938555",
+          "source_id": "doi:10.3389/fphys.2022.938555",
+          "locator": "Abstract: antennal tissue expression; Xenopus oocyte responses to three aromatic compounds; electroantennograms; female dual-choice bioassays"
+        },
+        {
+          "record_id": "dbm:openalex:W4392755518",
+          "title": "An odorant receptor mediates the avoidance of Plutella xylostella against parasitoid",
+          "public_url": "https://doi.org/10.1186/s12915-024-01862-9",
+          "source_id": "doi:10.1186/s12915-024-01862-9",
+          "locator": "Abstract Results and Conclusions: PxylOR16 response to heptanal; larval and adult avoidance; CRISPR/Cas9 knockout; parasitoid cuticular-volatile origin"
+        },
+        {
+          "record_id": "dbm:openalex:W2289612981",
+          "title": "Behavioral Avoidance - Will Physiological Insecticide Resistance Level of Insect Strains Affect Their Oviposition and Movement Responses?",
+          "public_url": "https://doi.org/10.1371/journal.pone.0149994",
+          "source_id": "doi:10.1371/journal.pone.0149994",
+          "locator": "Abstract Methods, Results, and Conclusions: two resistant strains; gamma-cyhalothrin and spinetoram choice assays; female oviposition and larval movement or avoidance"
+        },
+        {
+          "record_id": "dbm:openalex:W2119258755",
+          "title": "A heterozygous moth genome provides insights into herbivory and detoxification",
+          "public_url": "https://doi.org/10.1038/ng.2524",
+          "source_id": "doi:10.1038/ng.2524",
+          "locator": "Abstract: 18,071 protein-coding genes, 1,412 unique genes, and expansions associated with perception, plant-defense detoxification, and insecticide resistance"
+        },
+        {
+          "record_id": "dbm:openalex:W3022069165",
+          "title": "Variation among 532 genomes unveils the origin and evolutionary history of a global insect herbivore",
+          "public_url": "https://doi.org/10.1038/s41467-020-16178-9",
+          "source_id": "doi:10.1038/s41467-020-16178-9",
+          "locator": "Abstract: 532 genomes from 114 populations and selection signatures in metabolic and signaling pathways"
+        }
+      ]
+    },
+    {
       "id": "dbm-antennal-field-blend-endpoints",
       "species_ids": ["plutella_xylostella"],
       "match": {

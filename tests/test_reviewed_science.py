@@ -2389,6 +2389,201 @@ class ReviewedScienceTests(unittest.TestCase):
                         )
                     )
 
+    def test_dbm_chemosensory_and_resistance_evidence_route_handles_unseen_paraphrases(self):
+        record_ids = (
+            "dbm:openalex:W2119258755",
+            "dbm:openalex:W2289612981",
+            "dbm:openalex:W2754278786",
+            "dbm:openalex:W3022069165",
+            "dbm:openalex:W4285394072",
+            "dbm:openalex:W4392755518",
+        )
+        questions = (
+            "What direct evidence does Ask Insects have for odorant receptors, "
+            "chemoreception genes, and resistance-related behavior in diamondback "
+            "moth, and what important uncertainties remain?",
+            "For Plutella xylostella, which chemosensory genes and odorant receptors "
+            "have direct functional evidence, and how does that differ from the "
+            "behavioral evidence in insecticide-resistant strains?",
+            "Summarize DBM molecular odor detection and what resistant-strain "
+            "movement and egg-laying results do and do not establish.",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="plutella_xylostella_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(answer["answer_shape"], "reviewed_science")
+                for fragment in (
+                    "54 odorant receptors",
+                    "PxylOR11",
+                    "PxylOR16",
+                    "CRISPR",
+                    "gamma-cyhalothrin",
+                    "spinetoram",
+                    "does not establish",
+                    "field crop protection",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    set(record_ids),
+                )
+                or11 = next(
+                    item
+                    for item in answer["evidence"]
+                    if item["record_id"] == "dbm:openalex:W4285394072"
+                )
+                self.assertEqual(
+                    or11["title"],
+                    "Odorant Receptor PxylOR11 Mediates Repellency of Plutella "
+                    "xylostella to Aromatic Volatiles",
+                )
+                self.assertEqual(
+                    or11["url"],
+                    "https://doi.org/10.3389/fphys.2022.938555",
+                )
+                self.assertEqual(
+                    or11["provenance"]["source_id"],
+                    "doi:10.3389/fphys.2022.938555",
+                )
+                self.assertIn(
+                    "dual-choice bioassays",
+                    or11["provenance"]["locator"].casefold(),
+                )
+
+    def test_dbm_receptor_and_resistance_routes_answer_narrow_scientist_questions(self):
+        record_ids = (
+            "dbm:openalex:W2289612981",
+            "dbm:openalex:W2754278786",
+            "dbm:openalex:W4285394072",
+            "dbm:openalex:W4392755518",
+        )
+        cases = (
+            (
+                "Which diamondback moth odorant receptors have direct functional "
+                "evidence, which ligands were tested, and what does each experiment "
+                "not prove?",
+                {
+                    "dbm:openalex:W2754278786",
+                    "dbm:openalex:W4285394072",
+                    "dbm:openalex:W4392755518",
+                },
+                ("PxylOR11", "PxylOR16", "heptanal", "field crop protection"),
+            ),
+            (
+                "How does physiological insecticide resistance relate to oviposition "
+                "and larval movement avoidance in DBM, and does the study show the "
+                "same mechanism?",
+                {"dbm:openalex:W2289612981"},
+                (
+                    "gamma-cyhalothrin",
+                    "spinetoram",
+                    "life-stage",
+                    "does not identify",
+                ),
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="plutella_xylostella_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question, _, _ in cases
+            ]
+
+        for (question, expected_record_ids, fragments), answer in zip(
+            cases, answers, strict=True
+        ):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    expected_record_ids,
+                )
+                for fragment in fragments:
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_normal_answer_path_returns_exact_dbm_mechanism_sources(self):
+        from askinsects.cli import compact_agent_answer
+
+        record_ids = (
+            "dbm:openalex:W2119258755",
+            "dbm:openalex:W2289612981",
+            "dbm:openalex:W2754278786",
+            "dbm:openalex:W3022069165",
+            "dbm:openalex:W4285394072",
+            "dbm:openalex:W4392755518",
+        )
+        question = (
+            "What links diamondback moth chemosensory receptors to odor avoidance, "
+            "and how is that evidence different from resistance-linked behavior?"
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="plutella_xylostella_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answer = answer_question(question, artifact_dir=artifact_dir)
+
+        self.assertTrue(answer["ok"])
+        self.assertEqual(answer["answer_shape"], "reviewed_science")
+        self.assertEqual(
+            {item["record_id"] for item in answer["evidence"]},
+            set(record_ids),
+        )
+        final_answer = compact_agent_answer(answer)["final_answer"]
+        self.assertIn(
+            "[Odorant Receptor PxylOR11 Mediates Repellency of Plutella "
+            "xylostella to Aromatic Volatiles]"
+            "(https://doi.org/10.3389/fphys.2022.938555)",
+            final_answer,
+        )
+        self.assertIn("Source ID: `doi:10.3389/fphys.2022.938555`", final_answer)
+        self.assertIn("Locator: `Abstract: antennal tissue expression", final_answer)
+
 
 if __name__ == "__main__":
     unittest.main()
