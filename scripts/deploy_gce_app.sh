@@ -46,6 +46,8 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
     --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
   python3 '$RUNTIME_DIR/scripts/ingest_aedes_primary_behavior_evidence.py' \
     --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
+  python3 '$RUNTIME_DIR/scripts/ingest_swd_primary_field_evidence.py' \
+    --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
   if [[ -e '$CURRENT_LINK' && ! -L '$CURRENT_LINK' ]]; then
     rm -rf '$CURRENT_LINK'
   fi

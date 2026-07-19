@@ -149,6 +149,31 @@ sources:
         - universal_24_hour_post_blood_meal_phase
         - npylr1_as_the_sole_required_post_blood_meal_mechanism
         - citronella_duration_beyond_the_reported_formulations_and_conditions
+  - id: swd_primary_field_evidence
+    name: Exact primary SWD greenhouse-to-field evidence
+    source_type: human_reviewed_primary_study
+    boundary: One exact primary study of hop products against Drosophila suzukii, preserving the 24-hour greenhouse infestation result, controlled raspberry field result, commercial raspberry and blackberry results, application modes, endpoint distinctions, volatile-profile associations, and the authors' bounded explanations for failed field translation
+    query_plane: deterministic_reviewed_record_to_sqlite_literature
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_swd_primary_field_evidence.py
+    upstream_sources:
+      - ku_leuven_public_author_manuscript
+      - elsevier_crop_protection_doi
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: release_refresh_static_exact_record
+    source_contract:
+      source_grade_now:
+        - exact_original_title
+        - exact_public_doi
+        - exact_public_full_text_locator
+        - greenhouse_and_field_endpoint_boundaries
+        - human_reviewed_claim_boundary
+      not_claimed:
+        - greenhouse_efficacy_as_commercial_field_efficacy
+        - associated_headspace_compounds_as_causal_repellents
+        - hypothesized_field_failure_mechanisms_as_demonstrated_causes
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
     source_type: public_api_composite
