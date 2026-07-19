@@ -207,6 +207,78 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIn("Compare naive and pre-exposed flies", answer["answer"])
                     self.assertIn("does not prove long-term field persistence", answer["answer"])
 
+    def test_swd_seasonal_morph_olfaction_paraphrases_use_direct_source(self):
+        record_id = "swd_olfaction_literature:pubmed:29668908"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_olfaction_literature",
+                        locator="raw/swd-olfaction.json#result/29668908",
+                    )
+                ]
+            )
+            questions = (
+                "Summer-morph SWD avoid geosmin, but winter-morph females have weaker antennal responses and no significant geosmin aversion. How should we screen a year-round volatile without mistaking seasonal sensory plasticity for loss of detection?",
+                "Could seasonal sensory plasticity make a volatile look inactive in winter-morph SWD?",
+                "How should summer- and winter-morph SWD be compared in an antennal odor screen?",
+                "Does a weaker winter-morph EAG mean female SWD cannot detect geosmin?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertEqual(answer["evidence"][0]["record_id"], record_id)
+                    for fragment in (
+                        "isoamyl acetate, acetic acid, and geosmin",
+                        "winter-morph responses were reduced overall",
+                        "summer morphs showed significant aversion",
+                        "not proof that winter morphs cannot detect",
+                        "matched delivered doses",
+                    ):
+                        self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_swd_diurnal_oviposition_paraphrases_use_direct_source(self):
+        record_id = "swd_olfaction_literature:pubmed:30379809"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_olfaction_literature",
+                        locator="raw/swd-olfaction.json#result/30379809",
+                    )
+                ]
+            )
+            questions = (
+                "Our SWD treatment and control cages were scored at different times of day. Could the apparent oviposition deterrence be a daily rhythm artifact, and how should the repeat be blocked?",
+                "Could time of day make an SWD cage treatment look like it reduced egg laying?",
+                "How should I block a daily SWD oviposition assay across treatment and control cages?",
+                "Could a light-dark egg-laying rhythm confound an SWD repellent repeat?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertEqual(answer["evidence"][0]["record_id"], record_id)
+                    for fragment in (
+                        "2.4-fold",
+                        "15.4-fold",
+                        "9.1-fold and 25-fold",
+                        "exceeded 30 degrees C",
+                        "randomize both within replicated time blocks",
+                    ):
+                        self.assertIn(fragment, answer["answer"])
+
     def test_swd_delayed_oviposition_is_separated_from_spatial_avoidance(self):
         record_ids = (
             "swd:openalex_literature:openalex:W4411730655",
