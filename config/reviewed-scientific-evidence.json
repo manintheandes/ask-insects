@@ -1032,6 +1032,48 @@
         "dbm:openalex:W4387738540",
         "dbm:openalex:W4391482378"
       ]
+    },
+    {
+      "id": "swd-exclusion-net-operating-envelope",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 55,
+        "phrases": [
+          "exclusion net",
+          "protective net",
+          "fan ventilated",
+          "berry tunnel",
+          "operating envelope",
+          "still air"
+        ],
+        "required_any": [
+          ["net", "nets", "netting", "mesh", "screen", "screens"],
+          ["airflow", "air flow", "fan", "ventilated", "ventilation", "still air", "still-air", "tunnel", "wind", "windy"],
+          ["deploy", "deployment", "qualify", "qualified", "operating envelope", "temperature", "hot", "cool", "reared", "field"]
+        ],
+        "optional": [
+          "body size",
+          "morphology",
+          "morphometry",
+          "sex",
+          "hole dimensions",
+          "crop protection",
+          "microclimate"
+        ]
+      },
+      "answer": "Do not qualify an SWD exclusion net for a hot, fan-ventilated tunnel from a cool-reared, still-air result alone. The cited laboratory study tested nine commercial nets in a tubular device. It challenged passage at 0, 1.5, and 3.0 m/s fan-generated airflow while recording ambient temperature; temperature varied during the tests but was not experimentally controlled. Higher airflow and higher recorded temperatures were associated with lower efficacy, but the experiment did not establish a controlled temperature effect or a monotonic difference between 1.5 and 3.0 m/s. The laboratory flies also showed sexual dimorphism and an overall temperature-size relationship, although not every measured dimension was larger in the lower-temperature group. Some nets completely blocked passage in the tested combinations, but that is a conditional result rather than universal proof. Before deployment, cross the actual mesh with the tunnel's relevant airflow and temperature range and the colony or field population's sex and body-size distribution. Keep laboratory passage, tunnel ventilation and heat, season-long exclusion, fruit infestation, marketable yield, and durability as separate gates. The paper did not establish tunnel microclimate, crop protection, or yield under commercial deployment.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W4408117270"
+      ],
+      "source_provenance": [
+        {
+          "record_id": "swd:openalex_literature:openalex:W4408117270",
+          "title": "The Efficacy of Protective Nets Against Drosophila suzukii: The Effect of Temperature, Airflow, and Pest Morphology",
+          "public_url": "https://doi.org/10.3390/insects16030253",
+          "source_id": "doi:10.3390/insects16030253",
+          "locator": "Methods 2.1-2.2; Results 3.1 and 3.3; Tables 1-3 and 6-8; Conclusion 5"
+        }
+      ]
     }
   ]
 }
