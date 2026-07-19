@@ -3022,8 +3022,8 @@ class ReviewedScienceTests(unittest.TestCase):
             "at a higher loading. What laboratory series should "
             "we run before translating it to a field rate?",
             "For spotted wing drosophila, how should we bracket a source-mass "
-            "series after seeing attraction below and repellency above, and which "
-            "exposure units must we measure?",
+            "series after seeing attraction at lower source masses and repellency "
+            "at higher source masses, and which exposure units must we measure?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -3077,6 +3077,8 @@ class ReviewedScienceTests(unittest.TestCase):
             "For SWD, a volatile source below the canopy pulled flies toward it, "
             "while one above the crop pushed them away. How should we measure the "
             "spatial response?",
+            "For SWD, attraction occurred below the canopy and repellency above "
+            "the crop during field exposure.",
             "How should source-to-fly distance and field exposure be reported for "
             "an SWD repellent tested at one high loading?",
         )

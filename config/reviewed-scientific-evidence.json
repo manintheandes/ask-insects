@@ -646,11 +646,11 @@
         "priority": 25,
         "phrases": ["dose reversal", "source loading", "source mass", "field exposure", "field rate"],
         "required_any": [
-          ["low dose", "lower dose", "low loading", "lower loading", "low source loading", "below"],
-          ["high dose", "higher dose", "high loading", "higher loading", "high source loading", "above"],
+          ["low dose", "lower dose", "small dose", "low concentration", "lower concentration", "low amount", "lower amount", "low loading", "lower loading", "low source loading", "low source mass", "lower source mass", "lower source masses"],
+          ["high dose", "higher dose", "large dose", "high concentration", "higher concentration", "high amount", "higher amount", "high loading", "higher loading", "high source loading", "high source mass", "higher source mass", "higher source masses"],
           ["attract", "attraction", "attractive"],
           ["repel", "repellent", "repellency"],
-          ["dose", "loading", "source mass", "filter paper", "exposure", "field rate"]
+          ["dose", "concentration", "amount", "loading", "source mass", "filter paper", "field rate"]
         ],
         "excluded_any": ["methyl jasmonate", "meja"],
         "optional": ["series", "bracket", "release rate", "air concentration", "field", "crop"]
