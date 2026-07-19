@@ -31,6 +31,14 @@ PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS = (
     "W2141627881",  # Mikania oil repellency and oviposition deterrence
     "W4383535925",  # Angelica extract behavior, oviposition, and toxicity
     "W4393189143",  # non-host oils, olfaction, field traps, and oviposition
+    "W4392755518",  # PxylOR16, heptanal, and parasitoid-avoidance behavior
+    "W4285394072",  # PxylOR11 and aromatic-volatile repellency
+    "W2289612981",  # resistance-linked oviposition and movement avoidance
+    "W3026883449",  # biogenic amines and oviposition control
+    "W2990818115",  # plant extracts from laboratory through field assays
+    "W2754278786",  # antennal chemoreceptor transcriptome
+    "W2119258755",  # reference genome, herbivory, and detoxification
+    "W3022069165",  # global population genomics and adaptation
 )
 
 

@@ -51,6 +51,20 @@ class PlutellaXylostellaLiteratureSourceTests(unittest.TestCase):
             }.issubset(set(PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS))
         )
 
+    def test_curated_work_set_spans_receptors_oviposition_and_adaptation(self):
+        self.assertTrue(
+            {
+                "W4392755518",  # PxylOR16, heptanal, and parasitoid avoidance
+                "W4285394072",  # PxylOR11 and aromatic volatile repellency
+                "W2289612981",  # resistance-linked movement and oviposition avoidance
+                "W3026883449",  # biogenic amines and oviposition
+                "W2990818115",  # plant extracts from lab through field
+                "W2754278786",  # antennal chemoreceptor transcriptome
+                "W2119258755",  # reference genome and detoxification
+                "W3022069165",  # global population genomics
+            }.issubset(set(PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS))
+        )
+
     def test_exact_openalex_works_become_dedicated_dbm_records(self):
         requested: list[str] = []
 
@@ -161,7 +175,7 @@ class PlutellaXylostellaLiteratureSourceTests(unittest.TestCase):
             index = SourceIndex(artifact_dir / "source_index.sqlite")
             retained = index.sql(
                 "select record_id from records where record_id like 'dbm:openalex:%'",
-                limit=20,
+                limit=len(PLUTELLA_XYLOSTELLA_OPENALEX_WORK_IDS),
             )
             with index.connect() as connection:
                 searchable_count = int(

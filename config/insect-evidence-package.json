@@ -1,7 +1,7 @@
 {
   "schema_version": "ask-insects-evidence-package-config.v2",
-  "package_version": "2026-07-17.1",
-  "last_reviewed": "2026-07-14",
+  "package_version": "2026-07-19.1",
+  "last_reviewed": "2026-07-19",
   "objective": "Provide bounded public insect evidence for reusable interpretation contexts.",
   "knowledge_domains": [
     "sensory_world",
