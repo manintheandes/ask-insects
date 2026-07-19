@@ -564,14 +564,15 @@
       "id": "swd-crop-and-nontarget-safety",
       "species_ids": ["drosophila_suzukii"],
       "match": {
-        "phrases": ["non-target", "non target", "crop safety"],
+        "priority": 45,
+        "phrases": ["non-target", "non target", "crop safety", "pollinator safe", "pollinator safety", "bee safe", "bee safety"],
         "required_any": [
-          ["non target", "non-target", "pollinator", "beneficial", "crop safety", "phytotoxicity"],
-          ["measure", "measurement", "field trial", "safety", "assess"]
+          ["non target", "non-target", "pollinator", "pollinators", "bee", "bees", "beneficial", "crop safety", "phytotoxicity"],
+          ["measure", "measurement", "field trial", "safety", "safe", "safer", "unsafe", "assess", "advance", "tolerant", "tolerance", "sensitive", "sensitivity", "hazard", "risk"]
         ],
-        "optional": ["residue", "worker", "soil", "aquatic", "predator", "parasitoid"]
+        "optional": ["residue", "worker", "soil", "aquatic", "predator", "parasitoid", "essential oil", "feeding", "formulation", "dose", "route", "crop", "berry", "program"]
       },
-      "answer": "At the intended formulation and dose, measure crop phytotoxicity and quality, residues and worker exposure, pollinator and beneficial-arthropod survival and behavior, and relevant soil or aquatic exposure. The cited feeding study compared SWD with two pollinator bee species, but greater tolerance in those bees does not establish field safety for a different repellent, formulation, route, crop, or dose. That study also does not measure crop injury, field exposure, predators, parasitoids, soil organisms, aquatic organisms, or worker exposure, so each remains a separate test requirement rather than an inferred safety result.",
+      "answer": "No. The cited study compared one Pectis brevipedunculata essential oil in Drosophila suzukii and two pollinator bees, Apis mellifera and Partamona helleri. It used feeding toxicity and diet-consumption endpoints, not a berry-field volatile-repellent exposure. Both bee species were more tolerant than SWD, but exposure at the tested SWD LC50 still killed more bees than the control. Relative tolerance in two species does not establish pollinator safety for a different formulation, dose, route, crop, or exposure pattern. Keep laboratory hazard, expected field exposure, and field risk separate. Before advancing the product as pollinator-safe, test the intended formulation and application rate through relevant airborne, surface-residue, and oral routes in the focal crop and relevant pollinators. Also measure crop injury and quality, residues and worker exposure, field pollinator survival and behavior, predators, parasitoids, soil organisms, and relevant aquatic exposure. The feeding study did not establish any of those wider endpoints, so they remain evidence needs rather than favorable safety results.",
       "source_record_ids": ["swd:openalex_literature:openalex:W4397009635"]
     },
     {

@@ -569,6 +569,78 @@ class ReviewedScienceTests(unittest.TestCase):
                         all(not locator.startswith("/") for locator in locators)
                     )
 
+    def test_swd_pollinator_safety_paraphrases_use_direct_feeding_study(self):
+        record_id = "swd:openalex_literature:openalex:W4397009635"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator="raw/swd.json#works/W4397009635",
+                    )
+                ]
+            )
+            questions = (
+                "SWD was more sensitive than two bee species in an essential-oil feeding study. Is that enough to advance the oil as pollinator-safe in a berry-field repellent program?",
+                "Does greater bee tolerance in an SWD feeding assay make the essential oil safe for pollinators in the field?",
+                "Can we call an SWD oil bee-safe because honey bees and stingless bees tolerated it better than the flies?",
+                "What pollinator risk evidence is still missing before advancing an SWD essential oil for use on berry crops?",
+                "Do lower effects in two tested bees establish non-target safety for an SWD crop treatment?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertTrue(answer["ok"])
+                    self.assertEqual(
+                        [item["record_id"] for item in answer["evidence"]],
+                        [record_id],
+                    )
+                    for fragment in (
+                        "No.",
+                        "Pectis brevipedunculata",
+                        "feeding toxicity and diet-consumption",
+                        "still killed more bees than the control",
+                        "laboratory hazard, expected field exposure, and field risk",
+                        "does not establish pollinator safety",
+                        "remain evidence needs",
+                    ):
+                        self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_swd_pollinator_safety_matcher_rejects_unrelated_questions(self):
+        record_id = "swd:openalex_literature:openalex:W4397009635"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator="raw/swd.json#works/W4397009635",
+                    )
+                ]
+            )
+            questions = (
+                "Is this SWD essential oil an effective oviposition repellent?",
+                "Are Aedes aegypti skin repellents safe for people?",
+                "Which beneficial insects attack diamondback moth larvae?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    if answer is not None:
+                        self.assertNotIn(
+                            record_id,
+                            {item["record_id"] for item in answer["evidence"]},
+                        )
+
     def test_aedes_microclimate_chamber_paraphrase_selects_environment_controls(self):
         record_ids = (
             "openalex:W3048721146",
