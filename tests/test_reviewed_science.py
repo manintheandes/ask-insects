@@ -985,6 +985,8 @@ class ReviewedScienceTests(unittest.TestCase):
                     "intermediate densities",
                     "male density did not significantly change",
                     "nonlinear",
+                    "affected oviposition more than adult density",
+                    "unfamiliar or unnatural substrates",
                 ),
             ),
             (
@@ -1054,6 +1056,10 @@ class ReviewedScienceTests(unittest.TestCase):
                     "larva-induced",
                     "Y-tube olfactory assay",
                     "did not measure landing or egg deposition",
+                    "versus clean air",
+                    "no preference",
+                    "three Brassicaceae",
+                    "mixed cropping",
                 ),
             ),
         )
