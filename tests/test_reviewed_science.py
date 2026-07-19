@@ -581,16 +581,30 @@ class ReviewedScienceTests(unittest.TestCase):
                         {item["record_id"] for item in answer["evidence"]},
                         set(record_ids),
                     )
-                    locators = [
-                        item["provenance"]["locator"]
+                    provenance_by_record = {
+                        item["record_id"]: item["provenance"]
                         for item in answer["evidence"]
+                    }
+                    locators = [
+                        item["locator"] for item in provenance_by_record.values()
                     ]
+                    field_source = provenance_by_record[
+                        "swd:openalex_literature:openalex:W4411730655"
+                    ]
+                    self.assertEqual(
+                        field_source["source_id"],
+                        "doi:10.1093/ee/nvaf057",
+                    )
                     self.assertIn(
-                        "artifacts/mosquito-v1/raw/swd.json#works/W4411730655",
-                        locators,
+                        "field raspberry methods/results",
+                        field_source["locator"],
                     )
                     self.assertTrue(
-                        all(not locator.startswith("/") for locator in locators)
+                        all(
+                            not locator.startswith("/")
+                            and "artifacts/" not in locator
+                            for locator in locators
+                        )
                     )
 
     def test_swd_pollinator_safety_paraphrases_use_direct_feeding_study(self):
@@ -1296,6 +1310,162 @@ class ReviewedScienceTests(unittest.TestCase):
                 "public HTTP",
             ):
                 load_reviewed_science_catalog(path)
+
+    def test_catalog_source_provenance_overrides_generic_index_metadata(self):
+        payload = catalog_payload()
+        payload["source_provenance"] = [
+            {
+                "record_id": "study:texture",
+                "title": "Exact primary study",
+                "public_url": "https://doi.org/10.1000/example",
+                "source_id": "doi:10.1000/example",
+                "locator": "Results: harder oviposition substrate comparison",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            index = SourceIndex(root / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        "study:texture",
+                        source_id="generic_literature_lane",
+                        locator="artifacts/generic.json#records/0",
+                    )
+                ]
+            )
+
+            answer = build_reviewed_science_answer(
+                index,
+                "How does SWD fruit texture affect egg laying?",
+                catalog_path=self.write_catalog(root, payload),
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        evidence = answer["evidence"][0]
+        self.assertEqual(evidence["title"], "Exact primary study")
+        self.assertEqual(evidence["url"], "https://doi.org/10.1000/example")
+        self.assertEqual(evidence["provenance"]["source_id"], "doi:10.1000/example")
+        self.assertEqual(
+            evidence["provenance"]["locator"],
+            "Results: harder oviposition substrate comparison",
+        )
+
+    def test_catalog_rejects_missing_exact_source_provenance_when_required(self):
+        payload = catalog_payload()
+        payload["require_exact_source_provenance"] = True
+        payload["source_provenance"] = [
+            {
+                "record_id": "study:texture",
+                "title": "Exact primary study",
+                "public_url": "https://doi.org/10.1000/example",
+                "source_id": "doi:10.1000/example",
+                "locator": "Results: harder oviposition substrate comparison",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = self.write_catalog(Path(tmpdir), payload)
+            with self.assertRaisesRegex(
+                ReviewedScienceError,
+                "missing exact source provenance.*study:new-insect",
+            ):
+                load_reviewed_science_catalog(path)
+
+    def test_catalog_rejects_generic_source_id_when_exact_provenance_is_required(self):
+        payload = catalog_payload()
+        payload["topics"] = [payload["topics"][0]]
+        payload["require_exact_source_provenance"] = True
+        payload["source_provenance"] = [
+            {
+                "record_id": "study:texture",
+                "title": "Primary study",
+                "public_url": "https://doi.org/10.1000/example",
+                "source_id": "generic_literature_lane",
+                "locator": "Results: harder oviposition substrate comparison",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = self.write_catalog(Path(tmpdir), payload)
+            with self.assertRaisesRegex(
+                ReviewedScienceError,
+                "exact public source_id",
+            ):
+                load_reviewed_science_catalog(path)
+
+    def test_catalog_rejects_index_locator_when_exact_provenance_is_required(self):
+        payload = catalog_payload()
+        payload["topics"] = [payload["topics"][0]]
+        payload["require_exact_source_provenance"] = True
+        payload["source_provenance"] = [
+            {
+                "record_id": "study:texture",
+                "title": "Primary study",
+                "public_url": "https://doi.org/10.1000/example",
+                "source_id": "doi:10.1000/example",
+                "locator": "artifacts/literature.json#works/W123",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = self.write_catalog(Path(tmpdir), payload)
+            with self.assertRaisesRegex(
+                ReviewedScienceError,
+                "claim-level locator",
+            ):
+                load_reviewed_science_catalog(path)
+
+    def test_topic_source_provenance_overrides_catalog_entry(self):
+        payload = catalog_payload()
+        payload["source_provenance"] = [
+            {
+                "record_id": "study:texture",
+                "title": "Catalog primary study",
+                "public_url": "https://doi.org/10.1000/catalog",
+                "source_id": "doi:10.1000/catalog",
+                "locator": "Abstract",
+            }
+        ]
+        payload["topics"][0]["source_provenance"] = [
+            {
+                "record_id": "study:texture",
+                "title": "Topic-specific primary study",
+                "public_url": "https://doi.org/10.1000/topic",
+                "source_id": "doi:10.1000/topic",
+                "locator": "Results: exact claim",
+            }
+        ]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            index = SourceIndex(root / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        "study:texture",
+                        source_id="generic_literature_lane",
+                        locator="artifacts/generic.json#records/0",
+                    )
+                ]
+            )
+
+            answer = build_reviewed_science_answer(
+                index,
+                "How does SWD fruit texture affect egg laying?",
+                catalog_path=self.write_catalog(root, payload),
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        evidence = answer["evidence"][0]
+        self.assertEqual(evidence["title"], "Topic-specific primary study")
+        self.assertEqual(evidence["provenance"]["source_id"], "doi:10.1000/topic")
+        self.assertEqual(evidence["provenance"]["locator"], "Results: exact claim")
+
+    def test_repository_catalog_requires_complete_exact_source_provenance(self):
+        payload = load_reviewed_science_catalog(default_reviewed_science_catalog())
+
+        self.assertIs(payload["require_exact_source_provenance"], True)
 
     def test_reviewed_answer_rejects_record_without_original_public_url(self):
         with tempfile.TemporaryDirectory() as tmpdir:

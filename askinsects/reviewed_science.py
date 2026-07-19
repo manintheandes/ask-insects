@@ -92,6 +92,16 @@ _QUESTION_INTENTS = frozenset({"sampling_design"})
 FORBIDDEN_SCIENTIFIC_SOURCE_PREFIXES = (
     "insect_intelligence_programs:",
 )
+EXACT_PUBLIC_SOURCE_ID_PREFIXES = ("doi:", "pubmed:", "pmc:", "epa:", "who:")
+INDEX_LOCATOR_MARKERS = (
+    "/home/",
+    "artifacts/",
+    "config/",
+    "jsonpath=",
+    ".json#",
+    "#records/",
+    "#works/",
+)
 
 
 class ReviewedScienceError(ValueError):
@@ -146,6 +156,33 @@ def _reject_evaluation_coupling(value: object, *, path: str = "catalog") -> None
         )
 
 
+def _source_provenance_by_record(
+    value: object,
+    label: str,
+) -> dict[str, dict[str, object]]:
+    sources = _objects(value, label)
+    by_record: dict[str, dict[str, object]] = {}
+    for source_index, source in enumerate(sources):
+        item_label = f"{label}[{source_index}]"
+        record_id = str(source.get("record_id") or "").strip()
+        title = str(source.get("title") or "").strip()
+        public_url = str(source.get("public_url") or "").strip()
+        source_id = str(source.get("source_id") or "").strip()
+        locator = str(source.get("locator") or "").strip()
+        if not all((record_id, title, source_id, locator)):
+            raise ReviewedScienceError(
+                f"{item_label} requires record_id, title, source_id, and locator"
+            )
+        if not public_url.startswith(("https://", "http://")):
+            raise ReviewedScienceError(
+                f"{item_label}.public_url must be a public HTTP(S) URL"
+            )
+        if record_id in by_record:
+            raise ReviewedScienceError(f"{label} record_ids must be unique")
+        by_record[record_id] = source
+    return by_record
+
+
 def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
     _reject_evaluation_coupling(payload)
     if payload.get("schema_version") != CATALOG_SCHEMA_VERSION:
@@ -156,6 +193,17 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
         payload["last_reviewed"]
     ).strip():
         raise ReviewedScienceError("last_reviewed must be a non-empty string")
+    require_exact_source_provenance = payload.get(
+        "require_exact_source_provenance", False
+    )
+    if not isinstance(require_exact_source_provenance, bool):
+        raise ReviewedScienceError(
+            "require_exact_source_provenance must be a boolean"
+        )
+    catalog_source_provenance = _source_provenance_by_record(
+        payload.get("source_provenance", []),
+        "source_provenance",
+    )
 
     species = _objects(payload.get("species"), "species")
     topics = _objects(payload.get("topics"), "topics")
@@ -174,6 +222,7 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
         _strings(item.get("aliases"), f"species {species_id}.aliases")
 
     topic_ids: set[str] = set()
+    referenced_record_ids: set[str] = set()
     for topic in topics:
         topic_id = str(topic.get("id") or "").strip()
         if not topic_id or topic_id in topic_ids:
@@ -239,6 +288,7 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
             topic.get("source_record_ids"),
             f"topic {topic_id}.source_record_ids",
         )
+        referenced_record_ids.update(source_record_ids)
         if any(
             record_id.startswith(FORBIDDEN_SCIENTIFIC_SOURCE_PREFIXES)
             for record_id in source_record_ids
@@ -247,36 +297,48 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
                 f"topic {topic_id} must cite an original scientific or official source; "
                 "the internal insect-intelligence program ledger cannot substitute for evidence"
             )
-        source_provenance = _objects(
+        source_provenance = _source_provenance_by_record(
             topic.get("source_provenance", []),
             f"topic {topic_id}.source_provenance",
         )
-        provenance_record_ids: list[str] = []
-        for source_index, source in enumerate(source_provenance):
-            label = f"topic {topic_id}.source_provenance[{source_index}]"
-            record_id = str(source.get("record_id") or "").strip()
-            title = str(source.get("title") or "").strip()
-            public_url = str(source.get("public_url") or "").strip()
-            source_id = str(source.get("source_id") or "").strip()
-            locator = str(source.get("locator") or "").strip()
-            if not all((record_id, title, source_id, locator)):
-                raise ReviewedScienceError(
-                    f"{label} requires record_id, title, source_id, and locator"
-                )
-            if not public_url.startswith(("https://", "http://")):
-                raise ReviewedScienceError(
-                    f"{label}.public_url must be a public HTTP(S) URL"
-                )
-            provenance_record_ids.append(record_id)
-        if len(provenance_record_ids) != len(set(provenance_record_ids)):
-            raise ReviewedScienceError(
-                f"topic {topic_id}.source_provenance record_ids must be unique"
-            )
-        unknown_provenance_ids = set(provenance_record_ids).difference(source_record_ids)
+        unknown_provenance_ids = set(source_provenance).difference(source_record_ids)
         if unknown_provenance_ids:
             raise ReviewedScienceError(
                 f"topic {topic_id}.source_provenance references unknown source records"
             )
+        if require_exact_source_provenance:
+            missing_provenance = set(source_record_ids).difference(
+                catalog_source_provenance,
+                source_provenance,
+            )
+            if missing_provenance:
+                raise ReviewedScienceError(
+                    f"topic {topic_id} is missing exact source provenance for: "
+                    + ", ".join(sorted(missing_provenance))
+                )
+            effective_provenance = dict(catalog_source_provenance)
+            effective_provenance.update(source_provenance)
+            for record_id in source_record_ids:
+                source = effective_provenance[record_id]
+                source_id = str(source["source_id"]).strip().casefold()
+                locator = str(source["locator"]).strip().casefold()
+                if not source_id.startswith(EXACT_PUBLIC_SOURCE_ID_PREFIXES):
+                    raise ReviewedScienceError(
+                        f"topic {topic_id} record {record_id} requires an exact public source_id"
+                    )
+                if any(marker in locator for marker in INDEX_LOCATOR_MARKERS):
+                    raise ReviewedScienceError(
+                        f"topic {topic_id} record {record_id} requires a claim-level locator, not an index locator"
+                    )
+
+    unknown_catalog_provenance_ids = set(catalog_source_provenance).difference(
+        referenced_record_ids
+    )
+    if unknown_catalog_provenance_ids:
+        raise ReviewedScienceError(
+            "source_provenance references unknown source records: "
+            + ", ".join(sorted(unknown_catalog_provenance_ids))
+        )
 
 
 def _objects_as_string_groups(value: object, label: str) -> list[list[str]]:
@@ -676,10 +738,17 @@ def build_reviewed_science_answer(
     source_provenance = {
         str(item["record_id"]): item
         for item in _objects(
+            catalog.get("source_provenance", []),
+            "source_provenance",
+        )
+    }
+    source_provenance.update({
+        str(item["record_id"]): item
+        for item in _objects(
             topic.get("source_provenance", []),
             "topic source_provenance",
         )
-    }
+    })
     return {
         "ok": True,
         "answer_shape": "reviewed_science",
