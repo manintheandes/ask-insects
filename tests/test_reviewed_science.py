@@ -3027,6 +3027,39 @@ class ReviewedScienceTests(unittest.TestCase):
             "approach for Drosophila suzukii",
         )
 
+        seasonal_morph = provenance[
+            "swd_olfaction_literature:pubmed:29668908"
+        ]
+        self.assertEqual(
+            seasonal_morph["title"],
+            "Comparative Antennal and Behavioral Responses of Summer and Winter "
+            "Morph Drosophila suzukii (Diptera: Drosophilidae) to Ecologically "
+            "Relevant Volatiles",
+        )
+        self.assertEqual(
+            seasonal_morph["locator"],
+            "Abstract: female summer- and winter-morph electroantennogram responses "
+            "to six volatiles; no-choice behavior for geosmin and bornyl acetate; "
+            "geosmin T-maze aversion",
+        )
+
+        cffa_blend = provenance[
+            "swd:openalex_literature:openalex:W4386466923"
+        ]
+        self.assertEqual(
+            cffa_blend["title"],
+            "A 2-component blend of coconut oil-derived fatty acids as an "
+            "oviposition deterrent against Drosophila suzukii (Drosophilidae: "
+            "Diptera)",
+        )
+        self.assertEqual(
+            cffa_blend["locator"],
+            "Methods: Laboratory Choice Test 1, Laboratory No-Choice Test, and "
+            "Table 1; Results: Field Test 1, Laboratory Choice Tests 1-2, "
+            "Laboratory No-Choice Test, and Figure 4; Discussion: unresolved "
+            "spatial- versus contact-mediated mode",
+        )
+
         vision = provenance["openalex:W3187681115"]
         self.assertIn("Figures 1-3", vision["locator"])
         self.assertIn("Supplementary Figures S1-S3", vision["locator"])
