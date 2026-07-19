@@ -2536,6 +2536,86 @@ class ReviewedScienceTests(unittest.TestCase):
                 for fragment in fragments:
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
 
+    def test_named_dbm_receptors_route_to_their_exact_primary_papers(self):
+        records = {
+            "dbm:openalex:W4285394072": (
+                "doi:10.3389/fphys.2022.938555",
+                "https://doi.org/10.3389/fphys.2022.938555",
+                "dual-choice bioassays",
+            ),
+            "dbm:openalex:W4392755518": (
+                "doi:10.1186/s12915-024-01862-9",
+                "https://doi.org/10.1186/s12915-024-01862-9",
+                "CRISPR/Cas9 knockout",
+            ),
+        }
+        cases = (
+            (
+                "Which aromatic volatiles activated PxylOR11 in diamondback moth, "
+                "and what direct evidence linked that receptor to female repellency?",
+                "dbm:openalex:W4285394072",
+                ("benzyl alcohol", "salicylaldehyde", "phenylacetaldehyde", "Xenopus"),
+            ),
+            (
+                "For PxylOR11, how do the oocyte recordings, antennal response, and "
+                "female dual-choice result fit together, and is there knockout evidence?",
+                "dbm:openalex:W4285394072",
+                ("Xenopus", "antennal", "dual-choice", "did not use a receptor knockout"),
+            ),
+            (
+                "What direct evidence shows that PxylOR16 mediates diamondback moth "
+                "avoidance of heptanal, and what does the study not prove about crop protection?",
+                "dbm:openalex:W4392755518",
+                ("heptanal", "larvae", "adults", "CRISPR", "field crop protection"),
+            ),
+            (
+                "What did deleting PxylOR16 show about heptanal avoidance in Plutella "
+                "xylostella, and where did the odor originate?",
+                "dbm:openalex:W4392755518",
+                ("knockout", "heptanal", "parasitoid", "Cotesia vestalis"),
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="plutella_xylostella_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in records
+                ]
+            )
+            answers = [
+                answer_question(question, artifact_dir=Path(tmpdir))
+                for question, _, _ in cases
+            ]
+
+        for (question, expected_record_id, fragments), answer in zip(
+            cases, answers, strict=True
+        ):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {expected_record_id},
+                )
+                for fragment in fragments:
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                source_id, public_url, locator_fragment = records[expected_record_id]
+                evidence = answer["evidence"][0]
+                self.assertEqual(evidence["provenance"]["source_id"], source_id)
+                self.assertEqual(evidence["url"], public_url)
+                self.assertIn(
+                    locator_fragment.casefold(),
+                    evidence["provenance"]["locator"].casefold(),
+                )
+
     def test_normal_answer_path_returns_exact_dbm_mechanism_sources(self):
         from askinsects.cli import compact_agent_answer
 

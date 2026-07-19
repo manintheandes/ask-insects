@@ -938,6 +938,103 @@
       ]
     },
     {
+      "id": "dbm-pxylor11-functional-evidence",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 95,
+        "species_may_be_implicit": true,
+        "phrases": [
+          "pxylor11 aromatic volatiles",
+          "pxylor11 female repellency",
+          "pxylor11 oocyte recordings"
+        ],
+        "required_any": [
+          ["pxylor11", "pxyl or11"],
+          [
+            "aromatic",
+            "volatile",
+            "volatiles",
+            "benzyl alcohol",
+            "salicylaldehyde",
+            "phenylacetaldehyde",
+            "oocyte",
+            "oocytes",
+            "antennal",
+            "dual-choice",
+            "dual choice",
+            "repellency",
+            "repellent"
+          ]
+        ],
+        "optional": [
+          "xenopus",
+          "electroantennogram",
+          "eag",
+          "female",
+          "knockout",
+          "direct evidence"
+        ]
+      },
+      "answer": "The PxylOR11 study linked three evidence levels without establishing receptor necessity. PxylOR11 was enriched in antennae and was expressed more strongly in female than male antennae. In Xenopus oocytes, PxylOR11 with Orco responded to benzyl alcohol, salicylaldehyde, and phenylacetaldehyde. The same three aromatic compounds elicited electroantennogram responses, with larger responses in females, and repelled females in dual-choice bioassays. Together, those molecular, antennal, and behavioral results support a role for PxylOR11 in the response. The study did not use a receptor knockout, so it did not show that PxylOR11 is necessary for repellency. It also did not establish an airborne field dose, persistence, reduced crop infestation or damage, improved yield, or commercial crop protection.",
+      "source_record_ids": ["dbm:openalex:W4285394072"],
+      "source_provenance": [
+        {
+          "record_id": "dbm:openalex:W4285394072",
+          "title": "Odorant Receptor PxylOR11 Mediates Repellency of Plutella xylostella to Aromatic Volatiles",
+          "public_url": "https://doi.org/10.3389/fphys.2022.938555",
+          "source_id": "doi:10.3389/fphys.2022.938555",
+          "locator": "Abstract: antennal tissue expression; Xenopus oocyte responses to three aromatic compounds; electroantennograms; female dual-choice bioassays"
+        }
+      ]
+    },
+    {
+      "id": "dbm-pxylor16-heptanal-causality",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 95,
+        "species_may_be_implicit": true,
+        "phrases": [
+          "pxylor16 heptanal avoidance",
+          "pxylor16 knockout",
+          "pxylor16 parasitoid"
+        ],
+        "required_any": [
+          ["pxylor16", "pxyl or16"],
+          [
+            "heptanal",
+            "parasitoid",
+            "cotesia vestalis",
+            "crispr",
+            "knockout",
+            "knocked out",
+            "deleting",
+            "deleted",
+            "avoidance"
+          ]
+        ],
+        "optional": [
+          "larva",
+          "larvae",
+          "adult",
+          "adults",
+          "cuticular volatile",
+          "direct evidence",
+          "crop protection"
+        ]
+      },
+      "answer": "The PxylOR16 study supplies receptor-level causal evidence for one odor and one ecological context. PxylOR16 responded sensitively to heptanal, and both larvae and adults avoided heptanal. CRISPR/Cas9 knockout experimentally confirmed that PxylOR16 mediates that avoidance. The study traced heptanal to cuticular volatiles of the parasitoid Cotesia vestalis, rather than identifying it as a host-plant cue. This result does not prove that heptanal will repel all DBM populations or life stages under crop-field plume conditions. It also does not establish persistence, crop safety, reduced egg laying or larval establishment, lower crop damage, improved yield, or commercial field crop protection.",
+      "source_record_ids": ["dbm:openalex:W4392755518"],
+      "source_provenance": [
+        {
+          "record_id": "dbm:openalex:W4392755518",
+          "title": "An odorant receptor mediates the avoidance of Plutella xylostella against parasitoid",
+          "public_url": "https://doi.org/10.1186/s12915-024-01862-9",
+          "source_id": "doi:10.1186/s12915-024-01862-9",
+          "locator": "Abstract Results and Conclusions: PxylOR16 response to heptanal; larval and adult avoidance; CRISPR/Cas9 knockout; parasitoid cuticular-volatile origin"
+        }
+      ]
+    },
+    {
       "id": "dbm-odorant-receptor-evidence",
       "species_ids": ["plutella_xylostella"],
       "match": {
