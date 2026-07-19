@@ -2584,6 +2584,170 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertIn("Source ID: `doi:10.3389/fphys.2022.938555`", final_answer)
         self.assertIn("Locator: `Abstract: antennal tissue expression", final_answer)
 
+    def test_fresh_swd_and_aedes_topics_use_exact_primary_source_provenance(self):
+        records = {
+            "swd:openalex_literature:openalex:W4413971464": (
+                "doi:10.1017/s0007485325100369",
+                "https://doi.org/10.1017/S0007485325100369",
+                "two-choice planar olfactometer",
+            ),
+            "swd:openalex_literature:openalex:W3199560580": (
+                "doi:10.1093/ee/nvab099",
+                "https://doi.org/10.1093/ee/nvab099",
+                "24, 48, or 72",
+            ),
+            "swd:openalex_literature:openalex:W4411730655": (
+                "doi:10.1093/ee/nvaf057",
+                "https://doi.org/10.1093/ee/nvaf057",
+                "field raspberry",
+            ),
+            "swd:openalex_literature:openalex:W3161910963": (
+                "doi:10.3389/fmicb.2021.656406",
+                "https://doi.org/10.3389/fmicb.2021.656406",
+                "axenic and conventional",
+            ),
+            "aedes_primary_behavior:pmc:PMC3794971": (
+                "doi:10.1371/journal.pntd.0002486",
+                "https://doi.org/10.1371/journal.pntd.0002486",
+                "null-mutant host-seeking",
+            ),
+            "openalex:W4225097850": (
+                "doi:10.1038/s41598-022-10825-5",
+                "https://doi.org/10.1038/s41598-022-10825-5",
+                "AeCyc knockout",
+            ),
+            "openalex:W3187681115": (
+                "doi:10.1016/j.cub.2021.07.003",
+                "https://doi.org/10.1016/j.cub.2021.07.003",
+                "op1 and op2 double-mutant",
+            ),
+        }
+        cases = (
+            (
+                "Can a low dose of methyl jasmonate attract SWD even when a higher "
+                "dose repels it, and which dose units were actually tested?",
+                {"swd:openalex_literature:openalex:W4413971464"},
+                ("3.86 to 15.45", "309.0", "filter paper"),
+            ),
+            (
+                "Did 24, 48, or 72 hours of pre-exposure make female SWD habituate "
+                "to octenol or 2-pentylfuran, and what did the assay not establish?",
+                {"swd:openalex_literature:openalex:W3199560580"},
+                ("no loss of deterrence", "geosmin", "field persistence"),
+            ),
+            (
+                "How should we connect fewer pupae from treated raspberries in the "
+                "SWD push-pull study to a defensible crop-protection claim?",
+                {"swd:openalex_literature:openalex:W4411730655"},
+                ("fewer pupae", "marketable yield", "commercial crop-protection"),
+            ),
+            (
+                "How could microbiome status, mating state, and starvation confound "
+                "the behavioral baseline in an SWD repellent assay?",
+                {"swd:openalex_literature:openalex:W3161910963"},
+                ("microbiome", "virgin", "starvation"),
+            ),
+            (
+                "Is NPYLR1 required for post-blood-meal host-seeking suppression in "
+                "Aedes aegypti, or did the null-mutant experiment rule that out?",
+                {"aedes_primary_behavior:pmc:PMC3794971"},
+                ("not required", "null mutants", "unknown receptor"),
+            ),
+            (
+                "Why should time after lights-on be controlled in an Aedes aegypti "
+                "repellent assay, and what did the cycle knockout actually change?",
+                {"openalex:W4225097850"},
+                ("locomotor", "host-odor", "blood-feeding"),
+            ),
+            (
+                "If Aedes aegypti op1 or op2 is knocked out alone versus both "
+                "together, what does that show about visual target attraction and "
+                "sensory redundancy?",
+                {"openalex:W3187681115"},
+                ("op1", "op2", "double mutants", "odor tracking"),
+            ),
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="generic_public_literature_lane",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in records
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question, _, _ in cases
+            ]
+
+        for (question, expected_record_ids, fragments), answer in zip(
+            cases, answers, strict=True
+        ):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    expected_record_ids,
+                )
+                for fragment in fragments:
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                for item in answer["evidence"]:
+                    source_id, public_url, locator_fragment = records[item["record_id"]]
+                    self.assertEqual(item["provenance"]["source_id"], source_id)
+                    self.assertEqual(item["url"], public_url)
+                    self.assertIn(
+                        locator_fragment.casefold(),
+                        item["provenance"]["locator"].casefold(),
+                    )
+
+    def test_visual_rhodopsin_route_rejects_broader_multimodal_neighbors(self):
+        broad_record_ids = {
+            "openalex:W4401794442",
+            "openalex:W3187681115",
+            "openalex:W4297252092",
+        }
+        questions = (
+            "How do carbon dioxide, human odor, vision, and heat combine during "
+            "Aedes aegypti host seeking, and are these cues redundant?",
+            "If one visual receptor is knocked out in Aedes aegypti, can other "
+            "host-seeking cues compensate, or is the whole system redundant?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in broad_record_ids
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question) for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    broad_record_ids,
+                )
+
 
 if __name__ == "__main__":
     unittest.main()
