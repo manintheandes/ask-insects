@@ -905,6 +905,55 @@ class ReviewedScienceTests(unittest.TestCase):
                     expected_record_ids,
                 )
 
+    def test_aedes_resistance_answer_includes_distinct_thymol_selection_evidence(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topic = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "aedes-physiological-repellent-resistance"
+        )
+        expected_record_ids = {
+            "aedes_primary_behavior:plosntds:e0003726",
+            "openalex:W4299723530",
+            "openalex:W4413344516",
+        }
+        self.assertEqual(set(topic["source_record_ids"]), expected_record_ids)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="generic_literature_lane",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in expected_record_ids
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                "How should I distinguish inherited Aedes repellent resistance from "
+                "ordinary avoidance, and what do the transfluthrin, thymol-selection, "
+                "and pyrethroid-clothing studies each establish?",
+            )
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertTrue(answer["ok"])
+        self.assertIn("thymol", answer["answer"].casefold())
+        self.assertIn("life-history", answer["answer"].casefold())
+        self.assertIn("does not measure repellent response", answer["answer"].casefold())
+        self.assertEqual(
+            {item["record_id"] for item in answer["evidence"]},
+            expected_record_ids,
+        )
+        self.assertIn(
+            "doi:10.1371/journal.pone.0329776",
+            {item["provenance"]["source_id"] for item in answer["evidence"]},
+        )
+
     def test_blood_meal_state_answers_do_not_overclaim_mechanism(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         topics = {topic["id"]: topic for topic in catalog["topics"]}
