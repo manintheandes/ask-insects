@@ -227,6 +227,8 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
         self.assertGreaterEqual(len(gap_records), len(REQUIRED_KNOWLEDGE_DOMAINS))
         direct_domains = {
             "sensory_world",
+            "receptors_signaling",
+            "genetics_gene_activity",
             "life_cycle_development",
             "behavior",
             "reproduction_oviposition",
@@ -235,6 +237,7 @@ class InsectIntelligenceProgramTests(unittest.TestCase):
             "learning_memory_internal_state",
             "ecology_interactions",
             "chemical_responses_metabolism",
+            "adaptation_resistance",
         }
         for record in domain_records:
             domain = record.payload["domain"]
