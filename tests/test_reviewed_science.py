@@ -1513,7 +1513,37 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "What did SWD raspberry trials show about 1-octen-3-ol aerosol puffers versus passive vials and release schedules?",
                 "swd:openalex_literature:openalex:W3046652911",
-                ("20%", "42-55%", "dawn and dusk", "low fly"),
+                (
+                    "20%",
+                    "42-55%",
+                    "dawn and dusk",
+                    "low fly",
+                    "does not isolate total emitted dose",
+                ),
+            ),
+            (
+                "In raspberry plots, did the advantage of timed octenol puffers over passive vials prove that a larger total dose caused the result?",
+                "swd:openalex_literature:openalex:W3046652911",
+                (
+                    "20%",
+                    "42-55%",
+                    "tested delivery methods differed in outcome",
+                    "does not isolate total emitted dose",
+                    "airborne concentration at the flies",
+                    "low fly abundance",
+                ),
+            ),
+            (
+                "Timed 1-octen-3-ol aerosol puffers outperformed passive vials in raspberry plots. Does that isolate total dose as the driver, or only show a delivery-method difference under those field conditions?",
+                "swd:openalex_literature:openalex:W3046652911",
+                (
+                    "20%",
+                    "42-55%",
+                    "dawn and dusk",
+                    "low fly abundance",
+                    "tested delivery methods differed in outcome",
+                    "does not isolate total emitted dose",
+                ),
             ),
             (
                 "Which measurements distinguish a directional SWD odor response from general locomotor suppression?",
@@ -1776,6 +1806,35 @@ class ReviewedScienceTests(unittest.TestCase):
                     answer = build_reviewed_science_answer(index, question)
 
                     self.assertIsNone(answer)
+
+    def test_swd_field_delivery_matcher_rejects_other_species_and_generic_delivery(self):
+        record_id = "swd:openalex_literature:openalex:W3046652911"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator="raw/swd.json#works/W3046652911",
+                    )
+                ]
+            )
+            questions = (
+                "Did Aedes aegypti aerosol puffers outperform passive vials in a field trial?",
+                "Does an automated greenhouse dispenser release more total dose than a passive vial?",
+                "Do octenol mosquito-trap puffers change dengue vector competence?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    if answer is not None:
+                        self.assertNotIn(
+                            record_id,
+                            {item["record_id"] for item in answer["evidence"]},
+                        )
 
     def test_normal_answer_path_prefers_reviewed_science_when_it_matches(self):
         reviewed = {
