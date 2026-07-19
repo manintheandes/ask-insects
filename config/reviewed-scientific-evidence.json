@@ -1,6 +1,6 @@
 {
   "schema_version": "ask-insects-reviewed-science.v1",
-  "last_reviewed": "2026-07-17",
+  "last_reviewed": "2026-07-19",
   "species": [
     {
       "id": "drosophila_suzukii",
@@ -104,6 +104,37 @@
       },
       "answer": "The study tested 2-phenylethanol at 0.01-0.1%, ethanol at 1-10%, and acetic acid at 0.1-1%. In Y-tube choices, Drosophila melanogaster favored the higher tested concentrations more strongly, whereas Drosophila suzukii tended toward lower concentrations. Electroantennogram responses measured antennal detection separately from choice. Mated females favored higher concentrations more than virgins only in the D. melanogaster comparison, so that mating-state result cannot be assigned to SWD. Keep chemical identity, concentration, Y-tube behavior, and electroantennogram response separate; the study does not show that all fermentation volatiles repel SWD.",
       "source_record_ids": ["swd:openalex_literature:openalex:W4365509323"]
+    },
+    {
+      "id": "swd-seasonal-morph-olfaction",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 20,
+        "phrases": ["summer morph", "winter morph", "seasonal morph", "seasonal sensory plasticity"],
+        "required_any": [
+          ["summer morph", "winter morph", "seasonal morph", "seasonal plasticity", "seasonal sensory"],
+          ["antenna", "antennal", "electroantennogram", "eag", "detect", "detection", "olfaction", "odor", "odour", "volatile"]
+        ],
+        "optional": ["geosmin", "bornyl acetate", "isoamyl acetate", "acetic acid", "aversion", "avoidance", "screen", "year round"]
+      },
+      "answer": "Female summer- and winter-morph Drosophila suzukii differed in both antennal and behavioral responses. Isoamyl acetate, acetic acid, and geosmin produced significantly larger electroantennogram responses in summer morphs, while winter-morph responses were reduced overall. Geosmin and bornyl acetate also produced morph-dependent behavior in no-choice assays; in the geosmin T-maze, summer morphs showed significant aversion while winter morphs showed no significant aversion. A weaker bulk antennal response is not proof that winter morphs cannot detect an odor, and summer-morph aversion cannot be assigned to winter morphs. Screen both morphs at matched delivered doses under matched temperature, light, and assay geometry, and keep antennal response, behavioral valence, locomotion, survival, recovery, and field efficacy separate.",
+      "source_record_ids": ["swd_olfaction_literature:pubmed:29668908"]
+    },
+    {
+      "id": "swd-diurnal-oviposition-confound",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 20,
+        "phrases": ["time of day", "daily rhythm", "diurnal oviposition", "oviposition rhythm", "circadian oviposition"],
+        "required_any": [
+          ["time of day", "daily", "diurnal", "circadian", "light dark", "light-dark", "day", "night", "clock time"],
+          ["egg", "eggs", "egg laying", "egg-laying", "oviposition", "laying"],
+          ["assay", "cage", "treatment", "control", "confound", "artifact", "block", "randomize", "repeat"]
+        ],
+        "optional": ["temperature", "humidity", "light", "deterrence", "repellent", "different times", "concurrent"]
+      },
+      "answer": "Yes. Scoring treatment and control at different times can confound a chemical effect with Drosophila suzukii's daily egg-laying rhythm. Hourly oviposition was 2.4-fold higher in light than dark at constant 23 degrees C, 15.4-fold higher under a 17:7 light-dark cycle with 17/11 degrees C, and 9.1-fold and 25-fold higher in the August and October field assays. Field peaks were not fixed to one sunrise or sunset interval, and oviposition dipped when August field temperatures exceeded 30 degrees C. Repeat treatment and control concurrently when possible, or randomize both within replicated time blocks while matching fruit, fly state, light, temperature, humidity, and exposure duration. Keep egg-laying rhythm, locomotor activity, treatment effect, and egg-to-adult survival as separate endpoints; do not transfer one month's or one laboratory regime's peak to another.",
+      "source_record_ids": ["swd_olfaction_literature:pubmed:30379809"]
     },
     {
       "id": "swd-methyl-jasmonate-dose",
