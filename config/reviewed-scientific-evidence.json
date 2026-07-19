@@ -1049,7 +1049,7 @@
         "required_any": [
           ["net", "nets", "netting", "mesh", "screen", "screens"],
           ["airflow", "air flow", "fan", "ventilated", "ventilation", "still air", "still-air", "tunnel", "wind", "windy"],
-          ["deploy", "deployment", "qualify", "qualified", "operating envelope", "temperature", "hot", "cool", "reared", "field"]
+          ["deploy", "deployment", "qualify", "qualified", "operating envelope", "temperature", "heat", "hot", "cool", "reared", "field"]
         ],
         "optional": [
           "body size",
