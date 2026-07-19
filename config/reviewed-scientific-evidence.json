@@ -646,11 +646,11 @@
         "priority": 25,
         "phrases": ["dose reversal", "source loading", "source mass", "field exposure", "field rate"],
         "required_any": [
-          ["low dose", "lower dose", "small dose", "low concentration", "lower concentration", "low amount", "lower amount", "low loading", "lower loading", "low source loading", "low source mass", "lower source mass", "lower source masses"],
-          ["high dose", "higher dose", "large dose", "high concentration", "higher concentration", "high amount", "higher amount", "high loading", "higher loading", "high source loading", "high source mass", "higher source mass", "higher source masses"],
-          ["attract", "attraction", "attractive"],
-          ["repel", "repellent", "repellency"],
-          ["dose", "concentration", "amount", "loading", "source mass", "filter paper", "field rate"]
+          ["low dose", "lower dose", "small dose", "low concentration", "lower concentration", "low amount", "lower amount", "low loading", "lower loading", "low source load", "lower source load", "lower source loads", "low source loading", "low source mass", "lower source mass", "lower source masses"],
+          ["high dose", "higher dose", "large dose", "high concentration", "higher concentration", "high amount", "higher amount", "high loading", "higher loading", "high source load", "higher source load", "higher source loads", "high source loading", "high source mass", "higher source mass", "higher source masses"],
+          ["attract", "attraction", "attractive", "draw", "draws", "pull toward", "pulls toward", "lure", "lures"],
+          ["repel", "repellent", "repellency", "push away", "pushes away", "push them away", "pushes them away", "drive away", "drives away", "drive them away", "drives them away", "avoid", "avoids", "aversive"],
+          ["dose", "concentration", "amount", "load", "loading", "source mass", "filter paper", "field rate"]
         ],
         "excluded_any": ["methyl jasmonate", "meja"],
         "optional": ["series", "bracket", "release rate", "air concentration", "field", "crop"]
