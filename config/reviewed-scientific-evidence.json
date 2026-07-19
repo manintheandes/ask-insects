@@ -5,7 +5,7 @@
     {
       "id": "drosophila_suzukii",
       "scientific_name": "Drosophila suzukii",
-      "aliases": ["spotted wing drosophila", "spotted-wing drosophila", "SWD"]
+      "aliases": ["spotted wing drosophila", "spotted-wing drosophila", "SWD", "D. suzukii"]
     },
     {
       "id": "aedes_aegypti",
@@ -86,7 +86,8 @@
           ["density", "crowding", "crowded", "social"],
           ["host", "substrate", "fruit", "egg", "eggs", "oviposition"]
         ],
-        "optional": ["quality", "distribution", "per female", "unfamiliar", "unnatural"]
+        "optional": ["quality", "distribution", "per female", "unfamiliar", "unnatural"],
+        "excluded_any": ["hardware", "placement", "chemical protection", "spray", "repellent", "canopy", "crown", "orchard", "row", "fruit sampling", "fruit inspection", "sampling design"]
       },
       "answer": "Both adult density and host quality changed Drosophila suzukii oviposition in the cited laboratory experiments. Whole raspberries supported substantially more oviposition than lower-quality raspberry agar. On whole raspberries, eggs per female declined as female density increased; on raspberry agar, intermediate densities produced the highest per-female oviposition. Male density did not significantly change oviposition on whole raspberries, whereas the response to male density on agar was nonlinear. Total eggs, eggs per female, and egg distribution among hosts are different outcomes and should not be collapsed. These laboratory density and substrate effects do not directly predict field infestation.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3171171860"]
@@ -127,7 +128,7 @@
         "priority": 20,
         "phrases": ["time of day", "daily rhythm", "diurnal oviposition", "oviposition rhythm", "circadian oviposition"],
         "required_any": [
-          ["time of day", "daily", "diurnal", "circadian", "light dark", "light-dark", "day", "night", "clock time"],
+          ["time of day", "daily", "diurnal", "circadian", "light dark", "light-dark", "day", "night", "clock time", "clock times"],
           ["egg", "eggs", "egg laying", "egg-laying", "oviposition", "laying"],
           ["assay", "cage", "treatment", "control", "confound", "artifact", "block", "randomize", "repeat"]
         ],
@@ -1047,9 +1048,9 @@
           "still air"
         ],
         "required_any": [
-          ["net", "nets", "netting", "mesh", "screen", "screens"],
-          ["airflow", "air flow", "fan", "ventilated", "ventilation", "still air", "still-air", "tunnel", "wind", "windy"],
-          ["deploy", "deployment", "qualify", "qualified", "operating envelope", "temperature", "heat", "hot", "cool", "reared", "field"]
+          ["net", "nets", "netting", "mesh", "screen", "screens", "barrier", "barriers", "fabric", "exclusion fabric"],
+          ["airflow", "air flow", "fan", "ventilated", "ventilation", "still air", "still-air", "tunnel", "wind", "windy", "windier"],
+          ["deploy", "deployment", "qualify", "qualified", "operating envelope", "operating range", "temperature", "heat", "heated", "hot", "hotter", "cool", "reared", "field", "effective", "effectiveness", "efficacy", "works", "prove", "proven", "reliable"]
         ],
         "optional": [
           "body size",
@@ -1072,6 +1073,50 @@
           "public_url": "https://doi.org/10.3390/insects16030253",
           "source_id": "doi:10.3390/insects16030253",
           "locator": "Methods 2.1-2.2; Results 3.1 and 3.3; Tables 1-3 and 6-8; Conclusion 5"
+        }
+      ]
+    },
+    {
+      "id": "swd-seasonal-canopy-infestation-sampling",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 55,
+        "question_intent": "sampling_design",
+        "phrases": [
+          "season-long",
+          "season long",
+          "canopy sample",
+          "canopy position",
+          "lower-south",
+          "lower south",
+          "spatial pattern"
+        ],
+        "required_any": [
+          ["SWD", "D. suzukii", "readout", "canopy", "orchard", "fruit", "cherry", "cherries", "fruit sample", "fruit samples", "fruit sampling", "fruit collection", "fruit pull", "sampling", "spatial distribution", "infestation", "SWD burden", "SWD readout"],
+          ["row", "rows", "row end", "row ends", "mid-row", "mid row", "aspect", "aspects", "side", "sides", "edge", "edges", "border", "interior", "interiors", "margin", "margins", "tree", "trees", "center", "centre", "core", "location", "locations", "zone", "zones", "stratum", "strata", "tier", "tiers", "quarter", "layout", "space", "across space", "spatial", "spatially", "spatial replication", "height", "heights", "vertical", "high", "top", "bottom", "ground", "near ground", "nearest the ground", "low", "lowest", "lower", "upper", "north", "south", "east-facing", "south-facing", "northern", "southern", "crown", "mid-canopy", "mid canopy", "layer", "layers", "neighborhood", "neighborhoods", "sector", "sectors", "limb", "limbs", "branch", "branches", "point", "points", "position", "positions", "broadly", "cover the orchard", "sampling scheme", "stratified", "across orchard", "across the orchard"],
+          ["season", "seasonal", "seasonwide", "season-wide", "season-long", "season long", "summer", "temporally", "temporal", "temporal replication", "weekly", "fortnightly", "successive", "successively", "preharvest", "pre-harvest", "midseason", "mid-season", "phenological stage", "phenological stages", "picking calendar", "first", "final", "first to last", "early", "late", "later", "mature", "matures", "maturity", "maturity stages", "phenology", "ripen", "ripens", "ripening", "blush", "bearing", "cultivar", "cultivars", "variety", "varieties", "harvest", "harvests", "harvest date", "harvest dates", "harvest week", "population density", "population pressure", "population growth", "populations build", "pressure builds", "numbers rise", "densities arrive", "density", "density-dependent", "density changes", "abundance", "abundance rises", "abundance increases", "abundance climbs", "peak abundance", "low density", "high density", "sparse", "clustered", "aggregation", "aggregated", "over time"],
+          ["sample", "samples", "sampled", "sampling", "subsample", "subsamples", "readout", "estimate", "estimated", "estimator", "represent", "representative", "representativeness", "misrepresent", "stratify", "stratified", "measure", "measuring", "measurement", "measurements", "monitor", "collect", "collected", "collection", "collections", "fruit collection", "take", "taking", "taken", "gather", "gathered", "gathering", "pick", "picked", "picking", "pull", "pulls", "pool", "pools", "pooled", "pooling", "composite", "compositing", "conceal", "understate", "obscure", "rotate", "rotated", "defensible", "fair", "hide", "cover", "span", "capture", "track", "describe", "scheme", "routine", "layout", "location", "locations", "stand", "position", "positions", "assay", "assaying", "inspect", "inspection", "allocate", "allocated", "balance", "balanced", "divide", "divided", "replicate", "replication", "pseudoreplicate", "pseudoreplicating", "revisit", "revisited", "selected"]
+        ],
+        "optional": [
+          "infestation",
+          "readout",
+          "representative",
+          "stratify",
+          "phenology",
+          "sweet cherry"
+        ]
+      },
+      "answer": "Do not use one fixed lower-south canopy sample as a validated season-long SWD infestation readout. The cited orchard study reared arthropods from individual sweet cherries from five successively ripening cultivars over seven weeks. It sampled interior and border rows and four canopy regions defined by top or bottom height crossed with north or south aspect. The observed pattern changed with time and density: at low SWD abundance, more flies occurred in the northernmost row and northern aspect; later, row, height, and aspect were homogeneous for part of the sampling period; at the highest density in the latest-ripening cultivar, more SWD occurred in the orchard center, lower canopy, and southern aspect than in some comparison positions. Early fruit samples contained single clutches without aggregation, while intraspecific aggregation increased as density rose. R&D inference, not a design validated by the paper: for a treatment trial, repeatedly stratify fruit-level infestation samples by row, canopy height, aspect, cultivar or ripening stage, and date. As a measurement-design recommendation, keep fruit-emergence infestation separate from adult trap counts and treatment efficacy; the paper did not compare or validate those endpoints. This one-orchard pattern does not establish a universal placement rule for a repellent or a universally best canopy zone.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W3036207020"
+      ],
+      "source_provenance": [
+        {
+          "record_id": "swd:openalex_literature:openalex:W3036207020",
+          "title": "Spatial distribution of spotted-wing drosophila (Diptera: Drosophilidae) and other insects in fruit of a sweet cherry (Rosaceae) orchard",
+          "public_url": "https://doi.org/10.4039/tce.2020.41",
+          "source_id": "doi:10.4039/tce.2020.41",
+          "locator": "Abstract: five cultivars over seven weeks; interior and border rows; top/bottom x north/south canopy; low-, later-, and high-density distribution and aggregation results"
         }
       ]
     }

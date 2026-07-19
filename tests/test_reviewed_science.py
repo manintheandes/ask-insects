@@ -262,6 +262,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Could time of day make an SWD cage treatment look like it reduced egg laying?",
                 "How should I block a daily SWD oviposition assay across treatment and control cages?",
                 "Could a light-dark egg-laying rhythm confound an SWD repellent repeat?",
+                "Could running SWD cage replicates at different clock times confound the apparent oviposition treatment effect?",
             )
             for question in questions:
                 with self.subTest(question=question):
@@ -1236,6 +1237,15 @@ class ReviewedScienceTests(unittest.TestCase):
             with self.assertRaisesRegex(ReviewedScienceError, "excluded_any"):
                 load_reviewed_science_catalog(path)
 
+    def test_catalog_rejects_malformed_question_intent(self):
+        payload = catalog_payload()
+        payload["topics"][0]["match"]["question_intent"] = ["sampling_design"]
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = self.write_catalog(Path(tmpdir), payload)
+
+            with self.assertRaisesRegex(ReviewedScienceError, "question_intent"):
+                load_reviewed_science_catalog(path)
+
     def test_catalog_rejects_internal_program_rows_as_scientific_evidence(self):
         payload = catalog_payload()
         payload["topics"][0]["source_record_ids"] = [
@@ -2046,6 +2056,10 @@ class ReviewedScienceTests(unittest.TestCase):
             "What hot-weather and airflow envelope should we challenge before deploying mesh against spotted wing drosophila?",
             "Our Drosophila suzukii screen worked with cool-reared flies; what must change before a windy field test?",
             "Which airflow and heat conditions should I vary before treating an SWD exclusion screen as reliable outside a laboratory passage assay?",
+            "Can one lower-canopy sample across the cherry season prove that exclusion mesh works under low airflow for SWD?",
+            "We sampled cherries below the screen, but is the SWD barrier reliable under hotter and windier field conditions?",
+            "Before field deployment, should D. suzukii exclusion mesh be challenged under fan ventilation and heat?",
+            "Is SWD exclusion fabric proven for a heated polytunnel with strong ventilation, or must we qualify that operating range?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2099,6 +2113,281 @@ class ReviewedScienceTests(unittest.TestCase):
             )
 
         self.assertIsNone(unrelated)
+
+    def test_swd_seasonal_canopy_questions_use_the_reviewed_sampling_design(self):
+        record_id = "swd:openalex_literature:openalex:W3036207020"
+        record = EvidenceRecord(
+            record_id=record_id,
+            lane="literature",
+            source="drosophila_suzukii_core",
+            title=(
+                "Spatial distribution of spotted-wing drosophila (Diptera: "
+                "Drosophilidae) and other insects in fruit of a sweet cherry "
+                "(Rosaceae) orchard"
+            ),
+            text="Primary study title and abstract.",
+            species="Drosophila suzukii",
+            url="10.4039/tce.2020.41",
+            media_url=None,
+            provenance=Provenance(
+                source_id="drosophila_suzukii_core",
+                locator="raw/drosophila_suzukii/literature/page_005.json#works/W3036207020",
+                retrieved_at=RETRIEVED_AT,
+                license="OpenAlex metadata",
+            ),
+        )
+        questions = (
+            "Can one SWD canopy position represent infestation through the whole cherry season?",
+            "How should we stratify SWD fruit samples by orchard row, height, and aspect as cultivars ripen?",
+            "Can one fixed lower-south canopy sample be our season-long SWD infestation readout in sweet cherry, or did the orchard study show that the spatial pattern changes with population density and ripening stage?",
+            "How should we stratify SWD fruit samples by canopy height and aspect through the cherry season during a repellent trial?",
+            "Where should we sample SWD-infested fruit across orchard rows as cultivars ripen during a spray trial?",
+            "Can a lower-canopy sweet-cherry fruit sample represent seasonal SWD infestation when adult trap counts are recorded separately?",
+            "How should we measure SWD fruit infestation by canopy position through the season inside a netted orchard?",
+            "How should we collect SWD-infested cherries from upper and lower canopy positions as cultivars ripen?",
+            "Where should we collect SWD-infested cherries across north and south canopy positions through the season?",
+            "Design a representative season-long SWD fruit-collection plan across orchard rows, canopy heights, and cultivars.",
+            "How should we sample SWD fruit by canopy position through the season in a hot, fan-ventilated tunnel with an exclusion net?",
+            "Can cherries picked only from the lower south canopy represent SWD infestation as successive cultivars ripen?",
+            "Is an SWD estimate from upper-canopy cherries alone defensible across early and late ripening cultivars?",
+            "We pick fruit from one southern branch each week; does that represent whole-orchard SWD infestation over time?",
+            "Should SWD fruit collection rotate among border and interior rows as different cherry cultivars ripen?",
+            "Could a pooled sample from the bottom canopy hide seasonal changes in SWD aggregation?",
+            "To estimate season-long SWD infestation, must fruit collection cover both canopy heights and both aspects?",
+            "At each ripening stage, where would we collect cherries to estimate SWD infestation across the orchard?",
+            "Can a fixed upper-north fruit collection estimate SWD infestation before and after population growth?",
+            "Does a south-row sample represent seasonal SWD infestation separately from adult trap counts in a treatment arm?",
+            "Where should fruit be sampled across orchard rows during an SWD pesticide assay as cultivars ripen?",
+            "We are testing an odor treatment; can upper-canopy fruit alone estimate SWD infestation over the cherry season?",
+            "For treatment and control blocks, is one lower-north sample representative of SWD infestation as cherries ripen?",
+            "During a spray experiment, would one bottom-row sample give a representative SWD readout across successive cultivars?",
+            "We've only been taking cherries from one low southern limb; can that stand in for the orchard's SWD burden from first to last cultivar?",
+            "Would fruit gathered at the north edge give a fair seasonwide estimate of spotted wing drosophila as varieties mature?",
+            "Build us a fruit-sampling scheme that follows SWD across border and center rows from early through late cherry cultivars.",
+            "Are cherries from a single upper branch enough to describe SWD infestation while the orchard moves through ripening?",
+            "The crew pools fruit from every southern bottom branch; could that hide shifts in SWD as cultivars mature?",
+            "How many orchard locations should each weekly fruit pull cover to track SWD through ripening?",
+            "Could a north-edge picking routine misrepresent SWD across the rest of the canopy later in the season?",
+            "Do repeated collections from one bottom branch capture the change from sparse to aggregated SWD over time?",
+            "In treated and untreated cherry blocks, how should fruit samples span rows and canopy heights as SWD density changes?",
+            "During a repellent efficacy study, can one upper-row cherry sample represent SWD infestation through all ripening dates?",
+            "While testing a repellent, how should fruit collection cover upper and lower canopy zones as SWD abundance rises?",
+            "The assay compares spray and untreated plots; must SWD cherries be sampled across north and south aspects over time?",
+            "Within mesh enclosures, should cherry collection rotate among rows as seasonal SWD density changes?",
+            "Under exclusion fabric, can one north-canopy fruit sample represent SWD infestation across cultivars?",
+            "The orchard is netted, but our question is whether bottom-row cherries represent SWD infestation over time; should we stratify?",
+            "Could pooling cherries from the lowest south-facing branches conceal a shift from sparse to clustered SWD later in the season?",
+            "How broadly should each weekly cherry collection cover the orchard to estimate SWD through successive ripening stages?",
+            "Would a north-border picking routine understate SWD in central lower canopy once populations build?",
+            "Can fruit repeatedly gathered from one bottom limb capture the seasonal transition to aggregated D. suzukii?",
+            "In an insecticide experiment, is one upper-canopy fruit pull a defensible SWD infestation endpoint across all harvest dates?",
+            "During an odor-treatment assay, how should fruit collection be stratified through ripening to measure SWD infestation without confusing placement with efficacy?",
+            "In pesticide assay blocks, what seasonal sampling scheme should estimate SWD from early through late cherry cultivars?",
+            "Can SWD infestation estimated from the top of a single center-row tree stand for all canopy aspects as population density increases?",
+            "What stratified cherry-sampling scheme would best estimate D. suzukii infestation across rows, heights, aspects, and maturity stages?",
+            "How should cherry fruit collection be spread spatially and temporally to track spotted wing drosophila through harvest?",
+            "Must an SWD monitoring plan collect infested fruit from multiple aspects rather than the same branch all summer?",
+            "What orchard sampling layout would let us compare SWD fruit infestation reliably between early and late ripening stages?",
+            "Across the first and final cherry harvests, can one low east-facing branch represent SWD infestation throughout the orchard?",
+            "Would repeatedly gathering cherries only from border trees give a representative D. suzukii estimate as the season advances?",
+            "Is a fixed high-canopy picking point a fair estimator of SWD infestation from early through late cherry maturity?",
+            "Should a seasonal D. suzukii readout rotate among border rows, center rows, top branches, and bottom branches?",
+            "Can one northern orchard location stand for SWD fruit infestation before and after abundance increases?",
+            "Could compositing cherries from orchard margins obscure a later shift in Drosophila suzukii toward central low branches?",
+            "How should the team spread cherry collections across space and harvest time to measure changes in spotted wing drosophila clustering?",
+            "Would sampling only fruit nearest the ground bias an SWD estimate when late cultivars and higher fly densities arrive?",
+            "How many canopy strata and orchard zones should a cherry sample include to follow D. suzukii from sparse to aggregated populations?",
+            "Should fruit-level SWD measurements be rotated across compass aspects, heights, rows, and maturity dates?",
+            "Design a repeated cherry collection that can compare SWD infestation across orchard position and phenology without treating one branch as universal.",
+            "When SWD numbers rise, can cherries gathered from one upper edge still stand for fruit infestation in lower central trees?",
+            "Would pooling all D. suzukii fruit observations from one canopy quarter conceal density-dependent spatial aggregation across ripening stages?",
+            "Does repeatedly measuring spotted-wing drosophila in cherry fruit from the orchard centre at mid-canopy give a defensible trajectory as fruit matures, or do we need wider spatial replication?",
+            "If we assay 30 cherries per tree for spotted wing drosophila each week, can all fruit come from the north-facing lower crown, especially once abundance climbs in late cultivars?",
+            "When measuring spotted wing drosophila incidence in individual cherries, should we balance fruit among compass aspects and orchard row positions at every cultivar's harvest date?",
+            "How should cherries per tree be allocated across canopy layers and row neighborhoods when D. suzukii abundance is low in early picks but surges before the final cultivar?",
+            "For D. suzukii, how should cherry fruit inspection be divided between north-facing interior branches and south-facing margin branches during weekly preharvest rounds?",
+            "What spatial and temporal replication should a sweet-cherry fruit collection use to compare SWD infestation among early, midseason, and late cultivars without pseudoreplicating one canopy sector?",
+            "For D. suzukii, should cherry subsamples come from upper crown and trunk-adjacent lower crown positions at both the first and final harvests?",
+            "Write the sampling logic for fruit-level spotted-wing drosophila measurement over cherry phenological stages and orchard strata, including how often each canopy aspect is revisited.",
+            "In a commercial sweet-cherry orchard, how should we quantify SWD fruit infestation among perimeter trees, row interiors, and central crowns from first color through final harvest?",
+            "What allocation of inspected sweet cherries among boundary and interior trees would track Drosophila suzukii infestation over the seven-week ripening sequence?",
+            "Should our SWD fruit census in sweet cherry split each cultivar's harvest among treetop, mid-crown, and near-ground positions across orchard rows?",
+            "How many Drosophila suzukii-infested cherries should be drawn from north-facing versus south-facing branches in every cultivar and harvest week?",
+            "How should fruit-level spotted wing drosophila observations be partitioned among orchard margins, center rows, canopy tiers, and ripeness classes?",
+            "For SWD in a sweet-cherry block, how should individual-fruit inspections cover edge, middle, and interior rows as population pressure builds toward late harvest?",
+            "At successive sweet-cherry picks, where should we inspect fruit for spotted wing drosophila so row position and vertical canopy strata are represented?",
+            "What representative fruit collection would compare SWD infestation at the orchard boundary and core when abundance shifts between early and late sweet-cherry varieties?",
+            "Can one stratum of the sweet-cherry canopy be used to estimate spotted wing drosophila infestation across the full picking calendar, or must rows and aspects be rotated?",
+            "During sweet-cherry ripening, how should D. suzukii fruit examinations be distributed across row ends, mid-row trees, lower shade, and upper sun?",
+            "Are fortnightly spotted wing drosophila infestation checks on cherries from one southern low branch adequate for a sweet-cherry orchard as fruit moves from blush to ripe?",
+            "Could repeatedly inspecting D. suzukii infestation in fruit from the same east-side sweet-cherry trees distort the trend from low-density onset to peak abundance?",
+            "At each sweet-cherry harvest, should spotted-wing drosophila cherries be selected randomly within every row-by-height-by-aspect cell or composited by orchard zone?",
+            "Can SWD infestation measured from the lower half of center-row sweet-cherry trees generalize to border treetops after late cultivars come into bearing?",
+            "To estimate D. suzukii infestation in a sweet-cherry planting, what sampling frame should cross canopy thirds and compass quadrants as early and late cultivars mature?",
+            "We score sweet-cherry fruit for D. suzukii infestation after incubation; which canopy neighborhoods should enter the survey at first blush, full color, and harvest?",
+            "At changing SWD densities, what sweet-cherry inspection layout prevents one row orientation or canopy tier from determining the entire infestation estimate?",
+            "What orchard-by-canopy allocation of sweet-cherry samples would let us track Drosophila suzukii from initial detection to maximum fruit infestation?",
+            "How can a sweet-cherry monitoring routine cover D. suzukii variation among rows and branch exposures while fruit maturity advances?",
+            "To avoid pseudoreplication, where should we draw sweet-cherry fruit for Drosophila suzukii assays across orchard blocks and phenological stages?",
+            "When SWD density climbs across the sweet-cherry season, should fruit infestation tallies be replicated along orchard transects and vertical crown thirds?",
+            "SWD, sweet cherry: inspect fruit by canopy depth and row terminus at every cultivar pick, or composite the whole season?",
+            "For Drosophila suzukii, can sweet-cherry subsampling stay confined to proximal branches while infestation pressure shifts between preharvest rounds?",
+            "How should Drosophila suzukii-positive sweet cherries be enumerated across orchard transects, canopy depths, and serial harvests?",
+            "For weekly SWD incidence estimates in sweet cherry, apportion inspected fruit among row termini, mid-row trees, and crown interiors as density changes?",
+            "What multistage allocation should be used for SWD-infested sweet cherries across orchard quadrants and fruit-development stages?",
+            "For Drosophila suzukii in sweet cherry, devise a repeated-measures fruit inspection across paired row orientations and canopy shells over the cultivar succession.",
+            "Drosophila suzukii in sweet cherry: map fruit-infestation observations by row azimuth and canopy depth through the harvest progression.",
+            "Sweet-cherry Drosophila suzukii surveillance: allocate individual-fruit examinations among canopy faces and orchard zones whenever harvest density shifts.",
+            "Drosophila suzukii sweet-cherry sampling protocol: divide cherries among outer, mid-canopy, and trunk-side positions whenever maturity stages change.",
+            "Does collecting sweet-cherry fruit for SWD from only inner lower branches misrepresent infestation after population pressure builds later in the season?",
+            "How should individual sweet-cherry fruit be assayed for SWD across lower shade, upper sun, perimeter trees, and the final cultivar's ripening period?",
+            "For D. suzukii, should cherries be subsampled from orchard corners and middle-row crowns on every cultivar harvest?",
+            "SWD sweet-cherry infestation: stratify fruit picks by orchard quadrant and inner-versus-outer canopy at each cultivar's preharvest and harvest survey.",
+            "Drosophila suzukii, sweet-cherry fruit infestation: replicate picks across row termini, central trees, canopy thirds, and successive ripening cohorts.",
+            "When sweet-cherry fruit colour advances, should Drosophila suzukii samples be drawn from each canopy aspect and from both peripheral and interior rows?",
+            "Specify a sweet-cherry fruit-infestation survey for Drosophila suzukii that revisits upper, middle, and lower canopy shells in border and central rows before each harvest.",
+            "To estimate seasonal Drosophila suzukii fruit infestation in sweet cherry, collect replicate cherries along edge-to-core transects and from sunlit and shaded crown tiers.",
+            "Drosophila suzukii sweet-cherry protocol: survey fruit infestation in alternating row azimuths and canopy depths on successive harvest rounds.",
+            "Please balance sweet-cherry fruit collected for SWD infestation among windward borders, leeward interiors, crown levels, and the first, middle, and final commercial picks.",
+            "Build a seasonwide sweet-cherry fruit pull for Drosophila suzukii infestation that crosses compass sides, canopy heights, and orchard blocks.",
+            "Before and after SWD abundance peaks, select sweet-cherry fruit for infestation assays from row borders, row interiors, and multiple canopy faces.",
+            "Would fortnightly Drosophila suzukii fruit-infestation surveys from fixed southeast lower branches capture the seasonal shift across sweet-cherry varieties?",
+            "Draft a sweet-cherry SWD fruit-infestation protocol that repeatedly collects from windward and leeward rows, inner and outer crowns, and successive harvest stages.",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([record])
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(answer["answer_shape"], "reviewed_science")
+                self.assertIn("Do not use one fixed lower-south", answer["answer"])
+                self.assertIn("five successively ripening cultivars over seven weeks", answer["answer"])
+                self.assertIn("keep fruit-emergence infestation separate", answer["answer"])
+                self.assertIn("R&D inference", answer["answer"])
+                self.assertIn("not a design validated by the paper", answer["answer"])
+                evidence = answer["evidence"][0]
+                self.assertEqual(evidence["record_id"], record_id)
+                self.assertEqual(evidence["url"], "https://doi.org/10.4039/tce.2020.41")
+                self.assertEqual(
+                    evidence["provenance"]["source_id"],
+                    "doi:10.4039/tce.2020.41",
+                )
+                self.assertIn(
+                    "low-, later-, and high-density distribution",
+                    evidence["provenance"]["locator"],
+                )
+
+        unrelated_questions = (
+            "Should SWD netting cover the lower canopy throughout the cherry season?",
+            "Where should we spray for SWD in the orchard canopy as cherries ripen?",
+            "Should an SWD repellent be placed in the lower-south canopy for the entire season?",
+            "Is the lower canopy the best place for an SWD trap throughout the cherry season?",
+            "Does SWD spatial distribution prove where to spray in a ripening cherry orchard?",
+            "Does seasonal SWD spatial distribution tell us whether we should spray the lower canopy?",
+            "Should the SWD repellent go in the lower canopy as cherries ripen?",
+            "Can orchard monitoring decide trap locations for SWD through the cherry season?",
+            "Does SWD distribution show where netting goes as each cultivar ripens?",
+            "Does one lower-canopy SWD fruit sample show where insecticide should be applied through the cherry season?",
+            "Can seasonal SWD fruit sampling tell us where pesticide belongs in the upper orchard canopy?",
+            "Does a lower-south sample decide chemical treatment placement as cherry cultivars ripen?",
+            "Can one canopy sample show where an odor dispenser should go for SWD through the season?",
+            "Does orchard sampling determine the best canopy position for a volatile emitter during cherry ripening?",
+            "Can SWD fruit samples tell us where to install exclusion screening through the cherry season?",
+            "Does seasonal canopy sampling establish where barrier fabric belongs in a cherry orchard?",
+            "Should sticky cards go in the lower canopy based on SWD fruit samples through the season?",
+            "Can orchard samples decide where a lure station goes in the lower canopy as cherries ripen?",
+            "Can one lower-canopy sample tell us where to install a bait station for seasonal SWD monitoring?",
+            "Does a lower-canopy fruit sample establish treatment placement through the cherry season?",
+            "Does sampling by canopy position show where a push-pull emitter should go as cultivars ripen?",
+            "Does seasonal lower-canopy SWD sampling show where we should be spraying?",
+            "Should SWD repellents go in the lower canopy based on fruit samples across the season?",
+            "Can one season-long SWD fruit sample tell us which canopy rows should be netted?",
+            "Should we be trapping in the lower canopy based on SWD fruit samples through the cherry season?",
+            "Can one lower-canopy SWD fruit sample represent the cherry season well enough to choose insecticide placement?",
+            "Could seasonal SWD sampling represent enough of the upper versus lower cherry canopy to decide where an odor dispenser goes?",
+            "Does a stratified SWD sample represent each cherry row over the season well enough to select a sticky-card location?",
+            "Is a lower-canopy SWD sample representative across ripening cultivars for choosing where exclusion screening belongs?",
+            "Will an upper-canopy SWD sample represent orchard infestation over the season well enough to pick a bait-station site?",
+            "Can a lower-canopy SWD fruit sample be representative enough to justify targeting the south cherry row with insecticide throughout the season?",
+            "Could an upper-canopy SWD sample represent the ripening season well enough to tell us to put an odor dispenser in the north row?",
+            "Does a stratified SWD sample represent each cherry row over the season well enough to tell us which canopy should hang sticky cards?",
+            "Is a lower-canopy SWD sample representative across cultivars for focusing pesticide applications on the south orchard row?",
+            "Will an upper-canopy SWD sample represent seasonal infestation well enough to position a lure station in the lower row?",
+            "Can one north-row SWD sample be representative over ripening cultivars before we put barrier fabric on the lower canopy?",
+            "Where should we collect seasonal SWD fruit samples across north and south rows to decide which canopy receives insecticide?",
+            "How should we sample upper and lower cherry positions through ripening before choosing a repellent dispenser location for SWD?",
+            "Please design a representative SWD sampling map across canopy heights and cultivars so we can position bait stations?",
+            "How should orchard crews measure SWD in north and south canopy positions before selecting spray zones for the season?",
+            "Design a seasonal fruit-collection plan across upper and lower canopy areas to choose where sticky cards should hang for SWD.",
+            "Where should we sample SWD-infested cherries across rows to locate repellent emitters during cultivar ripening?",
+            "How should we monitor seasonal SWD aggregation by canopy aspect to place lure stations?",
+            "In a hot, fan-ventilated tunnel, how should we sample upper and lower canopy positions over the season to determine whether an SWD net remains effective?",
+            "How should we collect SWD from north and south canopy zones over time if the actual question is whether hot, fan-assisted netting works?",
+            "How should we monitor parasitoid emergence across north and south cherry rows as SWD populations change over the season?",
+            "How should we measure parasitoid diversity in top and bottom canopy fruit while SWD densities rise over time?",
+            "Where should we monitor pollinator activity across upper and lower cherry canopy positions as SWD abundance changes over the season?",
+            "How should we collect yeast communities from north and south cherry rows across ripening while studying SWD ecology?",
+            "Can orchard sampling across heights over the season determine which branch gets treated for SWD?",
+            "Could representative SWD fruit samples by row guide our placement plan for odor hardware during ripening?",
+            "Can SWD samples from north and south rows select the canopy for a push-pull release as cultivars mature?",
+            "Would sampling SWD cherries over time identify the row that needs a physical barrier?",
+            "Can a representative lower-canopy SWD sample choose the row for chemical protection across the cherry season?",
+            "Should soil samples span north and south orchard rows through ripening while we track SWD pressure?",
+            "How should leaves be collected from upper and lower cherry branches over the season during an SWD ecology study?",
+            "At low and high population density, should our cherries come from both canopy heights and both compass sides?",
+            "Is the representativeness of one southern-row fruit pull stable from early to late cultivars?",
+            "Inside each netted treatment block, how should we collect cherries across canopy aspects over the season?",
+            "Canopy samples are an endpoint in a barrier-mesh experiment; are both row edges and the center needed across cultivars?",
+            "Does one southern-row cherry collection remain representative from early-ripening to late-ripening varieties?",
+            "Inside netted experimental plots, should seasonal cherry samples rotate among edges, center, canopy heights, and aspects?",
+            "Can a seasonwide cherry sampling map identify the row that should be sprayed for spotted wing drosophila?",
+            "Would a high-density SWD fruit sample justify focusing control hardware on the lower south side?",
+            "What row-by-row sampling plan should we use for predatory mites in cherries while tracking seasonal D. suzukii pressure?",
+            "Can our seasonal cherry samples tell the spray crew which SWD row should receive the first insecticide pass?",
+            "How should SWD raspberry fruit samples be distributed between border and interior canopy zones from early to late harvest?",
+            "Can a lower-canopy blueberry collection represent Drosophila suzukii infestation as berry cultivars ripen?",
+            "How should peach fruit inspections for Drosophila suzukii span upper and lower tree crowns as seasonal density increases?",
+            "How should SWD-infested apricots be sampled between windward and leeward orchard rows as early and late cultivars ripen?",
+            "For Drosophila suzukii in pears, what fruit-inspection allocation across upper and lower crowns would represent infestation from first pick to final harvest?",
+            "Would seasonal SWD fruit sampling in inner and outer sweet-cherry crowns prove that a volatile repellent works?",
+            "How should adult SWD trap counts be allocated among border and interior sweet-cherry rows over successive harvest weeks?",
+            "At sunrise versus dusk during sweet-cherry ripening, should SWD fruit collections alternate between east- and west-facing canopy sectors?",
+            "How should spider abundance be sampled across outer and inner sweet-cherry rows from bloom through late harvest while SWD pressure increases?",
+            "Should sweet-cherry sugar and firmness measurements be balanced between top and bottom canopy fruit as Drosophila suzukii density rises toward harvest?",
+            "For Drosophila suzukii adults, should trapping stations be inspected in upper and lower sweet-cherry crowns at each cultivar harvest?",
+            "Where should an SWD repellent dispenser be installed within the sweet-cherry canopy as cultivars move from blush to harvest?",
+            "Would repeated SWD-infested sweet-cherry samples across orchard rows and canopy tiers over the season demonstrate that a volatile repellent works?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([record])
+            unrelated = [
+                build_reviewed_science_answer(index, question)
+                for question in unrelated_questions
+            ]
+
+        for question, answer in zip(unrelated_questions, unrelated, strict=True):
+            with self.subTest(unrelated_question=question):
+                if answer is not None:
+                    self.assertNotIn("Do not use one fixed lower-south", answer["answer"])
+                    self.assertTrue(
+                        all(
+                            item["record_id"] != record_id
+                            for item in answer["evidence"]
+                        )
+                    )
 
 
 if __name__ == "__main__":
