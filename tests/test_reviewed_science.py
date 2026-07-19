@@ -2924,7 +2924,7 @@ class ReviewedScienceTests(unittest.TestCase):
             "openalex:W3187681115": (
                 "doi:10.1016/j.cub.2021.07.003",
                 "https://doi.org/10.1016/j.cub.2021.07.003",
-                "op1 and op2 double-mutant",
+                "Figures 1-3 and Supplementary Figures S1-S3",
             ),
         }
         cases = (
@@ -3012,6 +3012,40 @@ class ReviewedScienceTests(unittest.TestCase):
                         locator_fragment.casefold(),
                         item["provenance"]["locator"].casefold(),
                     )
+
+    def test_catalog_preserves_exact_title_and_complete_figure_locator(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        provenance = {
+            item["record_id"]: item for item in catalog["source_provenance"]
+        }
+        push_pull = provenance[
+            "swd:openalex_literature:openalex:W4411730655"
+        ]
+        self.assertEqual(
+            push_pull["title"],
+            "Oviposition deterrent as a component of a push–pull management "
+            "approach for Drosophila suzukii",
+        )
+
+        vision = provenance["openalex:W3187681115"]
+        self.assertIn("Figures 1-3", vision["locator"])
+        self.assertIn("Supplementary Figures S1-S3", vision["locator"])
+        self.assertIn("Figure 4", vision["locator"])
+        self.assertIn("Supplementary Figure S4", vision["locator"])
+
+        topics = {topic["id"]: topic for topic in catalog["topics"]}
+        self.assertEqual(
+            topics["swd-eggs-to-crop-protection"]["source_provenance"][0][
+                "title"
+            ],
+            push_pull["title"],
+        )
+        self.assertEqual(
+            topics["aedes-visual-rhodopsin-redundancy"]["source_provenance"][0][
+                "locator"
+            ],
+            vision["locator"],
+        )
 
     def test_visual_rhodopsin_route_rejects_broader_multimodal_neighbors(self):
         broad_record_ids = {
