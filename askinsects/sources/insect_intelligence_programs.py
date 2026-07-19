@@ -12,7 +12,7 @@ from askinsects.records import EvidenceRecord, Provenance
 INSECT_INTELLIGENCE_SOURCE_ID = "insect_intelligence_programs"
 PUBLIC_PROGRAM_LEDGER_URL = (
     "https://github.com/manintheandes/ask-insects/blob/"
-    "45d43b02d3dc34ac5354252da5dceefacc321f3e/"
+    "aeea2062bb97db236828ee3594611b99a6c1def6/"
     "config/insect-intelligence-programs.json"
 )
 _REPOSITORY_PROGRAM_LEDGER = (

@@ -79,7 +79,7 @@ MAX_LIST_ITEMS = 10_000
 MAX_NESTING_DEPTH = 20
 PUBLIC_PROGRAM_CONFIG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "45d43b02d3dc34ac5354252da5dceefacc321f3e/"
+    "aeea2062bb97db236828ee3594611b99a6c1def6/"
     "config/insect-intelligence-programs.json"
 )
 PUBLIC_CONTEXT_CONFIG_URL = (
@@ -88,7 +88,7 @@ PUBLIC_CONTEXT_CONFIG_URL = (
     "config/insect-evidence-package.json"
 )
 PUBLIC_PROGRAM_CONFIG_SHA256 = (
-    "ceb0819081672494afbf91afa097a5077720eb90c357d84fde55e498f82ee792"
+    "887256535d9e7da6511967db138b20e83ab1dc8f8639fbe3652dccc24e58fcf6"
 )
 PUBLIC_CONTEXT_CONFIG_SHA256 = (
     "d0c61ac1aa7b891958b1b730932cc174c2f301f432c7cae8f951abd5f878103a"
