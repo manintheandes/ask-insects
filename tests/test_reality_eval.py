@@ -215,9 +215,9 @@ def truth_packet(case_id):
         "sources": [
             {
                 "title": f"Original public source for {case_id}",
-                "source_id": f"public-source-{case_id}",
-                "locator": f"records#{case_id}",
-                "public_url": f"https://example.org/sources/{case_id}",
+                "source_id": "doi:10.1093/jee/toab108",
+                "locator": f"Abstract and Results: fixture evidence for {case_id}",
+                "public_url": "https://doi.org/10.1093/jee/toab108",
                 "supports": f"The measured observation for {case_id}.",
             }
         ],
@@ -452,7 +452,7 @@ class RealityEvalTests(unittest.TestCase):
             holdout_bundle(),
             separators=(",", ":"),
         ).encode("utf-8")
-        source = b'"source_id":"public-source-holdout-00"'
+        source = b'"source_id":"doi:10.1093/jee/toab108"'
         duplicate_source = source + b"," + source
         self.assertIn(source, bundle_bytes)
         bundle_bytes = bundle_bytes.replace(source, duplicate_source, 1)
