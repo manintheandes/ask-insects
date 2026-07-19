@@ -164,6 +164,11 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
             f"topic {topic_id}.match.optional",
             allow_empty=True,
         )
+        _strings(
+            match.get("excluded_any", []),
+            f"topic {topic_id}.match.excluded_any",
+            allow_empty=True,
+        )
         if not isinstance(topic.get("answer"), str) or not str(
             topic["answer"]
         ).strip():
@@ -246,6 +251,11 @@ def _topic_score(
     if matched_species and not topic_species.intersection(matched_species):
         return None
     if not matched_species and match.get("species_may_be_implicit") is not True:
+        return None
+    excluded = _strings(
+        match.get("excluded_any", []), "topic match.excluded_any", allow_empty=True
+    )
+    if any(_contains(normalized_question, term) for term in excluded):
         return None
     required_groups = _objects_as_string_groups(
         match["required_any"], "topic match.required_any"

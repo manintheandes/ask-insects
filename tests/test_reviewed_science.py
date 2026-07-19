@@ -1126,6 +1126,15 @@ class ReviewedScienceTests(unittest.TestCase):
             with self.assertRaisesRegex(ReviewedScienceError, "evaluation coupling"):
                 load_reviewed_science_catalog(path)
 
+    def test_catalog_rejects_malformed_excluded_terms(self):
+        payload = catalog_payload()
+        payload["topics"][0]["match"]["excluded_any"] = "anopheles"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = self.write_catalog(Path(tmpdir), payload)
+
+            with self.assertRaisesRegex(ReviewedScienceError, "excluded_any"):
+                load_reviewed_science_catalog(path)
+
     def test_catalog_rejects_internal_program_rows_as_scientific_evidence(self):
         payload = catalog_payload()
         payload["topics"][0]["source_record_ids"] = [
@@ -1466,6 +1475,17 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Is the caprylic-plus-capric mixture ready to advance as a simpler CFFA formulation for SWD, or do we need a broader component comparison?",
+                "swd:openalex_literature:openalex:W4386466923",
+                (
+                    "bounded formulation hypothesis",
+                    "1.38 mg caprylic acid plus 1.46 mg capric acid",
+                    "not significantly different",
+                    "not field tests of the two-component blend",
+                    "component and blend dose-response",
+                ),
+            ),
+            (
                 "When commensal growth is present, does SWD oviposition differ on 1% and 3% agar?",
                 "swd:openalex_literature:openalex:W3124252639",
                 (
@@ -1550,6 +1570,17 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Why did transfluthrin look better in large-cage Aedes trials than in open-field landing collections?",
                 "openalex:W4399119561",
                 ("negligible", "50-60%", "moderate pyrethroid resistance", "15 g"),
+            ),
+            (
+                "Should the large-cage hessian emanator result or the disappointing open-field result control our outdoor product decision, and how should we diagnose the gap?",
+                "openalex:W4399119561",
+                (
+                    "Use the open-field result",
+                    "context-dependent biological effect",
+                    "not be averaged",
+                    "human landing and biting separately",
+                    "airborne transfluthrin concentration",
+                ),
             ),
             (
                 "Can we transfer an Anopheles DEET response to Aedes, or are close-range repellent responses species-specific?",
@@ -1708,6 +1739,37 @@ class ReviewedScienceTests(unittest.TestCase):
             questions = (
                 "Can Aedes aegypti smell human odor but avoid DEET?",
                 "Does Aedes aegypti detect heat but avoid a visual target?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNone(answer)
+
+    def test_decision_route_matchers_reject_neighboring_questions(self):
+        record_ids = (
+            "swd:openalex_literature:openalex:W4386466923",
+            "openalex:W4399119561",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            questions = (
+                "Should we advance caprylic acid as a mosquito skin formulation?",
+                "Why did a large-cage moth trial disagree with a field trial?",
+                "How should an Aedes emanator be tested in a laboratory cage?",
+                "Why did a hessian emanator work in a large-cage Anopheles gambiae test but disappoint in an open-field trial?",
+                "Should a semi-field Culex hessian emanator result control an outdoor field decision?",
             )
             for question in questions:
                 with self.subTest(question=question):

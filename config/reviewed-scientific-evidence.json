@@ -52,14 +52,14 @@
       "species_ids": ["drosophila_suzukii"],
       "match": {
         "priority": 30,
-        "phrases": ["coconut free fatty acid", "fatty acid blend", "caprylic and capric"],
+        "phrases": ["coconut free fatty acid", "fatty acid blend", "caprylic and capric", "caprylic plus capric", "minimal CFFA formulation"],
         "required_any": [
           ["coconut free fatty acid", "cffa", "caprylic", "capric", "octanoic acid", "decanoic acid"],
-          ["egg", "eggs", "oviposition", "deterrent", "lay", "laying"]
+          ["egg", "eggs", "oviposition", "deterrent", "lay", "laying", "blend", "component", "formulation", "down-selection", "down selection", "advance"]
         ],
-        "optional": ["blend", "20 mg", "raspberry", "spatial", "contact", "airborne"]
+        "optional": ["blend", "20 mg", "raspberry", "spatial", "contact", "airborne", "minimal", "equivalent", "equivalence", "decision"]
       },
-      "answer": "The paper reported CFFA as an oviposition deterrent, including a 99% laboratory reduction at 20 mg and a 64% reduction on field raspberries. However, those two headline reductions were calculated from larvae and pupae recovered after treated fruit was incubated, not from direct egg counts. They therefore establish fewer recovered immature offspring on treated fruit, but cannot by themselves distinguish fewer eggs from effects on development or survival. The component choice assays likewise counted recovered larvae and pupae. A later no-choice comparison counted eggs directly and confirmed that the caprylic-capric blend was about as effective as the full CFFA mixture, while either acid alone was less effective. None of these assays isolates an airborne spatial-avoidance effect from surface contact or fruit chemistry. Resolve mode with a no-contact assay using measured airborne concentration, followed separately by treated-substrate choice, direct egg counts and total egg output, development and survival, activity or knockdown, and field fruit endpoints.",
+      "answer": "The paper reported CFFA as an oviposition deterrent. Advance the caprylic-capric blend only as a bounded formulation hypothesis, not as a finished minimal formulation. The later no-choice comparison counted eggs directly: 20 females oviposited for 24 hours on surface-treated raspberries. At the tested 20 mg CFFA-equivalent composition, each raspberry received 1.38 mg caprylic acid plus 1.46 mg capric acid. Full CFFA and the two-component blend were not significantly different in that assay. CFFA outperformed either acid alone; the blend outperformed capric acid but not caprylic acid. That supports the blend at this composition, dose, substrate, and endpoint, but it does not establish equivalence across doses, release profiles, choice contexts, fruit types, or field conditions. The reported 99% laboratory and 64% field reductions were separate full-CFFA assays based on recovered larvae and pupae, not from direct egg counts and not field tests of the two-component blend. The component choice assays likewise counted recovered larvae and pupae. None of these assays isolates airborne spatial avoidance from surface contact or fruit chemistry. A defensible down-selection needs component and blend dose-response tests with direct egg counts and total egg output, development and survival follow-up, measured formulation and release chemistry, separate no-contact and surface-contact arms, and replicated fruit and field validation.",
       "source_record_ids": ["swd:openalex_literature:openalex:W4386466923"]
     },
     {
@@ -671,14 +671,17 @@
       "species_ids": ["aedes_aegypti"],
       "match": {
         "priority": 30,
-        "phrases": ["transfluthrin field", "semi-field transfluthrin", "large-cage transfluthrin"],
+        "species_may_be_implicit": true,
+        "phrases": ["transfluthrin field", "semi-field transfluthrin", "large-cage transfluthrin", "large-cage emanator", "semi-field versus open-field"],
         "required_any": [
-          ["transfluthrin"],
-          ["field", "semi field", "semi-field", "large cage", "large-cage", "landing", "translation"]
+          ["transfluthrin", "emanator", "emanators", "hessian"],
+          ["semi field", "semi-field", "large cage", "large-cage"],
+          ["field", "open field", "open-field", "full field", "full-field", "outdoor"]
         ],
-        "optional": ["emanator", "wild", "resistance", "dose", "vapor", "vapour", "protection"]
+        "excluded_any": ["anopheles", "culex"],
+        "optional": ["wild", "resistance", "dose", "vapor", "vapour", "protection", "landing", "mismatch", "go/no-go", "go no go", "decision", "translation"]
       },
-      "answer": "Two full-field experiments found negligible reductions in human landing by wild Aedes aegypti, whereas large-cage semi-field tests found about 50-60% landing reduction across the tested doses, collection methods, placements, and mosquito sources. The authors judged moderate pyrethroid resistance unlikely to explain the field shortfall. The endpoint was landing, not bites, infection, or disease, and potential inhalation exposure was a concern at the highest 15 g loading. For translation, give the open-field result precedence and repeat matched field landing and biting tests with measured vapor exposure, weather, airflow, placement, population background, and safety monitoring.",
+      "answer": "Use the open-field result for the next go/no-go decision if the intended product must protect people outdoors. The hessian transfluthrin emanators reduced Aedes aegypti landing by about 50-60% in large-cage semi-field tests across the tested doses, collection methods, placements, and mosquito sources, but two full-field experiments with wild Aedes aegypti found negligible landing reductions. The semi-field result preserves evidence of a context-dependent biological effect, but it should not override the result in the intended-use setting. The results should not be averaged. The authors judged moderate pyrethroid resistance unlikely to explain the field shortfall. The endpoint was human landing, not biting, infection, disease transmission, or duration of personal protection. Resolve the mismatch by matching formulation and loading across settings while measuring airborne transfluthrin concentration over distance and time, airflow and weather, emanator placement, mosquito population background, human landing and biting separately, and exposure safety. Potential inhalation exposure was a concern at the highest 15 g loading.",
       "source_record_ids": ["openalex:W4399119561"]
     },
     {
