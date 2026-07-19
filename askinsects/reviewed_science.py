@@ -25,17 +25,70 @@ EVALUATION_ONLY_FIELDS = frozenset(
     }
 )
 _MATCH_TOKEN_EQUIVALENTS = {
+    "assayed": "assay",
+    "assaying": "assay",
+    "allocation": "allocate",
+    "allocations": "allocate",
+    "allocated": "allocate",
+    "boundary": "border",
+    "boundaries": "border",
+    "census": "sampling",
+    "censuses": "sampling",
+    "central": "center",
+    "checks": "monitor",
     "colored": "color",
     "coloring": "color",
     "colors": "color",
+    "collecting": "collect",
+    "collects": "collect",
     "coloured": "color",
+    "colour": "color",
     "colouring": "color",
     "colours": "color",
+    "composited": "composite",
+    "crowns": "crown",
+    "distort": "misrepresent",
+    "distorted": "misrepresent",
+    "distribute": "stratify",
+    "distributed": "stratified",
+    "drawn": "sample",
+    "draw": "sample",
+    "enumerate": "measure",
+    "enumerated": "measure",
+    "enumerating": "measure",
+    "examination": "inspect",
+    "examinations": "inspect",
+    "generalise": "represent",
+    "generalize": "represent",
+    "inspected": "inspect",
+    "inspecting": "inspect",
+    "inspections": "inspect",
+    "measured": "measure",
+    "monitoring": "monitor",
+    "observations": "measurement",
+    "partition": "stratify",
+    "partitioned": "stratified",
+    "perimeter": "border",
+    "picks": "pick",
+    "quantified": "measure",
+    "quantify": "measure",
+    "quantifying": "measure",
+    "replicated": "replicate",
+    "ripe": "ripening",
+    "ripeness": "ripening",
+    "subsampled": "sample",
+    "subsampling": "sampling",
+    "surveys": "survey",
+    "tallies": "measurement",
+    "tally": "measurement",
     "stiff": "hardness",
     "stiffer": "harder",
     "stiffest": "harder",
     "stiffness": "hardness",
+    "treetop": "top",
+    "treetops": "top",
 }
+_QUESTION_INTENTS = frozenset({"sampling_design"})
 FORBIDDEN_SCIENTIFIC_SOURCE_PREFIXES = (
     "insect_intelligence_programs:",
 )
@@ -141,6 +194,15 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
         ):
             raise ReviewedScienceError(
                 f"topic {topic_id}.match.species_may_be_implicit must be a boolean"
+            )
+        question_intent = match.get("question_intent")
+        if question_intent is not None and (
+            not isinstance(question_intent, str)
+            or question_intent not in _QUESTION_INTENTS
+        ):
+            raise ReviewedScienceError(
+                f"topic {topic_id}.match.question_intent must be one of "
+                f"{sorted(_QUESTION_INTENTS)}"
             )
         priority = match.get("priority", 0)
         if isinstance(priority, bool) or not isinstance(priority, int):
@@ -257,6 +319,182 @@ def _contains(normalized_question: str, value: str) -> bool:
     )
 
 
+def _has_intervention_decision_context(normalized_question: str) -> bool:
+    contextless_question = re.sub(
+        r"\b(?:repellent|spray|insecticide|pesticide|treatment|net|netting|mesh|"
+        r"barrier)\s+(?:efficacy\s+)?"
+        r"(?:trial|experiment|assay|study|arm|arms)\b",
+        "",
+        normalized_question,
+    )
+    contextless_question = re.sub(
+        r"\b(?:adult\s+)?trap\s+counts?\b",
+        "",
+        contextless_question,
+    )
+    contextless_question = re.sub(
+        r"\b(?:we are\s+)?testing\s+(?:an?\s+)?(?:[a-z0-9]+\s+)?treatment\b|"
+        r"\b(?:treatment|treated) and (?:control|untreated) blocks\b",
+        "",
+        contextless_question,
+    )
+    sampling = (
+        r"(?:sample|samples|sampled|sampling|collect|collected|collection|collections|"
+        r"take|taking|taken|gather|gathered|gathering|pick|picked|picking|pull|pulls|"
+        r"measure|measuring|measurement|measurements|monitor|estimate|estimated|"
+        r"estimator|readout|stratify|stratified|represent|representative|"
+        r"representativeness|assay|assaying|inspect|inspection|allocate|allocated|"
+        r"balance|balanced|divide|divided|subsample|subsamples|replicate|replication|"
+        r"select|selected|score|scoring|survey|apportion|apportioned|map|mapping|"
+        r"surveillance)"
+    )
+    intervention = (
+        r"(?:insecticide|pesticide|spray|sprayed|spraying|treated|treatment|repellent|repellents|"
+        r"dispenser|dispensers|emitter|emitters|hardware|release|screen|screening|"
+        r"fabric|barrier|net|netting|netted|sticky card|sticky cards|mesh|trap|traps|"
+        r"trapping|station|stations|device|devices|application|applications|protection)"
+    )
+    sampling_match = re.search(rf"\b{sampling}\b", contextless_question)
+    intervention_matches = list(
+        re.finditer(rf"\b{intervention}\b", contextless_question)
+    )
+    if not intervention_matches:
+        return False
+    if re.search(
+        rf"\b{intervention}\b.*\b(?:effective|effectiveness|efficacy|reliable|"
+        r"reliability|works|work|prove|demonstrate|demonstrates)\b|"
+        rf"\b(?:effective|effectiveness|efficacy|reliable|reliability|works|work|"
+        rf"prove|demonstrate|demonstrates)\b.*\b{intervention}\b",
+        contextless_question,
+    ):
+        return True
+    if re.search(
+        r"\b(?:screen|barrier|mesh|net|netting)\b.*\b"
+        r"(?:effective|effectiveness|efficacy|reliable|reliability|works|work|prove)\b|"
+        r"\b(?:effective|effectiveness|efficacy|reliable|reliability|works|work|prove)"
+        r"\b.*\b(?:screen|barrier|mesh|net|netting)\b",
+        contextless_question,
+    ):
+        return True
+    if sampling_match is None:
+        return True
+    first_intervention = intervention_matches[0]
+    if first_intervention.start() < sampling_match.start():
+        prefix = contextless_question[: first_intervention.start()]
+        return bool(
+            re.search(
+                r"^(?:should|where|which|can|could|does|do|is|are|would|will)\b",
+                prefix.strip(),
+            )
+        )
+    purpose = contextless_question[sampling_match.end() : first_intervention.start()]
+    return bool(
+        re.search(
+            r"\b(?:to|for|so|before|where|which|guide|guides|determine|decide|choose|"
+            r"choosing|select|selecting|locate|identify|establish|tell|target|targeting|"
+            r"focus|focusing|put|hang|gets|needs|placement|prove)\b",
+            purpose,
+        )
+    )
+
+
+def _has_swd_fruit_sampling_subject(normalized_question: str) -> bool:
+    sampling_term = (
+        r"(?:sample|samples|sampled|sampling|collect|collected|collection|collections|"
+        r"take|taking|taken|gather|gathered|gathering|pick|picked|picking|pull|pulls|"
+        r"measure|measuring|measurement|measurements|monitor|estimate|estimated|"
+        r"estimator|readout|stratify|stratified|position|positions|location|locations|"
+        r"represent|representative|representativeness|stand|describe|pool|pools|"
+        r"pooled|pooling|composite|compositing|rotate|rotated|assay|assaying|inspect|"
+        r"inspection|allocate|allocated|balance|balanced|divide|divided|subsample|"
+        r"subsamples|replicate|replication|revisit|revisited|selected|score|scoring|"
+        r"survey|select|apportion|apportioned|map|mapping|surveillance)"
+    )
+    non_target = (
+        r"(?:parasitoid|parasitoids|pollinator|pollinators|yeast|yeasts|predator|"
+        r"predators|pathogen|pathogens|microbiome|fungus|fungi|bacterium|bacteria|"
+        r"soil|leaf|leaves|mite|mites|spider|spiders)"
+    )
+    if re.search(rf"\b{non_target}\b", normalized_question):
+        return False
+    if re.search(
+        r"\b(?:raspberry|raspberries|blueberry|blueberries|strawberry|strawberries|"
+        r"blackberry|blackberries|grape|grapes|peach|peaches|plum|plums|"
+        r"apricot|apricots|pear|pears)\b",
+        normalized_question,
+    ):
+        return False
+    if re.search(
+        r"\b(?:adult\s+(?:swd\s+)?trap\s+counts?|trapping\s+stations?|trap\s+stations?)\b",
+        normalized_question,
+    ) and not re.search(
+        r"\b(?:fruit|infestation)\b", normalized_question
+    ):
+        return False
+    if re.search(
+        r"\b(?:sunrise|sunset|dawn|dusk|clock time|clock times|time of day|diurnal|"
+        r"morning|afternoon|photoperiod)\b",
+        normalized_question,
+    ):
+        return False
+    if re.search(r"\b(?:sugar|firmness|brix)\b", normalized_question) and not re.search(
+        r"\binfestation\b", normalized_question
+    ):
+        return False
+    return bool(re.search(rf"\b{sampling_term}\b", normalized_question))
+
+
+def _has_sampling_design_intent(normalized_question: str) -> bool:
+    if _has_intervention_decision_context(normalized_question):
+        return False
+    if not _has_swd_fruit_sampling_subject(normalized_question):
+        return False
+    design_term = (
+        r"(?:sample|samples|sampled|sampling|collect|collected|collection|collections|"
+        r"take|taking|taken|gather|gathered|gathering|pick|picked|picking|pull|pulls|"
+        r"measure|measuring|measurement|measurements|monitor|estimate|estimated|"
+        r"estimator|readout|stratify|stratified|represent|representative|"
+        r"representativeness|misrepresent|defensible|hide|cover|rotate|repeated|"
+        r"separate|span|capture|track|describe|scheme|routine|layout|location|locations|"
+        r"stand|pool|pools|pooled|pooling|composite|compositing|conceal|understate|"
+        r"obscure|rotated|assay|assaying|inspect|inspection|allocate|allocated|balance|"
+        r"balanced|divide|divided|subsample|subsamples|replicate|replication|revisit|"
+        r"revisited|select|selected|score|scoring|survey|apportion|apportioned|map|mapping|"
+        r"surveillance)"
+    )
+    spatial_term = (
+        r"(?:spatial|spatially|space|stratified|orchard|canopy|row|rows|aspect|aspects|side|sides|edge|edges|"
+        r"border|interior|margin|tree|trees|center|centre|core|zone|zones|stratum|"
+        r"strata|tier|tiers|quarter|height|heights|vertical|top|bottom|ground|lower|"
+        r"upper|north|south|east|west|crown|layer|layers|neighborhood|neighborhoods|"
+        r"sector|sectors|quadrant|quadrants|third|thirds|block|blocks|transect|"
+        r"transects|depth|depths|terminus|termini|proximal|shell|shells|azimuth|"
+        r"face|faces|limb|limbs|"
+        r"branch|branches|position|positions|exposure|exposures|windward|leeward|"
+        r"inner|outer|compass)"
+    )
+    temporal_term = (
+        r"(?:season|seasonal|seasonwide|summer|week|weekly|fortnightly|successive|successively|"
+        r"preharvest|midseason|first|final|initial|maximum|early|late|later|mature|"
+        r"matures|maturity|phenology|phenological|development|multistage|ripen|"
+        r"ripening|blush|color|cultivar|"
+        r"cultivars|variety|varieties|harvest|pick|picking|population|density|"
+        r"densities|changing|numbers|rise|temporally|abundance|pressure|sparse|"
+        r"clustered|aggregation|peak|serial|succession|progression|over time)"
+    )
+    return bool(
+        re.search(rf"\b{design_term}\b", normalized_question)
+        and re.search(rf"\b{spatial_term}\b", normalized_question)
+        and re.search(rf"\b{temporal_term}\b", normalized_question)
+    )
+
+
+def _question_intent_matches(intent: str, normalized_question: str) -> bool:
+    if intent == "sampling_design":
+        return _has_sampling_design_intent(normalized_question)
+    return False
+
+
 def _species_matches(
     normalized_question: str,
     species: list[dict[str, object]],
@@ -282,6 +520,11 @@ def _topic_score(
         return None
     if not matched_species and match.get("species_may_be_implicit") is not True:
         return None
+    question_intent = match.get("question_intent")
+    if isinstance(question_intent, str) and not _question_intent_matches(
+        question_intent, normalized_question
+    ):
+        return None
     excluded = _strings(
         match.get("excluded_any", []), "topic match.excluded_any", allow_empty=True
     )
@@ -290,7 +533,7 @@ def _topic_score(
     required_groups = _objects_as_string_groups(
         match["required_any"], "topic match.required_any"
     )
-    if not all(
+    if question_intent is None and not all(
         any(_contains(normalized_question, term) for term in group)
         for group in required_groups
     ):
@@ -298,6 +541,8 @@ def _topic_score(
     phrases = _strings(match["phrases"], "topic match.phrases", allow_empty=True)
     optional = _strings(match["optional"], "topic match.optional", allow_empty=True)
     score = int(match.get("priority", 0)) + 10 * len(required_groups)
+    if question_intent is not None:
+        score += 1000
     score += sum(
         8 + 2 * len(_normalize(phrase).split())
         for phrase in phrases
