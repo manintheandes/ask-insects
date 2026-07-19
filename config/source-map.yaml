@@ -79,7 +79,7 @@ sources:
   - id: plutella_xylostella_literature
     name: Exact reviewed Plutella xylostella literature
     source_type: public_api_metadata_curated_exact_works
-    boundary: Seven human-reviewed OpenAlex works that directly name Plutella xylostella or diamondback moth and cover host-finding olfaction and vision, Brassica volatiles and antennal responses, host choice and oviposition, semiochemical choice and field management, intercropping VOCs and crop damage, citronella laboratory and field endpoints, and adult diel locomotor behavior; each record preserves its original title, DOI, OpenAlex work ID, saved raw response, and exact focal-species label
+    boundary: Twenty-one human-reviewed OpenAlex works that directly name Plutella xylostella or diamondback moth and cover host finding, chemoreception genes, functionally tested odorant receptors, oviposition, resistance-linked behavior, genome-scale adaptation, semiochemical choice, field management, crop damage, and adult diel locomotor behavior; each record preserves its original title, DOI, OpenAlex work ID, saved raw response, and exact focal-species label
     query_plane: exact_openalex_work_ids_to_sqlite_literature_records
     artifact_dir: artifacts/mosquito-v1
     raw_artifact_dir: artifacts/mosquito-v1/raw/plutella_xylostella_literature
