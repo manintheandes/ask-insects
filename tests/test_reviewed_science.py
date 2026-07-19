@@ -3018,8 +3018,8 @@ class ReviewedScienceTests(unittest.TestCase):
 
         record_id = "swd:openalex_literature:openalex:W4413971464"
         questions = (
-            "Our unnamed SWD volatile pulls flies toward it at a low loading and "
-            "pushes them away at a higher loading. What laboratory series should "
+            "Our unnamed SWD volatile is attractive at a low loading and repellent "
+            "at a higher loading. What laboratory series should "
             "we run before translating it to a field rate?",
             "For spotted wing drosophila, how should we bracket a source-mass "
             "series after seeing attraction below and repellency above, and which "
@@ -3072,6 +3072,66 @@ class ReviewedScienceTests(unittest.TestCase):
                     "olfactometer",
                     final_answer,
                 )
+
+        negative_questions = (
+            "For SWD, a volatile source below the canopy pulled flies toward it, "
+            "while one above the crop pushed them away. How should we measure the "
+            "spatial response?",
+            "How should source-to-fly distance and field exposure be reported for "
+            "an SWD repellent tested at one high loading?",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            negative_answers = [
+                build_reviewed_science_answer(index, question)
+                for question in negative_questions
+            ]
+
+        for question, answer in zip(
+            negative_questions, negative_answers, strict=True
+        ):
+            with self.subTest(question=question):
+                if answer is not None:
+                    self.assertNotIn(
+                        record_id,
+                        {item["record_id"] for item in answer["evidence"]},
+                    )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            named_answer = build_reviewed_science_answer(
+                index,
+                "Why is methyl jasmonate attractive at a low dose but repellent "
+                "at a higher dose in SWD?",
+            )
+
+        self.assertIsNotNone(named_answer)
+        assert named_answer is not None
+        self.assertTrue(
+            named_answer["answer"].startswith(
+                "Methyl jasmonate was not uniformly repellent."
+            )
+        )
 
     def test_catalog_preserves_exact_title_and_complete_figure_locator(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())

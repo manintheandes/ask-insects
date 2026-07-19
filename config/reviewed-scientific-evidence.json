@@ -648,10 +648,11 @@
         "required_any": [
           ["low dose", "lower dose", "low loading", "lower loading", "low source loading", "below"],
           ["high dose", "higher dose", "high loading", "higher loading", "high source loading", "above"],
-          ["attract", "attraction", "attractive", "pull", "pulls", "toward"],
-          ["repel", "repellent", "repellency", "push", "pushes", "away"],
+          ["attract", "attraction", "attractive"],
+          ["repel", "repellent", "repellency"],
           ["dose", "loading", "source mass", "filter paper", "exposure", "field rate"]
         ],
+        "excluded_any": ["methyl jasmonate", "meja"],
         "optional": ["series", "bracket", "release rate", "air concentration", "field", "crop"]
       },
       "answer": "The relevant published SWD benchmark for this low-to-high reversal is methyl jasmonate. In the cited planar olfactometer, 3.86 to 15.45 micrograms per filter paper was attractive, while 309.0 micrograms per filter paper was repellent. In a separate two-choice cage, doses above 1287.5 micrograms per filter paper reduced oviposition by more than 90 percent on artificial fruits. Run separate carrier-controlled, log-spaced series for the two endpoints: bracket the orientation reversal from below 3.86 through 309.0 micrograms per filter paper, and bracket the oviposition transition around 1287.5 micrograms per filter paper in the cage assay. Measure release rate and air concentration over time before translating either result beyond its apparatus. Applied mass per filter paper is not measured air concentration or a crop application rate, and neither endpoint by itself proves field crop protection.",

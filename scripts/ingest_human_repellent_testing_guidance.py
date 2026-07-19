@@ -55,7 +55,7 @@ def ingest_human_repellent_testing_guidance(
         "record_count": installed_record_count,
         "retrieved_at": retrieved,
         "refresh_failed": bool(outcome["refresh_failed"]),
-        "method": "reviewed exact official guidance and peer-reviewed source URLs",
+        "method": "reviewed exact official guidance URLs",
     }
     update_source_metadata_incrementally(
         artifact_dir,
