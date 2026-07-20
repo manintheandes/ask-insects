@@ -289,6 +289,42 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
             f"topic {topic_id}.match.optional",
             allow_empty=True,
         )
+        required_normalized_pattern_groups = _objects_as_string_groups(
+            match.get("required_normalized_pattern_groups", []),
+            f"topic {topic_id}.match.required_normalized_pattern_groups",
+        )
+        for group in required_normalized_pattern_groups:
+            for pattern in group:
+                try:
+                    re.compile(pattern, flags=re.IGNORECASE)
+                except re.error as exc:
+                    raise ReviewedScienceError(
+                        f"topic {topic_id}.match.required_normalized_pattern_groups contains invalid regex"
+                    ) from exc
+        implicit_species_excluded_patterns = _strings(
+            match.get("implicit_species_excluded_normalized_patterns", []),
+            f"topic {topic_id}.match.implicit_species_excluded_normalized_patterns",
+            allow_empty=True,
+        )
+        for pattern in implicit_species_excluded_patterns:
+            try:
+                re.compile(pattern, flags=re.IGNORECASE)
+            except re.error as exc:
+                raise ReviewedScienceError(
+                    f"topic {topic_id}.match.implicit_species_excluded_normalized_patterns contains invalid regex"
+                ) from exc
+        excluded_normalized_patterns = _strings(
+            match.get("excluded_normalized_patterns", []),
+            f"topic {topic_id}.match.excluded_normalized_patterns",
+            allow_empty=True,
+        )
+        for pattern in excluded_normalized_patterns:
+            try:
+                re.compile(pattern, flags=re.IGNORECASE)
+            except re.error as exc:
+                raise ReviewedScienceError(
+                    f"topic {topic_id}.match.excluded_normalized_patterns contains invalid regex"
+                ) from exc
         _strings(
             match.get("excluded_any", []),
             f"topic {topic_id}.match.excluded_any",
@@ -597,6 +633,16 @@ def _topic_score(
     if not matched_species:
         if match.get("species_may_be_implicit") is not True:
             return None
+        implicit_species_excluded_patterns = _strings(
+            match.get("implicit_species_excluded_normalized_patterns", []),
+            "topic match.implicit_species_excluded_normalized_patterns",
+            allow_empty=True,
+        )
+        if any(
+            re.search(pattern, normalized_question, flags=re.IGNORECASE)
+            for pattern in implicit_species_excluded_patterns
+        ):
+            return None
         implicit_required = _objects_as_string_groups(
             match.get("implicit_species_required_any", []),
             "topic match.implicit_species_required_any",
@@ -616,6 +662,16 @@ def _topic_score(
     )
     if any(_contains(normalized_question, term) for term in excluded):
         return None
+    excluded_normalized_patterns = _strings(
+        match.get("excluded_normalized_patterns", []),
+        "topic match.excluded_normalized_patterns",
+        allow_empty=True,
+    )
+    if any(
+        re.search(pattern, normalized_question, flags=re.IGNORECASE)
+        for pattern in excluded_normalized_patterns
+    ):
+        return None
     required_groups = _objects_as_string_groups(
         match["required_any"], "topic match.required_any"
     )
@@ -624,9 +680,22 @@ def _topic_score(
         for group in required_groups
     ):
         return None
+    required_normalized_pattern_groups = _objects_as_string_groups(
+        match.get("required_normalized_pattern_groups", []),
+        "topic match.required_normalized_pattern_groups",
+    )
+    if required_normalized_pattern_groups and not all(
+        any(
+            re.search(pattern, normalized_question, flags=re.IGNORECASE)
+            for pattern in group
+        )
+        for group in required_normalized_pattern_groups
+    ):
+        return None
     phrases = _strings(match["phrases"], "topic match.phrases", allow_empty=True)
     optional = _strings(match["optional"], "topic match.optional", allow_empty=True)
     score = int(match.get("priority", 0)) + 10 * len(required_groups)
+    score += 10 * len(required_normalized_pattern_groups)
     if question_intent is not None:
         score += 1000
     score += sum(
