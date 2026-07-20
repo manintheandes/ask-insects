@@ -139,6 +139,52 @@ class ReviewedScienceTests(unittest.TestCase):
             },
         )
 
+    def test_normalized_match_patterns_are_case_insensitive_and_validated(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            index = SourceIndex(root / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        "study:texture",
+                        source_id="drosophila_suzukii_core",
+                        locator="raw/swd.json#works/W3037850025",
+                    )
+                ]
+            )
+
+            payload = catalog_payload()
+            payload["topics"][0]["match"]["required_normalized_pattern_groups"] = [
+                [r"\bCHOOSE\b"]
+            ]
+            answer = build_reviewed_science_answer(
+                index,
+                "Do female SWD choose firmer places to lay eggs?",
+                catalog_path=self.write_catalog(root, payload),
+            )
+            self.assertIsNotNone(answer)
+
+            payload["topics"][0]["match"]["required_normalized_pattern_groups"] = [
+                ["[invalid"]
+            ]
+            with self.assertRaisesRegex(ReviewedScienceError, "invalid regex"):
+                load_reviewed_science_catalog(self.write_catalog(root, payload))
+
+            payload = catalog_payload()
+            payload["topics"][0]["match"]["excluded_normalized_patterns"] = [
+                "[invalid"
+            ]
+            with self.assertRaisesRegex(ReviewedScienceError, "invalid regex"):
+                load_reviewed_science_catalog(self.write_catalog(root, payload))
+
+            payload = catalog_payload()
+            payload["topics"][0]["match"][
+                "implicit_species_excluded_normalized_patterns"
+            ] = ["[invalid"]
+            with self.assertRaisesRegex(ReviewedScienceError, "invalid regex"):
+                load_reviewed_science_catalog(self.write_catalog(root, payload))
+
     def test_substrate_stiffness_paraphrase_selects_texture_topic(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
@@ -3668,6 +3714,65 @@ class ReviewedScienceTests(unittest.TestCase):
             "it attracts more SWD but also more nontarget insects?",
             "For SWD, should we advance H. uvarum headspace because it reduces "
             "Drosophila melanogaster bycatch and has higher selectivity?",
+            "For an SWD pull lure, would you pick H. uvarum synthetic volatiles "
+            "over collected headspace when target catch rises but nontarget catch "
+            "rises too? What should the next experiment require?",
+            "For an SWD pull-lure field trial with control traps, should we pick "
+            "H. uvarum synthetic volatiles over collected headspace when target "
+            "catch rises but nontarget catch rises too?",
+            "For SWD, should we advance H. uvarum headspace because it has higher "
+            "specificity, and what control treatment should the next experiment include?",
+            "Should we compare H. uvarum headspace with the reference lure before "
+            "choosing for SWD, given the bycatch difference?",
+            "Should we choose H. uvarum headspace versus the reference lure for "
+            "SWD based on specificity and bycatch?",
+            "For SWD, should we advance H. uvarum headspace or the reference lure, "
+            "considering the bycatch difference?",
+            "Given its higher specificity, should we advance H. uvarum headspace "
+            "for SWD?",
+            "Because H. uvarum headspace has higher specificity, should we advance "
+            "it for SWD?",
+            "Between H. uvarum headspace and the reference lure, which should we "
+            "choose for SWD based on specificity and bycatch?",
+            "Which should we choose based on specificity and bycatch: H. uvarum "
+            "headspace or the reference lure for SWD?",
+            "Should we advance H. uvarum headspace for SWD based on target catch "
+            "and bycatch?",
+            "Would you recommend H. uvarum headspace over the reference lure given "
+            "lower bycatch?",
+            "Should we favor H. uvarum headspace over the reference lure because "
+            "of lower bycatch?",
+            "Is H. uvarum headspace the better choice than the reference lure given "
+            "higher specificity?",
+            "Should we advance the synthetic H. uvarum blend over headspace because "
+            "catch is higher despite lower specificity, while keeping Riga bait as "
+            "a control?",
+            "Would you prefer H. uvarum headspace or the reference lure for SWD, "
+            "given lower bycatch?",
+            "Would you go with H. uvarum headspace over the reference lure given "
+            "lower bycatch?",
+            "Should we move forward with H. uvarum headspace rather than the "
+            "reference lure because bycatch is lower?",
+            "Should H. uvarum headspace be recommended over the reference lure for "
+            "SWD given lower bycatch?",
+            "Should H. uvarum headspace be favored over the reference lure for SWD "
+            "because specificity is higher?",
+            "Should H. uvarum headspace be advanced over the reference lure for SWD "
+            "given lower bycatch?",
+            "Should H. uvarum headspace be taken forward instead of the reference "
+            "lure for SWD given lower bycatch?",
+            "Would you recommend moving forward with H. uvarum headspace over the "
+            "reference lure for SWD given lower bycatch?",
+            "Should H. uvarum headspace now be recommended over the reference lure "
+            "for SWD given lower bycatch?",
+            "Which of H. uvarum headspace and the reference lure should we choose for "
+            "SWD given the bycatch difference?",
+            "Should we take H. uvarum headspace forward instead of the reference lure "
+            "for SWD given lower bycatch?",
+            "Should we move H. uvarum headspace forward instead of the reference lure "
+            "for SWD given lower bycatch?",
+            "Based on target catch and bycatch, is H. uvarum headspace the formulation "
+            "we should advance for SWD?",
         )
         negative_questions = (
             "How can Hanseniaspora uvarum be genetically modified for wine fermentation?",
@@ -3678,6 +3783,71 @@ class ReviewedScienceTests(unittest.TestCase):
             "because it has higher selectivity?",
             "Should we choose H. uvarum headspace for Drosophila biarmipes "
             "because it has higher selectivity?",
+            "For SWD, should we advance H. uvarum headspace as the negative control "
+            "for measuring nontarget catch?",
+            "For an SWD olfaction assay, which H. uvarum headspace dilution should "
+            "we pick as the specificity control?",
+            "For SWD, should H. uvarum headspace be the calibration control in a "
+            "specificity model when target catch rises?",
+            "For SWD, can H. uvarum headspace serve as the untreated control for "
+            "bycatch counts in the next experiment?",
+            "Should we pick a synthetic H. uvarum headspace formulation as a "
+            "control for SWD specificity measurements?",
+            "Should synthetic H. uvarum headspace be the control used for "
+            "calibration in an SWD specificity model when target catch rises?",
+            "Should we pick synthetic H. uvarum headspace as the vehicle control "
+            "when measuring SWD bycatch?",
+            "Should we pick H. uvarum headspace with six replicates for an SWD "
+            "specificity assay?",
+            "Should we pick H. uvarum headspace for an SWD specificity assay "
+            "between 9 and 10 AM?",
+            "Should we pick H. uvarum headspace as a vehicle control for SWD "
+            "specificity because more technicians are available?",
+            "For an SWD H. uvarum headspace specificity assay, should we pick six "
+            "replicates because higher catch variance requires more observations?",
+            "For an SWD specificity assay, should we pick six replicates and plot "
+            "H. uvarum headspace against the reference lure?",
+            "For an SWD trial where bycatch and specificity differ, should we select "
+            "H. uvarum headspace samples for GC-MS analysis?",
+            "Should we choose H. uvarum headspace vials for chemical analysis because "
+            "bycatch and specificity differ?",
+            "For an SWD report on specificity and bycatch, should we select H. uvarum "
+            "headspace rows for the summary table?",
+            "In Drosophila melanogaster, would you recommend H. uvarum headspace "
+            "over the reference lure given lower bycatch?",
+            "When trapping D. biarmipes, should we favor H. uvarum headspace over "
+            "the reference lure because bycatch is lower?",
+            "For Drosophila simulans, should we recommend H. uvarum headspace over "
+            "the reference lure given lower bycatch?",
+            "Should we select H. uvarum headspace chromatograms for an SWD "
+            "specificity/bycatch figure?",
+            "Should we choose H. uvarum headspace footage for a slide about SWD "
+            "specificity and bycatch?",
+            "Should we pick H. uvarum headspace to serve as the negative control "
+            "because nontarget catch is higher?",
+            "Should we choose H. uvarum headspace as our specificity control because "
+            "bycatch is lower?",
+            "For an SWD report where specificity and bycatch differ, should we select "
+            "the spectra from H. uvarum headspace for the summary figure?",
+            "For an SWD specificity and bycatch analysis, should we choose the GC-MS "
+            "peaks from H. uvarum headspace for the results section?",
+            "For SWD specificity and bycatch measurements, should we select the "
+            "negative control containing H. uvarum headspace because target catch "
+            "is higher?",
+            "For the SWD specificity and bycatch report, should we select the odor "
+            "profile from H. uvarum headspace over the reference profile?",
+            "Which H. uvarum headspace should we select for GC-MS when SWD "
+            "specificity and bycatch differ?",
+            "H. uvarum headspace had lower bycatch in SWD traps; should we select it "
+            "for chemical profiling?",
+            "Between H. uvarum headspace and the reference lure, which chromatogram "
+            "should we select for the SWD specificity and bycatch figure?",
+            "Is H. uvarum headspace the better choice of negative control for an SWD "
+            "specificity assay because bycatch is higher?",
+            "For an SWD specificity and bycatch analysis, should we select the "
+            "component from H. uvarum headspace with the strongest GC-MS peak?",
+            "Should we select H. uvarum headspace for the SWD negative control "
+            "because bycatch is higher?",
             "Should a mosquito repellent be tested in a wind tunnel?",
         )
 
