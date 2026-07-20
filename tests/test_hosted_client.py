@@ -147,6 +147,30 @@ class HostedClientTests(unittest.TestCase):
         self.assertFalse(payload["ok"])
         self.assertIn("error", payload)
 
+    def test_hosted_request_returns_a_safe_timeout_error(self):
+        def timed_out(request, timeout):
+            raise TimeoutError("/Users/josh/private-path token-secret")
+
+        payload = hosted_request(
+            HostedConfig(url="https://ask-insects.example", token="secret"),
+            "POST",
+            "/ask",
+            {"question": "hello"},
+            urlopen_fn=timed_out,
+            timeout=45,
+        )
+
+        self.assertEqual(
+            payload,
+            {
+                "ok": False,
+                "error": {
+                    "code": "hosted_request_timeout",
+                    "message": "The hosted Ask Insects request timed out.",
+                },
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

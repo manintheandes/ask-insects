@@ -2305,6 +2305,7 @@ class ReviewedScienceTests(unittest.TestCase):
             "We sampled cherries below the screen, but is the SWD barrier reliable under hotter and windier field conditions?",
             "Before field deployment, should D. suzukii exclusion mesh be challenged under fan ventilation and heat?",
             "Is SWD exclusion fabric proven for a heated polytunnel with strong ventilation, or must we qualify that operating range?",
+            "Our SWD mesh passed a bench assay. What environmental qualification and crop-performance matrix is needed before recommending it to berry growers?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2356,8 +2357,13 @@ class ReviewedScienceTests(unittest.TestCase):
                 index,
                 "Should I use an exclusion net to keep birds out of blueberries?",
             )
+            nearby = build_reviewed_science_answer(
+                index,
+                "Which mesh color is easiest to see when counting SWD in a laboratory cage?",
+            )
 
         self.assertIsNone(unrelated)
+        self.assertIsNone(nearby)
 
     def test_swd_seasonal_canopy_questions_use_the_reviewed_sampling_design(self):
         record_id = "swd:openalex_literature:openalex:W3036207020"

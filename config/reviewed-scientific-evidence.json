@@ -1972,12 +1972,15 @@
           "fan ventilated",
           "berry tunnel",
           "operating envelope",
-          "still air"
+          "still air",
+          "bench assay",
+          "bench challenge",
+          "qualification matrix"
         ],
         "required_any": [
           ["net", "nets", "netting", "mesh", "screen", "screens", "barrier", "barriers", "fabric", "exclusion fabric"],
-          ["airflow", "air flow", "fan", "ventilated", "ventilation", "still air", "still-air", "tunnel", "wind", "windy", "windier"],
-          ["deploy", "deployment", "qualify", "qualified", "operating envelope", "operating range", "temperature", "heat", "heated", "hot", "hotter", "cool", "reared", "field", "effective", "effectiveness", "efficacy", "works", "prove", "proven", "reliable"]
+          ["airflow", "air flow", "fan", "ventilated", "ventilation", "still air", "still-air", "tunnel", "wind", "windy", "windier", "condition", "conditions", "environment", "environmental", "microclimate", "greenhouse", "polytunnel", "protected culture"],
+          ["deploy", "deployment", "qualify", "qualified", "operating envelope", "operating range", "temperature", "heat", "heated", "hot", "hotter", "cool", "reared", "field", "effective", "effectiveness", "efficacy", "works", "prove", "proven", "reliable", "qualification", "matrix", "recommend", "recommending", "recommendation", "ready", "readiness", "validate", "validation", "performance", "protect", "protection", "outcome", "outcomes"]
         ],
         "optional": [
           "body size",
@@ -1986,7 +1989,11 @@
           "sex",
           "hole dimensions",
           "crop protection",
-          "microclimate"
+          "microclimate",
+          "crop outcome",
+          "crop outcomes",
+          "berry grower",
+          "berry growers"
         ]
       },
       "answer": "Do not qualify an SWD exclusion net for a hot, fan-ventilated tunnel from a cool-reared, still-air result alone. The cited laboratory study tested nine commercial nets in a tubular device. It challenged passage at 0, 1.5, and 3.0 m/s fan-generated airflow while recording ambient temperature; temperature varied during the tests but was not experimentally controlled. Higher airflow and higher recorded temperatures were associated with lower efficacy, but the experiment did not establish a controlled temperature effect or a monotonic difference between 1.5 and 3.0 m/s. The laboratory flies also showed sexual dimorphism and an overall temperature-size relationship, although not every measured dimension was larger in the lower-temperature group. Some nets completely blocked passage in the tested combinations, but that is a conditional result rather than universal proof. Before deployment, cross the actual mesh with the tunnel's relevant airflow and temperature range and the colony or field population's sex and body-size distribution. Keep laboratory passage, tunnel ventilation and heat, season-long exclusion, fruit infestation, marketable yield, and durability as separate gates. The paper did not establish tunnel microclimate, crop protection, or yield under commercial deployment.",
