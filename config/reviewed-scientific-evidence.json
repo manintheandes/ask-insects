@@ -541,6 +541,10 @@
       "species_ids": ["drosophila_suzukii"],
       "match": {
         "priority": 30,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["coconut free fatty acid", "cffa", "caprylic", "capric", "octanoic acid", "decanoic acid"]
+        ],
         "phrases": ["coconut free fatty acid", "fatty acid blend", "caprylic and capric", "caprylic plus capric", "minimal CFFA formulation"],
         "required_any": [
           ["coconut free fatty acid", "cffa", "caprylic", "capric", "octanoic acid", "decanoic acid"],
@@ -548,7 +552,7 @@
         ],
         "optional": ["blend", "20 mg", "raspberry", "spatial", "contact", "airborne", "minimal", "equivalent", "equivalence", "decision"]
       },
-      "answer": "The paper reported CFFA as an oviposition deterrent. Advance the caprylic-capric blend only as a bounded formulation hypothesis, not as a finished minimal formulation. The later no-choice comparison counted eggs directly: 20 females oviposited for 24 hours on surface-treated raspberries. At the tested 20 mg CFFA-equivalent composition, each raspberry received 1.38 mg caprylic acid plus 1.46 mg capric acid. Full CFFA and the two-component blend were not significantly different in that assay. CFFA outperformed either acid alone; the blend outperformed capric acid but not caprylic acid. That supports the blend at this composition, dose, substrate, and endpoint, but it does not establish equivalence across doses, release profiles, choice contexts, fruit types, or field conditions. The reported 99% laboratory and 64% field reductions were separate full-CFFA assays based on recovered larvae and pupae, not from direct egg counts and not field tests of the two-component blend. The component choice assays likewise counted recovered larvae and pupae. None of these assays isolates airborne spatial avoidance from surface contact or fruit chemistry. A defensible down-selection needs component and blend dose-response tests with direct egg counts and total egg output, development and survival follow-up, measured formulation and release chemistry, separate no-contact and surface-contact arms, and replicated fruit and field validation.",
+      "answer": "The paper reported CFFA as an oviposition deterrent. Advance the caprylic-capric blend only as a bounded formulation hypothesis, not as a finished minimal formulation. The later no-choice comparison counted eggs directly: 20 females oviposited for 24 hours on surface-treated raspberries. At the tested 20 mg CFFA-equivalent composition, each raspberry received 1.38 mg caprylic acid plus 1.46 mg capric acid. Full CFFA and the two-component blend were not significantly different in that assay. CFFA outperformed either acid alone; the blend outperformed capric acid but not caprylic acid. That supports the blend at this composition, dose, substrate, and endpoint, but it does not establish equivalence across doses, release profiles, choice contexts, fruit types, or field conditions. The reported 99% laboratory and 64% field reductions were separate full-CFFA assays based on recovered larvae and pupae, not from direct egg counts and not field tests of the two-component blend. The component choice assays likewise counted recovered larvae and pupae. Recovered offspring combine egg laying with hatch, development, survival, and recovery, so they cannot by themselves isolate oviposition. Because fruit surfaces were treated, none of these assays isolates airborne spatial avoidance from surface contact or fruit chemistry. A defensible down-selection needs component and blend dose-response tests with direct egg counts and total egg output, development and survival follow-up, measured formulation and release chemistry, separate no-contact and surface-contact arms, and replicated fruit and field validation.",
       "source_record_ids": ["swd:openalex_literature:openalex:W4386466923"]
     },
     {
