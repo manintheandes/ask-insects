@@ -3536,6 +3536,26 @@ class ReviewedScienceTests(unittest.TestCase):
                 "dbm-product-endpoint-ladder",
                 ("beneficial-insect safety", "separate safety gate", "adult avoidance alone"),
             ),
+            (
+                "If Aedes aegypti combines carbon dioxide, human odor, and body infrared, could blocking thermal infrared alone protect a person?",
+                "aedes-thermal-infrared-integration",
+                ("roughly 34 C", "TRPA1", "not a validated stand-alone repellent target"),
+            ),
+            (
+                "Should a volatile selected with summer-morph SWD be rescreened in winter morphs before a year-round oviposition program?",
+                "swd-seasonal-morph-olfaction",
+                ("matched delivered doses", "oviposition", "field efficacy"),
+            ),
+            (
+                "Aerosol puffers beat passive octenol vials in raspberries. What exposure and crop measurements should the next field trial collect?",
+                "swd-field-plume-delivery",
+                ("emitted mass", "time-resolved canopy concentration", "marketable yield"),
+            ),
+            (
+                "The DBM citronella paper inferred less larval feeding from lower adult egg output. What else could explain it and what should the repeat measure?",
+                "dbm-citronella-endpoint-separation",
+                ("development time", "survivor selection", "total eggs", "egg allocation"),
+            ),
         )
         record_ids = sorted(
             {
