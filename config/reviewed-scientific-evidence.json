@@ -1312,9 +1312,17 @@
       "id": "aedes-population-and-state-variation",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["population variation", "resistance background", "laboratory strain"],
+        "phrases": [
+          "population variation",
+          "resistance background",
+          "laboratory strain",
+          "one Aedes aegypti colony",
+          "one colony",
+          "population and resistance-selection evidence",
+          "conflicting development statistics"
+        ],
         "required_any": [
-          ["population", "strain", "genotype", "age", "background"],
+          ["population", "populations", "colony", "colonies", "strain", "genotype", "age", "background"],
           ["repellent", "response", "result", "variation", "change", "resistance"]
         ],
         "optional": ["field population", "laboratory colony", "mating", "feeding state", "life history"]

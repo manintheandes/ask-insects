@@ -1250,6 +1250,46 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Could one Aedes aegypti colony mislead a repellent screen? Summarize "
+                "the population and resistance-selection evidence, including any "
+                "conflicting development statistics.",
+                "aedes-population-and-state-variation",
+                (
+                    "5.0%",
+                    "54.9%",
+                    "0.00852%",
+                    "Supplementary Table S4C",
+                    "adjusted p = 0.8996",
+                    "adjusted p = 0.0001",
+                    "S4E and S4F",
+                    "adjusted p = 0.0004",
+                    "adjusted p < 0.0001",
+                    "source conflict",
+                    "do not assume",
+                ),
+            ),
+            (
+                "Could one Aedes aegypti colony mislead our repellent screen?",
+                "aedes-population-and-state-variation",
+                ("5.0%", "54.9%", "do not assume"),
+            ),
+            (
+                "Could relying on a single Aedes aegypti colony mislead a repellent screen?",
+                "aedes-population-and-state-variation",
+                ("5.0%", "54.9%", "do not assume"),
+            ),
+            (
+                "Should an Aedes aegypti repellent screen include more than one colony?",
+                "aedes-population-and-state-variation",
+                ("5.0%", "54.9%", "do not assume"),
+            ),
+            (
+                "Do laboratory and field Aedes aegypti populations respond differently "
+                "to the same spatial repellent dose?",
+                "aedes-population-and-state-variation",
+                ("5.0%", "54.9%", "do not assume"),
+            ),
+            (
                 "What can an arm-in-cage landing assay establish, and what can it not establish about actual bite prevention?",
                 "aedes-arm-in-cage-meaning",
                 (
