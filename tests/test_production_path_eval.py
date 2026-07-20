@@ -101,6 +101,24 @@ class ProductionPathEvalTests(unittest.TestCase):
             ["config/insect-intelligence-programs.json#species/2"],
         )
 
+    def test_literal_stdin_route_preserves_shell_metacharacters(self):
+        case = sample_case()
+        question = (
+            "What is missing from diamondback moth's $biology and `coverage`?"
+        )
+        case["question"] = question
+        execution = successful_execution()
+        execution.commands = [
+            "ask-insects ask --question-stdin --answer-only "
+            "<<'ASK_INSECTS_QUESTION'\n"
+            f"{question}\n"
+            "ASK_INSECTS_QUESTION"
+        ]
+
+        result = evaluate_case(case, execution, maximum_seconds=60)
+
+        self.assertTrue(result["ok"], result["failures"])
+
     def test_commentary_before_the_full_answer_fails(self):
         execution = successful_execution()
         execution.agent_messages = [

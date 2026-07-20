@@ -42,8 +42,29 @@ PUBLIC_ANSWER_LEAK_PATTERNS = (
     ),
 )
 
+LITERAL_STDIN_ASK_RE = re.compile(
+    r"\Aask-insects[ \t]+ask[ \t]+--question-stdin[ \t]+--answer-only[ \t]+"
+    r"<<'(?P<delimiter>ASK_INSECTS_QUESTION(?:_[A-Z0-9]+)?)'\r?\n"
+    r"(?P<question>.*)\r?\n(?P=delimiter)\r?\n?\Z",
+    re.DOTALL,
+)
+
+
+def _literal_stdin_ask_tokens(command: str) -> list[str] | None:
+    match = LITERAL_STDIN_ASK_RE.fullmatch(command)
+    if match is None:
+        return None
+    delimiter = match.group("delimiter")
+    question = match.group("question")
+    if not question or delimiter in question.splitlines():
+        return None
+    return ["ask-insects", "ask", question, "--answer-only"]
+
 
 def _command_tokens(command: str, *, allow_shell_wrapper: bool = True) -> list[str] | None:
+    literal_stdin_tokens = _literal_stdin_ask_tokens(command)
+    if literal_stdin_tokens is not None:
+        return literal_stdin_tokens
     try:
         lexer = shlex.shlex(
             command,
