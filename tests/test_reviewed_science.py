@@ -1105,6 +1105,51 @@ class ReviewedScienceTests(unittest.TestCase):
                 for fragment in fragments:
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
 
+    def test_swd_density_topic_handles_count_and_per_fly_wording(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topic = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "swd-density-host-quality"
+        )
+        questions = (
+            "If one cage has twice as many SWD females and eggs per fly drops, "
+            "is that evidence the treatment deterred egg laying?",
+            "We changed the number of female spotted wing drosophila per arena; "
+            "how should total eggs, eggs per female, and fruit coverage be interpreted?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        topic["source_record_ids"][0],
+                        source_id="public_literature",
+                        locator=f'records#{topic["source_record_ids"][0]}',
+                    )
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    set(topic["source_record_ids"]),
+                )
+                self.assertIn("about 15%", answer["answer"])
+                self.assertIn("about 72%", answer["answer"])
+                self.assertIn("match female and male density", answer["answer"])
+                self.assertIn("does not establish oviposition deterrence", answer["answer"])
+
     def test_dbm_cross_species_answer_cites_direct_oviposition_evidence(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         topic = next(
