@@ -11,6 +11,13 @@
       "locator": "Abstract; Results sections 3.1-3.3; Discussion and conclusion, pp. 4-5; Figures 1-2"
     },
     {
+      "record_id": "swd_primary_field:doi:10.3390/insects11080536",
+      "title": "Deterrent Effects of Essential Oils on Spotted-Wing Drosophila (Drosophila suzukii): Implications for Organic Management in Berry Crops",
+      "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7469169/",
+      "source_id": "doi:10.3390/insects11080536",
+      "locator": "Table 1, Ecotrol PLUS and spinosad rows; Methods 2.3, blueberry and raspberry field-trial paragraphs; Results 3.2, both field-experiment paragraphs; Tables 2 and 3"
+    },
+    {
       "record_id": "aedes_olfaction_literature:pubmed:36261039",
       "title": "Differential mosquito attraction to humans is associated with skin-derived carboxylic acid levels",
       "public_url": "https://pubmed.ncbi.nlm.nih.gov/36261039/",
@@ -428,7 +435,7 @@
       "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
       "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
       "source_id": "doi:10.1016/j.cub.2021.07.003",
-      "locator": "Results, Figure 2 and Supplementary Figure S2: op1/op2 double-mutant CO2-stimulated target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results, Figure 3 and Supplementary Figure S3: normal human-odor tracking; Results, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
+      "locator": "Results paragraph 13, Figure 1F and Supplementary Figures S1E-S1G: op1/op2 double-mutant CO2-stimulated cage target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results paragraph 13, Supplementary Figures S1I and S2J: normal human-skin-odor tracking; Results paragraph 17, Figure 3 and Supplementary Figure S3: wind-tunnel target-attraction impairment with preserved upwind orientation; Results paragraphs 18-21, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
     },
     {
       "record_id": "openalex:W4225097850",
@@ -1211,7 +1218,7 @@
           "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
           "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
           "source_id": "doi:10.1016/j.cub.2021.07.003",
-          "locator": "Results, Figure 2 and Supplementary Figure S2: op1/op2 double-mutant CO2-stimulated target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results, Figure 3 and Supplementary Figure S3: normal human-odor tracking; Results, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
+          "locator": "Results paragraph 13, Figure 1F and Supplementary Figures S1E-S1G: op1/op2 double-mutant CO2-stimulated cage target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results paragraph 13, Supplementary Figures S1I and S2J: normal human-skin-odor tracking; Results paragraph 17, Figure 3 and Supplementary Figure S3: wind-tunnel target-attraction impairment with preserved upwind orientation; Results paragraphs 18-21, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
         }
       ]
     },
@@ -2125,6 +2132,46 @@
       "answer": "Do not advance the unchanged soil-applied hop-pellet formulation into a commercial SWD push program from the greenhouse result alone. In the 24-hour greenhouse cage study, HOP00 significantly reduced larval infestation relative to the untreated control, while HOP03 and HOP07 produced moderate but nonsignificant reductions; thymol and 1-octen-3-ol positive controls also reduced infestation. The controlled raspberry field trial did not reproduce a significant reduction for hop or for the dispenser-applied positive controls. Later commercial raspberry and blackberry trials found no significant reduction in larvae in fruit or trapped-fly density in hop-treated plots. Treat release rate, plume and upper-canopy coverage, persistence, wind dilution, and hop-variety headspace as formulation and exposure variables to measure, not as proven explanations for the field failure. The next gate should be a replicated field trial that measures delivered exposure and uses larvae in fruit as the primary efficacy endpoint, with trap counts kept separate. Stop advancing the unchanged formulation if it again fails to reduce larvae in fruit under the predefined field conditions, even if cage avoidance or adult trap counts look favorable. The study associated several headspace compounds with greenhouse efficacy but did not establish that any one compound caused repellency.",
       "source_record_ids": [
         "swd_primary_field:doi:10.1016/j.cropro.2019.05.033"
+      ]
+    },
+    {
+      "id": "swd-ecotrol-cross-crop-field-translation",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 90,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["Ecotrol", "Ecotrol PLUS"]
+        ],
+        "phrases": [
+          "Ecotrol PLUS",
+          "3.5 L/ha",
+          "half-high blueberry",
+          "same spray program",
+          "equivalent to spinosad"
+        ],
+        "required_any": [
+          ["Ecotrol", "Ecotrol PLUS"],
+          ["raspberry", "raspberries", "blueberry", "blueberries", "berry crop", "berry crops"],
+          ["advance", "transfer", "same spray", "same program", "equivalent", "equivalence", "spinosad", "effective", "efficacy"]
+        ],
+        "optional": [
+          "3.5 L/ha",
+          "maximum label rate",
+          "half-high",
+          "Chippewa",
+          "sentinel fruit",
+          "noninferiority",
+          "Tukey"
+        ],
+        "excluded_any": [
+          "human mosquito",
+          "diamondback moth"
+        ]
+      },
+      "answer": "Do not advance the same Ecotrol PLUS spray program into half-high blueberry from the raspberry result alone, and do not call Ecotrol equivalent to spinosad. Ecotrol PLUS contained rosemary oil (10%), geraniol (5%), and peppermint oil (2%) and was applied at the maximum label rate of 3.5 L/ha. In the raspberry experiment, sprays were applied every 5 to 9 days and store-bought sentinel raspberries were exposed in treated plots for 24 hours. Mean infested-fruit proportion was 0.06 plus or minus 0.01 for Ecotrol, 0.06 plus or minus 0.02 for spinosad, and 0.17 plus or minus 0.04 for the unsprayed control. Ecotrol and spinosad were each lower than the control in the Tukey grouping, but the study did not run an equivalence or noninferiority test between them. The separate blueberry trial used half-high Vaccinium corymbosum cv. Chippewa in 12 exclusion tunnels with a water control. Colony releases did not establish sufficient infestation, so netting was removed seven days before final harvest; the August 5 observations therefore represented a covered open-plot simulation. Treatments were applied about every seven days and fruit was harvested four days after spraying. The blueberry spray effect was not significant (chi-square = 0.191, df = 2, p = 0.909); modeled infestation was 0.23 plus or minus 0.06 for Ecotrol and 0.28 plus or minus 0.07 for water. This supports a raspberry signal within its sentinel-fruit design, not blueberry efficacy or a cross-crop commercial program. The study did not establish season-long control, yield protection, crop safety, residue compliance, nontarget safety, registration, consumer acceptance, or commercial feasibility, and it did not isolate which Ecotrol ingredient caused the raspberry result.",
+      "source_record_ids": [
+        "swd_primary_field:doi:10.3390/insects11080536"
       ]
     },
     {

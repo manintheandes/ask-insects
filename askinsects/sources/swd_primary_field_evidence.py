@@ -5,6 +5,7 @@ from askinsects.records import EvidenceRecord, Provenance
 
 SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID = "swd_primary_field_evidence"
 HOP_FIELD_RECORD_ID = "swd_primary_field:doi:10.1016/j.cropro.2019.05.033"
+ECOTROL_FIELD_RECORD_ID = "swd_primary_field:doi:10.3390/insects11080536"
 
 
 def build_swd_primary_field_evidence_records(
@@ -54,5 +55,57 @@ def build_swd_primary_field_evidence_records(
                 "source_kind": "peer_reviewed_primary_study",
                 "curation_status": "human_reviewed_original_source",
             },
-        )
+        ),
+        EvidenceRecord(
+            record_id=ECOTROL_FIELD_RECORD_ID,
+            lane="literature",
+            source=SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
+            title=(
+                "Deterrent Effects of Essential Oils on Spotted-Wing Drosophila "
+                "(Drosophila suzukii): Implications for Organic Management in "
+                "Berry Crops"
+            ),
+            text=(
+                "Ecotrol PLUS contained rosemary oil (10%), geraniol (5%), and "
+                "peppermint oil (2%) and was applied at its maximum label rate of "
+                "3.5 L/ha. In the raspberry experiment, sprays were applied every "
+                "5 to 9 days and store-bought sentinel raspberries were exposed in "
+                "treated plots for 24 hours. Mean infested-fruit proportion was "
+                "0.06 plus or minus 0.01 for Ecotrol, 0.06 plus or minus 0.02 for "
+                "spinosad, and 0.17 plus or minus 0.04 for the unsprayed control. "
+                "Ecotrol and spinosad were each lower than the control in the Tukey "
+                "grouping, but the study did not run an equivalence or noninferiority "
+                "test between them. The separate blueberry trial used half-high "
+                "Vaccinium corymbosum cv. Chippewa in 12 exclusion tunnels with a "
+                "water control. Colony releases did not establish sufficient "
+                "infestation, so netting was removed seven days before final harvest; "
+                "the August 5 observations therefore represented a covered open-plot "
+                "simulation. Treatments were applied about every seven days and fruit "
+                "was harvested four days after spraying. The blueberry spray effect "
+                "was not significant (chi-square=0.191, df=2, P=0.909); modeled "
+                "infestation was 0.23 plus or minus 0.06 for Ecotrol and 0.28 plus or "
+                "minus 0.07 for water. The raspberry signal does not support "
+                "transferring the same spray program to blueberry or claiming "
+                "statistical equivalence to spinosad. The study did not establish "
+                "season-long control, yield protection, crop safety, residues, "
+                "nontarget safety, registration, or commercial feasibility."
+            ),
+            species="Drosophila suzukii",
+            url="https://pmc.ncbi.nlm.nih.gov/articles/PMC7469169/",
+            media_url=None,
+            provenance=Provenance(
+                source_id=SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
+                locator=(
+                    "https://pmc.ncbi.nlm.nih.gov/articles/PMC7469169/"
+                    "#sec2-insects-11-00536"
+                ),
+                retrieved_at=retrieved_at,
+                license="Open-access primary study; source terms apply",
+                source_url="https://pmc.ncbi.nlm.nih.gov/articles/PMC7469169/",
+            ),
+            payload={
+                "source_kind": "peer_reviewed_primary_study",
+                "curation_status": "human_reviewed_original_source",
+            },
+        ),
     ]
