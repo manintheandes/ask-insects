@@ -2036,7 +2036,13 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "Should I interpret SWD adult oviposition choices as protein-to-carbohydrate preference, or as substrate hardness?",
                 "swd_traits:pubmed:28592264",
-                ("lower protein", "not nutritional composition", "hardness"),
+                (
+                    "lower protein",
+                    "1:8 protein-to-carbohydrate diet",
+                    "did not differ significantly in their nutritional preference",
+                    "D. biarmipes preferred the softest tested substrate",
+                    "D. suzukii showed no significant hardness preference",
+                ),
             ),
             (
                 "Why did transfluthrin look better in large-cage Aedes trials than in open-field landing collections?",
@@ -3553,6 +3559,16 @@ class ReviewedScienceTests(unittest.TestCase):
                     "cross inoculated versus uninoculated",
                     "egg allocation",
                     "total egg output",
+                ),
+            ),
+            (
+                "Did adult SWD ignore nutritional composition when choosing where to lay eggs, or did both species prefer one protein-to-carbohydrate ratio?",
+                "swd-nutrition-versus-oviposition-texture",
+                (
+                    "both species preferentially laid eggs on the 1:8 protein-to-carbohydrate diet",
+                    "fewer eggs on the 1:1 diet",
+                    "did not differ significantly in their nutritional preference",
+                    "D. suzukii showed no significant hardness preference",
                 ),
             ),
             (

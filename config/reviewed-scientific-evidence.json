@@ -379,7 +379,7 @@
       "title": "Adaptation to new nutritional environments: larval performance, foraging decisions, and adult oviposition choices in Drosophila suzukii",
       "public_url": "https://pubmed.ncbi.nlm.nih.gov/28592264/",
       "source_id": "pubmed:28592264",
-      "locator": "Abstract and Results: larval protein performance and intake separated from adult oviposition choices for nutrition and substrate hardness"
+      "locator": "Abstract; Methods, Adult oviposition assays; Results, Figure 3; Discussion: larval protein performance and intake; both species preferred the 1:8 over the 1:1 protein-to-carbohydrate diet for oviposition without a significant species difference; D. biarmipes preferred the softest substrate while D. suzukii showed no significant hardness preference"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W4413971464",
@@ -563,7 +563,7 @@
         ],
         "optional": ["larva", "larvae", "adult", "biarmipes", "choice", "specialist"]
       },
-      "answer": "The cited comparison separates larval nutrition from adult oviposition. Drosophila suzukii larvae performed better at lower protein concentrations and consumed less protein-rich diets than Drosophila biarmipes. Adults differed in oviposition preference for substrate hardness, but not nutritional composition. The study therefore supports broader use of ripening and softer food niches, not an adult protein-to-carbohydrate oviposition mechanism. In product assays, manipulate texture and nutrition independently and keep larval performance, larval intake, adult egg allocation, and total fecundity as separate endpoints.",
+      "answer": "The cited comparison separates larval nutrition from adult oviposition. Drosophila suzukii larvae performed better at lower protein concentrations and consumed less protein-rich diets than Drosophila biarmipes. Adult egg laying did respond to nutritional composition: both species preferentially laid eggs on the 1:8 protein-to-carbohydrate diet and laid fewer eggs on the 1:1 diet. The species did not differ significantly in their nutritional preference, so the study did not find a species-specific adult preference that mirrored their different larval nutritional performance. Their hardness choices did differ: D. biarmipes preferred the softest tested substrate, while D. suzukii showed no significant hardness preference. In product assays, manipulate texture and nutrition independently and keep larval performance, larval intake, adult egg allocation, and total fecundity as separate endpoints.",
       "source_record_ids": ["swd_traits:pubmed:28592264"]
     },
     {
