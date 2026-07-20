@@ -7,7 +7,9 @@ description: >-
   question. This includes adding a new insect or asking whether answer-routing
   design must change for one. This description is the complete route. Do not
   open this file for a normal answer. The first hosted command must be
-  ask-insects ask "<the user's exact question>" --answer-only. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
+  ask-insects ask 'USER QUESTION' --answer-only. Replace USER QUESTION with the
+  exact question as one POSIX single-quoted shell argument and replace every embedded apostrophe
+  with the exact shell sequence '"'"'. Never retry after a shell-quoting error. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
   a session ID, continue with write_stdin until exit. If the wrapper reports a cell ID,
   call functions.wait on that same cell until exit. Never call image generation or
   another visual helper unless the user explicitly asks for a visual. Then return stdout verbatim.
@@ -16,24 +18,19 @@ description: >-
 
 Ask Insects provides open, source-backed insect science.
 It publishes a generic public evidence package for any downstream tool.
-Its first products are an SWD crop repellent and a human mosquito repellent. The active species are
-`Drosophila suzukii` and `Aedes aegypti`; diamondback moth (`Plutella
-xylostella`) is the next expansion proof.
+Its first products are an SWD crop repellent and a human mosquito repellent. The active species are `Drosophila suzukii` and `Aedes aegypti`; diamondback moth (`Plutella xylostella`) is the next expansion proof.
 
 ## Normal Answer
 
-Do not inspect memory, Chronicle, repository docs, another skill, or the web
-before the hosted call. Do not emit a progress update or preamble. Run the
-hosted command as the first visible action. Use the installed command, or
-`$HOME/.local/bin/ask-insects` when it is not on `PATH`:
+Do not inspect memory, Chronicle, repository docs, another skill, or the web before the hosted call. Do not emit a progress update or preamble. Run the hosted command as the first visible action. Use the installed command, or `$HOME/.local/bin/ask-insects` when it is not on `PATH`:
 
 ```bash
-ask-insects ask "<the user's exact question>" --answer-only
+ask-insects ask 'USER QUESTION' --answer-only
 ```
 
+Replace `USER QUESTION` with the user's exact complete question as one POSIX single-quoted shell argument. Inside it, replace every embedded apostrophe with the exact shell sequence `'"'"'`. Never put the question in double quotes, command substitution, or an unquoted shell word. Compose the safe command before calling the tool. Never retry after a shell-quoting error; that is a failed route.
 The shell command must contain only the displayed Ask Insects command. Do not add comments, timing directives, or wrapper text to the shell command.
-A command may yield a session ID or report `Script running with cell ID`. Continue that same process with
-`write_stdin` for the session or `functions.wait` on the same cell until exit. Never discard a yielded command or issue another Ask Insects command.
+A command may yield a session ID or report `Script running with cell ID`. Continue that same process with `write_stdin` for the session or `functions.wait` on the same cell until exit. Never discard a yielded command or issue another Ask Insects command.
 
 A bare call uses the hosted production source plane. Never add `--local` to a
 user answer. Stdout is already the complete sourced answer. Return it verbatim

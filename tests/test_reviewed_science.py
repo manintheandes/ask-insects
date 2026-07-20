@@ -1770,6 +1770,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Three commercial transfluthrin repellents were stronger than a high-purity preparation but lost part of that effect in Orco-null Aedes. Does that show transfluthrin itself has two receptor mechanisms, or what can we conclude about the products' unidentified additional compounds?",
+                "openalex:W3179105761",
+                (
+                    "does not show that transfluthrin itself has two receptor mechanisms",
+                    "unidentified additional compounds",
+                    "Orco-dependent component",
+                    "cannot be assigned",
+                ),
+            ),
+            (
                 "Why does Aedes aegypti show transfluthrin-mediated landing suppression despite a null antennal field potential, and how do Orco deletion and kdr substitutions constrain the mechanism?",
                 "openalex:W3179105761",
                 (
