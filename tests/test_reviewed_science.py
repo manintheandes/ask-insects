@@ -3396,6 +3396,105 @@ class ReviewedScienceTests(unittest.TestCase):
             vision["locator"],
         )
 
+    def test_reality_eval_repairs_generalize_to_neighboring_paraphrases(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        topics = {topic["id"]: topic for topic in catalog["topics"]}
+        cases = (
+            (
+                "Nearly all SWD eggs moved to untreated fruit while total fecundity fell. Which no-choice, survival, movement, and mating controls distinguish avoidance from impairment?",
+                "swd-choice-endpoint-confounds",
+                ("cannot by itself", "total eggs", "female survival"),
+            ),
+            (
+                "Treated SWD berries were firmer and drier while control berries were wounded. How should those fruit conditions be crossed before assigning the effect to repellency?",
+                "swd-fruit-condition-controls",
+                ("factorial design", "fruit injury directly changed oviposition", "did not measure a specific moisture effect"),
+            ),
+            (
+                "Three hours after DEET pre-exposure, Aedes aegypti respond less strongly. How do we separate sensory adaptation from associative learning?",
+                "aedes-olfactory-learning",
+                ("reduced electroantennogram response", "dopamine signaling", "sensory adaptation"),
+            ),
+            (
+                "Can I compare SWD egg counts from a treatment run at noon with a control run at night, or must I block clock time?",
+                "swd-diurnal-oviposition-confound",
+                ("No.", "concurrently", "daily egg-laying rhythm"),
+            ),
+            (
+                "Which product-specific airflow, carrier, release, and delivery information is missing from an Aedes spatial-repellency chamber result?",
+                "aedes-spatial-environment-controls",
+                ("source plane", "release rate", "delivery hardware"),
+            ),
+            (
+                "Before broad diamondback moth repellent screening, which experiment closes the candidate-specific evidence gap?",
+                "dbm-first-baseline-experiment",
+                ("source release rate", "choice and no-choice oviposition", "airborne concentration"),
+            ),
+            (
+                "After fewer diamondback moth adults land, which larval, damage, beneficial-insect, and yield gates still matter?",
+                "dbm-product-endpoint-ladder",
+                ("beneficial-insect safety", "separate safety gate", "adult avoidance alone"),
+            ),
+        )
+        record_ids = sorted(
+            {
+                record_id
+                for _, topic_id, _ in cases
+                for record_id in topics[topic_id]["source_record_ids"]
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question, _, _ in cases
+            ]
+
+        for (question, topic_id, fragments), answer in zip(cases, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    set(topics[topic_id]["source_record_ids"]),
+                )
+                for fragment in fragments:
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_expanded_locators_cover_reviewed_protocol_claims(self):
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        provenance = {
+            item["record_id"]: item for item in catalog["source_provenance"]
+        }
+        citronella_locator = provenance[
+            "aedes_primary_behavior:pmc:PMC9866038:table8"
+        ]["locator"]
+        self.assertIn("Methods", citronella_locator)
+        self.assertIn("skin-permeation", citronella_locator)
+        self.assertIn("Table 8", citronella_locator)
+
+        state_topic = next(
+            topic
+            for topic in catalog["topics"]
+            if topic["id"] == "swd-physiological-state-confounds"
+        )
+        state_locator = state_topic["source_provenance"][0]["locator"]
+        self.assertIn("5- to 10-day-old adults", state_locator)
+        self.assertIn("15-hour food-deprivation", state_locator)
+
     def test_visual_rhodopsin_route_rejects_broader_multimodal_neighbors(self):
         broad_record_ids = {
             "openalex:W4401794442",
