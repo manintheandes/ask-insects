@@ -1232,6 +1232,7 @@ class ReviewedScienceTests(unittest.TestCase):
         assert answer is not None
         self.assertTrue(answer["ok"])
         for fragment in (
+            "across the eight cited primary studies",
             "direct studies already report",
             "airborne concentration at the moth",
             "known DBM-active positive control",
@@ -3392,6 +3393,12 @@ class ReviewedScienceTests(unittest.TestCase):
             "Abstract and Results: airflow repellency and oviposition-deterrence "
             "endpoints for Mikania micrantha essential oil and five volatile "
             "compounds",
+        )
+        self.assertEqual(
+            provenance["dbm:openalex:W4393189143"]["locator"],
+            "Methods 2.4-2.7 and Results 3.2-3.3: male orientation to sex "
+            "pheromone plus essential oil, field trap catch, and female "
+            "oviposition responses",
         )
 
         durability = next(
