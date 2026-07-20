@@ -2957,7 +2957,7 @@ class ReviewedScienceTests(unittest.TestCase):
             "openalex:W3187681115": (
                 "doi:10.1016/j.cub.2021.07.003",
                 "https://doi.org/10.1016/j.cub.2021.07.003",
-                "Figures 1-3 and Supplementary Figures S1-S3",
+                "Figure 2 and Supplementary Figure S2",
             ),
         }
         cases = (
@@ -3416,8 +3416,10 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertNotIn("wash-in", durability["answer"].casefold())
 
         vision = provenance["openalex:W3187681115"]
-        self.assertIn("Figures 1-3", vision["locator"])
-        self.assertIn("Supplementary Figures S1-S3", vision["locator"])
+        self.assertIn("Figure 2", vision["locator"])
+        self.assertIn("Supplementary Figure S2", vision["locator"])
+        self.assertIn("Figure 3", vision["locator"])
+        self.assertIn("Supplementary Figure S3", vision["locator"])
         self.assertIn("Figure 4", vision["locator"])
         self.assertIn("Supplementary Figure S4", vision["locator"])
 
@@ -3465,6 +3467,42 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("reduced electroantennogram response", "dopamine signaling", "sensory adaptation"),
             ),
             (
+                "Which human-seeking cues remain after a mosquito repellent exposure, and what exactly did the visual-rhodopsin experiment show?",
+                "aedes-host-cues-after-exposure",
+                (
+                    "nearly eliminated at 1000 and 100 lux",
+                    "abolished at 25 and 5 lux",
+                    "compound-specific exposure must be tested",
+                ),
+            ),
+            (
+                "Our SWD odor candidate received more eggs on a firmer fruit analog than its vehicle. What does mechanosensation evidence say, and which control separates odor from firmness?",
+                "swd-fruit-texture-mechanosensation",
+                (
+                    "cannot isolate odor",
+                    "cross candidate versus vehicle",
+                    "factorial design",
+                ),
+            ),
+            (
+                "How should we cross inoculation and substrate hardness in an SWD egg-laying assay, and which egg endpoints should we keep separate?",
+                "swd-microbial-oviposition",
+                (
+                    "cross inoculated versus uninoculated",
+                    "egg allocation",
+                    "total egg output",
+                ),
+            ),
+            (
+                "Can an SWD assay with fed virgins be compared directly with one using starved mated gravid females?",
+                "swd-physiological-state-confounds",
+                (
+                    "Do not compare",
+                    "conventional mated gravid females at 7 hours",
+                    "not significant at 12 or 24 hours",
+                ),
+            ),
+            (
                 "Can I compare SWD egg counts from a treatment run at noon with a control run at night, or must I block clock time?",
                 "swd-diurnal-oviposition-confound",
                 ("No.", "concurrently", "daily egg-laying rhythm"),
@@ -3472,12 +3510,26 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "Which product-specific airflow, carrier, release, and delivery information is missing from an Aedes spatial-repellency chamber result?",
                 "aedes-spatial-environment-controls",
-                ("source plane", "release rate", "delivery hardware"),
+                (
+                    "cannot by itself define a complete product-specific exposure package",
+                    "release rate",
+                    "delivery hardware",
+                ),
             ),
             (
                 "Before broad diamondback moth repellent screening, which experiment closes the candidate-specific evidence gap?",
                 "dbm-first-baseline-experiment",
-                ("source release rate", "choice and no-choice oviposition", "airborne concentration"),
+                ("source release rate", "choice and no-choice oviposition", "same measured candidate headspace"),
+            ),
+            (
+                "How should we cross reduced leaf wax with larva-induced headspace to test the sequence from diamondback moth orientation through egg laying?",
+                "dbm-host-cue-sequence-experiment",
+                (
+                    "crossed 2 x 2 experiment",
+                    "Generate the headspace separately",
+                    "initial orientation",
+                    "total eggs",
+                ),
             ),
             (
                 "After fewer diamondback moth adults land, which larval, damage, beneficial-insect, and yield gates still matter?",
@@ -3522,6 +3574,10 @@ class ReviewedScienceTests(unittest.TestCase):
                 )
                 for fragment in fragments:
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                if topic_id == "aedes-spatial-environment-controls":
+                    self.assertNotIn(
+                        "current public source plane", answer["answer"].casefold()
+                    )
 
     def test_expanded_locators_cover_reviewed_protocol_claims(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
@@ -3542,7 +3598,25 @@ class ReviewedScienceTests(unittest.TestCase):
         )
         state_locator = state_topic["source_provenance"][0]["locator"]
         self.assertIn("5- to 10-day-old adults", state_locator)
-        self.assertIn("15-hour food-deprivation", state_locator)
+        self.assertIn("15-hour food deprivation", state_locator)
+        self.assertIn("7, 12, and 24 hours", state_locator)
+
+        epa_locator = provenance["human_repellent_guidance:epa:810.3700"][
+            "locator"
+        ]
+        self.assertIn("section (b)(7) Complete Protection Time", epa_locator)
+        self.assertIn("section (c)(1)(iii)(B)", epa_locator)
+        self.assertIn("section (c)(1)(ix)", epa_locator)
+        self.assertNotIn("Paragraphs (v)", epa_locator)
+
+        transfluthrin_locator = provenance["openalex:W3048721146"]["locator"]
+        self.assertIn("Figure 4 and Table 6", transfluthrin_locator)
+        self.assertIn("Discussion paragraphs", transfluthrin_locator)
+
+        learning_locator = provenance["openalex:W4315621418"]["locator"]
+        self.assertIn("Materials and methods 4(b)(ii)", learning_locator)
+        self.assertIn("60-second odor presentation", learning_locator)
+        self.assertIn("2-minute inter-trial interval", learning_locator)
 
     def test_visual_rhodopsin_route_rejects_broader_multimodal_neighbors(self):
         broad_record_ids = {
