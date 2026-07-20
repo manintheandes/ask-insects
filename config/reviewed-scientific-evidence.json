@@ -863,6 +863,7 @@
       "species_ids": ["aedes_aegypti"],
       "match": {
         "priority": 55,
+        "species_may_be_implicit": true,
         "phrases": ["transfluthrin mechanism", "transfluthrin sodium channel", "transfluthrin orco", "transfluthrin kdr", "transfluthrin stereoisomer", "null antennal field potential", "whole antenna eag"],
         "required_any": [
           ["transfluthrin"],
