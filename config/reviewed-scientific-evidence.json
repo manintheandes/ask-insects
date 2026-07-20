@@ -1305,6 +1305,11 @@
       "species_ids": ["aedes_aegypti"],
       "match": {
         "priority": 25,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["anopheles", "culex"],
+          ["deet", "pmd", "lemongrass", "eugenol"]
+        ],
         "phrases": ["species-specific repellent", "species specific response", "transfer an Anopheles response"],
         "required_any": [
           ["species-specific", "species specific", "extrapolate", "transfer", "anopheles", "culex"],

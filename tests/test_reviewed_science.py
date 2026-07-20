@@ -2095,6 +2095,25 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Did every Anopheles coluzzii female remain still near DEET in the 30-second odor assay, or was the result only statistically non-significant?",
+                "openalex:W3013059076",
+                (
+                    "DEET was not significantly repellent",
+                    "not the same as zero movement",
+                    "one resting female",
+                    "30-second",
+                ),
+            ),
+            (
+                "Was the Anopheles DEET result in the close-proximity assay zero response, or a non-significant repellency comparison?",
+                "openalex:W3013059076",
+                (
+                    "DEET was not significantly repellent",
+                    "not the same as zero movement",
+                    "0.5 cm",
+                ),
+            ),
+            (
                 "Do Aedes aegypti populations from different African environments have the same human-odor preference?",
                 "openalex:W3044645851",
                 ("27", "83%", "dry-season", "human population density"),
