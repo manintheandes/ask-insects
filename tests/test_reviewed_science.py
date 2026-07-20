@@ -540,6 +540,158 @@ class ReviewedScienceTests(unittest.TestCase):
                     {item["record_id"] for item in unrelated["evidence"]},
                 )
 
+    def test_aedes_co2_spectral_gating_paraphrases_preserve_endpoint_limits(self):
+        record_id = "aedes_primary_behavior:pmc:PMC8816903"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_primary_behavior_evidence",
+                        locator="https://pmc.ncbi.nlm.nih.gov/articles/PMC8816903/#Sec3",
+                    )
+                ]
+            )
+            questions = (
+                "In the wind-tunnel paper, female Aedes aegypti clustered near "
+                "600- and 660-nm objects during carbon-dioxide release but not "
+                "during filtered air. Does that establish an unconditional "
+                "preference for 'red,' and which measured endpoint and controls "
+                "limit the claim?",
+                "Did Aedes aegypti prefer red objects regardless of odor, or was "
+                "the 600 to 660 nm response gated by CO2 in the wind tunnel?",
+                "How do the white control, 496 nm response, and filtered-air phase "
+                "limit claims about Aedes color attraction?",
+                "Were cyan and long-wavelength visual objects attractive to Aedes "
+                "aegypti only after the plume arrived?",
+                "Did host odor gate Aedes aegypti attraction to orange and cyan "
+                "visual targets?",
+                "Did CO2 make Aedes aegypti respond to red objects?",
+                "How did carbon dioxide affect Aedes aegypti behavior around "
+                "different wavelengths?",
+                "Did Aedes aegypti spend longer around 660-nm objects while carbon "
+                "dioxide was on?",
+                "Did Aedes aegypti approach orange targets only with a CO2 plume?",
+                "Were Aedes aegypti attracted to red circles after carbon dioxide "
+                "exposure?",
+                "Did carbon dioxide change Aedes aegypti color preferences?",
+                "Did carbon dioxide increase Aedes aegypti visits to red objects?",
+                "Were Aedes aegypti drawn to orange circles only after the CO2 plume?",
+                "Did CO2 increase Aedes aegypti occupancy around 660-nm targets?",
+                "Did Aedes aegypti remain near cyan objects only during carbon "
+                "dioxide release?",
+                "Did the CO2 plume boost Aedes aegypti visits to long-wavelength "
+                "objects?",
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+            unrelated_questions = (
+                "Does the color of an Aedes aegypti rearing cage change adult emergence?",
+                "Should a red visual object be the control in an Aedes aegypti "
+                "oviposition assay?",
+                "Should a red visual object be the control when measuring Aedes "
+                "aegypti adult emergence?",
+                "Should Aedes aegypti odor-attraction controls use visual target "
+                "markers?",
+                "Does red dye affect odor responses in Aedes aegypti larvae?",
+                "Does food coloring affect odor response during Aedes aegypti "
+                "larval rearing?",
+                "Does orange cage paint affect odor-driven oviposition behavior in "
+                "Aedes aegypti?",
+                "Does red ambient lighting affect adult Aedes aegypti odor responses "
+                "in flight?",
+                "Does wind-tunnel wall paint change Aedes aegypti odor-tracking "
+                "behavior?",
+                "Does red camera illumination alter Aedes aegypti odor responses in "
+                "a wind tunnel?",
+                "Does red clothing change odor-mediated Aedes aegypti biting?",
+                "Does odor change color-gene expression in Aedes aegypti?",
+                "Does flight-muscle pigmentation affect Aedes aegypti odor behavior?",
+                "Can red tracking-hardware lights alter Aedes aegypti odor responses?",
+            )
+            unrelated_answers = [
+                build_reviewed_science_answer(index, question)
+                for question in unrelated_questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    [item["record_id"] for item in answer["evidence"]],
+                    [record_id],
+                )
+                evidence = answer["evidence"][0]
+                self.assertEqual(
+                    evidence["title"],
+                    "The olfactory gating of visual preferences to human skin and "
+                    "visible spectra in mosquitoes",
+                )
+                self.assertEqual(
+                    evidence["url"],
+                    "https://doi.org/10.1038/s41467-022-28195-x",
+                )
+                self.assertEqual(
+                    evidence["provenance"]["source_id"],
+                    "doi:10.1038/s41467-022-28195-x",
+                )
+                self.assertIn(
+                    "paragraphs 7-9, Figure 1e-i, and Supplementary Figure S1",
+                    evidence["provenance"]["locator"],
+                )
+                for fragment in (
+                    "time a tracked trajectory spent around the test object",
+                    "evenly reflecting white control",
+                    "1-4%",
+                    "ceased after the plume stopped",
+                    "600 and 660 nm",
+                    "496 nm",
+                    "437, 452, 510, and 520 nm",
+                    "not an unconditional preference for human-labeled red",
+                    "heat, water vapor, or skin volatiles",
+                    "landing or biting",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+        from askinsects.cli import compact_agent_answer
+
+        first_answer = answers[0]
+        assert first_answer is not None
+        final_answer = compact_agent_answer(first_answer)["final_answer"]
+        self.assertIn(
+            "[The olfactory gating of visual preferences to human skin and visible "
+            "spectra in mosquitoes]"
+            "(https://doi.org/10.1038/s41467-022-28195-x)",
+            final_answer,
+        )
+        self.assertIn(
+            "Source ID: `doi:10.1038/s41467-022-28195-x`",
+            final_answer,
+        )
+        self.assertIn(
+            "Locator: `Results, 'Olfactory gating of spectral preferences of Ae. "
+            "aegypti mosquitoes,' paragraphs 7-9, Figure 1e-i, and Supplementary "
+            "Figure S1; Discussion paragraph beginning 'It is important to note that "
+            "our current experiments did not incorporate close-range cues'`",
+            final_answer,
+        )
+
+        for question, unrelated in zip(
+            unrelated_questions, unrelated_answers, strict=True
+        ):
+            with self.subTest(question=question):
+                if unrelated is not None:
+                    self.assertNotIn(
+                        record_id,
+                        {item["record_id"] for item in unrelated["evidence"]},
+                    )
+
     def test_swd_choice_controls_cover_solvent_airflow_and_locomotor_confounds(self):
         record_ids = (
             "swd:openalex_literature:openalex:W4411730655",

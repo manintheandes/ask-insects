@@ -119,6 +119,35 @@ def build_aedes_primary_behavior_evidence_records(
             "source_kind": "peer_reviewed_primary_study",
         },
         {
+            "record_id": "aedes_primary_behavior:pmc:PMC8816903",
+            "title": (
+                "The olfactory gating of visual preferences to human skin and "
+                "visible spectra in mosquitoes"
+            ),
+            "text": (
+                "In the contrast-controlled wind-tunnel experiment, attraction was "
+                "the time a tracked Aedes aegypti trajectory spent around a test "
+                "object relative to an evenly reflecting white control. During "
+                "filtered air only 1-4% of mosquitoes investigated the objects; "
+                "carbon dioxide increased object investigation, and attraction "
+                "ceased after the plume stopped. Under carbon dioxide, females "
+                "preferred 600 and 660 nm objects and also 496 nm, whereas 437, 452, "
+                "510, and 520 nm objects were not more attractive than the control. "
+                "The experiment omitted close-range heat, water vapor, or skin "
+                "volatiles and did not measure landing or biting."
+            ),
+            "url": "https://doi.org/10.1038/s41467-022-28195-x",
+            "locator": (
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC8816903/#Sec3 "
+                "(Results paragraphs 7-9, Figure 1e-i, and Supplementary Figure S1); "
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC8816903/#Sec9 "
+                "(Discussion paragraph 26)"
+            ),
+            "provenance_source_id": "doi:10.1038/s41467-022-28195-x",
+            "license": "CC BY 4.0",
+            "source_kind": "peer_reviewed_primary_study",
+        },
+        {
             "record_id": "aedes_primary_behavior:pmc:PMC9866038:table8",
             "title": (
                 "Development of a Nanotechnology Matrix-Based Citronella Oil Insect "
@@ -156,7 +185,12 @@ def build_aedes_primary_behavior_evidence_records(
             url=str(source["url"]),
             media_url=None,
             provenance=Provenance(
-                source_id=AEDES_PRIMARY_BEHAVIOR_EVIDENCE_SOURCE_ID,
+                source_id=str(
+                    source.get(
+                        "provenance_source_id",
+                        AEDES_PRIMARY_BEHAVIOR_EVIDENCE_SOURCE_ID,
+                    )
+                ),
                 locator=str(source["locator"]),
                 retrieved_at=retrieved_at,
                 license=str(source["license"]),

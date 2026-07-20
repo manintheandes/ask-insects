@@ -1,6 +1,6 @@
 {
   "schema_version": "ask-insects-reviewed-science.v1",
-  "last_reviewed": "2026-07-19",
+  "last_reviewed": "2026-07-20",
   "require_exact_source_provenance": true,
   "source_provenance": [
     {
@@ -30,6 +30,13 @@
       "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3577799/",
       "source_id": "pmc:PMC3577799",
       "locator": "Abstract and Results: behavioral insensitivity and reduced electroantennogram response three hours after DEET pre-exposure; odor and host-stimulus control experiments"
+    },
+    {
+      "record_id": "aedes_primary_behavior:pmc:PMC8816903",
+      "title": "The olfactory gating of visual preferences to human skin and visible spectra in mosquitoes",
+      "public_url": "https://doi.org/10.1038/s41467-022-28195-x",
+      "source_id": "doi:10.1038/s41467-022-28195-x",
+      "locator": "Results, 'Olfactory gating of spectral preferences of Ae. aegypti mosquitoes,' paragraphs 7-9, Figure 1e-i, and Supplementary Figure S1; Discussion paragraph beginning 'It is important to note that our current experiments did not incorporate close-range cues'"
     },
     {
       "record_id": "aedes_primary_behavior:pmc:PMC9866038:table8",
@@ -1207,6 +1214,31 @@
           "locator": "Results, Figure 2 and Supplementary Figure S2: op1/op2 double-mutant CO2-stimulated target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results, Figure 3 and Supplementary Figure S3: normal human-odor tracking; Results, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
         }
       ]
+    },
+    {
+      "id": "aedes-co2-spectral-gating",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 100,
+        "phrases": [
+          "olfactory gating of visual preferences",
+          "spectral preference",
+          "color preference",
+          "600 and 660 nm",
+          "filtered air",
+          "white control"
+        ],
+        "required_any": [
+          ["spectrum", "spectral", "wavelength", "wavelengths", "long wavelength", "color", "red", "cyan", "orange", "496 nm", "600 nm", "660 nm"],
+          ["carbon dioxide", "co2", "filtered air", "odor", "odour", "plume", "gate", "gated", "gating"],
+          ["preference", "preferences", "prefer", "preferred", "attraction", "attractive", "attracted", "cluster", "clustered", "investigate", "investigated", "investigating", "investigation", "respond", "response", "behavior", "behaviour", "affect", "effect", "spend", "spent", "approach", "approached", "change", "changed", "hover", "hovered", "linger", "lingered", "visit", "visits", "visited", "occupancy", "remain", "remained", "drawn", "increase", "increased", "boost", "boosted"],
+          ["object", "objects", "target", "targets", "circle", "circles", "white control", "different wavelengths", "color attraction", "color preference", "color preferences", "spectral preference", "spectral preferences", "long wavelength"]
+        ],
+        "excluded_any": ["larva", "larvae", "larval", "rearing", "emergence", "egg", "eggs", "oviposition"],
+        "optional": ["wind tunnel", "trajectory", "white", "landing", "biting", "unconditional"]
+      },
+      "answer": "No. The study supports a carbon-dioxide-gated preference among contrast-matched visual objects, not an unconditional preference for human-labeled red. Its attraction endpoint was the time a tracked trajectory spent around the test object relative to an evenly reflecting white control; it was not landing, probing, or biting. During filtered air, only 1-4% of mosquitoes investigated the objects. Carbon dioxide increased flight and object investigation, and attraction ceased after the plume stopped. With approximate object contrast matched, females preferred 600 and 660 nm objects, but they also preferred 496 nm; 437, 452, 510, and 520 nm were not more attractive than the white control. The pattern therefore cannot be reduced to long wavelength alone or to an unconditional mosquito concept of red. The experiments also omitted close-range heat, water vapor, or skin volatiles, so they do not establish consequences for landing or biting, human protection, or field repellency.",
+      "source_record_ids": ["aedes_primary_behavior:pmc:PMC8816903"]
     },
     {
       "id": "aedes-multimodal-cue-redundancy",

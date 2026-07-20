@@ -18,7 +18,7 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is the prod
 
 These answers report evidence coverage and explicit gaps. They do not claim that a product works. Cross-species evidence must remain labeled as inference rather than being presented as focal-species proof.
 
-Exact primary Aedes behavior and formulation records are installed during release deployment with `scripts/ingest_aedes_primary_behavior_evidence.py`. Their provenance points to the original ScienceDirect abstract, PMC article, or the exact Table 8 anchor rather than to an internal program summary.
+Exact primary Aedes behavior, sensory, and formulation records are installed during release deployment with `scripts/ingest_aedes_primary_behavior_evidence.py`. Their provenance points to the original ScienceDirect abstract, PMC article, DOI, or the exact Table 8 anchor rather than to an internal program summary. The spectral-preference record preserves the carbon-dioxide gate, contrast-matched white control, tracked-trajectory endpoint, tested wavelengths, and omitted close-range host cues.
 
 To export the bounded generic public evidence package for any downstream tool:
 
