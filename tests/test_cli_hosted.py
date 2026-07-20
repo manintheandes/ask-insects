@@ -418,6 +418,34 @@ class HostedCliTests(unittest.TestCase):
         )
         self.assertFalse(output.lstrip().startswith("{"))
 
+    def test_answer_only_hosted_timeout_is_safe_and_bounded(self):
+        hosted_payload = {
+            "ok": False,
+            "error": {
+                "code": "hosted_request_timeout",
+                "message": "/Users/josh/private-path token-secret",
+            },
+        }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", return_value=hosted_payload
+        ) as hosted_request:
+            load_config.return_value = SimpleNamespace(
+                url="https://ask-insects.example", token="secret"
+            )
+            code, output = self.run_cli(
+                "ask",
+                "Which operating conditions should this SWD net be qualified under?",
+                "--answer-only",
+            )
+
+        self.assertEqual(code, 2)
+        self.assertIn("within the response budget", output)
+        self.assertIn("Source gap:", output)
+        self.assertNotIn("/Users/", output)
+        self.assertNotIn("token-secret", output)
+        self.assertEqual(hosted_request.call_args.kwargs["timeout"], 45)
+
     def test_answer_only_reads_exact_question_from_literal_stdin(self):
         question = (
             "A formulation's $effect includes `Orco`; can a \"pure\" active explain it?"

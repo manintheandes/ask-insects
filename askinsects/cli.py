@@ -47,6 +47,7 @@ HOSTED_EVIDENCE_ERROR_MESSAGES = {
         "The generic public evidence package could not be generated."
     ),
 }
+HOSTED_ASK_TIMEOUT_SECONDS = 45
 
 
 def hosted_evidence_package() -> dict[str, object]:
@@ -211,6 +212,26 @@ def _agent_final_answer(payload: dict[str, object]) -> str:
             lines.append(f"  Source ID: `{source_id}`")
             lines.append(f"  Locator: `{locator}`")
     return "\n".join(lines)
+
+
+def _safe_hosted_ask_payload(payload: dict[str, object]) -> dict[str, object]:
+    if payload.get("ok") is not False or payload.get("answer") or payload.get("source_gap"):
+        return payload
+    error = payload.get("error")
+    code = str(error.get("code") or "") if isinstance(error, dict) else ""
+    if code == "hosted_request_timeout":
+        answer = "Ask Insects could not complete this source-backed answer within the response budget."
+        reason = "The hosted Ask Insects request timed out before returning a complete sourced answer."
+    else:
+        answer = "Ask Insects could not complete this source-backed answer because the hosted service was unavailable."
+        reason = "The hosted Ask Insects service did not return a complete sourced answer."
+    return {
+        "ok": False,
+        "answer_shape": "source_gap",
+        "answer": answer,
+        "evidence": [],
+        "source_gap": {"lane": "hosted", "reason": reason},
+    }
 
 
 def compact_agent_answer(payload: dict[str, object]) -> dict[str, object]:
@@ -978,7 +999,14 @@ def main(argv: list[str] | None = None) -> int:
             ))
             return 2
         if args.hosted:
-            payload = hosted_request(load_config(), "POST", "/ask", {"question": question, "limit": args.limit})
+            payload = hosted_request(
+                load_config(),
+                "POST",
+                "/ask",
+                {"question": question, "limit": args.limit},
+                timeout=HOSTED_ASK_TIMEOUT_SECONDS,
+            )
+            payload = _safe_hosted_ask_payload(payload)
         else:
             try:
                 payload = answer_question(question, artifact_dir=artifact_dir, limit=args.limit)

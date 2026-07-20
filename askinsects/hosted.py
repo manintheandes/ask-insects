@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import tempfile
 from typing import Callable
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
@@ -102,6 +102,20 @@ def hosted_request(
             result = dict(result)
             result["ok"] = False
             result.setdefault("error", f"hosted Ask Insects returned HTTP {exc.code}")
+    except (URLError, OSError) as exc:
+        reason = getattr(exc, "reason", None)
+        timed_out = isinstance(exc, TimeoutError) or isinstance(reason, TimeoutError)
+        result = {
+            "ok": False,
+            "error": {
+                "code": "hosted_request_timeout" if timed_out else "hosted_request_unavailable",
+                "message": (
+                    "The hosted Ask Insects request timed out."
+                    if timed_out
+                    else "The hosted Ask Insects service is unavailable."
+                ),
+            },
+        }
     if not isinstance(result, dict):
         return {"ok": False, "error": "hosted Ask Insects returned non-object JSON"}
     return result
