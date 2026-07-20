@@ -260,7 +260,7 @@
       "title": "Changes in the life history traits in Aedes aegypti selected for resistance to permethrin and thymol, a spatial repellent",
       "public_url": "https://doi.org/10.1371/journal.pone.0329776",
       "source_id": "doi:10.1371/journal.pone.0329776",
-      "locator": "Results: Effects of selection for resistance on longevity, Tables 1-2 and Figures 1-2; Selection of resistance on biting rate, Table 3 and Figure 3, where no pairwise feeding difference was significant; fecundity, Table 4 and Figure 4; development, Tables 5-6 and Figure 5"
+      "locator": "Results: Effects of selection for resistance on longevity, Tables 1-2 and Figures 1-2; Selection of resistance on biting rate, Table 3 and Figure 3, where no pairwise feeding difference was significant; fecundity, Table 4 and Figure 4; development, Tables 5-6, Figure 5, and Supplementary Table S4 pairwise comparisons, including conflicts between the main-text significance narrative and S4C, S4E, and S4F"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W3037850025",
@@ -307,9 +307,9 @@
     {
       "record_id": "swd:openalex_literature:openalex:W4213332511",
       "title": "Hanseniaspora uvarum Attracts Drosophila suzukii (Diptera: Drosophilidae) With High Specificity",
-      "public_url": "https://doi.org/10.1093/jee/toac029",
+      "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9365507/",
       "source_id": "doi:10.1093/jee/toac029",
-      "locator": "Methods: virgin 3-6-day-old females starved for 24 hours; Results: wind-tunnel takeoff-plus-upwind-flight response and source contact"
+      "locator": "Methods: Field Comparison of Riga bait and H. uvarum Culture, Wind Tunnel Tests, and Field Comparison of H. uvarum Headspace Extract, H. uvarum-Based Synthetic Blend and a Reference Blend; Table 1; Results and Figures 1-3; Discussion paragraphs on drowning-solution contribution and blend optimization"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W4290861466",
@@ -1302,7 +1302,7 @@
         ],
         "optional": ["dopamine", "aversive", "habituation", "sensitization", "persistence"]
       },
-      "answer": "Yes, under specific laboratory conditions. In one direct repellent study, previous DEET exposure was followed by reduced behavioral repellency when Aedes aegypti were tested three hours later, together with a reduced electroantennogram response to DEET. A separate associative learning study trained females with 10 pairings of a 60-second odor presentation and mechanical shock separated by 2-minute intervals, then found learned avoidance of mammalian-associated odorants 24 hours later, but not the same change for the floral odor linalool; dopamine signaling was implicated in that olfactory learning. The DEET result is short-term pre-exposure evidence, while the shock experiment is associative learning. The DEET result does not establish long-term persistence or field product failure, and the learning experiment does not show learning to every repellent. Habituation, sensitization, learned association, sensory adaptation, innate repellency, and toxic impairment remain separate explanations.",
+      "answer": "Prior odor or repellent experience can change later response under specific laboratory conditions; an effect of prior host contact or feeding on later repellent response is not established by the cited studies. In one direct repellent study, previous DEET exposure was followed by reduced behavioral repellency when Aedes aegypti were tested three hours later, together with a reduced electroantennogram response to DEET. Pre-exposure to an untreated arm did not produce that change, and the DEET effect was also observed without host cues. A separate associative learning study trained females with 10 pairings of a 60-second isolated odor presentation and mechanical shock separated by 2-minute intervals, then found learned avoidance of mammalian-associated odorants 24 hours later, but not the same change for the floral odor linalool; dopamine signaling was implicated in that olfactory learning. It did not expose mosquitoes to a host, feeding, or a repellent. For a repellent experiment, standardize and record prior odor or repellent exposure and experimental handling, randomize naive and pre-exposed cohorts, and keep elapsed time since exposure explicit. Standardizing prior host contact and feeding is a prudent control, but these sources do not test whether either changes a later repellent response. The DEET result does not establish long-term persistence or field product failure, and the learning experiment does not show learning to every repellent. Habituation, sensitization, learned association, sensory adaptation, innate repellency, and toxic impairment remain separate explanations.",
       "source_record_ids": [
         "aedes_primary_behavior:pmc:PMC3577799",
         "openalex:W4315621418"
@@ -1319,7 +1319,7 @@
         ],
         "optional": ["field population", "laboratory colony", "mating", "feeding state", "life history"]
       },
-      "answer": "Population background can change a result enough to reverse the practical interpretation. At the same 0.00852% initial transfluthrin loading on paper, non-contact escape was 5.0% in the laboratory USDA strain and 54.9% in the field NON population. That is one assay and one population comparison; the loading is the initial paper loading, not a measured airborne concentration at the mosquito. A separate resistance-selection study measured longevity, first-blood-meal feeding rate, egg output, and development. Selection background affected several life-history outcomes, but no pairwise feeding-rate difference was significant, and the study does not quantify repellent response by age, genotype, or resistance state. Report and test population, genotype or resistance phenotype, age, mating, and feeding state across relevant backgrounds. Do not assume one colony represents the species or that insecticide resistance changes repellency in one fixed direction.",
+      "answer": "Population background can change a result enough to reverse the practical interpretation. At the same 0.00852% initial transfluthrin loading on paper, non-contact escape was 5.0% in the laboratory USDA strain and 54.9% in the field NON population. That is one assay and one population comparison; the loading is the initial paper loading, not a measured airborne concentration at the mosquito. A separate generational resistance-selection study did not directly measure repellent response, but it shows why biological state cannot be compressed into one colony label. Selected population, feeding state, and mating status all contributed to adult mortality; selected groups generally had shorter survival than controls, blood-fed mated females tended to have the highest mortality, and the size of the effect varied by chemical, dose, meal, and mating state. First-blood-meal feeding varied in the overall population test, but no pairwise feeding-rate comparison was significant. Among females that laid eggs, all selected lines except the 60-ug permethrin line laid more eggs than the control; both thymol doses and the 120-ug permethrin line showed the clearest increases, while the proportion laying and egg hatching also varied by selection treatment. Development was also dose- and sex-dependent, but the paper contains an internal reporting inconsistency. Low-dose permethrin significantly shortened development for both sexes, and high-dose permethrin males did not differ from controls in Supplementary Table S4B (adjusted p = 0.8996). For high-dose permethrin females, the main text says only the low-dose comparison was significant, but Supplementary Table S4C reports a significant high-dose-versus-control contrast (adjusted p = 0.0001). Both thymol doses lengthened development for both sexes relative to controls. The main text says the two thymol doses did not significantly differ, while S4E and S4F report significant 2.1-mg-versus-3.0-mg contrasts for males (adjusted p = 0.0004) and females (adjusted p < 0.0001); the 3.0-mg line was numerically longest. The numerical dose order is consistent, but do not treat the significance of the between-dose contrasts as settled until the source conflict is resolved. These are life-history outcomes after selection; the study does not quantify repellent response by age, genotype, or resistance state. Report and test population, genotype or resistance phenotype, age, mating, feeding, and prior-exposure state across more than one relevant background. Do not assume one colony represents the species or that insecticide resistance changes repellency in one fixed direction.",
       "source_record_ids": ["openalex:W3048721146", "openalex:W4413344516"]
     },
     {
@@ -1503,7 +1503,7 @@
         ],
         "optional": ["selection response", "common garden", "kdr", "pyrethroid", "marker"]
       },
-      "answer": "First separate three levels: ordinary avoidance is the intended behavioral response; reduced sensitivity is a measured behavioral phenotype; and physiological resistance requires evidence of an altered physiological mechanism. As an operational decision rule, require repeatable reduced sensitivity at a standardized dose or air concentration plus inheritance evidence before calling the phenotype inherited resistance; this is not a universal definition. Heritable behavioral insensitivity does not by itself prove an altered physiological mechanism because behavioral sensitivity can also be inherited. In the direct transfluthrin study, selective mating over nine generations produced an insensitive SRA- line, the decline was significant by generation F4, and an experimental cross between SRA- females and wild-type males restored spatial-repellent sensitivity and insecticide susceptibility. The association with reduced insecticide susceptibility supports a link, but altered uptake, metabolism, target-site action, or neural processing would need direct measurement before naming a physiological mechanism. A separate thymol- and permethrin-selection study measured longevity, first-blood-meal feeding rate, egg output, and development after selection. No pairwise feeding-rate difference was significant; the selected lines did show other life-history differences, including fecundity and development effects. Those are life-history outcomes after selection; the study does not measure repellent response in a standardized spatial-sensitivity assay or identify the physiological mechanism. A separate treated-clothing study also shows why kdr or insecticide-resistance status cannot automatically be equated with repellent failure. Insecticide resistance and repellent response cannot be assumed equivalent across compounds, formulations, routes, populations, or doses.",
+      "answer": "First separate three levels: ordinary avoidance is the intended behavioral response; reduced sensitivity is a measured behavioral phenotype; and physiological resistance requires evidence of an altered physiological mechanism. As an operational decision rule, require repeatable reduced sensitivity at a standardized dose or air concentration plus inheritance evidence before calling the phenotype inherited resistance; this is not a universal definition. Heritable behavioral insensitivity does not by itself prove an altered physiological mechanism because behavioral sensitivity can also be inherited. In the direct transfluthrin study, selective mating over nine generations produced an insensitive SRA- line, the decline was significant by generation F4, and an experimental cross between SRA- females and wild-type males restored spatial-repellent sensitivity and insecticide susceptibility. The association with reduced insecticide susceptibility supports a link, but altered uptake, metabolism, target-site action, or neural processing would need direct measurement before naming a physiological mechanism. A separate thymol- and permethrin-selection study found that longevity depended on selected population, feeding, and mating state; no pairwise first-blood-meal feeding-rate difference was significant; both thymol-selected lines and the high-dose permethrin line laid more eggs than the control among females that oviposited; and permethrin selection tended to shorten development while thymol selection lengthened it. Those are dose- and state-dependent life-history outcomes after selection; the study does not measure repellent response in a standardized spatial-sensitivity assay or identify the physiological mechanism. A separate treated-clothing study also shows why kdr or insecticide-resistance status cannot automatically be equated with repellent failure. Insecticide resistance and repellent response cannot be assumed equivalent across compounds, formulations, routes, populations, or doses.",
       "source_record_ids": [
         "aedes_primary_behavior:plosntds:e0003726",
         "openalex:W4299723530",
@@ -2172,6 +2172,48 @@
       "answer": "Do not advance the same Ecotrol PLUS spray program into half-high blueberry from the raspberry result alone, and do not call Ecotrol equivalent to spinosad. Ecotrol PLUS contained rosemary oil (10%), geraniol (5%), and peppermint oil (2%) and was applied at the maximum label rate of 3.5 L/ha. In the raspberry experiment, sprays were applied every 5 to 9 days and store-bought sentinel raspberries were exposed in treated plots for 24 hours. Mean infested-fruit proportion was 0.06 plus or minus 0.01 for Ecotrol, 0.06 plus or minus 0.02 for spinosad, and 0.17 plus or minus 0.04 for the unsprayed control. Ecotrol and spinosad were each lower than the control in the Tukey grouping, but the study did not run an equivalence or noninferiority test between them. The separate blueberry trial used half-high Vaccinium corymbosum cv. Chippewa in 12 exclusion tunnels with a water control. Colony releases did not establish sufficient infestation, so netting was removed seven days before final harvest; the August 5 observations therefore represented a covered open-plot simulation. Treatments were applied about every seven days and fruit was harvested four days after spraying. The blueberry spray effect was not significant (chi-square = 0.191, df = 2, p = 0.909); modeled infestation was 0.23 plus or minus 0.06 for Ecotrol and 0.28 plus or minus 0.07 for water. This supports a raspberry signal within its sentinel-fruit design, not blueberry efficacy or a cross-crop commercial program. The study did not establish season-long control, yield protection, crop safety, residue compliance, nontarget safety, registration, consumer acceptance, or commercial feasibility, and it did not isolate which Ecotrol ingredient caused the raspberry result.",
       "source_record_ids": [
         "swd_primary_field:doi:10.3390/insects11080536"
+      ]
+    },
+    {
+      "id": "swd-pull-lure-specificity-tradeoff",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 90,
+        "phrases": [
+          "seven-component Hanseniaspora uvarum synthetic lure",
+          "seven-component synthetic blend",
+          "H. uvarum headspace",
+          "lure specificity tradeoff",
+          "pull lure"
+        ],
+        "required_any": [
+          ["Hanseniaspora uvarum", "H. uvarum", "seven-component", "seven component", "seven-compound", "seven compound"],
+          ["synthetic lure", "synthetic blend", "headspace", "volatile formulation", "formulation", "odor blend", "odour blend", "volatile blend", "yeast blend"],
+          ["specificity", "selectivity", "bycatch", "by-catch", "non-target catch", "non target catch", "nontarget insects", "non-target insects", "non target insects", "tradeoff", "trade-off", "poorer specificity", "lower specificity"],
+          ["advance", "next gate", "downselect", "choose", "select", "take forward", "move ahead", "more SWD", "higher capture", "greater catch", "catches more", "caught more", "attracts more"]
+        ],
+        "optional": [
+          "more SWD",
+          "catch",
+          "catches",
+          "drowning solution",
+          "wind tunnel",
+          "source contact",
+          "20 ng/uL",
+          "100 ug/uL",
+          "push-pull"
+        ],
+        "excluded_any": [
+          "wine fermentation",
+          "gene targeting",
+          "genetic modification",
+          "human mosquito",
+          "diamondback moth"
+        ]
+      },
+      "answer": "Do not advance the seven-component synthetic H. uvarum lure solely because it caught more SWD than H. uvarum headspace. In the second field comparison, 300-uL open-vial loads were reported for the headspace extract and synthetic H. uvarum blend; the reference used separate methionol and acetoin vials whose load volumes were not reported. All treatments used the same drowning solution. The headspace treatment caught 85 SWD, 23 other drosophilids, and 115 arthropods in total; the synthetic H. uvarum blend caught 148, 122, and 275; and the reference lure caught 212, 108, and 336. The synthetic blend therefore caught more SWD than headspace but was significantly less specific. This was a small comparison: six treatment-site/date replicates across three sites in one wood-and-shrub landscape laboratory, using two November deployments that lasted one and three days. In the earlier four-period field comparison, live H. uvarum culture caught fewer SWD than the Riga wine-vinegar bait (445 versus 712), but also far fewer other drosophilids (596 versus 4,022) and total arthropods (1,773 versus 6,790); the proportion of SWD relative to other drosophilids was significantly higher with H. uvarum in three of four periods. The wind-tunnel result is a separate endpoint: virgin 3- to 6-day-old females starved for 24 hours were observed for three minutes, the 20-ng/uL seven-component blend induced more upwind flight than 1 ng/uL, and H. uvarum headspace remained active at 1:4 and 1:8 dilution although source contact fell at 1:8. Do not equate that approximately 20-ng/uL wind-tunnel blend with the approximately 100-ug/uL field blend. The field catches also do not isolate the lure effect because the common drowning solution contained acetic acid and ethanol, whose contribution was not quantified. The next gate should pre-specify both target catch and specificity or bycatch, compare headspace and optimized synthetic blends under the intended crop background with measured release rates and a controlled drowning matrix, and test redundancy, component ratios, concentrations, yeast strain, and growth conditions. Separately measure fruit infestation, damage, and marketable yield before treating the lure as a successful pull component. This paper supports attraction and trap selectivity, not crop protection, an optimal lure, or a commercial push-pull product.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W4213332511"
       ]
     },
     {

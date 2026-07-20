@@ -1176,6 +1176,8 @@ class ReviewedScienceTests(unittest.TestCase):
                     "electroantennogram",
                     "associative learning",
                     "does not establish long-term",
+                    "standardize and record prior odor or repellent exposure",
+                    "do not test whether either changes a later repellent response",
                 ),
             ),
             (
@@ -1185,6 +1187,18 @@ class ReviewedScienceTests(unittest.TestCase):
                     "5.0%",
                     "54.9%",
                     "0.00852%",
+                    "feeding state, and mating status",
+                    "no pairwise feeding-rate comparison was significant",
+                    "all selected lines except the 60-ug permethrin line",
+                    "internal reporting inconsistency",
+                    "Supplementary Table S4C",
+                    "adjusted p = 0.8996",
+                    "adjusted p = 0.0001",
+                    "S4E and S4F",
+                    "adjusted p = 0.0004",
+                    "adjusted p < 0.0001",
+                    "significance of the between-dose contrasts",
+                    "source conflict",
                     "does not quantify",
                     "do not assume",
                 ),
@@ -3634,6 +3648,106 @@ class ReviewedScienceTests(unittest.TestCase):
                         {item["record_id"] for item in answer["evidence"]},
                     )
 
+    def test_hanseniaspora_lure_downselection_preserves_specificity_tradeoff(self):
+        from askinsects.cli import compact_agent_answer
+
+        record_id = "swd:openalex_literature:openalex:W4213332511"
+        questions = (
+            "For the pull stations in an SWD push-pull field trial, should we "
+            "advance the seven-component Hanseniaspora uvarum synthetic lure "
+            "instead of H. uvarum headspace because it catches more SWD, or does "
+            "the specificity tradeoff require a different next gate?",
+            "Should we select the seven component H. uvarum synthetic blend over "
+            "headspace because it catches more spotted wing drosophila despite "
+            "lower specificity?",
+            "How should we downselect an SWD pull lure after H. uvarum headspace "
+            "had less bycatch but the synthetic lure caught more target flies?",
+            "Which H. uvarum volatile formulation should we take forward for SWD "
+            "trapping if higher capture comes with greater non-target catch?",
+            "Should we move ahead with the seven-compound H. uvarum odor blend if "
+            "it attracts more SWD but also more nontarget insects?",
+            "For SWD, should we advance H. uvarum headspace because it reduces "
+            "Drosophila melanogaster bycatch and has higher selectivity?",
+        )
+        negative_questions = (
+            "How can Hanseniaspora uvarum be genetically modified for wine fermentation?",
+            "Which medium gives the fastest H. uvarum culture growth?",
+            "Should we select H. uvarum as a lure for a D. suzukii attract-and-kill assay?",
+            "Should we choose an H. uvarum lure to study SWD olfaction?",
+            "Should we choose H. uvarum headspace for Drosophila melanogaster "
+            "because it has higher selectivity?",
+            "Should we choose H. uvarum headspace for Drosophila biarmipes "
+            "because it has higher selectivity?",
+            "Should a mosquito repellent be tested in a wind tunnel?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+            negatives = [
+                build_reviewed_science_answer(index, question)
+                for question in negative_questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(answer["answer_shape"], "reviewed_science")
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {record_id},
+                )
+                for fragment in (
+                    "do not advance",
+                    "85 SWD",
+                    "148",
+                    "significantly less specific",
+                    "drowning solution",
+                    "approximately 20-ng/uL",
+                    "approximately 100-ug/uL",
+                    "fruit infestation, damage, and marketable yield",
+                    "not crop protection",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                final_answer = compact_agent_answer(answer)["final_answer"]
+                self.assertIn(
+                    "[Hanseniaspora uvarum Attracts Drosophila suzukii "
+                    "(Diptera: Drosophilidae) With High Specificity]"
+                    "(https://pmc.ncbi.nlm.nih.gov/articles/PMC9365507/)",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Source ID: `doi:10.1093/jee/toac029`",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Locator: `Methods: Field Comparison of Riga bait and H. uvarum Culture",
+                    final_answer,
+                )
+
+        for question, answer in zip(negative_questions, negatives, strict=True):
+            with self.subTest(question=question):
+                if answer is not None:
+                    self.assertNotIn(
+                        record_id,
+                        {item["record_id"] for item in answer["evidence"]},
+                    )
+
     def test_catalog_preserves_exact_title_and_complete_figure_locator(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         provenance = {
@@ -3697,8 +3811,11 @@ class ReviewedScienceTests(unittest.TestCase):
         )
         self.assertEqual(
             yeast["locator"],
-            "Methods: virgin 3-6-day-old females starved for 24 hours; Results: "
-            "wind-tunnel takeoff-plus-upwind-flight response and source contact",
+            "Methods: Field Comparison of Riga bait and H. uvarum Culture, Wind "
+            "Tunnel Tests, and Field Comparison of H. uvarum Headspace "
+            "Extract, H. uvarum-Based Synthetic Blend and a Reference Blend; "
+            "Table 1; Results and Figures 1-3; Discussion paragraphs on "
+            "drowning-solution contribution and blend optimization",
         )
 
         fruit_injury = provenance[
@@ -4038,6 +4155,12 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertIn("Materials and methods 4(b)(ii)", learning_locator)
         self.assertIn("60-second odor presentation", learning_locator)
         self.assertIn("2-minute inter-trial interval", learning_locator)
+
+        life_history_locator = provenance["openalex:W4413344516"]["locator"]
+        self.assertIn("Supplementary Table S4", life_history_locator)
+        self.assertIn("S4C", life_history_locator)
+        self.assertIn("S4E", life_history_locator)
+        self.assertIn("S4F", life_history_locator)
 
     def test_visual_rhodopsin_route_rejects_broader_multimodal_neighbors(self):
         broad_record_ids = {
