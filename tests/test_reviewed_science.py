@@ -3450,6 +3450,11 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("factorial design", "fruit injury directly changed oviposition", "did not measure a specific moisture effect"),
             ),
             (
+                "Our SWD treatment arm used firm intact berries while the comparison arm used soft wounded fruit. Can the egg difference isolate the compound?",
+                "swd-fruit-condition-controls",
+                ("factorial design", "fruit injury directly changed oviposition", "record those variables"),
+            ),
+            (
                 "Three hours after DEET pre-exposure, Aedes aegypti respond less strongly. How do we separate sensory adaptation from associative learning?",
                 "aedes-olfactory-learning",
                 ("reduced electroantennogram response", "dopamine signaling", "sensory adaptation"),
