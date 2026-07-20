@@ -1928,6 +1928,27 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "In the CFFA work, some trials counted eggs and others recovered larvae and pupae. Which result measures oviposition directly, and why can the offspring counts not identify airborne avoidance?",
+                "swd:openalex_literature:openalex:W4386466923",
+                (
+                    "later no-choice comparison counted eggs directly",
+                    "20 females",
+                    "larvae and pupae",
+                    "cannot",
+                    "airborne spatial avoidance",
+                ),
+            ),
+            (
+                "For CFFA, why should recovered offspring and direct egg counts be treated as different endpoints when deciding whether the effect is spatial?",
+                "swd:openalex_literature:openalex:W4386466923",
+                (
+                    "counted eggs directly",
+                    "recovered larvae and pupae",
+                    "no-contact",
+                    "surface-contact",
+                ),
+            ),
+            (
                 "When commensal growth is present, does SWD oviposition differ on 1% and 3% agar?",
                 "swd:openalex_literature:openalex:W3124252639",
                 (
