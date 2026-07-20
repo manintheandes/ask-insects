@@ -41,6 +41,9 @@ class AgentSetupTests(unittest.TestCase):
             "Do not emit a progress update",
             "exactly one visible assistant message",
             "Return it immediately and verbatim without another reasoning turn or command",
+            "byte-for-byte identical to stdout",
+            "Never add or remove whitespace",
+            "Markdown hard-break spaces",
             "yields a session ID",
             "continue the same process",
             "write_stdin",
@@ -96,6 +99,9 @@ class AgentSetupTests(unittest.TestCase):
             "--answer-only",
             "stdout",
             "verbatim",
+            "byte-for-byte identical to stdout",
+            "Never add or remove whitespace",
+            "Markdown hard-break spaces",
         ):
             self.assertIn(term, text)
         self.assertNotIn("current top-level product goal is Aedes-first", text)
@@ -119,6 +125,9 @@ class AgentSetupTests(unittest.TestCase):
             "functions.wait",
             "Never call image generation",
             "return stdout verbatim",
+            "byte-for-byte identical to stdout",
+            "Never add or remove whitespace",
+            "Markdown hard-break spaces",
         ):
             self.assertIn(term, frontmatter)
 
