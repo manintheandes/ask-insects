@@ -752,7 +752,7 @@
         "phrases": ["fruit condition", "fruit ripeness", "skin hardness"],
         "required_any": [
           ["ripeness", "firmness", "firmer", "hardness", "injury", "wound", "wounded", "moisture", "dry", "drier"],
-          ["control", "controls", "controlled", "match", "matched", "cross", "crossed", "assay", "factorial", "assign", "assigned"]
+          ["control", "controls", "controlled", "treatment arm", "treatment arms", "comparison arm", "comparison arms", "comparison", "compare", "comparable", "comparability", "isolate", "rebuild", "match", "matched", "cross", "crossed", "assay", "factorial", "assign", "assigned"]
         ],
         "optional": ["randomize", "block", "cultivar", "surface moisture", "repellent"]
       },
