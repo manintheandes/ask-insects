@@ -126,9 +126,9 @@ sources:
         - universal_regulatory_acceptance
         - chemical_retention_as_a_substitute_for_bite_protection
   - id: aedes_primary_behavior_evidence
-    name: Exact primary Aedes host-seeking and citronella evidence
+    name: Exact primary Aedes host-seeking, sensory, and citronella evidence
     source_type: human_reviewed_primary_studies_and_table
-    boundary: Four exact primary-source records covering immediate abdominal-distention inhibition after a blood meal, humoral inhibition during oocyte maturation, NPYLR1 functional and genetic evidence, and formulation-specific citronella protection times from Table 8; claims are limited to the experiments and values reported by those sources
+    boundary: Seven exact primary-source records covering immediate abdominal-distention inhibition after a blood meal, humoral inhibition during oocyte maturation, NPYLR1 functional and genetic evidence, short-term DEET pre-exposure, heritable transfluthrin insensitivity, carbon-dioxide-gated spectral preference, and formulation-specific citronella protection times from Table 8; claims are limited to the experiments and values reported by those sources
     query_plane: deterministic_reviewed_records_to_sqlite_literature
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_aedes_primary_behavior_evidence.py
@@ -149,6 +149,8 @@ sources:
         - universal_24_hour_post_blood_meal_phase
         - npylr1_as_the_sole_required_post_blood_meal_mechanism
         - citronella_duration_beyond_the_reported_formulations_and_conditions
+        - spectral_preference_without_carbon_dioxide
+        - visual_object_investigation_as_landing_biting_or_protection
   - id: swd_primary_field_evidence
     name: Exact primary SWD greenhouse-to-field evidence
     source_type: human_reviewed_primary_study

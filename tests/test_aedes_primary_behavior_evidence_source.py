@@ -22,7 +22,7 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
             retrieved_at="2026-07-17T00:00:00Z"
         )
 
-        self.assertEqual(len(records), 6)
+        self.assertEqual(len(records), 7)
         self.assertEqual(
             {record.record_id for record in records},
             {
@@ -32,7 +32,40 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
                 "aedes_primary_behavior:pmc:PMC9866038:table8",
                 "aedes_primary_behavior:pmc:PMC3577799",
                 "aedes_primary_behavior:plosntds:e0003726",
+                "aedes_primary_behavior:pmc:PMC8816903",
             },
+        )
+        spectral_gating = next(
+            record for record in records if record.record_id.endswith("PMC8816903")
+        )
+        self.assertEqual(
+            spectral_gating.title,
+            "The olfactory gating of visual preferences to human skin and visible "
+            "spectra in mosquitoes",
+        )
+        self.assertEqual(
+            spectral_gating.url,
+            "https://doi.org/10.1038/s41467-022-28195-x",
+        )
+        for fragment in (
+            "1-4%",
+            "600 and 660 nm",
+            "496 nm",
+            "437, 452, 510, and 520 nm",
+            "heat, water vapor, or skin volatiles",
+            "landing or biting",
+        ):
+            self.assertIn(fragment, spectral_gating.text)
+        self.assertEqual(
+            spectral_gating.provenance.locator,
+            "https://pmc.ncbi.nlm.nih.gov/articles/PMC8816903/#Sec3 "
+            "(Results paragraphs 7-9, Figure 1e-i, and Supplementary Figure S1); "
+            "https://pmc.ncbi.nlm.nih.gov/articles/PMC8816903/#Sec9 "
+            "(Discussion paragraph 26)",
+        )
+        self.assertEqual(
+            spectral_gating.provenance.source_id,
+            "doi:10.1038/s41467-022-28195-x",
         )
         table = next(record for record in records if record.record_id.endswith("table8"))
         self.assertIn("4.0 +/- 0.0 hours", table.text)
@@ -57,10 +90,12 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
                     record.source,
                     AEDES_PRIMARY_BEHAVIOR_EVIDENCE_SOURCE_ID,
                 )
-                self.assertEqual(
-                    record.provenance.source_id,
-                    AEDES_PRIMARY_BEHAVIOR_EVIDENCE_SOURCE_ID,
+                expected_source_id = (
+                    "doi:10.1038/s41467-022-28195-x"
+                    if record.record_id.endswith("PMC8816903")
+                    else AEDES_PRIMARY_BEHAVIOR_EVIDENCE_SOURCE_ID
                 )
+                self.assertEqual(record.provenance.source_id, expected_source_id)
                 self.assertTrue(record.title)
                 self.assertTrue(str(record.url).startswith("https://"))
                 self.assertTrue(record.provenance.locator.startswith("https://"))
@@ -110,16 +145,16 @@ class AedesPrimaryBehaviorEvidenceSourceTests(unittest.TestCase):
 
         self.assertTrue(result["ok"])
         self.assertTrue(repeated["ok"])
-        self.assertEqual(len(rows), 6)
-        self.assertEqual(searchable_count, 6)
+        self.assertEqual(len(rows), 7)
+        self.assertEqual(searchable_count, 7)
         self.assertTrue(all(row["title"] for row in rows))
         self.assertTrue(all(str(row["url"]).startswith("https://") for row in rows))
         self.assertEqual(
             status["source_counts"][AEDES_PRIMARY_BEHAVIOR_EVIDENCE_SOURCE_ID],
-            6,
+            7,
         )
-        self.assertEqual(status["record_count"], 6)
-        self.assertEqual(status["lanes"]["literature"], 6)
+        self.assertEqual(status["record_count"], 7)
+        self.assertEqual(status["lanes"]["literature"], 7)
 
 
 if __name__ == "__main__":
