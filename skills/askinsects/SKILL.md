@@ -8,7 +8,9 @@ description: >-
   design must change for one. This description is the complete route. Do not
   open this file for a normal answer. The first hosted command must use
   ask-insects ask --question-stdin --answer-only with a literal here-document
-  named ASK_INSECTS_QUESTION. Do not quote, escape, rewrite, or interpolate the question body. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
+  named ASK_INSECTS_QUESTION. In a delegated Codex task, use only the decoded text
+  inside its single `<input>...</input>` element. Never copy `<codex_delegation>`,
+  `<source_thread_id>`, or handoff tags. Do not quote, escape, rewrite, or interpolate the question body. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
   a session ID, continue with write_stdin until exit. If the wrapper reports a cell ID,
   call functions.wait on that same cell until exit. Never call image generation or
   another visual helper unless the user explicitly asks for a visual. Then return stdout verbatim.
@@ -29,7 +31,7 @@ USER QUESTION
 ASK_INSECTS_QUESTION
 ```
 
-Replace `USER QUESTION` with the user's exact complete question. Do not quote, escape, rewrite, or interpolate the question body. The single-quoted marker keeps shell punctuation literal. Do not put anything after the closing marker.
+Replace `USER QUESTION` with the user's exact complete question. In a delegated Codex task, use only the decoded text inside its single `<input>...</input>` element. Never copy `<codex_delegation>`, `<source_thread_id>`, `<input>`, `</input>`, or other handoff tags. Do not quote, escape, rewrite, or interpolate the question body. The single-quoted marker keeps shell punctuation literal. Do not put anything after the closing marker.
 The shell command must contain only the displayed Ask Insects command. Do not add comments, timing directives, or wrapper text to the shell command.
 A command may yield a session ID or report `Script running with cell ID`. Continue that same process with `write_stdin` for the session or `functions.wait` on the same cell until exit. Never discard a yielded command or issue another Ask Insects command.
 
