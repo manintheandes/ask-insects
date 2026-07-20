@@ -244,6 +244,20 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
             raise ReviewedScienceError(
                 f"topic {topic_id}.match.species_may_be_implicit must be a boolean"
             )
+        implicit_required = match.get("implicit_species_required_any")
+        if implicit_required is not None:
+            if match.get("species_may_be_implicit") is not True:
+                raise ReviewedScienceError(
+                    f"topic {topic_id}.match.implicit_species_required_any requires "
+                    "species_may_be_implicit=true"
+                )
+            if not _objects_as_string_groups(
+                implicit_required,
+                f"topic {topic_id}.match.implicit_species_required_any",
+            ):
+                raise ReviewedScienceError(
+                    f"topic {topic_id}.match.implicit_species_required_any must not be empty"
+                )
         question_intent = match.get("question_intent")
         if question_intent is not None and (
             not isinstance(question_intent, str)
@@ -580,8 +594,18 @@ def _topic_score(
     assert isinstance(match, dict)
     if matched_species and not topic_species.intersection(matched_species):
         return None
-    if not matched_species and match.get("species_may_be_implicit") is not True:
-        return None
+    if not matched_species:
+        if match.get("species_may_be_implicit") is not True:
+            return None
+        implicit_required = _objects_as_string_groups(
+            match.get("implicit_species_required_any", []),
+            "topic match.implicit_species_required_any",
+        )
+        if implicit_required and not all(
+            any(_contains(normalized_question, term) for term in group)
+            for group in implicit_required
+        ):
+            return None
     question_intent = match.get("question_intent")
     if isinstance(question_intent, str) and not _question_intent_matches(
         question_intent, normalized_question

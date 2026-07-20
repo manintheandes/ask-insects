@@ -1966,6 +1966,10 @@
       "species_ids": ["drosophila_suzukii"],
       "match": {
         "priority": 55,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["berry", "berries", "berry crop", "berry crops", "berry farm", "berry farms", "berry grower", "berry growers", "fruit crop", "fruit crops"]
+        ],
         "phrases": [
           "exclusion net",
           "protective net",
