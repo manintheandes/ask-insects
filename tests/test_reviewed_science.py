@@ -500,6 +500,10 @@ class ReviewedScienceTests(unittest.TestCase):
                 "details should I record so another lab can reproduce the exposure?",
                 "Which daytime window, microclimate measurements, and plume details "
                 "should be reported for a reproducible Aedes non-contact chamber assay?",
+                "When evaluating a volatile around Aedes aegypti, why should airflow "
+                "and humidity be logged rather than described only as room conditions?",
+                "Which plume and temperature conditions should I record and report "
+                "when evaluating an airborne Aedes treatment?",
             )
             for question in questions:
                 with self.subTest(question=question):

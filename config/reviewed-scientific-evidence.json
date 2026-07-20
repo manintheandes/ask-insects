@@ -939,7 +939,8 @@
         "phrases": ["environmental controls", "environment controls", "airflow controls", "plume controls", "spatial-repellency assay", "air plume", "microclimate"],
         "required_any": [
           ["environment", "environmental", "airflow", "plume", "humidity", "temperature", "ventilation"],
-          ["control", "controls", "assay", "monitor", "measure", "standardize", "standardized", "chamber", "test", "testing", "experiment"]
+          ["control", "controls", "assay", "monitor", "measure", "standardize", "standardized", "chamber", "test", "testing", "experiment", "evaluate", "evaluating", "evaluation", "log", "logged", "logging", "record", "recorded", "recording", "report", "reported", "reporting"],
+          ["vapor", "vapour", "volatile", "airborne", "spatial", "non contact", "non-contact", "chamber", "repellent", "repellency", "treatment"]
         ],
         "optional": ["airborne", "air plume", "microclimate", "occupancy", "solvent", "direction", "speed", "still air", "randomize", "reverse", "carrier", "delivery", "unsupported", "source gap"]
       },
