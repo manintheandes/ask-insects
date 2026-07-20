@@ -3000,6 +3000,21 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("locomotor", "host-odor", "blood-feeding"),
             ),
             (
+                "An AeCyc knockout changes host-odor response and blood feeding but "
+                "also egg hatch, development, survival, and mating. Can we use it to "
+                "infer a time-of-day repellent effect without separating general "
+                "fitness costs?",
+                {"openalex:W4225097850"},
+                (
+                    "egg hatching",
+                    "development",
+                    "survival",
+                    "mating",
+                    "cannot be assigned solely",
+                    "intact mosquitoes",
+                ),
+            ),
+            (
                 "If Aedes aegypti op1 or op2 is knocked out alone versus both "
                 "together, what does that show about visual target attraction and "
                 "sensory redundancy?",
