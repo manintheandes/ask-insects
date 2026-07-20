@@ -13,7 +13,7 @@ description: >-
   `<source_thread_id>`, or handoff tags. Do not quote, escape, rewrite, or interpolate the question body. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
   a session ID, continue with write_stdin until exit. If the wrapper reports a cell ID,
   call functions.wait on that same cell until exit. Never call image generation or
-  another visual helper unless the user explicitly asks for a visual. Then return stdout verbatim.
+  another visual helper unless the user explicitly asks for a visual. Then return stdout verbatim, byte-for-byte identical to stdout. Never add or remove whitespace, including Markdown hard-break spaces.
 ---
 # Ask Insects
 
@@ -36,8 +36,8 @@ The shell command must contain only the displayed Ask Insects command. Do not ad
 A command may yield a session ID or report `Script running with cell ID`. Continue that same process with `write_stdin` for the session or `functions.wait` on the same cell until exit. Never discard a yielded command or issue another Ask Insects command.
 
 A bare call uses the hosted production source plane. Never add `--local` to a
-user answer. Stdout is already the complete sourced answer. Return it verbatim
-as the entire visible answer without another reasoning turn. Do not preface, rewrite, summarize, append, search, run SQL, or
+user answer. Stdout is already the complete sourced answer. Return it verbatim,
+byte-for-byte identical to stdout, as the entire visible answer without another reasoning turn. Never add or remove whitespace, including invisible trailing spaces or Markdown hard-break spaces. Do not preface, rewrite, summarize, append, search, run SQL, or
 run a second Ask Insects call. Complete the visible answer in under 60 seconds.
 Do not run setup-agent during a user question. Do not run tests, installation,
 or source refreshes during a normal answer.
