@@ -1780,6 +1780,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Commercial transfluthrin formulations show an Orco-linked component that the pure active does not. Can the extra compounds be assigned that mechanism?",
+                "openalex:W3179105761",
+                (
+                    "Aedes aegypti",
+                    "does not show that transfluthrin itself has two receptor mechanisms",
+                    "unidentified additional compounds",
+                    "cannot be assigned",
+                ),
+            ),
+            (
                 "Why does Aedes aegypti show transfluthrin-mediated landing suppression despite a null antennal field potential, and how do Orco deletion and kdr substitutions constrain the mechanism?",
                 "openalex:W3179105761",
                 (
