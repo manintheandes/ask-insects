@@ -504,6 +504,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "and humidity be logged rather than described only as room conditions?",
                 "Which plume and temperature conditions should I record and report "
                 "when evaluating an airborne Aedes treatment?",
+                "Which airflow, plume, temperature, and humidity controls are needed "
+                "in an Aedes spatial-repellency assay?",
             )
             for question in questions:
                 with self.subTest(question=question):
@@ -526,6 +528,12 @@ class ReviewedScienceTests(unittest.TestCase):
                         "room temperature on aluminium foil",
                         "define and monitor airflow direction and speed",
                         "airborne-exposure measurement gap",
+                        "current reviewed public evidence",
+                        "no complete product-specific",
+                        "carrier",
+                        "release-rate",
+                        "application-method",
+                        "delivery evidence package",
                         "applied loading alone as airborne dose",
                     ):
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
@@ -3234,7 +3242,30 @@ class ReviewedScienceTests(unittest.TestCase):
                 "How should we connect fewer pupae from treated raspberries in the "
                 "SWD push-pull study to a defensible crop-protection claim?",
                 {"swd:openalex_literature:openalex:W4411730655"},
-                ("fewer pupae", "marketable yield", "commercial crop-protection"),
+                (
+                    "fewer pupae",
+                    "current reviewed public evidence",
+                    "no replicated field evidence",
+                    "crop damage",
+                    "marketable yield",
+                    "persistence",
+                    "operational fit",
+                    "commercial crop-protection",
+                ),
+            ),
+            (
+                "What follow-up measurements connect SWD oviposition deterrence "
+                "to actual crop protection?",
+                {"swd:openalex_literature:openalex:W4411730655"},
+                (
+                    "larval or pupal emergence",
+                    "current reviewed public evidence",
+                    "no replicated field evidence",
+                    "crop damage",
+                    "marketable yield",
+                    "persistence",
+                    "operational fit",
+                ),
             ),
             (
                 "How could microbiome status, mating state, and starvation confound "
@@ -3802,9 +3833,12 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Which product-specific airflow, carrier, release, and delivery information is missing from an Aedes spatial-repellency chamber result?",
                 "aedes-spatial-environment-controls",
                 (
-                    "cannot by itself define a complete product-specific exposure package",
-                    "release rate",
-                    "delivery hardware",
+                    "current reviewed public evidence",
+                    "no complete product-specific",
+                    "carrier",
+                    "release-rate",
+                    "application-method",
+                    "delivery evidence package",
                 ),
             ),
             (
