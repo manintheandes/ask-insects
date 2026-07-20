@@ -2306,6 +2306,7 @@ class ReviewedScienceTests(unittest.TestCase):
             "Before field deployment, should D. suzukii exclusion mesh be challenged under fan ventilation and heat?",
             "Is SWD exclusion fabric proven for a heated polytunnel with strong ventilation, or must we qualify that operating range?",
             "Our SWD mesh passed a bench assay. What environmental qualification and crop-performance matrix is needed before recommending it to berry growers?",
+            "Our berry farm has a mesh that passed a bench assay. Which environmental qualification matrix should precede a grower recommendation?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2361,9 +2362,14 @@ class ReviewedScienceTests(unittest.TestCase):
                 index,
                 "Which mesh color is easiest to see when counting SWD in a laboratory cage?",
             )
+            implicit_species_neighbor = build_reviewed_science_answer(
+                index,
+                "Our greenhouse mesh passed a bench assay. Which environmental qualification matrix should precede deployment?",
+            )
 
         self.assertIsNone(unrelated)
         self.assertIsNone(nearby)
+        self.assertIsNone(implicit_species_neighbor)
 
     def test_swd_seasonal_canopy_questions_use_the_reviewed_sampling_design(self):
         record_id = "swd:openalex_literature:openalex:W3036207020"
