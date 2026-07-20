@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import sqlite3
 import sys
+import time
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
@@ -48,6 +49,56 @@ HOSTED_EVIDENCE_ERROR_MESSAGES = {
     ),
 }
 HOSTED_ASK_TIMEOUT_SECONDS = 45
+HOSTED_ASK_MAX_ATTEMPTS = 3
+HOSTED_ASK_RETRY_DELAYS_SECONDS = (0.25, 0.75)
+RETRYABLE_HOSTED_ASK_CODES = {
+    "hosted_request_unavailable",
+    "hosted_request_http_429",
+    "hosted_request_http_500",
+    "hosted_request_http_502",
+    "hosted_request_http_503",
+    "hosted_request_http_504",
+}
+
+
+def _retryable_hosted_ask_failure(payload: dict[str, object]) -> bool:
+    error = payload.get("error")
+    if isinstance(error, dict):
+        code = str(error.get("code") or "")
+        if code in RETRYABLE_HOSTED_ASK_CODES:
+            return True
+        message = str(error.get("message") or "")
+    else:
+        message = str(error or "")
+    return any(f"HTTP {status}" in message for status in (429, 500, 502, 503, 504))
+
+
+def _hosted_ask_request(question: str, limit: int) -> dict[str, object]:
+    config = load_config()
+    deadline = time.monotonic() + HOSTED_ASK_TIMEOUT_SECONDS
+    result: dict[str, object] = {}
+    for attempt in range(HOSTED_ASK_MAX_ATTEMPTS):
+        remaining = deadline - time.monotonic()
+        if remaining < 1:
+            break
+        timeout = HOSTED_ASK_TIMEOUT_SECONDS if attempt == 0 else max(1, int(remaining))
+        result = hosted_request(
+            config,
+            "POST",
+            "/ask",
+            {"question": question, "limit": limit},
+            timeout=timeout,
+        )
+        if (
+            not _retryable_hosted_ask_failure(result)
+            or attempt == HOSTED_ASK_MAX_ATTEMPTS - 1
+        ):
+            return result
+        delay = HOSTED_ASK_RETRY_DELAYS_SECONDS[attempt]
+        if time.monotonic() + delay >= deadline:
+            break
+        time.sleep(delay)
+    return result
 
 
 def hosted_evidence_package() -> dict[str, object]:
@@ -999,13 +1050,7 @@ def main(argv: list[str] | None = None) -> int:
             ))
             return 2
         if args.hosted:
-            payload = hosted_request(
-                load_config(),
-                "POST",
-                "/ask",
-                {"question": question, "limit": args.limit},
-                timeout=HOSTED_ASK_TIMEOUT_SECONDS,
-            )
+            payload = _hosted_ask_request(question, args.limit)
             payload = _safe_hosted_ask_payload(payload)
         else:
             try:

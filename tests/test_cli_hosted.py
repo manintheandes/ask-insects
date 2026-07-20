@@ -446,6 +446,51 @@ class HostedCliTests(unittest.TestCase):
         self.assertNotIn("token-secret", output)
         self.assertEqual(hosted_request.call_args.kwargs["timeout"], 45)
 
+    def test_answer_only_retries_transient_hosted_unavailability_within_budget(self):
+        unavailable = {
+            "ok": False,
+            "error": {
+                "code": "hosted_request_unavailable",
+                "message": "The hosted Ask Insects service is unavailable.",
+            },
+        }
+        success = {
+            "ok": True,
+            "answer_shape": "reviewed_science",
+            "answer": "Occupancy and bites are separate endpoints.",
+            "evidence": [
+                {
+                    "source": "aedes_primary_behavior_evidence",
+                    "title": "Behavioral responses to transfluthrin by Aedes aegypti",
+                    "url": "https://doi.org/10.1371/journal.pone.0237353",
+                    "provenance": {
+                        "source_id": "doi:10.1371/journal.pone.0237353",
+                        "locator": "Results: non-contact escape and occupancy endpoints",
+                    },
+                }
+            ],
+        }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request",
+            side_effect=[unavailable, unavailable, success],
+        ) as hosted_request, patch("askinsects.cli.time.sleep") as sleep:
+            load_config.return_value = SimpleNamespace(
+                url="https://ask-insects.example", token="secret"
+            )
+            code, output = self.run_cli(
+                "ask",
+                "Does reduced chamber occupancy prove fewer bites?",
+                "--answer-only",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertIn(success["answer"], output)
+        self.assertEqual(hosted_request.call_count, 3)
+        self.assertEqual(sleep.call_count, 2)
+        for call in hosted_request.call_args_list:
+            self.assertLessEqual(call.kwargs["timeout"], 45)
+
     def test_answer_only_reads_exact_question_from_literal_stdin(self):
         question = (
             "A formulation's $effect includes `Orco`; can a \"pure\" active explain it?"
