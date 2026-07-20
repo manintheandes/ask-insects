@@ -343,6 +343,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "reflect locomotor impairment instead of weak avoidance?",
                 "If more treated Aedes remain in a non-contact chamber, should I call that "
                 "repellency or possible knockdown?",
+                "How would you distinguish a mosquito changing its flight direction from a "
+                "mosquito that is simply moving more slowly after repellent exposure?",
             )
             for question in questions:
                 with self.subTest(question=question):
