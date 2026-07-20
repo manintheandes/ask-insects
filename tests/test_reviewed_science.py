@@ -3565,6 +3565,15 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "What did the SWD foraging study show about fed conventional gravid females versus starved axenic virgins, and why can those batches not be compared?",
+                "swd-physiological-state-confounds",
+                (
+                    "Do not compare",
+                    "feeding, mating, and gravidity changed together",
+                    "sex and microbiome status",
+                ),
+            ),
+            (
                 "Can I compare SWD egg counts from a treatment run at noon with a control run at night, or must I block clock time?",
                 "swd-diurnal-oviposition-confound",
                 ("No.", "concurrently", "daily egg-laying rhythm"),

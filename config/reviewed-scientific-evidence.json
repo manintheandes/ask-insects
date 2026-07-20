@@ -1060,8 +1060,8 @@
       "match": {
         "phrases": ["mating status", "prior egg laying", "internal state"],
         "required_any": [
-          ["age", "mating", "mated", "virgin", "hunger", "starvation", "prior egg"],
-          ["repellent", "result", "response", "confound", "assay"]
+          ["age", "mating", "mated", "virgin", "gravid", "hunger", "starvation", "starved", "fed", "food deprived", "food-deprived", "microbiome", "axenic", "conventional", "prior egg"],
+          ["repellent", "result", "response", "confound", "assay", "show", "showed", "evidence", "finding", "findings", "compare", "compared", "comparison"]
         ],
         "optional": ["feeding state", "microbiome", "gravid", "foraging", "standardize"]
       },
