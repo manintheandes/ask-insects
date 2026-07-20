@@ -36,7 +36,7 @@
       "title": "Development of a Nanotechnology Matrix-Based Citronella Oil Insect Repellent to Obtain a Prolonged Effect and Evaluation of the Safety and Efficacy",
       "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9866038/",
       "source_id": "pmc:PMC9866038",
-      "locator": "Table 8: complete-protection times and efficacy of citronella formulations in the arm-in-cage assay"
+      "locator": "Methods; Results: formulation composition, thermal analysis, skin-permeation and mass-balance experiments; Table 8: complete-protection times and efficacy in the Aedes aegypti arm-in-cage assay"
     },
     {
       "record_id": "aedes_primary_behavior:pubmed:469272",
@@ -372,7 +372,7 @@
       "title": "Oviposition Preference and Developmental Performance of Drosophila suzukii on Different Cherry Cultivars",
       "public_url": "https://pubmed.ncbi.nlm.nih.gov/39769586/",
       "source_id": "pubmed:39769586",
-      "locator": "Abstract and Table 1: cultivar-specific oviposition, hatching, pupation, and survival outcomes"
+      "locator": "Abstract; Methods: fruit ripeness and developmental design; Results and Table 1: cultivar-specific fruit traits, oviposition, hatching, pupation, and survival outcomes"
     },
     {
       "record_id": "swd_traits:pubmed:28592264",
@@ -414,7 +414,7 @@
       "title": "Sex-Dependent Effects of the Microbiome on Foraging and Locomotion in Drosophila suzukii",
       "public_url": "https://doi.org/10.3389/fmicb.2021.656406",
       "source_id": "doi:10.3389/fmicb.2021.656406",
-      "locator": "Abstract and Results/Discussion: axenic and conventional females and males; starvation-induced locomotion; virgin versus mated gravid female food seeking; oviposition and fruit-preference results"
+      "locator": "Methods: 5- to 10-day-old adults and 15-hour food-deprivation protocol; Abstract and Results/Discussion: axenic and conventional females and males, starvation-induced locomotion, virgin versus mated gravid female food seeking, oviposition, and fruit preference"
     },
     {
       "record_id": "openalex:W3187681115",
@@ -620,7 +620,7 @@
         ],
         "optional": ["temperature", "humidity", "light", "deterrence", "repellent", "different times", "concurrent"]
       },
-      "answer": "Yes. Scoring treatment and control at different times can confound a chemical effect with Drosophila suzukii's daily egg-laying rhythm. Hourly oviposition was 2.4-fold higher in light than dark at constant 23 degrees C, 15.4-fold higher under a 17:7 light-dark cycle with 17/11 degrees C, and 9.1-fold and 25-fold higher in the August and October field assays. Field peaks were not fixed to one sunrise or sunset interval, and oviposition dipped when August field temperatures exceeded 30 degrees C. Repeat treatment and control concurrently when possible, or randomize both within replicated time blocks while matching fruit, fly state, light, temperature, humidity, and exposure duration. Keep egg-laying rhythm, locomotor activity, treatment effect, and egg-to-adult survival as separate endpoints; do not transfer one month's or one laboratory regime's peak to another.",
+      "answer": "No. Scoring treatment and control at different times confounds a chemical effect with Drosophila suzukii's daily egg-laying rhythm. Hourly oviposition was 2.4-fold higher in light than dark at constant 23 degrees C, 15.4-fold higher under a 17:7 light-dark cycle with 17/11 degrees C, and 9.1-fold and 25-fold higher in the August and October field assays. Field peaks were not fixed to one sunrise or sunset interval, and oviposition dipped when August field temperatures exceeded 30 degrees C. Repeat treatment and control concurrently when possible, or randomize both within replicated time blocks while matching fruit, fly state, light, temperature, humidity, and exposure duration. Keep egg-laying rhythm, locomotor activity, treatment effect, and egg-to-adult survival as separate endpoints; do not transfer one month's or one laboratory regime's peak to another.",
       "source_record_ids": ["swd_olfaction_literature:pubmed:30379809"]
     },
     {
@@ -678,12 +678,14 @@
       "id": "swd-choice-endpoint-confounds",
       "species_ids": ["drosophila_suzukii"],
       "match": {
+        "priority": 30,
         "phrases": ["fewer eggs", "reduced egg laying", "oviposition choice"],
         "required_any": [
           ["egg", "eggs", "oviposition", "fecundity"],
-          ["mortality", "survival", "activity", "locomotion", "mating", "confound", "separate"]
+          ["mortality", "survival", "activity", "locomotion", "movement", "mating", "confound", "separate"],
+          ["treated", "untreated", "choice", "no choice", "no-choice", "total eggs", "allocation", "allocate", "repellency", "prove"]
         ],
-        "optional": ["treated fruit", "choice", "total eggs", "no choice"]
+        "optional": ["treated fruit", "choice", "total eggs", "no choice", "dwell", "physiological state"]
       },
       "answer": "Fewer eggs on a treated choice cannot by itself establish sensory repellency. Interpret egg allocation alongside total eggs or a no-choice fecundity measure, survival, locomotion or dwell behavior, and standardized mating and physiological state. The cited pre-exposure study separately measured trap capture, female survival, and oviposition frequency, illustrating why one egg endpoint is insufficient. Choice, activity, toxicity, mating, and fecundity must remain separate explanations.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3199560580"]
@@ -746,10 +748,11 @@
       "id": "swd-fruit-condition-controls",
       "species_ids": ["drosophila_suzukii"],
       "match": {
+        "priority": 20,
         "phrases": ["fruit condition", "fruit ripeness", "skin hardness"],
         "required_any": [
-          ["ripeness", "firmness", "hardness", "injury", "wound", "moisture"],
-          ["control", "controlled", "match", "matched", "assay", "factorial"]
+          ["ripeness", "firmness", "firmer", "hardness", "injury", "wound", "wounded", "moisture", "dry", "drier"],
+          ["control", "controls", "controlled", "match", "matched", "cross", "crossed", "assay", "factorial", "assign", "assigned"]
         ],
         "optional": ["randomize", "block", "cultivar", "surface moisture", "repellent"]
       },
@@ -932,7 +935,7 @@
         ],
         "optional": ["airborne", "air plume", "microclimate", "occupancy", "solvent", "direction", "speed", "still air", "randomize", "reverse", "carrier", "delivery", "unsupported", "source gap"]
       },
-      "answer": "The cited transfluthrin study directly supports matched treated and solvent-and-carrier vehicle control chambers, separating contact from non-contact exposure, and keeping escape, knockdown, recovery, and mortality distinct. For environmental reproducibility, it recorded ambient air temperature and relative humidity at the beginning of each 30-minute trial, ran trials during 09:00-16:30 in the same laboratory space under identical conditions, and replicated each trial series four times. It does not publish the numeric assay-room temperature or humidity values. The reported colony conditions were 25 +/- 2 C, 80 +/- 10% relative humidity, and a 12:12 light:dark cycle; those are rearing conditions, not measured assay-room set points. The exposure source was 2.8 mL of transfluthrin solution on 14.7 x 17.5 cm filter paper. Acetone was the solvent and silicone oil the carrier at a reported 1.91:0.95 ratio; control papers used both without transfluthrin. Papers were air-dried at room temperature on aluminium foil for 24 hours, used once, and discarded. The paper reports initial loading but says active ingredient remaining on those papers at test time was not chemically determined. Separately, it does not report chamber-air concentration, plume structure, or airflow direction and speed; that is an airborne-exposure measurement gap, not the paper's named treated-paper residue limitation. For a new assay, record numeric chamber temperature and humidity over the full trial, define and monitor airflow direction and speed, sample plume or air concentration where possible, randomize or reverse treatment side, and report vehicle, applied amount, source geometry, drying, release rate, and reuse. Those are R&D design recommendations, not universal requirements established by this one paper. Keep still-air conclusions separate from directional-flow conclusions and do not treat applied loading alone as airborne dose.",
+      "answer": "The cited transfluthrin study directly supports matched treated and solvent-and-carrier vehicle control chambers, separating contact from non-contact exposure, and keeping escape, knockdown, recovery, and mortality distinct. For environmental reproducibility, it recorded ambient air temperature and relative humidity at the beginning of each 30-minute trial, ran trials during 09:00-16:30 in the same laboratory space under identical conditions, and replicated each trial series four times. It does not publish the numeric assay-room temperature or humidity values. The reported colony conditions were 25 +/- 2 C, 80 +/- 10% relative humidity, and a 12:12 light:dark cycle; those are rearing conditions, not measured assay-room set points. The exposure source was 2.8 mL of transfluthrin solution on 14.7 x 17.5 cm filter paper. Acetone was the solvent and silicone oil the carrier at a reported 1.91:0.95 ratio; control papers used both without transfluthrin. Papers were air-dried at room temperature on aluminium foil for 24 hours, used once, and discarded. The paper reports initial loading but says active ingredient remaining on those papers at test time was not chemically determined. Separately, it does not report chamber-air concentration, plume structure, or airflow direction and speed; that is an airborne-exposure measurement gap, not the paper's named treated-paper residue limitation. The current public source plane also lacks a complete product-specific package for carrier, release rate, application method, and delivery hardware. For a new assay, record numeric chamber temperature and humidity over the full trial, define and monitor airflow direction and speed, sample plume or air concentration where possible, randomize or reverse treatment side, and report vehicle, applied amount, source geometry, drying, release rate, and reuse. Those are R&D design recommendations, not universal requirements established by this one paper. Keep still-air conclusions separate from directional-flow conclusions and do not treat applied loading alone as airborne dose.",
       "source_record_ids": ["openalex:W3048721146"]
     },
     {
@@ -1066,7 +1069,7 @@
           "title": "Sex-Dependent Effects of the Microbiome on Foraging and Locomotion in Drosophila suzukii",
           "public_url": "https://doi.org/10.3389/fmicb.2021.656406",
           "source_id": "doi:10.3389/fmicb.2021.656406",
-          "locator": "Abstract and Results/Discussion: axenic and conventional females and males; starvation-induced locomotion; virgin versus mated gravid female food seeking; oviposition and fruit-preference results"
+          "locator": "Methods: 5- to 10-day-old adults and 15-hour food-deprivation protocol; Abstract and Results/Discussion: axenic and conventional females and males, starvation-induced locomotion, virgin versus mated gravid female food seeking, oviposition, and fruit preference"
         }
       ]
     },
@@ -1241,14 +1244,15 @@
       "id": "aedes-olfactory-learning",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["prior odor experience", "host experience", "olfactory learning"],
+        "priority": 20,
+        "phrases": ["prior odor experience", "host experience", "olfactory learning", "repeat exposure", "retested three hours", "three hours after exposure"],
         "required_any": [
-          ["prior", "experience", "experienced", "learning", "learned", "training"],
-          ["odor", "odour", "host", "repellent", "response"]
+          ["prior", "experience", "experienced", "learning", "learned", "training", "habituation", "adaptation", "retested", "repeat exposure"],
+          ["odor", "odour", "host", "repellent", "repellency", "response", "deet"]
         ],
         "optional": ["dopamine", "aversive", "habituation", "sensitization", "persistence"]
       },
-      "answer": "Yes, under specific laboratory conditions. In one direct repellent study, previous DEET exposure was followed by reduced behavioral repellency when Aedes aegypti were tested three hours later, together with a reduced electroantennogram response to DEET. A separate associative learning study trained females with 10 pairings of a 60-second odor presentation and mechanical shock separated by 2-minute intervals, then found learned avoidance of mammalian-associated odorants 24 hours later, but not the same change for the floral odor linalool. The DEET result is short-term pre-exposure evidence, while the shock experiment is associative learning. The DEET result does not establish long-term persistence or field product failure, and the learning experiment does not show learning to every repellent. Habituation, sensitization, learned association, innate repellency, and toxic impairment remain separate explanations.",
+      "answer": "Yes, under specific laboratory conditions. In one direct repellent study, previous DEET exposure was followed by reduced behavioral repellency when Aedes aegypti were tested three hours later, together with a reduced electroantennogram response to DEET. A separate associative learning study trained females with 10 pairings of a 60-second odor presentation and mechanical shock separated by 2-minute intervals, then found learned avoidance of mammalian-associated odorants 24 hours later, but not the same change for the floral odor linalool; dopamine signaling was implicated in that olfactory learning. The DEET result is short-term pre-exposure evidence, while the shock experiment is associative learning. The DEET result does not establish long-term persistence or field product failure, and the learning experiment does not show learning to every repellent. Habituation, sensitization, learned association, sensory adaptation, innate repellency, and toxic impairment remain separate explanations.",
       "source_record_ids": [
         "aedes_primary_behavior:pmc:PMC3577799",
         "openalex:W4315621418"
@@ -1858,7 +1862,7 @@
         ],
         "optional": ["orientation", "landing", "oviposition", "feeding", "yield", "quality"]
       },
-      "answer": "Start with an assay ladder that separately measures adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, and marketable yield or quality. Direct Plutella xylostella studies already demonstrate why the layers cannot be collapsed: one measured host orientation, landing, and egg laying; another separately counted adults, larvae, and leaf damage in broccoli; and the semiochemical study linked a four-choice adult assay to field population and beneficial-insect counts. Those sources do not show that one early endpoint universally predicts marketable yield. The proposed order is a product-development design, and adult avoidance alone cannot establish reduced crop damage.",
+      "answer": "Start with an assay ladder that separately measures adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, beneficial-insect safety, and marketable yield or quality. Direct Plutella xylostella studies already demonstrate why the layers cannot be collapsed: one measured host orientation, landing, and egg laying; another separately counted adults, larvae, and leaf damage in broccoli; and the semiochemical study linked a four-choice adult assay to field population and beneficial-insect counts. Beneficial-insect abundance or harm is a separate safety gate for the candidate treatment, not a footnote to reduced moth landing. Those sources do not show that one early endpoint universally predicts marketable yield. The proposed order is a product-development design, and adult avoidance alone cannot establish reduced crop damage.",
       "source_record_ids": [
         "dbm:openalex:W2114561940",
         "dbm:openalex:W4391482378",
@@ -1944,7 +1948,7 @@
         ],
         "optional": ["brassica", "wind tunnel", "olfactometer", "mated female", "larval damage"]
       },
-      "answer": "The missing public baseline is not whether Plutella xylostella can respond to candidate repellents. Direct studies already report airflow or Y-tube avoidance, oviposition deterrence, larval toxicity or feeding effects, field trapping, and field population outcomes for Mikania micrantha oil, Angelica pubescens extract and compounds, non-host essential oils, and citronella. Those studies use source dose or airflow, but they do not provide one field-validated chain that measures airborne concentration at the moth, separates non-contact avoidance from contact-permitted exposure and toxic impairment, and then links that same exposure to eggs, larvae, crop damage, and marketable yield. That quantified exposure-to-crop-protection chain is the highest-leverage public-evidence gap. Close it with a randomized, blinded, staged study of one focal candidate and a known DBM-active positive control. First, use mated females and standardized Brassica plants in an airflow chamber with solvent and airflow controls, an upstream source physically isolated from moth and plant, and air sampling at the moth position over time to measure plume concentration. Record orientation, landing, zone occupancy, flight, knockdown, recovery, mortality, and eggs separately across a dose series. Compare that odor-only condition with a contact-permitted treated-plant condition while measuring both headspace and surface residue; do not label a volatile-treated surface contact-only because it still emits vapor. Then carry prespecified effective, non-toxic exposures into replicated semi-field or field plots and measure plume exposure, eggs, larval establishment, feeding damage, marketable yield or quality, persistence, weather, and non-target effects. Release rate alone is not airborne concentration, and a laboratory avoidance result alone would not close the field crop-protection gap. This prioritization and design are R&D recommendations, not evidence that one candidate already works.",
+      "answer": "The missing public baseline is not whether Plutella xylostella can respond to candidate repellents. Direct studies already report airflow or Y-tube avoidance, oviposition deterrence, larval toxicity or feeding effects, field trapping, and field population outcomes for Mikania micrantha oil, Angelica pubescens extract and compounds, non-host essential oils, and citronella. Those studies use source dose or airflow, but they do not provide one field-validated chain that measures airborne concentration at the moth, separates non-contact avoidance from contact-permitted exposure and toxic impairment, and then links that same exposure to eggs, larvae, crop damage, and marketable yield. That quantified exposure-to-crop-protection chain is the highest-leverage public-evidence gap. Close it with a randomized, blinded, staged study of one focal candidate and a known DBM-active positive control. First, use mated females and standardized Brassica plants in an airflow chamber with solvent and airflow controls, an upstream source physically isolated from moth and plant, and direct measurements of source release rate plus air sampling at the moth position over time to measure plume concentration. Record orientation, landing, zone occupancy, flight, knockdown, recovery, and mortality separately across a dose series. Compare that odor-only condition with a contact-permitted treated-plant condition while measuring both headspace and surface residue; do not label a volatile-treated surface contact-only because it still emits vapor. Carry the same exposures into matched choice and no-choice oviposition assays, measuring total eggs as well as allocation, survival, larval establishment, and feeding damage. Then carry prespecified effective, non-toxic exposures into replicated semi-field or field plots and measure plume exposure, eggs, larval establishment, feeding damage, marketable yield or quality, persistence, weather, and non-target effects. Release rate alone is not airborne concentration, so measure both; a laboratory avoidance result alone would not close the field crop-protection gap. This prioritization and design are R&D recommendations, not evidence that one candidate already works.",
       "source_record_ids": [
         "dbm:openalex:W1994548084",
         "dbm:openalex:W2114561940",
