@@ -418,6 +418,48 @@ class HostedCliTests(unittest.TestCase):
         )
         self.assertFalse(output.lstrip().startswith("{"))
 
+    def test_answer_only_reads_exact_question_from_literal_stdin(self):
+        question = (
+            "A formulation's $effect includes `Orco`; can a \"pure\" active explain it?"
+        )
+        hosted_payload = {
+            "ok": True,
+            "answer_shape": "reviewed_science",
+            "answer": "The formulation result does not identify the responsible compound.",
+            "evidence": [
+                {
+                    "source": "aedes_primary_behavior_evidence",
+                    "title": "Sodium channel activation underlies transfluthrin repellency in Aedes aegypti",
+                    "url": "https://doi.org/10.1371/journal.pntd.0009546",
+                    "provenance": {
+                        "source_id": "doi:10.1371/journal.pntd.0009546",
+                        "locator": "Results: commercial products and Orco-null comparison",
+                    },
+                }
+            ],
+        }
+
+        with patch("askinsects.cli.load_config") as load_config, patch(
+            "askinsects.cli.hosted_request", return_value=hosted_payload
+        ) as hosted_request, patch(
+            "askinsects.cli.sys.stdin", io.StringIO(question + "\n")
+        ):
+            load_config.return_value = SimpleNamespace(
+                url="https://ask-insects.example", token="secret"
+            )
+            code, output = self.run_cli(
+                "ask",
+                "--question-stdin",
+                "--answer-only",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertIn(hosted_payload["answer"], output)
+        self.assertEqual(
+            hosted_request.call_args.args[3],
+            {"question": question, "limit": 5},
+        )
+
     def test_answer_only_preserves_word_boundaries_around_title_markup(self):
         hosted_payload = {
             "ok": True,

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import re
 import sqlite3
+import sys
 
 from .answer import answer_question
 from .builder import DEFAULT_ARTIFACT_DIR
@@ -366,7 +367,12 @@ def main(argv: list[str] | None = None) -> int:
     context_package.add_argument("--local", action="store_true", help=_LOCAL_HELP)
 
     ask = sub.add_parser("ask")
-    ask.add_argument("question")
+    ask.add_argument("question", nargs="?")
+    ask.add_argument(
+        "--question-stdin",
+        action="store_true",
+        help="Read the exact question from stdin, removing only the here-document's final newline",
+    )
     ask.add_argument("--limit", type=int, default=5)
     ask.add_argument("--json", action="store_true")
     ask.add_argument(
@@ -954,11 +960,28 @@ def main(argv: list[str] | None = None) -> int:
         emit(payload)
         return 0 if payload.get("ok") else 2
     if args.command == "ask":
+        question = args.question
+        if args.question_stdin:
+            if question is not None:
+                emit(evidence_package_error(
+                    "invalid_question_input",
+                    "Provide the question either as an argument or with --question-stdin, not both.",
+                ))
+                return 2
+            question = sys.stdin.read()
+            if question.endswith("\n"):
+                question = question[:-1]
+        if not question:
+            emit(evidence_package_error(
+                "missing_question",
+                "Ask Insects requires a non-empty question.",
+            ))
+            return 2
         if args.hosted:
-            payload = hosted_request(load_config(), "POST", "/ask", {"question": args.question, "limit": args.limit})
+            payload = hosted_request(load_config(), "POST", "/ask", {"question": question, "limit": args.limit})
         else:
             try:
-                payload = answer_question(args.question, artifact_dir=artifact_dir, limit=args.limit)
+                payload = answer_question(question, artifact_dir=artifact_dir, limit=args.limit)
             except sqlite3.Error as exc:
                 payload = cli_error(str(exc), lane="mosquito_v1", artifact_dir=artifact_dir)
             gap = payload.get("source_gap") or {}
