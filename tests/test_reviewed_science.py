@@ -2084,7 +2084,15 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "Can we transfer an Anopheles DEET response to Aedes, or are close-range repellent responses species-specific?",
                 "openalex:W3013059076",
-                ("lemongrass", "PMD", "eugenol", "DEET", "0.5 cm", "30 seconds"),
+                (
+                    "significant repellency to lemongrass oil, PMD, eugenol, and DEET",
+                    "DEET was not significantly repellent",
+                    "weak response",
+                    "P=0.08",
+                    "not the same as zero movement",
+                    "0.5 cm",
+                    "30-second",
+                ),
             ),
             (
                 "Do Aedes aegypti populations from different African environments have the same human-odor preference?",

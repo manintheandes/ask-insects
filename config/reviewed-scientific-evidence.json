@@ -169,7 +169,7 @@
       "title": "Insect repellents mediate species-specific olfactory behaviours in mosquitoes",
       "public_url": "https://doi.org/10.1186/s12936-020-03206-8",
       "source_id": "doi:10.1186/s12936-020-03206-8",
-      "locator": "Abstract and Methods: close-proximity odor assay comparing lemongrass oil, PMD, eugenol, and DEET across three mosquito species"
+      "locator": "Methods: close-proximity odor assay, one resting female, filter paper about 0.5 cm away, and 30-second observation; Results, species comparison: Aedes aegypti and Culex quinquefasciatus showed significant repellency to all four compounds, while Anopheles coluzzii showed significant repellency to lemongrass oil and PMD, a weak non-significant eugenol response (P=0.08), and non-significant DEET repellency"
     },
     {
       "record_id": "openalex:W3044645851",
@@ -1312,7 +1312,7 @@
         ],
         "optional": ["aedes", "close range", "close-range", "odor alone", "human odor", "receptor"]
       },
-      "answer": "In the close-proximity odor assay, Aedes aegypti and Culex quinquefasciatus were repelled to varying degrees by lemongrass oil, PMD, eugenol, and DEET, while Anopheles coluzzii responded to lemongrass oil and PMD but not eugenol or DEET. Each test used one resting female, filter paper about 0.5 cm away, and a 30 seconds observation window. This is direct odor-only, close-range movement evidence, not human-odor masking, landing, biting, or protection time. Do not transfer an Anopheles result to Aedes or infer a universal receptor; test the intended Aedes population at the intended vapor exposure, then confirm host-seeking and protection endpoints.",
+      "answer": "In the close-proximity odor assay, Aedes aegypti and Culex quinquefasciatus showed significant repellency to lemongrass oil, PMD, eugenol, and DEET. Anopheles coluzzii showed significant repellency to lemongrass oil and PMD; DEET was not significantly repellent, and eugenol produced a weak response that was not significantly different from paraffin oil (P=0.08). That is not the same as zero movement or no response by every mosquito. Each test used one resting female, filter paper about 0.5 cm away, and a 30-second observation window. This is direct odor-only, close-range movement evidence, not human-odor masking, landing, biting, complete protection time, or field efficacy. Do not transfer an Anopheles result to Aedes or infer a universal receptor; test the intended Aedes population at the intended vapor exposure, then confirm host-seeking and protection endpoints.",
       "source_record_ids": ["openalex:W3013059076"]
     },
     {
