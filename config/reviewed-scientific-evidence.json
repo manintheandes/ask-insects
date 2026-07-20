@@ -917,10 +917,10 @@
       "species_ids": ["aedes_aegypti"],
       "match": {
         "priority": 6,
-        "phrases": ["vapor repellency", "airborne repellency", "spatial repellency", "vapor-active", "less escape", "reduced escape", "lower escape"],
+        "phrases": ["vapor repellency", "airborne repellency", "spatial repellency", "vapor-active", "less escape", "reduced escape", "lower escape", "flight direction", "moving more slowly"],
         "required_any": [
-          ["vapor", "vapour", "airborne", "spatial", "non contact", "non-contact"],
-          ["knockdown", "toxicity", "toxic", "mortality", "impaired", "impairment", "locomotor"]
+          ["vapor", "vapour", "airborne", "spatial", "non contact", "non-contact", "flight direction", "directional", "heading", "trajectory"],
+          ["knockdown", "toxicity", "toxic", "mortality", "impaired", "impairment", "locomotor", "slow", "slower", "slowing", "speed", "moving more slowly"]
         ],
         "optional": ["avoidance", "occupancy", "escape", "voluntary", "recovery"]
       },
