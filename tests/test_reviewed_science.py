@@ -3222,7 +3222,7 @@ class ReviewedScienceTests(unittest.TestCase):
             "openalex:W3187681115": (
                 "doi:10.1016/j.cub.2021.07.003",
                 "https://doi.org/10.1016/j.cub.2021.07.003",
-                "Figure 2 and Supplementary Figure S2",
+                "Figure 1F and Supplementary Figures S1E-S1G",
             ),
         }
         cases = (
@@ -3559,6 +3559,81 @@ class ReviewedScienceTests(unittest.TestCase):
                         {item["record_id"] for item in answer["evidence"]},
                     )
 
+    def test_ecotrol_field_result_keeps_crop_and_comparator_claims_separate(self):
+        from askinsects.cli import compact_agent_answer
+        from askinsects.sources.swd_primary_field_evidence import (
+            ECOTROL_FIELD_RECORD_ID,
+            build_swd_primary_field_evidence_records,
+        )
+
+        questions = (
+            "We got a raspberry signal with Ecotrol PLUS at 3.5 L/ha. Is that "
+            "enough to advance the same spray program for half-high blueberry, "
+            "and was its raspberry performance actually equivalent to spinosad?",
+            "Can the Ecotrol raspberry field result be transferred to blueberries "
+            "or treated as equivalence with spinosad?",
+            "Was Ecotrol PLUS effective across berry crops because its raspberry "
+            "mean matched the spinosad mean?",
+        )
+        negative_questions = (
+            "Which Ecotrol ingredient has the lowest boiling point?",
+            "Did spinosad cause mortality in a laboratory vial bioassay?",
+            "How should blueberry firmness be measured?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                build_swd_primary_field_evidence_records(
+                    retrieved_at="2026-07-20T00:00:00Z"
+                )
+            )
+            answers = [
+                answer_question(question, artifact_dir=artifact_dir)
+                for question in questions
+            ]
+            negatives = [
+                build_reviewed_science_answer(index, question)
+                for question in negative_questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertTrue(answer["ok"])
+                self.assertEqual(answer["answer_shape"], "reviewed_science")
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {ECOTROL_FIELD_RECORD_ID},
+                )
+                for fragment in (
+                    "do not advance",
+                    "sentinel raspberries",
+                    "equivalence or noninferiority",
+                    "p = 0.909",
+                    "not blueberry efficacy",
+                ):
+                    self.assertIn(fragment, answer["answer"].casefold())
+                final_answer = compact_agent_answer(answer)["final_answer"]
+                self.assertIn(
+                    "(https://pmc.ncbi.nlm.nih.gov/articles/PMC7469169/)",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Source ID: `doi:10.3390/insects11080536`",
+                    final_answer,
+                )
+                self.assertIn("Locator: `Table 1", final_answer)
+
+        for question, answer in zip(negative_questions, negatives, strict=True):
+            with self.subTest(question=question):
+                if answer is not None:
+                    self.assertNotIn(
+                        ECOTROL_FIELD_RECORD_ID,
+                        {item["record_id"] for item in answer["evidence"]},
+                    )
+
     def test_catalog_preserves_exact_title_and_complete_figure_locator(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         provenance = {
@@ -3719,8 +3794,9 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertNotIn("wash-in", durability["answer"].casefold())
 
         vision = provenance["openalex:W3187681115"]
-        self.assertIn("Figure 2", vision["locator"])
-        self.assertIn("Supplementary Figure S2", vision["locator"])
+        self.assertIn("Figure 1F", vision["locator"])
+        self.assertIn("Supplementary Figures S1E-S1G", vision["locator"])
+        self.assertIn("Supplementary Figures S1I and S2J", vision["locator"])
         self.assertIn("Figure 3", vision["locator"])
         self.assertIn("Supplementary Figure S3", vision["locator"])
         self.assertIn("Figure 4", vision["locator"])

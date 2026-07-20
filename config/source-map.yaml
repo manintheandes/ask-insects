@@ -152,15 +152,17 @@ sources:
         - spectral_preference_without_carbon_dioxide
         - visual_object_investigation_as_landing_biting_or_protection
   - id: swd_primary_field_evidence
-    name: Exact primary SWD greenhouse-to-field evidence
+    name: Exact primary SWD field-translation evidence
     source_type: human_reviewed_primary_study
-    boundary: One exact primary study of hop products against Drosophila suzukii, preserving the 24-hour greenhouse infestation result, controlled raspberry field result, commercial raspberry and blackberry results, application modes, endpoint distinctions, volatile-profile associations, and the authors' bounded explanations for failed field translation
+    boundary: Human-reviewed primary studies of candidate products against Drosophila suzukii, preserving crop-specific designs, application rates, infestation endpoints, comparator statistics, and bounded field-translation claims. Includes hop greenhouse-to-field evidence and Ecotrol PLUS raspberry-versus-half-high-blueberry evidence without turning shared point estimates into equivalence.
     query_plane: deterministic_reviewed_record_to_sqlite_literature
     artifact_dir: artifacts/mosquito-v1
     ingest_script: scripts/ingest_swd_primary_field_evidence.py
     upstream_sources:
       - ku_leuven_public_author_manuscript
       - elsevier_crop_protection_doi
+      - pubmed_central_open_access_article
+      - mdpi_insects_doi
     lanes:
       - literature
     provenance_required: true

@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from askinsects.index import SourceIndex
 from askinsects.sources.swd_primary_field_evidence import (
+    ECOTROL_FIELD_RECORD_ID,
     SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
     build_swd_primary_field_evidence_records,
 )
@@ -22,8 +23,8 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
             retrieved_at="2026-07-19T00:00:00Z"
         )
 
-        self.assertEqual(len(records), 1)
-        record = records[0]
+        self.assertEqual(len(records), 2)
+        record = next(item for item in records if item.record_id != ECOTROL_FIELD_RECORD_ID)
         self.assertEqual(
             record.record_id,
             "swd_primary_field:doi:10.1016/j.cropro.2019.05.033",
@@ -49,6 +50,32 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
             "commercial raspberry and blackberry",
             "larvae in fruit",
             "hypotheses rather than demonstrated causes",
+        ):
+            self.assertIn(fragment, record.text)
+
+    def test_record_preserves_ecotrol_crop_specific_results_and_limits(self):
+        records = build_swd_primary_field_evidence_records(
+            retrieved_at="2026-07-20T00:00:00Z"
+        )
+
+        record = next(
+            item for item in records if item.record_id == ECOTROL_FIELD_RECORD_ID
+        )
+        self.assertEqual(record.source, SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID)
+        self.assertEqual(record.species, "Drosophila suzukii")
+        self.assertEqual(
+            record.url,
+            "https://pmc.ncbi.nlm.nih.gov/articles/PMC7469169/",
+        )
+        for fragment in (
+            "rosemary oil (10%)",
+            "3.5 L/ha",
+            "sentinel raspberries",
+            "0.06 plus or minus 0.01",
+            "equivalence or noninferiority",
+            "half-high Vaccinium corymbosum cv. Chippewa",
+            "P=0.909",
+            "does not support transferring",
         ):
             self.assertIn(fragment, record.text)
 
@@ -97,13 +124,13 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
 
         self.assertTrue(first["ok"])
         self.assertTrue(repeated["ok"])
-        self.assertEqual(record_count, 1)
-        self.assertEqual(searchable_count, 1)
+        self.assertEqual(record_count, 2)
+        self.assertEqual(searchable_count, 2)
         self.assertEqual(
-            status["source_counts"][SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID], 1
+            status["source_counts"][SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID], 2
         )
-        self.assertEqual(status["record_count"], 1)
-        self.assertEqual(status["lanes"]["literature"], 1)
+        self.assertEqual(status["record_count"], 2)
+        self.assertEqual(status["lanes"]["literature"], 2)
 
 
 if __name__ == "__main__":
