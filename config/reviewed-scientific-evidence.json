@@ -41,23 +41,23 @@
     {
       "record_id": "aedes_primary_behavior:pubmed:469272",
       "title": "Humoral inhibition of host-seeking in Aedes aegypti during oöcyte maturation",
-      "public_url": "https://doi.org/10.1016/0022-1910(79)90048-9",
+      "public_url": "https://www.sciencedirect.com/science/article/abs/pii/0022191079900489",
       "source_id": "doi:10.1016/0022-1910(79)90048-9",
-      "locator": "Abstract: blood-enema, oocyte-maturation, surgical-manipulation, and haemolymph-transfer experiments separating humoral inhibition from feeding"
+      "locator": "Publisher abstract: blood-enema, oocyte-maturation, surgical-manipulation, and haemolymph-transfer experiments separating humoral inhibition from feeding"
     },
     {
       "record_id": "aedes_primary_behavior:pubmed:544697",
       "title": "Abdominal distention terminates subsequent host-seeking behaviour of Aedes aegypti following a blood meal",
-      "public_url": "https://doi.org/10.1016/0022-1910(79)90073-8",
+      "public_url": "https://www.sciencedirect.com/science/article/abs/pii/0022191079900738",
       "source_id": "doi:10.1016/0022-1910(79)90073-8",
-      "locator": "Abstract: immediate host-seeking inhibition after a replete blood meal and after saline-enema abdominal distention"
+      "locator": "Publisher abstract: immediate host-seeking inhibition after a replete blood meal and after saline-enema abdominal distention"
     },
     {
       "record_id": "dbm:openalex:W1994548084",
       "title": "The roles of olfaction and vision in host-plant finding by the diamondback moth, Plutella xylostella",
       "public_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
       "source_id": "doi:10.1111/j.1365-3032.2006.00499.x",
-      "locator": "Abstract and Results: odor-guided host orientation, visual plant position, alighting, and oviposition measured as distinct outcomes"
+      "locator": "Abstract and Results: volatile-cue host location and landing plus plant-position and host-versus-nonhost effects on alighting; oviposition was not measured"
     },
     {
       "record_id": "dbm:openalex:W1996826081",
@@ -148,7 +148,7 @@
       "title": "Product Performance Test Guidelines OPPTS 810.3700: Insect Repellents to be Applied to Human Skin",
       "public_url": "https://www.epa.gov/system/files/documents/2023-12/1d.-oppts-810.3700-guidelines-july-7-2010.pdf",
       "source_id": "epa:oppts-810.3700",
-      "locator": "Paragraphs (v), (ix), and (x): efficacy endpoints, subject preparation, treatment, and complete protection time"
+      "locator": "Pages 5-9: section (b)(7) Complete Protection Time; section (c)(1)(iii)(B) choice of repellency endpoint; section (c)(1)(ix) subject preparation; section (c)(1)(x) treatment"
     },
     {
       "record_id": "human_repellent_guidance:who:2009.4",
@@ -183,7 +183,7 @@
       "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus (Diptera: Culicidae)",
       "public_url": "https://doi.org/10.1371/journal.pone.0237353",
       "source_id": "doi:10.1371/journal.pone.0237353",
-      "locator": "Methods and Results: treated-paper loading, contact and non-contact chambers, escape, knockdown, mortality, and post-exposure behavior by species and population"
+      "locator": "Methods, Insecticide impregnated papers and Experimental design; Results, Tables 1-3 and Figure 1; Results, Excito-repellency of field-collected mosquitoes, Figure 4 and Table 6; Discussion paragraphs on chemically undetermined residual transfluthrin"
     },
     {
       "record_id": "openalex:W3179105761",
@@ -211,14 +211,14 @@
       "title": "Development of a Nanotechnology Matrix-Based Citronella Oil Insect Repellent to Obtain a Prolonged Effect and Evaluation of the Safety and Efficacy",
       "public_url": "https://doi.org/10.3390/life13010141",
       "source_id": "doi:10.3390/life13010141",
-      "locator": "Abstract, thermal and skin-permeation methods, and Table 8 arm-in-cage complete-protection times"
+      "locator": "Methods 2.6, 2.9, and 2.10; Results 3.3, 3.6 and Table 8, and 3.7: thermal analysis, arm-in-cage protection time, skin permeation and mass balance, and the authors' release interpretation without a direct emission curve or chamber-air measurement"
     },
     {
       "record_id": "openalex:W4315621418",
       "title": "Neuromodulation and differential learning across mosquito species",
       "public_url": "https://doi.org/10.1098/rspb.2022.2118",
       "source_id": "doi:10.1098/rspb.2022.2118",
-      "locator": "Abstract and Results: species-specific aversive olfactory learning and dopamine-pathway manipulation"
+      "locator": "Materials and methods 4(b)(ii): 60-second odor presentation, 10 odor-shock pairings, 2-minute inter-trial interval, and testing after 24 hours; Results 2(b) and Figures 2-4: species-specific aversive learning and dopamine-pathway evidence"
     },
     {
       "record_id": "openalex:W4399119561",
@@ -246,7 +246,7 @@
       "title": "Changes in the life history traits in Aedes aegypti selected for resistance to permethrin and thymol, a spatial repellent",
       "public_url": "https://doi.org/10.1371/journal.pone.0329776",
       "source_id": "doi:10.1371/journal.pone.0329776",
-      "locator": "Abstract and Results: longevity, blood-feeding avidity, egg output, and development after permethrin or thymol resistance selection"
+      "locator": "Results: Effects of selection for resistance on longevity, Tables 1-2 and Figures 1-2; Selection of resistance on biting rate, Table 3 and Figure 3, where no pairwise feeding difference was significant; fecundity, Table 4 and Figure 4; development, Tables 5-6 and Figure 5"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W3037850025",
@@ -414,14 +414,14 @@
       "title": "Sex-Dependent Effects of the Microbiome on Foraging and Locomotion in Drosophila suzukii",
       "public_url": "https://doi.org/10.3389/fmicb.2021.656406",
       "source_id": "doi:10.3389/fmicb.2021.656406",
-      "locator": "Methods: 5- to 10-day-old adults and 15-hour food-deprivation protocol; Abstract and Results/Discussion: axenic and conventional females and males, starvation-induced locomotion, virgin versus mated gravid female food seeking, oviposition, and fruit preference"
+      "locator": "Methods: 5- to 10-day-old adults, including axenic and conventional females and males, 15-hour food deprivation, and foraging scored at 7, 12, and 24 hours; Results, Figures 1-3 and reproductive-state comparison: sex- and microbiome-dependent foraging and locomotion, the conventional-female 7-hour virgin-versus-gravid difference and its later time points, axenic comparisons, and oviposition"
     },
     {
       "record_id": "openalex:W3187681115",
       "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
       "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
       "source_id": "doi:10.1016/j.cub.2021.07.003",
-      "locator": "Abstract; Results, Figures 1-3 and Supplementary Figures S1-S3: op1 and op2 single-mutant and op1/op2 double-mutant cage and wind-tunnel target attraction plus odor tracking; Results, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
+      "locator": "Results, Figure 2 and Supplementary Figure S2: op1/op2 double-mutant CO2-stimulated target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results, Figure 3 and Supplementary Figure S3: normal human-odor tracking; Results, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
     },
     {
       "record_id": "openalex:W4225097850",
@@ -509,28 +509,31 @@
       "id": "swd-fruit-texture-mechanosensation",
       "species_ids": ["drosophila_suzukii"],
       "match": {
+        "priority": 60,
         "phrases": ["fruit texture", "egg-laying texture", "oviposition texture"],
         "required_any": [
           ["texture", "firmness", "firmer", "hardness", "harder"],
           ["egg", "eggs", "oviposition", "lay", "laying"]
         ],
+        "excluded_any": ["wound", "wounded", "wounding", "injury", "moisture", "dry", "drier", "ripeness", "protein", "carbohydrate", "nutritional", "nutrition", "diet"],
         "optional": ["mechanosensory", "mechanosensation", "channel", "channels", "sensory"]
       },
-      "answer": "In the cited laboratory assay, female Drosophila suzukii preferred the harder oviposition texture. Drugs targeting TRP and DEG/ENaC channel families abolished that preference. This separates the observed behavior from the candidate mechanism: mechanosensitive channels are implicated, but the experiment did not identify one uniquely causal channel. It also does not show that fruit hardness alone determines field infestation or that one channel is a proven commercial target.",
+      "answer": "In the cited laboratory assay, female Drosophila suzukii preferred the harder oviposition texture. Drugs targeting TRP and DEG/ENaC channel families abolished that preference. This separates the observed behavior from the candidate mechanism: mechanosensitive channels are implicated, but the experiment did not identify one uniquely causal channel. It also does not show that fruit hardness alone determines field infestation or that one channel is a proven commercial target. If a candidate and its vehicle were applied to substrates with different firmness, the treatment contrast cannot isolate odor. Match firmness across treatments or cross candidate versus vehicle with at least two pre-specified firmness levels in a factorial design, measure firmness rather than assigning it by label, and analyze treatment, firmness, and their interaction. This is an R&D control derived from the texture confound, not a protocol tested by the cited paper.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3037850025"]
     },
     {
       "id": "swd-microbial-oviposition",
       "species_ids": ["drosophila_suzukii"],
       "match": {
+        "priority": 60,
         "phrases": ["microbial growth", "microbes on fruit", "microbial oviposition"],
         "required_any": [
-          ["microbe", "microbes", "microbial", "bacteria", "yeast", "commensal"],
+          ["microbe", "microbes", "microbial", "bacteria", "yeast", "commensal", "inoculated", "inoculation"],
           ["egg", "eggs", "oviposition", "lay", "laying"]
         ],
         "optional": ["hardness", "harder", "substrate", "texture", "attract", "deter", "avoid"]
       },
-      "answer": "In the cited artificial-substrate assay, Drosophila suzukii laid fewer eggs on soft 1% agar with visible commensal microbial growth than on the matched uninoculated substrate. By contrast, Drosophila melanogaster and Drosophila biarmipes preferred the microbe-rich soft substrate and laid more eggs there. On hard 3% agar, D. suzukii showed no significant preference or aversion to microbial growth. The hardness-dependent change implicates an interaction between mechanosensory and chemosensory information; it does not identify the responsible microbial molecule or show that every fruit microbe deters SWD in crops. To isolate the interaction, cross microbial treatment with matched agar hardness instead of changing microbes and texture together.",
+      "answer": "In the cited artificial-substrate assay, Drosophila suzukii laid fewer eggs on soft 1% agar with visible commensal microbial growth than on the matched uninoculated substrate. By contrast, Drosophila melanogaster and Drosophila biarmipes preferred the microbe-rich soft substrate and laid more eggs there. On hard 3% agar, D. suzukii showed no significant preference or aversion to microbial growth. The hardness-dependent change implicates an interaction between mechanosensory and chemosensory information; it does not identify the responsible microbial molecule or show that every fruit microbe deters SWD in crops. To isolate the interaction, cross inoculated versus uninoculated substrate with matched soft versus hard levels, randomize sides, and analyze the interaction. Measure both egg allocation in choice assays and total egg output in matched no-choice assays so a site preference is not confused with a change in overall oviposition. These are R&D controls, not additional results from the paper.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3124252639"]
     },
     {
@@ -793,7 +796,7 @@
         ],
         "optional": ["carbon dioxide", "co2", "odor", "visual", "heat", "landing"]
       },
-      "answer": "Untreated Aedes aegypti host seeking combines carbon dioxide, skin odor, visual contrast, thermal cues, and other close-range information rather than one signal. Genetic removal of two visual rhodopsins abolished vision-guided target attraction while odor tracking remained normal, showing separable pathways. The arm-in-cage study also shows that contact and bite endpoints can diverge. None of this proves which channels remain intact after a particular repellent: compound-specific exposure must be tested while keeping activation, orientation, landing, contact, probing, and biting distinct.",
+      "answer": "Untreated Aedes aegypti host seeking combines carbon dioxide, skin odor, visual contrast, thermal cues, and other close-range information rather than one signal. In the op1/op2 double mutants, carbon-dioxide-stimulated visual target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux, while human-odor tracking remained normal. This light-dependent result shows separable visual and odor pathways; it is not an unqualified loss of visual attraction under every light level. The arm-in-cage study also shows that contact and bite endpoints can diverge. None of this proves which channels remain intact after a particular repellent: compound-specific exposure must be tested while keeping activation, orientation, landing, contact, probing, and biting distinct.",
       "source_record_ids": [
         "openalex:W4401794442",
         "openalex:W3187681115",
@@ -936,7 +939,7 @@
         ],
         "optional": ["airborne", "air plume", "microclimate", "occupancy", "solvent", "direction", "speed", "still air", "randomize", "reverse", "carrier", "delivery", "unsupported", "source gap"]
       },
-      "answer": "The cited transfluthrin study directly supports matched treated and solvent-and-carrier vehicle control chambers, separating contact from non-contact exposure, and keeping escape, knockdown, recovery, and mortality distinct. For environmental reproducibility, it recorded ambient air temperature and relative humidity at the beginning of each 30-minute trial, ran trials during 09:00-16:30 in the same laboratory space under identical conditions, and replicated each trial series four times. It does not publish the numeric assay-room temperature or humidity values. The reported colony conditions were 25 +/- 2 C, 80 +/- 10% relative humidity, and a 12:12 light:dark cycle; those are rearing conditions, not measured assay-room set points. The exposure source was 2.8 mL of transfluthrin solution on 14.7 x 17.5 cm filter paper. Acetone was the solvent and silicone oil the carrier at a reported 1.91:0.95 ratio; control papers used both without transfluthrin. Papers were air-dried at room temperature on aluminium foil for 24 hours, used once, and discarded. The paper reports initial loading but says active ingredient remaining on those papers at test time was not chemically determined. Separately, it does not report chamber-air concentration, plume structure, or airflow direction and speed; that is an airborne-exposure measurement gap, not the paper's named treated-paper residue limitation. The current public source plane also lacks a complete product-specific package for carrier, release rate, application method, and delivery hardware. For a new assay, record numeric chamber temperature and humidity over the full trial, define and monitor airflow direction and speed, sample plume or air concentration where possible, randomize or reverse treatment side, and report vehicle, applied amount, source geometry, drying, release rate, and reuse. Those are R&D design recommendations, not universal requirements established by this one paper. Keep still-air conclusions separate from directional-flow conclusions and do not treat applied loading alone as airborne dose.",
+      "answer": "The cited transfluthrin study directly supports matched treated and solvent-and-carrier vehicle control chambers, separating contact from non-contact exposure, and keeping escape, knockdown, recovery, and mortality distinct. For environmental reproducibility, it recorded ambient air temperature and relative humidity at the beginning of each 30-minute trial, ran trials during 09:00-16:30 in the same laboratory space under identical conditions, and replicated each trial series four times. It does not publish the numeric assay-room temperature or humidity values. The reported colony conditions were 25 +/- 2 C, 80 +/- 10% relative humidity, and a 12:12 light:dark cycle; those are rearing conditions, not measured assay-room set points. The exposure source was 2.8 mL of transfluthrin solution on 14.7 x 17.5 cm filter paper. Acetone was the solvent and silicone oil the carrier at a reported 1.91:0.95 ratio; control papers used both without transfluthrin. Papers were air-dried at room temperature on aluminium foil for 24 hours, used once, and discarded. The paper reports initial loading but says active ingredient remaining on those papers at test time was not chemically determined. Separately, it does not report chamber-air concentration, plume structure, airflow direction and speed, a measured source release rate, or delivery-hardware characterization beyond the treated paper; that is an airborne-exposure measurement gap, not the paper's named treated-paper residue limitation. This paper therefore cannot by itself define a complete product-specific exposure package. For a new assay, record numeric chamber temperature and humidity over the full trial, define and monitor airflow direction and speed, sample plume or air concentration where possible, randomize or reverse treatment side, and report vehicle, applied amount, source geometry, drying, release rate, reuse, and delivery hardware. Those are R&D design recommendations, not universal requirements established by this one paper. Keep still-air conclusions separate from directional-flow conclusions and do not treat applied loading alone as airborne dose.",
       "source_record_ids": ["openalex:W3048721146"]
     },
     {
@@ -1062,7 +1065,7 @@
         ],
         "optional": ["feeding state", "microbiome", "gravid", "foraging", "standardize"]
       },
-      "answer": "The cited SWD study used 5- to 10-day-old adults and compared fed flies with flies deprived of food for 15 hours; starvation-induced locomotion increased activity. It also found lower food seeking in virgin females than in mated gravid females and linked reduced female foraging with lower oviposition in microbiome-deprived flies. These direct results show that hunger, mating state, gravidity, and microbiome can change the behavioral baseline against which a repellent is judged. Age could change reproductive maturity, and prior egg laying could change remaining egg load and oviposition motivation, but this paper did not experimentally measure either effect. Standardize, block, or deliberately vary age, mating, feeding, microbiome, and prior egg-laying history, and do not infer unmeasured age or prior-oviposition effect sizes from the mating-state result.",
+      "answer": "Do not compare those two assay batches as a treatment-effect contrast because feeding, mating, and gravidity changed together. The cited SWD study used 5- to 10-day-old adults and compared fed flies with flies deprived of food for 15 hours; starvation-induced locomotion changed in ways that depended on sex and microbiome status. In its reproductive-state comparison, conventional virgin females showed lower food seeking than conventional mated gravid females at 7 hours; that difference was not significant at 12 or 24 hours, and axenic virgin and gravid females did not differ significantly at the measured times. The paper also linked lower foraging in axenic females with lower egg production. These direct results show that hunger, bundled reproductive state, microbiome, and assay time can change the behavioral baseline against which a repellent is judged. Age could change reproductive maturity, and prior egg laying could change remaining egg load and oviposition motivation, but this paper did not experimentally measure either effect. Standardize, block, or deliberately vary age, mating, gravidity, feeding, microbiome, time of measurement, and prior egg-laying history, and do not infer unmeasured age or prior-oviposition effect sizes from the reproductive-state result.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3161910963"],
       "source_provenance": [
         {
@@ -1070,7 +1073,7 @@
           "title": "Sex-Dependent Effects of the Microbiome on Foraging and Locomotion in Drosophila suzukii",
           "public_url": "https://doi.org/10.3389/fmicb.2021.656406",
           "source_id": "doi:10.3389/fmicb.2021.656406",
-          "locator": "Methods: 5- to 10-day-old adults and 15-hour food-deprivation protocol; Abstract and Results/Discussion: axenic and conventional females and males, starvation-induced locomotion, virgin versus mated gravid female food seeking, oviposition, and fruit preference"
+          "locator": "Methods: 5- to 10-day-old adults, including axenic and conventional females and males, 15-hour food deprivation, and foraging scored at 7, 12, and 24 hours; Results, Figures 1-3 and reproductive-state comparison: sex- and microbiome-dependent foraging and locomotion, the conventional-female 7-hour virgin-versus-gravid difference and its later time points, axenic comparisons, and oviposition"
         }
       ]
     },
@@ -1188,7 +1191,7 @@
         ],
         "optional": ["carbon dioxide", "co2", "cage", "wind tunnel", "odor tracking", "phototaxis", "optic flow", "erg"]
       },
-      "answer": "The single and double knockouts separate redundancy from general blindness. Knocking out op1 alone did not impair carbon-dioxide-stimulated visual target selection, and op2 single mutants also behaved like controls. By contrast, op1/op2 double mutants nearly eliminated or abolished attraction to the dark visual target in cage and wind-tunnel tests. The double mutants retained odor tracking and normal phototaxis, still showed an optomotor response to optic flow, and retained a diminished electrophysiological response to light. The result therefore supports redundant contributions of Op1 and Op2 to this CO2-activated, vision-guided target-attraction behavior. It does not show that either receptor is individually necessary, that the double mutants are completely blind, or that olfactory tracking, close-range heat sensing, landing, probing, and biting are abolished.",
+      "answer": "The single and double knockouts separate redundancy from general blindness. Knocking out op1 alone did not impair carbon-dioxide-stimulated visual target selection, and op2 single mutants also behaved like controls. By contrast, op1/op2 double-mutant attraction to the dark target was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux in the cage assay, with severe impairment also seen in the wind tunnel. The double mutants retained odor tracking and normal phototaxis, still showed an optomotor response to optic flow, and retained a diminished electrophysiological response to light. The result therefore supports redundant contributions of Op1 and Op2 to this CO2-activated, light-dependent target-attraction behavior. It does not show that either receptor is individually necessary, that the double mutants are completely blind, or that olfactory tracking, close-range heat sensing, landing, probing, and biting are abolished.",
       "source_record_ids": ["openalex:W3187681115"],
       "source_provenance": [
         {
@@ -1196,7 +1199,7 @@
           "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
           "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
           "source_id": "doi:10.1016/j.cub.2021.07.003",
-          "locator": "Abstract; Results, Figures 1-3 and Supplementary Figures S1-S3: op1 and op2 single-mutant and op1/op2 double-mutant cage and wind-tunnel target attraction plus odor tracking; Results, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
+          "locator": "Results, Figure 2 and Supplementary Figure S2: op1/op2 double-mutant CO2-stimulated target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results, Figure 3 and Supplementary Figure S3: normal human-odor tracking; Results, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG"
         }
       ]
     },
@@ -1211,7 +1214,7 @@
         ],
         "optional": ["thermal infrared", "rhodopsin", "blood feeding", "navigation"]
       },
-      "answer": "Aedes aegypti host seeking is multimodal, but the cues are not fully interchangeable. The cited primary studies directly support integration of carbon dioxide, human odor, and thermal infrared; they also show that removing two visual rhodopsins abolished vision-guided target attraction while leaving odor tracking normal, and that carbon dioxide and a blood meal changed visual tracking. The thermal-infrared paper identifies close-range moisture and convective body heat as contributing when mosquitoes are very near skin. It distinguishes convective heat, which is sensed at less than 10 cm, from thermal infrared, which can provide a mid-range directional cue; neither is interchangeable with carbon dioxide, odor, or vision. The cited experiments do not directly manipulate humidity or moisture within this multimodal cue combination. That is a source gap, so the degree to which humidity is redundant with odor, vision, or heat is not established here. Cue weighting depends on physiological state and assay geometry; distinguish activation, long-range orientation, landing, and biting.",
+      "answer": "Aedes aegypti host seeking is multimodal, but the cues are not fully interchangeable. The cited primary studies directly support integration of carbon dioxide, human odor, and thermal infrared. They also show that op1/op2 double-mutant carbon-dioxide-stimulated visual target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux while odor tracking remained normal, and that carbon dioxide and a blood meal changed visual tracking. The thermal-infrared paper identifies close-range moisture and convective body heat as contributing when mosquitoes are very near skin. It distinguishes convective heat, which is sensed at less than 10 cm, from thermal infrared, which can provide a mid-range directional cue; neither is interchangeable with carbon dioxide, odor, or vision. The cited experiments do not directly manipulate humidity or moisture within this multimodal cue combination. That is a source gap, so the degree to which humidity is redundant with odor, vision, or heat is not established here. Cue weighting depends on physiological state, light level, and assay geometry; distinguish activation, long-range orientation, landing, and biting.",
       "source_record_ids": [
         "openalex:W4401794442",
         "openalex:W3187681115",
@@ -1270,7 +1273,7 @@
         ],
         "optional": ["field population", "laboratory colony", "mating", "feeding state", "life history"]
       },
-      "answer": "Population background can change a result enough to reverse the practical interpretation. At the same 0.00852% initial transfluthrin loading on paper, non-contact escape was 5.0% in the laboratory USDA strain and 54.9% in the field NON population. That is one assay and one population comparison; the loading is the initial paper loading, not a measured airborne concentration at the mosquito. A separate resistance-selection study found changes in longevity, blood-feeding avidity, egg output, and development, but it does not quantify repellent response by age, genotype, or resistance state. Report and test population, genotype or resistance phenotype, age, mating, and feeding state across relevant backgrounds. Do not assume one colony represents the species or that insecticide resistance changes repellency in one fixed direction.",
+      "answer": "Population background can change a result enough to reverse the practical interpretation. At the same 0.00852% initial transfluthrin loading on paper, non-contact escape was 5.0% in the laboratory USDA strain and 54.9% in the field NON population. That is one assay and one population comparison; the loading is the initial paper loading, not a measured airborne concentration at the mosquito. A separate resistance-selection study measured longevity, first-blood-meal feeding rate, egg output, and development. Selection background affected several life-history outcomes, but no pairwise feeding-rate difference was significant, and the study does not quantify repellent response by age, genotype, or resistance state. Report and test population, genotype or resistance phenotype, age, mating, and feeding state across relevant backgrounds. Do not assume one colony represents the species or that insecticide resistance changes repellency in one fixed direction.",
       "source_record_ids": ["openalex:W3048721146", "openalex:W4413344516"]
     },
     {
@@ -1363,7 +1366,7 @@
         ],
         "optional": ["formulation", "source age", "chamber volume", "ventilation", "sampling method"]
       },
-      "answer": "The transfluthrin paper reported initial loading on treated papers but says the active ingredient remaining on those papers at test time was not chemically determined. Separately, its methods do not report chamber-air concentration or plume exposure. The citronella paper measured protection time, thermal properties, and skin permeation, but it did not directly measure volatile release rate or chamber air concentration. Those findings support keeping source loading, retained source mass, and measured mosquito exposure separate, but neither paper supplies a universal reporting standard. As an R&D reporting recommendation, record active ingredient and formulation, applied mass and area, source age, retained source mass when measured, evaporation or release rate over time when measured, chamber volume and ventilation, air-sampling method and airborne concentration when measured, source-to-mosquito distance, time, temperature, humidity, and airflow. Keep loading, retained mass, emission, transport, measured concentration, distance, and behavior separate; do not convert applied mass to milligrams per cubic meter without validated release and transport measurements. The cited public evidence does not yet provide one complete product-specific package spanning carrier, concentration, application method, spatial delivery, and measured release rate; this is a source gap, not evidence that those properties are absent.",
+      "answer": "The transfluthrin paper reported initial loading on treated papers but says in its Discussion that the active ingredient remaining on those papers at test time was not chemically determined. Its assay methods and reported results also provide no chamber-air concentration or plume-exposure measurement. The citronella paper measured thermal properties, arm-in-cage protection time, skin permeation, and mass balance; it interpreted the longer protection as prolonged release but did not directly measure a volatile-emission curve or chamber-air concentration. Those findings support keeping source loading, retained source mass, inferred release, measured emission, and measured mosquito exposure separate, but neither paper supplies a universal reporting standard. As an R&D reporting recommendation, record active ingredient and formulation, applied mass and area, source age, retained source mass when measured, evaporation or release rate over time when measured, chamber volume and ventilation, air-sampling method and airborne concentration when measured, source-to-mosquito distance, time, temperature, humidity, and airflow. Keep loading, retained mass, emission, transport, measured concentration, distance, and behavior separate; do not convert applied mass to milligrams per cubic meter without validated release and transport measurements. Taken together, these two papers do not provide one complete product-specific package spanning carrier, application, spatial delivery, measured release rate, and measured air concentration. That is a source gap within these two cited papers, not evidence that those product properties are absent.",
       "source_record_ids": [
         "openalex:W3048721146",
         "openalex:W4313493759"
@@ -1449,7 +1452,7 @@
         ],
         "optional": ["selection response", "common garden", "kdr", "pyrethroid", "marker"]
       },
-      "answer": "First separate three levels: ordinary avoidance is the intended behavioral response; reduced sensitivity is a measured behavioral phenotype; and physiological resistance requires evidence of an altered physiological mechanism. As an operational decision rule, require repeatable reduced sensitivity at a standardized dose or air concentration plus inheritance evidence before calling the phenotype inherited resistance; this is not a universal definition. Heritable behavioral insensitivity does not by itself prove an altered physiological mechanism because behavioral sensitivity can also be inherited. In the direct transfluthrin study, selective mating over nine generations produced an insensitive SRA- line, the decline was significant by generation F4, and an experimental cross between SRA- females and wild-type males restored spatial-repellent sensitivity and insecticide susceptibility. The association with reduced insecticide susceptibility supports a link, but altered uptake, metabolism, target-site action, or neural processing would need direct measurement before naming a physiological mechanism. A separate thymol- and permethrin-selection study found dose-, feeding-, and mating-dependent changes in longevity, increased blood-feeding avidity and egg output in both thymol-selected groups and the high-permethrin group, and altered development time. Those are life-history changes after selection; the study does not measure repellent response in a standardized spatial-sensitivity assay or identify the physiological mechanism. A separate treated-clothing study also shows why kdr or insecticide-resistance status cannot automatically be equated with repellent failure. Insecticide resistance and repellent response cannot be assumed equivalent across compounds, formulations, routes, populations, or doses.",
+      "answer": "First separate three levels: ordinary avoidance is the intended behavioral response; reduced sensitivity is a measured behavioral phenotype; and physiological resistance requires evidence of an altered physiological mechanism. As an operational decision rule, require repeatable reduced sensitivity at a standardized dose or air concentration plus inheritance evidence before calling the phenotype inherited resistance; this is not a universal definition. Heritable behavioral insensitivity does not by itself prove an altered physiological mechanism because behavioral sensitivity can also be inherited. In the direct transfluthrin study, selective mating over nine generations produced an insensitive SRA- line, the decline was significant by generation F4, and an experimental cross between SRA- females and wild-type males restored spatial-repellent sensitivity and insecticide susceptibility. The association with reduced insecticide susceptibility supports a link, but altered uptake, metabolism, target-site action, or neural processing would need direct measurement before naming a physiological mechanism. A separate thymol- and permethrin-selection study measured longevity, first-blood-meal feeding rate, egg output, and development after selection. No pairwise feeding-rate difference was significant; the selected lines did show other life-history differences, including fecundity and development effects. Those are life-history outcomes after selection; the study does not measure repellent response in a standardized spatial-sensitivity assay or identify the physiological mechanism. A separate treated-clothing study also shows why kdr or insecticide-resistance status cannot automatically be equated with repellent failure. Insecticide resistance and repellent response cannot be assumed equivalent across compounds, formulations, routes, populations, or doses.",
       "source_record_ids": [
         "aedes_primary_behavior:plosntds:e0003726",
         "openalex:W4299723530",
@@ -1807,6 +1810,30 @@
       ]
     },
     {
+      "id": "dbm-host-cue-sequence-experiment",
+      "species_ids": ["plutella_xylostella"],
+      "match": {
+        "priority": 90,
+        "phrases": [
+          "surface wax and induced volatiles",
+          "wax versus induced volatiles",
+          "cue sequence",
+          "final oviposition"
+        ],
+        "required_any": [
+          ["wax", "waxy", "reduced-wax", "reduced wax", "surface"],
+          ["volatile", "volatiles", "headspace", "odor", "odour", "larva-damaged", "larva damaged", "induced"],
+          ["experiment", "test", "determine", "sequence", "causal", "causality", "staged", "stage"]
+        ],
+        "optional": ["orientation", "landing", "contact", "residence", "factorial", "choice", "no-choice"]
+      },
+      "answer": "The existing Plutella xylostella evidence establishes two separate stages, not their causal order. Reduced-wax or herbicide-treated surfaces received more eggs in a surface-choice study, while larva-induced host-plant volatiles attracted females in a Y-tube that did not measure landing, contact, or egg deposition. To determine how those cues combine, run a crossed 2 x 2 experiment: induced versus control headspace, delivered at a measured and matched flow, by wax-intact versus reduced-wax Brassica surfaces that are otherwise visually and chemically matched. Generate the headspace separately from the test plant so larval damage does not also alter its surface. Include clean-air and sham wax-manipulation controls, randomize sides and blocks, and standardize mated-female age and egg load. Record the sequence as separate endpoints: initial orientation, landing, first surface contact, residence time, total eggs, and egg allocation. Add matched no-choice arms for total egg output. A headspace effect on orientation followed by a wax effect after contact would support a staged sequence; an interaction would show that the final choice depends on both. This is a causal R&D design derived from the two studies, not an experiment either paper already performed.",
+      "source_record_ids": [
+        "dbm:openalex:W2164349268",
+        "dbm:openalex:W3093961030"
+      ]
+    },
+    {
       "id": "dbm-direct-host-cue-gap",
       "species_ids": ["plutella_xylostella"],
       "match": {
@@ -1949,7 +1976,7 @@
         ],
         "optional": ["brassica", "wind tunnel", "olfactometer", "mated female", "larval damage"]
       },
-      "answer": "Across the eight cited primary studies, the missing baseline is not whether Plutella xylostella can respond to candidate repellents. Direct studies already report airflow or Y-tube avoidance, oviposition deterrence, larval toxicity or feeding effects, field trapping, and field population outcomes for Mikania micrantha oil, Angelica pubescens extract and compounds, non-host essential oils, and citronella. Those studies use source dose or airflow, but they do not provide one field-validated chain that measures airborne concentration at the moth, separates non-contact avoidance from contact-permitted exposure and toxic impairment, and then links that same exposure to eggs, larvae, crop damage, and marketable yield. Within this cited evidence set, that quantified exposure-to-crop-protection chain is the highest-leverage gap. Close it with a randomized, blinded, staged study of one focal candidate and a known DBM-active positive control. First, use mated females and standardized Brassica plants in an airflow chamber with solvent and airflow controls, an upstream source physically isolated from moth and plant, and direct measurements of source release rate plus air sampling at the moth position over time to measure plume concentration. Record orientation, landing, zone occupancy, flight, knockdown, recovery, and mortality separately across a dose series. Compare that odor-only condition with a contact-permitted treated-plant condition while measuring both headspace and surface residue; do not label a volatile-treated surface contact-only because it still emits vapor. Carry the same exposures into matched choice and no-choice oviposition assays, measuring total eggs as well as allocation, survival, larval establishment, and feeding damage. Then carry prespecified effective, non-toxic exposures into replicated semi-field or field plots and measure plume exposure, eggs, larval establishment, feeding damage, marketable yield or quality, persistence, weather, and non-target effects. Release rate alone is not airborne concentration, so measure both; a laboratory avoidance result alone would not close the field crop-protection gap. This prioritization and design are R&D recommendations, not evidence that one candidate already works.",
+      "answer": "Across the eight cited primary studies, the missing baseline is not whether Plutella xylostella can respond to candidate repellents. Direct studies already report airflow or Y-tube avoidance, oviposition deterrence, larval toxicity or feeding effects, field trapping, and field population outcomes for Mikania micrantha oil, Angelica pubescens extract and compounds, non-host essential oils, and citronella. Those studies use source dose or airflow, but they do not provide one field-validated chain that measures airborne concentration at the moth, separates non-contact avoidance from contact effects and toxic impairment, and then links that same exposure to eggs, larvae, crop damage, and marketable yield. Within this cited evidence set, that quantified exposure-to-crop-protection chain is the highest-leverage gap. Close it with a randomized, blinded, staged study of one focal candidate and a known DBM-active positive control. First, use mated females and standardized Brassica plants in an airflow chamber with solvent and airflow controls, an upstream source physically isolated from moth and plant, and direct measurements of source release rate plus air sampling at the moth position over time to measure plume concentration. Record orientation, landing, zone occupancy, flight, knockdown, recovery, and mortality separately across a dose series. To estimate the added effect of contact, deliver the same measured candidate headspace to both arms, then compare access to a vehicle surface with access to a candidate-residue surface while confirming equivalent air concentration at the moth in both arms. A barrier/no-barrier implementation is acceptable only if the barrier does not change the measured plume. Do not label a volatile-treated surface contact-only; without vapor matching it cannot isolate contact. Carry those vapor-matched exposures into choice and no-choice oviposition assays, measuring total eggs as well as allocation, survival, larval establishment, and feeding damage. Then carry prespecified effective, non-toxic exposures into replicated semi-field or field plots and measure plume exposure, eggs, larval establishment, feeding damage, marketable yield or quality, persistence, weather, and non-target effects. Release rate alone is not airborne concentration, so measure both; a laboratory avoidance result alone would not close the field crop-protection gap. This prioritization and design are R&D recommendations, not evidence that one candidate already works.",
       "source_record_ids": [
         "dbm:openalex:W1994548084",
         "dbm:openalex:W2114561940",
