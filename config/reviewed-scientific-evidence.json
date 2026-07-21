@@ -1026,14 +1026,42 @@
       "id": "swd-visual-olfactory-confound",
       "species_ids": ["drosophila_suzukii"],
       "match": {
-        "phrases": ["visual contrast", "fruit color", "visual cue"],
-        "required_any": [
-          ["visual", "color", "colour", "contrast"],
-          ["odor", "odour", "olfactory", "repellency", "assay", "confound"]
+        "priority": 90,
+        "phrases": [
+          "visual contrast",
+          "fruit color",
+          "visual cue",
+          "target color",
+          "trap choice",
+          "odor lead",
+          "color odor interaction",
+          "color by odor"
         ],
-        "optional": ["trap", "match", "hide", "randomize", "multimodal", "dispenser", "emitter", "cartridge", "clear", "transparent"]
+        "required_any": [
+          ["visual", "color", "colour", "contrast", "target color"],
+          ["odor", "odour", "olfactory", "volatile", "repellency", "assay", "confound"]
+        ],
+        "optional": [
+          "trap",
+          "choice",
+          "interaction",
+          "factorial",
+          "carrier",
+          "match",
+          "hide",
+          "randomize",
+          "position",
+          "oviposition",
+          "egg",
+          "multimodal",
+          "dispenser",
+          "emitter",
+          "cartridge",
+          "clear",
+          "transparent"
+        ]
       },
-      "answer": "Repeat the comparison: visually match treatment and control, or hide the source hardware while randomizing positions. Drosophila suzukii showed color preferences, and the preferred visual cue changed with the accompanying odor in the cited study. The source measured trap-oriented responses, not oviposition, so it does not prove an egg-laying effect. Vision and olfaction should be treated as interacting modalities rather than independent additive cues.",
+      "answer": "Do not call the volatile itself repellent from a trap-choice shift that appears only with one target color. Repeat the assay as a color-by-odor factorial: each target color crossed with candidate odor, carrier or blank odor, and matched source hardware. Visually match treatment and control, hide the source where possible, and randomize target positions; keep randomizing positions across replicates so hardware is not the cue. Drosophila suzukii showed color preferences, and the preferred visual cue changed with the accompanying odor in the cited study. The source measured trap-oriented responses, not oviposition, so it does not prove an egg-laying effect. Vision and olfaction are interacting modalities rather than independent additive cues; an oviposition claim needs a separate egg-laying assay that crosses the same odor and visual conditions while also measuring total eggs.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3132534524"]
     },
     {
@@ -1527,10 +1555,45 @@
         "species_may_be_implicit": true,
         "phrases": ["skin repellent durability", "how long a skin repellent", "real-use durability"],
         "required_any": [
-          ["sweat", "washing", "abrasion", "sunlight", "ultraviolet"],
-          ["duration", "durability", "protect", "protection", "skin", "lasts"]
+          [
+            "sweat",
+            "sweating",
+            "perspiration",
+            "washing",
+            "swim",
+            "swimming",
+            "water",
+            "abrasion",
+            "rub",
+            "rubbing",
+            "sun",
+            "sunlight",
+            "uv",
+            "ultraviolet"
+          ],
+          [
+            "duration",
+            "durability",
+            "protect",
+            "protection",
+            "skin",
+            "lasts",
+            "last",
+            "arm test",
+            "unchallenged"
+          ]
         ],
-        "optional": ["temperature", "rubbing", "water exposure", "active ingredient", "landing", "bite"]
+        "optional": [
+          "standard",
+          "complete protection time",
+          "arm",
+          "temperature",
+          "rubbing",
+          "water exposure",
+          "active ingredient",
+          "landing",
+          "bite"
+        ]
       },
       "answer": "WHO and EPA guidance provide standardized baseline efficacy and complete-protection-time methods for human-skin repellents. EPA's baseline subject controls explicitly avoid perspiration, abrasion, rubbing, touching, and wetting the treated area, so a baseline test does not establish protection after those stresses. The cited official guidance does not provide a validated sunlight or ultraviolet challenge protocol or a universal multi-stress durability matrix; that is a source gap. For product R&D, a challenge design could use separate, pre-specified sweat or water, washing and drying, rubbing or abrasion, exploratory sunlight or ultraviolet, and relevant temperature arms, each with an unchallenged time-matched control. That is an R&D challenge design, not a source-standardized protocol. Repeat landing or bite protection after each challenge; retained active ingredient or measured release is supporting evidence and cannot substitute for behavioral protection.",
       "source_record_ids": [
