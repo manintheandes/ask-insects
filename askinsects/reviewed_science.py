@@ -88,7 +88,14 @@ _MATCH_TOKEN_EQUIVALENTS = {
     "treetop": "top",
     "treetops": "top",
 }
-_QUESTION_INTENTS = frozenset({"sampling_design"})
+_QUESTION_INTENTS = frozenset(
+    {
+        "deet_repeat_exposure",
+        "movement_inference",
+        "olfactory_experience",
+        "sampling_design",
+    }
+)
 FORBIDDEN_SCIENTIFIC_SOURCE_PREFIXES = (
     "insect_intelligence_programs:",
 )
@@ -557,6 +564,8 @@ def _has_swd_fruit_sampling_subject(normalized_question: str) -> bool:
 
 
 def _has_sampling_design_intent(normalized_question: str) -> bool:
+    if _has_movement_inference_intent(normalized_question):
+        return False
     if _has_intervention_decision_context(normalized_question):
         return False
     if not _has_swd_fruit_sampling_subject(normalized_question):
@@ -601,7 +610,132 @@ def _has_sampling_design_intent(normalized_question: str) -> bool:
     )
 
 
+def _has_movement_inference_intent(normalized_question: str) -> bool:
+    spatial_pattern = re.search(
+        r"\b(?:orchard|block|canopy|row|rows|edge|border|center|centre|north|south|"
+        r"spatial|distribution|infestation|emergence)\b",
+        normalized_question,
+    )
+    movement_claim = re.search(
+        r"\b(?:movement|move|moved|moving|entry|entered|entering|immigration|"
+        r"dispersal|trajectory|transition|transitions|flight path|flight paths|"
+        r"origin|origins|direction|directional|trace|traced|tracing)\b",
+        normalized_question,
+    )
+    inference_decision = re.search(
+        r"\b(?:infer|inference|prove|establish|show|demonstrate|fit|fitting|model|"
+        r"estimate|reconstruct|conclude|claim|evidence|study|track|tracked)\b",
+        normalized_question,
+    )
+    return bool(spatial_pattern and movement_claim and inference_decision)
+
+
+def _has_olfactory_experience_intent(normalized_question: str) -> bool:
+    target = r"(?:odor|odour|host|repellent|repellency|deet)"
+    experience = (
+        r"(?:experience|experienced|exposure|exposed|contact|training|learning|"
+        r"learned|habituation|adaptation|pre exposure)"
+    )
+    prior_target_experience = re.search(
+        rf"\b(?:prior|previous|past|repeat|repeated|retested)\s+{target}"
+        rf"(?:\s+\w+){{0,2}}\s+{experience}\b",
+        normalized_question,
+    )
+    prior_experience_target = re.search(
+        rf"\b(?:prior|previous|past|repeat|repeated|retested)\s+{experience}"
+        rf"(?:\s+(?:to|with|from))?\s+{target}\b",
+        normalized_question,
+    )
+    previously_exposed_target = re.search(
+        rf"\bpreviously\s+exposed(?:\s+(?:to|with))?\s+{target}\b",
+        normalized_question,
+    )
+    retested_after_target_experience = re.search(
+        rf"\bretested(?:\s+\w+){{0,4}}\s+(?:after|following)\s+(?:"
+        rf"{target}(?:\s+\w+){{0,2}}\s+{experience}|"
+        rf"{experience}(?:\s+(?:to|with|from))?\s+{target})\b",
+        normalized_question,
+    )
+    named_learning = re.search(
+        r"\b(?:olfactory learning|odor learning|odour learning|host experience|"
+        r"repellent experience|deet experience)\b",
+        normalized_question,
+    )
+    bound_experience = re.search(
+        rf"\b(?:{target}(?:\s+\w+){{0,2}}\s+{experience}|"
+        rf"{experience}(?:\s+(?:to|with|from))?\s+{target})\b",
+        normalized_question,
+    )
+    mechanism_question = re.search(
+        r"\b(?:learning|learned|training|habituation|adaptation)\b",
+        normalized_question,
+    )
+    return bool(
+        named_learning
+        or prior_target_experience
+        or prior_experience_target
+        or previously_exposed_target
+        or retested_after_target_experience
+        or (bound_experience and mechanism_question)
+    )
+
+
+def _has_deet_repeat_exposure_intent(normalized_question: str) -> bool:
+    if not re.search(r"\bdeet\b", normalized_question):
+        return False
+    decision = re.search(
+        r"\b(?:independent|replicate|efficacy|screen|control|rank|measurement|"
+        r"crossover|carryover)\b",
+        normalized_question,
+    )
+    repeat_before_deet = re.search(
+        r"\b(?:repeat(?:ed|ing)?|retest(?:ed|ing)?|re exposure|prior exposure|"
+        r"previous exposure|pre exposure|second exposure|previously exposed)\b"
+        r"(?:\s+\w+){0,2}\s+\bdeet\b",
+        normalized_question,
+    )
+    exposed_to_deet_before = re.search(
+        r"\bexposed(?:\s+\w+){0,2}\s+\bdeet\s+before\b",
+        normalized_question,
+    )
+    qualified_deet_event = re.search(
+        r"\b(?:prior|previous|repeat|repeated|second)\s+deet\s+"
+        r"(?:exposure|challenge|test|measurement)\b",
+        normalized_question,
+    )
+    deet_before_repeat = re.search(
+        r"\bdeet\b(?:\s+\w+){0,4}\s+\b(?:again|carryover|repeat(?:ed|ing)?|"
+        r"retest(?:ed|ing)?|re exposure|pre exposure|second challenge|exposure history)\b",
+        normalized_question,
+    )
+    cage_rechallenge = re.search(
+        r"\b(?:challenge|challenged|rechallenge|rechallenged|reuse|reuses|reusing)\s+"
+        r"(?:the\s+)?same\s+cage(?:\s+\w+){0,2}\s+deet\b|"
+        r"\bsame\s+cage(?:\s+\w+){0,2}\s+"
+        r"(?:challenged|rechallenged|reused)(?:\s+\w+){0,2}\s+deet\b|"
+        r"\bdeet(?:\s+\w+){0,4}\s+(?:challenge|challenged|rechallenge|"
+        r"rechallenged|reuse|reuses|reusing)\s+(?:the\s+)?same\s+cage\b",
+        normalized_question,
+    )
+    return bool(
+        decision
+        and (
+            repeat_before_deet
+            or exposed_to_deet_before
+            or qualified_deet_event
+            or deet_before_repeat
+            or cage_rechallenge
+        )
+    )
+
+
 def _question_intent_matches(intent: str, normalized_question: str) -> bool:
+    if intent == "deet_repeat_exposure":
+        return _has_deet_repeat_exposure_intent(normalized_question)
+    if intent == "movement_inference":
+        return _has_movement_inference_intent(normalized_question)
+    if intent == "olfactory_experience":
+        return _has_olfactory_experience_intent(normalized_question)
     if intent == "sampling_design":
         return _has_sampling_design_intent(normalized_question)
     return False
