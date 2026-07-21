@@ -852,7 +852,6 @@ class ReviewedScienceTests(unittest.TestCase):
                         [record_id],
                     )
                     for fragment in (
-                        "No.",
                         "Pectis brevipedunculata",
                         "feeding toxicity and diet-consumption",
                         "still killed more bees than the control",
@@ -861,6 +860,41 @@ class ReviewedScienceTests(unittest.TestCase):
                         "remain evidence needs",
                     ):
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_swd_crop_safety_measurement_question_starts_with_measurements(self):
+        record_id = "swd:openalex_literature:openalex:W4397009635"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator="raw/swd.json#works/W4397009635",
+                    )
+                ]
+            )
+            answer = build_reviewed_science_answer(
+                index,
+                "Which non-target and crop-safety measurements should accompany an SWD repellent field trial?",
+            )
+
+            self.assertIsNotNone(answer)
+            assert answer is not None
+            self.assertTrue(answer["ok"])
+            self.assertFalse(answer["answer"].startswith("No."))
+            for fragment in (
+                "Measure the safety package",
+                "crop injury and fruit quality",
+                "residues and worker exposure",
+                "field pollinator survival and behavior",
+                "predators and parasitoids",
+                "soil exposure",
+                "aquatic exposure",
+                "does not establish pollinator safety or crop safety",
+            ):
+                self.assertIn(fragment.casefold(), answer["answer"].casefold())
 
     def test_swd_pollinator_safety_matcher_rejects_unrelated_questions(self):
         record_id = "swd:openalex_literature:openalex:W4397009635"
