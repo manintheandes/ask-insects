@@ -1963,7 +1963,7 @@
         ],
         "optional": ["fewer", "less", "landing", "larva", "larvae", "yield"]
       },
-      "answer": "The evidence supports antennal detection and adult field attraction, not crop protection. The cited 2025 Plutella xylostella study identified eight broccoli volatiles that elicited antennal responses and found a three-component blend that attracted adults in field traps. It did not show that the blend reduced egg laying, larval establishment, feeding damage, or yield loss. A separate direct host-choice study measured orientation, landing, fecundity, and oviposition as distinct outcomes, which is why antennal response and trap catch cannot substitute for reproductive or crop endpoints. Test the blend in randomized choice and no-choice oviposition assays and then in matched field plots that separately count adults, eggs, larvae, leaf damage, and marketable yield. Until those downstream outcomes improve, the blend is a candidate attractant rather than a demonstrated crop repellent or crop-protection treatment.",
+      "answer": "The evidence supports antennal detection and adult field attraction, not crop protection. The cited 2025 Plutella xylostella study identified eight broccoli volatiles that elicited antennal responses and found a three-component blend that attracted adults in field traps. That winnows adult-attraction candidates, but it does not prove that the three-component lure is best for oviposition, and it does not justify discarding the other five antennally active compounds as egg-laying candidates solely because they were not included in the field-trap blend. It also did not show that the blend reduced egg laying, larval establishment, feeding damage, or yield loss. A separate direct host-choice study measured orientation, landing, fecundity, and oviposition as distinct outcomes, which is why antennal response and trap catch cannot substitute for reproductive or crop endpoints. Test the blend and the omitted antennally active compounds in randomized choice and no-choice oviposition assays and then in matched field plots that separately count adults, eggs, larvae, leaf damage, beneficial insects, and marketable yield. Until those downstream outcomes improve, the blend is a candidate attractant rather than a demonstrated crop repellent or crop-protection treatment.",
       "source_record_ids": [
         "dbm:openalex:W4409241407",
         "dbm:openalex:W2114561940"
@@ -2061,12 +2061,32 @@
       "id": "dbm-cross-species-transfer-boundary",
       "species_ids": ["plutella_xylostella"],
       "match": {
-        "phrases": ["cross-species", "SWD or mosquito", "spatial-repellency evidence"],
+        "priority": 95,
+        "phrases": [
+          "cross-species",
+          "SWD or mosquito",
+          "SWD and Aedes",
+          "vapor lead",
+          "spatial-repellency evidence",
+          "diamondback moth assay"
+        ],
         "required_any": [
           ["swd", "mosquito", "aedes", "cross species", "cross-species"],
-          ["diamondback", "dbm", "plutella", "transfer", "suggest", "spatial"]
+          ["diamondback", "dbm", "plutella"],
+          ["transfer", "suggest", "spatial", "borrow", "vapor", "lead", "assay", "build", "building"]
         ],
-        "optional": ["contact", "non contact", "plume", "oviposition", "larval feeding"]
+        "optional": [
+          "contact",
+          "non contact",
+          "plume",
+          "oviposition",
+          "orientation",
+          "egg",
+          "larval",
+          "larval feeding",
+          "crop-damage",
+          "persistence"
+        ]
       },
       "answer": "SWD and mosquito work can transfer assay principles and hypotheses: separate contact from non-contact exposure, measure dose and plume, use matched controls, and follow behavior with reproduction and damage endpoints. It cannot transfer efficacy. Direct Plutella xylostella studies already provide adult choice, host-location, oviposition, field population, larval-density, and leaf-damage endpoints, so a DBM program should build on those rather than claim the species is unstudied. The candidate repellent must still be tested directly in Plutella for non-contact orientation, contact effects, sex and life-stage response, oviposition, larval feeding and damage, dose response, toxicity, field plume behavior, and persistence. Keep the SWD and Aedes papers labeled as method analogies and the DBM papers labeled as focal-species evidence.",
       "source_record_ids": [
@@ -2099,11 +2119,24 @@
       "id": "dbm-diel-release-timing",
       "species_ids": ["plutella_xylostella"],
       "match": {
-        "priority": 30,
-        "phrases": ["diel timing", "clock gene timing", "adult locomotor activity"],
+        "priority": 95,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["roth"],
+          ["period", "timeless", "transcript", "transcripts"],
+          ["locomotor", "activity", "emitter", "release", "schedule"]
+        ],
+        "phrases": [
+          "diel timing",
+          "clock gene timing",
+          "adult locomotor activity",
+          "ROTH colony",
+          "period and timeless transcripts",
+          "volatile emitter"
+        ],
         "required_any": [
-          ["diel", "circadian", "period", "timeless", "time of day", "light", "temperature"],
-          ["locomotor", "activity", "release", "schedule", "timing", "application"]
+          ["diel", "circadian", "period", "timeless", "transcript", "transcripts", "time of day", "light", "temperature"],
+          ["locomotor", "activity", "release", "schedule", "timing", "application", "emitter", "turn", "turns"]
         ],
         "optional": ["roth", "entrained", "free running", "free-running", "field", "repellent"]
       },
