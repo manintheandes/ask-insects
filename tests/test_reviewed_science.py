@@ -2509,6 +2509,17 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("34 C", "CO2", "human odor", "TRPA1", "opsins"),
             ),
             (
+                "If a mosquito product blocks thermal infrared cues, can we claim people are protected without testing CO2, odor, humidity, vision, and biting outcomes?",
+                "openalex:W4401794442",
+                (
+                    "humidity",
+                    "vision",
+                    "biting",
+                    "not enough to claim people are protected",
+                    "not a validated stand-alone repellent target",
+                ),
+            ),
+            (
                 "When the same people provide skin-odor samples repeatedly, what do donor consistency, carboxylic acids, and ionotropic-receptor mutants tell us about why female Aedes differ in attraction?",
                 "aedes_olfaction_literature:pubmed:36261039",
                 (
@@ -3307,6 +3318,18 @@ class ReviewedScienceTests(unittest.TestCase):
                 "female dual-choice result fit together, and is there knockout evidence?",
                 "dbm:openalex:W4285394072",
                 ("Xenopus", "antennal", "dual-choice", "did not use a receptor knockout"),
+            ),
+            (
+                "A DBM odorant receptor responds to an aromatic volatile in oocytes and females avoid the odor in a choice assay. Is that enough to call the receptor a field repellent target?",
+                "dbm:openalex:W4285394072",
+                (
+                    "PxylOR11",
+                    "Xenopus",
+                    "dual-choice",
+                    "did not use a receptor knockout",
+                    "field dose",
+                    "crop protection",
+                ),
             ),
             (
                 "What direct evidence shows that PxylOR16 mediates diamondback moth "
@@ -4462,7 +4485,25 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "Aerosol puffers beat passive octenol vials in raspberries. What exposure and crop measurements should the next field trial collect?",
                 "swd-field-plume-delivery",
-                ("emitted mass", "time-resolved canopy concentration", "marketable yield"),
+                (
+                    "emitted mass",
+                    "time-resolved canopy concentration",
+                    "marketable yield",
+                    "Keep two raspberry-field results separate",
+                ),
+            ),
+            (
+                "Aerosol puffers reduced SWD emergence in raspberries more than passive vials. What exposure, weather, egg, larval, crop-quality, and yield data do we still need before choosing the delivery system?",
+                "swd-field-plume-delivery",
+                (
+                    "If a question says puffers reduced emergence more than passive vials",
+                    "premise that needs correction",
+                    "pupae emerging from fruit",
+                    "eggs",
+                    "larval establishment or pupal emergence",
+                    "crop quality or marketable yield",
+                    "non-target exposure",
+                ),
             ),
             (
                 "The DBM citronella paper inferred less larval feeding from lower adult egg output. What else could explain it and what should the repeat measure?",
