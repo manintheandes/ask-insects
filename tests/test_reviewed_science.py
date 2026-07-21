@@ -2320,6 +2320,18 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "If 1-octen-3-ol works as an SWD oviposition antagonist, what placement and release questions matter before using puffers in raspberries?",
+                "swd:openalex_literature:openalex:W3046652911",
+                (
+                    "source spacing and placement",
+                    "release-rate effects",
+                    "dawn and dusk",
+                    "larger-scale perimeter and placement trials",
+                    "time-resolved canopy concentration",
+                    "marketable yield",
+                ),
+            ),
+            (
                 "Which measurements distinguish a directional SWD odor response from general locomotor suppression?",
                 "swd:openalex_literature:openalex:W4213332511",
                 ("heading", "upwind", "clean air", "speed", "immobility", "mating"),

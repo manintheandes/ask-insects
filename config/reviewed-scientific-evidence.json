@@ -1127,9 +1127,15 @@
       "match": {
         "priority": 45,
         "species_may_be_implicit": true,
-        "phrases": ["windy crop canopy", "still-air chamber", "field plume"],
+        "phrases": [
+          "windy crop canopy",
+          "still-air chamber",
+          "field plume",
+          "placement and release",
+          "using puffers in raspberries"
+        ],
         "required_any": [
-          ["windy", "wind", "canopy", "field", "still air", "still-air", "raspberry", "trial", "trials"],
+          ["windy", "wind", "canopy", "field", "still air", "still-air", "raspberry", "raspberries", "trial", "trials", "placement"],
           ["volatile", "release", "plume", "puffer", "puffers", "dispenser", "vial", "vials"],
           ["swd", "spotted wing", "drosophila suzukii", "raspberry", "1 octen 3 ol", "octenol"]
         ],
