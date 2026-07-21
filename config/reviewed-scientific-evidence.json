@@ -1084,7 +1084,7 @@
         ],
         "optional": ["feeding state", "microbiome", "gravid", "foraging", "standardize"]
       },
-      "answer": "Do not compare those two assay batches as a treatment-effect contrast because feeding, mating, and gravidity changed together. The cited SWD study used 5- to 10-day-old adults and compared fed flies with flies deprived of food for 15 hours; starvation-induced locomotion changed in ways that depended on sex and microbiome status. In its reproductive-state comparison, conventional virgin females showed lower food seeking than conventional mated gravid females at 7 hours; that difference was not significant at 12 or 24 hours, and axenic virgin and gravid females did not differ significantly at the measured times. The paper also linked lower foraging in axenic females with lower egg production. These direct results show that hunger, bundled reproductive state, microbiome, and assay time can change the behavioral baseline against which a repellent is judged. Age could change reproductive maturity, and prior egg laying could change remaining egg load and oviposition motivation, but this paper did not experimentally measure either effect. Standardize, block, or deliberately vary age, mating, gravidity, feeding, microbiome, time of measurement, and prior egg-laying history, and do not infer unmeasured age or prior-oviposition effect sizes from the reproductive-state result.",
+      "answer": "The cited study shows that physiological and reproductive state can change the behavioral baseline against which an SWD repellent is judged, but it did not test a repellent. It used 5- to 10-day-old adults. Its locomotion assays compared fed flies with flies deprived of food for 15 hours and found starvation-induced locomotion responses that depended on sex and microbiome status. Its foraging and oviposition assays food-deprived all tested flies for 15 hours before testing. In the reproductive-state comparison, conventional virgin females showed lower food seeking than conventional mated gravid females at 7 hours; that difference was not significant at 12 or 24 hours, and axenic virgin and gravid females did not differ significantly at the measured times. The paper also associated lower foraging in axenic females with lower egg production without proving that one caused the other. Age could change reproductive maturity, and prior egg laying could change remaining egg load and oviposition motivation, but this paper did not experimentally vary age or prior egg-laying history. Standardize, block, or deliberately vary age, mating, gravidity, feeding, microbiome, time of measurement, and prior egg-laying history, and do not infer unmeasured age or prior-oviposition effect sizes from the reproductive-state result.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3161910963"],
       "source_provenance": [
         {
@@ -1093,6 +1093,31 @@
           "public_url": "https://doi.org/10.3389/fmicb.2021.656406",
           "source_id": "doi:10.3389/fmicb.2021.656406",
           "locator": "Methods: 5- to 10-day-old adults, including axenic and conventional females and males, 15-hour food deprivation, and foraging scored at 7, 12, and 24 hours; Results, Figures 1-3 and reproductive-state comparison: sex- and microbiome-dependent foraging and locomotion, the conventional-female 7-hour virgin-versus-gravid difference and its later time points, axenic comparisons, and oviposition"
+        }
+      ]
+    },
+    {
+      "id": "swd-physiological-state-batch-confound",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 80,
+        "phrases": ["fed virgins", "starved mated gravid", "fed conventional gravid", "starved axenic virgins", "those batches"],
+        "required_any": [
+          ["fed", "starved", "food deprived", "food-deprived"],
+          ["virgin", "mated", "gravid"],
+          ["compare", "compared", "comparison", "batch", "batches", "versus"]
+        ],
+        "optional": ["microbiome", "axenic", "conventional", "foraging", "treatment effect", "treatment-effect"]
+      },
+      "answer": "Do not treat a contrast between batches that differ in feeding, mating, gravidity, or microbiome status as a treatment effect. The cited paper did not directly compare a fed-virgin batch with a starved mated-gravid batch, or a fed conventional gravid batch with a starved axenic virgin batch. Combining groups across its experiments changes several state variables and can also change assay time or endpoint, so any difference cannot be assigned to one factor. The study used 5- to 10-day-old SWD adults. Its locomotion assays compared fed flies with flies deprived of food for 15 hours and found responses that depended on sex and microbiome status. Its foraging and oviposition assays instead food-deprived all tested flies for 15 hours before testing. Conventional virgin females showed lower food seeking than conventional mated gravid females at 7 hours, but not significantly at 12 or 24 hours; axenic virgin and gravid females did not differ significantly at the measured times. Compare treatment and control concurrently within the same feeding, mating, gravidity, microbiome, age, assay-time, and prior-egg-laying block, or cross those factors deliberately in a factorial design.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W3161910963"],
+      "source_provenance": [
+        {
+          "record_id": "swd:openalex_literature:openalex:W3161910963",
+          "title": "Sex-Dependent Effects of the Microbiome on Foraging and Locomotion in Drosophila suzukii",
+          "public_url": "https://doi.org/10.3389/fmicb.2021.656406",
+          "source_id": "doi:10.3389/fmicb.2021.656406",
+          "locator": "Methods: 5- to 10-day-old adults, including axenic and conventional females and males, fed versus 15-hour-deprived locomotion groups, and uniformly 15-hour-deprived foraging and oviposition groups scored at 7, 12, and 24 hours; Results, Figures 1-3 and reproductive-state comparison: sex- and microbiome-dependent locomotion, conventional virgin-versus-mated-gravid foraging, axenic comparisons, and oviposition"
         }
       ]
     },
