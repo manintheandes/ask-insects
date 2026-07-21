@@ -710,11 +710,12 @@ def _has_deet_repeat_exposure_intent(normalized_question: str) -> bool:
     )
     cage_rechallenge = re.search(
         r"\b(?:challenge|challenged|rechallenge|rechallenged|reuse|reuses|reusing)\s+"
-        r"(?:the\s+)?same\s+cage(?:\s+\w+){0,2}\s+deet\b|"
-        r"\bsame\s+cage(?:\s+\w+){0,2}\s+"
+        r"(?:the\s+)?same\s+(?:aedes\s+)?cage(?:\s+\w+){0,4}\s+deet\b|"
+        r"\bsame\s+(?:aedes\s+)?cage(?:\s+\w+){0,4}\s+"
         r"(?:challenged|rechallenged|reused)(?:\s+\w+){0,2}\s+deet\b|"
         r"\bdeet(?:\s+\w+){0,4}\s+(?:challenge|challenged|rechallenge|"
-        r"rechallenged|reuse|reuses|reusing)\s+(?:the\s+)?same\s+cage\b",
+        r"rechallenged|reuse|reuses|reusing)\s+(?:the\s+)?same\s+(?:aedes\s+)?cage\b|"
+        r"\bsame\s+(?:aedes\s+)?cage(?:\s+\w+){0,5}\s+after\s+(?:a\s+)?deet\s+challenge\b",
         normalized_question,
     )
     return bool(
