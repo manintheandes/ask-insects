@@ -4037,7 +4037,7 @@ class ReviewedScienceTests(unittest.TestCase):
         ]
         self.assertEqual(
             fruit_injury["title"],
-            "Mind the Wound!-Fruit Injury Ranks Higher than, and Interacts with, "
+            "Mind the Wound!—Fruit Injury Ranks Higher than, and Interacts with, "
             "Heterospecific Cues for Drosophila suzukii Oviposition",
         )
 
