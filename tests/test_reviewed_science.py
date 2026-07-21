@@ -4815,6 +4815,13 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("selected cohort", "concurrently prepared unexposed controls"),
                 "Materials and Methods, Experiment 1",
             ),
+            (
+                "Can I reuse the same Aedes cage three hours after a DEET challenge "
+                "and count it as an independent efficacy replicate?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("three-hour second challenge", "selected cohort"),
+                "Materials and Methods, Experiment 1",
+            ),
         )
         negative_cases = (
             (
