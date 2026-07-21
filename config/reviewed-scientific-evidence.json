@@ -2384,11 +2384,11 @@
       "match": {
         "priority": 130,
         "question_intent": "deet_repeat_exposure",
-        "phrases": ["DEET carryover", "repeat-exposure control", "second DEET challenge", "three hours later", "independent efficacy measurement"],
+        "phrases": ["DEET carryover", "repeat-exposure control", "second DEET challenge", "three hours later", "independent efficacy measurement", "earlier DEET exposure", "less repelled by DEET", "responded less to DEET", "reduced repellency after DEET exposure"],
         "required_any": [
           ["DEET"],
-          ["DEET carryover", "carryover from DEET", "DEET challenge", "after a DEET challenge", "after DEET challenge", "following a DEET challenge", "following DEET challenge", "repeat DEET", "repeated DEET exposure", "retest with DEET", "retested with DEET", "retesting with DEET", "DEET re-exposure", "re-exposure to DEET", "prior DEET exposure", "prior exposure to DEET", "pre-exposure to DEET", "pre-exposed to DEET", "DEET pre-exposure", "previous DEET exposure", "previous exposure to DEET", "previously exposed to DEET", "exposed to DEET before", "second DEET challenge", "second exposure to DEET", "same cage be challenged", "same cage is challenged", "same cage was challenged", "reuse same cage", "reuse the same cage", "reuse the same Aedes cage", "reusing same cage", "reusing the same cage", "reusing the same Aedes cage"],
-          ["independent", "replicate", "efficacy", "screen", "control", "rank", "measurement", "crossover", "carryover"]
+          ["DEET carryover", "carryover from DEET", "DEET challenge", "after a DEET challenge", "after DEET challenge", "following a DEET challenge", "following DEET challenge", "repeat DEET", "repeated DEET exposure", "retest with DEET", "retested with DEET", "retesting with DEET", "DEET re-exposure", "re-exposure to DEET", "prior DEET exposure", "prior exposure to DEET", "earlier DEET exposure", "earlier exposure to DEET", "pre-exposure to DEET", "pre-exposed to DEET", "DEET pre-exposure", "previous DEET exposure", "previous exposure to DEET", "previously exposed to DEET", "exposed to DEET before", "second DEET challenge", "second exposure to DEET", "same cage be challenged", "same cage is challenged", "same cage was challenged", "reuse same cage", "reuse the same cage", "reuse the same Aedes cage", "reusing same cage", "reusing the same cage", "reusing the same Aedes cage", "less repelled by DEET", "responded less to DEET", "reduced repellency after DEET exposure", "decreased repellency after DEET exposure"],
+          ["independent", "replicate", "efficacy", "screen", "control", "rank", "measurement", "assay", "design", "protocol", "cohort", "compare", "comparison", "crossover", "carryover"]
         ],
         "optional": ["solvent", "same cage", "arm", "20%", "landing", "probing", "fresh control", "exposure history"]
       },

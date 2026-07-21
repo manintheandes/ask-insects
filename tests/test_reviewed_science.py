@@ -4822,6 +4822,27 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("three-hour second challenge", "selected cohort"),
                 "Materials and Methods, Experiment 1",
             ),
+            (
+                "If Aedes is less repelled by DEET a few hours after earlier DEET "
+                "exposure, what should I change in a repeat-exposure assay?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("control-arm-to-DEET", "concurrently prepared unexposed controls"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "If Aedes aegypti shows reduced repellency after prior DEET "
+                "exposure, how should I design the next assay?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("naive-to-DEET", "solvent-to-DEET", "DEET-to-DEET"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Aedes mosquitoes responded less to DEET following earlier DEET "
+                "exposure; how should the protocol compare cohorts?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "not an unselected population"),
+                "Materials and Methods, Experiment 1",
+            ),
         )
         negative_cases = (
             (
