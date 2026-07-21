@@ -1160,17 +1160,22 @@
           "still-air chamber",
           "field plume",
           "placement and release",
-          "using puffers in raspberries"
+          "using puffers in raspberries",
+          "aerosol puffers reduced emergence",
+          "puffers reduced swd emergence"
         ],
         "required_any": [
           ["windy", "wind", "canopy", "field", "still air", "still-air", "raspberry", "raspberries", "trial", "trials", "placement"],
           ["volatile", "release", "plume", "puffer", "puffers", "dispenser", "vial", "vials"],
           ["swd", "spotted wing", "drosophila suzukii", "raspberry", "1 octen 3 ol", "octenol"]
         ],
-        "optional": ["source spacing", "placement", "foliage", "temperature", "timing", "total dose", "delivery method", "passive"]
+        "optional": ["source spacing", "placement", "foliage", "temperature", "timing", "total dose", "delivery method", "passive", "emergence", "pupae", "egg", "larval", "crop quality", "yield", "weather"]
       },
-      "answer": "A crop canopy adds airflow, source spacing and placement, foliage, temperature, timing, and changing release-rate effects that a still-air chamber does not estimate. In 2016 raspberry plots, automated 1-octen-3-ol puffers reduced SWD oviposition by 20% versus controls. In 2017, puffers were 42-55% more effective than passive vials, and dawn and dusk release performed similarly to continuous daytime release. No placement difference was detected, but low fly abundance limited that comparison, so larger-scale perimeter and placement trials remain necessary. The comparison shows that the tested delivery methods differed in outcome under those field conditions. It does not isolate total emitted dose, release rate, airborne concentration at the flies, or another delivery feature as the causal driver. These results are specific to the tested crop, compound, years, pressure, and delivery methods. The next field trial should measure emitted mass and release rate over time; time-resolved canopy concentration at several distances and heights; weather and airflow; source placement and spacing; fruit infestation and damage; and marketable yield under randomized, replicated plots.",
-      "source_record_ids": ["swd:openalex_literature:openalex:W3046652911"]
+      "answer": "A crop canopy adds airflow, source spacing and placement, foliage, temperature, timing, and changing release-rate effects that a still-air chamber does not estimate. Keep two raspberry-field results separate. The 1-octen-3-ol puffer/passive-vial study reported oviposition outcomes: in 2016 raspberry plots, automated puffers reduced SWD oviposition by 20% versus controls; in 2017, puffers were 42-55% more effective than passive vials, and dawn and dusk release performed similarly to continuous daytime release. No placement difference was detected, but low fly abundance limited that comparison, so larger-scale perimeter and placement trials remain necessary. The comparison shows that the tested delivery methods differed in outcome under those field conditions, but it does not isolate total emitted dose, airborne concentration at the flies, does not prove that a larger total dose caused the result, and does not report the complete exposure-to-emergence-to-yield chain. A separate push-pull raspberry study measured pupae emerging from fruit and found fewer pupae from raspberries treated with the 2-component oviposition deterrent or push-pull system. If a question says puffers reduced emergence more than passive vials, treat that as a premise that needs correction rather than one directly proven source. Before choosing a delivery system, measure emitted mass and release rate over time; time-resolved canopy concentration at several distances and heights; weather, airflow, source placement, and spacing; eggs; larval establishment or pupal emergence; fruit infestation and damage; crop quality or marketable yield; persistence; and non-target exposure under randomized, replicated plots.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W3046652911",
+        "swd:openalex_literature:openalex:W4411730655"
+      ]
     },
     {
       "id": "swd-directed-flight-versus-motor-suppression",
@@ -1474,9 +1479,9 @@
           ["thermal infrared", "infrared", "radiant heat", "radiant energy", "ir"],
           ["host", "host seeking", "host-seeking", "heat", "cue", "sensor", "trpa1", "opsin", "carbon dioxide", "co2", "human odor", "human odour", "human-odor", "protect", "protection", "repellent"]
         ],
-        "optional": ["34 c", "carbon dioxide", "co2", "human odor", "antenna", "convective"]
+        "optional": ["34 c", "carbon dioxide", "co2", "human odor", "antenna", "convective", "humidity", "moisture", "vision", "visual", "biting", "protection"]
       },
-      "answer": "Female Aedes aegypti showed the strongest preference for a roughly 34 C infrared source when carbon dioxide (CO2) and human odor were also present. Infrared, CO2, or human odor alone produced little host-seeking in this assay. TRPA1 at the antennal tip was required for infrared detection, and two co-expressed opsins supported responses at lower radiant intensities. The study separates radiant infrared from conductive or convective heat, and it measured female host-seeking rather than biting or human protection. Infrared is therefore a plausible component of host location, not a validated stand-alone repellent target or proof that blocking it alone protects people.",
+      "answer": "Female Aedes aegypti showed the strongest preference for a roughly 34 C infrared source when carbon dioxide (CO2) and human odor were also present. Infrared, CO2, or human odor alone produced little host-seeking in this assay. TRPA1 at the antennal tip was required for infrared detection, and two co-expressed opsins supported responses at lower radiant intensities. The paper also notes close-range convective heat and moisture as host cues, but it did not test whether humidity can substitute for, or is redundant with, infrared, CO2, odor, or vision. The study separates radiant infrared from conductive or convective heat, and it measured female host-seeking rather than landing, probing, biting, or human protection. Blocking thermal infrared alone is therefore not enough to claim people are protected; infrared is not a validated stand-alone repellent target. A product claim still needs multimodal tests with CO2, human odor, visual context, humidity or moisture, convective heat, and biting/protection endpoints under realistic use conditions.",
       "source_record_ids": ["openalex:W4401794442"]
     },
     {
@@ -1628,10 +1633,13 @@
         "phrases": [
           "pxylor11 aromatic volatiles",
           "pxylor11 female repellency",
-          "pxylor11 oocyte recordings"
+          "pxylor11 oocyte recordings",
+          "odorant receptor responds to an aromatic volatile",
+          "oocytes and females avoid",
+          "field repellent target"
         ],
         "required_any": [
-          ["pxylor11", "pxyl or11"],
+          ["pxylor11", "pxyl or11", "odorant receptor", "receptor"],
           [
             "aromatic",
             "volatile",
@@ -1644,6 +1652,10 @@
             "antennal",
             "dual-choice",
             "dual choice",
+            "choice assay",
+            "avoid",
+            "avoids",
+            "avoidance",
             "repellency",
             "repellent"
           ]
@@ -1654,7 +1666,10 @@
           "eag",
           "female",
           "knockout",
-          "direct evidence"
+          "direct evidence",
+          "field",
+          "crop protection",
+          "target"
         ]
       },
       "answer": "The PxylOR11 study linked three evidence levels without establishing receptor necessity. PxylOR11 was enriched in antennae and was expressed more strongly in female than male antennae. In Xenopus oocytes, PxylOR11 with Orco responded to benzyl alcohol, salicylaldehyde, and phenylacetaldehyde. The same three aromatic compounds elicited electroantennogram responses, with larger responses in females, and repelled females in dual-choice bioassays. Together, those molecular, antennal, and behavioral results support a role for PxylOR11 in the response. The study did not use a receptor knockout, so it did not show that PxylOR11 is necessary for repellency. It also did not establish an airborne field dose, persistence, reduced crop infestation or damage, improved yield, or commercial crop protection.",
