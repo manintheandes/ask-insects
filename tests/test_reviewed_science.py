@@ -4420,6 +4420,11 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("source release rate", "choice and no-choice oviposition", "same measured candidate headspace"),
             ),
             (
+                "A vapor lead works against SWD and Aedes. What can we borrow when building a diamondback moth assay, and which DBM orientation, contact, egg, larval, crop-damage, plume, and persistence results still need direct evidence?",
+                "dbm-cross-species-transfer-boundary",
+                ("method analogies", "cannot transfer efficacy", "field plume behavior"),
+            ),
+            (
                 "How should we cross reduced leaf wax with larva-induced headspace to test the sequence from diamondback moth orientation through egg laying?",
                 "dbm-host-cue-sequence-experiment",
                 (
@@ -4433,6 +4438,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 "After fewer diamondback moth adults land, which larval, damage, beneficial-insect, and yield gates still matter?",
                 "dbm-product-endpoint-ladder",
                 ("beneficial-insect safety", "separate safety gate", "adult avoidance alone"),
+            ),
+            (
+                "Broccoli headspace yielded eight antennally active DBM compounds and a subset lure captured adults in field traps. Does that winnow oviposition candidates, or what reproductive and crop-damage outcomes remain unmeasured?",
+                "dbm-antennal-field-blend-endpoints",
+                ("other five antennally active compounds", "beneficial insects", "not crop protection"),
+            ),
+            (
+                "The ROTH colony's period and timeless transcripts cycle, yet locomotor activity follows light and temperature. Which observation should control when our volatile emitter turns on?",
+                "dbm-diel-release-timing",
+                ("period", "timeless", "temperature-driven", "light-suppressed"),
             ),
             (
                 "If Aedes aegypti combines carbon dioxide, human odor, and body infrared, could blocking thermal infrared alone protect a person?",
