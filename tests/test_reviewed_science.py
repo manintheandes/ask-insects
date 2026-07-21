@@ -3430,7 +3430,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Why should time after lights-on be controlled in an Aedes aegypti "
                 "repellent assay, and what did the cycle knockout actually change?",
                 {"openalex:W4225097850"},
-                ("locomotor", "host-odor", "blood-feeding"),
+                ("locomotor", "host-odor", "blood-feeding", "entrainment history"),
             ),
             (
                 "An AeCyc knockout changes host-odor response and blood feeding but "
