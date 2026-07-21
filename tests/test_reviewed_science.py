@@ -1427,6 +1427,8 @@ class ReviewedScienceTests(unittest.TestCase):
             "is that evidence the treatment deterred egg laying?",
             "We changed the number of female spotted wing drosophila per arena; "
             "how should total eggs, eggs per female, and fruit coverage be interpreted?",
+            "When SWD crowding changes in a cage, can total egg count alone "
+            "compare repellent treatments across raspberry quality?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:

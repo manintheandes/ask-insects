@@ -588,13 +588,13 @@
       "id": "swd-density-host-quality",
       "species_ids": ["drosophila_suzukii"],
       "match": {
-        "phrases": ["adult density", "host quality", "substrate quality", "adult crowding"],
+        "phrases": ["adult density", "host quality", "substrate quality", "adult crowding", "total egg count", "raspberry quality"],
         "required_any": [
           ["density", "crowding", "crowded", "social", "twice as many", "doubled the number", "number of female", "number of swd", "number of spotted wing", "female count", "females per", "flies per", "group size", "cohort size"],
           ["host", "substrate", "fruit", "egg", "eggs", "oviposition"]
         ],
-        "optional": ["quality", "distribution", "per female", "unfamiliar", "unnatural"],
-        "excluded_any": ["hardware", "placement", "chemical protection", "spray", "repellent", "canopy", "crown", "orchard", "row", "fruit sampling", "fruit inspection", "sampling design"]
+        "optional": ["quality", "distribution", "per female", "total egg count", "egg count", "raspberry quality", "denominator", "unfamiliar", "unnatural"],
+        "excluded_any": ["hardware", "placement", "chemical protection", "spray", "canopy", "crown", "orchard", "row", "fruit sampling", "fruit inspection", "sampling design"]
       },
       "answer": "Both adult density and host quality changed Drosophila suzukii oviposition in the cited laboratory experiments, but substrate quality affected oviposition more than adult density. Whole raspberries supported substantially more oviposition than lower-quality raspberry agar. On whole raspberries, eggs per female declined as female density increased; on raspberry agar, intermediate densities produced the highest per-female oviposition. Male density did not significantly change oviposition on whole raspberries, whereas the response to male density on agar was nonlinear. In a separate five-fruit comparison, solitary females laid eggs in about 15% of available fruit while groups of five used about 72%. Because the study did not track individual flies in the grouped treatment, it could not show whether each grouped female spread her eggs more widely. The authors interpreted the results as evidence that social interactions can encourage oviposition, especially on unfamiliar or unnatural substrates. Total eggs, eggs per female, and fruit coverage are different outcomes and should not be collapsed. If treatment groups contain different numbers of flies, match female and male density, host quality, and host distribution before attributing an egg difference to the candidate. A lower eggs-per-female value after increasing fly number does not establish oviposition deterrence. These laboratory density and substrate effects do not directly predict field infestation.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3171171860"]
