@@ -309,6 +309,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "How should I block a daily SWD oviposition assay across treatment and control cages?",
                 "Could a light-dark egg-laying rhythm confound an SWD repellent repeat?",
                 "Could running SWD cage replicates at different clock times confound the apparent oviposition treatment effect?",
+                "Can I score SWD treatment jars in the morning and controls at dusk if the exposure duration is identical?",
+                "Can I read SWD treatment cages at dawn and control cages at dusk if both ran for the same exposure time?",
             )
             for question in questions:
                 with self.subTest(question=question):

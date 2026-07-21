@@ -633,13 +633,13 @@
       "species_ids": ["drosophila_suzukii"],
       "match": {
         "priority": 20,
-        "phrases": ["time of day", "daily rhythm", "diurnal oviposition", "oviposition rhythm", "circadian oviposition"],
+        "phrases": ["time of day", "daily rhythm", "diurnal oviposition", "oviposition rhythm", "circadian oviposition", "morning and dusk", "morning versus dusk", "dawn and dusk"],
         "required_any": [
-          ["time of day", "daily", "diurnal", "circadian", "light dark", "light-dark", "day", "night", "clock time", "clock times"],
-          ["egg", "eggs", "egg laying", "egg-laying", "oviposition", "laying"],
-          ["assay", "cage", "treatment", "control", "confound", "artifact", "block", "randomize", "repeat"]
+          ["time of day", "daily", "diurnal", "circadian", "light dark", "light-dark", "day", "night", "clock time", "clock times", "morning", "afternoon", "dawn", "dusk", "sunrise", "sunset"],
+          ["egg", "eggs", "egg laying", "egg-laying", "oviposition", "laying", "score", "scoring", "count", "counting", "read", "reading", "jar", "jars"],
+          ["assay", "cage", "cages", "jar", "jars", "treatment", "control", "controls", "confound", "artifact", "block", "randomize", "repeat", "exposure"]
         ],
-        "optional": ["temperature", "humidity", "light", "deterrence", "repellent", "different times", "concurrent"]
+        "optional": ["temperature", "humidity", "light", "deterrence", "repellent", "different times", "concurrent", "duration", "matched"]
       },
       "answer": "No. Scoring treatment and control at different times confounds a chemical effect with Drosophila suzukii's daily egg-laying rhythm. Hourly oviposition was 2.4-fold higher in light than dark at constant 23 degrees C, 15.4-fold higher under a 17:7 light-dark cycle with 17/11 degrees C, and 9.1-fold and 25-fold higher in the August and October field assays. Field peaks were not fixed to one sunrise or sunset interval, and oviposition dipped when August field temperatures exceeded 30 degrees C. Repeat treatment and control concurrently when possible, or randomize both within replicated time blocks while matching fruit, fly state, light, temperature, humidity, and exposure duration. Keep egg-laying rhythm, locomotor activity, treatment effect, and egg-to-adult survival as separate endpoints; do not transfer one month's or one laboratory regime's peak to another.",
       "source_record_ids": ["swd_olfaction_literature:pubmed:30379809"]
