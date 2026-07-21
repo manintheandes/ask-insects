@@ -1211,10 +1211,16 @@
       "species_ids": ["drosophila_suzukii"],
       "match": {
         "priority": 30,
-        "phrases": ["marketable crop loss", "surviving larvae", "eggs to yield"],
+        "phrases": [
+          "marketable crop loss",
+          "surviving larvae",
+          "eggs to yield",
+          "similar egg numbers",
+          "larval or pupal readout"
+        ],
         "required_any": [
-          ["egg", "eggs", "oviposition"],
-          ["larva", "larvae", "pupa", "pupae", "survival", "marketable", "crop loss", "yield"]
+          ["egg", "eggs", "egg numbers", "oviposition"],
+          ["larva", "larval", "larvae", "pupa", "pupal", "pupae", "survival", "marketable", "crop loss", "yield"]
         ],
         "optional": ["hatch", "emergence", "damage", "decay", "rejected fruit", "economic"]
       },

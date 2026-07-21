@@ -2082,6 +2082,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "If two cherry cultivars get similar SWD egg numbers, what larval or pupal readout could still change our product conclusion?",
+                "swd_pubmed_literature:pubmed:39769586",
+                (
+                    "cultivar differences in pupation",
+                    "survival rates of 0.51-0.62",
+                    "Every prevented egg would not necessarily have become a damaging larva",
+                    "marketable yield",
+                ),
+            ),
+            (
                 "How redundant are carbon dioxide, human odor, heat, humidity, and visual cues during Aedes aegypti host seeking?",
                 "openalex:W4401794442",
                 (
