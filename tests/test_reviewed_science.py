@@ -2952,9 +2952,11 @@ class ReviewedScienceTests(unittest.TestCase):
                     evidence["provenance"]["source_id"],
                     "doi:10.4039/tce.2020.41",
                 )
-                self.assertIn(
-                    "low-, later-, and high-density distribution",
+                self.assertEqual(
                     evidence["provenance"]["locator"],
+                    "Abstract: five cultivars over seven weeks; interior and border rows; "
+                    "top/bottom by north/south canopy; low-, later-, and high-density "
+                    "distribution and aggregation results",
                 )
 
         unrelated_questions = (
