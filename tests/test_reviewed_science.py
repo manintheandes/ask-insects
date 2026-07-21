@@ -4416,6 +4416,430 @@ class ReviewedScienceTests(unittest.TestCase):
                     broad_record_ids,
                 )
 
+    def test_sealed_failure_repairs_generalize_to_neighboring_questions(self):
+        cases = (
+            (
+                "Every SWD trap in our comparison uses the same vinegar-and-ethanol "
+                "drowning fluid. Before ranking an H. uvarum headspace dispenser "
+                "against the reference lure, must we isolate the retention liquid's "
+                "contribution?",
+                {"swd:openalex_literature:openalex:W4213332511"},
+                (
+                    "91 ml water",
+                    "0.003 ml Tween",
+                    "1.6 ml acetic acid",
+                    "7.2 ml ethanol",
+                    "85 SWD",
+                    "factorial",
+                    "crop protection",
+                ),
+                "paragraph 4",
+            ),
+            (
+                "Early sweet-cherry infestation was northern, then later became "
+                "central, low-canopy, and southern. Does that trace SWD entering from "
+                "the north, or what evidence is needed before fitting movement "
+                "transitions?",
+                {"swd:openalex_literature:openalex:W3036207020"},
+                (
+                    "1,328 arthropods",
+                    "10,426 arthropods",
+                    "did not track individual flies",
+                    "marked flies",
+                    "detection",
+                    "recovery",
+                ),
+                "sentences 3-9",
+            ),
+            (
+                "May we use microbe-treated soft agar as a universal positive SWD "
+                "deterrence control across hard inserts, fruit coatings, and every "
+                "formulation screen?",
+                {"swd:openalex_literature:openalex:W3124252639"},
+                (
+                    "soft 1% agar",
+                    "hard 3% agar",
+                    "100 microliters",
+                    "20 females and 10 males",
+                    "16 hours",
+                    "0.22 micrometers",
+                    "not a universal",
+                ),
+                "Methods 2.2",
+            ),
+            (
+                "For SWD, do methyl-jasmonate low-dose attraction and high-dose "
+                "oviposition deterrence justify placing pull traps and a high-dose "
+                "push treatment together in a berry field?",
+                {"swd:openalex_literature:openalex:W4413971464"},
+                (
+                    "55.24",
+                    "55.03",
+                    "55.14",
+                    "trap capture",
+                    "bycatch",
+                    "spacing",
+                    "did not test a field push-pull system",
+                ),
+                "55.24, 55.03, and 55.14",
+            ),
+            (
+                "In a repeat-measures Aedes aegypti screen, can the same cage be "
+                "challenged with 20% DEET three hours later as an independent "
+                "replicate, or which carryover controls are needed?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                (
+                    "0.5 ml",
+                    "2 minutes",
+                    "10 mosquitoes",
+                    "removed",
+                    "concurrently prepared unexposed controls",
+                    "Do not treat a three-hour second challenge",
+                ),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "After prior DEET exposure, can a second Aedes aegypti measurement "
+                "three hours later count as an independent efficacy replicate?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                (
+                    "control-arm-to-DEET",
+                    "concurrently prepared unexposed controls",
+                    "selected cohort",
+                ),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "After prior exposure to DEET, can a second Aedes aegypti "
+                "measurement count as an independent efficacy replicate?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "concurrently prepared unexposed controls"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Does previous exposure to DEET create carryover in a repeated "
+                "Aedes aegypti efficacy screen?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("control-arm-to-DEET", "selected cohort"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "How should pre-exposure to DEET be controlled in a repeat Aedes "
+                "aegypti repellent measurement?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("naive-to-DEET", "solvent-to-DEET", "DEET-to-DEET"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can a second DEET challenge three hours later count as an "
+                "independent Aedes aegypti efficacy measurement?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "concurrently prepared unexposed controls"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can Aedes aegypti previously exposed to DEET be counted as an "
+                "independent replicate in a later efficacy screen?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "not an unselected population"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "If Aedes aegypti were exposed to DEET before, which carryover "
+                "controls are needed for the next efficacy measurement?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("naive-to-DEET", "solvent-to-DEET", "DEET-to-DEET"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can repeated DEET exposure in Aedes aegypti be treated as an "
+                "independent efficacy replicate?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "not an unselected population"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "When retesting with DEET, which carryover controls should an Aedes "
+                "aegypti efficacy screen include?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("naive-to-DEET", "solvent-to-DEET", "DEET-to-DEET"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can a second exposure to DEET in Aedes aegypti count as an "
+                "independent efficacy measurement?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "concurrently prepared unexposed controls"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can prior host contact change how Aedes aegypti responds to a "
+                "repellent?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("prior host contact", "is not established"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "Does prior odor exposure alter a later Aedes aegypti repellent "
+                "response?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("associative learning", "does not show learning to every repellent"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "Can prior repellent exposure change a later Aedes aegypti response?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("previous DEET exposure", "three hours later"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "Can repeat repellent exposure change a later Aedes aegypti "
+                "response?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("previous DEET exposure", "three hours later"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "Does repeated odor exposure alter a later Aedes aegypti repellent "
+                "response?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("associative learning", "does not show learning to every repellent"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "When Aedes aegypti are retested three hours after repellent "
+                "exposure, can their response change?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("previous DEET exposure", "three hours later"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "When Aedes aegypti are retested three hours after exposure to "
+                "DEET, can their response change?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("previous DEET exposure", "three hours later"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "When Aedes aegypti are retested after exposure to repellent, can "
+                "their response change?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("previous DEET exposure", "three hours later"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "When Aedes aegypti are retested following exposure to host odor, "
+                "can their response change?",
+                {
+                    "aedes_primary_behavior:pmc:PMC3577799",
+                    "openalex:W4315621418",
+                },
+                ("prior host contact", "is not established"),
+                "Materials and methods 4(b)(ii)",
+            ),
+            (
+                "Can we challenge the same cage with DEET again and treat the result "
+                "as an independent Aedes aegypti efficacy replicate?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "concurrently prepared unexposed controls"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can the same cage be rechallenged with DEET and counted as an "
+                "independent Aedes aegypti efficacy measurement?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "not an unselected population"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can pre-exposure to DEET bias an independent Aedes aegypti "
+                "efficacy measurement?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "concurrently prepared unexposed controls"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can re-exposure to DEET count as an independent Aedes aegypti "
+                "efficacy replicate?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "not an unselected population"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Does DEET re-exposure create carryover in an Aedes aegypti screen?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("control-arm-to-DEET", "concurrently prepared unexposed controls"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can we use DEET to rechallenge the same cage and count the result "
+                "as an independent Aedes aegypti efficacy replicate?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "not an unselected population"),
+                "Materials and Methods, Experiment 1",
+            ),
+            (
+                "Can a DEET efficacy screen that reuses the same cage count the "
+                "second Aedes aegypti measurement as independent?",
+                {"aedes_primary_behavior:pmc:PMC3577799"},
+                ("selected cohort", "concurrently prepared unexposed controls"),
+                "Materials and Methods, Experiment 1",
+            ),
+        )
+        negative_cases = (
+            (
+                "Does the study show that SWD movement changed later after "
+                "repellent exposure?",
+                "swd:openalex_literature:openalex:W3036207020",
+            ),
+            (
+                "What evidence shows early movement changes in Drosophila suzukii "
+                "after microbial exposure?",
+                "swd:openalex_literature:openalex:W3036207020",
+            ),
+            (
+                "Does DEET efficacy against Aedes aegypti decline later in the day?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "What is the efficacy of DEET against Aedes aegypti three hours "
+                "after application?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "Does prior exposure to sunlight reduce DEET efficacy against "
+                "Aedes aegypti?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "Does previous exposure to heat affect DEET efficacy against "
+                "Aedes aegypti?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "Does repeat sunscreen application reduce DEET efficacy against "
+                "Aedes aegypti?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "Does using the same cage size affect DEET efficacy against Aedes "
+                "aegypti?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "Does one DEET exposure alter Aedes aegypti efficacy?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "Which previous study measured Aedes aegypti response during "
+                "repellent exposure?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "Does using the same cage size create a challenge for measuring "
+                "DEET efficacy against Aedes aegypti?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+            (
+                "Can we challenge the same cage with heat before an Aedes aegypti "
+                "DEET efficacy measurement?",
+                "aedes_primary_behavior:pmc:PMC3577799",
+            ),
+        )
+        catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
+        record_ids = sorted(
+            {
+                record_id
+                for topic in catalog["topics"]
+                for record_id in topic["source_record_ids"]
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question, _, _, _ in cases
+            ]
+            negative_answers = [
+                build_reviewed_science_answer(index, question)
+                for question, _ in negative_cases
+            ]
+
+        for (question, expected_ids, fragments, locator_fragment), answer in zip(
+            cases, answers, strict=True
+        ):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    expected_ids,
+                )
+                self.assertEqual(len(answer["evidence"]), len(expected_ids))
+                self.assertTrue(
+                    all(
+                        str(evidence["url"]).startswith("https://")
+                        for evidence in answer["evidence"]
+                    )
+                )
+                self.assertTrue(
+                    any(
+                        locator_fragment.casefold()
+                        in str(evidence["provenance"]["locator"]).casefold()
+                        for evidence in answer["evidence"]
+                    ),
+                    answer["evidence"],
+                )
+                for fragment in fragments:
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+        for (question, forbidden_record_id), answer in zip(
+            negative_cases, negative_answers, strict=True
+        ):
+            with self.subTest(question=question):
+                if answer is not None:
+                    self.assertNotIn(
+                        forbidden_record_id,
+                        {item["record_id"] for item in answer["evidence"]},
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

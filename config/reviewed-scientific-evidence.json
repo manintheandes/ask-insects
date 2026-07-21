@@ -281,7 +281,7 @@
       "title": "Drosophila suzukii avoidance of microbes in oviposition choice",
       "public_url": "https://doi.org/10.1098/rsos.201601",
       "source_id": "doi:10.1098/rsos.201601",
-      "locator": "Abstract and Results: commensal-microbe oviposition choices on soft and hard substrates across three Drosophila species"
+      "locator": "Methods 2.2, inoculation and oviposition assay paragraphs; Results 3, paragraphs 1-3 and Figure 2a-c; Figure 2 caption"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W3132534524",
@@ -400,7 +400,7 @@
       "title": "Dose-dependent effect of methyl jasmonate on Drosophila suzukii (Matsumura) (Diptera: Drosophilidae)",
       "public_url": "https://doi.org/10.1017/S0007485325100369",
       "source_id": "doi:10.1017/s0007485325100369",
-      "locator": "Abstract: two-choice cage and two-choice planar olfactometer; oviposition deterrence above 1287.5 micrograms per filter paper; RD50 values; 309.0 micrograms repellent and 3.86-15.45 micrograms attractive"
+      "locator": "Abstract: two-choice cage oviposition and two-choice planar olfactometer adult-behavior assays; oviposition deterrence above 1287.5 micrograms per filter paper; female, male, and total RD50 values of 55.24, 55.03, and 55.14 micrograms per filter paper; 309.0 micrograms repellent and 3.86-15.45 micrograms attractive"
     },
     {
       "record_id": "swd:openalex_literature:openalex:W4411730655",
@@ -655,7 +655,7 @@
         ],
         "optional": ["filter paper", "planar olfactometer", "artificial fruit", "low dose"]
       },
-      "answer": "Methyl jasmonate was not uniformly repellent. In the cited planar olfactometer, 309.0 micrograms per filter paper was repellent, while 3.86 to 15.45 micrograms per filter paper was attractive. In a separate two-choice cage, doses above 1287.5 micrograms per filter paper reduced oviposition by more than 90 percent on artificial fruits. Run separate carrier-controlled, log-spaced series for the two endpoints: bracket the orientation reversal from below 3.86 through 309.0 micrograms per filter paper, and bracket the oviposition transition around 1287.5 micrograms per filter paper in the cage assay. Measure release rate and air concentration over time before translating either result beyond its apparatus. Applied mass per filter paper is not measured air concentration or a crop application rate, and neither endpoint by itself proves field crop protection.",
+      "answer": "Methyl jasmonate was not uniformly repellent. The paper supports dose-dependent laboratory behavior gates, not a field push-pull deployment. In a two-choice planar olfactometer, methyl jasmonate had RD50 values of 55.24 micrograms per filter paper for females, 55.03 for males, and 55.14 for total adults. The paper reported repellency at 309.0 micrograms per filter paper and attraction at 3.86 to 15.45 micrograms per filter paper. In a separate two-choice cage, doses above 1287.5 micrograms per filter paper deterred female oviposition on artificial fruits by more than 90 percent. Adult orientation in the planar olfactometer and egg allocation in the cage are different endpoints and cannot be collapsed into one field potency curve. Applied mass per filter paper is not emitted mass, air concentration, fruit residue, or a crop application rate. The study did not test a field push-pull system, trap capture, bycatch, dispenser emission, canopy concentration, fruit residue, crop injury, field infestation, persistence, or spacing. Before assigning low-dose pull and high-dose push roles, run separate low-pull, high-push, combined, vehicle, and untreated field treatments with randomized positions; measure dispenser emissions and local exposure; and measure trap capture and bycatch, fruit oviposition and infestation, persistence, crop effects, odor-field overlap, and treatment spacing.",
       "source_record_ids": ["swd:openalex_literature:openalex:W4413971464"],
       "source_provenance": [
         {
@@ -663,7 +663,7 @@
           "title": "Dose-dependent effect of methyl jasmonate on Drosophila suzukii (Matsumura) (Diptera: Drosophilidae)",
           "public_url": "https://doi.org/10.1017/S0007485325100369",
           "source_id": "doi:10.1017/s0007485325100369",
-          "locator": "Abstract: two-choice cage and two-choice planar olfactometer; oviposition deterrence above 1287.5 micrograms per filter paper; RD50 values; 309.0 micrograms repellent and 3.86-15.45 micrograms attractive"
+          "locator": "Abstract: two-choice cage oviposition and two-choice planar olfactometer adult-behavior assays; oviposition deterrence above 1287.5 micrograms per filter paper; female, male, and total RD50 values of 55.24, 55.03, and 55.14 micrograms per filter paper; 309.0 micrograms repellent and 3.86-15.45 micrograms attractive"
         }
       ]
     },
@@ -1295,9 +1295,10 @@
       "species_ids": ["aedes_aegypti"],
       "match": {
         "priority": 20,
+        "question_intent": "olfactory_experience",
         "phrases": ["prior odor experience", "host experience", "olfactory learning", "repeat exposure", "retested three hours", "three hours after exposure"],
         "required_any": [
-          ["prior", "experience", "experienced", "learning", "learned", "training", "habituation", "adaptation", "retested", "repeat exposure"],
+          ["experience", "experienced", "learning", "learned", "training", "habituation", "adaptation", "retested", "repeat exposure"],
           ["odor", "odour", "host", "repellent", "repellency", "response", "deet"]
         ],
         "optional": ["dopamine", "aversive", "habituation", "sensitization", "persistence"]
@@ -2256,6 +2257,114 @@
       "answer": "Do not advance the seven-component synthetic H. uvarum lure solely because it caught more SWD than H. uvarum headspace. In the second field comparison, 300-uL open-vial loads were reported for the headspace extract and synthetic H. uvarum blend; the reference used separate methionol and acetoin vials whose load volumes were not reported. All treatments used the same drowning solution. The headspace treatment caught 85 SWD, 23 other drosophilids, and 115 arthropods in total; the synthetic H. uvarum blend caught 148, 122, and 275; and the reference lure caught 212, 108, and 336. The synthetic blend therefore caught more SWD than headspace but was significantly less specific. This was a small comparison: six treatment-site/date replicates across three sites in one wood-and-shrub landscape laboratory, using two November deployments that lasted one and three days. In the earlier four-period field comparison, live H. uvarum culture caught fewer SWD than the Riga wine-vinegar bait (445 versus 712), but also far fewer other drosophilids (596 versus 4,022) and total arthropods (1,773 versus 6,790); the proportion of SWD relative to other drosophilids was significantly higher with H. uvarum in three of four periods. The wind-tunnel result is a separate endpoint: virgin 3- to 6-day-old females starved for 24 hours were observed for three minutes, the 20-ng/uL seven-component blend induced more upwind flight than 1 ng/uL, and H. uvarum headspace remained active at 1:4 and 1:8 dilution although source contact fell at 1:8. Do not equate that approximately 20-ng/uL wind-tunnel blend with the approximately 100-ug/uL field blend. The field catches also do not isolate the lure effect because the common drowning solution contained acetic acid and ethanol, whose contribution was not quantified. The next gate should pre-specify both target catch and specificity or bycatch, compare headspace and optimized synthetic blends under the intended crop background with measured release rates and a controlled drowning matrix, and test redundancy, component ratios, concentrations, yeast strain, and growth conditions. Separately measure fruit infestation, damage, and marketable yield before treating the lure as a successful pull component. This paper supports attraction and trap selectivity, not crop protection, an optimal lure, or a commercial push-pull product.",
       "source_record_ids": [
         "swd:openalex_literature:openalex:W4213332511"
+      ]
+    },
+    {
+      "id": "swd-trap-lure-system-attribution",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 130,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["Hanseniaspora uvarum", "H. uvarum"],
+          ["drowning solution", "drowning liquid", "retention liquid", "acetic acid and ethanol", "vinegar and ethanol"],
+          ["rank", "ranking", "compare", "comparison", "attribution", "contribution", "isolate", "alone", "attractant system"]
+        ],
+        "phrases": ["drowning-solution contribution", "drowning solution contribution", "lure-system attribution", "attractant system", "retention liquid"],
+        "required_any": [
+          ["Hanseniaspora uvarum", "H. uvarum", "headspace", "reference lure", "synthetic blend"],
+          ["drowning solution", "drowning liquid", "retention liquid", "acetic acid and ethanol", "vinegar and ethanol", "trap liquid"],
+          ["rank", "ranking", "compare", "comparison", "attribute", "attribution", "contribution", "isolate", "alone", "system", "qualify", "qualified"]
+        ],
+        "optional": ["trap catch", "trap catches", "field catch", "specificity", "bycatch", "wind tunnel", "factorial", "release rate"]
+      },
+      "answer": "Treat the published field result as a combined lure, dispenser, trap, and drowning-liquid system, not proof that the headspace vial alone caused the catches. In the field comparison of H. uvarum headspace extract, the seven-component synthetic H. uvarum blend, and the synthetic reference blend, every trap contained 91 ml water, 0.003 ml Tween, 1.6 ml acetic acid, and 7.2 ml ethanol. The authors said the contribution of volatile emissions from that drowning solution to trapping efficiency still needed to be quantified. Across the four field days, headspace traps caught 85 SWD, 23 other drosophilids, and 7 nondrosophilid arthropods; synthetic H. uvarum traps caught 148 SWD and 122 other drosophilids within 275 arthropods total; and reference traps caught 212 SWD and 108 non-SWD drosophilids within 336 arthropods total. The reference had the highest SWD catch per trap per day, while headspace had higher SWD specificity than the synthetic H. uvarum and reference blends. In a separate wind-tunnel assay without the field drowning solution, H. uvarum headspace and the synthetic blend produced upwind flight attraction. That orientation endpoint does not isolate the cause of field trap capture. The paper did not quantify the liquid's independent field effect, prove one causal lure component, establish crop protection, or validate a deployment interval. Before ranking an active lure, run a factorial field qualification that crosses vial lure present or absent with drowning-liquid attractants present or absent while using matched hardware and a retention matrix that does not create an unmeasured odor contrast. Randomize positions, measure emissions from both sources, record target catch and bycatch, and independently measure fruit infestation and crop-protection endpoints.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W4213332511"],
+      "source_provenance": [
+        {
+          "record_id": "swd:openalex_literature:openalex:W4213332511",
+          "title": "Hanseniaspora uvarum Attracts Drosophila suzukii (Diptera: Drosophilidae) With High Specificity",
+          "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9365507/",
+          "source_id": "doi:10.1093/jee/toac029",
+          "locator": "Methods, Field Comparison of H. uvarum Headspace Extract, H. uvarum-Based Synthetic Blend and a Reference Blend, paragraph 4; Results, Baits Based on H. uvarum Headspace and a Synthetic Blend of Headspace Volatiles Attracted SWD, paragraphs 1-2 and Figure 3; Discussion, paragraph beginning 'Based on our wind tunnel results'"
+        }
+      ]
+    },
+    {
+      "id": "swd-orchard-pattern-movement-inference",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 130,
+        "question_intent": "movement_inference",
+        "phrases": ["movement trajectory", "entry edge", "movement transitions", "directional dispersal", "spatial pattern"],
+        "required_any": [
+          ["orchard", "block", "canopy", "row", "rows", "spatial", "distribution", "infestation"],
+          ["movement", "entry", "entered", "immigration", "dispersal", "trajectory", "transition", "direction"],
+          ["infer", "prove", "fit", "model", "trace", "track", "evidence", "study"]
+        ],
+        "optional": ["north", "south", "center", "centre", "lower canopy", "marked flies", "detection", "recovery"]
+      },
+      "answer": "No. The reported spatial sequence does not establish that SWD entered from the north or that the same flies moved through the orchard. The study sampled five sweet-cherry cultivars ripening successively over seven weeks. It compared interior and border rows and four canopy regions defined by top or bottom height crossed with north or south aspect, and it measured fruit ripeness as degrees Brix. Individual cherries were reared for more than two weeks, so the biological endpoint was arthropods emerging from sampled fruit, not tracked adult movement. The study reports 1,328 arthropods emerging from 887 cherries sampled in June and 10,426 arthropods emerging from 1,071 cherries sampled in July. At low SWD density, significantly more D. suzukii were in the northernmost row and northern aspect. Later, row, height, and aspect were homogeneous. At the highest density in the latest-ripening cultivar, more SWD occurred in the center than the southernmost row, in the lower canopy, and on the southern aspect. Intraspecific aggregation increased with density, but the study did not track individual flies, establish an entry edge, estimate directional transition rates, or demonstrate a north-to-south trajectory. Before fitting a movement model, collect temporally resolved observations at orchard boundaries and within the block, use marked flies or another validated tracer to link origins and destinations, synchronize cultivar, ripeness, fruit abundance, and weather measurements, and estimate detection, recovery, mortality, and missing-fate probabilities. Keep cross-sectional fruit-emergence patterns separate from adult flight paths and immigration direction.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W3036207020"],
+      "source_provenance": [
+        {
+          "record_id": "swd:openalex_literature:openalex:W3036207020",
+          "title": "Spatial distribution of spotted-wing drosophila (Diptera: Drosophilidae) and other insects in fruit of a sweet cherry (Rosaceae) orchard",
+          "public_url": "https://doi.org/10.4039/tce.2020.41",
+          "source_id": "doi:10.4039/tce.2020.41",
+          "locator": "Abstract, sentences 3-9: five cultivars over seven weeks; 887 June and 1,071 July cherries; low-density northern row and aspect; later homogeneous distribution; highest-density centre, lower-canopy, southern-aspect pattern; density-dependent aggregation"
+        }
+      ]
+    },
+    {
+      "id": "swd-microbial-positive-control-qualification",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 130,
+        "phrases": ["microbial positive control", "positive deterrence control", "universal positive control", "control qualification"],
+        "required_any": [
+          ["microbe", "microbes", "microbial", "inoculated", "inoculation", "microbe-treated"],
+          ["positive control", "reference control", "deterrence control", "benchmark", "potency control"],
+          ["universal", "every surface", "any surface", "hard surface", "soft agar", "hard agar", "substrate", "fruit coating", "formulation screen", "transfer"]
+        ],
+        "optional": ["1%", "3%", "egg", "oviposition", "surface", "assay", "screen", "hardness"]
+      },
+      "answer": "No. A microbe-inoculated 1% agar substrate is not a universal SWD deterrence positive control. In the cited oviposition-choice study, Drosophila suzukii avoided microbial growth on soft 1% agar, but on hard 3% agar it showed no significant preference or aversion. For inoculation, 100 microliters of washed surface solution was spread onto fresh agar and grown for 24 hours at 25 +/- 1 degrees C. Each oviposition chamber held 20 females and 10 males for 16 hours in darkness at 25 +/- 1 degrees C and 50 +/- 5% relative humidity, and eggs on each substrate were counted. Filtering the solution through 0.22 micrometers eliminated the positive and negative oviposition preferences observed across the three tested Drosophila species. That result does not identify one microbial chemical active or provide a potency scale for synthetic candidates. It also does not measure orientation, contact repellency, fruit infestation, crop protection, or transfer from soft agar to a hard surface. Qualify the microbial reference separately for each species, life stage, assay geometry, substrate hardness, microbial state, exposure time, and endpoint. Cross inoculated versus uninoculated material with soft versus hard substrate, randomize sides, and keep egg allocation in choice tests separate from total egg output in no-choice tests. A volatile, contact treatment, fruit coating, or field formulation must be compared within its own matched surface and endpoint rather than advanced because it matches the soft-agar effect.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W3124252639"],
+      "source_provenance": [
+        {
+          "record_id": "swd:openalex_literature:openalex:W3124252639",
+          "title": "Drosophila suzukii avoidance of microbes in oviposition choice",
+          "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC7890486/",
+          "source_id": "doi:10.1098/rsos.201601",
+          "locator": "Methods 2.2, inoculation and oviposition assay paragraphs; Results 3, paragraphs 1-3 and Figure 2a-c; Figure 2 caption"
+        }
+      ]
+    },
+    {
+      "id": "aedes-deet-repeat-exposure-assay-design",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 130,
+        "question_intent": "deet_repeat_exposure",
+        "phrases": ["DEET carryover", "repeat-exposure control", "second DEET challenge", "three hours later", "independent efficacy measurement"],
+        "required_any": [
+          ["DEET"],
+          ["DEET carryover", "carryover from DEET", "repeat DEET", "repeated DEET exposure", "retest with DEET", "retested with DEET", "retesting with DEET", "DEET re-exposure", "re-exposure to DEET", "prior DEET exposure", "prior exposure to DEET", "pre-exposure to DEET", "pre-exposed to DEET", "DEET pre-exposure", "previous DEET exposure", "previous exposure to DEET", "previously exposed to DEET", "exposed to DEET before", "second DEET challenge", "second exposure to DEET", "same cage be challenged", "same cage is challenged", "same cage was challenged", "reuse same cage", "reuse the same cage", "reusing same cage", "reusing the same cage"],
+          ["independent", "replicate", "efficacy", "screen", "control", "rank", "measurement", "crossover", "carryover"]
+        ],
+        "optional": ["solvent", "same cage", "arm", "20%", "landing", "probing", "fresh control", "exposure history"]
+      },
+      "answer": "Do not treat a three-hour second challenge of the same cage as an independent efficacy replicate. In the arm-on-cage experiment, initially DEET-sensitive females exposed again to a 20% DEET-treated arm three hours later landed and probed significantly more than mosquitoes receiving their first DEET exposure or DEET after a control-arm pre-exposure (p < 0.001). The treated or control arm received 0.5 ml, each trial lasted 2 minutes, and each treatment replicate used 10 mosquitoes. Females that probed during the first DEET exposure were removed before the second challenge, so the DEET-to-DEET group was a selected cohort of initially sensitive females, not an unselected population. A control-arm-to-DEET group did not differ from a first-time DEET group, so elapsed time alone did not explain the carryover pattern. A solvent-first then DEET group is therefore a prior-handling control, not evidence of DEET pre-exposure, but its second measurement still shares cohort and cage history and should not be counted as independent. A repeat-measures screen should balance exposure histories and compare the later challenge with concurrently prepared unexposed controls. If carryover is the question, include naive-to-DEET, solvent-to-DEET, and DEET-to-DEET groups while keeping the study's selection rule explicit. Record first and repeat probing, landing, and any later electrophysiology as separate endpoints. This study does not establish complete-protection time, field failure, human safety, genetic resistance after one exposure, or a validated washout period.",
+      "source_record_ids": ["aedes_primary_behavior:pmc:PMC3577799"],
+      "source_provenance": [
+        {
+          "record_id": "aedes_primary_behavior:pmc:PMC3577799",
+          "title": "Aedes aegypti Mosquitoes Exhibit Decreased Repellency by DEET following Previous Exposure",
+          "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC3577799/",
+          "source_id": "pmc:PMC3577799",
+          "locator": "Materials and Methods, Experiment 1; Results, 'Do mosquitoes change their behaviour after pre-exposure to DEET on a human arm?', paragraphs 1-3 and Figure 1A"
+        }
       ]
     },
     {
