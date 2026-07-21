@@ -414,7 +414,7 @@ class HostedCliTests(unittest.TestCase):
             "- [Direct measurements of transfluthrin effects on Aedes aegypti]"
             "(https://doi.org/10.1186/s13071-020-04271-3)\n"
             "  Source ID: `aedes_environment_controls`\n"
-            "  Locator: `artifacts/mosquito-v1/raw/literature/environment.json#record/1`\n",
+            "  Locator: `artifacts/mosquito-v1/raw/literature/environment.json#record/1`",
         )
         self.assertFalse(output.lstrip().startswith("{"))
 
