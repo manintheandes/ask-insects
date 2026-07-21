@@ -1066,7 +1066,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
         payload = _enforce_exact_answer_sources(payload)
         if args.answer_only:
-            print(_agent_final_answer(payload))
+            sys.stdout.write(_agent_final_answer(payload))
         elif args.json:
             emit(compact_agent_answer(payload) if args.compact else payload)
         elif args.hosted and "answer" not in payload:
