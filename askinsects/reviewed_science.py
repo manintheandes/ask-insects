@@ -685,13 +685,29 @@ def _has_deet_repeat_exposure_intent(normalized_question: str) -> bool:
         return False
     decision = re.search(
         r"\b(?:independent|replicate|efficacy|screen|control|rank|measurement|"
-        r"crossover|carryover)\b",
+        r"assay|design|protocol|cohort|compare|comparison|crossover|carryover)\b",
         normalized_question,
     )
     repeat_before_deet = re.search(
         r"\b(?:repeat(?:ed|ing)?|retest(?:ed|ing)?|re exposure|prior exposure|"
-        r"previous exposure|pre exposure|second exposure|previously exposed)\b"
+        r"previous exposure|earlier exposure|pre exposure|second exposure|"
+        r"previously exposed)\b"
         r"(?:\s+\w+){0,2}\s+\bdeet\b",
+        normalized_question,
+    )
+    deet_exposure_before_effect = re.search(
+        r"\bdeet\s+(?:exposure|challenge|test|measurement)\b"
+        r"(?:\s+\w+){0,5}\s+\b(?:less|lower|reduced|decreased|weaker|changes?|changed)\b"
+        r"(?:\s+\w+){0,3}\s+\b(?:repel|repelled|repellency|response|responds?|responded)\b",
+        normalized_question,
+    )
+    effect_after_deet_exposure = re.search(
+        r"\b(?:(?:less|lower|reduced|decreased|weaker|changes?|changed)\b"
+        r"(?:\s+\w+){0,3}\s+\b(?:repel|repelled|repellency|response|responds?|responded)|"
+        r"responded\s+(?:less|weakly|weaklier))\b"
+        r"(?:\s+\w+){0,8}\s+\b(?:after|following)\b"
+        r"(?:\s+\w+){0,3}\s+\b(?:prior|previous|earlier|past)?\s*deet\s+"
+        r"(?:exposure|challenge|test|measurement)\b",
         normalized_question,
     )
     exposed_to_deet_before = re.search(
@@ -722,6 +738,8 @@ def _has_deet_repeat_exposure_intent(normalized_question: str) -> bool:
         decision
         and (
             repeat_before_deet
+            or deet_exposure_before_effect
+            or effect_after_deet_exposure
             or exposed_to_deet_before
             or qualified_deet_event
             or deet_before_repeat
