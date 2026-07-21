@@ -417,6 +417,44 @@ class ReviewedScienceTests(unittest.TestCase):
                         answer["answer"].casefold(),
                     )
 
+    def test_aedes_post_exposure_recovery_defines_denominators(self):
+        record_id = "openalex:W3048721146"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator="raw/aedes.json#works/W3048721146",
+                    )
+                ]
+            )
+            questions = (
+                "What should be measured after Aedes repellent exposure to separate "
+                "temporary knockdown, recovery, and mortality?",
+                "After an Aedes transfluthrin exposure, how should I compare recovered, "
+                "knocked-down, and dead mosquitoes across treatments?",
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertEqual(answer["evidence"][0]["record_id"], record_id)
+                    for fragment in (
+                        "immediate knockdown",
+                        "repeated recovery",
+                        "delayed mortality",
+                        "same exposed cohort",
+                        "denominators before comparing treatments",
+                        "same starting cohort denominator",
+                        "not necessarily dead",
+                    ):
+                        self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
     def test_topical_contact_does_not_route_to_a_spatial_source_gap(self):
         record_ids = (
             "openalex:W4403603462",

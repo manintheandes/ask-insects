@@ -979,14 +979,14 @@
       "id": "aedes-post-exposure-recovery",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["post-exposure recovery", "temporary knockdown", "after exposure"],
+        "phrases": ["post-exposure recovery", "temporary knockdown", "after exposure", "recovered knocked-down dead"],
         "required_any": [
-          ["recovery", "recover", "knockdown", "motionless"],
-          ["mortality", "survival", "after exposure", "post exposure", "post-exposure"]
+          ["recovery", "recover", "recovered", "knockdown", "knocked down", "knocked-down", "motionless"],
+          ["mortality", "dead", "death", "survival", "after exposure", "post exposure", "post-exposure", "across treatments", "compare"]
         ],
-        "optional": ["24 hour", "same cohort", "immediate", "delayed"]
+        "optional": ["24 hour", "same cohort", "immediate", "delayed", "denominator", "denominators"]
       },
-      "answer": "Record immediate knockdown at the end of exposure, repeated recovery or normal-movement status after removal, and delayed mortality such as a 24-hour endpoint. Follow the same exposed cohort and report dead, knocked down, recovered, and behaviorally normal categories against a matched control. A motionless mosquito at exposure end is not necessarily dead, and recovery is not the same endpoint as survival or voluntary avoidance during exposure.",
+      "answer": "Record immediate knockdown at the end of exposure, repeated recovery or normal-movement status after removal, and delayed mortality such as a 24-hour endpoint. Follow the same exposed cohort and report dead, knocked down, recovered, and behaviorally normal categories against a matched control. Define observation times and denominators before comparing treatments, and use the same starting cohort denominator when reporting each post-exposure state. A motionless mosquito at exposure end is not necessarily dead, and recovery is not the same endpoint as survival or voluntary avoidance during exposure.",
       "source_record_ids": ["openalex:W3048721146"]
     },
     {
