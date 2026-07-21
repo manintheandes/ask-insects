@@ -1116,6 +1116,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Our skin repellent passes a standard unchallenged arm test. Can we claim it lasts through sweating, swimming, rubbing, and sun?",
+                (
+                    "WHO and EPA",
+                    "baseline test does not establish",
+                    "sweat or water",
+                    "rubbing or abrasion",
+                    "sunlight or ultraviolet",
+                ),
+            ),
+            (
                 "When can we call reduced Aedes repellent sensitivity inherited resistance?",
                 ("operational decision rule", "not a universal definition", "cannot be assumed equivalent"),
             ),
@@ -4310,6 +4320,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Our SWD treatment arm used firm intact berries while the comparison arm used soft wounded fruit. Can the egg difference isolate the compound?",
                 "swd-fruit-condition-controls",
                 ("factorial design", "fruit injury directly changed oviposition", "record those variables"),
+            ),
+            (
+                "Our SWD odor lead changes trap choice only when paired with one target color. Is that enough to call the volatile repellent, and how should we separate color, odor, and their interaction before an oviposition claim?",
+                "swd-visual-olfactory-confound",
+                ("color-by-odor factorial", "target positions", "not oviposition"),
+            ),
+            (
+                "An SWD trap lure only looks active with the blue target, not the red target. What color, odor, carrier, and position controls separate a visual effect from an odor effect?",
+                "swd-visual-olfactory-confound",
+                ("preferred visual cue changed", "carrier", "randomize target positions"),
             ),
             (
                 "The SWD intervention and comparator groups differed in berry firmness and wounding. What prevents attributing their egg-count contrast to the compound?",
