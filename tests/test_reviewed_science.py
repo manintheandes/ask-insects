@@ -1371,6 +1371,15 @@ class ReviewedScienceTests(unittest.TestCase):
                 )
                 for fragment in fragments:
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                if topic_id == "swd-physiological-state-confounds":
+                    self.assertNotIn(
+                        "batch",
+                        answer["answer"].casefold(),
+                    )
+                    self.assertIn(
+                        "did not test a repellent",
+                        answer["answer"].casefold(),
+                    )
 
     def test_swd_density_topic_handles_count_and_per_fly_wording(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
@@ -4147,6 +4156,42 @@ class ReviewedScienceTests(unittest.TestCase):
             vision["locator"],
         )
 
+    def test_swd_state_questions_do_not_inherit_unmentioned_batch_context(self):
+        record_id = "swd:openalex_literature:openalex:W3161910963"
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            broad = build_reviewed_science_answer(
+                index,
+                "How could age, mating status, hunger, or prior egg laying change an SWD repellent result?",
+            )
+            explicit = build_reviewed_science_answer(
+                index,
+                "Can an SWD assay with fed virgins be compared directly with one using starved mated gravid females?",
+            )
+
+        self.assertIsNotNone(broad)
+        self.assertIsNotNone(explicit)
+        assert broad is not None and explicit is not None
+        self.assertNotEqual(broad["answer"], explicit["answer"])
+        self.assertNotIn("batch", broad["answer"].casefold())
+        self.assertIn("did not test a repellent", broad["answer"].casefold())
+        self.assertIn(
+            "do not treat a contrast between batches",
+            explicit["answer"].casefold(),
+        )
+        self.assertIn("did not directly compare", explicit["answer"].casefold())
+
     def test_reality_eval_repairs_generalize_to_neighboring_paraphrases(self):
         catalog = load_reviewed_science_catalog(default_reviewed_science_catalog())
         topics = {topic["id"]: topic for topic in catalog["topics"]}
@@ -4215,19 +4260,20 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "Can an SWD assay with fed virgins be compared directly with one using starved mated gravid females?",
-                "swd-physiological-state-confounds",
+                "swd-physiological-state-batch-confound",
                 (
-                    "Do not compare",
+                    "Do not treat a contrast between batches",
                     "conventional mated gravid females at 7 hours",
-                    "not significant at 12 or 24 hours",
+                    "not significantly at 12 or 24 hours",
+                    "did not directly compare a fed-virgin batch",
                 ),
             ),
             (
                 "What did the SWD foraging study show about fed conventional gravid females versus starved axenic virgins, and why can those batches not be compared?",
-                "swd-physiological-state-confounds",
+                "swd-physiological-state-batch-confound",
                 (
-                    "Do not compare",
-                    "feeding, mating, and gravidity changed together",
+                    "Do not treat a contrast between batches",
+                    "did not directly compare",
                     "sex and microbiome status",
                 ),
             ),
