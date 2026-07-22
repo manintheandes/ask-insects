@@ -2162,6 +2162,29 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "What evidence would distinguish learned habituation from inherited resistance to an SWD repellent?",
+                "swd:openalex_literature:openalex:W3199560580",
+                (
+                    "within-individual or within-generation",
+                    "offspring raised without exposure",
+                    "selection response",
+                    "genetic association",
+                    "did not test genetic association",
+                    "unexposed-generation",
+                ),
+            ),
+            (
+                "If an SWD line keeps ignoring a deterrent after its offspring are raised without exposure, is that still learning or evidence for inheritance?",
+                "swd:openalex_literature:openalex:W3199560580",
+                (
+                    "offspring raised without exposure",
+                    "selection response",
+                    "genetic association",
+                    "parental effects",
+                    "inheritance",
+                ),
+            ),
+            (
                 "How should I connect fewer SWD eggs with later larval survival and marketable yield across different fruit ripeness states?",
                 "swd_pubmed_literature:pubmed:39769586",
                 (

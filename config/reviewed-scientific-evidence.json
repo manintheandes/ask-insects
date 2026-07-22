@@ -1309,6 +1309,7 @@
       "id": "swd-habituation-versus-inherited-resistance",
       "species_ids": ["drosophila_suzukii"],
       "match": {
+        "priority": 95,
         "phrases": ["inherited resistance", "learned habituation", "genetic resistance"],
         "required_any": [
           ["habituation", "learned", "learning", "pre exposure", "pre-exposure"],
