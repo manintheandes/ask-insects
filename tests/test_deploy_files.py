@@ -25,11 +25,22 @@ class DeployFilesTests(unittest.TestCase):
         self.assertIn("systemctl restart ask-insects", app)
         self.assertIn("chmod 600", app)
         self.assertIn("http://127.0.0.1:8080/health", app)
+        self.assertIn("ASK_INSECTS_DEPLOY_REFRESH_SOURCES", app)
+        self.assertIn("if [[ '$REFRESH_SOURCES' == '1' ]]", app)
         self.assertIn("/ingest/insect-intelligence-programs", app)
         self.assertIn("ingest_plutella_xylostella_literature.py", app)
         self.assertIn("ingest_human_repellent_testing_guidance.py", app)
         self.assertIn("ingest_aedes_primary_behavior_evidence.py", app)
         self.assertIn("ingest_swd_primary_field_evidence.py", app)
+
+    def test_deploy_source_refresh_is_opt_in(self):
+        app = Path("scripts/deploy_gce_app.sh").read_text(encoding="utf-8")
+
+        self.assertIn(
+            'REFRESH_SOURCES="${ASK_INSECTS_DEPLOY_REFRESH_SOURCES:-0}"', app
+        )
+        self.assertIn('if [[ "$REFRESH_SOURCES" != "0" && "$REFRESH_SOURCES" != "1" ]]', app)
+        self.assertIn("ASK_INSECTS_DEPLOY_REFRESH_SOURCES must be 0 or 1", app)
 
     def test_deploy_activates_and_verifies_the_exact_git_revision(self):
         app = Path("scripts/deploy_gce_app.sh").read_text(encoding="utf-8")

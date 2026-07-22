@@ -7,7 +7,12 @@ DATA_DIR="${ASK_INSECTS_REMOTE_DIR:-/home/josh/ask-insects}"
 RUNTIME_ROOT="${ASK_INSECTS_REMOTE_RUNTIME_ROOT:-/home/josh/ask-insects-runtime}"
 CURRENT_LINK="${ASK_INSECTS_REMOTE_CURRENT_LINK:-/home/josh/ask-insects-current}"
 TOKEN="${ASK_INSECTS_TOKEN:?Set ASK_INSECTS_TOKEN before deploying}"
+REFRESH_SOURCES="${ASK_INSECTS_DEPLOY_REFRESH_SOURCES:-0}"
 RELEASE_ID="${ASK_INSECTS_RELEASE_ID:-$(git rev-parse --verify HEAD)}"
+if [[ "$REFRESH_SOURCES" != "0" && "$REFRESH_SOURCES" != "1" ]]; then
+  echo "ASK_INSECTS_DEPLOY_REFRESH_SOURCES must be 0 or 1" >&2
+  exit 2
+fi
 if [[ "${#RELEASE_ID}" -ne 40 || "$RELEASE_ID" == *[!0-9a-f]* ]]; then
   echo "ASK_INSECTS_RELEASE_ID must be a full lowercase Git commit SHA" >&2
   exit 2
@@ -40,14 +45,16 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   printf 'ASK_INSECTS_TOKEN=%s\nASK_INSECTS_RELEASE_ID=%s\n' \
     '$TOKEN' '$RELEASE_ID' > '$DATA_DIR/.env'
   chmod 600 '$DATA_DIR/.env'
-  python3 '$RUNTIME_DIR/scripts/ingest_plutella_xylostella_literature.py' \
-    --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
-  python3 '$RUNTIME_DIR/scripts/ingest_human_repellent_testing_guidance.py' \
-    --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
-  python3 '$RUNTIME_DIR/scripts/ingest_aedes_primary_behavior_evidence.py' \
-    --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
-  python3 '$RUNTIME_DIR/scripts/ingest_swd_primary_field_evidence.py' \
-    --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
+  if [[ '$REFRESH_SOURCES' == '1' ]]; then
+    python3 '$RUNTIME_DIR/scripts/ingest_plutella_xylostella_literature.py' \
+      --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
+    python3 '$RUNTIME_DIR/scripts/ingest_human_repellent_testing_guidance.py' \
+      --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
+    python3 '$RUNTIME_DIR/scripts/ingest_aedes_primary_behavior_evidence.py' \
+      --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
+    python3 '$RUNTIME_DIR/scripts/ingest_swd_primary_field_evidence.py' \
+      --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
+  fi
   if [[ -e '$CURRENT_LINK' && ! -L '$CURRENT_LINK' ]]; then
     rm -rf '$CURRENT_LINK'
   fi
@@ -65,11 +72,13 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   test -n \"\$MAIN_PID\"
   test \"\$(readlink -f /proc/\$MAIN_PID/cwd)\" = '$RUNTIME_DIR'
   test \"\$(cat '$RUNTIME_DIR/.deployed-revision')\" = '$RELEASE_ID'
-  curl --max-time 120 -fsS -X POST \
-    -H 'Authorization: Bearer $TOKEN' \
-    -H 'Content-Type: application/json' \
-    --data '{}' \
-    http://127.0.0.1:8080/ingest/insect-intelligence-programs >/dev/null
+  if [[ '$REFRESH_SOURCES' == '1' ]]; then
+    curl --max-time 600 -fsS -X POST \
+      -H 'Authorization: Bearer $TOKEN' \
+      -H 'Content-Type: application/json' \
+      --data '{}' \
+      http://127.0.0.1:8080/ingest/insect-intelligence-programs >/dev/null
+  fi
   curl --max-time 10 -fsS \
     -H 'Authorization: Bearer $TOKEN' \
     http://127.0.0.1:8080/health \

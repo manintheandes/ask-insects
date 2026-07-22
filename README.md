@@ -52,6 +52,8 @@ bash scripts/install_local_runtime.sh
 
 Normal user questions go directly through the installed skill to the hosted production source plane. Do not run setup, installation, repository tests, or source refreshes inside a normal answer. The repo-owned skill can be refreshed by itself during maintenance with `ask-insects setup-agent`.
 
+Production code deployment and scientific source refresh are separate operations. `scripts/deploy_gce_app.sh` installs and verifies the requested revision without rebuilding sources. Set `ASK_INSECTS_DEPLOY_REFRESH_SOURCES=1` only for an intentional maintenance deployment that must also refresh the four bootstrap evidence lanes and the insect-intelligence program ledger.
+
 ### Aedes Deep Source Program
 
 The existing comprehensive-source strategy is Aedes-first within the mosquito program: build Ask Insects toward the most comprehensive `Aedes aegypti` intelligence system in the world. That is the goal, not a claim the repo is allowed to make blindly. Other mosquitoes can still be indexed as comparison records, but they are not the completion boundary for that source-depth push.
