@@ -3886,6 +3886,87 @@ class ReviewedScienceTests(unittest.TestCase):
                         {item["record_id"] for item in answer["evidence"]},
                     )
 
+    def test_laminate_flake_questions_route_to_primary_delivery_evidence(self):
+        from askinsects.cli import compact_agent_answer
+        from askinsects.sources.swd_primary_field_evidence import (
+            LAMINATE_FLAKE_FIELD_RECORD_ID,
+            build_swd_primary_field_evidence_records,
+        )
+
+        questions = (
+            "A flake formulation with SWD deterrent compounds lowered berry "
+            "infestation. What evidence says the flake is doing repellent work "
+            "rather than just being another insecticide, and what would still be "
+            "missing for a grower recommendation?",
+            "Do laminate polymer flakes with thymol or peppermint prove a "
+            "non-toxic SWD repellent, or do we still need a crop recommendation "
+            "gate?",
+            "If treated flakes reduced strawberry infestation at four days, can "
+            "we recommend them to growers or do we need persistence and field "
+            "validation first?",
+        )
+        negative_questions = (
+            "Which polymer has the best thermal stability for food packaging?",
+            "How should I identify spotted wing drosophila in a monitoring trap?",
+            "Which lavender essential oil supplier sells the cheapest flake?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                build_swd_primary_field_evidence_records(
+                    retrieved_at="2026-07-21T00:00:00Z"
+                )
+            )
+            answers = [
+                answer_question(question, artifact_dir=artifact_dir)
+                for question in questions
+            ]
+            negatives = [
+                build_reviewed_science_answer(index, question)
+                for question in negative_questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertTrue(answer["ok"])
+                self.assertEqual(answer["answer_shape"], "reviewed_science")
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {LAMINATE_FLAKE_FIELD_RECORD_ID},
+                )
+                for fragment in (
+                    "not as proof",
+                    "increased fly mortality",
+                    "reduced larval infestation by 25% at four days",
+                    "not at seven days",
+                    "release rate and persistence",
+                    "do not recommend",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                final_answer = compact_agent_answer(answer)["final_answer"]
+                self.assertIn(
+                    "[Reduced Drosophila suzukii Infestation in Berries Using "
+                    "Deterrent Compounds and Laminate Polymer Flakes]"
+                    "(https://doi.org/10.3390/insects8040117)",
+                    final_answer,
+                )
+                self.assertIn(
+                    "Source ID: `doi:10.3390/insects8040117`",
+                    final_answer,
+                )
+                self.assertIn("Locator: `Abstract and Results", final_answer)
+
+        for question, answer in zip(negative_questions, negatives, strict=True):
+            with self.subTest(question=question):
+                if answer is not None:
+                    self.assertNotIn(
+                        LAMINATE_FLAKE_FIELD_RECORD_ID,
+                        {item["record_id"] for item in answer["evidence"]},
+                    )
+
     def test_hanseniaspora_lure_downselection_preserves_specificity_tradeoff(self):
         from askinsects.cli import compact_agent_answer
 

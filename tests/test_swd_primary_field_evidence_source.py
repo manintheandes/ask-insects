@@ -9,6 +9,8 @@ from unittest.mock import patch
 from askinsects.index import SourceIndex
 from askinsects.sources.swd_primary_field_evidence import (
     ECOTROL_FIELD_RECORD_ID,
+    HOP_FIELD_RECORD_ID,
+    LAMINATE_FLAKE_FIELD_RECORD_ID,
     SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
     build_swd_primary_field_evidence_records,
 )
@@ -23,12 +25,9 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
             retrieved_at="2026-07-19T00:00:00Z"
         )
 
-        self.assertEqual(len(records), 2)
-        record = next(item for item in records if item.record_id != ECOTROL_FIELD_RECORD_ID)
-        self.assertEqual(
-            record.record_id,
-            "swd_primary_field:doi:10.1016/j.cropro.2019.05.033",
-        )
+        self.assertEqual(len(records), 3)
+        record = next(item for item in records if item.record_id == HOP_FIELD_RECORD_ID)
+        self.assertEqual(record.record_id, HOP_FIELD_RECORD_ID)
         self.assertEqual(record.source, SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID)
         self.assertEqual(record.species, "Drosophila suzukii")
         self.assertEqual(
@@ -50,6 +49,28 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
             "commercial raspberry and blackberry",
             "larvae in fruit",
             "hypotheses rather than demonstrated causes",
+        ):
+            self.assertIn(fragment, record.text)
+
+    def test_record_preserves_laminate_flake_delivery_results_and_limits(self):
+        records = build_swd_primary_field_evidence_records(
+            retrieved_at="2026-07-21T00:00:00Z"
+        )
+
+        record = next(
+            item for item in records if item.record_id == LAMINATE_FLAKE_FIELD_RECORD_ID
+        )
+        self.assertEqual(record.source, SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID)
+        self.assertEqual(record.species, "Drosophila suzukii")
+        self.assertEqual(record.url, "https://doi.org/10.3390/insects8040117")
+        for fragment in (
+            "laminate polymer flakes",
+            "thymol was the most repellent",
+            "increased fly mortality",
+            "greater in raspberries near untreated flakes",
+            "25% at four days",
+            "not seven days",
+            "not a completed grower recommendation",
         ):
             self.assertIn(fragment, record.text)
 
@@ -124,13 +145,13 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
 
         self.assertTrue(first["ok"])
         self.assertTrue(repeated["ok"])
-        self.assertEqual(record_count, 2)
-        self.assertEqual(searchable_count, 2)
+        self.assertEqual(record_count, 3)
+        self.assertEqual(searchable_count, 3)
         self.assertEqual(
-            status["source_counts"][SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID], 2
+            status["source_counts"][SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID], 3
         )
-        self.assertEqual(status["record_count"], 2)
-        self.assertEqual(status["lanes"]["literature"], 2)
+        self.assertEqual(status["record_count"], 3)
+        self.assertEqual(status["lanes"]["literature"], 3)
 
 
 if __name__ == "__main__":
