@@ -562,7 +562,26 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
 
     def test_aedes_environment_control_paraphrases_use_reviewed_source_gap(self):
-        record_id = "openalex:W3048721146"
+        from askinsects.cli import compact_agent_answer
+
+        expected_record_ids = (
+            "openalex:W3048721146",
+            "openalex:W3179105761",
+            "openalex:W4313493759",
+            "openalex:W4399119561",
+            "openalex:W4403603462",
+            "human_repellent_guidance:epa:810.3700",
+            "human_repellent_guidance:who:2009.4",
+        )
+        expected_source_ids = (
+            "doi:10.1371/journal.pone.0237353",
+            "doi:10.1371/journal.pntd.0009546",
+            "doi:10.3390/life13010141",
+            "doi:10.1371/journal.pone.0299722",
+            "doi:10.1038/s41598-024-74518-x",
+            "epa:oppts-810.3700",
+            "who:WHO-HTM-NTD-WHOPES-2009.4",
+        )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
             index.initialize()
@@ -571,8 +590,9 @@ class ReviewedScienceTests(unittest.TestCase):
                     evidence_record(
                         record_id,
                         source_id="aedes_literature_openalex",
-                        locator="raw/aedes.json#works/W3048721146",
+                        locator=f"records#{record_id}",
                     )
+                    for record_id in expected_record_ids
                 ]
             )
             questions = (
@@ -600,7 +620,10 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIsNotNone(answer)
                     assert answer is not None
                     self.assertTrue(answer["ok"])
-                    self.assertEqual(answer["evidence"][0]["record_id"], record_id)
+                    self.assertEqual(
+                        [item["record_id"] for item in answer["evidence"]],
+                        list(expected_record_ids),
+                    )
                     for fragment in (
                         "at the beginning of each 30-minute trial",
                         "09:00-16:30",
@@ -614,7 +637,7 @@ class ReviewedScienceTests(unittest.TestCase):
                         "room temperature on aluminium foil",
                         "define and monitor airflow direction and speed",
                         "airborne-exposure measurement gap",
-                        "current reviewed public evidence",
+                        "cited reviewed Aedes delivery and human-use evidence set",
                         "no complete product-specific",
                         "carrier",
                         "release-rate",
@@ -623,15 +646,19 @@ class ReviewedScienceTests(unittest.TestCase):
                         "applied loading alone as airborne dose",
                     ):
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                    final_answer = compact_agent_answer(answer)["final_answer"]
+                    for source_id in expected_source_ids:
+                        self.assertIn(f"Source ID: `{source_id}`", final_answer)
 
             unrelated = build_reviewed_science_answer(
                 index,
                 "How does regional humidity affect Aedes aegypti field abundance?",
             )
             if unrelated is not None:
-                self.assertNotIn(
-                    record_id,
-                    {item["record_id"] for item in unrelated["evidence"]},
+                self.assertTrue(
+                    set(expected_record_ids).isdisjoint(
+                        {item["record_id"] for item in unrelated["evidence"]}
+                    )
                 )
 
     def test_aedes_co2_spectral_gating_paraphrases_preserve_endpoint_limits(self):
@@ -966,8 +993,16 @@ class ReviewedScienceTests(unittest.TestCase):
                         )
 
     def test_aedes_microclimate_chamber_paraphrase_selects_environment_controls(self):
+        from askinsects.cli import compact_agent_answer
+
         record_ids = (
             "openalex:W3048721146",
+            "openalex:W3179105761",
+            "openalex:W4313493759",
+            "openalex:W4399119561",
+            "openalex:W4403603462",
+            "human_repellent_guidance:epa:810.3700",
+            "human_repellent_guidance:who:2009.4",
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -1010,6 +1045,17 @@ class ReviewedScienceTests(unittest.TestCase):
             {item["record_id"] for item in answer["evidence"]},
             set(record_ids),
         )
+        final_answer = compact_agent_answer(answer)["final_answer"]
+        for source_id in (
+            "doi:10.1371/journal.pone.0237353",
+            "doi:10.1371/journal.pntd.0009546",
+            "doi:10.3390/life13010141",
+            "doi:10.1371/journal.pone.0299722",
+            "doi:10.1038/s41598-024-74518-x",
+            "epa:oppts-810.3700",
+            "who:WHO-HTM-NTD-WHOPES-2009.4",
+        ):
+            self.assertIn(f"Source ID: `{source_id}`", final_answer)
 
     def test_aedes_human_subject_preparation_routes_to_official_guidance(self):
         record_id = "human_repellent_guidance:epa:810.3700"
@@ -4547,7 +4593,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Which product-specific airflow, carrier, release, and delivery information is missing from an Aedes spatial-repellency chamber result?",
                 "aedes-spatial-environment-controls",
                 (
-                    "current reviewed public evidence",
+                    "cited reviewed Aedes delivery and human-use evidence set",
                     "no complete product-specific",
                     "carrier",
                     "release-rate",
