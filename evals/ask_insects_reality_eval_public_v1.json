@@ -1184,12 +1184,12 @@
       "holdout": false,
       "why_realistic": "Applied mass is not the same as the airborne exposure a mosquito receives at a particular distance and time.",
       "expected_behavior": "Require separate reporting of source loading, emission over time, measured air concentration, geometry, and distance while naming the current delivery evidence gap.",
-      "truth_source": "Independent review of PMCID PMC7423148 and the public formulation-delivery gap record.",
+      "truth_source": "Independent review of PMCID PMC7423148 and DOI 10.3390/life13010141 plus the reviewed-public-evidence coverage boundary.",
       "truth_packet": {
         "required_claims": [
           "Report active ingredient and formulation, applied mass and area, source age, evaporation or release rate over time, chamber volume and ventilation, sampling method, measured airborne concentration if available, and source-to-mosquito distance.",
           "Applied dose cannot be substituted for air concentration without a validated release and transport measurement.",
-          "The public product record identifies carrier, concentration, spatial delivery, and release-rate evidence as incomplete."
+          "The current reviewed public Aedes repellent evidence cited here does not contain one complete product-specific package spanning carrier, concentration, spatial delivery, release-rate, measured air concentration, application method, and user-experience evidence."
         ],
         "forbidden_claims": [
           "Milligrams applied and milligrams per cubic meter are interchangeable.",
