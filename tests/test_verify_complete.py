@@ -512,10 +512,26 @@ class VerifyCompleteTests(unittest.TestCase):
     def test_verify_complete_requires_open_source_boundary(self):
         required_files = set(verify_complete.REQUIRED_FILES)
 
+        self.assertIn(".codex/config.toml", required_files)
         self.assertIn("LICENSE", required_files)
         self.assertIn("NOTICE", required_files)
         self.assertIn("THIRD_PARTY_DATA.md", required_files)
         verify_complete.check_open_source_boundary()
+
+    def test_reality_eval_requires_latency_sensitive_codex_project_config(self):
+        verify_complete.check_reality_evaluation()
+
+        config_path = verify_complete.REPO_ROOT / ".codex/config.toml"
+        original = config_path.read_text(encoding="utf-8")
+        try:
+            config_path.write_text(
+                original.replace('model = "gpt-5.4-mini"', 'model = "gpt-5.5"'),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(RuntimeError, "gpt-5.4-mini"):
+                verify_complete.check_reality_evaluation()
+        finally:
+            config_path.write_text(original, encoding="utf-8")
 
     def test_verify_complete_requires_generic_v3_evidence_package(self):
         required_files = set(verify_complete.REQUIRED_FILES)
