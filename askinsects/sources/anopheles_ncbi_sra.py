@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from http.client import IncompleteRead
 import json
 from pathlib import Path
 import re
 import time
 from typing import Callable
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -43,13 +44,18 @@ class NCBISRAClient:
     @staticmethod
     def _fetch_json(url: str) -> dict[str, object]:
         request = Request(url, headers={"User-Agent": USER_AGENT})
-        for attempt in range(3):
+        payload: object | None = None
+        for attempt in range(4):
             try:
                 with urlopen(request, timeout=120) as response:
                     payload = json.loads(response.read().decode("utf-8", "replace"))
                 break
             except HTTPError as exc:
-                if exc.code not in {429, 500, 502, 503, 504} or attempt == 2:
+                if exc.code not in {429, 500, 502, 503, 504} or attempt == 3:
+                    raise
+                time.sleep(1.0 + attempt)
+            except (IncompleteRead, URLError, TimeoutError, OSError, json.JSONDecodeError):
+                if attempt == 3:
                     raise
                 time.sleep(1.0 + attempt)
         if not isinstance(payload, dict):

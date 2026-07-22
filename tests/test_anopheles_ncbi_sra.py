@@ -2,12 +2,15 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from http.client import IncompleteRead
+from unittest.mock import patch
 
 from askinsects.answer import answer_question
 from askinsects.index import SourceIndex
 from askinsects.records import EvidenceRecord, Provenance
 from askinsects.sources.anopheles_ncbi_sra import (
     ANOPHELES_NCBI_SRA_SOURCE_ID,
+    NCBISRAClient,
     fetch_anopheles_ncbi_sra_records,
 )
 from scripts.ingest_anopheles_ncbi_sra import ingest_anopheles_ncbi_sra
@@ -67,6 +70,32 @@ def _aedes_dataset() -> EvidenceRecord:
 
 
 class AnophelesNCBISRATests(unittest.TestCase):
+    def test_ncbi_client_retries_incomplete_response_reads(self):
+        class Response:
+            def __init__(self, payload: bytes | Exception):
+                self.payload = payload
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, traceback):
+                return False
+
+            def read(self):
+                if isinstance(self.payload, Exception):
+                    raise self.payload
+                return self.payload
+
+        responses = [
+            Response(IncompleteRead(b'{"result":', 100)),
+            Response(b'{"result": {"uids": []}}'),
+        ]
+        with patch("askinsects.sources.anopheles_ncbi_sra.urlopen", side_effect=responses), patch(
+            "askinsects.sources.anopheles_ncbi_sra.time.sleep"
+        ):
+            payload = NCBISRAClient._fetch_json("https://example.test/esummary")
+        self.assertEqual(payload, {"result": {"uids": []}})
+
     def test_fetch_creates_one_atomic_record_per_run(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             result = fetch_anopheles_ncbi_sra_records(
