@@ -18,6 +18,13 @@
       "locator": "Table 1, Ecotrol PLUS and spinosad rows; Methods 2.3, blueberry and raspberry field-trial paragraphs; Results 3.2, both field-experiment paragraphs; Tables 2 and 3"
     },
     {
+      "record_id": "swd_primary_field:doi:10.3390/insects8040117",
+      "title": "Reduced Drosophila suzukii Infestation in Berries Using Deterrent Compounds and Laminate Polymer Flakes",
+      "public_url": "https://doi.org/10.3390/insects8040117",
+      "source_id": "doi:10.3390/insects8040117",
+      "locator": "Abstract and Results: repellency and oviposition-deterrence screening, cotton-wick raspberry assays, laminate polymer flake raspberry choice assay, and strawberry field infestation at 4 and 7 days after application"
+    },
+    {
       "record_id": "aedes_olfaction_literature:pubmed:36261039",
       "title": "Differential mosquito attraction to humans is associated with skin-derived carboxylic acid levels",
       "public_url": "https://pubmed.ncbi.nlm.nih.gov/36261039/",
@@ -2247,6 +2254,55 @@
           "source_id": "doi:10.3390/insects16030253",
           "locator": "Methods 2.1-2.2; Results 3.1 and 3.3; Tables 1-3 and 6-8; Conclusion 5"
         }
+      ]
+    },
+    {
+      "id": "swd-laminate-flake-delivery-boundary",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 95,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["flake", "flakes", "laminate", "laminate polymer", "polymer flake", "polymer flakes", "flake formulation", "deterrent compounds"],
+          ["berry", "berries", "raspberry", "raspberries", "strawberry", "strawberries", "infestation", "larval infestation", "grower"]
+        ],
+        "phrases": [
+          "laminate polymer flakes",
+          "flake formulation",
+          "deterrent compounds",
+          "reduced berry infestation",
+          "doing repellent work",
+          "another insecticide"
+        ],
+        "required_any": [
+          ["flake", "flakes", "laminate", "laminate polymer", "polymer flake", "polymer flakes", "flake formulation", "deterrent compound", "deterrent compounds"],
+          ["SWD", "spotted wing drosophila", "Drosophila suzukii", "infestation", "larval infestation", "berry", "berries", "raspberry", "raspberries", "strawberry", "strawberries"],
+          ["repellent", "repellency", "deterrent", "deters", "deterred", "insecticide", "toxicity", "toxic", "non-toxic", "mechanism", "mode", "grower", "growers", "recommend", "recommendation", "crop recommendation", "field validation", "persistence", "advance"]
+        ],
+        "optional": [
+          "thymol",
+          "peppermint",
+          "four days",
+          "4 days",
+          "seven days",
+          "7 days",
+          "mortality",
+          "field",
+          "carrier",
+          "delivery",
+          "application",
+          "persistence"
+        ],
+        "excluded_any": [
+          "human mosquito",
+          "diamondback moth",
+          "brewing quality",
+          "hop cultivar"
+        ]
+      },
+      "answer": "Treat the laminate-flake result as a promising deterrent-delivery signal, not as proof of a finished repellent product or as proof that toxicity made no contribution. The study first screened essential-oil compounds and found thymol to be the strongest laboratory repellent to adult Drosophila suzukii for up to 24 hours, with citronellol, geraniol, and menthol showing moderate repellency. In raspberry assays, thymol on cotton wicks reduced female landings and larval infestation, and in a no-choice assay it reduced landings by 60% and larval infestation by 50%, but it also increased fly mortality relative to controls. That mortality result means reduced infestation cannot be interpreted as pure non-toxic repellency. The laminate-polymer-flake evidence is stronger for delivery than for mechanism: raspberries near untreated flakes had greater larval infestation than raspberries near flakes treated with thymol or peppermint oil, and a strawberry field trial found thymol and peppermint flakes reduced larval infestation by 25% at four days after application, but not at seven days. Advance the concept only through a next gate that separates non-contact deterrence, contact effects, toxicity, egg laying, hatch or larval survival, and fruit infestation. For a grower recommendation, the missing pieces are replicated field performance across crop and season, release rate and persistence, application rate and spacing, weather robustness, crop safety, residue and registration fit, non-target effects, compatibility with existing controls, economics, and a clear retreatment interval. Do not recommend the flake program from this paper alone.",
+      "source_record_ids": [
+        "swd_primary_field:doi:10.3390/insects8040117"
       ]
     },
     {

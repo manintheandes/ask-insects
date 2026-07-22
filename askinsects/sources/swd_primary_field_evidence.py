@@ -6,6 +6,7 @@ from askinsects.records import EvidenceRecord, Provenance
 SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID = "swd_primary_field_evidence"
 HOP_FIELD_RECORD_ID = "swd_primary_field:doi:10.1016/j.cropro.2019.05.033"
 ECOTROL_FIELD_RECORD_ID = "swd_primary_field:doi:10.3390/insects11080536"
+LAMINATE_FLAKE_FIELD_RECORD_ID = "swd_primary_field:doi:10.3390/insects8040117"
 
 
 def build_swd_primary_field_evidence_records(
@@ -102,6 +103,54 @@ def build_swd_primary_field_evidence_records(
                 retrieved_at=retrieved_at,
                 license="Open-access primary study; source terms apply",
                 source_url="https://pmc.ncbi.nlm.nih.gov/articles/PMC7469169/",
+            ),
+            payload={
+                "source_kind": "peer_reviewed_primary_study",
+                "curation_status": "human_reviewed_original_source",
+            },
+        ),
+        EvidenceRecord(
+            record_id=LAMINATE_FLAKE_FIELD_RECORD_ID,
+            lane="literature",
+            source=SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
+            title=(
+                "Reduced Drosophila suzukii Infestation in Berries Using "
+                "Deterrent Compounds and Laminate Polymer Flakes"
+            ),
+            text=(
+                "The study evaluated repellency and oviposition-deterrent "
+                "activity of plant essential-oil compounds and used laminate "
+                "polymer flakes as a carrier for selected deterrent compounds. "
+                "In laboratory screening, thymol was the most repellent compound "
+                "to adult Drosophila suzukii males and females for up to 24 hours, "
+                "while citronellol, geraniol, and menthol were moderately "
+                "repellent. In assays with thymol on cotton wicks next to ripe "
+                "raspberries, female landings and larval infestation were reduced. "
+                "In a no-choice assay, thymol reduced female landings by 60% and "
+                "larval infestation by 50%, but also increased fly mortality "
+                "relative to controls, so the result cannot be interpreted as pure "
+                "non-toxic repellency. With polymer flakes, larval infestation was "
+                "greater in raspberries near untreated flakes than near flakes "
+                "treated with thymol or peppermint oil. In a strawberry field "
+                "trial, thymol and peppermint flakes reduced larval infestation by "
+                "25% at four days after application, but not seven days after "
+                "application, compared with untreated flakes. The authors concluded "
+                "that, with future improvements in application strategies, "
+                "deterrent compounds may have a role in D. suzukii management. "
+                "The paper supports a deterrent-compound delivery hypothesis and "
+                "a short-lived field infestation signal, not a completed grower "
+                "recommendation, a universal crop claim, or proof that toxicity or "
+                "non-behavioral effects made no contribution."
+            ),
+            species="Drosophila suzukii",
+            url="https://doi.org/10.3390/insects8040117",
+            media_url=None,
+            provenance=Provenance(
+                source_id=SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
+                locator="https://www.mdpi.com/2075-4450/8/4/117#sec0-insects-08-00117",
+                retrieved_at=retrieved_at,
+                license="Open-access primary study; source terms apply",
+                source_url="https://doi.org/10.3390/insects8040117",
             ),
             payload={
                 "source_kind": "peer_reviewed_primary_study",
