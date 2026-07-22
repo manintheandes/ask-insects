@@ -9,6 +9,7 @@ from unittest.mock import patch
 from askinsects.index import SourceIndex
 from askinsects.sources.swd_primary_field_evidence import (
     ECOTROL_FIELD_RECORD_ID,
+    FALL_RASPBERRY_NONTARGET_FIELD_RECORD_ID,
     HOP_FIELD_RECORD_ID,
     LAMINATE_FLAKE_FIELD_RECORD_ID,
     SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
@@ -25,7 +26,7 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
             retrieved_at="2026-07-19T00:00:00Z"
         )
 
-        self.assertEqual(len(records), 3)
+        self.assertEqual(len(records), 4)
         record = next(item for item in records if item.record_id == HOP_FIELD_RECORD_ID)
         self.assertEqual(record.record_id, HOP_FIELD_RECORD_ID)
         self.assertEqual(record.source, SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID)
@@ -100,6 +101,28 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
         ):
             self.assertIn(fragment, record.text)
 
+    def test_record_preserves_fall_raspberry_nontarget_field_boundary(self):
+        records = build_swd_primary_field_evidence_records(
+            retrieved_at="2026-07-22T00:00:00Z"
+        )
+
+        record = next(
+            item
+            for item in records
+            if item.record_id == FALL_RASPBERRY_NONTARGET_FIELD_RECORD_ID
+        )
+        self.assertEqual(record.source, SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID)
+        self.assertEqual(record.species, "Drosophila suzukii")
+        self.assertEqual(record.url, "https://doi.org/10.1093/jee/tow116")
+        for fragment in (
+            "fall-bearing red raspberry field plots",
+            "potential nontarget effects",
+            "specific crop, season, field layout",
+            "not be read as a clean standalone crop-repellent win",
+            "Reduced oviposition alone does not establish fruit-damage prevention",
+        ):
+            self.assertIn(fragment, record.text)
+
     def test_ingest_is_idempotent_and_keeps_one_searchable_row(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"
@@ -145,13 +168,13 @@ class SwdPrimaryFieldEvidenceSourceTests(unittest.TestCase):
 
         self.assertTrue(first["ok"])
         self.assertTrue(repeated["ok"])
-        self.assertEqual(record_count, 3)
-        self.assertEqual(searchable_count, 3)
+        self.assertEqual(record_count, 4)
+        self.assertEqual(searchable_count, 4)
         self.assertEqual(
-            status["source_counts"][SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID], 3
+            status["source_counts"][SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID], 4
         )
-        self.assertEqual(status["record_count"], 3)
-        self.assertEqual(status["lanes"]["literature"], 3)
+        self.assertEqual(status["record_count"], 4)
+        self.assertEqual(status["lanes"]["literature"], 4)
 
 
 if __name__ == "__main__":
