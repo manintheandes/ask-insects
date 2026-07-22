@@ -115,12 +115,21 @@ class WheelResourceTests(unittest.TestCase):
             wheels = list(wheelhouse.glob("*.whl"))
             self.assertEqual(len(wheels), 1)
             with zipfile.ZipFile(wheels[0]) as wheel:
+                wheel_names = set(wheel.namelist())
                 resource_names = sorted(
                     Path(name).name
-                    for name in wheel.namelist()
+                    for name in wheel_names
                     if "/resources/" in name and name.endswith(".json")
                 )
             self.assertEqual(resource_names, sorted(expected))
+            self.assertIn(
+                "askinsects/resources/skills/askinsects/SKILL.md",
+                wheel_names,
+            )
+            self.assertIn(
+                "askinsects/resources/skills/askinsects/agents/openai.yaml",
+                wheel_names,
+            )
             self._run(
                 uv,
                 "pip",
@@ -148,6 +157,7 @@ class WheelResourceTests(unittest.TestCase):
                     import hashlib
                     from importlib.resources import files
                     import json
+                    from pathlib import Path
                     import sys
 
                     sys.path.insert(0, sys.argv[1])
@@ -157,6 +167,11 @@ class WheelResourceTests(unittest.TestCase):
                         DEFAULT_PUBLISHED_PACKAGE,
                         load_context_config,
                         load_published_context_package,
+                    )
+                    from askinsects.agent_setup import (
+                        PACKAGED_SKILL_DIR,
+                        install_askinsects_skill,
+                        skill_manifest,
                     )
                     from askinsects.reviewed_science import (
                         default_reviewed_science_catalog,
@@ -201,11 +216,18 @@ class WheelResourceTests(unittest.TestCase):
                     published = load_published_context_package()
                     if published["package_version"] != "2026-07-19.1":
                         raise SystemExit("installed published release did not load")
+                    destination = Path(sys.argv[3]) / "askinsects"
+                    skill_result = install_askinsects_skill(destination=destination)
+                    if not skill_result["verified"]:
+                        raise SystemExit("installed wheel could not install its agent skill")
+                    if skill_manifest(destination) != skill_manifest(PACKAGED_SKILL_DIR):
+                        raise SystemExit("installed agent skill differs from packaged skill")
                     print(json.dumps({"digests": actual, "defaults": defaults}, sort_keys=True))
                     """
                 ),
                 installed.as_posix(),
                 json.dumps(expected, sort_keys=True),
+                (root / "installed-skill").as_posix(),
                 cwd=run_dir,
             )
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ask Insects"
+  short_description: "Source-backed intelligence for insect R&D"
+  default_prompt: "Use $askinsects to answer this insect question from hosted public evidence with exact provenance."

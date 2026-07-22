@@ -36,7 +36,11 @@ Source = "https://github.com/manintheandes/ask-insects"
 include = ["askinsects*", "scripts*"]
 
 [tool.setuptools.package-data]
-"askinsects.resources" = ["*.json"]
+"askinsects.resources" = [
+  "*.json",
+  "skills/askinsects/SKILL.md",
+  "skills/askinsects/agents/openai.yaml",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

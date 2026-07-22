@@ -11,7 +11,24 @@ import uuid
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 REPO_SKILL_DIR = REPO_ROOT / "skills" / "askinsects"
+PACKAGED_SKILL_DIR = Path(__file__).resolve().parent / "resources" / "skills" / "askinsects"
 DEFAULT_SKILL_DESTINATION = Path.home() / ".codex" / "skills" / "askinsects"
+
+
+def default_skill_destinations(*, home: Path | None = None) -> dict[str, Path]:
+    root = Path.home() if home is None else Path(home)
+    return {
+        "codex": root / ".codex" / "skills" / "askinsects",
+        "claude_code": root / ".claude" / "skills" / "askinsects",
+        "opencode": root / ".config" / "opencode" / "skills" / "askinsects",
+    }
+
+
+def resolve_skill_source() -> Path:
+    for candidate in (REPO_SKILL_DIR, PACKAGED_SKILL_DIR):
+        if (candidate / "SKILL.md").is_file():
+            return candidate
+    raise ValueError("Ask Insects installation does not contain the agent skill bundle")
 
 
 def skill_manifest(path: Path) -> dict[str, str]:
@@ -40,9 +57,9 @@ def _remove_path(path: Path) -> None:
 def install_askinsects_skill(
     *,
     destination: Path = DEFAULT_SKILL_DESTINATION,
-    source: Path = REPO_SKILL_DIR,
+    source: Path | None = None,
 ) -> dict[str, object]:
-    source_path = Path(source).resolve()
+    source_path = (resolve_skill_source() if source is None else Path(source)).resolve()
     destination_path = Path(destination).expanduser().resolve()
     source_manifest = skill_manifest(source_path)
     destination_path.parent.mkdir(parents=True, exist_ok=True)
@@ -83,4 +100,20 @@ def install_askinsects_skill(
         "destination": destination_path.as_posix(),
         "file_count": len(installed_manifest),
         "digest": _manifest_digest(installed_manifest),
+    }
+
+
+def install_askinsects_skills(
+    *,
+    destinations: dict[str, Path] | None = None,
+    source: Path | None = None,
+) -> dict[str, object]:
+    targets = default_skill_destinations() if destinations is None else destinations
+    results = {
+        agent: install_askinsects_skill(destination=destination, source=source)
+        for agent, destination in targets.items()
+    }
+    return {
+        "ok": bool(results) and all(bool(result.get("ok")) for result in results.values()),
+        "agents": results,
     }

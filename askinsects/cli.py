@@ -1031,16 +1031,28 @@ def main(argv: list[str] | None = None) -> int:
         config = HostedConfig(url=args.url, token=args.token)
         save_config(config, path=HOSTED_CONFIG_PATH)
         health_payload = hosted_request(config, "GET", "/health")
+        agent_skills: dict[str, object] | None = None
+        if health_payload.get("ok"):
+            from askinsects.agent_setup import install_askinsects_skills
+
+            agent_skills = install_askinsects_skills()
+        ready = bool(health_payload.get("ok")) and bool(
+            agent_skills and agent_skills.get("ok")
+        )
         payload = {
-            "ok": bool(health_payload.get("ok")),
-            "status": "ready" if health_payload.get("ok") else "needs_help",
+            "ok": ready,
+            "status": "ready" if ready else "needs_help",
             "config_path": HOSTED_CONFIG_PATH.as_posix(),
             "url": args.url,
         }
+        if agent_skills is not None:
+            payload["agent_skills"] = agent_skills
         if "record_count" in health_payload:
             payload["record_count"] = health_payload["record_count"]
         if "error" in health_payload:
             payload["error"] = health_payload["error"]
+        elif health_payload.get("ok") and not ready:
+            payload["error"] = "Ask Insects agent skills could not be installed and verified."
         emit(payload)
         return 0 if payload["ok"] else 2
     if args.command == "setup-agent":

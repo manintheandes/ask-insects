@@ -185,6 +185,33 @@ class AnophelesVectorCompetenceEvidenceTests(unittest.TestCase):
         self.assertNotIn("pooled across multiple Anopheles species", answer["answer"])
         self.assertIn("0.69%", answer["answer"])
 
+    def test_controlled_evidence_wording_excludes_field_results(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([
+                literature_record(
+                    "anopheles_openalex:W10",
+                    "Anopheles gambiae underwent membrane feeding with Plasmodium falciparum gametocytes. "
+                    "A total of 24 of 30 Anopheles gambiae mosquitoes transmitted sporozoites.",
+                ),
+                literature_record(
+                    "anopheles_openalex:W11",
+                    "Anopheles gambiae were collected in a field survey for Plasmodium falciparum. "
+                    "The sporozoite infection rate in Anopheles gambiae was 3.6%.",
+                ),
+            ])
+            ingest_anopheles_vector_competence_evidence(artifact_dir=artifact_dir)
+            answer = answer_question(
+                "What controlled evidence shows that Anopheles gambiae can transmit Plasmodium falciparum?",
+                artifact_dir=artifact_dir,
+            )
+        self.assertTrue(answer["ok"])
+        self.assertIn("Controlled experiment", answer["answer"])
+        self.assertNotIn("Field surveillance", answer["answer"])
+        self.assertEqual(len(answer["evidence"]), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

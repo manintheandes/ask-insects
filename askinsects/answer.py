@@ -5182,7 +5182,15 @@ def _anopheles_vector_competence_answer(
             record for record in records
             if (record.payload or {}).get("evidence_class") == "experimental_vector_competence_result"
         ]
-        asks_for_assay_proof = any(term in q for term in ("assay evidence", "experimental evidence", "controlled experiment"))
+        asks_for_assay_proof = any(
+            term in q
+            for term in (
+                "assay evidence",
+                "experimental evidence",
+                "controlled evidence",
+                "controlled experiment",
+            )
+        )
         selected = (controlled if asks_for_assay_proof and controlled else records)[:limit]
         details = []
         class_labels = {

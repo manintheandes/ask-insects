@@ -9,7 +9,14 @@ import tempfile
 import tomllib
 import unittest
 
-from askinsects.agent_setup import REPO_SKILL_DIR, install_askinsects_skill, skill_manifest
+from askinsects.agent_setup import (
+    PACKAGED_SKILL_DIR,
+    REPO_SKILL_DIR,
+    default_skill_destinations,
+    install_askinsects_skill,
+    install_askinsects_skills,
+    skill_manifest,
+)
 
 
 class AgentSetupTests(unittest.TestCase):
@@ -145,6 +152,38 @@ class AgentSetupTests(unittest.TestCase):
             self.assertFalse((destination / "stale.txt").exists())
             self.assertEqual(skill_manifest(destination), skill_manifest(REPO_SKILL_DIR))
             self.assertEqual(result["file_count"], len(skill_manifest(REPO_SKILL_DIR)))
+
+    def test_packaged_skill_matches_repo_skill(self):
+        self.assertEqual(skill_manifest(PACKAGED_SKILL_DIR), skill_manifest(REPO_SKILL_DIR))
+
+    def test_default_destinations_cover_supported_agent_apps(self):
+        home = Path("/tmp/ask-insects-user")
+
+        destinations = default_skill_destinations(home=home)
+
+        self.assertEqual(destinations["codex"], home / ".codex/skills/askinsects")
+        self.assertEqual(destinations["claude_code"], home / ".claude/skills/askinsects")
+        self.assertEqual(
+            destinations["opencode"],
+            home / ".config/opencode/skills/askinsects",
+        )
+
+    def test_multi_agent_installer_verifies_every_destination(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            destinations = {
+                "codex": root / "codex/askinsects",
+                "claude_code": root / "claude/askinsects",
+                "opencode": root / "opencode/askinsects",
+            }
+
+            result = install_askinsects_skills(destinations=destinations)
+
+            self.assertTrue(result["ok"])
+            self.assertEqual(set(result["agents"]), set(destinations))
+            for agent, destination in destinations.items():
+                self.assertTrue(result["agents"][agent]["verified"])
+                self.assertEqual(skill_manifest(destination), skill_manifest(REPO_SKILL_DIR))
 
     def test_setup_agent_cli_installs_to_explicit_destination(self):
         with tempfile.TemporaryDirectory() as tmpdir:

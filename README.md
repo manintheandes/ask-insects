@@ -44,6 +44,15 @@ The package includes the three species profiles, generic evidence contexts, huma
 
 ### Codex Runtime
 
+For normal team installation in Codex, Claude Code, or OpenCode:
+
+```bash
+uv tool install --force "git+https://github.com/manintheandes/ask-insects.git"
+ask-insects setup --url "<Ask Insects API URL>" --token "<Ask Insects token>"
+```
+
+`setup` saves the private connection with user-only permissions, verifies the hosted health endpoint, and installs the packaged Ask Insects skill for all three supported agent apps. A successful installation ends with `"status": "ready"`. Open a fresh thread before asking the first insect question.
+
 Install or refresh the local CLI runtime and the repo-owned Ask Insects skill together:
 
 ```bash

@@ -83,7 +83,20 @@ class HostedCliTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "config.json"
-            with patch("askinsects.cli.HOSTED_CONFIG_PATH", path), patch("askinsects.cli.hosted_request", fake_request):
+            installed = {
+                "ok": True,
+                "agents": {
+                    "codex": {"ok": True, "verified": True},
+                    "claude_code": {"ok": True, "verified": True},
+                    "opencode": {"ok": True, "verified": True},
+                },
+            }
+            with patch("askinsects.cli.HOSTED_CONFIG_PATH", path), patch(
+                "askinsects.cli.hosted_request", fake_request
+            ), patch(
+                "askinsects.agent_setup.install_askinsects_skills",
+                return_value=installed,
+            ) as install_skills:
                 code, output = self.run_cli("setup", "--url", "https://ask-insects.example", "--token", "secret")
 
             self.assertEqual(code, 0)
@@ -92,9 +105,11 @@ class HostedCliTests(unittest.TestCase):
             self.assertEqual(payload["status"], "ready")
             self.assertEqual(payload["url"], "https://ask-insects.example")
             self.assertEqual(payload["record_count"], 436182)
+            self.assertEqual(payload["agent_skills"], installed)
             self.assertNotIn("secret", output)
             self.assertEqual(calls[0], ("https://ask-insects.example", "secret", "GET", "/health", None, 120))
             self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["url"], "https://ask-insects.example")
+            install_skills.assert_called_once_with()
 
     def test_hosted_health_uses_remote_request(self):
         calls = []
