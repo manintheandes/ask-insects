@@ -265,6 +265,8 @@ REQUIRED_FILES = (
     "askinsects/sources/ncvbdc_dengue_surveillance.py",
     "askinsects/sources/opendatasus_dengue_surveillance.py",
     "askinsects/sources/pathogen_taxonomy.py",
+    "askinsects/sources/anopheles_pathogen_taxonomy.py",
+    "askinsects/sources/anopheles_vector_competence_evidence.py",
     "askinsects/sources/ncbi_biosample.py",
     "askinsects/sources/vectorbase_genomics.py",
     "askinsects/sources/vector_competence_assays.py",
@@ -347,6 +349,7 @@ REQUIRED_FILES = (
     "scripts/ingest_ncvbdc_dengue_surveillance.py",
     "scripts/ingest_opendatasus_dengue_surveillance.py",
     "scripts/ingest_pathogen_taxonomy.py",
+    "scripts/ingest_anopheles_vector_competence_evidence.py",
     "scripts/ingest_ncbi_biosamples.py",
     "scripts/ingest_ncbi_snp_variation.py",
     "scripts/ingest_vectorbase_genomics.py",
@@ -463,6 +466,8 @@ REQUIRED_FILES = (
     "tests/test_ingest_opendatasus_dengue_surveillance.py",
     "tests/test_pathogen_taxonomy_source.py",
     "tests/test_ingest_pathogen_taxonomy.py",
+    "tests/test_anopheles_pathogen_taxonomy.py",
+    "tests/test_anopheles_vector_competence_evidence.py",
     "tests/test_ncbi_biosample_source.py",
     "tests/test_ingest_ncbi_biosamples.py",
     "tests/test_ncbi_snp_variation_source.py",
@@ -623,6 +628,8 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_opendatasus_dengue_surveillance",
     "tests.test_pathogen_taxonomy_source",
     "tests.test_ingest_pathogen_taxonomy",
+    "tests.test_anopheles_pathogen_taxonomy",
+    "tests.test_anopheles_vector_competence_evidence",
     "tests.test_ncbi_biosample_source",
     "tests.test_ingest_ncbi_biosamples",
     "tests.test_ncbi_snp_variation_source",
@@ -2223,6 +2230,114 @@ def check_mosquito_intelligence_coverage() -> None:
             raise RuntimeError(f"config/source-map.yaml missing Aedes deep-source term: {term}")
 
 
+def check_anopheles_intelligence_coverage() -> None:
+    ledger_path = REPO_ROOT / "config/anopheles-intelligence-coverage.json"
+    payload = json.loads(ledger_path.read_text(encoding="utf-8"))
+    scope = payload.get("scope") if isinstance(payload, dict) else None
+    domains = payload.get("domains") if isinstance(payload, dict) else None
+    if not isinstance(scope, dict) or scope.get("source_id") != "anopheles_source_coverage":
+        raise RuntimeError("config/anopheles-intelligence-coverage.json missing anopheles_source_coverage scope")
+    target_taxa = scope.get("target_taxa")
+    if not isinstance(target_taxa, list) or len(target_taxa) < 5:
+        raise RuntimeError("Anopheles coverage ledger must list the target Anopheles taxa")
+    for term in ("Anopheles gambiae", "Anopheles coluzzii", "Anopheles funestus", "Anopheles stephensi"):
+        if term not in json.dumps(scope):
+            raise RuntimeError(f"Anopheles coverage ledger missing target taxon: {term}")
+    if not isinstance(domains, list) or len(domains) < 14:
+        raise RuntimeError("Anopheles coverage ledger must track at least fourteen coverage domains")
+    domain_ids = {str(domain.get("id")) for domain in domains if isinstance(domain, dict)}
+    for required in (
+        "literature",
+        "occurrence_surveillance",
+        "behavior",
+        "sensory_olfaction",
+        "neurobiology",
+        "genomics",
+        "expression_population_genomics",
+        "microbiome_symbionts_pathogens",
+        "vector_competence",
+        "resistance_control",
+        "repellents_product_discovery",
+        "public_health_guidance",
+        "media_images_video",
+        "eval_and_answer_quality",
+    ):
+        if required not in domain_ids:
+            raise RuntimeError(f"Anopheles coverage ledger missing domain: {required}")
+    gap_count = 0
+    for domain in domains:
+        if not isinstance(domain, dict):
+            continue
+        required_next_sources = domain.get("required_next_sources")
+        if not isinstance(required_next_sources, list) or not required_next_sources:
+            raise RuntimeError(f"Anopheles domain {domain.get('id')} must list required_next_sources")
+        gap_count += len(required_next_sources)
+    if gap_count < 40:
+        raise RuntimeError("Anopheles coverage ledger is too shallow for the requested world-class source-plane goal")
+
+    source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
+    for term in (
+        "anopheles_source_coverage",
+        "anopheles_literature_openalex",
+        "anopheles_gbif_occurrences",
+        "anopheles_ncbi_biosamples",
+        "anopheles_uniprot_proteins",
+        "anopheles_ncbi_sra_runs",
+        "anopheles_ncbi_assemblies",
+        "anopheles_ncbi_genome_features",
+        "anopheles_who_malaria_resistance",
+        "anopheles_pathogen_taxonomy",
+        "anopheles_vector_competence_evidence",
+        "config/anopheles-intelligence-coverage.json",
+        "scripts/ingest_anopheles_literature.py",
+        "scripts/ingest_anopheles_gbif.py",
+        "scripts/ingest_anopheles_ncbi_biosamples.py",
+        "scripts/ingest_anopheles_uniprot.py",
+        "scripts/ingest_anopheles_ncbi_sra.py",
+        "scripts/ingest_anopheles_ncbi_assemblies.py",
+        "scripts/ingest_anopheles_ncbi_genome_features.py",
+        "scripts/ingest_anopheles_who_malaria_resistance.py",
+        "scripts/ingest_anopheles_pathogen_taxonomy.py",
+        "scripts/ingest_anopheles_vector_competence_evidence.py",
+        "Anopheles gambiae complex",
+        "Anopheles stephensi",
+        "openalex_works_to_sqlite_literature_records",
+        "gbif_species_match_and_occurrence_to_sqlite_records",
+        "ncbi_biosample_esearch_esummary_to_sqlite_records",
+        "uniprot_rest_per_taxon_to_sqlite_protein_records",
+        "ncbi_sra_esearch_esummary_to_sqlite_run_records",
+        "ncbi_assembly_esearch_esummary_to_sqlite_records",
+        "ncbi_reference_annotation_and_expression_files_to_sqlite_records",
+        "ncbi_gene_ontology_gaf",
+        "ncbi_normalized_gene_expression_counts",
+        "who_malaria_threats_anopheles_rows_to_sqlite_resistance_records",
+        "ncbi_taxonomy_esummary_to_sqlite_anopheles_pathogen_identity_records",
+        "anopheles_openalex_abstract_sentences_to_sqlite_vector_competence_result_rows",
+        "coverage_ledger_to_sqlite_source_coverage_records",
+    ):
+        if term not in source_map:
+            raise RuntimeError(f"config/source-map.yaml missing Anopheles term: {term}")
+    for doc_path in ("README.md", "docs/source-lanes.md", "docs/querying-ask-insects.md"):
+        text = (REPO_ROOT / doc_path).read_text(encoding="utf-8")
+        for term in (
+            "Anopheles",
+            "anopheles_source_coverage",
+            "anopheles_literature_openalex",
+            "anopheles_gbif_occurrences",
+            "anopheles_ncbi_biosamples",
+            "anopheles_uniprot_proteins",
+            "anopheles_ncbi_sra_runs",
+            "anopheles_ncbi_assemblies",
+            "anopheles_ncbi_genome_features",
+            "anopheles_who_malaria_resistance",
+            "anopheles_pathogen_taxonomy",
+            "anopheles_vector_competence_evidence",
+            "config/anopheles-intelligence-coverage.json",
+        ):
+            if term not in text:
+                raise RuntimeError(f"{doc_path} missing Anopheles coverage term: {term}")
+
+
 def check_insect_intelligence_programs() -> None:
     from askinsects.sources.insect_intelligence_programs import (
         REQUIRED_KNOWLEDGE_DOMAINS,
@@ -3576,6 +3691,7 @@ def main() -> int:
         check_atomic_source_replacement()
         check_literature_source_map()
         check_mosquito_intelligence_coverage()
+        check_anopheles_intelligence_coverage()
         check_insect_intelligence_programs()
         check_evidence_package()
         check_reviewed_scientific_evidence()

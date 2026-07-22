@@ -882,6 +882,75 @@ def main(argv: list[str] | None = None) -> int:
     ingest_source_coverage.add_argument("--hosted", action="store_true")
     ingest_source_coverage.add_argument("--coverage-path", default="config/mosquito-intelligence-coverage.json")
 
+    ingest_anopheles_literature = sub.add_parser("ingest-anopheles-literature")
+    ingest_anopheles_literature.add_argument("--hosted", action="store_true")
+    ingest_anopheles_literature.add_argument("--from-date", default="1900-01-01")
+    ingest_anopheles_literature.add_argument("--to-date", default="2026-12-31")
+    ingest_anopheles_literature.add_argument("--max-works", type=int, default=5000)
+    ingest_anopheles_literature.add_argument("--page-size", type=int, default=100)
+    ingest_anopheles_literature.add_argument("--delay-seconds", type=float, default=0.0)
+    ingest_anopheles_literature.add_argument("--retrieved-at")
+
+    ingest_anopheles_gbif = sub.add_parser("ingest-anopheles-gbif")
+    ingest_anopheles_gbif.add_argument("--hosted", action="store_true")
+    ingest_anopheles_gbif.add_argument("--species", action="append", default=[])
+    ingest_anopheles_gbif.add_argument("--occurrence-limit", type=int, default=25)
+    ingest_anopheles_gbif.add_argument("--occurrence-page-size", type=int, default=100)
+    ingest_anopheles_gbif.add_argument("--occurrence-workers", type=int, default=1)
+    ingest_anopheles_gbif.add_argument("--delay-seconds", type=float, default=0.0)
+    ingest_anopheles_gbif.add_argument("--retrieved-at")
+
+    ingest_anopheles_ncbi_biosamples = sub.add_parser("ingest-anopheles-ncbi-biosamples")
+    ingest_anopheles_ncbi_biosamples.add_argument("--hosted", action="store_true")
+    ingest_anopheles_ncbi_biosamples.add_argument("--species", action="append", default=[])
+    ingest_anopheles_ncbi_biosamples.add_argument("--limit-per-taxon", type=int, default=250)
+    ingest_anopheles_ncbi_biosamples.add_argument("--page-size", type=int, default=200)
+    ingest_anopheles_ncbi_biosamples.add_argument("--delay-seconds", type=float, default=0.34)
+    ingest_anopheles_ncbi_biosamples.add_argument("--retrieved-at")
+
+    ingest_anopheles_uniprot = sub.add_parser("ingest-anopheles-uniprot")
+    ingest_anopheles_uniprot.add_argument("--hosted", action="store_true")
+    ingest_anopheles_uniprot.add_argument("--protein-limit-per-taxon", type=int, default=500)
+    ingest_anopheles_uniprot.add_argument("--proteome-limit-per-taxon", type=int, default=10)
+    ingest_anopheles_uniprot.add_argument("--retrieved-at")
+
+    ingest_anopheles_ncbi_sra = sub.add_parser("ingest-anopheles-ncbi-sra")
+    ingest_anopheles_ncbi_sra.add_argument("--hosted", action="store_true")
+    ingest_anopheles_ncbi_sra.add_argument("--species", action="append", default=[])
+    ingest_anopheles_ncbi_sra.add_argument("--experiment-limit-per-taxon", type=int, default=100)
+    ingest_anopheles_ncbi_sra.add_argument("--page-size", type=int, default=100)
+    ingest_anopheles_ncbi_sra.add_argument("--delay-seconds", type=float, default=0.34)
+    ingest_anopheles_ncbi_sra.add_argument("--retrieved-at")
+
+    ingest_anopheles_ncbi_assemblies = sub.add_parser("ingest-anopheles-ncbi-assemblies")
+    ingest_anopheles_ncbi_assemblies.add_argument("--hosted", action="store_true")
+    ingest_anopheles_ncbi_assemblies.add_argument("--species", action="append", default=[])
+    ingest_anopheles_ncbi_assemblies.add_argument("--limit-per-taxon", type=int, default=25)
+    ingest_anopheles_ncbi_assemblies.add_argument("--delay-seconds", type=float, default=0.34)
+    ingest_anopheles_ncbi_assemblies.add_argument("--retrieved-at")
+
+    ingest_anopheles_ncbi_genome_features = sub.add_parser("ingest-anopheles-ncbi-genome-features")
+    ingest_anopheles_ncbi_genome_features.add_argument("--hosted", action="store_true")
+    ingest_anopheles_ncbi_genome_features.add_argument("--species", default="Anopheles gambiae")
+    ingest_anopheles_ncbi_genome_features.add_argument("--assembly-accession")
+    ingest_anopheles_ncbi_genome_features.add_argument("--assembly-ftp")
+    ingest_anopheles_ncbi_genome_features.add_argument("--retrieved-at")
+
+    ingest_anopheles_who_malaria_resistance = sub.add_parser("ingest-anopheles-who-malaria-resistance")
+    ingest_anopheles_who_malaria_resistance.add_argument("--hosted", action="store_true")
+    ingest_anopheles_who_malaria_resistance.add_argument("--page-size", type=int, default=1000)
+    ingest_anopheles_who_malaria_resistance.add_argument("--max-rows", type=int, default=10000)
+    ingest_anopheles_who_malaria_resistance.add_argument("--delay-seconds", type=float, default=0.2)
+    ingest_anopheles_who_malaria_resistance.add_argument("--retrieved-at")
+
+    ingest_anopheles_pathogen_taxonomy = sub.add_parser("ingest-anopheles-pathogen-taxonomy")
+    ingest_anopheles_pathogen_taxonomy.add_argument("--hosted", action="store_true")
+    ingest_anopheles_pathogen_taxonomy.add_argument("--retrieved-at")
+
+    ingest_anopheles_vector_competence_evidence = sub.add_parser("ingest-anopheles-vector-competence-evidence")
+    ingest_anopheles_vector_competence_evidence.add_argument("--hosted", action="store_true")
+    ingest_anopheles_vector_competence_evidence.add_argument("--retrieved-at")
+
     ingest_insect_intelligence_programs = sub.add_parser("ingest-insect-intelligence-programs")
     ingest_insect_intelligence_programs.add_argument("--hosted", action="store_true")
     ingest_insect_intelligence_programs.add_argument(
@@ -2385,6 +2454,231 @@ def main(argv: list[str] | None = None) -> int:
             "/ingest/source-coverage",
             {"coverage_path": args.coverage_path},
             timeout=120,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-literature":
+        if not args.hosted:
+            from scripts.ingest_anopheles_literature import ingest_anopheles_literature
+
+            payload = ingest_anopheles_literature(
+                artifact_dir=artifact_dir,
+                from_date=args.from_date,
+                to_date=args.to_date,
+                max_works=args.max_works,
+                page_size=args.page_size,
+                delay_seconds=args.delay_seconds,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/anopheles-literature",
+            {
+                "from_date": args.from_date,
+                "to_date": args.to_date,
+                "max_works": args.max_works,
+                "page_size": args.page_size,
+                "delay_seconds": args.delay_seconds,
+                "retrieved_at": args.retrieved_at,
+            },
+            timeout=1800,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-gbif":
+        if not args.hosted:
+            from askinsects.sources.anopheles_gbif import ANOPHELES_GBIF_TARGET_TAXA
+            from scripts.ingest_anopheles_gbif import ingest_anopheles_gbif
+
+            payload = ingest_anopheles_gbif(
+                artifact_dir=artifact_dir,
+                species_names=args.species or ANOPHELES_GBIF_TARGET_TAXA,
+                occurrence_limit=args.occurrence_limit,
+                occurrence_page_size=args.occurrence_page_size,
+                occurrence_workers=args.occurrence_workers,
+                delay_seconds=args.delay_seconds,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/anopheles-gbif",
+            {
+                "species": args.species,
+                "occurrence_limit": args.occurrence_limit,
+                "occurrence_page_size": args.occurrence_page_size,
+                "occurrence_workers": args.occurrence_workers,
+                "delay_seconds": args.delay_seconds,
+                "retrieved_at": args.retrieved_at,
+            },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-ncbi-biosamples":
+        if not args.hosted:
+            from askinsects.sources.anopheles_ncbi_biosamples import ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+            from scripts.ingest_anopheles_ncbi_biosamples import ingest_anopheles_ncbi_biosamples
+
+            payload = ingest_anopheles_ncbi_biosamples(
+                artifact_dir=artifact_dir,
+                target_taxa=args.species or ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA,
+                limit_per_taxon=args.limit_per_taxon,
+                page_size=args.page_size,
+                delay_seconds=args.delay_seconds,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/anopheles-ncbi-biosamples",
+            {
+                "species": args.species,
+                "limit_per_taxon": args.limit_per_taxon,
+                "page_size": args.page_size,
+                "delay_seconds": args.delay_seconds,
+                "retrieved_at": args.retrieved_at,
+            },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-uniprot":
+        if not args.hosted:
+            from scripts.ingest_anopheles_uniprot import ingest_anopheles_uniprot
+
+            payload = ingest_anopheles_uniprot(
+                artifact_dir=artifact_dir,
+                protein_limit_per_taxon=args.protein_limit_per_taxon,
+                proteome_limit_per_taxon=args.proteome_limit_per_taxon,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/anopheles-uniprot",
+            {
+                "protein_limit_per_taxon": args.protein_limit_per_taxon,
+                "proteome_limit_per_taxon": args.proteome_limit_per_taxon,
+                "retrieved_at": args.retrieved_at,
+            },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-ncbi-sra":
+        if not args.hosted:
+            from askinsects.sources.anopheles_ncbi_biosamples import ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+            from scripts.ingest_anopheles_ncbi_sra import ingest_anopheles_ncbi_sra
+
+            payload = ingest_anopheles_ncbi_sra(
+                artifact_dir=artifact_dir,
+                target_taxa=args.species or ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA,
+                experiment_limit_per_taxon=args.experiment_limit_per_taxon,
+                page_size=args.page_size,
+                delay_seconds=args.delay_seconds,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/anopheles-ncbi-sra",
+            {
+                "species": args.species,
+                "experiment_limit_per_taxon": args.experiment_limit_per_taxon,
+                "page_size": args.page_size,
+                "delay_seconds": args.delay_seconds,
+                "retrieved_at": args.retrieved_at,
+            },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-ncbi-assemblies":
+        if not args.hosted:
+            from askinsects.sources.anopheles_ncbi_biosamples import ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+            from scripts.ingest_anopheles_ncbi_assemblies import ingest_anopheles_ncbi_assemblies
+
+            payload = ingest_anopheles_ncbi_assemblies(
+                artifact_dir=artifact_dir,
+                target_taxa=args.species or ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA,
+                limit_per_taxon=args.limit_per_taxon,
+                delay_seconds=args.delay_seconds,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST",
+            "/ingest/anopheles-ncbi-assemblies",
+            {
+                "species": args.species,
+                "limit_per_taxon": args.limit_per_taxon,
+                "delay_seconds": args.delay_seconds,
+                "retrieved_at": args.retrieved_at,
+            },
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-ncbi-genome-features":
+        if not args.hosted:
+            from scripts.ingest_anopheles_ncbi_genome_features import ingest_anopheles_ncbi_genome_features
+
+            payload = ingest_anopheles_ncbi_genome_features(
+                artifact_dir=artifact_dir, species=args.species,
+                assembly_accession=args.assembly_accession, assembly_ftp=args.assembly_ftp,
+                retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST", "/ingest/anopheles-ncbi-genome-features",
+            {"species": args.species, "assembly_accession": args.assembly_accession, "assembly_ftp": args.assembly_ftp, "retrieved_at": args.retrieved_at},
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-who-malaria-resistance":
+        if not args.hosted:
+            from scripts.ingest_anopheles_who_malaria_resistance import ingest_anopheles_who_malaria_resistance
+
+            payload = ingest_anopheles_who_malaria_resistance(
+                artifact_dir=artifact_dir, page_size=args.page_size, max_rows=args.max_rows,
+                delay_seconds=args.delay_seconds, retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST", "/ingest/anopheles-who-malaria-resistance",
+            {"page_size": args.page_size, "max_rows": args.max_rows, "delay_seconds": args.delay_seconds, "retrieved_at": args.retrieved_at},
+            timeout=7200,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-pathogen-taxonomy":
+        if not args.hosted:
+            from scripts.ingest_anopheles_pathogen_taxonomy import ingest_anopheles_pathogen_taxonomy
+
+            payload = ingest_anopheles_pathogen_taxonomy(
+                artifact_dir=artifact_dir, retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST", "/ingest/anopheles-pathogen-taxonomy",
+            {"retrieved_at": args.retrieved_at}, timeout=600,
+        )
+        return 0 if payload.get("ok") else 2
+    if args.command == "ingest-anopheles-vector-competence-evidence":
+        if not args.hosted:
+            from scripts.ingest_anopheles_vector_competence_evidence import ingest_anopheles_vector_competence_evidence
+
+            payload = ingest_anopheles_vector_competence_evidence(
+                artifact_dir=artifact_dir, retrieved_at=args.retrieved_at,
+            )
+            emit(payload)
+            return 0 if payload.get("ok") else 2
+        payload = emit_hosted(
+            "POST", "/ingest/anopheles-vector-competence-evidence",
+            {"retrieved_at": args.retrieved_at}, timeout=600,
         )
         return 0 if payload.get("ok") else 2
     if args.command == "ingest-insect-intelligence-programs":

@@ -69,6 +69,111 @@ The derived source `aedes_source_coverage` creates one overview record, one reco
 
 The machine-readable benchmark is `config/aedes-source-plane-benchmark.json`, with the plain-English readout in `docs/aedes-source-plane-benchmark.md`. It currently marks the world-largest/world-deepest claim as not proven. The safe current wording is: Ask Insects is a broad, integrated, provenance-backed `Aedes aegypti` query plane.
 
+### Anopheles Deep Source Program
+
+The next mosquito-depth objective is Anopheles: build a source-backed intelligence system for the `Anopheles gambiae` complex, `Anopheles coluzzii`, `Anopheles funestus`, `Anopheles stephensi`, and other major malaria vectors that surpasses the current Aedes dataset in depth, breadth, provenance, and usefulness.
+
+The machine-readable starting ledger is `config/anopheles-intelligence-coverage.json`. It does not claim Anopheles coverage is complete. It names the required source lanes, source-contract gates, target taxa, completion evidence, and missing-source gaps that must be closed before Ask Insects can call Anopheles source-grade at the requested world-class boundary.
+
+Ask Insects can ingest that ledger into queryable source-coverage records:
+
+```bash
+python3 -m askinsects ingest-source-coverage --coverage-path config/anopheles-intelligence-coverage.json
+python3 -m askinsects ask "what is missing from Anopheles coverage?" --json
+```
+
+The derived source `anopheles_source_coverage` creates one overview record, one record per coverage domain, and one missing-coverage record per required next source. The next implementation steps are real Anopheles source lanes: taxonomy, OpenAlex/PubMed/Crossref literature, GBIF occurrence, VectorBase/VEuPathDB genomics, NCBI BioSample/SRA, resistance/control, vector competence, behavior/media, public-health guidance, and a production-path Anopheles Reality Eval.
+
+The first real evidence lane is bounded OpenAlex literature metadata:
+
+```bash
+python3 -m askinsects ingest-anopheles-literature --max-works 250
+python3 -m askinsects search literature "Anopheles stephensi repellent"
+```
+
+The derived source `anopheles_literature_openalex` searches historical-to-current literature across twenty priority species, the Anopheles gambiae complex, and thirteen R&D topics. The current local refresh contains 3,457 real literature records plus 5,482 explicit per-work gaps for missing abstracts, missing DOIs, or intentionally skipped PubMed enrichment. Every accepted work preserves its raw OpenAlex page locator and source URL. PubMed reconciliation, legal full text, supplement audits, parsed tables, and human-reviewed materiality checks remain follow-on work.
+
+The first bounded taxonomy and occurrence lane is GBIF:
+
+```bash
+python3 -m askinsects ingest-anopheles-gbif --occurrence-limit 25
+python3 -m askinsects ask "show Anopheles stephensi GBIF occurrence records" --json
+```
+
+The derived source `anopheles_gbif_occurrences` preserves GBIF species-match records and bounded occurrence records for twenty priority Anopheles taxa, with raw API page locators, target taxa, taxon keys, and reported total counts. It is not complete occurrence, ecology, surveillance, or range-model coverage.
+
+The first Anopheles sample-metadata lane is NCBI BioSample:
+
+```bash
+python3 -m askinsects ingest-anopheles-ncbi-biosamples --limit-per-taxon 250
+python3 -m askinsects ask "show Anopheles stephensi BioSamples from India with linked SRA" --json
+```
+
+The derived source `anopheles_ncbi_biosamples` searches twenty priority species, creates one record per BioSample accession, and parses the organism, sample name, geography, collection date, tissue, isolation source, isolate, strain, and linked SRA identifier when NCBI exposes those fields. The current bounded build contains 2,688 samples plus seven explicit gap records. Its receipt records each exact species query, NCBI's reported total, fetched count, raw response files, and any bounded-limit or fetch gaps. It does not claim downloaded SRA reads, expression analysis, or complete population-genomics coverage.
+
+The first Anopheles protein and proteome lane is UniProt:
+
+```bash
+python3 -m askinsects ingest-anopheles-uniprot --protein-limit-per-taxon 500
+python3 -m askinsects ask "show Anopheles gambiae UniProt proteins" --json
+```
+
+The derived source `anopheles_uniprot_proteins` uses NCBI-verified taxonomy identifiers for eight priority Anopheles vectors. It preserves protein accession, reviewed status, name, gene names, function comments, GO and VectorBase cross-references, keywords, proteome metadata, exact raw API locators, and explicit limit-reached gaps. It is bounded protein metadata, not complete genome, sequence, orthology, or gene-ID coverage.
+
+The first Anopheles run-level sequencing lane is NCBI SRA:
+
+```bash
+python3 -m askinsects ingest-anopheles-ncbi-sra --experiment-limit-per-taxon 100
+python3 -m askinsects ask "show Anopheles gambiae antenna RNA-seq SRA runs" --json
+```
+
+The derived source `anopheles_ncbi_sra_runs` searches twenty priority species and parses bounded experiment results into one record per run accession, preserving experiment, BioProject, BioSample, platform, library strategy, source, selection, spots, bases, size, and exact raw NCBI summary locator when supplied. It explicitly does not claim downloaded reads, alignment, count matrices, or completed reanalysis.
+
+The first Anopheles assembly lane is NCBI Assembly:
+
+```bash
+python3 -m askinsects ingest-anopheles-ncbi-assemblies --limit-per-taxon 25
+python3 -m askinsects ask "show chromosome-level Anopheles gambiae assemblies" --json
+```
+
+The derived source `anopheles_ncbi_assemblies` searches twenty priority species and currently preserves 122 returned assemblies plus four explicit zero-result gaps. Each assembly record includes assembly level, BioProject, BioSample, release date, coverage, N50 values, submitter, RefSeq category, properties, public download paths, and an exact raw NCBI locator. Assembly metadata is distinct from parsed GFF, protein, GO, and expression evidence.
+
+To parse the indexed Anopheles gambiae reference assembly into atomic genome records:
+
+```bash
+python3 -m askinsects ingest-anopheles-ncbi-genome-features --species "Anopheles gambiae"
+python3 -m askinsects ask "show NCBI genes annotated as odorant receptors in Anopheles gambiae" --json
+```
+
+The derived source `anopheles_ncbi_genome_features` selects an indexed reference-category assembly; discovers and downloads its available NCBI GFF, protein FASTA, Gene Ontology GAF, and expression-count tables; records file SHA-256 hashes; and indexes genes, transcripts, selected functional features, proteins, GO annotations, and expression profiles with exact source-file locators. Refreshes replace only the selected assembly, so multiple species remain queryable together. The current local lane contains 1,427,103 records across thirteen parsed reference genomes: Anopheles gambiae, stephensi, coluzzii, funestus, arabiensis, minimus, sinensis, albimanus, darlingi, aquasalis, merus, nili, and moucheti. Missing annotation or expression files for other targets remain exact, queryable source gaps. VectorBase or VEuPathDB annotations remain a separate gap.
+
+The first Anopheles field-resistance lane is the WHO global database on insecticide resistance in malaria vectors:
+
+```bash
+python3 -m askinsects ingest-anopheles-who-malaria-resistance --max-rows 10000
+python3 -m askinsects ask "show WHO Anopheles gambiae deltamethrin resistance records in Benin" --json
+```
+
+The first Anopheles pathogen-identity lane is NCBI Taxonomy:
+
+```bash
+python3 -m askinsects ingest-anopheles-pathogen-taxonomy
+python3 -m askinsects ask "what is Plasmodium falciparum in the context of Anopheles research?" --json
+```
+
+The derived source `anopheles_pathogen_taxonomy` preserves ten exact NCBI Taxonomy anchors for major human malaria parasites and laboratory Plasmodium models. It identifies pathogens; it does not claim infection, vector competence, transmission, or epidemiological importance without assay-level evidence.
+
+The first measured Anopheles vector-competence lane is derived from exact OpenAlex abstract sentences:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-vector-competence-evidence
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "What sporozoite infection-rate data do we have for Anopheles coluzzii?" --json
+```
+
+The source `anopheles_vector_competence_evidence` currently installs 90 numeric endpoint records from 3,457 real Anopheles literature works: 34 field-surveillance results, 3 controlled experimental results, and 53 results whose study setting is unclear in the abstract. Each row requires a target Anopheles species and infection, oocyst, sporozoite, transmission, parasite-burden, or EIR endpoint in the same result sentence. It preserves that sentence plus the original OpenAlex work and raw-page locator, excludes modeled projections and methods-only numeric sentences, and labels the result by evidence class. These are abstract-level results, not yet full-text-table validated assay records.
+
+The derived source `anopheles_who_malaria_resistance` pages the public WHO MAL_THREATS endpoint for Anopheles rows with a named insecticide and stores each assay row with species label, place, year, test, insecticide, concentration, sample size, mortality, status, mechanism, citation, and exact raw response locator when present. Reaching the configured row cap remains an explicit completeness gap. Biochemical rows with no named insecticide are a separate unparsed stratum.
+
 ## Spotted Wing Drosophila Expansion
 
 Ask Insects now has an explicit expansion boundary for spotted wing drosophila, `Drosophila suzukii`. The first source-grade pass is `drosophila_suzukii_core`: a bounded composite source that can ingest GBIF taxonomy and occurrence rows, iNaturalist licensed still-image observations, multi-term OpenAlex literature metadata from 2020 onward, BOLD DNA barcode rows, and queryable coverage/gap records for the deeper lanes that still need work.

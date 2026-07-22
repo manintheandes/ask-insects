@@ -1,0 +1,303 @@
+{
+  "scope": {
+    "source_id": "anopheles_source_coverage",
+    "primary_taxon": "Anopheles",
+    "target_taxa": [
+      "Anopheles gambiae complex",
+      "Anopheles gambiae",
+      "Anopheles coluzzii",
+      "Anopheles funestus",
+      "Anopheles stephensi",
+      "Anopheles arabiensis",
+      "Anopheles dirus",
+      "Anopheles minimus",
+      "Anopheles sinensis",
+      "Anopheles albimanus",
+      "Anopheles darlingi",
+      "Anopheles culicifacies",
+      "Anopheles aquasalis",
+      "Anopheles melas",
+      "Anopheles merus",
+      "Anopheles nili",
+      "Anopheles moucheti",
+      "Anopheles atroparvus",
+      "Anopheles labranchiae",
+      "Anopheles sacharovi",
+      "Anopheles freeborni"
+    ],
+    "strategy": "Build the world's most comprehensive source-backed Anopheles intelligence system, surpassing the current Aedes dataset in depth, breadth, provenance, and usefulness.",
+    "completion_bar": "Anopheles is not complete until source-map entries, receipts, SQLite records, answer routing, wiki pages, and a realistic production-path eval prove normal Codex answers are accurate, source-backed, and under 60 seconds."
+  },
+  "source_contract_gates": [
+    "mapped",
+    "accessible",
+    "atomically_queryable",
+    "receipted",
+    "ask_surface_wired",
+    "eval_proven"
+  ],
+  "domains": [
+    {
+      "id": "taxonomy",
+      "priority": 1,
+      "status": "partial_source_grade",
+      "target_state": "Authoritative taxonomy, synonymy, species-complex membership, vector status, and common-name records for the Anopheles gambiae complex, An. coluzzii, An. funestus, An. stephensi, and other major regional malaria vectors.",
+      "current_sources": ["anopheles_gbif_occurrences"],
+      "current_gates": {"mapped": "source_grade", "accessible": "source_grade", "atomically_queryable": "source_grade", "receipted": "source_grade", "ask_surface_wired": "source_grade", "eval_proven": "not_started"},
+      "current_evidence": ["Bounded GBIF species-match records for twenty priority Anopheles taxa with exact raw-response provenance and accepted taxon keys."],
+      "required_next_sources": [
+        "Catalogue of Life taxonomy and synonym records for target Anopheles taxa",
+        "NCBI Taxonomy records for target Anopheles taxa",
+        "VectorBase or VEuPathDB species and strain authority pages",
+        "Malaria Atlas Project and WHO vector-species context pages"
+      ],
+      "completion_evidence": ["species and complex questions answer with exact authority provenance and synonym boundaries"]
+    },
+    {
+      "id": "literature",
+      "priority": 2,
+      "status": "partial_source_grade",
+      "target_state": "Comprehensive Anopheles literature metadata, abstracts, legal full text when available, supplement audits, parsed tables, and explicit blocked-source gaps.",
+      "current_sources": ["anopheles_literature_openalex"],
+      "current_gates": {"mapped": "source_grade", "accessible": "source_grade", "atomically_queryable": "source_grade", "receipted": "source_grade", "ask_surface_wired": "source_grade", "eval_proven": "not_started"},
+      "current_evidence": ["3,457 bounded historical-to-current OpenAlex work records across twenty priority species, the Gambiae complex, and thirteen R&D topics, plus explicit per-work metadata and enrichment gaps. Records preserve title, abstract when supplied, topic search context, source URL, and exact saved raw-page locator."],
+      "required_next_sources": [
+        "deeper OpenAlex Anopheles literature corpus with strict target-taxon materiality review",
+        "PubMed Anopheles host-seeking, olfaction, repellency, resistance, and vector-competence audits",
+        "Crossref publisher metadata reconciliation",
+        "Europe PMC, Unpaywall, PMC Open Access, and legal full-text units",
+        "per-paper supplement audit atoms and parsed supported supplement rows"
+      ],
+      "completion_evidence": ["paper questions distinguish metadata, legal full text, parsed supplement rows, and source gaps"]
+    },
+    {
+      "id": "occurrence_surveillance",
+      "priority": 3,
+      "status": "partial_source_grade",
+      "target_state": "Global Anopheles occurrence, collection, abundance, country, seasonality, trap, and surveillance records with date, place, method, certainty, taxon, and provenance.",
+      "current_sources": ["anopheles_gbif_occurrences"],
+      "current_gates": {"mapped": "source_grade", "accessible": "source_grade", "atomically_queryable": "source_grade", "receipted": "source_grade", "ask_surface_wired": "source_grade", "eval_proven": "not_started"},
+      "current_evidence": ["Bounded GBIF occurrence records for twenty priority Anopheles taxa with event date, place fields when supplied, dataset identity, license, and exact occurrence/raw-page locators."],
+      "required_next_sources": [
+        "complete paged GBIF occurrence records and deduplicated range summaries for target Anopheles taxa",
+        "VectorBase population and sample metadata where public",
+        "VectorByte or VecDyn abundance datasets for Anopheles",
+        "Malaria Atlas Project vector occurrence or suitability resources where public",
+        "VectorNet and national surveillance exports where public"
+      ],
+      "completion_evidence": ["country, date, abundance, and source-specific questions answer with row provenance"]
+    },
+    {
+      "id": "ecology",
+      "priority": 4,
+      "status": "not_started",
+      "target_state": "Habitat, larval ecology, climate suitability, seasonality, vector range, indoor/outdoor biting context, resting behavior, and ecological interaction records.",
+      "current_sources": [],
+      "current_gates": {"mapped": "partial", "accessible": "not_started", "atomically_queryable": "not_started", "receipted": "not_started", "ask_surface_wired": "not_started", "eval_proven": "not_started"},
+      "current_evidence": [],
+      "required_next_sources": [
+        "WorldClim-linked occurrence joins for target Anopheles taxa",
+        "Malaria Atlas Project vector suitability and range layers where public",
+        "VectorByte traits and ecology datasets",
+        "literature-derived habitat, resting, feeding, and seasonality facets"
+      ],
+      "completion_evidence": ["ecology answers separate observation rows, modeled suitability, literature summaries, and public-health inference"]
+    },
+    {
+      "id": "behavior",
+      "priority": 5,
+      "status": "not_started",
+      "target_state": "Host seeking, blood feeding, landing, probing, oviposition, mating, swarming, resting, flight, larval, circadian, and intervention-response behavior records.",
+      "current_sources": [],
+      "current_gates": {"mapped": "partial", "accessible": "not_started", "atomically_queryable": "not_started", "receipted": "not_started", "ask_surface_wired": "not_started", "eval_proven": "not_started"},
+      "current_evidence": [],
+      "required_next_sources": [
+        "Dryad, Zenodo, Figshare, OSF, Mendeley, and PMC supplementary Anopheles behavior datasets and videos",
+        "literature-derived behavior facets with assay, stimulus, sex, age, strain, endpoint, and context fields",
+        "repellent and spatial-repellent assay datasets for Anopheles",
+        "decoded trajectory, landing, probing, biting, oviposition, and swarming tables where public"
+      ],
+      "completion_evidence": ["behavior answers preserve endpoint differences instead of collapsing approach, landing, probing, feeding, and mortality"]
+    },
+    {
+      "id": "sensory_olfaction",
+      "priority": 6,
+      "status": "not_started",
+      "target_state": "Odor, heat, CO2, humidity, visual, auditory, gustatory, antennal, receptor, and host-cue evidence tied to Anopheles behavior and repellent discovery.",
+      "current_sources": [],
+      "current_gates": {"mapped": "partial", "accessible": "not_started", "atomically_queryable": "not_started", "receipted": "not_started", "ask_surface_wired": "not_started", "eval_proven": "not_started"},
+      "current_evidence": [],
+      "required_next_sources": [
+        "PubMed/OpenAlex Anopheles olfaction and sensory audit",
+        "VectorBase receptor gene and protein records",
+        "UniProt receptor and sensory protein metadata",
+        "functional receptor, antennal, and behavior assay tables from legal full text and supplements"
+      ],
+      "completion_evidence": ["sensory answers separate receptor expression, ligand response, neural response, and behavioral causality"]
+    },
+    {
+      "id": "neurobiology",
+      "priority": 7,
+      "status": "not_started",
+      "target_state": "Brain, neuron, sensory circuit, atlas, single-cell, SRA workflow, and connectome/source-gap records for Anopheles.",
+      "current_sources": [],
+      "current_gates": {"mapped": "partial", "accessible": "not_started", "atomically_queryable": "not_started", "receipted": "not_started", "ask_surface_wired": "not_started", "eval_proven": "not_started"},
+      "current_evidence": [],
+      "required_next_sources": [
+        "public Anopheles brain, single-cell, and sensory-neuron datasets",
+        "GEO and SRA neurobiology metadata",
+        "Mosquito Cell Atlas or related cross-mosquito resources where Anopheles rows exist",
+        "explicit public connectome gap records if no complete whole-brain bulk package exists"
+      ],
+      "completion_evidence": ["neurobiology answers distinguish direct Anopheles evidence from cross-species Aedes inference"]
+    },
+    {
+      "id": "genomics",
+      "priority": 8,
+      "status": "partial_source_grade",
+      "target_state": "Reference assemblies, genes, transcripts, proteins, orthology, gene families, gene IDs, sequence metadata, and genome-feature records for target Anopheles species.",
+      "current_sources": ["anopheles_uniprot_proteins", "anopheles_ncbi_assemblies", "anopheles_ncbi_genome_features"],
+      "current_gates": {"mapped": "source_grade", "accessible": "source_grade", "atomically_queryable": "source_grade", "receipted": "source_grade", "ask_surface_wired": "source_grade", "eval_proven": "not_started"},
+      "current_evidence": [
+        "Bounded UniProtKB protein and proteome records for eight priority Anopheles taxa, using NCBI-verified taxonomy identifiers and preserving exact raw API result locators.",
+        "Bounded NCBI Assembly searches for twenty priority Anopheles taxa, preserving 122 returned assemblies plus explicit zero-result gaps, with accession, assembly level, BioProject, BioSample, release date, quality fields, download paths, and exact raw ESummary locators.",
+        "Assembly-scoped parsing of thirteen reference genomes: Anopheles gambiae, stephensi, coluzzii, funestus, arabiensis, minimus, sinensis, albimanus, darlingi, aquasalis, merus, nili, and moucheti. The 1,427,103-record lane contains genes, transcripts, functional features, proteins, GO assertions, available expression profiles, and explicit per-assembly file gaps with exact provenance."
+      ],
+      "required_next_sources": [
+        "VectorBase or VEuPathDB Anopheles reference genome packages",
+        "NCBI or VectorBase annotations for Dirus, Culicifacies, Melas, Atroparvus, Labranchiae, Sacharovi, and Freeborni where exact NCBI reference files are absent or unusable",
+        "BOLD DNA barcode records",
+        "OrthoMCL or equivalent orthology and current-ID resources"
+      ],
+      "completion_evidence": ["gene, protein, orthology, barcode, and assembly questions answer with exact row or file locators"]
+    },
+    {
+      "id": "expression_population_genomics",
+      "priority": 9,
+      "status": "partial_source_grade",
+      "target_state": "Expression, RNA-seq, single-cell, strain, BioSample, SRA, population genomics, variant, introgression, and adaptation records for Anopheles.",
+      "current_sources": ["anopheles_ncbi_biosamples", "anopheles_ncbi_sra_runs", "anopheles_ncbi_genome_features"],
+      "current_gates": {"mapped": "source_grade", "accessible": "source_grade", "atomically_queryable": "source_grade", "receipted": "source_grade", "ask_surface_wired": "source_grade", "eval_proven": "not_started"},
+      "current_evidence": [
+        "2,688 bounded accession-level NCBI BioSample records across twenty priority Anopheles taxa, plus explicit gaps, with exact raw ESummary locators, parsed sample attributes, linked SRA identifiers when present, and per-taxon receipt counts.",
+        "Bounded NCBI SRA experiment searches parsed to atomic run records with BioProject, BioSample, platform, library metadata, spots, bases, size, and exact raw run locators when supplied.",
+        "83,725 parsed NCBI expression profiles across assemblies where NCBI supplies raw and normalized count tables, with exact source-file line locators and underlying sample-by-gene values preserved."
+      ],
+      "required_next_sources": [
+        "GEO expression and RNA-seq metadata",
+        "Ag1000G or MalariaGEN public Anopheles population-genomics releases where licensing permits",
+        "dbSNP or ENA/EBI variation resources and explicit no-record gaps where applicable"
+      ],
+      "completion_evidence": ["population and expression answers distinguish sample metadata, raw reads, computed matrices, and variant calls"]
+    },
+    {
+      "id": "microbiome_symbionts_pathogens",
+      "priority": 10,
+      "status": "partial_source_grade",
+      "target_state": "Microbiome, symbiont, Plasmodium interaction, vector-pathogen, Wolbachia or paratransgenesis, and pathogen identity records.",
+      "current_sources": ["anopheles_pathogen_taxonomy"],
+      "current_gates": {"mapped": "source_grade", "accessible": "source_grade", "atomically_queryable": "source_grade", "receipted": "source_grade", "ask_surface_wired": "source_grade", "eval_proven": "not_started"},
+      "current_evidence": ["Ten NCBI Taxonomy identity anchors cover major human and laboratory Plasmodium species, with exact taxon IDs and raw-summary locators. These records explicitly do not claim vector competence or transmission."],
+      "required_next_sources": [
+        "NCBI Taxonomy anchors for additional Anopheles-relevant pathogens where justified by direct evidence",
+        "literature-derived microbiome and symbiont facets",
+        "VectorBase or public pathway and host-pathogen interaction metadata",
+        "public intervention datasets for symbiont or microbiome approaches"
+      ],
+      "completion_evidence": ["answers separate mosquito microbiome, parasite development, transmission, and intervention evidence"]
+    },
+    {
+      "id": "vector_competence",
+      "priority": 11,
+      "status": "partial_source_grade",
+      "target_state": "Assay-level Anopheles vector-competence records for Plasmodium species and relevant pathogens, preserving infection, dissemination, transmission, tissue, strain, population, timepoint, temperature, and provenance.",
+      "current_sources": ["anopheles_vector_competence_evidence"],
+      "current_gates": {"mapped": "source_grade", "accessible": "source_grade", "atomically_queryable": "source_grade", "receipted": "source_grade", "ask_surface_wired": "source_grade", "eval_proven": "not_started"},
+      "current_evidence": ["90 conservative abstract-level numeric endpoint records derived from 3,457 real Anopheles OpenAlex works: 34 field-surveillance results, 3 controlled experimental results, and 53 abstract-reported results whose study setting was not explicit enough for a stronger classification. Every row preserves the exact result sentence, original work ID and title, original raw OpenAlex locator, named target species, named Plasmodium species where present, endpoint labels, and numeric strings. Modeled projections and methods-only numeric sentences are excluded. Results are not yet validated against full-text tables."],
+      "required_next_sources": [
+        "parsed supplement tables for infection, oocyst, sporozoite, transmission, and parasite-load endpoints",
+        "strain and mosquito-population metadata linked to each extracted competence assay",
+        "human validation of abstract extractions against methods and full-text result tables"
+      ],
+      "completion_evidence": ["vector competence answers preserve species, parasite, assay endpoint, and experimental context"]
+    },
+    {
+      "id": "resistance_control",
+      "priority": 12,
+      "status": "partial_source_grade",
+      "target_state": "Insecticide resistance, kdr, metabolic resistance, behavioral resistance, ITN/IRS response, larval control, gene drive, sterile/incompatible insect, and control-method records.",
+      "current_sources": ["anopheles_who_malaria_resistance"],
+      "current_gates": {"mapped": "source_grade", "accessible": "source_grade", "atomically_queryable": "source_grade", "receipted": "source_grade", "ask_surface_wired": "source_grade", "eval_proven": "not_started"},
+      "current_evidence": ["Paged WHO MAL_THREATS malaria-vector resistance rows filtered to Anopheles species labels, with assay, insecticide, mortality, status, mechanism, place, time, citation, and exact raw response row provenance when supplied."],
+      "required_next_sources": [
+        "IR Mapper or equivalent Anopheles resistance records where public",
+        "WHO malaria vector-control and resistance guidance",
+        "literature-derived resistance markers and parsed resistance supplement rows"
+      ],
+      "completion_evidence": ["resistance answers preserve phenotype, mechanism, insecticide class, geography, time, method, and source"]
+    },
+    {
+      "id": "repellents_product_discovery",
+      "priority": 13,
+      "status": "not_started",
+      "target_state": "Topical repellent, spatial repellent, bite-prevention, landing-inhibition, feeding-inhibition, attractant, odor-masking, and product-discovery evidence for Anopheles.",
+      "current_sources": [],
+      "current_gates": {"mapped": "partial", "accessible": "not_started", "atomically_queryable": "not_started", "receipted": "not_started", "ask_surface_wired": "not_started", "eval_proven": "not_started"},
+      "current_evidence": [],
+      "required_next_sources": [
+        "Anopheles-specific repellent literature and datasets",
+        "mosquito repellent literature records tagged to Anopheles species and endpoints",
+        "WHO and EPA human-repellent testing guidance connected to Anopheles endpoints",
+        "patent, preprint, dataset, and blocked-source discovery gap records"
+      ],
+      "completion_evidence": ["repellent answers keep topical, spatial, contact, non-contact, landing, probing, feeding, and mortality endpoints separate"]
+    },
+    {
+      "id": "public_health_guidance",
+      "priority": 14,
+      "status": "not_started",
+      "target_state": "Official WHO, CDC, ECDC, PMI, Malaria Atlas Project, national-malaria-program, and malaria surveillance guidance tied to Anopheles biology and intervention context.",
+      "current_sources": [],
+      "current_gates": {"mapped": "partial", "accessible": "not_started", "atomically_queryable": "not_started", "receipted": "not_started", "ask_surface_wired": "not_started", "eval_proven": "not_started"},
+      "current_evidence": [],
+      "required_next_sources": [
+        "WHO malaria vector-control guidance and reports",
+        "CDC malaria and Anopheles pages",
+        "Malaria Atlas Project public pages and dataset metadata",
+        "national or regional surveillance exports where public and machine-readable"
+      ],
+      "completion_evidence": ["public-health answers distinguish guidance, surveillance, model outputs, and vector biology"]
+    },
+    {
+      "id": "media_images_video",
+      "priority": 15,
+      "status": "not_started",
+      "target_state": "Licensed Anopheles still images, public videos, keyframes, media locators, labels, checksums, metadata, and explicit media gaps.",
+      "current_sources": [],
+      "current_gates": {"mapped": "partial", "accessible": "not_started", "atomically_queryable": "not_started", "receipted": "not_started", "ask_surface_wired": "not_started", "eval_proven": "not_started"},
+      "current_evidence": [],
+      "required_next_sources": [
+        "iNaturalist and GBIF media records for target Anopheles taxa",
+        "Mosquito Alert or regional media records where Anopheles is represented",
+        "PMC, Dryad, Zenodo, Figshare, OSF, and Mendeley Anopheles video/media manifests",
+        "bounded licensed image mirrors, video probes, previews, frame manifests, and media gap records"
+      ],
+      "completion_evidence": ["media answers include source URL, license, taxon, observation or dataset context, and inspectable locator"]
+    },
+    {
+      "id": "eval_and_answer_quality",
+      "priority": 16,
+      "status": "not_started",
+      "target_state": "A realistic black-box Anopheles production-path evaluation through Josh's normal Codex route, with accurate source-backed answers under 60 seconds.",
+      "current_sources": [],
+      "current_gates": {"mapped": "partial", "accessible": "not_started", "atomically_queryable": "not_started", "receipted": "not_started", "ask_surface_wired": "not_started", "eval_proven": "not_started"},
+      "current_evidence": [],
+      "required_next_sources": [
+        "50-question Anopheles Reality Eval covering biology, behavior, repellents, resistance, surveillance, genomics, ecology, media, and source gaps",
+        "independent grading with exact provenance checks and latency measurements",
+        "recorded Codex app demo after the eval passes"
+      ],
+      "completion_evidence": ["all eval questions pass accuracy, source, usefulness, privacy, provenance, and under-60-second latency gates"]
+    }
+  ]
+}

@@ -478,6 +478,134 @@ class SourceIndex:
                     raise
                 time.sleep(1.5 * (attempt + 1))
 
+    def replace_source_records_in_scope(
+        self,
+        source: str,
+        records: list[EvidenceRecord],
+        *,
+        record_id_prefix: str,
+        payload_field: str | None = None,
+        payload_value: str | None = None,
+        preserve_existing_fts: bool = False,
+    ) -> None:
+        """Replace one independently refreshable slice of a shared source."""
+
+        if not record_id_prefix:
+            raise ValueError("record_id_prefix must not be empty")
+        if (payload_field is None) != (payload_value is None):
+            raise ValueError("payload_field and payload_value must be supplied together")
+        if any(record.source != source for record in records):
+            raise ValueError("all scoped replacement records must belong to the requested source")
+
+        attempts = 4
+        for attempt in range(attempts):
+            try:
+                with self.connect() as conn:
+                    incoming_ids = [record.record_id for record in records]
+                    for chunk in _chunks(incoming_ids):
+                        placeholders = ",".join("?" for _ in chunk)
+                        conflicts = conn.execute(
+                            f"SELECT record_id, source FROM records WHERE record_id IN ({placeholders}) AND source<>?",
+                            [*chunk, source],
+                        ).fetchall()
+                        if conflicts:
+                            raise ValueError(
+                                "incoming record IDs already belong to another source: "
+                                + ", ".join(str(row["record_id"]) for row in conflicts)
+                            )
+
+                    conditions = ["substr(r.record_id, 1, length(?)) = ?"]
+                    params: list[object] = [record_id_prefix, record_id_prefix]
+                    if payload_field is not None:
+                        conditions.append("json_extract(p.payload_json, ?) = ?")
+                        params.extend([f"$.{payload_field}", payload_value])
+                    scoped_rows = conn.execute(
+                        f"""
+                        SELECT r.record_id
+                        FROM records r
+                        LEFT JOIN record_payloads p ON p.record_id = r.record_id
+                        WHERE r.source=? AND ({' OR '.join(conditions)})
+                        """,
+                        [source, *params],
+                    ).fetchall()
+                    scoped_ids = [str(row["record_id"]) for row in scoped_rows]
+                    if preserve_existing_fts:
+                        scoped_id_set = set(scoped_ids)
+                        incoming_id_set = set(incoming_ids)
+                        stale_ids = sorted(scoped_id_set - incoming_id_set)
+                        for chunk in _chunks(stale_ids):
+                            placeholders = ",".join("?" for _ in chunk)
+                            conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+                            conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
+                            conn.execute(f"DELETE FROM records WHERE record_id IN ({placeholders})", chunk)
+
+                        existing = [record for record in records if record.record_id in scoped_id_set]
+                        for chunk in _record_chunks(existing):
+                            rows = [record.to_row() for record in chunk]
+                            conn.executemany(
+                                """
+                                UPDATE records
+                                SET lane=?, species=?, url=?, media_url=?, provenance_json=?
+                                WHERE record_id=? AND source=?
+                                """,
+                                [
+                                    (
+                                        row["lane"],
+                                        row["species"],
+                                        row["url"],
+                                        row["media_url"],
+                                        row["provenance_json"],
+                                        row["record_id"],
+                                        source,
+                                    )
+                                    for row in rows
+                                ],
+                            )
+                            empty_payload_ids = [record.record_id for record in chunk if record.payload is None]
+                            if empty_payload_ids:
+                                placeholders = ",".join("?" for _ in empty_payload_ids)
+                                conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", empty_payload_ids)
+                            conn.executemany(
+                                """
+                                INSERT INTO record_payloads (record_id, source, lane, payload_json, provenance_json)
+                                VALUES (?, ?, ?, ?, ?)
+                                ON CONFLICT(record_id) DO UPDATE SET
+                                  source=excluded.source,
+                                  lane=excluded.lane,
+                                  payload_json=excluded.payload_json,
+                                  provenance_json=excluded.provenance_json
+                                """,
+                                [
+                                    (
+                                        record.record_id,
+                                        record.source,
+                                        record.lane,
+                                        json.dumps(record.payload, sort_keys=True),
+                                        json.dumps(record.provenance.to_dict(), sort_keys=True),
+                                    )
+                                    for record in chunk
+                                    if record.payload is not None
+                                ],
+                            )
+                        missing = [record for record in records if record.record_id not in scoped_id_set]
+                        for chunk in _record_chunks(missing):
+                            self._upsert_records(conn, chunk, update_fts=True)
+                        return
+                    for chunk in _chunks(scoped_ids):
+                        placeholders = ",".join("?" for _ in chunk)
+                        conn.execute(f"DELETE FROM records_fts WHERE record_id IN ({placeholders})", chunk)
+                        conn.execute(f"DELETE FROM literature_fulltext_fts WHERE record_id IN ({placeholders})", chunk)
+                        conn.execute(f"DELETE FROM literature_fulltext_units WHERE record_id IN ({placeholders})", chunk)
+                        conn.execute(f"DELETE FROM record_payloads WHERE record_id IN ({placeholders})", chunk)
+                        conn.execute(f"DELETE FROM records WHERE record_id IN ({placeholders})", chunk)
+                    for chunk in _record_chunks(records):
+                        self._upsert_records(conn, chunk, update_fts=True)
+                return
+            except sqlite3.OperationalError as exc:
+                if "locked" not in str(exc).lower() or attempt == attempts - 1:
+                    raise
+                time.sleep(1.5 * (attempt + 1))
+
     def _delete_source_records(self, conn: sqlite3.Connection, source: str, *, delete_fts: bool = True) -> None:
         record_ids: list[str] = []
         if delete_fts:

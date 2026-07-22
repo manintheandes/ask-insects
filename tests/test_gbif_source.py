@@ -120,6 +120,30 @@ class GBIFSourceTests(unittest.TestCase):
             self.assertEqual(result.total_results["Aedes aegypti"], 1)
             self.assertEqual(result.page_count, 1)
 
+    def test_fetch_gbif_records_accepts_source_override(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            fetcher = FakeGBIFFetcher()
+            result = fetch_gbif_records(
+                ["Aedes aegypti"],
+                raw_dir=Path(tmpdir) / "raw" / "gbif",
+                occurrence_limit=1,
+                fetch_json=fetcher,
+                retrieved_at="2026-05-23T00:00:00Z",
+                source_id="custom_gbif_source",
+                record_prefix="custom_gbif",
+            )
+
+            self.assertEqual(result.source_id, "custom_gbif_source")
+            self.assertEqual(result.gaps, [])
+            taxonomy = next(record for record in result.records if record.lane == "taxonomy")
+            self.assertEqual(taxonomy.record_id, "custom_gbif:taxon:1651891")
+            self.assertEqual(taxonomy.source, "custom_gbif_source")
+            self.assertEqual(taxonomy.provenance.source_id, "custom_gbif_source")
+            occurrence = next(record for record in result.records if record.lane == "observations")
+            self.assertEqual(occurrence.record_id, "custom_gbif:occurrence:444")
+            self.assertEqual(occurrence.source, "custom_gbif_source")
+            self.assertEqual(occurrence.provenance.source_id, "custom_gbif_source")
+
     def test_fetch_gbif_records_records_gap_when_species_does_not_match(self):
         def no_match_fetcher(url):
             return {"matchType": "NONE"} if "/species/match" in url else {"count": 0, "results": []}

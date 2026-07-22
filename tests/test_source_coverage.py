@@ -104,6 +104,61 @@ def write_coverage_fixture(path: Path) -> None:
     )
 
 
+def write_anopheles_coverage_fixture(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(
+            {
+                "scope": {
+                    "source_id": "anopheles_source_coverage",
+                    "primary_taxon": "Anopheles",
+                    "strategy": "Build the world's most comprehensive source-backed Anopheles intelligence system.",
+                },
+                "source_contract_gates": ["mapped", "accessible", "atomically_queryable", "receipted", "ask_surface_wired", "eval_proven"],
+                "domains": [
+                    {
+                        "id": "literature",
+                        "priority": 1,
+                        "status": "not_started",
+                        "target_state": "Anopheles papers, legal full text, supplements, and explicit literature gaps.",
+                        "current_sources": [],
+                        "current_gates": {
+                            "mapped": "partial",
+                            "accessible": "not_started",
+                            "atomically_queryable": "not_started",
+                            "receipted": "not_started",
+                            "ask_surface_wired": "not_started",
+                            "eval_proven": "not_started",
+                        },
+                        "current_evidence": [],
+                        "required_next_sources": ["OpenAlex Anopheles literature corpus with target-taxon filters"],
+                        "completion_evidence": ["literature answers distinguish metadata, legal full text, supplement rows, and gaps"],
+                    },
+                    {
+                        "id": "behavior",
+                        "priority": 2,
+                        "status": "not_started",
+                        "target_state": "Anopheles host seeking, blood feeding, oviposition, mating, flight, and intervention behavior rows.",
+                        "current_sources": [],
+                        "current_gates": {
+                            "mapped": "partial",
+                            "accessible": "not_started",
+                            "atomically_queryable": "not_started",
+                            "receipted": "not_started",
+                            "ask_surface_wired": "not_started",
+                            "eval_proven": "not_started",
+                        },
+                        "current_evidence": [],
+                        "required_next_sources": ["Anopheles repellent and spatial-repellent assay datasets"],
+                        "completion_evidence": ["behavior answers preserve endpoint differences"],
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
 class SourceCoverageTests(unittest.TestCase):
     def test_builds_overview_domain_and_gap_records_from_coverage_ledger(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -115,6 +170,7 @@ class SourceCoverageTests(unittest.TestCase):
             self.assertEqual(records[0].record_id, "aedes_source_coverage:overview")
             self.assertEqual(records[0].source, SOURCE_COVERAGE_SOURCE_ID)
             self.assertEqual(records[0].lane, "source_coverage")
+            self.assertTrue(str(records[0].url).endswith("/coverage.json"))
             domain_records = [record for record in records if record.payload and record.payload["atom_type"] == "source_coverage_domain"]
             gap_records = [record for record in records if record.payload and record.payload["atom_type"] == "source_coverage_gap"]
             self.assertEqual(len(domain_records), 4)
@@ -122,6 +178,22 @@ class SourceCoverageTests(unittest.TestCase):
             self.assertTrue(any("decoded trajectory tables" in record.text for record in gap_records))
             behavior = next(record for record in domain_records if record.payload["domain"] == "behavior")
             self.assertIn("atomically_queryable=partial", behavior.text)
+
+    def test_builds_anopheles_coverage_records_from_configured_source_id(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            coverage_path = Path(tmpdir) / "anopheles-coverage.json"
+            write_anopheles_coverage_fixture(coverage_path)
+
+            records = build_source_coverage_records(coverage_path, retrieved_at=RETRIEVED_AT)
+
+            self.assertEqual(records[0].record_id, "anopheles_source_coverage:overview")
+            self.assertEqual(records[0].source, "anopheles_source_coverage")
+            self.assertEqual(records[0].species, "Anopheles")
+            self.assertTrue(str(records[0].url).endswith("/anopheles-coverage.json"))
+            self.assertIn("Anopheles source coverage overview", records[0].title)
+            gap_records = [record for record in records if record.payload and record.payload["atom_type"] == "source_coverage_gap"]
+            self.assertEqual(len(gap_records), 2)
+            self.assertTrue(any("spatial-repellent assay datasets" in record.text for record in gap_records))
 
     def test_ingest_preserves_other_sources_and_updates_metadata(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -159,6 +231,23 @@ class SourceCoverageTests(unittest.TestCase):
             status = json.loads((artifact_dir / "source_status.json").read_text(encoding="utf-8"))
             self.assertIn(SOURCE_COVERAGE_SOURCE_ID, status["sources"])
             self.assertEqual(status[SOURCE_COVERAGE_SOURCE_ID]["coverage_gap_count"], 5)
+
+    def test_anopheles_missing_coverage_question_uses_anopheles_source_coverage_lane(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            coverage_path = Path(tmpdir) / "anopheles-coverage.json"
+            write_anopheles_coverage_fixture(coverage_path)
+            ingest_source_coverage(artifact_dir=artifact_dir, coverage_path=coverage_path, retrieved_at=RETRIEVED_AT)
+
+            answer = answer_question("what is missing from Anopheles behavior coverage?", artifact_dir=artifact_dir, limit=3)
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "evidence")
+            self.assertIn("Anopheles", answer["answer"])
+            self.assertIn("behavior is not started", answer["answer"])
+            self.assertEqual(answer["evidence"][0]["source"], "anopheles_source_coverage")
+            self.assertEqual(answer["evidence"][0]["record_id"], "anopheles_source_coverage:gap:behavior:1")
+            self.assertIn("spatial-repellent assay datasets", answer["evidence"][0]["text"])
 
     def test_missing_coverage_question_uses_source_coverage_lane(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -214,7 +303,7 @@ class SourceCoverageTests(unittest.TestCase):
             self.assertTrue(answer["ok"])
             self.assertEqual(answer["answer_shape"], "evidence")
             self.assertIn("Plainly", answer["answer"])
-            self.assertIn("4 tracked Aedes domains", answer["answer"])
+            self.assertIn("4 tracked Aedes aegypti domains", answer["answer"])
             self.assertIn("5 missing-source gaps", answer["answer"])
             self.assertEqual(answer["evidence"][0]["record_id"], "aedes_source_coverage:overview")
 

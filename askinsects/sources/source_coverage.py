@@ -10,6 +10,11 @@ from askinsects.records import EvidenceRecord, Provenance
 
 SOURCE_COVERAGE_SOURCE_ID = "aedes_source_coverage"
 DEFAULT_COVERAGE_LEDGER = Path("config/mosquito-intelligence-coverage.json")
+PUBLIC_REPO_BLOB_URL = "https://github.com/manintheandes/ask-insects/blob/main"
+SOURCE_ID_BY_TAXON = {
+    "aedes aegypti": "aedes_source_coverage",
+    "anopheles": "anopheles_source_coverage",
+}
 
 
 def utc_now() -> str:
@@ -30,6 +35,10 @@ def _list_text(values: object, *, limit: int = 6) -> str:
     return "; ".join(rendered) + suffix
 
 
+def _public_ledger_url(path: Path) -> str:
+    return f"{PUBLIC_REPO_BLOB_URL}/{path.as_posix()}"
+
+
 def load_coverage_ledger(path: Path = DEFAULT_COVERAGE_LEDGER) -> dict[str, object]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -40,6 +49,18 @@ def load_coverage_ledger(path: Path = DEFAULT_COVERAGE_LEDGER) -> dict[str, obje
     return payload
 
 
+def source_id_for_coverage_ledger(ledger: dict[str, object]) -> str:
+    scope = ledger.get("scope") if isinstance(ledger.get("scope"), dict) else {}
+    configured = scope.get("source_id")
+    if isinstance(configured, str) and configured.strip():
+        return configured.strip()
+    primary_taxon = str(scope.get("primary_taxon") or "Aedes aegypti").strip().lower()
+    for taxon, source_id in SOURCE_ID_BY_TAXON.items():
+        if primary_taxon == taxon or primary_taxon.startswith(f"{taxon} "):
+            return source_id
+    return SOURCE_COVERAGE_SOURCE_ID
+
+
 def build_source_coverage_records(
     coverage_path: Path = DEFAULT_COVERAGE_LEDGER,
     *,
@@ -47,12 +68,15 @@ def build_source_coverage_records(
 ) -> list[EvidenceRecord]:
     retrieved = retrieved_at or utc_now()
     ledger = load_coverage_ledger(coverage_path)
+    source_id = source_id_for_coverage_ledger(ledger)
+    record_prefix = source_id
+    public_ledger_url = _public_ledger_url(coverage_path)
     domains = [domain for domain in ledger["domains"] if isinstance(domain, dict)]
     scope = ledger.get("scope") if isinstance(ledger.get("scope"), dict) else {}
     # Project-scope descriptor, not a per-row species label: this is the coverage
     # ledger's declared primary taxon for the whole intelligence project (Aedes aegypti).
     primary_taxon = str(scope.get("primary_taxon") or "Aedes aegypti")
-    strategy = str(scope.get("strategy") or "Build comprehensive Aedes aegypti mosquito intelligence.")
+    strategy = str(scope.get("strategy") or f"Build comprehensive {primary_taxon} mosquito intelligence.")
     status_counts: dict[str, int] = {}
     for domain in domains:
         status = str(domain.get("status") or "unknown")
@@ -60,10 +84,10 @@ def build_source_coverage_records(
 
     records: list[EvidenceRecord] = [
         EvidenceRecord(
-            record_id="aedes_source_coverage:overview",
+            record_id=f"{record_prefix}:overview",
             lane="source_coverage",
-            source=SOURCE_COVERAGE_SOURCE_ID,
-            title="Aedes aegypti source coverage overview",
+            source=source_id,
+            title=f"{primary_taxon} source coverage overview",
             text=(
                 f"Ask Insects source coverage overview for {primary_taxon}. Strategy: {strategy} "
                 f"Tracked domains: {len(domains)}. Status counts: "
@@ -71,13 +95,14 @@ def build_source_coverage_records(
                 + ". Missing coverage questions should inspect the per-domain and coverage-gap records from this lane."
             ),
             species=primary_taxon,
-            url=None,
+            url=public_ledger_url,
             media_url=None,
             provenance=Provenance(
-                source_id=SOURCE_COVERAGE_SOURCE_ID,
+                source_id=source_id,
                 locator=f"{coverage_path.as_posix()}#scope",
                 retrieved_at=retrieved,
                 license="Repository coverage ledger",
+                source_url=public_ledger_url,
             ),
             payload={
                 "atom_type": "source_coverage_overview",
@@ -100,23 +125,24 @@ def build_source_coverage_records(
         gate_text = "; ".join(f"{key}={value}" for key, value in current_gates.items()) or "no gates recorded"
         records.append(
             EvidenceRecord(
-                record_id=f"aedes_source_coverage:domain:{_safe_id(domain_id)}",
+                record_id=f"{record_prefix}:domain:{_safe_id(domain_id)}",
                 lane="source_coverage",
-                source=SOURCE_COVERAGE_SOURCE_ID,
-                title=f"Aedes aegypti coverage status: {domain_id}",
+                source=source_id,
+                title=f"{primary_taxon} coverage status: {domain_id}",
                 text=(
-                    f"Aedes aegypti {domain_id} coverage status: {status}. Target: {target_state} "
+                    f"{primary_taxon} {domain_id} coverage status: {status}. Target: {target_state} "
                     f"Current source lanes: {_list_text(current_sources)}. Source-contract gates: {gate_text}. "
                     f"Missing or next required coverage: {_list_text(required_next_sources)}."
                 ),
                 species=primary_taxon,
-                url=None,
+                url=public_ledger_url,
                 media_url=None,
                 provenance=Provenance(
-                    source_id=SOURCE_COVERAGE_SOURCE_ID,
+                    source_id=source_id,
                     locator=f"{coverage_path.as_posix()}#domains/{index}",
                     retrieved_at=retrieved,
                     license="Repository coverage ledger",
+                    source_url=public_ledger_url,
                 ),
                 payload={
                     "atom_type": "source_coverage_domain",
@@ -136,22 +162,23 @@ def build_source_coverage_records(
         for gap_index, required_source in enumerate(required_next_sources):
             records.append(
                 EvidenceRecord(
-                    record_id=f"aedes_source_coverage:gap:{_safe_id(domain_id)}:{gap_index + 1}",
+                    record_id=f"{record_prefix}:gap:{_safe_id(domain_id)}:{gap_index + 1}",
                     lane="source_coverage",
-                    source=SOURCE_COVERAGE_SOURCE_ID,
-                    title=f"Aedes aegypti missing coverage: {domain_id}",
+                    source=source_id,
+                    title=f"{primary_taxon} missing coverage: {domain_id}",
                     text=(
-                        f"Missing Aedes aegypti {domain_id} source coverage: {required_source}. "
+                        f"Missing {primary_taxon} {domain_id} source coverage: {required_source}. "
                         f"Domain status: {status}. This is a coverage-ledger gap, not a completed source lane."
                     ),
                     species=primary_taxon,
-                    url=None,
+                    url=public_ledger_url,
                     media_url=None,
                     provenance=Provenance(
-                        source_id=SOURCE_COVERAGE_SOURCE_ID,
+                        source_id=source_id,
                         locator=f"{coverage_path.as_posix()}#domains/{index}/required_next_sources/{gap_index}",
                         retrieved_at=retrieved,
                         license="Repository coverage ledger",
+                        source_url=public_ledger_url,
                     ),
                     payload={
                         "atom_type": "source_coverage_gap",

@@ -42,7 +42,8 @@ def gap_records_from_dicts(
             continue
         reason = str(gap.get("reason") or "unknown")
         lane = str(gap.get("lane") or default_lane)
-        record_id = f"{source_id}:gap:{reason}"
+        scope = str(gap.get("assembly_accession") or "").strip()
+        record_id = f"{source_id}:gap:{reason}" + (f":{scope}" if scope else "")
         if record_id in seen:
             record_id = f"{source_id}:gap:{reason}:{index}"
         seen.add(record_id)

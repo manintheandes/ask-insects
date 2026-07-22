@@ -1673,6 +1673,195 @@ class HostedCliTests(unittest.TestCase):
         self.assertEqual(calls[0][2]["page_size"], 100)
         self.assertEqual(calls[0][3], 7200)
 
+    def test_hosted_anopheles_ncbi_biosamples_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "sample_record_count": 50}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-anopheles-ncbi-biosamples",
+                "--hosted",
+                "--species",
+                "Anopheles stephensi",
+                "--limit-per-taxon",
+                "50",
+                "--page-size",
+                "25",
+                "--delay-seconds",
+                "0",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/anopheles-ncbi-biosamples")
+        self.assertEqual(calls[0][2]["species"], ["Anopheles stephensi"])
+        self.assertEqual(calls[0][2]["limit_per_taxon"], 50)
+        self.assertEqual(calls[0][2]["page_size"], 25)
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_anopheles_uniprot_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "protein_record_count": 800}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-anopheles-uniprot",
+                "--hosted",
+                "--protein-limit-per-taxon",
+                "100",
+                "--proteome-limit-per-taxon",
+                "5",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/anopheles-uniprot")
+        self.assertEqual(calls[0][2]["protein_limit_per_taxon"], 100)
+        self.assertEqual(calls[0][2]["proteome_limit_per_taxon"], 5)
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_anopheles_ncbi_sra_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "run_record_count": 20}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-anopheles-ncbi-sra",
+                "--hosted",
+                "--species",
+                "Anopheles gambiae",
+                "--experiment-limit-per-taxon",
+                "20",
+                "--page-size",
+                "10",
+                "--delay-seconds",
+                "0",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/anopheles-ncbi-sra")
+        self.assertEqual(calls[0][2]["species"], ["Anopheles gambiae"])
+        self.assertEqual(calls[0][2]["experiment_limit_per_taxon"], 20)
+        self.assertEqual(calls[0][2]["page_size"], 10)
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_anopheles_ncbi_assemblies_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "assembly_record_count": 10}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-anopheles-ncbi-assemblies", "--hosted", "--species", "Anopheles gambiae",
+                "--limit-per-taxon", "10", "--delay-seconds", "0",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][0], "POST")
+        self.assertEqual(calls[0][1], "/ingest/anopheles-ncbi-assemblies")
+        self.assertEqual(calls[0][2]["species"], ["Anopheles gambiae"])
+        self.assertEqual(calls[0][2]["limit_per_taxon"], 10)
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_anopheles_ncbi_genome_features_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 1000}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-anopheles-ncbi-genome-features", "--hosted", "--species", "Anopheles gambiae",
+                "--assembly-accession", "GCF_TEST.1", "--assembly-ftp", "https://example.test/GCF_TEST.1_name",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1], "/ingest/anopheles-ncbi-genome-features")
+        self.assertEqual(calls[0][2]["assembly_accession"], "GCF_TEST.1")
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_anopheles_who_resistance_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 1000}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-anopheles-who-malaria-resistance", "--hosted", "--page-size", "500",
+                "--max-rows", "2000", "--delay-seconds", "0",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1], "/ingest/anopheles-who-malaria-resistance")
+        self.assertEqual(calls[0][2]["max_rows"], 2000)
+        self.assertEqual(calls[0][3], 7200)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_anopheles_pathogen_taxonomy_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "pathogen_count": 10}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-anopheles-pathogen-taxonomy", "--hosted", "--retrieved-at", "2026-07-22T00:00:00Z",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1], "/ingest/anopheles-pathogen-taxonomy")
+        self.assertEqual(calls[0][2]["retrieved_at"], "2026-07-22T00:00:00Z")
+        self.assertEqual(calls[0][3], 600)
+        self.assertTrue(json.loads(output)["ok"])
+
+    def test_hosted_anopheles_vector_competence_ingest_sends_options(self):
+        calls = []
+
+        def fake_request(config, method, path, payload=None, timeout=120):
+            calls.append((method, path, payload, timeout))
+            return {"ok": True, "record_count": 109}
+
+        with patch("askinsects.cli.load_config") as load_config, patch("askinsects.cli.hosted_request", fake_request):
+            load_config.return_value = SimpleNamespace(url="https://ask-insects.example", token="secret")
+            code, output = self.run_cli(
+                "ingest-anopheles-vector-competence-evidence", "--hosted",
+                "--retrieved-at", "2026-07-22T00:00:00Z",
+            )
+
+        self.assertEqual(code, 0)
+        self.assertEqual(calls[0][1], "/ingest/anopheles-vector-competence-evidence")
+        self.assertEqual(calls[0][2]["retrieved_at"], "2026-07-22T00:00:00Z")
+        self.assertEqual(calls[0][3], 600)
+        self.assertTrue(json.loads(output)["ok"])
+
     def test_hosted_ncbi_snp_variation_ingest_sends_options(self):
         calls = []
 

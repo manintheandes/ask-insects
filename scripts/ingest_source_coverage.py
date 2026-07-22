@@ -32,10 +32,11 @@ def _update_metadata(artifact_dir: Path, records: list[object], coverage_path: P
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     summary = index.summary()
     source_counts = _source_counts(index)
+    source_id = str(records[0].source if records else SOURCE_COVERAGE_SOURCE_ID)
     domain_count = sum(1 for record in records if record.payload and record.payload.get("atom_type") == "source_coverage_domain")
     gap_count = sum(1 for record in records if record.payload and record.payload.get("atom_type") == "source_coverage_gap")
     source_payload = {
-        "source": SOURCE_COVERAGE_SOURCE_ID,
+        "source": source_id,
         "record_count": len(records),
         "domain_count": domain_count,
         "coverage_gap_count": gap_count,
@@ -49,22 +50,22 @@ def _update_metadata(artifact_dir: Path, records: list[object], coverage_path: P
             payload = {}
         sources = payload.get("sources")
         if isinstance(sources, dict):
-            sources[SOURCE_COVERAGE_SOURCE_ID] = source_payload
+            sources[source_id] = source_payload
         else:
             if not isinstance(sources, list):
                 sources = []
-            if SOURCE_COVERAGE_SOURCE_ID not in sources:
-                sources.append(SOURCE_COVERAGE_SOURCE_ID)
+            if source_id not in sources:
+                sources.append(source_id)
         payload["sources"] = sources
         payload["source_counts"] = source_counts
         payload["record_count"] = summary["record_count"]
         payload["species_count"] = summary["species_count"]
         payload["lanes"] = summary["lanes"]
-        payload[SOURCE_COVERAGE_SOURCE_ID] = source_payload
+        payload[source_id] = source_payload
         write_json(path, payload)
     return {
         "ok": True,
-        "source": SOURCE_COVERAGE_SOURCE_ID,
+        "source": source_id,
         "record_count": len(records),
         "domain_count": domain_count,
         "coverage_gap_count": gap_count,
@@ -83,7 +84,8 @@ def ingest_source_coverage(
     records = build_source_coverage_records(coverage_path=coverage_path, retrieved_at=retrieved_at)
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(SOURCE_COVERAGE_SOURCE_ID, records)
+    source_id = str(records[0].source if records else SOURCE_COVERAGE_SOURCE_ID)
+    index.replace_source_records(source_id, records)
     return _update_metadata(artifact_dir, records, coverage_path)
 
 

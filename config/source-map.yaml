@@ -30,6 +30,284 @@ sources:
       - source_coverage
     provenance_required: true
     live_fetch: derived_from_repo_ledger
+  - id: anopheles_source_coverage
+    name: Anopheles source coverage ledger records
+    source_type: derived_repo_ledger
+    boundary: Queryable Ask Insects coverage, missing-source, source-contract gate, and completion-evidence records derived from config/anopheles-intelligence-coverage.json for Anopheles gambiae complex, Anopheles gambiae, Anopheles coluzzii, Anopheles funestus, Anopheles stephensi, and other major regional malaria vectors
+    query_plane: coverage_ledger_to_sqlite_source_coverage_records
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_source_coverage.py
+    input_ledger: config/anopheles-intelligence-coverage.json
+    lanes:
+      - source_coverage
+    provenance_required: true
+    live_fetch: derived_from_repo_ledger
+  - id: anopheles_literature_openalex
+    name: Bounded Anopheles OpenAlex literature
+    source_type: public_api_metadata
+    boundary: Bounded historical-to-current OpenAlex works across twenty priority Anopheles species, the Anopheles gambiae complex, and priority behavior, ecology, sensory, neurobiology, genomics, microbiome, resistance, repellent, and vector-competence topics; broad search-mode records remain candidates until materiality is confirmed
+    query_plane: openalex_works_to_sqlite_literature_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_literature
+    ingest_script: scripts/ingest_anopheles_literature.py
+    upstream_sources:
+      - openalex_works_api
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: release_refresh_bounded
+    source_contract:
+      source_grade_now:
+        - bounded_target_taxon_openalex_metadata
+        - exact_raw_openalex_page_locator
+        - target_taxa_recorded_in_receipts
+      not_claimed:
+        - complete_anopheles_literature_coverage
+        - legal_full_text_or_supplement_depth
+        - human_verified_species_materiality_for_every_broad_search_candidate
+  - id: anopheles_gbif_occurrences
+    name: Bounded Anopheles GBIF taxonomy and occurrence records
+    source_type: public_api_metadata
+    boundary: Bounded GBIF species-match and occurrence records for twenty priority Anopheles malaria-vector taxa spanning African, Asian, American, European, and Pacific vectors
+    query_plane: gbif_species_match_and_occurrence_to_sqlite_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_gbif
+    ingest_script: scripts/ingest_anopheles_gbif.py
+    upstream_sources:
+      - gbif_species_match_api
+      - gbif_occurrence_search_api
+    lanes:
+      - taxonomy
+      - observations
+    provenance_required: true
+    live_fetch: release_refresh_bounded
+    source_contract:
+      source_grade_now:
+        - bounded_gbif_taxon_match_records
+        - bounded_gbif_occurrence_records
+        - exact_raw_gbif_page_locator
+        - target_taxa_and_total_results_recorded_in_receipts
+      not_claimed:
+        - complete_anopheles_occurrence_coverage
+        - deduplicated_surveillance_or_modelled_range_coverage
+        - row_level_public_health_surveillance_counts
+  - id: anopheles_ncbi_biosamples
+    name: Bounded Anopheles NCBI BioSample metadata
+    source_type: public_api_metadata
+    boundary: Bounded NCBI BioSample ESearch and ESummary metadata for twenty priority Anopheles malaria-vector taxa, with one record per accession and parsed sample identifiers, organism, geography, collection date, tissue, isolation source, isolate, strain, and linked SRA identifier when NCBI exposes them
+    query_plane: ncbi_biosample_esearch_esummary_to_sqlite_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_ncbi_biosamples
+    ingest_script: scripts/ingest_anopheles_ncbi_biosamples.py
+    upstream_sources:
+      - ncbi_biosample_esearch_api
+      - ncbi_biosample_esummary_api
+    lanes:
+      - biosamples
+    provenance_required: true
+    live_fetch: release_refresh_bounded
+    source_contract:
+      source_grade_now:
+        - bounded_per_taxon_biosample_accession_records
+        - parsed_sample_attributes_and_linked_sra_ids
+        - exact_raw_ncbi_response_locator
+        - target_taxa_and_reported_total_counts_recorded_in_receipts
+      not_claimed:
+        - complete_anopheles_biosample_coverage
+        - downloaded_or_reanalysed_sra_reads
+        - complete_population_genomics_or_expression_omics
+  - id: anopheles_uniprot_proteins
+    name: Bounded Anopheles UniProt protein and proteome metadata
+    source_type: public_api_metadata
+    boundary: Bounded UniProtKB protein and proteome records for eight priority Anopheles malaria-vector taxa using NCBI-verified taxonomy identifiers, preserving accession, reviewed status, protein name, gene names, function comments, GO and VectorBase cross-references, keywords, proteome identifiers, and protein counts when supplied
+    query_plane: uniprot_rest_per_taxon_to_sqlite_protein_records
+    api_base: https://rest.uniprot.org
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_uniprot
+    ingest_script: scripts/ingest_anopheles_uniprot.py
+    upstream_sources:
+      - uniprotkb_search_api
+      - uniprot_proteomes_search_api
+      - ncbi_taxonomy_identifiers
+    lanes:
+      - proteins
+    provenance_required: true
+    live_fetch: release_refresh_bounded
+    source_contract:
+      source_grade_now:
+        - bounded_per_taxon_uniprotkb_protein_records
+        - bounded_per_taxon_proteome_records
+        - exact_raw_uniprot_result_locator
+        - ncbi_verified_taxonomy_ids_in_receipts
+        - explicit_limit_reached_gaps
+      not_claimed:
+        - complete_anopheles_protein_coverage
+        - parsed_vectorbase_genome_features_or_sequences
+        - complete_orthology_or_current_gene_id_resolution
+  - id: anopheles_ncbi_sra_runs
+    name: Bounded Anopheles NCBI SRA run metadata
+    source_type: public_api_metadata
+    boundary: Bounded NCBI SRA experiment searches for twenty priority Anopheles malaria-vector taxa, parsed to one record per public run accession with experiment, BioProject, BioSample, platform, library strategy, library source, library selection, spots, bases, and byte size when NCBI supplies them
+    query_plane: ncbi_sra_esearch_esummary_to_sqlite_run_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_ncbi_sra
+    ingest_script: scripts/ingest_anopheles_ncbi_sra.py
+    upstream_sources:
+      - ncbi_sra_esearch_api
+      - ncbi_sra_esummary_api
+    lanes:
+      - datasets
+    provenance_required: true
+    live_fetch: release_refresh_bounded
+    source_contract:
+      source_grade_now:
+        - bounded_per_taxon_sra_experiment_search
+        - atomic_sra_run_accession_records
+        - exact_raw_ncbi_summary_run_locator
+        - reported_experiment_and_parsed_run_counts_in_receipts
+        - explicit_limit_and_reanalysis_gaps
+      not_claimed:
+        - downloaded_raw_sra_reads
+        - completed_alignment_or_expression_reanalysis
+        - count_or_normalized_expression_matrices
+  - id: anopheles_ncbi_assemblies
+    name: Bounded Anopheles NCBI Assembly metadata
+    source_type: public_api_metadata
+    boundary: Bounded NCBI Assembly ESearch and full ESummary metadata for twenty priority Anopheles malaria-vector taxa, preserving accession, assembly name and level, BioProject, BioSample, coverage, N50 values, release date, submitter, RefSeq category, properties, and public download paths when supplied
+    query_plane: ncbi_assembly_esearch_esummary_to_sqlite_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_ncbi_assemblies
+    ingest_script: scripts/ingest_anopheles_ncbi_assemblies.py
+    upstream_sources:
+      - ncbi_assembly_esearch_api
+      - ncbi_assembly_esummary_api
+    lanes:
+      - genome_assemblies
+    provenance_required: true
+    live_fetch: release_refresh_bounded
+    source_contract:
+      source_grade_now:
+        - bounded_per_taxon_assembly_accession_records
+        - assembly_quality_and_linked_project_sample_metadata
+        - exact_raw_ncbi_summary_locator
+        - reported_total_and_parsed_assembly_counts_in_receipts
+        - explicit_limit_and_genome_feature_gaps
+      not_claimed:
+        - parsed_gene_transcript_or_sequence_features
+        - complete_anopheles_assembly_coverage
+        - vectorbase_or_veupathdb_genome_annotations
+  - id: anopheles_ncbi_genome_features
+    name: Anopheles NCBI reference genome features, proteins, GO, and expression
+    source_type: public_genome_files
+    boundary: Assembly-scoped downloaded NCBI GFF, protein FASTA, Gene Ontology GAF, and available raw and normalized gene-expression count tables for indexed reference-category Anopheles assemblies, parsed into atomic records with exact line or FASTA-record provenance
+    query_plane: ncbi_reference_annotation_and_expression_files_to_sqlite_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_ncbi_genome_features
+    ingest_script: scripts/ingest_anopheles_ncbi_genome_features.py
+    upstream_sources:
+      - ncbi_genome_gff
+      - ncbi_genome_protein_fasta
+      - ncbi_gene_ontology_gaf
+      - ncbi_gene_expression_counts
+      - ncbi_normalized_gene_expression_counts
+      - anopheles_ncbi_assemblies
+    lanes:
+      - genes
+      - transcripts
+      - genome_features
+      - proteins
+      - expression
+    provenance_required: true
+    live_fetch: release_refresh
+    source_contract:
+      source_grade_now:
+        - reference_assembly_selected_from_indexed_ncbi_metadata
+        - atomic_gene_transcript_functional_feature_protein_go_and_expression_records
+        - exact_compressed_source_file_line_or_fasta_record_locator
+        - per_assembly_raw_file_sha256_and_lane_counts_in_receipt
+        - independent_assembly_refresh_without_erasing_other_species
+      not_claimed:
+        - all_priority_anopheles_species_have_parsed_genome_features
+        - vectorbase_or_veupathdb_annotations
+  - id: anopheles_who_malaria_resistance
+    name: WHO malaria-vector Anopheles insecticide-resistance rows
+    source_type: official_public_health_api
+    boundary: Paged WHO MAL_THREATS FACT_PREVENTION_VIEW rows whose species label identifies Anopheles and whose insecticide field names a chemical, preserving assay, insecticide, dose, mortality, resistance status, mechanism, place, time, sample size, citation, and exact raw response row when supplied
+    query_plane: who_malaria_threats_anopheles_rows_to_sqlite_resistance_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_who_malaria_resistance
+    ingest_script: scripts/ingest_anopheles_who_malaria_resistance.py
+    upstream_sources:
+      - who_mal_threats_fact_prevention_view
+      - who_global_database_on_insecticide_resistance_in_malaria_vectors
+    lanes:
+      - resistance
+    provenance_required: true
+    live_fetch: release_refresh_bounded
+    source_contract:
+      source_grade_now:
+        - paged_anopheles_species_and_named_insecticide_filter
+        - atomic_who_resistance_assay_rows
+        - exact_raw_who_response_row_locator
+        - species_label_distribution_and_page_receipts
+        - explicit_max_row_or_fetch_gaps
+      not_claimed:
+        - complete_who_database_when_max_rows_gap_exists
+        - biochemical_rows_without_a_named_insecticide
+        - causal_resistance_mechanism_without_direct_row_evidence
+        - current_operational_recommendation_from_historical_assay_rows
+  - id: anopheles_pathogen_taxonomy
+    name: Anopheles malaria-parasite NCBI Taxonomy anchors
+    source_type: public_taxonomy_api
+    boundary: NCBI Taxonomy identity records for major human malaria parasites and laboratory Plasmodium models used in Anopheles research; identity records do not establish mosquito infection, vector competence, transmission, or epidemiological importance
+    query_plane: ncbi_taxonomy_esummary_to_sqlite_anopheles_pathogen_identity_records
+    artifact_dir: artifacts/mosquito-v1
+    raw_artifact_dir: artifacts/mosquito-v1/raw/anopheles_pathogen_taxonomy
+    ingest_script: scripts/ingest_anopheles_pathogen_taxonomy.py
+    upstream_sources:
+      - ncbi_taxonomy_esummary_api
+    lanes:
+      - vector_competence
+    provenance_required: true
+    live_fetch: release_refresh
+    source_contract:
+      source_grade_now:
+        - exact_ncbi_taxonomy_id_and_scientific_name
+        - one_atomic_record_per_requested_pathogen_taxon
+        - exact_saved_raw_summary_locator
+        - explicit_identity_only_evidence_boundary
+      not_claimed:
+        - vector_competence
+        - transmission
+        - infection_assay_results
+        - epidemiological_importance
+  - id: anopheles_vector_competence_evidence
+    name: Anopheles numeric vector-competence and malaria-transmission evidence
+    source_type: derived_openalex_abstract_result_rows
+    boundary: Conservative numeric endpoint extraction from exact abstract sentences in the Anopheles OpenAlex lane; every result names a target Anopheles species in the result sentence, excludes modeled projections, distinguishes controlled experiments from field surveillance and unclear abstract context, and remains explicitly unvalidated against full-text tables
+    query_plane: anopheles_openalex_abstract_sentences_to_sqlite_vector_competence_result_rows
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_anopheles_vector_competence_evidence.py
+    upstream_sources:
+      - anopheles_literature_openalex
+    lanes:
+      - vector_competence
+    provenance_required: true
+    live_fetch: derived_after_anopheles_literature_refresh
+    source_contract:
+      source_grade_now:
+        - exact_abstract_result_sentence
+        - original_openalex_work_id_title_url_and_raw_locator
+        - target_anopheles_species_in_same_result_sentence
+        - numeric_infection_oocyst_sporozoite_transmission_or_eir_endpoint
+        - experimental_field_or_unclear_abstract_context_classification
+        - modeled_projection_exclusion
+      not_claimed:
+        - fulltext_table_validation
+        - complete_assay_methods_or_conditions
+        - controlled_vector_competence_from_field_surveillance
+        - causal_transmission_without_matching_experimental_evidence
+        - complete_anopheles_vector_competence_literature
   - id: insect_intelligence_programs
     name: Ask Insects product and species intelligence programs
     source_type: derived_repo_ledger

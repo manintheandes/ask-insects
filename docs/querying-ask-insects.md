@@ -35,6 +35,128 @@ python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-source-coverag
 python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is missing from Aedes coverage?" --json
 ```
 
+To make the Anopheles source-plane starting contract queryable as `anopheles_source_coverage`:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-source-coverage \
+  --coverage-path config/anopheles-intelligence-coverage.json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is missing from Anopheles coverage?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "what is missing from Anopheles behavior coverage?" --json
+```
+
+This only installs the Anopheles coverage ledger and missing-source gaps. It does not mean Anopheles taxonomy, literature, genomics, behavior, resistance, vector-competence, media, or public-health lanes are complete yet.
+
+To add the first bounded Anopheles literature evidence lane:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-literature \
+  --max-works 250
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search literature "Anopheles stephensi repellent"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Anopheles repellent literature" --json
+```
+
+The `anopheles_literature_openalex` lane is OpenAlex metadata with exact raw-page provenance. It does not yet include Anopheles paper-depth coverage, legal full text, supplement audits, or parsed assay tables.
+
+To add the first bounded Anopheles GBIF taxonomy and occurrence lane:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-gbif \
+  --occurrence-limit 25
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search observations "Anopheles stephensi India"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "show Anopheles stephensi GBIF occurrence records" --json
+```
+
+The `anopheles_gbif_occurrences` lane is bounded GBIF species-match and occurrence evidence with exact raw-page provenance. It does not yet include complete Anopheles range modelling, deduplicated surveillance, climate joins, or public-health case surveillance.
+
+To add bounded Anopheles NCBI BioSample metadata:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-ncbi-biosamples \
+  --limit-per-taxon 250
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search biosamples "Anopheles stephensi India"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask \
+  "show Anopheles stephensi BioSamples from India with linked SRA" --json
+```
+
+The `anopheles_ncbi_biosamples` lane preserves one record per NCBI BioSample accession, parsed sample attributes, linked SRA identifiers when present, exact raw ESummary locators, and per-taxon reported totals in receipts. The default refresh is bounded to 250 accessions per target taxon and emits explicit limit gaps when NCBI reports more. It does not download SRA reads or claim expression or population-genomics analysis.
+
+To add bounded Anopheles UniProt protein and proteome metadata:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-uniprot \
+  --protein-limit-per-taxon 500
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search proteins "Anopheles gambiae odorant receptor"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask \
+  "show Anopheles gambiae UniProt proteins" --json
+```
+
+The `anopheles_uniprot_proteins` lane uses NCBI-verified taxonomy identifiers for eight priority Anopheles taxa and preserves exact raw UniProt result locators plus species-to-taxonomy mappings in receipts. It indexes bounded protein and proteome metadata and emits a limit-reached gap when a taxon fills its configured protein cap. It does not claim complete protein coverage, genome-feature parsing, sequence atoms, or orthology.
+
+To add bounded Anopheles NCBI SRA run metadata:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-ncbi-sra \
+  --experiment-limit-per-taxon 100
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 search datasets "Anopheles gambiae RNA-Seq antenna"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask \
+  "show Anopheles gambiae antenna RNA-seq SRA runs" --json
+```
+
+The `anopheles_ncbi_sra_runs` lane indexes atomic run metadata with exact raw ESummary run locators and per-taxon reported experiment and parsed run counts. It keeps downloaded raw reads, alignment, count matrices, normalized expression, and other reanalysis products as explicit source gaps.
+
+To add bounded Anopheles NCBI Assembly metadata:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-ncbi-assemblies \
+  --limit-per-taxon 25
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask \
+  "show chromosome-level Anopheles gambiae assemblies" --json
+```
+
+The `anopheles_ncbi_assemblies` lane preserves atomic assembly accessions and exact raw ESummary locators, with assembly quality, linked project and sample accessions, release metadata, and public download paths. It fails closed for a requested chromosome or reference category that is absent from the bounded index. It does not claim parsed GFF features or sequence records.
+
+To parse the indexed Anopheles gambiae reference GFF and protein FASTA:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-ncbi-genome-features \
+  --species "Anopheles gambiae"
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask --local \
+  "show NCBI genes annotated as odorant receptors in Anopheles gambiae" --json
+```
+
+The `anopheles_ncbi_genome_features` lane stores compressed NCBI source files, SHA-256 hashes, lane counts, and atomic genes, transcripts, selected functional features, proteins, GO assertions, and available expression profiles. Its locators identify the exact decompressed source-file line or FASTA record. Assembly-scoped refreshes currently preserve thirteen parsed reference genomes together; missing files for other target assemblies are queryable gaps.
+
+To add WHO malaria-vector Anopheles resistance rows:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-who-malaria-resistance \
+  --max-rows 10000
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask --local \
+  "show WHO Anopheles gambiae deltamethrin resistance records in Benin" --json
+```
+
+The `anopheles_who_malaria_resistance` lane pages the official WHO MAL_THREATS endpoint for Anopheles rows with a named insecticide and preserves one atomic assay row per WHO record. Questions can filter the bounded index by Anopheles label, insecticide, year, and location. The answer does not infer a mechanism or current recommendation when the row does not supply one, and the lane does not claim biochemical rows whose insecticide field is blank.
+
+To add NCBI Taxonomy identity anchors for major human and laboratory malaria parasites:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-pathogen-taxonomy
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask --local \
+  "what is Plasmodium falciparum in the context of Anopheles research?" --json
+```
+
+The `anopheles_pathogen_taxonomy` lane preserves one exact NCBI Taxonomy record per configured Plasmodium taxon. It establishes pathogen identity only. It does not establish infection, parasite development, vector competence, transmission, or epidemiological importance.
+
+To derive and query measured Anopheles infection and transmission indicators from exact abstract sentences:
+
+```bash
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ingest-anopheles-vector-competence-evidence
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "Can Anopheles gambiae transmit Plasmodium falciparum, and what assay evidence supports that?" --json
+python3 -m askinsects --artifact-dir artifacts/mosquito-v1 ask "What sporozoite infection-rate data do we have for Anopheles coluzzii?" --json
+```
+
+Run `anopheles_vector_competence_evidence` after refreshing `anopheles_literature_openalex`. The derived lane excludes modeled projections and distinguishes controlled experimental evidence from field surveillance. Every result preserves the original raw OpenAlex locator and exact abstract sentence. It does not claim that abstract extraction replaces full-text or supplement-table validation.
+
 To add the first source-grade spotted wing drosophila boundary:
 
 ```bash

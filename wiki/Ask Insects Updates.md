@@ -13,7 +13,38 @@ tags:
 
 This page tracks meaningful Ask Insects changes. Most updates do not require user action.
 
-Latest Ask Insects source-plane update: 2026-05-28.
+Latest Ask Insects source-plane update: 2026-07-22.
+
+## 2026-07-22
+
+### Anopheles Development
+- Added eleven Anopheles development lanes: a 16-domain coverage ledger, bounded OpenAlex literature, bounded GBIF taxonomy and occurrence records, accession-level NCBI BioSample metadata, bounded UniProt protein and proteome metadata, run-level NCBI SRA metadata, NCBI assembly metadata, parsed NCBI reference-genome features, WHO malaria-vector resistance assay rows, NCBI Taxonomy anchors for Plasmodium pathogens, and 90 exact abstract-level numeric infection or transmission endpoint records.
+- The NCBI BioSample lane parses geography, collection date, tissue, isolation source, isolate, strain, and linked SRA identifiers with exact raw-response locators and per-species receipts.
+- Added Anopheles-specific answer behavior that keeps Aedes samples out of Anopheles answers and reports an explicit source gap when a requested species or place is absent from the bounded index.
+- Added verified NCBI taxonomy identifiers for all eight UniProt target species and kept Aedes protein records in a separate source lane.
+- Added run-level SRA parsing with experiment, BioProject, BioSample, platform, library, spots, bases, and size fields while keeping raw-read downloads and reanalysis as explicit gaps.
+- Expanded NCBI Assembly, BioSample, SRA, and GBIF searches to twenty priority species. The local build contains 122 assembly records plus four zero-result gaps, 2,688 BioSamples plus seven gaps, 1,444 SRA runs plus thirteen gaps, and 520 GBIF taxonomy or occurrence records.
+- Parsed the Anopheles gambiae reference GFF, protein FASTA, Gene Ontology GAF, and raw and normalized expression tables into 141,777 atomic source entries: 14,803 genes, 33,662 transcripts, 6,160 functional coding segments, 30,505 proteins, 41,482 GO assertions, and 15,165 gene-expression profiles. Each entry cites an exact source-file line or FASTA record, and the receipt preserves SHA-256 hashes for all five source files.
+- Added 125,160 Anopheles stephensi reference-genome entries from `GCF_013141755.1`: 15,187 genes, 33,324 transcripts, 29,660 proteins, and 46,989 functional or GO records. NCBI exposes no expression-count tables in that assembly directory, so the missing Stephensi expression file is queryable as a source gap.
+- Made genome refreshes assembly-scoped and per-assembly receipted. Thirteen parsed reference genomes now coexist as 1,427,103 genome-source records without one species refresh erasing another. The parsed species are Gambiae, Stephensi, Coluzzii, Funestus, Arabiensis, Minimus, Sinensis, Albimanus, Darlingi, Aquasalis, Merus, Nili, and Moucheti; unusable or absent annotation files for other targets are explicit source gaps.
+- Added 10,000 distinct WHO MAL_THREATS Anopheles rows with named insecticides, spanning more than 60 Anopheles labels. Structured question filters use the WHO species, insecticide, year, country, and locality fields, so a chemical mentioned only in a citation cannot satisfy an assay query.
+- Added ten NCBI Taxonomy identity anchors for major human malaria parasites and laboratory Plasmodium models. The answer path explicitly separates pathogen identity from evidence that a mosquito supports infection or transmission.
+- Expanded OpenAlex discovery from a 2020-to-current, five-species, 250-work design to historical-to-current searches across twenty priority species, the Gambiae complex, and thirteen scientific topics. The refreshed lane contains 3,457 works plus 5,482 explicit missing-abstract, missing-DOI, or skipped-PubMed gaps.
+- Added species-locked Anopheles domain routing so host-seeking, oviposition, ecology, and neurobiology questions cannot fall through to Aedes records or a different Anopheles species.
+- The current local Anopheles plane contains 1,455,002 records across eleven source lanes. This exceeds the May 28 hosted Aedes record count numerically, but depth, breadth, hosted parity, and the Anopheles black-box evaluation are not yet proven.
+- Added [[Anopheles Intelligence]] with current evidence lanes and remaining gaps. This work remains a local development build until hosted deployment and black-box evaluation are proven.
+
+### Public Overview Refresh
+- Updated [[Ask Insects]] from the older mosquito-first description to the current Open Insects direction: SWD crop repellent, human mosquito repellent, and diamondback moth expansion.
+- Clarified that Ask Insects is a public evidence system. Private Monarch experiments can use Ask Insects as public context, but private R&D data does not flow into Ask Insects and cannot fill public evidence gaps.
+- Added the shared biology-domain model: sensory systems, brain and neurobiology, genes and proteins, physiology, behavior, egg laying, feeding, movement, ecology, chemical response, learning and internal state, development, and adaptation or resistance.
+- Added current product-program sections for SWD, Aedes human mosquito repellency, and diamondback moth.
+- Added an `Ask+Insects.md` alias note so the published URL that resolves to `Ask+Insects.md` has a source file instead of showing a missing-note page.
+
+### Shipped Route Hardening
+- Shipped Ask Insects commit `712aa0d` end to end: merged to `main`, deployed to the hosted Ask Insects VM, installed runtime and skill refreshed, and a fresh Codex app canary completed with a full sourced answer in 18.481 seconds.
+- The saved Codex project now keeps the reliable low-reasoning normal route and explicitly uses the fast service tier. The repo-owned skill metadata now says not to emit commentary, status updates, or preambles before the hosted answer command.
+- `python3 scripts/verify_complete.py` now checks the normal-question project config, including the fast service tier. This repository check does not replace the private 50-question Reality Eval pass and recording.
 
 ## 2026-05-28
 

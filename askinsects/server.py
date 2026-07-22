@@ -3452,6 +3452,202 @@ def ingest_source_coverage_hosted(
     return response
 
 
+def ingest_anopheles_literature_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_anopheles_literature import ingest_anopheles_literature
+
+    response = ingest_anopheles_literature(
+        artifact_dir=artifact_dir,
+        from_date=str(payload.get("from_date") or "1900-01-01"),
+        to_date=str(payload.get("to_date") or "2026-12-31"),
+        max_works=int(payload.get("max_works") or 5000),
+        page_size=int(payload.get("page_size") or 100),
+        delay_seconds=float(payload.get("delay_seconds") or 0.0),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_gbif_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from askinsects.sources.anopheles_gbif import ANOPHELES_GBIF_TARGET_TAXA
+    from scripts.ingest_anopheles_gbif import ingest_anopheles_gbif
+
+    species_payload = payload.get("species")
+    species = species_payload if isinstance(species_payload, list) and species_payload else ANOPHELES_GBIF_TARGET_TAXA
+    response = ingest_anopheles_gbif(
+        artifact_dir=artifact_dir,
+        species_names=species,
+        occurrence_limit=int(payload.get("occurrence_limit") or 25),
+        occurrence_page_size=int(payload.get("occurrence_page_size") or 100),
+        occurrence_workers=int(payload.get("occurrence_workers") or 1),
+        delay_seconds=float(payload.get("delay_seconds") or 0.0),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_ncbi_biosamples_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from askinsects.sources.anopheles_ncbi_biosamples import ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+    from scripts.ingest_anopheles_ncbi_biosamples import ingest_anopheles_ncbi_biosamples
+
+    species_payload = payload.get("species")
+    species = species_payload if isinstance(species_payload, list) and species_payload else ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+    response = ingest_anopheles_ncbi_biosamples(
+        artifact_dir=artifact_dir,
+        target_taxa=species,
+        limit_per_taxon=int(payload.get("limit_per_taxon") or 250),
+        page_size=int(payload.get("page_size") or 200),
+        delay_seconds=float(payload.get("delay_seconds") if payload.get("delay_seconds") is not None else 0.34),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_uniprot_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_anopheles_uniprot import ingest_anopheles_uniprot
+
+    response = ingest_anopheles_uniprot(
+        artifact_dir=artifact_dir,
+        protein_limit_per_taxon=int(payload.get("protein_limit_per_taxon") or 500),
+        proteome_limit_per_taxon=int(payload.get("proteome_limit_per_taxon") or 10),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_ncbi_sra_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from askinsects.sources.anopheles_ncbi_biosamples import ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+    from scripts.ingest_anopheles_ncbi_sra import ingest_anopheles_ncbi_sra
+
+    species_payload = payload.get("species")
+    species = species_payload if isinstance(species_payload, list) and species_payload else ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+    response = ingest_anopheles_ncbi_sra(
+        artifact_dir=artifact_dir,
+        target_taxa=species,
+        experiment_limit_per_taxon=int(payload.get("experiment_limit_per_taxon") or 100),
+        page_size=int(payload.get("page_size") or 100),
+        delay_seconds=float(payload.get("delay_seconds") if payload.get("delay_seconds") is not None else 0.34),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_ncbi_assemblies_hosted(
+    payload: dict[str, object],
+    *,
+    artifact_dir: Path,
+) -> dict[str, object]:
+    from askinsects.sources.anopheles_ncbi_biosamples import ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+    from scripts.ingest_anopheles_ncbi_assemblies import ingest_anopheles_ncbi_assemblies
+
+    species_payload = payload.get("species")
+    species = species_payload if isinstance(species_payload, list) and species_payload else ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+    response = ingest_anopheles_ncbi_assemblies(
+        artifact_dir=artifact_dir,
+        target_taxa=species,
+        limit_per_taxon=int(payload.get("limit_per_taxon") or 25),
+        delay_seconds=float(payload.get("delay_seconds") if payload.get("delay_seconds") is not None else 0.34),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_ncbi_genome_features_hosted(
+    payload: dict[str, object],
+    *, artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_anopheles_ncbi_genome_features import ingest_anopheles_ncbi_genome_features
+
+    response = ingest_anopheles_ncbi_genome_features(
+        artifact_dir=artifact_dir,
+        species=str(payload.get("species") or "Anopheles gambiae"),
+        assembly_accession=str(payload["assembly_accession"]) if payload.get("assembly_accession") else None,
+        assembly_ftp=str(payload["assembly_ftp"]) if payload.get("assembly_ftp") else None,
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_who_malaria_resistance_hosted(
+    payload: dict[str, object],
+    *, artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_anopheles_who_malaria_resistance import ingest_anopheles_who_malaria_resistance
+
+    response = ingest_anopheles_who_malaria_resistance(
+        artifact_dir=artifact_dir, page_size=int(payload.get("page_size") or 1000),
+        max_rows=int(payload.get("max_rows") or 10000),
+        delay_seconds=float(payload.get("delay_seconds") if payload.get("delay_seconds") is not None else 0.2),
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_pathogen_taxonomy_hosted(
+    payload: dict[str, object],
+    *, artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_anopheles_pathogen_taxonomy import ingest_anopheles_pathogen_taxonomy
+
+    response = ingest_anopheles_pathogen_taxonomy(
+        artifact_dir=artifact_dir,
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
+def ingest_anopheles_vector_competence_evidence_hosted(
+    payload: dict[str, object],
+    *, artifact_dir: Path,
+) -> dict[str, object]:
+    from scripts.ingest_anopheles_vector_competence_evidence import ingest_anopheles_vector_competence_evidence
+
+    response = ingest_anopheles_vector_competence_evidence(
+        artifact_dir=artifact_dir,
+        retrieved_at=str(payload["retrieved_at"]) if payload.get("retrieved_at") else None,
+    )
+    response["activated_artifact_dir"] = str(artifact_dir)
+    response["updated_in_place"] = True
+    return response
+
+
 def ingest_insect_intelligence_programs_hosted(
     payload: dict[str, object],
     *,
@@ -4750,6 +4946,46 @@ def dispatch_request(
             return json_response(status, result)
         if method == "POST" and path == "/ingest/source-coverage":
             result = ingest_source_coverage_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-literature":
+            result = ingest_anopheles_literature_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-gbif":
+            result = ingest_anopheles_gbif_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-ncbi-biosamples":
+            result = ingest_anopheles_ncbi_biosamples_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-uniprot":
+            result = ingest_anopheles_uniprot_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-ncbi-sra":
+            result = ingest_anopheles_ncbi_sra_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-ncbi-assemblies":
+            result = ingest_anopheles_ncbi_assemblies_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-ncbi-genome-features":
+            result = ingest_anopheles_ncbi_genome_features_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-who-malaria-resistance":
+            result = ingest_anopheles_who_malaria_resistance_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-pathogen-taxonomy":
+            result = ingest_anopheles_pathogen_taxonomy_hosted(payload or {}, artifact_dir=artifact_dir)
+            status = 200 if result.get("ok") else 500
+            return json_response(status, result)
+        if method == "POST" and path == "/ingest/anopheles-vector-competence-evidence":
+            result = ingest_anopheles_vector_competence_evidence_hosted(payload or {}, artifact_dir=artifact_dir)
             status = 200 if result.get("ok") else 500
             return json_response(status, result)
         if method == "POST" and path == "/ingest/insect-intelligence-programs":

@@ -209,6 +209,8 @@ def discover_topic_ids(
     fetch_json: Callable[[str], dict[str, object]],
     raw_dir: Path,
     retrieved_at: str,
+    *,
+    source_id: str = LITERATURE_SOURCE_ID,
 ) -> tuple[list[str], list[dict[str, object]], list[dict[str, object]], list[str]]:
     url = f"{OPENALEX_API_BASE}/topics?{urlencode({'search': species, 'per-page': 25})}"
     payload = fetch_json(url)
@@ -227,7 +229,7 @@ def discover_topic_ids(
             external_id = str(topic_id) if topic_id else None
             gaps.append(
                 {
-                    "source": LITERATURE_SOURCE_ID,
+                    "source": source_id,
                     "lane": "literature",
                     "reason": "openalex_topic_candidate_rejected",
                     "locator": f"{raw_path.as_posix()}#topics/{external_id or 'candidate'}",
@@ -241,7 +243,7 @@ def discover_topic_ids(
     if not accepted_topic_ids:
         gaps.append(
             {
-                "source": LITERATURE_SOURCE_ID,
+                "source": source_id,
                 "lane": "literature",
                 "reason": "openalex_topic_search_empty",
                 "locator": f"{raw_path.as_posix()}#topics",
@@ -415,6 +417,7 @@ def literature_record(
     search_mode: str = "title_and_abstract",
     topic_group: str | None = None,
     candidate_status: str = "exact_title_abstract",
+    source_id: str = LITERATURE_SOURCE_ID,
 ) -> EvidenceRecord:
     work_key = openalex_work_key(work)
     doi = _doi(work)
@@ -450,14 +453,14 @@ def literature_record(
     return EvidenceRecord(
         record_id=f"openalex:{work_key}",
         lane="literature",
-        source=LITERATURE_SOURCE_ID,
+        source=source_id,
         title=title,
         text="\n".join(parts),
         species=species,
         url=doi or work_url,
         media_url=None,
         provenance=Provenance(
-            source_id=LITERATURE_SOURCE_ID,
+            source_id=source_id,
             locator=f"{raw_path.as_posix()}#works/{work_key}",
             retrieved_at=retrieved_at,
             license="OpenAlex metadata",
@@ -539,6 +542,7 @@ def fetch_literature_records(
     max_works: int | None = None,
     skip_pubmed: bool = False,
     search_terms: list[object] | None = None,
+    source_id: str = LITERATURE_SOURCE_ID,
 ) -> LiteratureBuildResult:
     retrieved = retrieved_at or utc_now()
     json_fetcher = fetch_json or fetch_json_url
@@ -580,6 +584,7 @@ def fetch_literature_records(
             json_fetcher,
             raw_dir,
             retrieved,
+            source_id=source_id,
         )
         gaps.extend(topic_gaps)
         raw_artifacts.extend(topic_artifacts)
@@ -643,7 +648,7 @@ def fetch_literature_records(
                     pubmed_skipped_count += 1
                     gaps.append(
                         {
-                            "source": LITERATURE_SOURCE_ID,
+                            "source": source_id,
                             "lane": "literature",
                             "reason": "pubmed_skipped",
                             "locator": f"{raw_path.as_posix()}#works/{work_key}",
@@ -667,7 +672,7 @@ def fetch_literature_records(
                     except Exception as exc:
                         gaps.append(
                             {
-                                "source": LITERATURE_SOURCE_ID,
+                                "source": source_id,
                                 "lane": "literature",
                                 "reason": "pubmed_fetch_failed",
                                 "locator": f"{raw_path.as_posix()}#works/{work_key}",
@@ -702,7 +707,7 @@ def fetch_literature_records(
                             except Exception as exc:
                                 gaps.append(
                                     {
-                                        "source": LITERATURE_SOURCE_ID,
+                                        "source": source_id,
                                         "lane": "literature",
                                         "reason": "fulltext_fetch_failed",
                                         "locator": unpaywall_path.as_posix(),
@@ -724,6 +729,7 @@ def fetch_literature_records(
                                     url=fulltext_url,
                                     license=fulltext_license,
                                     retrieved_at=retrieved,
+                                    source_id=source_id,
                                 )
                                 if units:
                                     fulltext_units.extend(units)
@@ -731,7 +737,7 @@ def fetch_literature_records(
                                 else:
                                     gaps.append(
                                         {
-                                            "source": LITERATURE_SOURCE_ID,
+                                            "source": source_id,
                                             "lane": "literature",
                                             "reason": "fulltext_parse_failed",
                                             "locator": unpaywall_path.as_posix(),
@@ -759,7 +765,7 @@ def fetch_literature_records(
                             )
                             gaps.append(
                                 {
-                                    "source": LITERATURE_SOURCE_ID,
+                                    "source": source_id,
                                     "lane": "literature",
                                     "reason": reason,
                                     "locator": unpaywall_path.as_posix(),
@@ -777,7 +783,7 @@ def fetch_literature_records(
                     locator = f"{raw_path.as_posix()}#works/{work_key}"
                     gaps.append(
                         {
-                            "source": LITERATURE_SOURCE_ID,
+                            "source": source_id,
                             "lane": "literature",
                             "reason": "missing_doi",
                             "locator": locator,
@@ -794,7 +800,7 @@ def fetch_literature_records(
                     locator = f"{raw_path.as_posix()}#works/{work_key}"
                     gaps.append(
                         {
-                            "source": LITERATURE_SOURCE_ID,
+                            "source": source_id,
                             "lane": "literature",
                             "reason": "openalex_missing_abstract",
                             "locator": locator,
@@ -821,6 +827,7 @@ def fetch_literature_records(
                         search_mode=search_query.mode,
                         topic_group=search_query.topic_group,
                         candidate_status=search_query.confidence,
+                        source_id=source_id,
                     )
                 )
 
@@ -832,7 +839,7 @@ def fetch_literature_records(
             if next_cursor_value in seen_cursors:
                 gaps.append(
                     {
-                        "source": LITERATURE_SOURCE_ID,
+                        "source": source_id,
                         "lane": "literature",
                         "reason": "openalex_repeated_cursor",
                         "locator": f"{raw_path.as_posix()}#meta/next_cursor",
@@ -849,7 +856,7 @@ def fetch_literature_records(
             cursor = next_cursor_value
 
     return LiteratureBuildResult(
-        source_id=LITERATURE_SOURCE_ID,
+        source_id=source_id,
         records=records,
         fulltext_units=fulltext_units,
         gaps=gaps,

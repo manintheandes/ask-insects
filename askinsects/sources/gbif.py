@@ -120,21 +120,23 @@ def taxonomy_record(
     match_url: str,
     raw_path: Path,
     retrieved_at: str,
+    source_id: str = GBIF_SOURCE_ID,
+    record_prefix: str = "gbif",
 ) -> EvidenceRecord:
     taxon_key = int(match_payload["usageKey"])
     canonical = _canonical_species(species, match_payload)
     gbif_url = f"{GBIF_WEB_BASE}/species/{taxon_key}"
     return EvidenceRecord(
-        record_id=f"gbif:taxon:{taxon_key}",
+        record_id=f"{record_prefix}:taxon:{taxon_key}",
         lane="taxonomy",
-        source=GBIF_SOURCE_ID,
+        source=source_id,
         title=canonical,
         text=_taxonomy_text(match_payload),
         species=canonical,
         url=gbif_url,
         media_url=None,
         provenance=Provenance(
-            source_id=GBIF_SOURCE_ID,
+            source_id=source_id,
             locator=f"{raw_path.as_posix()}#species/match?name={species}",
             retrieved_at=retrieved_at,
             license="GBIF API metadata",
@@ -154,6 +156,8 @@ def occurrence_record(
     occurrence_url: str,
     raw_path: Path,
     retrieved_at: str,
+    source_id: str = GBIF_SOURCE_ID,
+    record_prefix: str = "gbif",
 ) -> EvidenceRecord:
     key = int(occurrence["key"])
     country = occurrence.get("country") or "unknown country"
@@ -166,16 +170,16 @@ def occurrence_record(
         f"event date {event_date}, from {dataset_name}."
     )
     return EvidenceRecord(
-        record_id=f"gbif:occurrence:{key}",
+        record_id=f"{record_prefix}:occurrence:{key}",
         lane="observations",
-        source=GBIF_SOURCE_ID,
+        source=source_id,
         title=f"{scientific_name} occurrence {key}",
         text=text,
         species=scientific_name,
         url=gbif_url,
         media_url=_media_url(occurrence),
         provenance=Provenance(
-            source_id=GBIF_SOURCE_ID,
+            source_id=source_id,
             locator=f"{raw_path.as_posix()}#occurrence/{key}",
             retrieved_at=retrieved_at,
             license=str(occurrence.get("license") or "GBIF occurrence license not supplied"),
@@ -212,6 +216,8 @@ def fetch_gbif_records(
     delay_seconds: float = 0.0,
     fetch_json: Callable[[str], dict[str, object]] | None = None,
     retrieved_at: str | None = None,
+    source_id: str = GBIF_SOURCE_ID,
+    record_prefix: str = "gbif",
 ) -> GBIFBuildResult:
     if occurrence_limit < 0:
         raise ValueError("occurrence_limit must be zero or greater")
@@ -236,7 +242,7 @@ def fetch_gbif_records(
 
         usage_key = match_payload.get("usageKey")
         if not usage_key:
-            gaps.append({"source": GBIF_SOURCE_ID, "lane": "taxonomy", "species": species, "reason": "GBIF did not match this species name."})
+            gaps.append({"source": source_id, "lane": "taxonomy", "species": species, "reason": "GBIF did not match this species name."})
             continue
 
         taxon_key = int(usage_key)
@@ -248,6 +254,8 @@ def fetch_gbif_records(
                 match_url=match_url,
                 raw_path=match_path,
                 retrieved_at=retrieved,
+                source_id=source_id,
+                record_prefix=record_prefix,
             )
         )
 
@@ -321,14 +329,16 @@ def fetch_gbif_records(
                             occurrence_url=occurrence_url,
                             raw_path=occurrence_path,
                             retrieved_at=retrieved,
+                            source_id=source_id,
+                            record_prefix=record_prefix,
                         )
                     )
 
         if not saw_occurrence:
-            gaps.append({"source": GBIF_SOURCE_ID, "lane": "observations", "species": species, "reason": "GBIF returned no occurrence records for this species."})
+            gaps.append({"source": source_id, "lane": "observations", "species": species, "reason": "GBIF returned no occurrence records for this species."})
 
     return GBIFBuildResult(
-        source_id=GBIF_SOURCE_ID,
+        source_id=source_id,
         records=records,
         gaps=gaps,
         taxon_keys=taxon_keys,

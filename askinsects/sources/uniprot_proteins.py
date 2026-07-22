@@ -118,7 +118,17 @@ def _keywords(entry: dict[str, object]) -> list[str]:
     return values
 
 
-def _protein_record(entry: dict[str, object], *, raw_path: Path, index: int, retrieved_at: str) -> EvidenceRecord | None:
+def _protein_record(
+    entry: dict[str, object],
+    *,
+    raw_path: Path,
+    index: int,
+    retrieved_at: str,
+    source_id: str = UNIPROT_PROTEIN_SOURCE_ID,
+    species_scope: str = "Aedes aegypti",
+    record_prefix: str = "uniprot",
+    taxonomy_id: int = 7159,
+) -> EvidenceRecord | None:
     accession = _clean(entry.get("primaryAccession"))
     if not accession:
         return None
@@ -126,7 +136,7 @@ def _protein_record(entry: dict[str, object], *, raw_path: Path, index: int, ret
     organism = entry.get("organism")
     species = resolve_species(
         _clean(organism.get("scientificName")) if isinstance(organism, dict) else None,
-        scope="Aedes aegypti",  # UniProtKB request is pinned to organism_id:7159 (Aedes aegypti)
+        scope=species_scope,
     )
     genes = _gene_names(entry)
     function = _function_text(entry)
@@ -139,7 +149,7 @@ def _protein_record(entry: dict[str, object], *, raw_path: Path, index: int, ret
     text = " ".join(
         part
         for part in (
-            f"UniProt {reviewed} Aedes aegypti protein record {accession}.",
+            f"UniProt {reviewed} {species_scope} protein record {accession}.",
             f"Protein: {protein_name}.",
             f"Gene names: {', '.join(genes)}." if genes else "",
             f"Function: {function}" if function else "",
@@ -149,43 +159,56 @@ def _protein_record(entry: dict[str, object], *, raw_path: Path, index: int, ret
         )
         if part
     )
+    payload = {
+        "record_type": "uniprotkb_protein",
+        "accession": accession,
+        "uniprot_id": _clean(entry.get("uniProtkbId")),
+        "entry_type": _clean(entry.get("entryType")),
+        "protein_name": protein_name,
+        "gene_names": genes,
+        "function": function,
+        "cross_references": refs,
+        "keywords": keywords,
+        "raw_json_path": raw_path.as_posix(),
+    }
+    if source_id != UNIPROT_PROTEIN_SOURCE_ID or species_scope != "Aedes aegypti" or taxonomy_id != 7159:
+        payload.update({"query_species": species_scope, "query_taxonomy_id": taxonomy_id})
     return EvidenceRecord(
-        record_id=f"uniprot:protein:{accession}",
+        record_id=f"{record_prefix}:protein:{accession}",
         lane="proteins",
-        source=UNIPROT_PROTEIN_SOURCE_ID,
+        source=source_id,
         title=f"UniProt protein {accession}: {protein_name}",
         text=text,
         species=species,
         url=url,
         media_url=None,
         provenance=Provenance(
-            source_id=UNIPROT_PROTEIN_SOURCE_ID,
+            source_id=source_id,
             locator=f"{raw_path.as_posix()}#results/{index}",
             retrieved_at=retrieved_at,
             license="UniProt public data; CC BY 4.0",
             source_url=url,
         ),
-        payload={
-            "record_type": "uniprotkb_protein",
-            "accession": accession,
-            "uniprot_id": _clean(entry.get("uniProtkbId")),
-            "entry_type": _clean(entry.get("entryType")),
-            "protein_name": protein_name,
-            "gene_names": genes,
-            "function": function,
-            "cross_references": refs,
-            "keywords": keywords,
-            "raw_json_path": raw_path.as_posix(),
-        },
+        payload=payload,
     )
 
 
-def _proteome_record(entry: dict[str, object], *, raw_path: Path, index: int, retrieved_at: str) -> EvidenceRecord | None:
+def _proteome_record(
+    entry: dict[str, object],
+    *,
+    raw_path: Path,
+    index: int,
+    retrieved_at: str,
+    source_id: str = UNIPROT_PROTEIN_SOURCE_ID,
+    species_scope: str = "Aedes aegypti",
+    record_prefix: str = "uniprot",
+    taxonomy_id: int = 7159,
+) -> EvidenceRecord | None:
     proteome_id = _clean(entry.get("id"))
     if not proteome_id:
         return None
     taxonomy = entry.get("taxonomy")
-    species = "Aedes aegypti"
+    species = species_scope
     if isinstance(taxonomy, dict):
         species = _clean(taxonomy.get("scientificName") or taxonomy.get("organismName")) or species
     description = _clean(entry.get("description"))
@@ -194,35 +217,38 @@ def _proteome_record(entry: dict[str, object], *, raw_path: Path, index: int, re
     text = " ".join(
         part
         for part in (
-            f"UniProt proteome record {proteome_id} for Aedes aegypti.",
+            f"UniProt proteome record {proteome_id} for {species_scope}.",
             f"Description: {description}." if description else "",
             f"Protein count: {protein_count}." if protein_count else "",
         )
         if part
     )
+    payload = {
+        "record_type": "uniprot_proteome",
+        "proteome_id": proteome_id,
+        "description": description,
+        "protein_count": protein_count,
+        "raw_json_path": raw_path.as_posix(),
+    }
+    if source_id != UNIPROT_PROTEIN_SOURCE_ID or species_scope != "Aedes aegypti" or taxonomy_id != 7159:
+        payload.update({"query_species": species_scope, "query_taxonomy_id": taxonomy_id})
     return EvidenceRecord(
-        record_id=f"uniprot:proteome:{proteome_id}",
+        record_id=f"{record_prefix}:proteome:{proteome_id}",
         lane="proteins",
-        source=UNIPROT_PROTEIN_SOURCE_ID,
-        title=f"UniProt proteome {proteome_id}: Aedes aegypti",
+        source=source_id,
+        title=f"UniProt proteome {proteome_id}: {species_scope}",
         text=text,
         species=species,
         url=url,
         media_url=None,
         provenance=Provenance(
-            source_id=UNIPROT_PROTEIN_SOURCE_ID,
+            source_id=source_id,
             locator=f"{raw_path.as_posix()}#results/{index}",
             retrieved_at=retrieved_at,
             license="UniProt public data; CC BY 4.0",
             source_url=url,
         ),
-        payload={
-            "record_type": "uniprot_proteome",
-            "proteome_id": proteome_id,
-            "description": description,
-            "protein_count": protein_count,
-            "raw_json_path": raw_path.as_posix(),
-        },
+        payload=payload,
     )
 
 
@@ -233,6 +259,11 @@ def fetch_uniprot_protein_records(
     retrieved_at: str,
     protein_limit: int = 250,
     proteome_limit: int = 10,
+    taxonomy_id: int = 7159,
+    species_name: str = "Aedes aegypti",
+    source_id: str = UNIPROT_PROTEIN_SOURCE_ID,
+    record_prefix: str = "uniprot",
+    raw_prefix: str = "aedes_aegypti",
 ) -> UniProtProteinResult:
     fetch = fetch_json or _default_fetch_json
     raw_dir.mkdir(parents=True, exist_ok=True)
@@ -241,38 +272,56 @@ def fetch_uniprot_protein_records(
     raw_artifacts: list[str] = []
     requested_urls: list[str] = []
 
-    uniprot_url = f"{UNIPROTKB_BASE}?{urlencode({'query': 'organism_id:7159', 'fields': 'accession,id,reviewed,protein_name,gene_names,organism_name,go_id,cc_function,xref_vectorbase,keyword', 'format': 'json', 'size': max(1, int(protein_limit))})}"
+    uniprot_url = f"{UNIPROTKB_BASE}?{urlencode({'query': f'organism_id:{taxonomy_id}', 'fields': 'accession,id,reviewed,protein_name,gene_names,organism_name,go_id,cc_function,xref_vectorbase,keyword', 'format': 'json', 'size': max(1, int(protein_limit))})}"
     requested_urls.append(uniprot_url)
     try:
         uniprot_payload = fetch(uniprot_url)
     except Exception as exc:
-        gaps.append({"source": UNIPROT_PROTEIN_SOURCE_ID, "lane": "proteins", "reason": "uniprot_proteins_fetch_failed", "error": str(exc), "retrieved_at": retrieved_at})
+        gaps.append({"source": source_id, "lane": "proteins", "reason": "uniprot_proteins_fetch_failed", "error": str(exc), "retrieved_at": retrieved_at, "species": species_name, "taxonomy_id": taxonomy_id})
     else:
-        raw_path = _write_raw(raw_dir, "uniprotkb_aedes_aegypti.json", uniprot_payload)
+        raw_path = _write_raw(raw_dir, f"uniprotkb_{raw_prefix}.json", uniprot_payload)
         raw_artifacts.append(raw_path.as_posix())
         for index, entry in enumerate(uniprot_payload.get("results") if isinstance(uniprot_payload.get("results"), list) else [], start=1):
             if isinstance(entry, dict):
-                record = _protein_record(entry, raw_path=raw_path, index=index, retrieved_at=retrieved_at)
+                record = _protein_record(
+                    entry,
+                    raw_path=raw_path,
+                    index=index,
+                    retrieved_at=retrieved_at,
+                    source_id=source_id,
+                    species_scope=species_name,
+                    record_prefix=record_prefix,
+                    taxonomy_id=taxonomy_id,
+                )
                 if record is not None:
                     records.append(record)
 
-    proteome_url = f"{PROTEOME_BASE}?{urlencode({'query': 'organism_id:7159', 'format': 'json', 'size': max(1, int(proteome_limit))})}"
+    proteome_url = f"{PROTEOME_BASE}?{urlencode({'query': f'organism_id:{taxonomy_id}', 'format': 'json', 'size': max(1, int(proteome_limit))})}"
     requested_urls.append(proteome_url)
     try:
         proteome_payload = fetch(proteome_url)
     except Exception as exc:
-        gaps.append({"source": UNIPROT_PROTEIN_SOURCE_ID, "lane": "proteins", "reason": "uniprot_proteome_fetch_failed", "error": str(exc), "retrieved_at": retrieved_at})
+        gaps.append({"source": source_id, "lane": "proteins", "reason": "uniprot_proteome_fetch_failed", "error": str(exc), "retrieved_at": retrieved_at, "species": species_name, "taxonomy_id": taxonomy_id})
     else:
-        raw_path = _write_raw(raw_dir, "uniprot_proteomes_aedes_aegypti.json", proteome_payload)
+        raw_path = _write_raw(raw_dir, f"uniprot_proteomes_{raw_prefix}.json", proteome_payload)
         raw_artifacts.append(raw_path.as_posix())
         for index, entry in enumerate(proteome_payload.get("results") if isinstance(proteome_payload.get("results"), list) else [], start=1):
             if isinstance(entry, dict):
-                record = _proteome_record(entry, raw_path=raw_path, index=index, retrieved_at=retrieved_at)
+                record = _proteome_record(
+                    entry,
+                    raw_path=raw_path,
+                    index=index,
+                    retrieved_at=retrieved_at,
+                    source_id=source_id,
+                    species_scope=species_name,
+                    record_prefix=record_prefix,
+                    taxonomy_id=taxonomy_id,
+                )
                 if record is not None:
                     records.append(record)
 
     return UniProtProteinResult(
-        source_id=UNIPROT_PROTEIN_SOURCE_ID,
+        source_id=source_id,
         records=records,
         gaps=gaps,
         raw_artifacts=raw_artifacts,

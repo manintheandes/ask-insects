@@ -9,14 +9,14 @@ from askinsects.index import SEARCH_TIMEOUT_SECONDS, SourceIndex, ensure_read_on
 from askinsects.records import EvidenceRecord, Provenance
 
 
-def sample_record(record_id="obs:1", lane="observations", text="Aedes aegypti observed in Brazil", payload=None):
+def sample_record(record_id="obs:1", lane="observations", text="Aedes aegypti observed in Brazil", payload=None, source="mosquito_v1_fixtures", species="Aedes aegypti"):
     return EvidenceRecord(
         record_id=record_id,
         lane=lane,
-        source="mosquito_v1_fixtures",
+        source=source,
         title="Brazil observation",
         text=text,
-        species="Aedes aegypti",
+        species=species,
         url="https://example.org/obs/1",
         media_url="https://example.org/image.jpg",
         provenance=Provenance(
@@ -30,6 +30,84 @@ def sample_record(record_id="obs:1", lane="observations", text="Aedes aegypti ob
 
 
 class IndexTests(unittest.TestCase):
+    def test_scoped_source_replacement_preserves_other_assemblies(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            source = "anopheles_ncbi_genome_features"
+            gambiae = sample_record(
+                record_id="anopheles_ncbi_genome:GCF_GAMBIAE:genes:old",
+                lane="genes",
+                text="old gambiae gene",
+                payload={"assembly_accession": "GCF_GAMBIAE"},
+                source=source,
+            )
+            stephensi = sample_record(
+                record_id="anopheles_ncbi_genome:GCF_STEPHENSI:genes:keep",
+                lane="genes",
+                text="stephensi gene to preserve",
+                payload={"assembly_accession": "GCF_STEPHENSI"},
+                source=source,
+            )
+            old_gap = sample_record(
+                record_id=f"{source}:gap:old:GCF_GAMBIAE",
+                lane="source_coverage",
+                text="old gambiae gap",
+                payload={"atom_type": "source_gap", "assembly_accession": "GCF_GAMBIAE"},
+                source=source,
+                species=None,
+            )
+            existing = sample_record(
+                record_id="anopheles_ncbi_genome:GCF_GAMBIAE:genes:same",
+                lane="genes",
+                text="stable text",
+                payload={"assembly_accession": "GCF_GAMBIAE"},
+                source=source,
+                species=None,
+            )
+            index.upsert_records([gambiae, stephensi, old_gap, existing])
+            replacement = sample_record(
+                record_id="anopheles_ncbi_genome:GCF_GAMBIAE:genes:new",
+                lane="genes",
+                text="new gambiae gene",
+                payload={"assembly_accession": "GCF_GAMBIAE"},
+                source=source,
+            )
+            refreshed_existing = sample_record(
+                record_id=existing.record_id,
+                lane="genes",
+                text="stable text",
+                payload={"assembly_accession": "GCF_GAMBIAE"},
+                source=source,
+                species="Anopheles gambiae",
+            )
+
+            index.replace_source_records_in_scope(
+                source,
+                [replacement, refreshed_existing],
+                record_id_prefix="anopheles_ncbi_genome:GCF_GAMBIAE:",
+                payload_field="assembly_accession",
+                payload_value="GCF_GAMBIAE",
+                preserve_existing_fts=True,
+            )
+
+            rows = index.sql("select record_id from records order by record_id", limit=10)
+            self.assertEqual(
+                [row["record_id"] for row in rows],
+                [
+                    "anopheles_ncbi_genome:GCF_GAMBIAE:genes:new",
+                    "anopheles_ncbi_genome:GCF_GAMBIAE:genes:same",
+                    "anopheles_ncbi_genome:GCF_STEPHENSI:genes:keep",
+                ],
+            )
+            species_row = index.sql(
+                f"select species from records where record_id='{existing.record_id}'",
+                limit=1,
+            )
+            self.assertEqual(species_row[0]["species"], "Anopheles gambiae")
+            self.assertEqual([record.record_id for record in index.search("new gambiae")], [replacement.record_id])
+            self.assertEqual([record.record_id for record in index.search("stephensi preserve")], [stephensi.record_id])
+
     def test_write_search_and_summary(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")

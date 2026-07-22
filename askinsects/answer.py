@@ -22,6 +22,15 @@ from .sources.aedes_deep_sources import (
 )
 from .sources.aedes_crossref_literature_audit import AEDES_CROSSREF_LITERATURE_AUDIT_SOURCE_ID
 from .sources.aedes_olfaction_literature import AEDES_OLFACTION_LITERATURE_SOURCE_ID
+from .sources.anopheles_gbif import ANOPHELES_GBIF_SOURCE_ID
+from .sources.anopheles_ncbi_assemblies import ANOPHELES_NCBI_ASSEMBLIES_SOURCE_ID
+from .sources.anopheles_ncbi_genome_features import ANOPHELES_NCBI_GENOME_FEATURES_SOURCE_ID
+from .sources.anopheles_ncbi_biosamples import ANOPHELES_NCBI_BIOSAMPLES_SOURCE_ID, ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+from .sources.anopheles_ncbi_sra import ANOPHELES_NCBI_SRA_SOURCE_ID
+from .sources.anopheles_uniprot import ANOPHELES_UNIPROT_SOURCE_ID
+from .sources.anopheles_who_malaria_resistance import ANOPHELES_WHO_MALARIA_RESISTANCE_SOURCE_ID
+from .sources.anopheles_pathogen_taxonomy import ANOPHELES_PATHOGEN_TAXONOMY_SOURCE_ID
+from .sources.anopheles_vector_competence_evidence import ANOPHELES_VECTOR_COMPETENCE_SOURCE_ID
 from .sources.drosophila_suzukii_extracted_facts import DROSOPHILA_SUZUKII_EXTRACTED_FACTS_SOURCE_ID
 from .sources.drosophila_suzukii_geo_expression_matrices import DROSOPHILA_SUZUKII_GEO_EXPRESSION_MATRICES_SOURCE_ID
 from .sources.drosophila_suzukii_susceptibility_assay_rows import DROSOPHILA_SUZUKII_SUSCEPTIBILITY_ASSAY_ROWS_SOURCE_ID
@@ -60,6 +69,11 @@ from .sources.resistance_markers import MARKER_SPECS, RESISTANCE_MARKER_SOURCE_I
 from .sources.resistance_table_rows import RESISTANCE_TABLE_ROW_SOURCE_ID
 from .sources.vectorbyte_abundance import VECTORBYTE_ABUNDANCE_SOURCE_ID
 from .sources.who_malaria_threats_resistance import WHO_MALARIA_THREATS_RESISTANCE_SOURCE_ID
+
+
+ANOPHELES_TARGET_EPITHETS = tuple(
+    species.rsplit(" ", 1)[-1].lower() for species in ANOPHELES_NCBI_BIOSAMPLES_TARGET_TAXA
+)
 
 
 LITERATURE_QUERY_STOPWORDS = {
@@ -1920,6 +1934,8 @@ def _requested_species(question: str) -> str | None:
         or re.search(r"\bdbm\b", q)
     ):
         return "Plutella xylostella"
+    if "anopheles" in q:
+        return "Anopheles"
     species_match = re.search(r"\b(Aedes|Culex|Anopheles|Drosophila|Plutella)\s+[a-z]+\b", question, flags=re.IGNORECASE)
     if not species_match:
         return None
@@ -2088,6 +2104,63 @@ def _fulltext_literature_search_queries(question: str) -> list[str]:
         queries.append(" ".join(distinctive))
     queries.extend(_literature_search_queries(question))
     return list(dict.fromkeys(queries))
+
+
+def _anopheles_literature_records(index: SourceIndex, question: str, *, limit: int) -> list[EvidenceRecord]:
+    if _requested_species(question) != "Anopheles":
+        return []
+    q = question.lower()
+    topic_filters: list[str] = []
+    if any(term in q for term in ("repellent", "repellency", "spatial")):
+        topic_filters.append("repellents")
+    if any(term in q for term in ("host seeking", "host-seeking", "blood", "feeding", "behavior", "behaviour")):
+        topic_filters.append("behavior")
+    if any(term in q for term in ("resistance", "insecticide", "kdr")):
+        topic_filters.append("resistance")
+    if any(term in q for term in ("vector competence", "infection", "transmission", "plasmodium")):
+        topic_filters.append("vector_competence")
+    conditions = [
+        "r.source = 'anopheles_literature_openalex'",
+        "r.lane = 'literature'",
+        "r.record_id NOT LIKE 'anopheles_literature_openalex:gap:%'",
+    ]
+    params: list[object] = []
+    if topic_filters:
+        placeholders = ",".join("?" for _ in topic_filters)
+        conditions.append(f"json_extract(p.payload_json, '$.openalex_topic_group') IN ({placeholders})")
+        params.extend(topic_filters)
+    params.append(max(limit * 20, 100))
+    with index.connect() as conn:
+        rows = conn.execute(
+            f"""
+            SELECT r.*, p.payload_json
+            FROM records r
+            JOIN record_payloads p ON p.record_id = r.record_id
+            WHERE {' AND '.join(conditions)}
+            ORDER BY
+              CASE json_extract(p.payload_json, '$.openalex_candidate_status')
+                WHEN 'exact_title_abstract' THEN 0 ELSE 1
+              END,
+              r.record_id
+            LIMIT ?
+            """,
+            params,
+        ).fetchall()
+    records = [
+        replace(EvidenceRecord.from_row(dict(row)), payload=json.loads(str(row["payload_json"] or "{}")))
+        for row in rows
+    ]
+    if topic_filters:
+        filtered: list[EvidenceRecord] = []
+        for record in records:
+            material_text = record.text.split("OpenAlex search term:", 1)[0].lower()
+            if "anopheles" not in material_text:
+                continue
+            if "repellents" in topic_filters and not any(term in material_text for term in ("repellent", "repellency")):
+                continue
+            filtered.append(record)
+        records = filtered
+    return records[:limit]
 
 
 def _record_matches_any_token(record: EvidenceRecord, tokens: set[str]) -> bool:
@@ -4557,6 +4630,979 @@ def _source_records(index: SourceIndex, source: str, lanes: list[str], *, limit:
     return [EvidenceRecord.from_row(dict(row)) for row in rows]
 
 
+def _anopheles_biosample_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    q = plan.question.lower()
+    biosample_terms = ("biosample", "biosamples", "sample", "samples", "strain", "strains", "isolate", "isolates")
+    wants_biosamples = any(term in q for term in biosample_terms) or (
+        "sra" in q and "reanalysis" not in q and "raw read" not in q and "runinfo" not in q
+    )
+    if "anopheles" not in q or not wants_biosamples:
+        return None
+
+    records = [
+        record
+        for record in _source_records(index, ANOPHELES_NCBI_BIOSAMPLES_SOURCE_ID, ["biosamples"], limit=5000)
+        if record.record_id.startswith("anopheles_ncbi:biosample:")
+    ]
+    if not records:
+        return source_gap(plan, "The Anopheles NCBI BioSample source lane has not been indexed yet.")
+
+    epithets = ANOPHELES_TARGET_EPITHETS
+    requested_epithets = [epithet for epithet in epithets if epithet in q]
+    if requested_epithets:
+        records = [
+            record
+            for record in records
+            if any(
+                f"anopheles {epithet}" in f"{record.species}\n{record.title}\n{record.text}".lower()
+                for epithet in requested_epithets
+            )
+        ]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles BioSample matched the requested species.")
+
+    if "with linked sra" in q or "linked sra" in q or "with sra" in q:
+        records = [record for record in records if "no sra id detected" not in record.text.lower()]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles BioSample matched the requested species with a linked SRA identifier.")
+
+    location_match = re.search(
+        r"\b(?:from|in)\s+([A-Za-z][A-Za-z .-]*?)(?=\s+(?:with|that|which|and|having)\b|[?.!,]|$)",
+        plan.question,
+        flags=re.IGNORECASE,
+    )
+    location_terms = []
+    if location_match:
+        location_terms = [
+            token.lower()
+            for token in re.findall(r"[A-Za-z][A-Za-z-]+", location_match.group(1))
+            if token.lower() not in {"anopheles", *epithets}
+        ]
+    if location_terms:
+        filtered = [
+            record
+            for record in records
+            if all(term in f"{record.species}\n{record.title}\n{record.text}".lower() for term in location_terms)
+        ]
+        if not filtered:
+            return source_gap(
+                plan,
+                f"No indexed Anopheles BioSample matched the requested location: {' '.join(location_terms)}.",
+            )
+        records = filtered
+
+    records = records[:limit]
+    answer_plan = replace(plan, answer_shape="genomics")
+    return {
+        "ok": True,
+        "answer_shape": "genomics",
+        "answer": _answer_text(answer_plan, records),
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
+def _anopheles_biosample_and_sra_answer(
+    index: SourceIndex,
+    plan: QueryPlan,
+    *,
+    limit: int,
+) -> dict[str, object] | None:
+    q = plan.question.lower()
+    if (
+        "anopheles" not in q
+        or "biosample" not in q
+        or "sra" not in q
+        or any(term in q for term in ("with linked sra", "linked sra", "with sra"))
+        or not any(term in q for term in ("sra run", "sra runs", "and sra", "plus sra"))
+    ):
+        return None
+
+    epithets = ANOPHELES_TARGET_EPITHETS
+    requested_epithets = [epithet for epithet in epithets if epithet in q]
+
+    def matches_species(record: EvidenceRecord) -> bool:
+        if not requested_epithets:
+            return True
+        text = f"{record.species}\n{record.title}\n{record.text}".lower()
+        return any(f"anopheles {epithet}" in text for epithet in requested_epithets)
+
+    biosamples = [
+        record
+        for record in _source_records(
+            index,
+            ANOPHELES_NCBI_BIOSAMPLES_SOURCE_ID,
+            ["biosamples"],
+            limit=5000,
+        )
+        if record.record_id.startswith("anopheles_ncbi:biosample:") and matches_species(record)
+    ]
+    sra_runs = [
+        record
+        for record in _source_records(
+            index,
+            ANOPHELES_NCBI_SRA_SOURCE_ID,
+            ["datasets"],
+            limit=5000,
+        )
+        if record.record_id.startswith("anopheles_sra:run:") and matches_species(record)
+    ]
+    if not biosamples or not sra_runs:
+        missing = []
+        if not biosamples:
+            missing.append("BioSample")
+        if not sra_runs:
+            missing.append("SRA run")
+        return source_gap(
+            plan,
+            f"No indexed Anopheles {' and '.join(missing)} evidence matched the requested species.",
+        )
+
+    per_lane_limit = max(1, limit // 2)
+    selected_biosamples = biosamples[:per_lane_limit]
+    selected_sra_runs = sra_runs[: max(1, limit - len(selected_biosamples))]
+    selected = [*selected_biosamples, *selected_sra_runs]
+    answer = (
+        f"BioSample evidence: {selected_biosamples[0].text} "
+        f"SRA run evidence: {selected_sra_runs[0].text}"
+    )
+    return {
+        "ok": True,
+        "answer_shape": "genomics",
+        "answer": answer,
+        "evidence": [record_to_evidence(record) for record in selected],
+        "source_gap": None,
+    }
+
+
+def _anopheles_ncbi_assembly_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    q = plan.question.lower()
+    if "anopheles" not in q or not any(term in q for term in (
+        "assembly", "assemblies", "reference genome", "genome reference", "chromosome-level", "chromosome level",
+    )):
+        return None
+    records = [
+        record
+        for record in _source_records_with_payload(index, ANOPHELES_NCBI_ASSEMBLIES_SOURCE_ID, ["genome_assemblies"], limit=5000)
+        if record.record_id.startswith("anopheles_ncbi:assembly:")
+    ]
+    if not records:
+        return source_gap(plan, "The Anopheles NCBI Assembly source lane has not been indexed yet.")
+
+    epithets = ANOPHELES_TARGET_EPITHETS
+    requested_epithets = [epithet for epithet in epithets if epithet in q]
+    if requested_epithets:
+        records = [
+            record for record in records
+            if any(f"anopheles {epithet}" in f"{record.species}\n{record.title}\n{record.text}".lower() for epithet in requested_epithets)
+        ]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles NCBI assembly matched the requested species.")
+
+    accession_match = re.search(r"\bGC[AF]_\d+(?:\.\d+)?\b", plan.question, flags=re.IGNORECASE)
+    if accession_match:
+        accession = accession_match.group(0).lower()
+        records = [record for record in records if accession in f"{record.record_id}\n{record.title}\n{record.text}".lower()]
+        if not records:
+            return source_gap(plan, f"No indexed Anopheles NCBI assembly matched accession {accession_match.group(0)}.")
+
+    if "chromosome-level" in q or "chromosome level" in q:
+        records = [record for record in records if str(record.payload.get("assembly_level", "")).lower() == "chromosome"]
+        if not records:
+            return source_gap(plan, "No indexed chromosome-level Anopheles assembly matched the requested species.")
+    if "reference" in q:
+        reference_records = [
+            record for record in records
+            if "reference genome" in str(record.payload.get("refseq_category", "")).lower()
+            or "reference" in [str(value).lower() for value in record.payload.get("properties", [])]
+        ]
+        if not reference_records:
+            return source_gap(plan, "No indexed NCBI reference-category Anopheles assembly matched the requested species.")
+        records = reference_records
+
+    level_rank = {"complete genome": 0, "chromosome": 1, "scaffold": 2, "contig": 3}
+    records.sort(key=lambda record: (
+        level_rank.get(str(record.payload.get("assembly_level", "")).lower(), 9),
+        str(record.payload.get("release_date", "")),
+    ))
+    records = records[:limit]
+    answer_plan = replace(plan, answer_shape="genomics")
+    return {
+        "ok": True,
+        "answer_shape": "genomics",
+        "answer": _answer_text(answer_plan, records),
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
+def _anopheles_ncbi_genome_feature_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    q = plan.question.lower()
+    accession_match = re.search(r"\b(?:LOC\d+|X[MRP]_\d+(?:\.\d+)?)\b", plan.question, flags=re.IGNORECASE)
+    go_match = re.search(r"\bGO:\d{4,}\b", plan.question, flags=re.IGNORECASE)
+    wants_feature = any(term in q for term in (
+        "ncbi gene", "ncbi genes", "gff", "gene annotation", "gene annotations", "genome feature",
+        "genome features", "ncbi transcript", "ncbi transcripts", "ncbi protein", "ncbi proteins",
+        "ncbi expression", "gene expression", "expression data", "expression profile", "expression profiles",
+        "normalized expression", "normalised expression", "gene ontology", "go annotation", "go annotations",
+    )) or ("ncbi" in q and any(term in q for term in ("gene", "genes", "transcript", "transcripts", "protein", "proteins", "expression"))) or accession_match is not None or go_match is not None
+    if "anopheles" not in q or not wants_feature:
+        return None
+
+    requested_lanes: list[str] = []
+    wants_expression = "expression" in q
+    wants_go = "gene ontology" in q or "go annotation" in q or go_match is not None
+    if wants_expression:
+        requested_lanes.append("expression")
+    elif "transcript" in q:
+        requested_lanes.append("transcripts")
+    if "protein" in q and not wants_expression:
+        requested_lanes.append("proteins")
+    if wants_go:
+        requested_lanes.append("genome_features")
+    elif not wants_expression and any(term in q for term in ("gene", "gff", "annotation")):
+        requested_lanes.extend(["genes", "genome_features"])
+    if not requested_lanes:
+        requested_lanes = ["genes", "transcripts", "proteins", "genome_features"]
+    requested_lanes = list(dict.fromkeys(requested_lanes))
+    epithets = ANOPHELES_TARGET_EPITHETS
+    requested_epithets = [epithet for epithet in epithets if epithet in q]
+    requested_species_labels = [f"Anopheles {epithet}" for epithet in requested_epithets]
+    records = [
+        record for record in _source_records_with_payload(
+            index,
+            ANOPHELES_NCBI_GENOME_FEATURES_SOURCE_ID,
+            requested_lanes,
+            limit=100000,
+            species=requested_species_labels or None,
+        )
+        if record.record_id.startswith("anopheles_ncbi_genome:")
+        or str((record.payload or {}).get("atom_type", "")) == "source_gap"
+    ]
+    if not records:
+        return source_gap(plan, "The Anopheles NCBI genome-feature source lane has not been indexed for the requested record type.")
+
+    if requested_epithets:
+        records = [record for record in records if any(f"anopheles {epithet}" in f"{record.species}\n{record.title}\n{record.text}".lower() for epithet in requested_epithets)]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles NCBI genome feature matched the requested species.")
+
+    gap_records = [record for record in records if str((record.payload or {}).get("atom_type", "")) == "source_gap"]
+    records = [record for record in records if record not in gap_records]
+    if not records and gap_records:
+        reasons = sorted({str((record.payload or {}).get("reason") or "source file unavailable") for record in gap_records})
+        detail = ", ".join(reasons)
+        return {
+            "ok": False,
+            "answer_shape": "genomics",
+            "answer": f"Source gap: the indexed NCBI Anopheles assembly has no parsed records for this request. Recorded reasons: {detail}.",
+            "evidence": [record_to_evidence(record) for record in gap_records[:limit]],
+            "source_gap": detail,
+        }
+
+    if accession_match:
+        token = accession_match.group(0).lower()
+        records = [record for record in records if token in f"{record.record_id}\n{record.title}\n{record.text}".lower()]
+        if not records:
+            return source_gap(plan, f"No indexed Anopheles NCBI genome feature matched accession {accession_match.group(0)}.")
+    if go_match:
+        token = go_match.group(0).lower()
+        records = [record for record in records if token in f"{record.record_id}\n{record.title}\n{record.text}".lower()]
+        if not records:
+            return source_gap(plan, f"No indexed Anopheles NCBI Gene Ontology annotation matched {go_match.group(0)}.")
+    if wants_go:
+        records = [record for record in records if ":go:" in record.record_id]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles NCBI Gene Ontology annotation matched the request.")
+
+    topics: list[tuple[str, ...]] = []
+    if "coreceptor" in q or "orco" in q:
+        topics.append(("coreceptor", "orco"))
+    elif "odorant receptor" in q or "olfactory receptor" in q:
+        topics.append(("odorant receptor", "olfactory receptor", "orco"))
+    elif "odorant" in q or "olfact" in q:
+        topics.append(("odorant", "olfact", "orco"))
+    if "gustatory" in q:
+        topics.append(("gustatory",))
+    if "ionotropic" in q:
+        topics.append(("ionotropic",))
+    if "resistance" in q and "insecticide" in q and "candidate" not in q:
+        topics.extend([("resistance",), ("insecticide",)])
+    elif ("resistance" in q or "insecticide" in q) and "candidate" not in q:
+        topics.append(("resistance", "insecticide"))
+    elif "candidate" in q and ("resistance" in q or "insecticide" in q):
+        topics.append(("resistance", "insecticide", "cytochrome p450", "glutathione s-transferase", "esterase", "sodium channel"))
+    linked_topic_records: list[EvidenceRecord] = []
+    if topics and wants_go:
+        transcript_records = _source_records_with_payload(
+            index,
+            ANOPHELES_NCBI_GENOME_FEATURES_SOURCE_ID,
+            ["transcripts"],
+            limit=100000,
+            species=requested_species_labels or None,
+        )
+        transcripts_by_locus: dict[str, list[EvidenceRecord]] = {}
+        for transcript in transcript_records:
+            for locus in set(re.findall(r"\bLOC\d+\b", f"{transcript.title}\n{transcript.text}", flags=re.IGNORECASE)):
+                transcripts_by_locus.setdefault(locus.lower(), []).append(transcript)
+
+        matched_go_records: list[EvidenceRecord] = []
+        linked_ids: set[str] = set()
+        for record in records:
+            loci = set(re.findall(r"\bLOC\d+\b", f"{record.title}\n{record.text}", flags=re.IGNORECASE))
+            linked = [item for locus in loci for item in transcripts_by_locus.get(locus.lower(), [])]
+            linked_text = "\n".join(f"{item.title}\n{item.text}" for item in linked).lower()
+            if all(any(term in linked_text for term in alternatives) for alternatives in topics):
+                matched_go_records.append(record)
+                for item in linked:
+                    if item.record_id not in linked_ids and all(
+                        any(term in f"{item.title}\n{item.text}".lower() for term in alternatives)
+                        for alternatives in topics
+                    ):
+                        linked_topic_records.append(item)
+                        linked_ids.add(item.record_id)
+        records = matched_go_records
+    elif topics:
+        records = [record for record in records if all(any(term in f"{record.title}\n{record.text}".lower() for term in alternatives) for alternatives in topics)]
+    if topics:
+        if not records:
+            return source_gap(plan, "No indexed Anopheles NCBI genome feature matched all requested annotation topics.")
+
+    if linked_topic_records:
+        go_limit = max(1, limit // 2)
+        records = [*records[:go_limit], *linked_topic_records[: max(1, limit - go_limit)]]
+    else:
+        records = records[:limit]
+    answer_plan = replace(plan, answer_shape="genomics")
+    answer = _answer_text(answer_plan, records)
+    if linked_topic_records:
+        answer += f" Linked NCBI transcript annotation: {linked_topic_records[0].text}"
+    return {"ok": True, "answer_shape": "genomics", "answer": answer, "evidence": [record_to_evidence(record) for record in records], "source_gap": None}
+
+
+def _anopheles_who_resistance_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    q = plan.question.lower()
+    asks_resistance = "anopheles" in q and any(term in q for term in ("resistance", "resistant", "susceptibility", "susceptible", "insecticide"))
+    wants_rows = "who" in q or any(term in q for term in ("record", "records", "row", "rows", "assay", "mortality", "status", "site", "sites", "surveillance", "where", "show"))
+    if not asks_resistance or not wants_rows or any(term in q for term in ("gene", "genes", "marker", "mutation", "protein")):
+        return None
+    records = [
+        record for record in _source_records_with_payload(index, ANOPHELES_WHO_MALARIA_RESISTANCE_SOURCE_ID, ["resistance"], limit=50000)
+        if record.record_id.startswith("anopheles_who:resistance:")
+    ]
+    if not records:
+        return source_gap(plan, "The Anopheles WHO malaria-vector resistance source lane has not been indexed yet.")
+
+    epithets = ANOPHELES_TARGET_EPITHETS
+    requested_epithets = [epithet for epithet in epithets if epithet in q]
+    if requested_epithets:
+        records = [record for record in records if any(epithet in str((record.payload or {}).get("species_label", record.species or "")).lower() for epithet in requested_epithets)]
+        if not records:
+            return source_gap(plan, "No indexed WHO Anopheles resistance row matched the requested species label.")
+
+    insecticides = (
+        "deltamethrin", "permethrin", "alpha-cypermethrin", "alphacypermethrin", "cypermethrin",
+        "lambda-cyhalothrin", "ddt", "malathion", "pirimiphos-methyl", "bendiocarb", "propoxur",
+        "chlorfenapyr", "clothianidin", "broflanilide", "etofenprox", "fenitrothion",
+    )
+    requested_insecticides = [term for term in insecticides if term in q]
+    if requested_insecticides:
+        records = [record for record in records if any(term in str((record.payload or {}).get("insecticide", "")).lower() for term in requested_insecticides)]
+        if not records:
+            return source_gap(plan, "No indexed WHO Anopheles resistance row matched the requested insecticide.")
+
+    year_match = re.search(r"\b(?:19|20)\d{2}\b", q)
+    if year_match:
+        records = [record for record in records if year_match.group(0) in str((record.payload or {}).get("year", ""))]
+        if not records:
+            return source_gap(plan, f"No indexed WHO Anopheles resistance row matched year {year_match.group(0)}.")
+
+    location_match = re.search(r"\b(?:from|in)\s+([A-Za-z][A-Za-z .'-]*?)(?=\s+(?:during|with|for|that|which|and)\b|[?.!,]|$)", plan.question, flags=re.IGNORECASE)
+    if location_match:
+        stop = {"anopheles", "resistance", "resistant", "records", "record", "assays", "assay", *epithets, *insecticides}
+        location_terms = [token.lower() for token in re.findall(r"[A-Za-z][A-Za-z'-]+", location_match.group(1)) if token.lower() not in stop]
+        if location_terms:
+            filtered = [
+                record for record in records
+                if all(term in f"{(record.payload or {}).get('country', '')}\n{(record.payload or {}).get('locality', '')}".lower() for term in location_terms)
+            ]
+            if not filtered:
+                return source_gap(plan, f"No indexed WHO Anopheles resistance row matched the requested location: {' '.join(location_terms)}.")
+            records = filtered
+
+    records = records[:limit]
+    answer_plan = replace(plan, answer_shape="resistance")
+    return {"ok": True, "answer_shape": "resistance", "answer": _answer_text(answer_plan, records), "evidence": [record_to_evidence(record) for record in records], "source_gap": None}
+
+
+def _anopheles_pathogen_taxonomy_answer(
+    index: SourceIndex,
+    plan: QueryPlan,
+    *,
+    limit: int,
+) -> dict[str, object] | None:
+    q = plan.question.lower()
+    identity_request = any(term in q for term in (
+        "pathogen taxonomy", "parasite taxonomy", "pathogen identity", "parasite identity",
+        "which plasmodium", "what plasmodium", "plasmodium species", "malaria parasite species",
+    )) or (
+        "plasmodium" in q
+        and any(term in q for term in ("what is", "what are", "which", "identity", "taxonomy"))
+        and not any(term in q for term in ("transmit", "transmission", "infect", "infection", "vector competence"))
+    )
+    if "anopheles" not in q or not identity_request:
+        return None
+
+    records = [
+        record
+        for record in _source_records_with_payload(
+            index,
+            ANOPHELES_PATHOGEN_TAXONOMY_SOURCE_ID,
+            ["vector_competence"],
+            limit=100,
+        )
+        if record.record_id.startswith("anopheles_pathogen:ncbi_taxonomy:")
+    ]
+    if not records:
+        return source_gap(plan, "The Anopheles pathogen-taxonomy source lane has not been indexed yet.")
+
+    named_pathogens = [
+        term for term in (
+            "plasmodium falciparum", "plasmodium vivax", "plasmodium malariae", "plasmodium ovale",
+            "plasmodium knowlesi", "plasmodium berghei", "plasmodium yoelii", "plasmodium cynomolgi",
+        )
+        if term in q
+    ]
+    if named_pathogens:
+        records = [
+            record for record in records
+            if any(term in f"{record.title}\n{record.text}".lower() for term in named_pathogens)
+        ]
+        if not records:
+            return source_gap(plan, "No indexed NCBI taxonomy anchor matched the requested Plasmodium name.")
+
+    if named_pathogens:
+        records = records[:limit]
+        answer = records[0].text
+    else:
+        records = records[: max(limit, len(records))]
+        names = [record.species or record.title for record in records]
+        answer = (
+            "The indexed NCBI Taxonomy anchors are: " + ", ".join(names) + ". "
+            "These establish pathogen identities only; they do not by themselves prove that any Anopheles "
+            "species can become infected with or transmit a parasite."
+        )
+    return {
+        "ok": True,
+        "answer_shape": "vector_competence",
+        "answer": answer,
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
+def _anopheles_vector_competence_answer(
+    index: SourceIndex,
+    plan: QueryPlan,
+    *,
+    limit: int,
+) -> dict[str, object] | None:
+    q = plan.question.lower()
+    competence_terms = (
+        "vector competence", "transmit", "transmission", "infection rate", "infection prevalence",
+        "dissemination rate", "oocyst", "sporozoite", "parasite load", "parasite intensity",
+    )
+    pathogen_terms = ("plasmodium", "malaria parasite", "microsporidia", "pathogen", "oocyst", "sporozoite")
+    if "anopheles" not in q or not any(term in q for term in competence_terms) or not any(term in q for term in pathogen_terms):
+        return None
+
+    records = [
+        record for record in _source_records_with_payload(
+            index, ANOPHELES_VECTOR_COMPETENCE_SOURCE_ID, ["vector_competence"], limit=1000,
+        )
+        if record.record_id.startswith("anopheles_vector_competence:abstract_result:")
+    ]
+    requested_epithets = [epithet for epithet in ANOPHELES_TARGET_EPITHETS if epithet in q]
+    if requested_epithets:
+        records = [
+            record for record in records
+            if any(
+                any(epithet in species.lower() for epithet in requested_epithets)
+                for species in (record.payload or {}).get("species_mentions", [])
+            )
+        ]
+    requested_pathogens = [
+        pathogen for pathogen in (
+            "Plasmodium falciparum", "Plasmodium vivax", "Plasmodium malariae", "Plasmodium ovale",
+            "Plasmodium knowlesi", "Plasmodium berghei", "Plasmodium yoelii", "Plasmodium cynomolgi",
+        )
+        if pathogen.lower() in q
+    ]
+    if requested_pathogens:
+        records = [
+            record for record in records
+            if any(pathogen in (record.payload or {}).get("pathogen_mentions", []) for pathogen in requested_pathogens)
+        ]
+    endpoint_terms = {
+        "sporozoite": ("sporozoite_rate", "sporozoite_detection"),
+        "oocyst": ("oocyst_rate", "oocyst_intensity"),
+        "infection rate": ("infection_rate",),
+        "infection prevalence": ("infection_rate", "parasite_burden"),
+        "infection": ("infection_rate",),
+        "parasite load": ("parasite_burden",),
+        "parasite intensity": ("parasite_burden",),
+        "transmission rate": ("transmission_rate",),
+        "entomological inoculation": ("entomological_inoculation_rate",),
+        "eir": ("entomological_inoculation_rate",),
+    }
+    requested_endpoints = {
+        endpoint
+        for question_term, endpoints in endpoint_terms.items()
+        if question_term in q
+        for endpoint in endpoints
+    }
+    if requested_endpoints:
+        records = [
+            record for record in records
+            if requested_endpoints.intersection((record.payload or {}).get("endpoint_mentions", []))
+        ]
+
+    if records:
+        class_order = {
+            "experimental_vector_competence_result": 0,
+            "field_surveillance_result": 1,
+            "abstract_reported_result": 2,
+        }
+        records.sort(key=lambda record: (
+            class_order.get(str((record.payload or {}).get("evidence_class")), 9),
+            str((record.payload or {}).get("source_title", record.title)).lower(),
+        ))
+        controlled = [
+            record for record in records
+            if (record.payload or {}).get("evidence_class") == "experimental_vector_competence_result"
+        ]
+        asks_for_assay_proof = any(term in q for term in ("assay evidence", "experimental evidence", "controlled experiment"))
+        selected = (controlled if asks_for_assay_proof and controlled else records)[:limit]
+        details = []
+        class_labels = {
+            "experimental_vector_competence_result": "Controlled experiment",
+            "field_surveillance_result": "Field surveillance",
+            "abstract_reported_result": "Study context unclear in the abstract",
+        }
+        for record in selected:
+            payload = record.payload or {}
+            evidence_class = str(payload.get("evidence_class") or "abstract_reported_result")
+            sentence = str(payload.get("exact_result_sentence") or record.text)
+            source_title = str(payload.get("source_title") or record.title)
+            details.append(f"{class_labels.get(evidence_class, evidence_class)} in \"{source_title}\": {sentence}")
+        boundary = (
+            "These are exact abstract-level reported results and have not yet been checked against full-text tables."
+        )
+        if asks_for_assay_proof and not controlled:
+            reason = (
+                "Source gap: The indexed matching results are field surveillance or abstract-reported evidence, "
+                "not a controlled mosquito infection experiment. They can show natural infection or transmission "
+                "indicators but do not by themselves prove controlled vector competence. "
+                + " ".join(details)
+                + " " + boundary
+            )
+            return {
+                "ok": False,
+                "answer_shape": "vector_competence",
+                "answer": reason,
+                "evidence": [record_to_evidence(record) for record in selected],
+                "source_gap": {
+                    "lane": "vector_competence",
+                    "reason": "No matching controlled experimental vector-competence result is indexed.",
+                    "checked_lanes": ["vector_competence", "literature"],
+                },
+            }
+        return {
+            "ok": True,
+            "answer_shape": "vector_competence",
+            "answer": " ".join(details) + " " + boundary,
+            "evidence": [record_to_evidence(record) for record in selected],
+            "source_gap": None,
+        }
+
+    coverage_records = [
+        record for record in _source_records_with_payload(
+            index, "anopheles_source_coverage", ["source_coverage"], limit=100,
+        )
+        if str((record.payload or {}).get("domain", "")) == "vector_competence"
+    ]
+    evidence = [record_to_evidence(record) for record in coverage_records[:limit]]
+    reason = (
+        "Source gap: Ask Insects does not yet have assay-level Anopheles vector-competence records that "
+        "preserve mosquito species, parasite, infection or transmission endpoint, strain or population, "
+        "timepoint, temperature, and exact result provenance. Mosquito taxonomy and pathogen taxonomy "
+        "cannot prove competence or transmission."
+    )
+    return {
+        "ok": False,
+        "answer_shape": "vector_competence",
+        "answer": reason,
+        "evidence": evidence,
+        "source_gap": {
+            "lane": "vector_competence",
+            "reason": reason.removeprefix("Source gap: "),
+            "checked_lanes": [ANOPHELES_VECTOR_COMPETENCE_SOURCE_ID, "literature", "source_coverage"],
+        },
+    }
+
+
+def _anopheles_pathogen_literature_answer(
+    index: SourceIndex,
+    plan: QueryPlan,
+    *,
+    limit: int,
+) -> dict[str, object] | None:
+    q = plan.question.lower()
+    named_terms = [term for term in ("microsporidia mb", "microsporidia", "plasmodium") if term in q]
+    if "anopheles" not in q or not named_terms:
+        return None
+    if any(term in q for term in ("vector competence", "transmit", "transmission", "infection rate", "oocyst", "sporozoite")):
+        return None
+
+    requested_epithets = [epithet for epithet in ANOPHELES_TARGET_EPITHETS if epithet in q]
+    records = []
+    for record in _source_records_with_payload(
+        index, "anopheles_literature_openalex", ["literature"], limit=1000,
+    ):
+        text = f"{record.title}\n{record.text}".lower()
+        if not all(term in text for term in named_terms):
+            continue
+        if requested_epithets and not all(f"anopheles {epithet}" in text for epithet in requested_epithets):
+            continue
+        records.append(record)
+    if not records:
+        return source_gap(plan, "No materially matching Anopheles pathogen-interaction paper is indexed in the bounded literature lane.")
+    records = records[:limit]
+    answer_plan = replace(plan, answer_shape="literature")
+    return {
+        "ok": True,
+        "answer_shape": "literature",
+        "answer": _answer_text(answer_plan, records),
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
+def _anopheles_domain_literature_answer(
+    index: SourceIndex,
+    plan: QueryPlan,
+    *,
+    limit: int,
+) -> dict[str, object] | None:
+    q = plan.question.lower()
+    if (
+        "anopheles" not in q
+        or plan.answer_shape not in {"behavior", "ecology", "neurobiology"}
+        or any(term in q for term in ("gbif", "biosample", "sra", "uniprot", "ncbi assembly"))
+    ):
+        return None
+
+    topic_groups: list[tuple[str, ...]] = []
+    if plan.answer_shape == "behavior":
+        if "host seeking" in q or "host-seeking" in q:
+            topic_groups.append(("host seeking", "host-seeking"))
+        if "oviposition" in q or "egg laying" in q or "egg-laying" in q:
+            topic_groups.append(("oviposition", "egg laying", "egg-laying"))
+        if "blood feed" in q or "blood-feed" in q or "biting" in q:
+            topic_groups.append(("blood feed", "blood-feed", "biting"))
+        if "repellent" in q or "repellency" in q:
+            topic_groups.append(("repellent", "repellency"))
+    elif plan.answer_shape == "ecology":
+        if "larv" in q:
+            topic_groups.extend([("larva", "larval", "larvae"), ("ecology", "habitat", "breeding")])
+        elif "habitat" in q:
+            topic_groups.append(("habitat", "breeding site"))
+        elif "season" in q:
+            topic_groups.append(("season", "seasonality"))
+        else:
+            topic_groups.append(("ecology", "habitat", "distribution"))
+    else:
+        topic_groups.append(("neuro", "neural", "neuron", "brain", "sensory circuit", "single-cell", "single cell"))
+
+    requested_epithets = [epithet for epithet in ANOPHELES_TARGET_EPITHETS if epithet in q]
+    records: list[EvidenceRecord] = []
+    for record in _source_records_with_payload(
+        index, "anopheles_literature_openalex", ["literature"], limit=10000,
+    ):
+        if not record.record_id.startswith("anopheles_openalex:"):
+            continue
+        text = f"{record.title}\n{record.text}".lower()
+        if requested_epithets and not any(f"anopheles {epithet}" in text for epithet in requested_epithets):
+            continue
+        if not all(any(term in text for term in alternatives) for alternatives in topic_groups):
+            continue
+        records.append(record)
+    if not records:
+        return source_gap(
+            plan,
+            "No materially matching paper for the requested Anopheles species and scientific topic is indexed in the bounded literature lane.",
+        )
+
+    query_terms = {term for alternatives in topic_groups for term in alternatives if term in q}
+    records.sort(key=lambda record: (
+        0 if str((record.payload or {}).get("openalex_candidate_status", "")) == "exact_title_abstract" else 1,
+        -sum(term in record.title.lower() for term in query_terms),
+        record.title.lower(),
+    ))
+    records = records[:limit]
+    answer_plan = replace(plan, answer_shape=plan.answer_shape)
+    return {
+        "ok": True,
+        "answer_shape": plan.answer_shape,
+        "answer": _answer_text(answer_plan, records),
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
+def _anopheles_sra_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    q = plan.question.lower()
+    if "biosample" in q:
+        return None
+    if "anopheles" not in q or not any(term in q for term in ("sra", "rna-seq", "rnaseq", "sequencing run", "sequencing runs")):
+        return None
+    if any(term in q for term in ("raw reads", "raw read", "download reads", "reanalyze", "reanalyse", "reanalysis")):
+        return source_gap(
+            plan,
+            "The Anopheles SRA lane indexes public run metadata but does not claim downloaded raw reads or completed reanalysis.",
+        )
+
+    records = [
+        record
+        for record in _source_records(index, ANOPHELES_NCBI_SRA_SOURCE_ID, ["datasets"], limit=5000)
+        if record.record_id.startswith("anopheles_sra:run:")
+    ]
+    if not records:
+        return source_gap(plan, "The Anopheles NCBI SRA run source lane has not been indexed yet.")
+
+    epithets = ANOPHELES_TARGET_EPITHETS
+    requested_epithets = [epithet for epithet in epithets if epithet in q]
+    if requested_epithets:
+        records = [
+            record
+            for record in records
+            if any(
+                f"anopheles {epithet}" in f"{record.species}\n{record.title}\n{record.text}".lower()
+                for epithet in requested_epithets
+            )
+        ]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles SRA run matched the requested species.")
+
+    accessions = [token.lower() for token in re.findall(r"\b(?:SRR|SRX|SAMN|PRJNA)\d+\b", plan.question, flags=re.IGNORECASE)]
+    if accessions:
+        records = [
+            record
+            for record in records
+            if all(token in f"{record.record_id}\n{record.title}\n{record.text}".lower() for token in accessions)
+        ]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles SRA run matched the requested accession.")
+
+    topic_groups: list[tuple[str, ...]] = []
+    if "rna-seq" in q or "rnaseq" in q:
+        topic_groups.append(("rna-seq", "transcriptomic"))
+    for term in ("antenna", "ovary", "midgut", "head", "larva", "whole body", "wgs", "metagenomic"):
+        if term in q:
+            topic_groups.append((term,))
+    if topic_groups:
+        records = [
+            record
+            for record in records
+            if all(
+                any(term in f"{record.title}\n{record.text}".lower() for term in alternatives)
+                for alternatives in topic_groups
+            )
+        ]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles SRA run matched all requested experiment topics.")
+
+    records = records[:limit]
+    answer_plan = replace(plan, answer_shape="genomics")
+    return {
+        "ok": True,
+        "answer_shape": "genomics",
+        "answer": _answer_text(answer_plan, records),
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
+def _anopheles_uniprot_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    q = plan.question.lower()
+    gene_token = re.search(r"\b(?:orco|ir\d+[a-z]*|or\d+[a-z]*|gr\d+[a-z]*|agap\d+)\b", q)
+    if "anopheles" not in q or not (
+        any(term in q for term in ("uniprot", "protein", "proteins", "proteome", "proteomes", "receptor", "receptors"))
+        or gene_token
+    ):
+        return None
+
+    records = [
+        record
+        for record in _source_records(index, ANOPHELES_UNIPROT_SOURCE_ID, ["proteins"], limit=5000)
+        if record.record_id.startswith("anopheles_uniprot:")
+    ]
+    if not records:
+        return source_gap(plan, "The Anopheles UniProt protein source lane has not been indexed yet.")
+
+    epithets = ANOPHELES_TARGET_EPITHETS
+    requested_epithets = [epithet for epithet in epithets if epithet in q]
+    if requested_epithets:
+        records = [
+            record
+            for record in records
+            if any(
+                f"anopheles {epithet}" in f"{record.species}\n{record.title}\n{record.text}".lower()
+                for epithet in requested_epithets
+            )
+        ]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles UniProt record matched the requested species.")
+
+    wants_proteome = bool(re.search(r"\bproteomes?\b", q))
+    wants_protein = bool(re.search(r"\bproteins?\b", q))
+    if wants_proteome and not wants_protein:
+        records = [record for record in records if record.record_id.startswith("anopheles_uniprot:proteome:")]
+    elif wants_protein and not wants_proteome:
+        records = [record for record in records if record.record_id.startswith("anopheles_uniprot:protein:")]
+    if not records:
+        return source_gap(plan, "No indexed Anopheles UniProt record matched the requested protein record type.")
+
+    if gene_token:
+        token = gene_token.group(0)
+        records = [
+            record
+            for record in records
+            if token in f"{record.title}\n{record.text}".lower()
+        ]
+        if not records:
+            return source_gap(plan, f"No indexed Anopheles UniProt record matched the requested gene or receptor: {token}.")
+
+    topic_groups: list[tuple[str, ...]] = []
+    if "odorant" in q or "olfact" in q:
+        topic_groups.append(("odorant", "olfaction"))
+    if "gustatory" in q:
+        topic_groups.append(("gustatory",))
+    if "ionotropic" in q:
+        topic_groups.append(("ionotropic",))
+    if "carbon dioxide" in q or "co2" in q or "co₂" in q:
+        topic_groups.append(("carbon dioxide", "chemosensation"))
+    if "repellent" in q or "repellency" in q or "deet" in q:
+        topic_groups.append(("repellent", "deet"))
+    if "heat" in q or "thermo" in q:
+        topic_groups.append(("heat", "thermosensation", "temperature"))
+    if topic_groups:
+        records = [
+            record
+            for record in records
+            if all(
+                any(term in f"{record.title}\n{record.text}".lower() for term in alternatives)
+                for alternatives in topic_groups
+            )
+        ]
+        if not records:
+            return source_gap(plan, "No indexed Anopheles UniProt record matched all requested protein topics.")
+
+    records = records[:limit]
+    answer_plan = replace(plan, answer_shape="genomics")
+    return {
+        "ok": True,
+        "answer_shape": "genomics",
+        "answer": _answer_text(answer_plan, records),
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
+def _anopheles_gbif_answer(index: SourceIndex, plan: QueryPlan, *, limit: int) -> dict[str, object] | None:
+    q = plan.question.lower()
+    if "anopheles" not in q or "gbif" not in q:
+        return None
+    wants_taxonomy = any(term in q for term in ("taxonomy", "taxon", "species match", "species-match", "identity"))
+    wants_occurrence = any(term in q for term in ("occurrence", "occurrences", "observation", "observations", "record", "records", "where"))
+    if not wants_taxonomy and not wants_occurrence:
+        return None
+
+    lanes = ["taxonomy"] if wants_taxonomy and not wants_occurrence else ["observations"] if wants_occurrence and not wants_taxonomy else ["taxonomy", "observations"]
+    records = _source_records(index, ANOPHELES_GBIF_SOURCE_ID, lanes, limit=500)
+    if not records:
+        return source_gap(plan, "The Anopheles GBIF source lane has not been indexed yet.")
+
+    species_terms = []
+    for epithet in ANOPHELES_TARGET_EPITHETS:
+        if epithet in q:
+            species_terms.append(f"anopheles {epithet}")
+    if species_terms:
+        filtered = [
+            record
+            for record in records
+            if any(term in f"{record.species}\n{record.title}\n{record.text}".lower() for term in species_terms)
+        ]
+        if filtered:
+            records = filtered
+
+    country_terms = [
+        token
+        for token in re.findall(r"[A-Za-z][A-Za-z-]+", plan.question)
+        if token.lower()
+        not in {
+            "anopheles",
+            "gbif",
+            "show",
+            "taxonomy",
+            "taxon",
+            "species",
+            "match",
+            "occurrence",
+            "occurrences",
+            "observation",
+            "observations",
+            "record",
+            "records",
+            "where",
+            "from",
+            "in",
+            "for",
+            "to",
+            "me",
+            "the",
+            "gambiae",
+            "coluzzii",
+            "funestus",
+            "stephensi",
+            "arabiensis",
+            "dirus",
+            "minimus",
+            "sinensis",
+        }
+    ]
+    if wants_occurrence and country_terms:
+        lowered_records = [(record, f"{record.species}\n{record.title}\n{record.text}".lower()) for record in records]
+        country_filtered = [
+            record
+            for record, haystack in lowered_records
+            if any(term.lower() in haystack for term in country_terms)
+        ]
+        if country_filtered:
+            records = country_filtered
+
+    records = records[:limit]
+    shape = "identity" if wants_taxonomy and not wants_occurrence else "ecology"
+    answer_plan = replace(plan, answer_shape=shape)
+    return {
+        "ok": True,
+        "answer_shape": shape,
+        "answer": _answer_text(answer_plan, records),
+        "evidence": [record_to_evidence(record) for record in records],
+        "source_gap": None,
+    }
+
+
 def _records_by_ids(index: SourceIndex, record_ids: list[str]) -> list[EvidenceRecord]:
     if not record_ids:
         return []
@@ -4573,21 +5619,35 @@ def _records_by_ids(index: SourceIndex, record_ids: list[str]) -> list[EvidenceR
     return [records_by_id[record_id] for record_id in record_ids if record_id in records_by_id]
 
 
-def _source_records_with_payload(index: SourceIndex, source: str, lanes: list[str], *, limit: int) -> list[EvidenceRecord]:
+def _source_records_with_payload(
+    index: SourceIndex,
+    source: str,
+    lanes: list[str],
+    *,
+    limit: int,
+    species: list[str] | None = None,
+) -> list[EvidenceRecord]:
     if not lanes:
         return []
     placeholders = ",".join("?" for _ in lanes)
+    species_condition = ""
+    params: list[object] = [source, *lanes]
+    if species:
+        species_placeholders = ",".join("?" for _ in species)
+        species_condition = f" AND lower(r.species) IN ({species_placeholders})"
+        params.extend(value.lower() for value in species)
+    params.append(limit)
     with index.connect() as conn:
         rows = conn.execute(
             f"""
             SELECT r.*, p.payload_json
             FROM records r
             LEFT JOIN record_payloads p ON p.record_id = r.record_id
-            WHERE r.source = ? AND r.lane IN ({placeholders})
+            WHERE r.source = ? AND r.lane IN ({placeholders}){species_condition}
             ORDER BY r.lane, r.record_id
             LIMIT ?
             """,
-            [source, *lanes, limit],
+            params,
         ).fetchall()
     records: list[EvidenceRecord] = []
     for row in rows:
@@ -5459,6 +6519,8 @@ def _source_coverage_requested_domains(question: str) -> list[str]:
 def _source_coverage_source_id(question: str) -> str:
     if _requested_species(question) == "Drosophila suzukii":
         return DROSOPHILA_SUZUKII_SOURCE_ID
+    if "anopheles" in question.lower():
+        return "anopheles_source_coverage"
     return "aedes_source_coverage"
 
 
@@ -5883,7 +6945,6 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
         return None
     q = plan.question.lower()
     source_id = _source_coverage_source_id(plan.question)
-    taxon_label = "spotted wing drosophila" if source_id == DROSOPHILA_SUZUKII_SOURCE_ID else "Aedes"
     wants_missing = any(term in q for term in ("missing", "gap", "gaps", "next required", "what are we missing", "what is missing"))
     requested_domains = _source_coverage_requested_domains(plan.question)
     domain_filter = ""
@@ -5936,6 +6997,11 @@ def _source_coverage_summary_answer(index: SourceIndex, plan: QueryPlan, *, limi
         return None
 
     overview_payload = _source_coverage_payload(overview_row) if overview_row is not None else {}
+    taxon_label = str(overview_payload.get("primary_taxon") or "")
+    if source_id == DROSOPHILA_SUZUKII_SOURCE_ID:
+        taxon_label = "spotted wing drosophila"
+    elif not taxon_label:
+        taxon_label = "Aedes"
     domain_payloads = [_source_coverage_payload(row) for row in domain_rows]
     gap_payloads = [_source_coverage_payload(row) for row in gap_rows]
     if source_id == DROSOPHILA_SUZUKII_SOURCE_ID and not gap_payloads:
@@ -6205,6 +7271,42 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     coverage_summary = _source_coverage_summary_answer(index, plan, limit=limit)
     if coverage_summary is not None:
         return coverage_summary
+    anopheles_biosamples_and_sra = _anopheles_biosample_and_sra_answer(index, plan, limit=limit)
+    if anopheles_biosamples_and_sra is not None:
+        return anopheles_biosamples_and_sra
+    anopheles_assemblies = _anopheles_ncbi_assembly_answer(index, plan, limit=limit)
+    if anopheles_assemblies is not None:
+        return anopheles_assemblies
+    anopheles_genome_features = _anopheles_ncbi_genome_feature_answer(index, plan, limit=limit)
+    if anopheles_genome_features is not None:
+        return anopheles_genome_features
+    anopheles_who_resistance = _anopheles_who_resistance_answer(index, plan, limit=limit)
+    if anopheles_who_resistance is not None:
+        return anopheles_who_resistance
+    anopheles_pathogens = _anopheles_pathogen_taxonomy_answer(index, plan, limit=limit)
+    if anopheles_pathogens is not None:
+        return anopheles_pathogens
+    anopheles_competence = _anopheles_vector_competence_answer(index, plan, limit=limit)
+    if anopheles_competence is not None:
+        return anopheles_competence
+    anopheles_pathogen_literature = _anopheles_pathogen_literature_answer(index, plan, limit=limit)
+    if anopheles_pathogen_literature is not None:
+        return anopheles_pathogen_literature
+    anopheles_domain_literature = _anopheles_domain_literature_answer(index, plan, limit=limit)
+    if anopheles_domain_literature is not None:
+        return anopheles_domain_literature
+    anopheles_sra = _anopheles_sra_answer(index, plan, limit=limit)
+    if anopheles_sra is not None:
+        return anopheles_sra
+    anopheles_uniprot = _anopheles_uniprot_answer(index, plan, limit=limit)
+    if anopheles_uniprot is not None:
+        return anopheles_uniprot
+    anopheles_biosamples = _anopheles_biosample_answer(index, plan, limit=limit)
+    if anopheles_biosamples is not None:
+        return anopheles_biosamples
+    anopheles_gbif = _anopheles_gbif_answer(index, plan, limit=limit)
+    if anopheles_gbif is not None:
+        return anopheles_gbif
 
     if (
         plan.answer_shape == "genomics"
@@ -6597,6 +7699,12 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             seen_record_ids.add(record.record_id)
 
     if plan.answer_shape == "literature" and _wants_mosquito_repellent_literature(plan.question):
+        if _requested_species(plan.question) == "Anopheles":
+            for record in _anopheles_literature_records(index, plan.question, limit=max(limit * 5, 20)):
+                if record.record_id in seen_record_ids:
+                    continue
+                all_records.append(record)
+                seen_record_ids.add(record.record_id)
         if _source_count(index, MOSQUITO_REPELLENT_LITERATURE_SOURCE_ID) == 0:
             return source_gap(plan, "The Ask Insects mosquito repellent literature lane is not installed in this source index.")
         repellent_records = _source_search_records(
@@ -7083,14 +8191,17 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     all_records = _prioritize_named_source_records(plan.question, all_records)
 
     if plan.answer_shape == "literature":
-        if _wants_literature_fulltext(plan.question):
+        species = _requested_species(plan.question)
+        anopheles_literature_records = _anopheles_literature_records(index, plan.question, limit=limit)
+        if anopheles_literature_records:
+            literature_records = anopheles_literature_records
+        elif _wants_literature_fulltext(plan.question):
             literature_records = _fulltext_literature_records(index, plan.question, limit=limit)
         elif _wants_mosquito_repellent_literature(plan.question):
             literature_records = [record for record in all_records if record.lane in {"literature", "datasets", "patents"}]
         else:
             literature_records = [record for record in all_records if record.lane == "literature"]
-        species = _requested_species(plan.question)
-        if species:
+        if species and not anopheles_literature_records:
             literature_records = [
                 record for record in literature_records if record.species and record.species.lower() == species.lower()
             ]
@@ -7102,6 +8213,10 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
             )
         if not literature_records:
             literature_records = _fulltext_literature_records(index, plan.question, limit=limit)
+            if species:
+                literature_records = [
+                    record for record in literature_records if record.species and record.species.lower() == species.lower()
+                ]
             if topical_tokens:
                 literature_records = _rank_literature_by_constraint_coverage(
                     literature_records,
