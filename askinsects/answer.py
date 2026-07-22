@@ -4868,12 +4868,13 @@ def _anopheles_ncbi_genome_feature_answer(index: SourceIndex, plan: QueryPlan, *
     epithets = ANOPHELES_TARGET_EPITHETS
     requested_epithets = [epithet for epithet in epithets if epithet in q]
     requested_species_labels = [f"Anopheles {epithet}" for epithet in requested_epithets]
+    record_limit = limit if wants_expression and accession_match is None else 100000
     records = [
         record for record in _source_records_with_payload(
             index,
             ANOPHELES_NCBI_GENOME_FEATURES_SOURCE_ID,
             requested_lanes,
-            limit=100000,
+            limit=record_limit,
             species=requested_species_labels or None,
         )
         if record.record_id.startswith("anopheles_ncbi_genome:")
@@ -5199,7 +5200,8 @@ def _anopheles_vector_competence_answer(
             pooled_result = (
                 isinstance(species_mentions, list)
                 and len(species_mentions) > 1
-                and re.search(r"\b(?:a total of|combined|pooled)\b", sentence, re.IGNORECASE)
+                and re.search(r"\ba total of\b", sentence, re.IGNORECASE)
+                and "respectively" not in sentence.lower()
             )
             if pooled_result and requested_epithets:
                 requested_names = [f"Anopheles {epithet}" for epithet in requested_epithets]
@@ -5649,8 +5651,8 @@ def _source_records_with_payload(
     params: list[object] = [source, *lanes]
     if species:
         species_placeholders = ",".join("?" for _ in species)
-        species_condition = f" AND lower(r.species) IN ({species_placeholders})"
-        params.extend(value.lower() for value in species)
+        species_condition = f" AND r.species IN ({species_placeholders})"
+        params.extend(species)
     params.append(limit)
     with index.connect() as conn:
         rows = conn.execute(

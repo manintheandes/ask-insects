@@ -166,6 +166,25 @@ class AnophelesVectorCompetenceEvidenceTests(unittest.TestCase):
         self.assertIn("pooled across multiple Anopheles species", answer["answer"])
         self.assertIn("does not report a separate Anopheles stephensi rate", answer["answer"])
 
+    def test_answer_does_not_label_species_specific_combined_sampling_result_as_pooled(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([literature_record(
+                "anopheles_openalex:W9",
+                "Anopheles gambiae and An. coluzzii were collected by two sampling methods. "
+                "Combined data showed sporozoite rates of 0.80% and 0.69% for An. gambiae and An. coluzzii, respectively.",
+            )])
+            ingest_anopheles_vector_competence_evidence(artifact_dir=artifact_dir)
+            answer = answer_question(
+                "What sporozoite infection-rate data do we have for Anopheles coluzzii?",
+                artifact_dir=artifact_dir,
+            )
+        self.assertTrue(answer["ok"])
+        self.assertNotIn("pooled across multiple Anopheles species", answer["answer"])
+        self.assertIn("0.69%", answer["answer"])
+
 
 if __name__ == "__main__":
     unittest.main()
