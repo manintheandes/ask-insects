@@ -16,8 +16,9 @@ class AgentSetupTests(unittest.TestCase):
     def test_project_defaults_normal_questions_to_reliable_router_model(self):
         config = tomllib.loads(Path(".codex/config.toml").read_text(encoding="utf-8"))
 
-        self.assertEqual(config["model"], "gpt-5.4-mini")
+        self.assertEqual(config["model"], "gpt-5.5")
         self.assertEqual(config["model_reasoning_effort"], "low")
+        self.assertEqual(config["service_tier"], "fast")
 
     def test_repo_instructions_make_the_hosted_call_the_first_normal_action(self):
         source = Path("AGENTS.md").read_text(encoding="utf-8")
