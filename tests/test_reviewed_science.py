@@ -242,6 +242,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "How should I test the reversibility of SWD avoidance once the volatile is gone?",
                 "Does SWD avoidance return to baseline after the odor source is removed?",
                 "Would SWD avoidance rebound after repellent washout?",
+                "For an SWD oviposition repellent lead, how should I think about adult or larval pre-exposure before assuming the deterrent will keep working after repeated crop exposure?",
+                "Before I trust an SWD oviposition deterrent across repeated crop exposure, how should adult and larval pre-exposure be tested?",
             )
             for question in questions:
                 with self.subTest(question=question):

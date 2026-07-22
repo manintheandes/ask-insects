@@ -1138,12 +1138,22 @@
       "id": "swd-preexposure-habituation-recovery",
       "species_ids": ["drosophila_suzukii"],
       "match": {
-        "phrases": ["volatile is removed", "pre-exposed flies", "washout time"],
+        "priority": 80,
+        "phrases": [
+          "volatile is removed",
+          "pre-exposed flies",
+          "washout time",
+          "adult or larval pre-exposure",
+          "repeated crop exposure",
+          "deterrent will keep working"
+        ],
         "required_any": [
           [
             "habituation",
             "pre exposure",
             "pre-exposure",
+            "adult and larval pre exposure",
+            "adult and larval pre-exposure",
             "washout",
             "persists",
             "persistence",
@@ -1155,7 +1165,7 @@
             "rebounds",
             "rebound"
           ],
-          ["volatile", "removed", "recovery", "avoidance", "repellent", "deterrence", "octenol", "2 pentylfuran", "2-pentylfuran", "geosmin"]
+          ["volatile", "removed", "recovery", "avoidance", "repellent", "deterrent", "deterrence", "octenol", "2 pentylfuran", "2-pentylfuran", "geosmin"]
         ],
         "optional": ["octenol", "2 pentylfuran", "geosmin", "larval exposure"]
       },
@@ -1320,6 +1330,10 @@
           "eggs to yield",
           "similar egg numbers",
           "larval or pupal readout"
+        ],
+        "excluded_normalized_patterns": [
+          "\\b(?:adult|larval|prior|previous|repeat|repeated)\\s+(?:or\\s+)?(?:adult\\s+or\\s+larval\\s+)?pre\\s+exposure\\b",
+          "\\b(?:habituation|habituates|habituate|pre\\s+exposed|washout|keep\\s+working\\s+after\\s+repeated)\\b"
         ],
         "required_any": [
           ["egg", "eggs", "egg numbers", "oviposition"],
