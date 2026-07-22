@@ -13,6 +13,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import tomllib
 from pathlib import Path
 from urllib.parse import parse_qsl, urlsplit
 
@@ -117,6 +118,7 @@ QUERY_CREDENTIAL_KEY_TOKENS = frozenset({"key", "session", "sig", "signature"})
 
 REQUIRED_FILES = (
     "AGENTS.md",
+    ".codex/config.toml",
     "LICENSE",
     "NOTICE",
     "README.md",
@@ -2639,6 +2641,18 @@ def check_reality_evaluation() -> None:
         REPO_ROOT / "evals/ask_insects_reality_eval_holdout_receipt_v1.json"
     )
     validate_holdout_receipt(load_json_object(receipt_path))
+
+    project_config_path = REPO_ROOT / ".codex/config.toml"
+    project_config = tomllib.loads(project_config_path.read_text(encoding="utf-8"))
+    if project_config.get("model") != "gpt-5.4-mini":
+        raise RuntimeError(
+            "Ask Insects normal-question Codex project must use gpt-5.4-mini "
+            "for latency-sensitive hosted lookups"
+        )
+    if project_config.get("model_reasoning_effort") != "low":
+        raise RuntimeError(
+            "Ask Insects normal-question Codex project must keep low reasoning effort"
+        )
 
     cli_source = (REPO_ROOT / "scripts/eval_reality.py").read_text(encoding="utf-8")
     for subcommand in (
