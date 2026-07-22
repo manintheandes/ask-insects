@@ -798,8 +798,13 @@
         ],
         "optional": ["egg", "eggs", "larva", "larvae", "pupa", "pupae", "oviposition"]
       },
-      "answer": "Follow eggs with larval or pupal emergence, fruit infestation or damage, and marketable yield or loss in replicated field conditions. The cited push-pull study found fewer pupae emerging from treated raspberries, which is stronger than an egg-only endpoint. Across the current reviewed public evidence, there is no replicated field evidence covering the complete package of crop damage, marketable yield, persistence, and operational fit needed for a commercial crop-protection claim.",
-      "source_record_ids": ["swd:openalex_literature:openalex:W4411730655"],
+      "answer": "Follow eggs with larval or pupal emergence, fruit infestation or damage, and marketable yield or loss in replicated field conditions. The cited push-pull study found fewer pupae emerging from treated raspberries, which is stronger than an egg-only endpoint. Across the cited reviewed SWD field evidence set, there is no replicated field evidence covering the complete package of crop damage, marketable yield, persistence, and operational fit needed for a commercial crop-protection claim.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W4411730655",
+        "swd:openalex_literature:openalex:W3046652911",
+        "swd_primary_field:doi:10.3390/insects11080536",
+        "swd_primary_field:doi:10.3390/insects8040117"
+      ],
       "source_provenance": [
         {
           "record_id": "swd:openalex_literature:openalex:W4411730655",
