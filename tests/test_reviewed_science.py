@@ -3519,6 +3519,11 @@ class ReviewedScienceTests(unittest.TestCase):
                 "https://doi.org/10.3390/insects8040117",
                 "laminate polymer flake raspberry choice assay",
             ),
+            "swd_primary_field:doi:10.1093/jee/tow116": (
+                "doi:10.1093/jee/tow116",
+                "https://doi.org/10.1093/jee/tow116",
+                "nontarget-effects sections",
+            ),
             "swd:openalex_literature:openalex:W3161910963": (
                 "doi:10.3389/fmicb.2021.656406",
                 "https://doi.org/10.3389/fmicb.2021.656406",
@@ -3590,6 +3595,17 @@ class ReviewedScienceTests(unittest.TestCase):
                     "marketable yield",
                     "persistence",
                     "operational fit",
+                ),
+            ),
+            (
+                "If a fall raspberry SWD oviposition deterrent reduced eggs, "
+                "can we ignore non-target captures and deployment context?",
+                {"swd_primary_field:doi:10.1093/jee/tow116"},
+                (
+                    "No.",
+                    "fall-bearing red raspberry",
+                    "potential nontarget effects",
+                    "deployment method",
                 ),
             ),
             (
@@ -4667,6 +4683,28 @@ class ReviewedScienceTests(unittest.TestCase):
                     "larval establishment or pupal emergence",
                     "crop quality or marketable yield",
                     "non-target exposure",
+                ),
+            ),
+            (
+                "If an SWD oviposition deterrent lowered eggs in fall raspberry plots, can I treat that as a clean crop-repellent win without checking non-target captures and deployment context?",
+                "swd-field-deterrent-nontarget-boundary",
+                (
+                    "No.",
+                    "fall-bearing red raspberry plots",
+                    "potential nontarget effects",
+                    "not optional context",
+                    "does not prove general protection",
+                ),
+            ),
+            (
+                "Our fall raspberry SWD deterrent cut egg laying, but we have not reviewed nontarget captures or the dispenser setup. Is that enough for a crop-protection claim?",
+                "swd-field-deterrent-nontarget-boundary",
+                (
+                    "No.",
+                    "field layout",
+                    "deployment method",
+                    "marketable yield",
+                    "does not by itself prove reduced crop damage",
                 ),
             ),
             (

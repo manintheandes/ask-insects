@@ -7,6 +7,9 @@ SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID = "swd_primary_field_evidence"
 HOP_FIELD_RECORD_ID = "swd_primary_field:doi:10.1016/j.cropro.2019.05.033"
 ECOTROL_FIELD_RECORD_ID = "swd_primary_field:doi:10.3390/insects11080536"
 LAMINATE_FLAKE_FIELD_RECORD_ID = "swd_primary_field:doi:10.3390/insects8040117"
+FALL_RASPBERRY_NONTARGET_FIELD_RECORD_ID = (
+    "swd_primary_field:doi:10.1093/jee/tow116"
+)
 
 
 def build_swd_primary_field_evidence_records(
@@ -151,6 +154,45 @@ def build_swd_primary_field_evidence_records(
                 retrieved_at=retrieved_at,
                 license="Open-access primary study; source terms apply",
                 source_url="https://doi.org/10.3390/insects8040117",
+            ),
+            payload={
+                "source_kind": "peer_reviewed_primary_study",
+                "curation_status": "human_reviewed_original_source",
+            },
+        ),
+        EvidenceRecord(
+            record_id=FALL_RASPBERRY_NONTARGET_FIELD_RECORD_ID,
+            lane="literature",
+            source=SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
+            title=(
+                "Field Evaluation of an Oviposition Deterrent for Management "
+                "of Spotted-Wing Drosophila, Drosophila suzukii, and Potential "
+                "Nontarget Effects"
+            ),
+            text=(
+                "The study evaluated an oviposition-deterrent deployment for "
+                "Drosophila suzukii in fall-bearing red raspberry field plots "
+                "and assessed potential nontarget effects. The evidence ties "
+                "reduced SWD oviposition to a specific crop, season, field "
+                "layout, treatment deployment, and nontarget-capture context. "
+                "It should not be read as a clean standalone crop-repellent win "
+                "or a general proof of SWD crop protection across crops, "
+                "seasons, delivery systems, or dispenser designs. Interpreting "
+                "the result requires preserving the treatment deployment method, "
+                "the fall raspberry setting, the oviposition endpoint, and the "
+                "nontarget observations. Reduced oviposition alone does not "
+                "establish fruit-damage prevention, harvest-quality protection, "
+                "marketable yield, crop safety, or broad operational fit."
+            ),
+            species="Drosophila suzukii",
+            url="https://doi.org/10.1093/jee/tow116",
+            media_url=None,
+            provenance=Provenance(
+                source_id=SWD_PRIMARY_FIELD_EVIDENCE_SOURCE_ID,
+                locator="https://doi.org/10.1093/jee/tow116",
+                retrieved_at=retrieved_at,
+                license="Peer-reviewed primary study; source terms apply",
+                source_url="https://doi.org/10.1093/jee/tow116",
             ),
             payload={
                 "source_kind": "peer_reviewed_primary_study",

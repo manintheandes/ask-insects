@@ -25,6 +25,13 @@
       "locator": "Abstract and Results: repellency and oviposition-deterrence screening, cotton-wick raspberry assays, laminate polymer flake raspberry choice assay, and strawberry field infestation at 4 and 7 days after application"
     },
     {
+      "record_id": "swd_primary_field:doi:10.1093/jee/tow116",
+      "title": "Field Evaluation of an Oviposition Deterrent for Management of Spotted-Wing Drosophila, Drosophila suzukii, and Potential Nontarget Effects",
+      "public_url": "https://doi.org/10.1093/jee/tow116",
+      "source_id": "doi:10.1093/jee/tow116",
+      "locator": "Abstract; field evaluation and nontarget-effects sections"
+    },
+    {
       "record_id": "aedes_olfaction_literature:pubmed:36261039",
       "title": "Differential mosquito attraction to humans is associated with skin-derived carboxylic acid levels",
       "public_url": "https://pubmed.ncbi.nlm.nih.gov/36261039/",
@@ -813,6 +820,49 @@
           "source_id": "doi:10.1093/ee/nvaf057",
           "locator": "Abstract and field raspberry methods/results; laboratory choice and no-choice assays; Figure 5 pupae emerging from ripening and sentinel raspberries under control, pull, push, and push-pull treatments"
         }
+      ]
+    },
+    {
+      "id": "swd-field-deterrent-nontarget-boundary",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 105,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["swd", "spotted wing", "drosophila suzukii", "raspberry", "raspberries"],
+          ["oviposition deterrent", "deterrent", "lowered eggs", "reduced eggs", "reduced oviposition", "egg laying", "egg-laying", "oviposition"],
+          ["non-target", "non target", "nontarget", "deployment", "field plot", "field plots", "field context", "crop-repellent win", "clean win"]
+        ],
+        "phrases": [
+          "fall raspberry plots",
+          "fall-bearing red raspberry",
+          "clean crop-repellent win",
+          "nontarget effects",
+          "non-target captures",
+          "deployment context"
+        ],
+        "required_any": [
+          ["raspberry", "raspberries", "field", "field plot", "field plots", "fall", "fall-bearing", "crop"],
+          ["oviposition deterrent", "deterrent", "reduced oviposition", "lowered eggs", "reduced eggs", "egg laying", "egg-laying", "eggs"],
+          ["non-target", "non target", "nontarget", "beneficial", "captures", "capture", "deployment", "context", "clean", "win", "claim", "without checking"]
+        ],
+        "optional": [
+          "source",
+          "dispenser",
+          "method",
+          "season",
+          "fruit damage",
+          "crop damage",
+          "yield",
+          "marketable",
+          "standalone",
+          "general",
+          "universal"
+        ]
+      },
+      "answer": "No. Treat the result as field evidence for one oviposition-deterrent deployment in fall-bearing red raspberry plots, not as a clean standalone SWD crop-repellent win. The cited study ties the target SWD oviposition result to its crop, season, field layout, deployment method, and potential nontarget effects. Those details are part of the evidence, not optional context. Before turning the signal into a product or crop-protection claim, keep checking nontarget captures or effects, crop setting, release method, treatment placement, persistence, fruit damage, harvest quality, and marketable yield. Reduced oviposition in that field context does not prove general protection across crops, seasons, dispenser designs, or management programs, and it does not by itself prove reduced crop damage or harvest-quality protection.",
+      "source_record_ids": [
+        "swd_primary_field:doi:10.1093/jee/tow116"
       ]
     },
     {
