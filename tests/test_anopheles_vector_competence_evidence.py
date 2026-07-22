@@ -147,6 +147,25 @@ class AnophelesVectorCompetenceEvidenceTests(unittest.TestCase):
         self.assertTrue(answer["ok"])
         self.assertIn("58 of 100", answer["answer"])
 
+    def test_answer_labels_multi_species_pooled_result(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records([literature_record(
+                "anopheles_openalex:W8",
+                "Plasmodium vivax gametocytes were tested by membrane feeding. "
+                "A total of 202 of 237 lots containing Anopheles freeborni, An. stephensi, and An. gambiae mosquitoes were infected.",
+            )])
+            ingest_anopheles_vector_competence_evidence(artifact_dir=artifact_dir)
+            answer = answer_question(
+                "What infection, oocyst, sporozoite, or transmission-rate data do we have for Anopheles stephensi and Plasmodium vivax?",
+                artifact_dir=artifact_dir,
+            )
+        self.assertTrue(answer["ok"])
+        self.assertIn("pooled across 3 Anopheles species", answer["answer"])
+        self.assertIn("does not report a separate Anopheles stephensi rate", answer["answer"])
+
 
 if __name__ == "__main__":
     unittest.main()

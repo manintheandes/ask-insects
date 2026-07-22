@@ -5194,7 +5194,22 @@ def _anopheles_vector_competence_answer(
             evidence_class = str(payload.get("evidence_class") or "abstract_reported_result")
             sentence = str(payload.get("exact_result_sentence") or record.text)
             source_title = str(payload.get("source_title") or record.title)
-            details.append(f"{class_labels.get(evidence_class, evidence_class)} in \"{source_title}\": {sentence}")
+            detail = f"{class_labels.get(evidence_class, evidence_class)} in \"{source_title}\": {sentence}"
+            species_mentions = payload.get("species_mentions", [])
+            pooled_result = (
+                isinstance(species_mentions, list)
+                and len(species_mentions) > 1
+                and re.search(r"\b(?:a total of|combined|pooled)\b", sentence, re.IGNORECASE)
+            )
+            if pooled_result and requested_epithets:
+                requested_names = [f"Anopheles {epithet}" for epithet in requested_epithets]
+                requested_label = " and ".join(requested_names)
+                rate_label = "rate" if len(requested_names) == 1 else "rates"
+                detail += (
+                    f" This result is pooled across {len(species_mentions)} Anopheles species and "
+                    f"does not report a separate {requested_label} {rate_label}."
+                )
+            details.append(detail)
         boundary = (
             "These are exact abstract-level reported results and have not yet been checked against full-text tables."
         )
