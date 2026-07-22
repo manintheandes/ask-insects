@@ -10,7 +10,7 @@ description: >-
   ask-insects ask --question-stdin --answer-only with a literal here-document
   named ASK_INSECTS_QUESTION. In a delegated Codex task, use only the decoded text
   inside its single `<input>...</input>` element. Never copy `<codex_delegation>`,
-  `<source_thread_id>`, or handoff tags. Do not quote, escape, rewrite, or interpolate the question body. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
+  `<source_thread_id>`, or handoff tags. Do not quote, escape, rewrite, or interpolate the question body. Do not emit commentary, a status update, or any preamble before the command. Do not add comments, timing directives, or wrapper text to the shell command. If it yields
   a session ID, continue with write_stdin until exit. If the wrapper reports a cell ID,
   call functions.wait on that same cell until exit. Never call image generation or
   another visual helper unless the user explicitly asks for a visual. Then return stdout verbatim, byte-for-byte identical to stdout. Never add or remove whitespace, including Markdown hard-break spaces.

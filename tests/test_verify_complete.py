@@ -525,10 +525,17 @@ class VerifyCompleteTests(unittest.TestCase):
         original = config_path.read_text(encoding="utf-8")
         try:
             config_path.write_text(
-                original.replace('model = "gpt-5.4-mini"', 'model = "gpt-5.5"'),
+                original.replace('model = "gpt-5.5"', 'model = "gpt-5.4-mini"'),
                 encoding="utf-8",
             )
-            with self.assertRaisesRegex(RuntimeError, "gpt-5.4-mini"):
+            with self.assertRaisesRegex(RuntimeError, "gpt-5.5"):
+                verify_complete.check_reality_evaluation()
+
+            config_path.write_text(
+                original.replace('service_tier = "fast"', 'service_tier = "default"'),
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(RuntimeError, "fast service tier"):
                 verify_complete.check_reality_evaluation()
         finally:
             config_path.write_text(original, encoding="utf-8")

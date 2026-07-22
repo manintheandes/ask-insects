@@ -2644,14 +2644,18 @@ def check_reality_evaluation() -> None:
 
     project_config_path = REPO_ROOT / ".codex/config.toml"
     project_config = tomllib.loads(project_config_path.read_text(encoding="utf-8"))
-    if project_config.get("model") != "gpt-5.4-mini":
+    if project_config.get("model") != "gpt-5.5":
         raise RuntimeError(
-            "Ask Insects normal-question Codex project must use gpt-5.4-mini "
+            "Ask Insects normal-question Codex project must use gpt-5.5 "
             "for latency-sensitive hosted lookups"
         )
     if project_config.get("model_reasoning_effort") != "low":
         raise RuntimeError(
             "Ask Insects normal-question Codex project must keep low reasoning effort"
+        )
+    if project_config.get("service_tier") != "fast":
+        raise RuntimeError(
+            "Ask Insects normal-question Codex project must use the fast service tier"
         )
 
     cli_source = (REPO_ROOT / "scripts/eval_reality.py").read_text(encoding="utf-8")
