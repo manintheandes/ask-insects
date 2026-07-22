@@ -5206,7 +5206,7 @@ def _anopheles_vector_competence_answer(
                 requested_label = " and ".join(requested_names)
                 rate_label = "rate" if len(requested_names) == 1 else "rates"
                 detail += (
-                    f" This result is pooled across {len(species_mentions)} Anopheles species and "
+                    " This result is pooled across multiple Anopheles species and "
                     f"does not report a separate {requested_label} {rate_label}."
                 )
             details.append(detail)

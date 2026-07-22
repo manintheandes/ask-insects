@@ -163,7 +163,7 @@ class AnophelesVectorCompetenceEvidenceTests(unittest.TestCase):
                 artifact_dir=artifact_dir,
             )
         self.assertTrue(answer["ok"])
-        self.assertIn("pooled across 3 Anopheles species", answer["answer"])
+        self.assertIn("pooled across multiple Anopheles species", answer["answer"])
         self.assertIn("does not report a separate Anopheles stephensi rate", answer["answer"])
 
 
