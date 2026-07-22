@@ -3440,6 +3440,8 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertIn("Locator: `Abstract: antennal tissue expression", final_answer)
 
     def test_fresh_swd_and_aedes_topics_use_exact_primary_source_provenance(self):
+        from askinsects.cli import compact_agent_answer
+
         records = {
             "swd:openalex_literature:openalex:W4413971464": (
                 "doi:10.1017/s0007485325100369",
@@ -3455,6 +3457,21 @@ class ReviewedScienceTests(unittest.TestCase):
                 "doi:10.1093/ee/nvaf057",
                 "https://doi.org/10.1093/ee/nvaf057",
                 "field raspberry",
+            ),
+            "swd:openalex_literature:openalex:W3046652911": (
+                "doi:10.1002/ps.6028",
+                "https://doi.org/10.1002/ps.6028",
+                "2016 and 2017 raspberry field trials",
+            ),
+            "swd_primary_field:doi:10.3390/insects11080536": (
+                "doi:10.3390/insects11080536",
+                "https://pmc.ncbi.nlm.nih.gov/articles/PMC7469169/",
+                "blueberry and raspberry field-trial",
+            ),
+            "swd_primary_field:doi:10.3390/insects8040117": (
+                "doi:10.3390/insects8040117",
+                "https://doi.org/10.3390/insects8040117",
+                "laminate polymer flake raspberry choice assay",
             ),
             "swd:openalex_literature:openalex:W3161910963": (
                 "doi:10.3389/fmicb.2021.656406",
@@ -3493,10 +3510,15 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "How should we connect fewer pupae from treated raspberries in the "
                 "SWD push-pull study to a defensible crop-protection claim?",
-                {"swd:openalex_literature:openalex:W4411730655"},
+                {
+                    "swd:openalex_literature:openalex:W4411730655",
+                    "swd:openalex_literature:openalex:W3046652911",
+                    "swd_primary_field:doi:10.3390/insects11080536",
+                    "swd_primary_field:doi:10.3390/insects8040117",
+                },
                 (
                     "fewer pupae",
-                    "current reviewed public evidence",
+                    "cited reviewed SWD field evidence set",
                     "no replicated field evidence",
                     "crop damage",
                     "marketable yield",
@@ -3508,10 +3530,15 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "What follow-up measurements connect SWD oviposition deterrence "
                 "to actual crop protection?",
-                {"swd:openalex_literature:openalex:W4411730655"},
+                {
+                    "swd:openalex_literature:openalex:W4411730655",
+                    "swd:openalex_literature:openalex:W3046652911",
+                    "swd_primary_field:doi:10.3390/insects11080536",
+                    "swd_primary_field:doi:10.3390/insects8040117",
+                },
                 (
                     "larval or pupal emergence",
-                    "current reviewed public evidence",
+                    "cited reviewed SWD field evidence set",
                     "no replicated field evidence",
                     "crop damage",
                     "marketable yield",
@@ -3600,6 +3627,10 @@ class ReviewedScienceTests(unittest.TestCase):
                         locator_fragment.casefold(),
                         item["provenance"]["locator"].casefold(),
                     )
+                final_answer = compact_agent_answer(answer)["final_answer"]
+                for record_id in expected_record_ids:
+                    source_id = records[record_id][0]
+                    self.assertIn(f"Source ID: `{source_id}`", final_answer)
 
     def test_unnamed_swd_dose_reversal_routes_to_exact_meja_evidence(self):
         from askinsects.cli import compact_agent_answer
