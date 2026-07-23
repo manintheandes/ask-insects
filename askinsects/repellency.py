@@ -1261,13 +1261,10 @@ def build_date_bounded_repellent_literature_answer(
         )
         for record in assay_records
     ]
-    informative_rows = [
-        row
-        for row in all_rows
-        if row.get("fulltext_unit_id") or row.get("outcome")
-    ]
+    outcome_rows = [row for row in all_rows if row.get("outcome")]
+    fulltext_rows = [row for row in all_rows if row.get("fulltext_unit_id")]
     selected_rows = _bounded_comparison_rows(
-        informative_rows or all_rows,
+        outcome_rows or fulltext_rows or all_rows,
         limit=max(1, limit),
     )
 
