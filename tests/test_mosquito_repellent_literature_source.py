@@ -142,6 +142,56 @@ class MosquitoRepellentLiteratureSourceTests(unittest.TestCase):
         self.assertIn("mosquito_repellent_pubmed_result_limit_applied", reasons)
         self.assertIn("mosquito_repellent_no_canonical_literature_rows", reasons)
 
+    def test_crossref_duplicate_pages_still_respect_each_query_limit(self):
+        crossref_calls = 0
+
+        def fake_fetch_json(url):
+            nonlocal crossref_calls
+            if "esearch.fcgi" in url:
+                return {"esearchresult": {"idlist": [], "count": "0"}}
+            if "api.crossref.org" in url:
+                crossref_calls += 1
+                if crossref_calls > 20:
+                    raise AssertionError("Crossref pagination exceeded its bounded budget")
+                return {
+                    "message": {
+                        "total-results": 100000,
+                        "next-cursor": f"cursor-{crossref_calls}",
+                        "items": [
+                            {
+                                "DOI": "10.1000/duplicate",
+                                "title": ["DEET mosquito repellent duplicate"],
+                                "publisher": "Example Publisher",
+                                "container-title": ["Medical Entomology"],
+                                "issued": {"date-parts": [[2026, 7, 1]]},
+                                "type": "journal-article",
+                                "subject": ["mosquito repellent"],
+                                "URL": "https://doi.org/10.1000/duplicate",
+                            }
+                        ],
+                    }
+                }
+            raise AssertionError(url)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            result = fetch_mosquito_repellent_literature_records(
+                raw_dir=Path(tmpdir) / "raw",
+                fetch_json=fake_fetch_json,
+                retrieved_at="2026-07-23T00:00:00Z",
+                pubmed_max_results=1,
+                crossref_max_results=16,
+                page_size=1,
+            )
+
+        self.assertEqual(crossref_calls, 16)
+        self.assertEqual(result.candidate_count, 1)
+        self.assertFalse(
+            any(
+                gap["reason"] == "mosquito_repellent_crossref_fetch_failed"
+                for gap in result.gaps
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
