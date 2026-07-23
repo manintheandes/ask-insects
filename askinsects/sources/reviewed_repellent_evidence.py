@@ -14,7 +14,8 @@ REVIEWED_REPELLENT_SOURCE_ID = "reviewed_repellent_evidence"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 _REPOSITORY_CATALOG = REPO_ROOT / "config" / "reviewed-repellent-evidence.json"
 PUBLIC_CATALOG_URL = (
-    "https://github.com/manintheandes/ask-insects/blob/main/"
+    "https://raw.githubusercontent.com/manintheandes/ask-insects/"
+    "171218bb6ad08f4d41254ffbd7a4c3eca368f1cd/"
     "config/reviewed-repellent-evidence.json"
 )
 ALLOWED_MATERIAL_TYPES = frozenset(

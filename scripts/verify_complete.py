@@ -1004,9 +1004,9 @@ assert Path(askinsects.__file__).resolve().is_relative_to(Path.cwd().resolve())
 assert DEFAULT_CONTEXT_CONFIG.resolve() == (Path.cwd() / "config/insect-evidence-package.json").resolve()
 assert load_context_config()["schema_version"] == "ask-insects-evidence-package-config.v2"
 assert DEFAULT_PUBLISHED_PACKAGE.resolve() == (
-    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-19.1.json"
+    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-23.1.json"
 ).resolve()
-assert load_published_context_package()["package_version"] == "2026-07-19.1"
+assert load_published_context_package()["package_version"] == "2026-07-23.1"
 assert not (Path.cwd() / "artifacts/mosquito-v1/source_index.sqlite").exists()
 """
         _run_clean_clone_command(
@@ -1380,10 +1380,10 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
             "sha256": PUBLIC_PROGRAM_CONFIG_SHA256,
         },
     }
-    if package.get("package_version") != "2026-07-19.1":
+    if package.get("package_version") != "2026-07-23.1":
         raise RuntimeError("published evidence package has the wrong release version")
     if package.get("content_sha256") != (
-        "9c92d249f29b783d2ed3fdfca33db1eed65715a8e5d1179ebdeed024a2925c50"
+        "d7d3e7fa2a10e491c35288f9cc4f2bf11d548edded51b35ed1a4a85879c82c25"
     ):
         raise RuntimeError("published evidence package has the wrong content hash")
     if hashlib.sha256(DEFAULT_PUBLISHED_PACKAGE.read_bytes()).hexdigest() != (
@@ -1404,7 +1404,7 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
     program_records = _object_list(package, "program_records", allow_empty=False)
     selector_results = _object_list(package, "selector_results", allow_empty=False)
     gaps = _object_list(package, "gaps")
-    if (len(evidence_records), len(program_records), len(gaps)) != (22, 122, 11):
+    if (len(evidence_records), len(program_records), len(gaps)) != (40, 122, 11):
         raise RuntimeError("published evidence package release counts do not match the audited release")
 
     context_config = json.loads(DEFAULT_CONTEXT_CONFIG.read_text(encoding="utf-8"))
@@ -1425,8 +1425,8 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
             for record_id in receipt.get("selected_record_ids", [])
         )
         approved_pairs.update((selector_id, record_id) for record_id in approved_ids)
-    if len(approved_pairs) != 23 or selected_pairs != approved_pairs:
-        raise RuntimeError("published evidence package does not exactly contain the 23 audited approvals")
+    if len(approved_pairs) != 41 or selected_pairs != approved_pairs:
+        raise RuntimeError("published evidence package does not exactly contain the 41 audited approvals")
     if any("W4399796030" in str(record.get("record_id")) for record in evidence_records):
         raise RuntimeError("published evidence package contains the SWD parasitoid-role paper")
     role_rejections = sum(
@@ -1457,7 +1457,7 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
     source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
     source_map_terms = (
         PUBLIC_PACKAGE_SCHEMA_VERSION,
-        "2026-07-19.1",
+        "2026-07-23.1",
         DEFAULT_PUBLISHED_PACKAGE.relative_to(REPO_ROOT).as_posix(),
         DEFAULT_PUBLISHED_PACKAGE_SHA256,
         str(package["content_sha256"]),
