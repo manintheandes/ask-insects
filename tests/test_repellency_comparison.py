@@ -286,6 +286,7 @@ class RepellencyComparisonTest(unittest.TestCase):
                         payload={
                             "fact_type": "repellency_assay",
                             "source_record_id": current_paper_id,
+                            "fulltext_unit_id": "openalex:current:fulltext:12",
                             "fields": {"compound": ["deet"]},
                             "evidence_text": "The paper title mentions DEET repellency.",
                             "confidence": "candidate",
