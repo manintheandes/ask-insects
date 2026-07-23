@@ -126,6 +126,8 @@ def _crossref_url(*, query: str, cursor: str, rows: int) -> str:
     params = {
         "query.bibliographic": query,
         "filter": "from-pub-date:2020-01-01,type:journal-article",
+        "sort": "published",
+        "order": "desc",
         "rows": str(max(1, min(rows, 100))),
         "cursor": cursor,
         "select": ",".join(
@@ -674,9 +676,9 @@ def fetch_mosquito_repellent_literature_records(
                     continue
                 before = len(candidates)
                 _add_crossref_candidate(candidates, query=query, item=item, raw_path=raw_path, item_index=item_index)
+                query_material_count += 1
                 if len(candidates) > before:
                     crossref_material_count += 1
-                    query_material_count += 1
             next_cursor = _next_cursor(payload)
             page_index += 1
             if not next_cursor or next_cursor == cursor or not items:
