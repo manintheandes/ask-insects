@@ -1,5 +1,7 @@
 include config/insect-evidence-package.json
 include config/insect-intelligence-programs.json
 include config/reviewed-scientific-evidence.json
+include config/reviewed-repellent-evidence.json
 include public/evidence-packages/ask-insects-evidence-package-2026-07-17.1.json
 include public/evidence-packages/ask-insects-evidence-package-2026-07-19.1.json
+include public/evidence-packages/ask-insects-evidence-package-2026-07-23.1.json

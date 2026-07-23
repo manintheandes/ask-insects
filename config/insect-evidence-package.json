@@ -1,7 +1,7 @@
 {
   "schema_version": "ask-insects-evidence-package-config.v2",
-  "package_version": "2026-07-19.1",
-  "last_reviewed": "2026-07-19",
+  "package_version": "2026-07-23.1",
+  "last_reviewed": "2026-07-23",
   "objective": "Provide bounded public insect evidence for reusable interpretation contexts.",
   "knowledge_domains": [
     "sensory_world",
@@ -39,7 +39,31 @@
     "landing_aedes_behavior": ["openalex:W2344416877", "openalex:W2584379108"],
     "spatial_aedes_olfaction": [],
     "spatial_aedes_literature": ["openalex:W3082735631", "openalex:W3187033380", "openalex:W4220896299"],
-    "post_aedes_behavior": ["openalex:W7131801126"]
+    "post_aedes_behavior": ["openalex:W7131801126"],
+    "repellent_catalog_aedes": [
+      "reviewed_repellent_evidence:cinnamaldehyde_aedes_skin_2006",
+      "reviewed_repellent_evidence:cinnamaldehyde_aedes_albopictus_2020",
+      "reviewed_repellent_evidence:citral_aedes_albopictus_2020",
+      "reviewed_repellent_evidence:eucalyptus_aedes_landing_2016",
+      "reviewed_repellent_evidence:eugenol_aedes_close_range_2020",
+      "reviewed_repellent_evidence:eugenol_anopheles_close_range_2020",
+      "reviewed_repellent_evidence:garlic_oil_aedes_albopictus_atsb_2015",
+      "reviewed_repellent_evidence:p_cymene_culex_forearm_2005",
+      "reviewed_repellent_evidence:p_cymene_culex_low_activity_2011",
+      "reviewed_repellent_evidence:rosemary_oil_mosquito_arm_cage_2022",
+      "reviewed_repellent_evidence:thymol_culex_forearm_2005",
+      "reviewed_repellent_evidence:thyme_oil_culex_2011"
+    ],
+    "repellent_catalog_swd": [
+      "reviewed_repellent_evidence:geraniol_swd_screen_2017",
+      "reviewed_repellent_evidence:geraniol_swd_ecotrol_component_2020",
+      "reviewed_repellent_evidence:peppermint_oil_swd_flake_2017",
+      "reviewed_repellent_evidence:rosemary_oil_swd_ecotrol_component_2020",
+      "reviewed_repellent_evidence:thymol_swd_screen_and_raspberry_2017"
+    ],
+    "repellent_catalog_dbm": [
+      "reviewed_repellent_evidence:methyl_salicylate_dbm_host_cue_2025"
+    ]
   },
   "contexts": [
     {
@@ -251,6 +275,36 @@
       ],
       "selectors": [
         {"id": "post_aedes_behavior", "species_id": "aedes_aegypti", "source": "aedes_literature_openalex", "query_any": ["post exposure", "post-exposure", "after exposure", "knockdown", "recovery"], "context_required_term_groups": [["post exposure", "post-exposure", "after exposure", "after-exposure", "following exposure"], ["recovery", "knockdown", "locomotion", "locomotor", "survival", "impairment", "mortality", "movement"]], "taxon_field_paths": ["payload.raw_openalex_work.display_name"], "context_field_paths": ["payload.raw_openalex_work.display_name", "payload.raw_openalex_work.abstract_inverted_index"], "context_field_prerequisites": {}, "limit": 5, "required": false}
+      ]
+    },
+    {
+      "id": "repellent_evidence_catalog",
+      "endpoint_family": "repellent_evidence_comparison",
+      "exposure_routes": ["contact", "non_contact"],
+      "species_ids": ["aedes_aegypti", "drosophila_suzukii", "plutella_xylostella"],
+      "required_domains": ["behavior", "feeding_host_finding", "reproduction_oviposition", "chemical_responses_metabolism"],
+      "measures": [
+        "human-reviewed material identity, observed species, assay, endpoint, finding, limitation, and exact public provenance"
+      ],
+      "does_not_establish": [
+        "equivalence between compounds, oils, mixtures, brands, species, formulations, doses, endpoints, or private experimental results"
+      ],
+      "plausible_explanations": [
+        "direct target-species repellent or deterrent evidence",
+        "cross-species evidence requiring target-species confirmation",
+        "mixture-component evidence that does not isolate one ingredient",
+        "non-repellent attraction, toxicity, or control evidence"
+      ],
+      "discriminating_evidence": [
+        "exact chemical or material identity and formulation composition",
+        "matched target species, exposure route, dose, assay, and endpoint",
+        "repellent behavior separated from toxicity, attraction, landing, feeding, and infestation",
+        "claim-level original-source provenance"
+      ],
+      "selectors": [
+        {"id": "repellent_catalog_aedes", "species_id": "aedes_aegypti", "source": "reviewed_repellent_evidence", "query_any": ["repellent", "repellency", "deterrent", "protection", "toxic bait", "attractant"], "context_required_term_groups": [["repellent", "repellency", "deterrent", "protection", "toxic", "attractant"], ["assay", "bioassay", "landing", "movement", "time", "infestation", "trapping", "bait", "response", "field"]], "taxon_field_paths": ["payload.evidence.comparison_target_scientific_name"], "context_field_paths": ["payload.evidence"], "context_field_prerequisites": {}, "record_requirements": {"payload.atom_type": "reviewed_repellent_evidence"}, "limit": 20, "required": true},
+        {"id": "repellent_catalog_swd", "species_id": "drosophila_suzukii", "source": "reviewed_repellent_evidence", "query_any": ["repellent", "repellency", "deterrent", "landing", "infestation"], "context_required_term_groups": [["repellent", "repellency", "deterrent", "protection", "toxic", "attractant"], ["assay", "bioassay", "landing", "movement", "time", "infestation", "trapping", "bait", "response", "field"]], "taxon_field_paths": ["payload.evidence.comparison_target_scientific_name"], "context_field_paths": ["payload.evidence"], "context_field_prerequisites": {}, "record_requirements": {"payload.atom_type": "reviewed_repellent_evidence"}, "limit": 10, "required": true},
+        {"id": "repellent_catalog_dbm", "species_id": "plutella_xylostella", "source": "reviewed_repellent_evidence", "query_any": ["repellent", "repellency", "deterrent", "attractant", "host cue"], "context_required_term_groups": [["repellent", "repellency", "deterrent", "protection", "toxic", "attractant"], ["assay", "bioassay", "landing", "movement", "time", "infestation", "trapping", "bait", "response", "field"]], "taxon_field_paths": ["payload.evidence.comparison_target_scientific_name"], "context_field_paths": ["payload.evidence"], "context_field_prerequisites": {}, "record_requirements": {"payload.atom_type": "reviewed_repellent_evidence"}, "limit": 5, "required": true}
       ]
     }
   ]

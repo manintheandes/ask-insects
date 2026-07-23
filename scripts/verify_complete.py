@@ -42,6 +42,7 @@ GENERIC_CONTEXT_IDS = (
     "human_landing_response",
     "spatial_behavior",
     "post_exposure_behavior",
+    "repellent_evidence_catalog",
 )
 GENERIC_CONFIG_CONTEXT_FIELDS = frozenset(
     {
@@ -128,9 +129,11 @@ REQUIRED_FILES = (
     "config/insect-evidence-package.json",
     "config/insect-intelligence-programs.json",
     "config/reviewed-scientific-evidence.json",
+    "config/reviewed-repellent-evidence.json",
     "public/evidence-packages/ask-insects-evidence-package-2026-07-14.7.json",
     "public/evidence-packages/ask-insects-evidence-package-2026-07-17.1.json",
     "public/evidence-packages/ask-insects-evidence-package-2026-07-19.1.json",
+    "public/evidence-packages/ask-insects-evidence-package-2026-07-23.1.json",
     "config/mosquito-intelligence-coverage.json",
     "config/aedes-source-plane-benchmark.json",
     "data/fixtures/mosquito_records.json",
@@ -175,6 +178,7 @@ REQUIRED_FILES = (
     "docs/superpowers/specs/2026-07-13-dual-product-insect-intelligence-design.md",
     "docs/superpowers/specs/2026-07-14-generic-insect-evidence-package-design.md",
     "docs/superpowers/specs/2026-07-16-ask-insects-reality-eval-integration-design.md",
+    "docs/superpowers/specs/2026-07-23-cross-plane-repellent-comparison-design.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-mosquito-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-gbif-v1.md",
     "docs/superpowers/plans/2026-05-23-ask-insects-inaturalist-v1.md",
@@ -214,6 +218,7 @@ REQUIRED_FILES = (
     "docs/superpowers/plans/2026-07-14-generic-insect-evidence-package.md",
     "docs/superpowers/plans/2026-07-15-broad-natural-language-production-readiness.md",
     "docs/superpowers/plans/2026-07-16-ask-insects-reality-eval-integration.md",
+    "docs/superpowers/plans/2026-07-23-cross-plane-repellent-comparison.md",
     "evals/ask_insects_production_path_v1.json",
     "evals/ask_insects_reality_eval_public_v1.json",
     "evals/ask_insects_reality_eval_holdout_receipt_v1.json",
@@ -231,6 +236,7 @@ REQUIRED_FILES = (
     "askinsects/records.py",
     "askinsects/repellency.py",
     "askinsects/reviewed_science.py",
+    "askinsects/sources/reviewed_repellent_evidence.py",
     "askinsects/reality_eval.py",
     "askinsects/sources/aedes_primary_behavior_evidence.py",
     "askinsects/sources/swd_primary_field_evidence.py",
@@ -241,6 +247,7 @@ REQUIRED_FILES = (
     "askinsects/sources/__init__.py",
     "skills/askinsects/SKILL.md",
     "skills/askinsects/agents/openai.yaml",
+    "scripts/ingest_reviewed_repellent_evidence.py",
     "askinsects/sources/fixtures.py",
     "askinsects/sources/bold_barcodes.py",
     "askinsects/sources/gbif.py",
@@ -659,6 +666,7 @@ UNIT_TEST_MODULES = (
     "tests.test_ingest_literature_depth",
     "tests.test_repellency_comparison",
     "tests.test_reviewed_science",
+    "tests.test_reviewed_repellent_evidence",
     "tests.test_reality_eval",
     "tests.test_insect_intelligence_programs",
     "tests.test_aedes_primary_behavior_evidence_source",
@@ -996,9 +1004,9 @@ assert Path(askinsects.__file__).resolve().is_relative_to(Path.cwd().resolve())
 assert DEFAULT_CONTEXT_CONFIG.resolve() == (Path.cwd() / "config/insect-evidence-package.json").resolve()
 assert load_context_config()["schema_version"] == "ask-insects-evidence-package-config.v2"
 assert DEFAULT_PUBLISHED_PACKAGE.resolve() == (
-    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-19.1.json"
+    Path.cwd() / "public/evidence-packages/ask-insects-evidence-package-2026-07-23.1.json"
 ).resolve()
-assert load_published_context_package()["package_version"] == "2026-07-19.1"
+assert load_published_context_package()["package_version"] == "2026-07-23.1"
 assert not (Path.cwd() / "artifacts/mosquito-v1/source_index.sqlite").exists()
 """
         _run_clean_clone_command(
@@ -1372,10 +1380,10 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
             "sha256": PUBLIC_PROGRAM_CONFIG_SHA256,
         },
     }
-    if package.get("package_version") != "2026-07-19.1":
+    if package.get("package_version") != "2026-07-23.1":
         raise RuntimeError("published evidence package has the wrong release version")
     if package.get("content_sha256") != (
-        "9c92d249f29b783d2ed3fdfca33db1eed65715a8e5d1179ebdeed024a2925c50"
+        "d7d3e7fa2a10e491c35288f9cc4f2bf11d548edded51b35ed1a4a85879c82c25"
     ):
         raise RuntimeError("published evidence package has the wrong content hash")
     if hashlib.sha256(DEFAULT_PUBLISHED_PACKAGE.read_bytes()).hexdigest() != (
@@ -1396,7 +1404,7 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
     program_records = _object_list(package, "program_records", allow_empty=False)
     selector_results = _object_list(package, "selector_results", allow_empty=False)
     gaps = _object_list(package, "gaps")
-    if (len(evidence_records), len(program_records), len(gaps)) != (22, 122, 11):
+    if (len(evidence_records), len(program_records), len(gaps)) != (40, 122, 11):
         raise RuntimeError("published evidence package release counts do not match the audited release")
 
     context_config = json.loads(DEFAULT_CONTEXT_CONFIG.read_text(encoding="utf-8"))
@@ -1417,8 +1425,8 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
             for record_id in receipt.get("selected_record_ids", [])
         )
         approved_pairs.update((selector_id, record_id) for record_id in approved_ids)
-    if len(approved_pairs) != 23 or selected_pairs != approved_pairs:
-        raise RuntimeError("published evidence package does not exactly contain the 23 audited approvals")
+    if len(approved_pairs) != 41 or selected_pairs != approved_pairs:
+        raise RuntimeError("published evidence package does not exactly contain the 41 audited approvals")
     if any("W4399796030" in str(record.get("record_id")) for record in evidence_records):
         raise RuntimeError("published evidence package contains the SWD parasitoid-role paper")
     role_rejections = sum(
@@ -1449,7 +1457,7 @@ def _check_exact_published_release(package: dict[str, object]) -> None:
     source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
     source_map_terms = (
         PUBLIC_PACKAGE_SCHEMA_VERSION,
-        "2026-07-19.1",
+        "2026-07-23.1",
         DEFAULT_PUBLISHED_PACKAGE.relative_to(REPO_ROOT).as_posix(),
         DEFAULT_PUBLISHED_PACKAGE_SHA256,
         str(package["content_sha256"]),
@@ -2735,6 +2743,63 @@ def check_reviewed_scientific_evidence() -> None:
             )
 
 
+def check_reviewed_repellent_evidence() -> None:
+    from askinsects.sources.reviewed_repellent_evidence import (
+        REVIEWED_REPELLENT_SOURCE_ID,
+        build_reviewed_repellent_records,
+        load_reviewed_repellent_catalog,
+    )
+
+    catalog_path = REPO_ROOT / "config/reviewed-repellent-evidence.json"
+    catalog = load_reviewed_repellent_catalog(catalog_path)
+    materials = catalog.get("materials")
+    evidence = catalog.get("evidence")
+    if not isinstance(materials, list) or len(materials) != 16:
+        raise RuntimeError(
+            "reviewed repellent evidence catalog must contain 16 audited materials"
+        )
+    if not isinstance(evidence, list) or len(evidence) != 18:
+        raise RuntimeError(
+            "reviewed repellent evidence catalog must contain 18 audited claims"
+        )
+    records = build_reviewed_repellent_records(
+        catalog_path=catalog_path,
+        retrieved_at="2026-07-23T00:00:00Z",
+    )
+    if len(records) != len(evidence):
+        raise RuntimeError(
+            "reviewed repellent evidence catalog does not build one record per claim"
+        )
+    if any(record.source != REVIEWED_REPELLENT_SOURCE_ID for record in records):
+        raise RuntimeError(
+            "reviewed repellent evidence records use the wrong source id"
+        )
+
+    source_map = (REPO_ROOT / "config/source-map.yaml").read_text(encoding="utf-8")
+    source_docs = (REPO_ROOT / "docs/source-lanes.md").read_text(encoding="utf-8")
+    for required in (
+        "reviewed_repellent_evidence",
+        "config/reviewed-repellent-evidence.json",
+        "scripts/ingest_reviewed_repellent_evidence.py",
+        "exact_material_identity_only",
+        "private_compound_names_never_enter_ask_insects",
+    ):
+        if required not in source_map:
+            raise RuntimeError(
+                f"config/source-map.yaml is missing reviewed-repellent term: {required}"
+            )
+    for required in (
+        "reviewed_repellent_evidence",
+        "config/reviewed-repellent-evidence.json",
+        "exact material identity",
+        "private compound names never enter Ask Insects",
+    ):
+        if required not in source_docs:
+            raise RuntimeError(
+                f"docs/source-lanes.md is missing reviewed-repellent term: {required}"
+            )
+
+
 def check_reality_evaluation() -> None:
     from askinsects.reality_eval import (
         PUBLIC_QUESTION_COUNT,
@@ -3695,6 +3760,7 @@ def main() -> int:
         check_insect_intelligence_programs()
         check_evidence_package()
         check_reviewed_scientific_evidence()
+        check_reviewed_repellent_evidence()
         check_reality_evaluation()
         check_aedes_source_plane_benchmark()
         check_cli()
