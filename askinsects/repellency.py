@@ -9,6 +9,7 @@ import re
 from typing import Any
 
 from .index import SourceIndex
+from .provenance import public_provenance_locator
 from .records import EvidenceRecord
 
 
@@ -128,6 +129,13 @@ _COMPOUND_DISPLAY_NAMES = {
     "deet": "DEET",
     "ir3535": "IR3535",
     "pmd": "PMD",
+}
+
+_COMPOUND_CANONICAL_NAMES = {
+    "icaridin": "picaridin",
+    "\u03b1-phellandrene": "alpha-phellandrene",
+    "\u03b3-terpinene": "gamma-terpinene",
+    "\u03b4-3-carene": "delta-3-carene",
 }
 
 _DATE_BOUNDED_REPELLENT_QUESTION_TERMS = (
@@ -708,6 +716,11 @@ def _unique(values: list[str]) -> list[str]:
     return result
 
 
+def _canonical_compound(value: str) -> str:
+    normalized = value.strip().casefold()
+    return _COMPOUND_CANONICAL_NAMES.get(normalized, normalized)
+
+
 def _normalize_exposure_values(values: list[str]) -> list[str]:
     normalized: list[str] = []
     for value in values:
@@ -790,7 +803,13 @@ def _comparison_row(
     combined = f"{record.title}\n{evidence_text}"
 
     compounds = _unique(
-        _field_values(payload, "compound") + _matches(combined, _COMPOUND_PATTERNS)
+        [
+            _canonical_compound(value)
+            for value in (
+                _field_values(payload, "compound")
+                + _matches(combined, _COMPOUND_PATTERNS)
+            )
+        ]
     )
     exposures = _normalize_exposure_values(
         _field_values(payload, "exposure_mode") + _matches(combined, _EXPOSURE_PATTERNS)
@@ -818,7 +837,11 @@ def _comparison_row(
     dose = _first_match(
         evidence_text,
         (
-            r"\b(\d+(?:\.\d+)?\s*%)",
+            r"\b(?:with|at|containing|concentration(?:\s+of)?|dose(?:\s+of)?|"
+            r"formulated\s+at|applied\s+at|exposed\s+to|treated\s+with|"
+            r"tested\s+with)\s+(\d+(?:\.\d+)?\s*%)",
+            r"\b(\d+(?:\.\d+)?\s*%)\s*(?:deet|picaridin|icaridin|ir3535|"
+            r"pmd|repellent|oil|solution|emulsion|lotion|spray)\b",
             r"\b(\d+(?:\.\d+)?\s*(?:mg|ug|g)/(?:cm2|m2|ml|l))\b",
             r"\b(\d+(?:\.\d+)?\s*ppm)\b",
         ),
@@ -878,9 +901,17 @@ def _comparison_row(
         "uncertainty": uncertainty,
         "confidence": confidence,
         "human_verified": human_verified,
+        "fulltext_unit_id": payload.get("fulltext_unit_id"),
+        "extraction_method": payload.get("extraction_method"),
         "evidence_text": evidence_text,
         "url": record.url,
-        "provenance": record.provenance.to_dict(),
+        "provenance": {
+            **record.provenance.to_dict(),
+            "locator": public_provenance_locator(
+                record.provenance.locator,
+                record.provenance.source_id,
+            ),
+        },
     }
 
 
@@ -1039,6 +1070,11 @@ def _pairwise_comparable_rows(
 
 
 def _evidence_item(record: EvidenceRecord) -> dict[str, object]:
+    provenance = record.provenance.to_dict()
+    provenance["locator"] = public_provenance_locator(
+        str(provenance.get("locator") or ""),
+        record.provenance.source_id,
+    )
     return {
         "record_id": record.record_id,
         "lane": record.lane,
@@ -1048,7 +1084,7 @@ def _evidence_item(record: EvidenceRecord) -> dict[str, object]:
         "species": record.species,
         "url": record.url,
         "media_url": record.media_url,
-        "provenance": record.provenance.to_dict(),
+        "provenance": provenance,
     }
 
 
@@ -1159,6 +1195,7 @@ def _bounded_comparison_rows(
         key=lambda row: (
             0 if row.get("human_verified") else 1,
             0 if row.get("outcome") else 1,
+            0 if row.get("fulltext_unit_id") else 1,
             0 if row.get("compounds") else 1,
             str(row.get("paper_title") or "").casefold(),
             str(row.get("record_id") or ""),
@@ -1224,7 +1261,15 @@ def build_date_bounded_repellent_literature_answer(
         )
         for record in assay_records
     ]
-    selected_rows = _bounded_comparison_rows(all_rows, limit=max(1, limit))
+    informative_rows = [
+        row
+        for row in all_rows
+        if row.get("fulltext_unit_id") or row.get("outcome")
+    ]
+    selected_rows = _bounded_comparison_rows(
+        informative_rows or all_rows,
+        limit=max(1, limit),
+    )
 
     named_compound_keys = {
         compound

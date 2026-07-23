@@ -212,10 +212,24 @@ class RepellencyComparisonTest(unittest.TestCase):
             prior_paper_id = "mosquito_repellent_literature:doi:10_1000_prior"
             index.upsert_records(
                 [
-                    _record(
-                        current_paper_id,
+                    EvidenceRecord(
+                        record_id=current_paper_id,
+                        lane="literature",
                         source="mosquito_repellent_literature",
                         title="DEET spatial repellency published in 2026",
+                        text="DEET spatial repellency published in 2026",
+                        species="Aedes aegypti",
+                        url="https://doi.org/10.1000/current",
+                        media_url=None,
+                        provenance=Provenance(
+                            source_id="mosquito_repellent_literature",
+                            locator=(
+                                "/home/josh/ask-insects/artifacts/mosquito-v1/raw/"
+                                "mosquito_repellent_literature/current.json#items/0"
+                            ),
+                            retrieved_at="2026-07-23T00:00:00Z",
+                            source_url="https://doi.org/10.1000/current",
+                        ),
                         payload={
                             "doi": "10.1000/current",
                             "publication_date": "2026-04-02",
@@ -264,6 +278,20 @@ class RepellencyComparisonTest(unittest.TestCase):
                         },
                     ),
                     _record(
+                        "mosq_repellent_lit_fact:repellency_assay:current_metadata",
+                        source="mosquito_repellent_literature_extracted_facts",
+                        lane="behavior",
+                        title="Current-year DEET title-only mention",
+                        text="The paper title mentions DEET repellency.",
+                        payload={
+                            "fact_type": "repellency_assay",
+                            "source_record_id": current_paper_id,
+                            "fields": {"compound": ["deet"]},
+                            "evidence_text": "The paper title mentions DEET repellency.",
+                            "confidence": "candidate",
+                        },
+                    ),
+                    _record(
                         "mosq_repellent_lit_fact:repellency_assay:prior",
                         source="mosquito_repellent_literature_extracted_facts",
                         lane="behavior",
@@ -308,10 +336,29 @@ class RepellencyComparisonTest(unittest.TestCase):
         self.assertEqual(result["named_compounds"], ["DEET"])
         self.assertIn("cannot be ranked", result["answer"])
         self.assertIn("82% landing inhibition", result["answer"])
+        self.assertNotIn("title-only mention", result["answer"])
+        self.assertEqual(
+            [
+                row["record_id"]
+                for row in result["comparison"]["rows"]
+            ],
+            ["mosq_repellent_lit_fact:repellency_assay:current"],
+        )
         self.assertNotIn("Picaridin", result["answer"])
         self.assertTrue(result["evidence"])
         self.assertTrue(
             all("prior" not in item["record_id"] for item in result["evidence"])
+        )
+        self.assertNotIn("/home/josh", str(result["evidence"]))
+        self.assertTrue(
+            any(
+                item["provenance"]["locator"]
+                == (
+                    "artifacts/mosquito-v1/raw/"
+                    "mosquito_repellent_literature/current.json#items/0"
+                )
+                for item in result["evidence"]
+            )
         )
         self.assertTrue(all(item["ok"] for item in variant_results))
         self.assertTrue(
@@ -378,6 +425,69 @@ class RepellencyComparisonTest(unittest.TestCase):
             cpt_row["outcome"],
             "67.93 min complete protection time",
         )
+
+    def test_compound_aliases_are_canonical_and_outcomes_are_not_doses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            index = _build_index(Path(tmp) / "source_index.sqlite")
+            index.upsert_records(
+                [
+                    _record(
+                        "mosq_repellent_lit_fact:repellency_assay:aliases",
+                        source="mosquito_repellent_literature_extracted_facts",
+                        lane="behavior",
+                        title="Repellent aliases and measured outcome",
+                        text=(
+                            "Icaridin, alpha-phellandrene, gamma-terpinene, and "
+                            "delta-3-carene were named. Repellence was 93.4% after "
+                            "4 hours."
+                        ),
+                        payload={
+                            "fact_type": "repellency_assay",
+                            "source_record_id": (
+                                "mosquito_repellent_literature:doi:10_1000_deet"
+                            ),
+                            "fields": {
+                                "compound": [
+                                    "icaridin",
+                                    "\u03b1-phellandrene",
+                                    "\u03b3-terpinene",
+                                    "\u03b4-3-carene",
+                                ],
+                                "endpoint": ["repellency"],
+                            },
+                            "evidence_text": (
+                                "Icaridin, alpha-phellandrene, gamma-terpinene, and "
+                                "delta-3-carene were named. Repellence was 93.4% "
+                                "after 4 hours."
+                            ),
+                            "confidence": "candidate",
+                        },
+                    )
+                ]
+            )
+
+            result = build_repellency_comparison_answer(
+                index,
+                "Summarize mosquito repellent assay results.",
+                limit=10,
+            )
+
+        row = next(
+            item
+            for item in result["comparison"]["rows"]
+            if item["record_id"].endswith(":aliases")
+        )
+        self.assertEqual(
+            row["compounds"],
+            [
+                "picaridin",
+                "alpha-phellandrene",
+                "gamma-terpinene",
+                "delta-3-carene",
+            ],
+        )
+        self.assertEqual(row["outcome"], "93.4% repellence")
+        self.assertIsNone(row["dose"])
 
     def test_source_records_are_cached_until_the_index_changes(self):
         with tempfile.TemporaryDirectory() as tmp:
