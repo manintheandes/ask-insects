@@ -12,7 +12,12 @@ from .planner import QueryPlan, plan_question
 from .provenance import public_provenance_locator
 from .reviewed_science import build_reviewed_science_answer
 from .records import EvidenceRecord
-from .repellency import build_repellency_comparison_answer, is_repellency_comparison_question
+from .repellency import (
+    build_date_bounded_repellent_literature_answer,
+    build_repellency_comparison_answer,
+    is_date_bounded_repellent_literature_question,
+    is_repellency_comparison_question,
+)
 from .sources.aedes_deep_sources import (
     AEDES_GLOBAL_COMPENDIUM_SOURCE_ID,
     AEDES_POPULATION_GENOMICS_SOURCE_ID,
@@ -7277,6 +7282,13 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
     reviewed_science = build_reviewed_science_answer(index, question)
     if reviewed_science is not None:
         return reviewed_science
+
+    if is_date_bounded_repellent_literature_question(plan.question):
+        return build_date_bounded_repellent_literature_answer(
+            index,
+            plan.question,
+            limit=limit,
+        )
 
     if is_repellency_comparison_question(plan.question):
         return build_repellency_comparison_answer(index, plan.question, limit=limit)

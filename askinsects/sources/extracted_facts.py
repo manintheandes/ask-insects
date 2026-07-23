@@ -1753,17 +1753,17 @@ def _bounded_fulltext_rows(
     conn: sqlite3.Connection,
     *,
     max_fulltext_units: int | None,
-    source_record_ids: list[str] | None = None,
+    record_ids: list[str],
 ) -> list[sqlite3.Row]:
-    query = """
+    if not record_ids:
+        return []
+    placeholders = ",".join("?" for _ in record_ids)
+    query = f"""
         SELECT unit_id, record_id, unit_index, text, url, license, provenance_json
         FROM literature_fulltext_units
+        WHERE record_id IN ({placeholders})
     """
-    params: list[object] = []
-    if source_record_ids:
-        placeholders = ",".join("?" for _ in source_record_ids)
-        query += f" WHERE record_id IN ({placeholders})"
-        params.extend(source_record_ids)
+    params: list[object] = list(record_ids)
     query += " ORDER BY rowid"
     if max_fulltext_units is not None:
         query += " LIMIT ?"
@@ -1771,22 +1771,37 @@ def _bounded_fulltext_rows(
     return conn.execute(query, params).fetchall()
 
 
+def _fulltext_record_ids(paper: sqlite3.Row) -> list[str]:
+    record_ids = [str(paper["record_id"])]
+    payload = _safe_json(paper["payload_json"])
+    matched_record_ids = payload.get("matched_record_ids")
+    if isinstance(matched_record_ids, list):
+        record_ids.extend(
+            str(record_id).strip()
+            for record_id in matched_record_ids
+            if str(record_id).strip()
+        )
+    return list(dict.fromkeys(record_ids))
+
+
 def _text_candidates(
     conn: sqlite3.Connection,
     literature_rows: list[sqlite3.Row],
     *,
     max_fulltext_units: int | None,
-    source_record_ids: list[str] | None = None,
     profile: ExtractedFactsProfile = DEFAULT_PROFILE,
 ) -> tuple[list[TextCandidate], int, int, int, int]:
     if max_fulltext_units is not None and max_fulltext_units < 1:
         raise ValueError("max_fulltext_units must be positive")
-    literature_by_id = {str(row["record_id"]): row for row in literature_rows}
+    literature_by_fulltext_id: dict[str, list[sqlite3.Row]] = {}
+    for paper in literature_rows:
+        for record_id in _fulltext_record_ids(paper):
+            literature_by_fulltext_id.setdefault(record_id, []).append(paper)
     try:
         fulltext_rows = _bounded_fulltext_rows(
             conn,
             max_fulltext_units=max_fulltext_units,
-            source_record_ids=source_record_ids,
+            record_ids=sorted(literature_by_fulltext_id),
         )
         fulltext_total = len(fulltext_rows)
         if max_fulltext_units is not None and len(fulltext_rows) > max_fulltext_units:
@@ -1799,8 +1814,8 @@ def _text_candidates(
     truncated_fulltext_unit_count = 0
     fulltext_record_ids: set[str] = set()
     for unit in fulltext_rows:
-        paper = literature_by_id.get(str(unit["record_id"]))
-        if paper is None:
+        papers = literature_by_fulltext_id.get(str(unit["record_id"]), [])
+        if not papers:
             continue
         unit_text = str(unit["text"])
         if _looks_like_markup_noise(unit_text):
@@ -1808,25 +1823,28 @@ def _text_candidates(
         if len(unit_text) > MAX_CANDIDATE_TEXT_CHARS:
             unit_text = unit_text[:MAX_CANDIDATE_TEXT_CHARS]
             truncated_fulltext_unit_count += 1
-        if not _matches_prefilter("\n".join([str(paper["title"]), unit_text]), profile=profile):
-            continue
-        fulltext_record_ids.add(str(unit["record_id"]))
-        candidates.append(
-            TextCandidate(
-                source_record_id=str(paper["record_id"]),
-                source_title=str(paper["title"]),
-                species=paper["species"],
-                paper_url=paper["url"],
-                source_provenance=_safe_json(paper["provenance_json"]),
-                extraction_source="literature_fulltext_units",
-                unit_id=str(unit["unit_id"]),
-                unit_index=int(unit["unit_index"]),
-                unit_url=unit["url"],
-                unit_license=unit["license"],
-                unit_provenance=_safe_json(unit["provenance_json"]),
-                text=unit_text,
+        for paper in papers:
+            if not _matches_prefilter(
+                "\n".join([str(paper["title"]), unit_text]), profile=profile
+            ):
+                continue
+            fulltext_record_ids.add(str(paper["record_id"]))
+            candidates.append(
+                TextCandidate(
+                    source_record_id=str(paper["record_id"]),
+                    source_title=str(paper["title"]),
+                    species=paper["species"],
+                    paper_url=paper["url"],
+                    source_provenance=_safe_json(paper["provenance_json"]),
+                    extraction_source="literature_fulltext_units",
+                    unit_id=str(unit["unit_id"]),
+                    unit_index=int(unit["unit_index"]),
+                    unit_url=unit["url"],
+                    unit_license=unit["license"],
+                    unit_provenance=_safe_json(unit["provenance_json"]),
+                    text=unit_text,
+                )
             )
-        )
 
     selected_record_text_count = 0
     for paper in literature_rows:
@@ -3421,7 +3439,6 @@ def build_extracted_fact_records(
             conn,
             literature_rows,
             max_fulltext_units=max_fulltext_units,
-            source_record_ids=source_record_ids,
             profile=profile,
         )
     finally:

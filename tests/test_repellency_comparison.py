@@ -203,6 +203,182 @@ def _build_index(path: Path) -> SourceIndex:
 
 
 class RepellencyComparisonTest(unittest.TestCase):
+    def test_current_year_compound_question_uses_only_current_year_papers(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            artifact_dir = Path(tmp)
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            current_paper_id = "mosquito_repellent_literature:doi:10_1000_current"
+            prior_paper_id = "mosquito_repellent_literature:doi:10_1000_prior"
+            index.upsert_records(
+                [
+                    _record(
+                        current_paper_id,
+                        source="mosquito_repellent_literature",
+                        title="DEET spatial repellency published in 2026",
+                        payload={
+                            "doi": "10.1000/current",
+                            "publication_date": "2026-04-02",
+                            "publication_year": 2026,
+                            "repellent_terms": ["deet", "spatial repellent"],
+                            "coverage_status": "repellent_metadata_ingested",
+                        },
+                    ),
+                    _record(
+                        prior_paper_id,
+                        source="mosquito_repellent_literature",
+                        title="Picaridin topical repellency published in 2025",
+                        payload={
+                            "doi": "10.1000/prior",
+                            "publication_date": "2025-04-02",
+                            "publication_year": 2025,
+                            "repellent_terms": ["picaridin", "topical repellent"],
+                            "coverage_status": "repellent_metadata_ingested",
+                        },
+                    ),
+                    _record(
+                        "mosq_repellent_lit_fact:repellency_assay:current",
+                        source="mosquito_repellent_literature_extracted_facts",
+                        lane="behavior",
+                        title="Current-year DEET assay result",
+                        text=(
+                            "Adult female Aedes aegypti exposed to 10% DEET in a "
+                            "non-contact chamber showed 82% landing inhibition after "
+                            "30 minutes versus solvent control (n=40, p<0.05)."
+                        ),
+                        payload={
+                            "fact_type": "repellency_assay",
+                            "source_record_id": current_paper_id,
+                            "fields": {
+                                "compound": ["deet"],
+                                "exposure_mode": ["non-contact"],
+                                "assay": ["chamber"],
+                                "endpoint": ["landing inhibition"],
+                            },
+                            "evidence_text": (
+                                "Adult female Aedes aegypti exposed to 10% DEET in a "
+                                "non-contact chamber showed 82% landing inhibition after "
+                                "30 minutes versus solvent control (n=40, p<0.05)."
+                            ),
+                            "confidence": "candidate",
+                        },
+                    ),
+                    _record(
+                        "mosq_repellent_lit_fact:repellency_assay:prior",
+                        source="mosquito_repellent_literature_extracted_facts",
+                        lane="behavior",
+                        title="Prior-year picaridin assay result",
+                        text="Picaridin provided 90% protection in 2025.",
+                        payload={
+                            "fact_type": "repellency_assay",
+                            "source_record_id": prior_paper_id,
+                            "fields": {
+                                "compound": ["picaridin"],
+                                "endpoint": ["protection"],
+                            },
+                            "evidence_text": "Picaridin provided 90% protection in 2025.",
+                            "confidence": "candidate",
+                        },
+                    ),
+                ]
+            )
+
+            result = answer_question(
+                "list the most repellent compounds in the literature from papers published this year",
+                artifact_dir=artifact_dir,
+                limit=10,
+            )
+            variant_results = [
+                answer_question(
+                    question,
+                    artifact_dir=artifact_dir,
+                    limit=10,
+                )
+                for question in (
+                    "Which repellent compounds stand out in this year's papers?",
+                    "List repellent actives from papers published in 2026.",
+                    "What repellent compounds are in the 2026 literature?",
+                )
+            ]
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["answer_shape"], "repellent_literature_year")
+        self.assertEqual(result["coverage"]["publication_year"], 2026)
+        self.assertEqual(result["coverage"]["deduplicated_papers"], 1)
+        self.assertEqual(result["named_compounds"], ["DEET"])
+        self.assertIn("cannot be ranked", result["answer"])
+        self.assertIn("82% landing inhibition", result["answer"])
+        self.assertNotIn("Picaridin", result["answer"])
+        self.assertTrue(result["evidence"])
+        self.assertTrue(
+            all("prior" not in item["record_id"] for item in result["evidence"])
+        )
+        self.assertTrue(all(item["ok"] for item in variant_results))
+        self.assertTrue(
+            all(
+                item["coverage"]["publication_year"] == 2026
+                for item in variant_results
+            )
+        )
+        self.assertTrue(
+            all(
+                item["coverage"]["deduplicated_papers"] == 1
+                for item in variant_results
+            )
+        )
+
+    def test_complete_protection_time_is_reported_as_an_outcome(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            index = _build_index(Path(tmp) / "source_index.sqlite")
+            index.upsert_records(
+                [
+                    _record(
+                        "mosq_repellent_lit_fact:repellency_assay:cpt",
+                        source="mosquito_repellent_literature_extracted_facts",
+                        lane="behavior",
+                        title="Clove oil complete protection time",
+                        text=(
+                            "Adult female Aedes aegypti were tested in an arm-in-cage "
+                            "assay. Eugenol was the principal constituent and CPT = "
+                            "67.93 min versus a solvent control."
+                        ),
+                        payload={
+                            "fact_type": "repellency_assay",
+                            "source_record_id": (
+                                "mosquito_repellent_literature:doi:10_1000_deet"
+                            ),
+                            "fields": {
+                                "compound": ["eugenol"],
+                                "assay": ["arm-in-cage"],
+                                "endpoint": ["complete protection time"],
+                            },
+                            "evidence_text": (
+                                "Adult female Aedes aegypti were tested in an "
+                                "arm-in-cage assay. Eugenol was the principal constituent "
+                                "and CPT = 67.93 min versus a solvent control."
+                            ),
+                            "confidence": "candidate",
+                        },
+                    )
+                ]
+            )
+
+            result = build_repellency_comparison_answer(
+                index,
+                "Summarize mosquito repellent assay results.",
+                limit=10,
+            )
+
+        cpt_row = next(
+            row
+            for row in result["comparison"]["rows"]
+            if row["record_id"].endswith(":cpt")
+        )
+        self.assertEqual(
+            cpt_row["outcome"],
+            "67.93 min complete protection time",
+        )
+
     def test_source_records_are_cached_until_the_index_changes(self):
         with tempfile.TemporaryDirectory() as tmp:
             index = _build_index(Path(tmp) / "source_index.sqlite")
