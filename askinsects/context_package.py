@@ -232,6 +232,9 @@ RETAINED_SEMANTIC_FIELD_PATHS = frozenset(
         "payload.assay_types",
         "payload.table_row",
         "payload.fields.table_row",
+        "payload.evidence",
+        "payload.evidence.comparison_target_scientific_name",
+        "payload.evidence.scientific_name",
         "payload.raw_openalex_work.display_name",
         "payload.raw_openalex_work.abstract_inverted_index",
     }

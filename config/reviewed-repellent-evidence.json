@@ -1,0 +1,537 @@
+{
+  "schema_version": "ask-insects-reviewed-repellent-evidence.v1",
+  "last_reviewed": "2026-07-23",
+  "materials": [
+    {
+      "id": "cinnamaldehyde",
+      "canonical_name": "cinnamaldehyde",
+      "material_type": "pure_compound",
+      "exact_aliases": ["cinnamaldehyde", "(E)-cinnamaldehyde", "trans-cinnamaldehyde"]
+    },
+    {
+      "id": "citral",
+      "canonical_name": "citral",
+      "material_type": "pure_compound",
+      "exact_aliases": ["citral"]
+    },
+    {
+      "id": "deet",
+      "canonical_name": "DEET",
+      "material_type": "pure_compound",
+      "exact_aliases": ["DEET", "N,N-diethyl-m-toluamide", "N,N-diethyl-3-methylbenzamide"]
+    },
+    {
+      "id": "eucalyptus_globulus_oil",
+      "canonical_name": "Eucalyptus globulus oil",
+      "material_type": "essential_oil",
+      "exact_aliases": ["Eucalyptus globulus oil", "Eucalyptus globulus essential oil"],
+      "related_aliases": ["eucalyptus oil", "eucalyptus essential oil"]
+    },
+    {
+      "id": "eugenol",
+      "canonical_name": "eugenol",
+      "material_type": "pure_compound",
+      "exact_aliases": ["eugenol"]
+    },
+    {
+      "id": "garlic_oil",
+      "canonical_name": "garlic oil",
+      "material_type": "essential_oil",
+      "exact_aliases": ["garlic oil", "garlic essential oil"]
+    },
+    {
+      "id": "geraniol",
+      "canonical_name": "geraniol",
+      "material_type": "pure_compound",
+      "exact_aliases": ["geraniol"]
+    },
+    {
+      "id": "lemongrass_oil",
+      "canonical_name": "lemongrass oil",
+      "material_type": "essential_oil",
+      "exact_aliases": ["lemongrass oil", "Cymbopogon citratus oil"]
+    },
+    {
+      "id": "menthol",
+      "canonical_name": "menthol",
+      "material_type": "pure_compound",
+      "exact_aliases": ["menthol"]
+    },
+    {
+      "id": "methyl_salicylate",
+      "canonical_name": "methyl salicylate",
+      "material_type": "pure_compound",
+      "exact_aliases": ["methyl salicylate", "wintergreen", "oil of wintergreen"]
+    },
+    {
+      "id": "p_cymene",
+      "canonical_name": "p-cymene",
+      "material_type": "pure_compound",
+      "exact_aliases": ["p-cymene", "p cymene", "para-cymene"]
+    },
+    {
+      "id": "peppermint_oil",
+      "canonical_name": "peppermint oil",
+      "material_type": "essential_oil",
+      "exact_aliases": ["peppermint oil", "Mentha piperita oil"]
+    },
+    {
+      "id": "pmd",
+      "canonical_name": "PMD",
+      "material_type": "pure_compound",
+      "exact_aliases": ["PMD", "p-menthane-3,8-diol", "para-menthane-3,8-diol"]
+    },
+    {
+      "id": "rosemary_oil",
+      "canonical_name": "rosemary oil",
+      "material_type": "essential_oil",
+      "exact_aliases": ["rosemary oil", "rosemary essential oil", "Rosmarinus officinalis oil"]
+    },
+    {
+      "id": "thymol",
+      "canonical_name": "thymol",
+      "material_type": "pure_compound",
+      "exact_aliases": ["thymol"]
+    },
+    {
+      "id": "thyme_oil",
+      "canonical_name": "thyme oil",
+      "material_type": "essential_oil",
+      "exact_aliases": ["thyme oil", "thyme essential oil", "Thymus vulgaris oil"]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "cinnamaldehyde_aedes_skin_2006",
+      "material_id": "cinnamaldehyde",
+      "species_id": "aedes_aegypti",
+      "scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "skin_bioassay",
+      "exposure_route": "contact",
+      "endpoint": "protection from female mosquito contact",
+      "finding": "(E)-cinnamaldehyde at 0.051 mg/cm2 provided 87% protection 30 minutes after application; DEET at 0.025 mg/cm2 provided 95% in the same study.",
+      "limitations": [
+        "This is a dose- and time-specific laboratory skin result, not proof of longer protection, safety, or field performance."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Repellency of Cinnamomum cassia bark compounds and cream containing cassia oil to Aedes aegypti under laboratory and indoor conditions",
+          "public_url": "https://doi.org/10.1002/ps.1268",
+          "source_id": "doi:10.1002/ps.1268",
+          "locator": "Abstract: skin bioassay protection at 30 minutes for (E)-cinnamaldehyde and DEET"
+        }
+      ]
+    },
+    {
+      "id": "cinnamaldehyde_aedes_albopictus_2020",
+      "material_id": "cinnamaldehyde",
+      "species_id": "aedes_albopictus",
+      "scientific_name": "Aedes albopictus",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "screening_and_arm_in_cage",
+      "exposure_route": "contact",
+      "endpoint": "repellent rate and protection time",
+      "finding": "Cinnamaldehyde showed an 82% repellent rate in screening, and its nanoemulsion prolonged protection time relative to the normal solution in an arm-in-cage assay.",
+      "limitations": [
+        "The formulation changed persistence; the result cannot be transferred unchanged to a different formulation or to Aedes aegypti."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Screening of larvicidal activity of 53 essential oils and their synergistic effect for the improvement of deltamethrin efficacy against Aedes albopictus",
+          "public_url": "https://doi.org/10.1016/j.indcrop.2020.112131",
+          "source_id": "doi:10.1016/j.indcrop.2020.112131",
+          "locator": "Abstract: repellent screening and arm-in-cage nanoemulsion comparison"
+        }
+      ]
+    },
+    {
+      "id": "citral_aedes_albopictus_2020",
+      "material_id": "citral",
+      "species_id": "aedes_albopictus",
+      "scientific_name": "Aedes albopictus",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "screening_and_arm_in_cage",
+      "exposure_route": "contact",
+      "endpoint": "repellent rate and protection time",
+      "finding": "Citral showed a 65% repellent rate in screening, and its nanoemulsion prolonged protection time relative to the normal solution in an arm-in-cage assay.",
+      "limitations": [
+        "The formulation changed persistence; the result cannot be transferred unchanged to a different formulation or to Aedes aegypti."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Screening of larvicidal activity of 53 essential oils and their synergistic effect for the improvement of deltamethrin efficacy against Aedes albopictus",
+          "public_url": "https://doi.org/10.1016/j.indcrop.2020.112131",
+          "source_id": "doi:10.1016/j.indcrop.2020.112131",
+          "locator": "Abstract: repellent screening and arm-in-cage nanoemulsion comparison"
+        }
+      ]
+    },
+    {
+      "id": "eucalyptus_aedes_landing_2016",
+      "material_id": "eucalyptus_globulus_oil",
+      "species_id": "aedes_aegypti",
+      "scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "human_landing_protocol",
+      "exposure_route": "contact",
+      "endpoint": "mosquito landing and feeding",
+      "finding": "At 20% in ethanol, Eucalyptus globulus oil prevented Aedes aegypti landing for about 1.5 hours in the reported protocol.",
+      "limitations": [
+        "The result is specific to Eucalyptus globulus oil at 20%; it does not establish the composition or performance of another eucalyptus species, brand, or formulation."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Mosquito repellent activity of volatile oils from selected aromatic plants",
+          "public_url": "https://pubmed.ncbi.nlm.nih.gov/28013374/",
+          "source_id": "pubmed:28013374",
+          "locator": "Abstract: 20% Eucalyptus globulus oil Aedes aegypti landing result"
+        }
+      ]
+    },
+    {
+      "id": "eugenol_aedes_close_range_2020",
+      "material_id": "eugenol",
+      "species_id": "aedes_aegypti",
+      "scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "close_proximity_odor",
+      "exposure_route": "non_contact",
+      "endpoint": "movement away from treated filter paper",
+      "finding": "Eugenol produced significant close-range repellency in Aedes aegypti in the 30-second odor assay.",
+      "limitations": [
+        "The assay did not measure human-host landing, biting, complete protection time, or field efficacy."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Insect repellents mediate species-specific olfactory behaviours in mosquitoes",
+          "public_url": "https://doi.org/10.1186/s12936-020-03206-8",
+          "source_id": "doi:10.1186/s12936-020-03206-8",
+          "locator": "Methods: close-proximity odor assay; Results: Aedes aegypti species comparison"
+        }
+      ]
+    },
+    {
+      "id": "eugenol_anopheles_close_range_2020",
+      "material_id": "eugenol",
+      "species_id": "anopheles_coluzzii",
+      "scientific_name": "Anopheles coluzzii",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "no_significant_repellent_effect",
+      "assay_family": "close_proximity_odor",
+      "exposure_route": "non_contact",
+      "endpoint": "movement away from treated filter paper",
+      "finding": "Eugenol produced a weak repellent response in the Anopheles coluzzii assay that was not significantly different from paraffin oil (P=0.08).",
+      "limitations": [
+        "A non-significant result in this short close-range assay is not proof of no effect at every dose, formulation, or endpoint."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Insect repellents mediate species-specific olfactory behaviours in mosquitoes",
+          "public_url": "https://doi.org/10.1186/s12936-020-03206-8",
+          "source_id": "doi:10.1186/s12936-020-03206-8",
+          "locator": "Methods: close-proximity odor assay; Results: Anopheles coluzzii species comparison and P=0.08"
+        }
+      ]
+    },
+    {
+      "id": "garlic_oil_aedes_albopictus_atsb_2015",
+      "material_id": "garlic_oil",
+      "species_id": "aedes_albopictus",
+      "scientific_name": "Aedes albopictus",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "identity_only",
+      "assay_family": "attractive_toxic_sugar_bait_field_trial",
+      "exposure_route": "contact",
+      "endpoint": "population suppression after ingesting toxic bait",
+      "finding": "Microencapsulated garlic oil was tested as the toxic active ingredient in an attractive sugar bait and reduced Aedes albopictus abundance.",
+      "limitations": [
+        "This is pesticidal bait evidence, not spatial or topical repellency, and should not be presented as a repellent result."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Efficacy of attractive toxic sugar baits against Aedes albopictus with garlic oil encapsulated in beta-cyclodextrin as the active ingredient",
+          "public_url": "https://doi.org/10.1016/j.actatropica.2015.09.006",
+          "source_id": "doi:10.1016/j.actatropica.2015.09.006",
+          "locator": "Abstract: garlic-oil attractive toxic sugar bait field treatment and population endpoint"
+        }
+      ]
+    },
+    {
+      "id": "geraniol_swd_screen_2017",
+      "material_id": "geraniol",
+      "species_id": "drosophila_suzukii",
+      "scientific_name": "Drosophila suzukii",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "laboratory_repellency_screen",
+      "exposure_route": "mixed_or_unclear",
+      "endpoint": "adult repellency",
+      "finding": "Geraniol showed moderate repellency to adult Drosophila suzukii in the laboratory screen.",
+      "limitations": [
+        "The study ranked thymol above geraniol and did not establish geraniol field persistence or crop protection as a standalone compound."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Reduced Drosophila suzukii Infestation in Berries Using Deterrent Compounds and Laminate Polymer Flakes",
+          "public_url": "https://doi.org/10.3390/insects8040117",
+          "source_id": "doi:10.3390/insects8040117",
+          "locator": "Abstract and Results: laboratory repellency and oviposition-deterrence screening"
+        }
+      ]
+    },
+    {
+      "id": "geraniol_swd_ecotrol_component_2020",
+      "material_id": "geraniol",
+      "species_id": "drosophila_suzukii",
+      "scientific_name": "Drosophila suzukii",
+      "evidence_relation": "mixture_component",
+      "evidence_class": "deterrent_effect",
+      "assay_family": "raspberry_sentinel_fruit_field_trial",
+      "exposure_route": "mixed_or_unclear",
+      "endpoint": "infested-fruit proportion",
+      "finding": "Geraniol was a 5% component of Ecotrol PLUS, a rosemary/geraniol/peppermint mixture that reduced raspberry sentinel-fruit infestation versus an unsprayed control.",
+      "limitations": [
+        "The mixture study did not isolate geraniol's contribution and did not establish blueberry efficacy or equivalence to spinosad."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Deterrent Effects of Essential Oils on Spotted-Wing Drosophila: Implications for Organic Management in Berry Crops",
+          "public_url": "https://doi.org/10.3390/insects11080536",
+          "source_id": "doi:10.3390/insects11080536",
+          "locator": "Table 1; Methods 2.3; Results 3.2; Tables 2 and 3"
+        }
+      ]
+    },
+    {
+      "id": "methyl_salicylate_dbm_host_cue_2025",
+      "material_id": "methyl_salicylate",
+      "species_id": "plutella_xylostella",
+      "scientific_name": "Plutella xylostella",
+      "evidence_relation": "exact_material",
+      "evidence_class": "host_cue_or_attractant",
+      "assay_family": "electrophysiology_and_field_trapping",
+      "exposure_route": "non_contact",
+      "endpoint": "antennal response and field trapping",
+      "finding": "Methyl salicylate was one of eight broccoli volatiles that elicited antennal responses in diamondback moth; field trapping supported a three-component attractant blend.",
+      "limitations": [
+        "Antennal response and blend attraction are not repellency, and the study did not prove methyl salicylate alone caused field attraction or oviposition."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Electrophysiological Responses and Field Attractants of Plutella xylostella Adults to Volatiles from Brassica oleracea",
+          "public_url": "https://doi.org/10.1021/acs.jafc.5c03182",
+          "source_id": "doi:10.1021/acs.jafc.5c03182",
+          "locator": "Abstract and Results: eight antennally active broccoli volatiles and field trapping with a three-component blend"
+        }
+      ]
+    },
+    {
+      "id": "p_cymene_culex_forearm_2005",
+      "material_id": "p_cymene",
+      "species_id": "culex_pipiens_pallens",
+      "scientific_name": "Culex pipiens pallens",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "human_forearm_bioassay",
+      "exposure_route": "contact",
+      "endpoint": "mosquito repellency",
+      "finding": "p-Cymene was one of five thyme monoterpenes reported to repel Culex pipiens pallens in a human forearm bioassay.",
+      "limitations": [
+        "The abstract does not establish p-cymene as the strongest compound, and a later Culex study reported almost no p-cymene activity."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Monoterpenes from thyme as potential mosquito repellents",
+          "public_url": "https://doi.org/10.2987/8756-971X(2005)21[80:MFTTVA]2.0.CO;2",
+          "source_id": "doi:10.2987/8756-971X(2005)21[80:MFTTVA]2.0.CO;2",
+          "locator": "Abstract: five monoterpenes and human forearm repellency against Culex pipiens pallens"
+        }
+      ]
+    },
+    {
+      "id": "p_cymene_culex_low_activity_2011",
+      "material_id": "p_cymene",
+      "species_id": "culex_pipiens",
+      "scientific_name": "Culex pipiens",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "no_significant_repellent_effect",
+      "assay_family": "adult_repellency_assay",
+      "exposure_route": "contact",
+      "endpoint": "adult repellency",
+      "finding": "p-Cymene showed almost no repellent activity in the adult assay even though the two p-cymene-rich Thymus essential oils showed 72.9% and 78.1% repellency.",
+      "limitations": [
+        "This conflicts with another Culex forearm study and shows that whole-oil activity cannot be assigned automatically to its dominant constituent."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Chemical composition, larvicidal evaluation, and adult repellency of endemic Greek Thymus essential oils against the mosquito vector of West Nile virus",
+          "public_url": "https://doi.org/10.1007/s00436-011-2271-1",
+          "source_id": "doi:10.1007/s00436-011-2271-1",
+          "locator": "Abstract: Thymus oil repellency percentages and almost no p-cymene repellent activity"
+        }
+      ]
+    },
+    {
+      "id": "peppermint_oil_swd_flake_2017",
+      "material_id": "peppermint_oil",
+      "species_id": "drosophila_suzukii",
+      "scientific_name": "Drosophila suzukii",
+      "evidence_relation": "exact_material",
+      "evidence_class": "deterrent_effect",
+      "assay_family": "laminate_flake_field_trial",
+      "exposure_route": "mixed_or_unclear",
+      "endpoint": "larval infestation in strawberry fruit",
+      "finding": "Peppermint-oil laminate flakes reduced strawberry larval infestation by 25% four days after application, but not seven days after application.",
+      "limitations": [
+        "The study did not isolate non-contact avoidance from contact, toxicity, egg laying, hatch, or larval survival."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Reduced Drosophila suzukii Infestation in Berries Using Deterrent Compounds and Laminate Polymer Flakes",
+          "public_url": "https://doi.org/10.3390/insects8040117",
+          "source_id": "doi:10.3390/insects8040117",
+          "locator": "Results: strawberry laminate-flake field infestation at four and seven days after application"
+        }
+      ]
+    },
+    {
+      "id": "rosemary_oil_swd_ecotrol_component_2020",
+      "material_id": "rosemary_oil",
+      "species_id": "drosophila_suzukii",
+      "scientific_name": "Drosophila suzukii",
+      "evidence_relation": "mixture_component",
+      "evidence_class": "deterrent_effect",
+      "assay_family": "raspberry_sentinel_fruit_field_trial",
+      "exposure_route": "mixed_or_unclear",
+      "endpoint": "infested-fruit proportion",
+      "finding": "Rosemary oil was a 10% component of Ecotrol PLUS, a rosemary/geraniol/peppermint mixture that reduced raspberry sentinel-fruit infestation versus an unsprayed control.",
+      "limitations": [
+        "The study did not isolate rosemary oil's contribution and did not establish the efficacy of pure rosemary oil against SWD."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Deterrent Effects of Essential Oils on Spotted-Wing Drosophila: Implications for Organic Management in Berry Crops",
+          "public_url": "https://doi.org/10.3390/insects11080536",
+          "source_id": "doi:10.3390/insects11080536",
+          "locator": "Table 1; Methods 2.3; Results 3.2; Tables 2 and 3"
+        }
+      ]
+    },
+    {
+      "id": "rosemary_oil_mosquito_arm_cage_2022",
+      "material_id": "rosemary_oil",
+      "species_id": "multiple_mosquito_species",
+      "scientific_name": "Aedes aegypti; Anopheles dirus; Culex quinquefasciatus",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "arm_in_cage",
+      "exposure_route": "contact",
+      "endpoint": "complete protection time",
+      "finding": "Undiluted rosemary oil was tested directly by arm-in-cage against Aedes aegypti, Anopheles dirus, and Culex quinquefasciatus; the paper reports repellency attributes across the tested oils and species.",
+      "limitations": [
+        "Protection time depended strongly on oil and mosquito species; the abstract does not identify rosemary as the best oil or support transfer to a branded or diluted formulation."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Effectiveness of Herbal Essential Oils as Single and Combined Repellents against Aedes aegypti, Anopheles dirus and Culex quinquefasciatus",
+          "public_url": "https://doi.org/10.3390/insects13070658",
+          "source_id": "doi:10.3390/insects13070658",
+          "locator": "Abstract and Methods: ten undiluted oils, including rosemary, tested by arm-in-cage against three mosquito species"
+        }
+      ]
+    },
+    {
+      "id": "thymol_swd_screen_and_raspberry_2017",
+      "material_id": "thymol",
+      "species_id": "drosophila_suzukii",
+      "scientific_name": "Drosophila suzukii",
+      "evidence_relation": "exact_material",
+      "evidence_class": "deterrent_effect",
+      "assay_family": "laboratory_screen_and_raspberry_assays",
+      "exposure_route": "mixed_or_unclear",
+      "endpoint": "adult landing and larval infestation",
+      "finding": "Thymol was the strongest laboratory repellent for up to 24 hours and reduced raspberry landings and larval infestation; in a no-choice assay it reduced landings 60% and infestation 50%.",
+      "limitations": [
+        "Thymol also increased mortality relative to controls, so reduced infestation cannot be interpreted as pure non-toxic repellency."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Reduced Drosophila suzukii Infestation in Berries Using Deterrent Compounds and Laminate Polymer Flakes",
+          "public_url": "https://doi.org/10.3390/insects8040117",
+          "source_id": "doi:10.3390/insects8040117",
+          "locator": "Abstract and Results: laboratory screen, cotton-wick raspberry assays, landing, infestation, and mortality"
+        }
+      ]
+    },
+    {
+      "id": "thymol_culex_forearm_2005",
+      "material_id": "thymol",
+      "species_id": "culex_pipiens_pallens",
+      "scientific_name": "Culex pipiens pallens",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "human_forearm_bioassay",
+      "exposure_route": "contact",
+      "endpoint": "mosquito repellency",
+      "finding": "Thymol showed repellency similar to DEET in the reported human forearm bioassay against Culex pipiens pallens.",
+      "limitations": [
+        "This is one Culex assay and does not establish equivalent protection across dose, time, formulation, or mosquito species."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Monoterpenes from thyme as potential mosquito repellents",
+          "public_url": "https://doi.org/10.2987/8756-971X(2005)21[80:MFTTVA]2.0.CO;2",
+          "source_id": "doi:10.2987/8756-971X(2005)21[80:MFTTVA]2.0.CO;2",
+          "locator": "Abstract: thymol versus DEET in human forearm repellency against Culex pipiens pallens"
+        }
+      ]
+    },
+    {
+      "id": "thyme_oil_culex_2011",
+      "material_id": "thyme_oil",
+      "species_id": "culex_pipiens",
+      "scientific_name": "Culex pipiens",
+      "comparison_target_species_id": "aedes_aegypti",
+      "comparison_target_scientific_name": "Aedes aegypti",
+      "evidence_relation": "related_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "adult_repellency_assay",
+      "exposure_route": "contact",
+      "endpoint": "adult repellency",
+      "finding": "Two species-specific Thymus essential oils provided 72.9% and 78.1% repellency, statistically equal to icaridin in the reported assay.",
+      "limitations": [
+        "Thyme oils vary by plant species and chemotype; these results do not establish the performance of generic or branded Thymus vulgaris oil."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Chemical composition, larvicidal evaluation, and adult repellency of endemic Greek Thymus essential oils against the mosquito vector of West Nile virus",
+          "public_url": "https://doi.org/10.1007/s00436-011-2271-1",
+          "source_id": "doi:10.1007/s00436-011-2271-1",
+          "locator": "Abstract: Thymus leucospermus and Thymus teucrioides essential-oil adult repellency"
+        }
+      ]
+    }
+  ]
+}

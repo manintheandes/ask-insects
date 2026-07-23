@@ -128,6 +128,28 @@ CONTEXT_REQUIRED_TERM_GROUPS = {
             "movement",
         ],
     ],
+    "repellent_evidence_catalog": [
+        [
+            "repellent",
+            "repellency",
+            "deterrent",
+            "protection",
+            "toxic",
+            "attractant",
+        ],
+        [
+            "assay",
+            "bioassay",
+            "landing",
+            "movement",
+            "time",
+            "infestation",
+            "trapping",
+            "bait",
+            "response",
+            "field",
+        ],
+    ],
 }
 TEST_CONTEXT_CONFIG_URL = (
     "https://raw.githubusercontent.com/example/ask-insects/"
@@ -203,7 +225,7 @@ class ContextPackageTests(unittest.TestCase):
             config["schema_version"],
             "ask-insects-evidence-package-config.v2",
         )
-        self.assertEqual(config["package_version"], "2026-07-19.1")
+        self.assertEqual(config["package_version"], "2026-07-23.1")
         contexts = config["contexts"]
         self.assertEqual(
             [context["id"] for context in contexts],
@@ -215,6 +237,7 @@ class ContextPackageTests(unittest.TestCase):
                 "human_landing_response",
                 "spatial_behavior",
                 "post_exposure_behavior",
+                "repellent_evidence_catalog",
             ],
         )
         expected_fields = {
@@ -883,6 +906,80 @@ class ContextPackageTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, field):
                     load_context_config(path)
 
+    def test_reviewed_repellent_payload_is_retained_for_public_comparison(self):
+        self.index.upsert_records(
+            [
+                record(
+                    "reviewed_repellent_evidence:eugenol_aedes",
+                    source="reviewed_repellent_evidence",
+                    species="Aedes aegypti",
+                    text=(
+                        "Eugenol produced significant repellent movement in a "
+                        "close-proximity non-contact odor assay."
+                    ),
+                    payload={
+                        "atom_type": "reviewed_repellent_evidence",
+                        "evidence": {
+                            "material_id": "eugenol",
+                            "canonical_name": "eugenol",
+                            "material_type": "pure_compound",
+                            "exact_aliases": ["eugenol"],
+                            "scientific_name": "Aedes aegypti",
+                            "evidence_relation": "exact_material",
+                            "evidence_class": "repellent_effect",
+                            "assay_family": "close_proximity_odor",
+                            "exposure_route": "non_contact",
+                            "endpoint": "movement away from treated paper",
+                            "finding": "Significant close-range repellency was measured.",
+                            "limitations": ["Landing and biting were not measured."],
+                            "supporting_provenance": [
+                                {
+                                    "title": "Public study",
+                                    "public_url": "https://doi.org/10.1186/s12936-020-03206-8",
+                                    "source_id": "doi:10.1186/s12936-020-03206-8",
+                                    "locator": "Methods and species-comparison Results",
+                                }
+                            ],
+                        },
+                    },
+                    locator="jsonpath=$.evidence[0]",
+                    source_url="https://example.org/reviewed-repellent-evidence.json",
+                )
+            ]
+        )
+        context = self.context(
+            "repellent_evidence_catalog",
+            ["aedes_aegypti"],
+            [
+                self.selector(
+                    "repellent_catalog_aedes",
+                    "aedes_aegypti",
+                    "reviewed_repellent_evidence",
+                    query_any=["repellent", "eugenol"],
+                    context_required_term_groups=[
+                        ["repellent", "repellency", "deterrent"],
+                        ["assay", "endpoint", "effect", "evidence"],
+                    ],
+                    taxon_field_paths=["payload.evidence.scientific_name"],
+                    context_field_paths=["payload.evidence"],
+                    limit=5,
+                )
+            ],
+        )
+
+        package = self.build_with_contexts([context])
+        exported = next(
+            item
+            for item in package["evidence_records"]
+            if item["record_id"] == "reviewed_repellent_evidence:eugenol_aedes"
+        )
+
+        self.assertEqual(exported["payload"]["evidence"]["canonical_name"], "eugenol")
+        self.assertEqual(
+            exported["payload"]["evidence"]["supporting_provenance"][0]["source_id"],
+            "doi:10.1186/s12936-020-03206-8",
+        )
+
     def test_default_config_preserves_selector_inventory(self):
         config = load_context_config()
         actual = [
@@ -922,6 +1019,9 @@ class ContextPackageTests(unittest.TestCase):
                 ("spatial_behavior", "spatial_aedes_olfaction", "aedes_aegypti", "aedes_olfaction_literature", ("spatial repellent", "olfaction", "odor plume", "host seeking"), 6, False),
                 ("spatial_behavior", "spatial_aedes_literature", "aedes_aegypti", "aedes_literature_openalex", ("spatial repellent", "airborne", "odor plume", "non-contact", "noncontact"), 4, False),
                 ("post_exposure_behavior", "post_aedes_behavior", "aedes_aegypti", "aedes_literature_openalex", ("post exposure", "post-exposure", "after exposure", "knockdown", "recovery"), 5, False),
+                ("repellent_evidence_catalog", "repellent_catalog_aedes", "aedes_aegypti", "reviewed_repellent_evidence", ("repellent", "repellency", "deterrent", "protection", "toxic bait", "attractant"), 20, True),
+                ("repellent_evidence_catalog", "repellent_catalog_swd", "drosophila_suzukii", "reviewed_repellent_evidence", ("repellent", "repellency", "deterrent", "landing", "infestation"), 10, True),
+                ("repellent_evidence_catalog", "repellent_catalog_dbm", "plutella_xylostella", "reviewed_repellent_evidence", ("repellent", "repellency", "deterrent", "attractant", "host cue"), 5, True),
             ],
         )
 
@@ -1055,8 +1155,8 @@ class ContextPackageTests(unittest.TestCase):
         serialized = json.dumps(package, sort_keys=True).casefold()
 
         self.assertEqual(package["schema_version"], "ask-insects-evidence-package.v3")
-        self.assertEqual(package["package_version"], "2026-07-19.1")
-        self.assertEqual(len(package["evidence_records"]), 22)
+        self.assertEqual(package["package_version"], "2026-07-23.1")
+        self.assertEqual(len(package["evidence_records"]), 40)
         self.assertEqual(len(package["gaps"]), 11)
         self.assertEqual(len(package["program_records"]), 122)
         selected_pairs = {
@@ -1070,7 +1170,7 @@ class ContextPackageTests(unittest.TestCase):
             for record_id in result["approved_record_ids"]
         }
         self.assertEqual(selected_pairs, approved_pairs)
-        self.assertEqual(len(selected_pairs), 23)
+        self.assertEqual(len(selected_pairs), 41)
         self.assertNotIn("W4399796030", serialized)
         self.assertNotIn("monarch", serialized)
         self.assertNotIn("/users/", serialized)

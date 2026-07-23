@@ -18,6 +18,7 @@ CONFIG_RESOURCES = (
     REPO_ROOT / "config" / "insect-evidence-package.json",
     REPO_ROOT / "config" / "insect-intelligence-programs.json",
     REPO_ROOT / "config" / "reviewed-scientific-evidence.json",
+    REPO_ROOT / "config" / "reviewed-repellent-evidence.json",
 )
 PACKAGE_VERSION = json.loads(CONFIG_RESOURCES[0].read_text(encoding="utf-8"))[
     "package_version"
@@ -181,6 +182,10 @@ class WheelResourceTests(unittest.TestCase):
                         DEFAULT_PROGRAM_LEDGER,
                         load_program_ledger,
                     )
+                    from askinsects.sources.reviewed_repellent_evidence import (
+                        default_reviewed_repellent_catalog,
+                        load_reviewed_repellent_catalog,
+                    )
 
                     expected = json.loads(sys.argv[2])
                     resources = files("askinsects.resources")
@@ -201,10 +206,10 @@ class WheelResourceTests(unittest.TestCase):
                         "context": "insect-evidence-package.json",
                         "program": "insect-intelligence-programs.json",
                         "program_ledger": "insect-intelligence-programs.json",
-                        "published": "ask-insects-evidence-package-2026-07-19.1.json",
+                        "published": "ask-insects-evidence-package-2026-07-23.1.json",
                     }:
                         raise SystemExit(f"installed defaults are wrong: {defaults!r}")
-                    if load_context_config()["package_version"] != "2026-07-19.1":
+                    if load_context_config()["package_version"] != "2026-07-23.1":
                         raise SystemExit("installed context config did not load")
                     if load_program_ledger(DEFAULT_PROGRAM_LEDGER)["schema_version"] != "insect-intelligence-programs.v1":
                         raise SystemExit("installed program ledger did not load")
@@ -213,8 +218,13 @@ class WheelResourceTests(unittest.TestCase):
                         raise SystemExit("installed reviewed science default is wrong")
                     if reviewed["schema_version"] != "ask-insects-reviewed-science.v1":
                         raise SystemExit("installed reviewed science catalog did not load")
+                    repellent = load_reviewed_repellent_catalog()
+                    if default_reviewed_repellent_catalog().name != "reviewed-repellent-evidence.json":
+                        raise SystemExit("installed reviewed repellent default is wrong")
+                    if repellent["schema_version"] != "ask-insects-reviewed-repellent-evidence.v1":
+                        raise SystemExit("installed reviewed repellent catalog did not load")
                     published = load_published_context_package()
-                    if published["package_version"] != "2026-07-19.1":
+                    if published["package_version"] != "2026-07-23.1":
                         raise SystemExit("installed published release did not load")
                     destination = Path(sys.argv[3]) / "askinsects"
                     skill_result = install_askinsects_skill(destination=destination)

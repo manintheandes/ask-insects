@@ -354,6 +354,31 @@ sources:
         - private_company_experiments_or_results
         - evaluation_case_specific_routing
         - unreviewed_mechanistic_or_commercial_claims
+  - id: reviewed_repellent_evidence
+    name: Human-reviewed public repellent evidence catalog
+    source_type: derived_repo_catalog
+    boundary: Public material identities and claim-level repellent, deterrent, attraction, and control evidence for SWD, mosquitoes, and diamondback moth; exact_material_identity_only matching is required, cross-species and mixture evidence stay labeled, and private_compound_names_never_enter_ask_insects
+    query_plane: reviewed_material_identity_and_claims_to_sqlite_evidence_records
+    artifact_dir: artifacts/mosquito-v1
+    input_catalog: config/reviewed-repellent-evidence.json
+    ingest_script: scripts/ingest_reviewed_repellent_evidence.py
+    source_module: askinsects/sources/reviewed_repellent_evidence.py
+    lanes:
+      - reviewed_science
+    provenance_required: true
+    live_fetch: derived_from_repo_catalog_and_original_public_sources
+    source_contract:
+      source_grade_now:
+        - exact_material_identity_only
+        - claim_level_original_source_ids_and_locators
+        - direct_cross_species_mixture_and_related_material_labels
+        - repellent_deterrent_attraction_and_control_endpoint_separation
+        - private_compound_names_never_enter_ask_insects
+      not_claimed:
+        - equivalence_across_isomers_oils_brands_mixtures_or_formulations
+        - efficacy_transfer_across_species_dose_assay_or_endpoint
+        - private_company_experiments_results_or_rankings
+        - exhaustive_repellent_literature_coverage
   - id: plutella_xylostella_literature
     name: Exact reviewed Plutella xylostella literature
     source_type: public_api_metadata_curated_exact_works
