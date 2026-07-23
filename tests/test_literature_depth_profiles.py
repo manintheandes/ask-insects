@@ -8,6 +8,7 @@ from askinsects.sources.elicit_extracted_facts import (
     DROSOPHILA_SUZUKII_ELICIT_EXTRACTED_FACTS_PROFILE,
 )
 from askinsects.sources.extracted_facts import build_extracted_fact_records
+from askinsects.sources.literature import FullTextUnit
 from askinsects.sources.literature_depth_profiles import LITERATURE_DEPTH_PROFILES
 
 
@@ -107,3 +108,80 @@ def test_miner_runs_for_a_culicidae_lane(tmp_path):
     fields = repellency_facts[0].payload["fields"]
     assert fields["exposure_mode"] == ["spatial repellent"]
     assert "landing" in fields["endpoint"]
+
+
+def test_miner_follows_matched_record_ids_to_existing_fulltext(tmp_path):
+    index = SourceIndex(tmp_path / "source_index.sqlite")
+    index.initialize()
+    source_record_id = "mosquito_repellent_literature:pubmed:42000001"
+    index.replace_source_records(
+        "mosquito_repellent_literature",
+        [
+            EvidenceRecord(
+                record_id=source_record_id,
+                lane="literature",
+                source="mosquito_repellent_literature",
+                title="DEET spatial repellency in Aedes aegypti",
+                text="PubMed metadata for a 2026 mosquito repellent paper.",
+                species="Culicidae",
+                url="https://pubmed.ncbi.nlm.nih.gov/42000001/",
+                media_url=None,
+                provenance=Provenance(
+                    source_id="mosquito_repellent_literature",
+                    locator="pubmed.json#result/42000001",
+                    retrieved_at="2026-07-23T00:00:00Z",
+                ),
+                payload={
+                    "pmid": "42000001",
+                    "publication_year": 2026,
+                    "matched_record_ids": ["openalex:W2026"],
+                },
+            )
+        ],
+    )
+    index.upsert_fulltext_units(
+        [
+            FullTextUnit(
+                unit_id="openalex:W2026:fulltext:4",
+                record_id="openalex:W2026",
+                source="aedes_literature_openalex",
+                unit_index=4,
+                text=(
+                    "Adult female Aedes aegypti were tested with 15% DEET in a "
+                    "non-contact spatial repellent chamber. Repellency was 81.46% "
+                    "after 6 hours versus a solvent control (n=30, p<0.05)."
+                ),
+                url="https://example.test/paper.pdf",
+                license="cc-by",
+                provenance=Provenance(
+                    source_id="aedes_literature_openalex",
+                    locator="openalex:W2026#fulltext/4",
+                    retrieved_at="2026-07-23T00:00:00Z",
+                    license="cc-by",
+                    source_url="https://example.test/paper.pdf",
+                ),
+            )
+        ]
+    )
+
+    result = build_extracted_fact_records(
+        tmp_path,
+        retrieved_at="2026-07-23T00:00:00Z",
+        max_fulltext_units=10,
+        discover_supplements=False,
+        download_supplements=False,
+        profile=LITERATURE_DEPTH_PROFILES[
+            "mosquito_repellent_literature_extracted_facts"
+        ],
+    )
+
+    facts = [
+        record
+        for record in result.records
+        if (record.payload or {}).get("fact_type") == "repellency_assay"
+    ]
+    assert facts
+    assert facts[0].payload["source_record_id"] == source_record_id
+    assert facts[0].payload["extraction_method"] == "deterministic_fulltext_term_extract"
+    assert facts[0].payload["unit_provenance"]["locator"] == "openalex:W2026#fulltext/4"
+    assert "81.46%" in facts[0].payload["evidence_text"]

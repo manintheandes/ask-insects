@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from datetime import UTC, datetime
 from functools import lru_cache
 import json
 from pathlib import Path
@@ -103,7 +104,17 @@ _COMPARISON_TERMS = (
 )
 
 _COMPOUND_PATTERNS = {
+    "alpha-phellandrene": (r"\b(?:alpha|\u03b1)[- ]phellandrene\b",),
+    "borneol": (r"\bborneol\b",),
+    "camphene": (r"\bcamphene\b",),
+    "citronellal": (r"\bcitronellal\b",),
+    "citronellol": (r"\bcitronellol\b",),
     "deet": (r"\bdeet\b", r"\bn,n-diethyl-m-toluamide\b"),
+    "delta-3-carene": (r"\b(?:delta|\u03b4)[- ]3[- ]carene\b",),
+    "eugenol": (r"\beugenol\b",),
+    "gamma-terpinene": (r"\b(?:gamma|\u03b3)[- ]terpinene\b",),
+    "geraniol": (r"\bgeraniol\b",),
+    "myrcene": (r"\bmyrcene\b",),
     "picaridin": (r"\bpicaridin\b", r"\bicaridin\b"),
     "ir3535": (r"\bir3535\b", r"\bethyl butylacetylaminopropionate\b"),
     "pmd": (r"\bpmd\b", r"\bpara-menthane-3,8-diol\b"),
@@ -118,6 +129,20 @@ _COMPOUND_DISPLAY_NAMES = {
     "ir3535": "IR3535",
     "pmd": "PMD",
 }
+
+_DATE_BOUNDED_REPELLENT_QUESTION_TERMS = (
+    "compound",
+    "compounds",
+    "active",
+    "actives",
+    "material",
+    "materials",
+    "most repellent",
+    "strongest",
+    "most effective",
+    "list",
+    "which",
+)
 
 _EXPOSURE_PATTERNS = {
     "non-contact": (r"\bnon[- ]?contact\b", r"\bno[- ]contact\b"),
@@ -174,6 +199,79 @@ def is_repellency_comparison_question(question: str) -> bool:
     normalized = question.lower()
     return any(term in normalized for term in _REPELLENCY_TERMS) and any(
         term in normalized for term in _COMPARISON_TERMS
+    )
+
+
+def _publication_year_scope(question: str) -> int | None:
+    normalized = question.lower()
+    current_year = datetime.now(UTC).year
+    if any(
+        term in normalized
+        for term in (
+            "this year",
+            "this year's",
+            "this years",
+            "current year",
+            "year to date",
+            "year-to-date",
+            "ytd",
+        )
+    ):
+        return current_year
+    if "last year" in normalized:
+        return current_year - 1
+    match = re.search(
+        r"\b(?:published|papers?|articles?|literature|studies|research)"
+        r"(?:\s+(?:from|in|during))?\s+(20\d{2})\b",
+        normalized,
+    )
+    if match:
+        return int(match.group(1))
+    if any(
+        term in normalized
+        for term in (
+            "article",
+            "articles",
+            "paper",
+            "papers",
+            "literature",
+            "published",
+            "research",
+            "studies",
+            "study",
+        )
+    ):
+        year_match = re.search(r"\b(20\d{2})\b", normalized)
+        if year_match:
+            return int(year_match.group(1))
+    return None
+
+
+def is_date_bounded_repellent_literature_question(question: str) -> bool:
+    normalized = question.lower()
+    has_repellent = any(term in normalized for term in _REPELLENCY_TERMS)
+    has_literature = any(
+        term in normalized
+        for term in (
+            "article",
+            "articles",
+            "paper",
+            "papers",
+            "literature",
+            "published",
+            "research",
+            "studies",
+            "study",
+        )
+    )
+    asks_for_results = any(
+        term in normalized for term in _DATE_BOUNDED_REPELLENT_QUESTION_TERMS
+    )
+    return (
+        has_repellent
+        and has_literature
+        and asks_for_results
+        and _publication_year_scope(question) is not None
     )
 
 
@@ -641,7 +739,20 @@ def _first_match(
 
 
 def _extract_outcome(text: str) -> str | None:
-    metric = r"landing inhibition|biting inhibition|repellency|protection|avoidance|oviposition deterrence"
+    protection_time = re.search(
+        r"\b(?:complete protection time|cpt)\s*(?:was|of|=|:)?\s*"
+        r"(\d+(?:\.\d+)?\s*(?:min(?:ute)?s?|h(?:ou)?rs?))\b",
+        text,
+        flags=re.IGNORECASE,
+    )
+    if protection_time:
+        return (
+            f"{protection_time.group(1).lower()} complete protection time"
+        )
+    metric = (
+        r"landing inhibition|biting inhibition|repellent power|repellent activity|"
+        r"repellency|repellence|protection|avoidance|oviposition deterrence"
+    )
     direct = re.search(
         rf"\b({metric})\s+(?:was|of|=|:)\s*(\d+(?:\.\d+)?\s*%)",
         text,
@@ -1017,6 +1128,232 @@ def _fulltext_paper_count(
             if str(row[0]) in paper_key_by_record_id
         }
     )
+
+
+def _record_publication_year(record: EvidenceRecord) -> int | None:
+    payload = record.payload or {}
+    raw_year = payload.get("publication_year")
+    try:
+        if raw_year is not None:
+            return int(str(raw_year))
+    except ValueError:
+        pass
+    match = re.search(
+        r"\b(20\d{2})\b",
+        str(payload.get("publication_date") or ""),
+    )
+    return int(match.group(1)) if match else None
+
+
+def _display_compound(compound: str) -> str:
+    return _COMPOUND_DISPLAY_NAMES.get(compound, compound)
+
+
+def _bounded_comparison_rows(
+    rows: list[dict[str, object]],
+    *,
+    limit: int,
+) -> list[dict[str, object]]:
+    ordered = sorted(
+        rows,
+        key=lambda row: (
+            0 if row.get("human_verified") else 1,
+            0 if row.get("outcome") else 1,
+            0 if row.get("compounds") else 1,
+            str(row.get("paper_title") or "").casefold(),
+            str(row.get("record_id") or ""),
+        ),
+    )
+    selected: list[dict[str, object]] = []
+    per_paper: Counter[str] = Counter()
+    for row in ordered:
+        paper_id = str(row.get("paper_record_id") or row.get("record_id") or "")
+        if per_paper[paper_id] >= 2:
+            continue
+        selected.append(row)
+        per_paper[paper_id] += 1
+        if len(selected) >= limit:
+            break
+    return selected
+
+
+def build_date_bounded_repellent_literature_answer(
+    index: SourceIndex,
+    question: str,
+    *,
+    limit: int = 10,
+) -> dict[str, object]:
+    publication_year = _publication_year_scope(question)
+    if publication_year is None:
+        raise ValueError("date-bounded repellent literature answer requires a year")
+
+    metadata_sources = MOSQUITO_REPELLENCY_METADATA_SOURCES
+    depth_sources = MOSQUITO_REPELLENCY_DEPTH_SOURCES
+    metadata_records = _source_records(
+        index,
+        metadata_sources,
+        lanes=("literature",),
+    )
+    current_records = [
+        record
+        for record in metadata_records
+        if not _is_source_gap(record)
+        and _record_publication_year(record) == publication_year
+    ]
+    papers = _deduplicated_papers(current_records)
+    metadata_by_record_id = {
+        record.record_id: record for record in current_records
+    }
+    depth_records = _source_records(
+        index,
+        depth_sources,
+        fact_types=("repellency_assay",),
+    )
+    assay_records = [
+        record
+        for record in depth_records
+        if str((record.payload or {}).get("source_record_id") or "")
+        in metadata_by_record_id
+    ]
+    all_rows = [
+        _comparison_row(
+            record,
+            metadata_by_record_id.get(
+                str((record.payload or {}).get("source_record_id") or "")
+            ),
+        )
+        for record in assay_records
+    ]
+    selected_rows = _bounded_comparison_rows(all_rows, limit=max(1, limit))
+
+    named_compound_keys = {
+        compound
+        for row in all_rows
+        for compound in row.get("compounds", [])
+        if isinstance(compound, str)
+    }
+    for record in current_records:
+        payload = record.payload or {}
+        searchable = " ".join(
+            [
+                record.title,
+                record.text,
+                " ".join(
+                    str(term)
+                    for term in payload.get("repellent_terms", [])
+                    if isinstance(term, str)
+                ),
+            ]
+        )
+        named_compound_keys.update(_matches(searchable, _COMPOUND_PATTERNS))
+    named_compounds = sorted(
+        {_display_compound(compound) for compound in named_compound_keys},
+        key=str.casefold,
+    )
+
+    if not current_records:
+        return {
+            "ok": False,
+            "answer_shape": "repellent_literature_year",
+            "answer": (
+                f"I do not see indexed mosquito-repellent papers published in "
+                f"{publication_year} in the checked Ask Insects literature lanes."
+            ),
+            "evidence": [],
+            "source_gap": {
+                "lane": "literature",
+                "reason": (
+                    f"The checked repellent literature sources contain no records "
+                    f"with publication_year={publication_year}."
+                ),
+                "checked_sources": list(metadata_sources + depth_sources),
+            },
+        }
+
+    answer_parts = [
+        (
+            f"Ask Insects found {len(papers)} deduplicated mosquito-repellent "
+            f"paper or preprint record(s) published in {publication_year}."
+        ),
+        (
+            "These papers cannot be ranked as one global most-to-least list because "
+            "species, formulations, doses, exposure routes, assays, endpoints, and "
+            "durations differ."
+        ),
+    ]
+    if named_compounds:
+        answer_parts.append(
+            "Named compounds or standard repellent actives in the current-year "
+            "records are: " + ", ".join(named_compounds) + "."
+        )
+    if selected_rows:
+        answer_parts.append(
+            "The current-year records with extractable assay detail are:\n"
+            + _comparison_row_details(selected_rows)
+        )
+    else:
+        answer_parts.append(
+            "The current-year lane currently has paper metadata but no linked, "
+            "structured assay result that supports a performance ranking. The names "
+            "above are literature-presence candidates, not efficacy winners."
+        )
+
+    records_by_id = {record.record_id: record for record in assay_records}
+    selected_evidence: list[EvidenceRecord] = []
+    seen_evidence_ids: set[str] = set()
+    for row in selected_rows:
+        for record_id in (
+            str(row.get("record_id") or ""),
+            str(row.get("paper_record_id") or ""),
+        ):
+            record = records_by_id.get(record_id) or metadata_by_record_id.get(
+                record_id
+            )
+            if record is None or record.record_id in seen_evidence_ids:
+                continue
+            selected_evidence.append(record)
+            seen_evidence_ids.add(record.record_id)
+    if not selected_evidence:
+        for paper_records in papers.values():
+            record = paper_records[0]
+            if record.record_id in seen_evidence_ids:
+                continue
+            selected_evidence.append(record)
+            seen_evidence_ids.add(record.record_id)
+            if len(selected_evidence) >= max(1, limit):
+                break
+
+    return {
+        "ok": True,
+        "answer_shape": "repellent_literature_year",
+        "answer": " ".join(answer_parts[:3])
+        + (
+            "\n\n" + answer_parts[3]
+            if len(answer_parts) > 3
+            else ""
+        ),
+        "named_compounds": named_compounds,
+        "comparison": {
+            "dimensions": list(COMPARISON_DIMENSIONS),
+            "rows": selected_rows,
+        },
+        "coverage": {
+            "publication_year": publication_year,
+            "discovered_records": len(current_records),
+            "deduplicated_papers": len(papers),
+            "structured_assay_facts": len(all_rows),
+            "papers_with_structured_assay_facts": len(
+                {
+                    str(row.get("paper_record_id") or "")
+                    for row in all_rows
+                    if row.get("paper_record_id")
+                }
+            ),
+            "searched_sources": list(metadata_sources + depth_sources),
+        },
+        "evidence": [_evidence_item(record) for record in selected_evidence],
+        "source_gap": None,
+    }
 
 
 def build_repellency_comparison_answer(
