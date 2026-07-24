@@ -2754,13 +2754,13 @@ def check_reviewed_repellent_evidence() -> None:
     catalog = load_reviewed_repellent_catalog(catalog_path)
     materials = catalog.get("materials")
     evidence = catalog.get("evidence")
-    if not isinstance(materials, list) or len(materials) != 16:
+    if not isinstance(materials, list) or len(materials) != 17:
         raise RuntimeError(
-            "reviewed repellent evidence catalog must contain 16 audited materials"
+            "reviewed repellent evidence catalog must contain 17 audited materials"
         )
-    if not isinstance(evidence, list) or len(evidence) != 18:
+    if not isinstance(evidence, list) or len(evidence) != 19:
         raise RuntimeError(
-            "reviewed repellent evidence catalog must contain 18 audited claims"
+            "reviewed repellent evidence catalog must contain 19 audited claims"
         )
     records = build_reviewed_repellent_records(
         catalog_path=catalog_path,

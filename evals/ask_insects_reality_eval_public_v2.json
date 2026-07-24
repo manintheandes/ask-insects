@@ -1,0 +1,1614 @@
+{
+  "manifest_version": "ask-insects-reality-public.v1",
+  "target": "ask-insects",
+  "maximum_seconds": 60,
+  "questions": [
+    {
+      "id": "swd-texture-01",
+      "question": "How does fruit texture influence where Drosophila suzukii females lay eggs, and what sensory mechanism is implicated?",
+      "category": "swd-sensory-behavior",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Texture is a controllable fruit property that can change both assay results and crop susceptibility.",
+      "expected_behavior": "State the measured texture preference, describe the implicated mechanosensory channel families, and keep pharmacological implication separate from proof of one causal channel.",
+      "truth_source": "Independent review of PMID 32596943 and DOI 10.1111/imb.12654.",
+      "truth_packet": {
+        "required_claims": [
+          "Females preferred the harder oviposition texture in the cited assay.",
+          "Drugs targeting TRP and DEG/ENaC channels abolished that preference, implicating mechanosensitive channels without identifying one uniquely causal channel."
+        ],
+        "forbidden_claims": [
+          "Fruit hardness alone determines field infestation.",
+          "A specific channel is proven to be the commercial repellent target."
+        ],
+        "reasoning_boundaries": [
+          "Separate the behavioral observation from the candidate molecular mechanism.",
+          "Do not turn a laboratory texture assay into a crop-protection claim."
+        ],
+        "sources": [
+          {
+            "title": "Identification of potential mechanosensitive ion channels involved in texture discrimination during Drosophila suzukii egg-laying behaviour",
+            "public_url": "https://doi.org/10.1111/imb.12654",
+            "source_id": "doi:10.1111/imb.12654",
+            "locator": "Abstract: harder-texture oviposition preference and its abolition by drugs targeting TRP and DEG/ENaC channel families",
+            "supports": "The study measured texture preference and found that pharmacological targeting of TRP and DEG/ENaC channels abolished the preference."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-microbes-02",
+      "question": "Do microbes on fruit attract or deter SWD oviposition, and does substrate hardness change that response?",
+      "category": "swd-oviposition-ecology",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Microbial growth and fruit damage can vary between assay substrates and alter an apparent repellent effect.",
+      "expected_behavior": "Report the direct species-specific result and explain that mechanosensory and microbial cues interacted in the tested substrates.",
+      "truth_source": "Independent review of PMID 33614092 and DOI 10.1098/rsos.201601.",
+      "truth_packet": {
+        "required_claims": [
+          "Microbial growth discouraged Drosophila suzukii oviposition in the cited assay, while it enhanced egg laying in the two comparison Drosophila species.",
+          "Substrate hardness changed the response to microbial growth, showing an interaction between mechanosensory and chemosensory information."
+        ],
+        "forbidden_claims": [
+          "All fruit microbes repel SWD in crops.",
+          "The experiment identified the responsible microbial molecule."
+        ],
+        "reasoning_boundaries": [
+          "Preserve the tested microbial inoculum and artificial-substrate context.",
+          "Do not generalize across microbial taxa, fruit, or field conditions."
+        ],
+        "sources": [
+          {
+            "title": "Drosophila suzukii avoidance of microbes in oviposition choice",
+            "public_url": "https://doi.org/10.1098/rsos.201601",
+            "source_id": "doi:10.1098/rsos.201601",
+            "locator": "Methods 2.2, inoculation and oviposition assay paragraphs; Results 3, paragraphs 1-3 and Figure 2a-c; Figure 2 caption",
+            "supports": "The paper directly tested microbial inoculation and hard versus soft oviposition substrates in Drosophila suzukii."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-meja-dose-05",
+      "question": "What does methyl jasmonate's dose-response tell us about the risk that a low dose attracts SWD instead of repelling it?",
+      "category": "swd-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A volatile crop treatment can create the opposite behavior when field concentration falls below the repellent range.",
+      "expected_behavior": "Give the observed dose-dependent reversal with units and keep artificial-fruit and olfactometer evidence separate from crop protection.",
+      "truth_source": "Independent review of PMID 40862496 and DOI 10.1017/S0007485325100369.",
+      "truth_packet": {
+        "required_claims": [
+          "In the cited study, 309.0 micrograms per filter paper was repellent while 3.86 to 15.45 micrograms per filter paper was attractive in the planar olfactometer.",
+          "Doses above 1287.5 micrograms per filter paper reduced oviposition by more than 90 percent on artificial fruits in a two-choice cage."
+        ],
+        "forbidden_claims": [
+          "Methyl jasmonate is reliably repellent at every dose.",
+          "The laboratory dose is a proven field application rate."
+        ],
+        "reasoning_boundaries": [
+          "Keep applied mass per filter paper distinct from measured air concentration or crop dose.",
+          "Separate orientation and artificial-fruit oviposition from field crop protection."
+        ],
+        "sources": [
+          {
+            "title": "Dose-dependent effect of methyl jasmonate on Drosophila suzukii (Matsumura) (Diptera: Drosophilidae)",
+            "public_url": "https://doi.org/10.1017/S0007485325100369",
+            "source_id": "doi:10.1017/s0007485325100369",
+            "locator": "Abstract: two-choice cage oviposition and two-choice planar olfactometer adult-behavior assays; oviposition deterrence above 1287.5 micrograms per filter paper; female, male, and total RD50 values of 55.24, 55.03, and 55.14 micrograms per filter paper; 309.0 micrograms repellent and 3.86-15.45 micrograms attractive",
+            "supports": "The paper reports both low-dose attraction and higher-dose repellency or oviposition deterrence with exact applied doses."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-choice-confounds-06",
+      "question": "If treated fruit gets fewer SWD eggs, how do we separate true oviposition choice from mortality, reduced activity, mating, or fecundity?",
+      "category": "swd-assay-interpretation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A lower egg count can arise without a female choosing to avoid the treated fruit.",
+      "expected_behavior": "Require separate behavioral, survival, activity, and total reproductive-output measurements and label this as assay-design inference supported by multi-endpoint studies.",
+      "truth_source": "Independent review of PMID 34532743 and its capture, survival, and oviposition endpoints.",
+      "truth_packet": {
+        "required_claims": [
+          "Egg allocation between choices should be interpreted alongside total eggs or no-choice fecundity, survival, locomotor or dwell behavior, and standardized mating and physiological state.",
+          "The cited habituation study separately measured trap capture, female survival, and oviposition frequency, illustrating why one egg endpoint is insufficient."
+        ],
+        "forbidden_claims": [
+          "Fewer eggs alone proves sensory repellency.",
+          "Mortality and behavioral avoidance are interchangeable endpoints."
+        ],
+        "reasoning_boundaries": [
+          "Identify the control logic as experimental-design inference, not a single paper's universal protocol.",
+          "Separate choice, activity, toxicity, mating, and fecundity."
+        ],
+        "sources": [
+          {
+            "title": "Does Habituation Affect the Efficacy of Semiochemical Oviposition Repellents Developed Against Drosophila suzukii?",
+            "public_url": "https://doi.org/10.1093/ee/nvab099",
+            "source_id": "doi:10.1093/ee/nvab099",
+            "locator": "Abstract: adult female and larval pre-exposure; 24, 48, or 72 hour adult exposures; two-choice gated trap capture, survival, and oviposition endpoints; octenol, geosmin, and 2-pentylfuran results",
+            "supports": "The study measured behavioral capture, survival, and oviposition rather than treating one outcome as the whole mechanism."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-choice-controls-07",
+      "question": "Which controls are essential in a two-choice SWD oviposition assay?",
+      "category": "swd-assay-interpretation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Scientists need a defensible assay before ranking candidate repellents.",
+      "expected_behavior": "Name matched vehicle and blank controls, side randomization, biological replication, standardized flies and fruit, and a no-choice or total-egg measurement without presenting one paper as a universal standard.",
+      "truth_source": "Independent review of PMID 40576950 and its choice, no-choice, solvent-control, and field comparisons.",
+      "truth_packet": {
+        "required_claims": [
+          "A matched untreated or solvent control, randomized or rotated sides, independent biological replicates, and standardized fly and substrate state are needed to attribute a side difference to treatment.",
+          "A no-choice or total-egg endpoint is needed to distinguish reallocation between sides from suppressed overall oviposition."
+        ],
+        "forbidden_claims": [
+          "A two-choice assay by itself proves field efficacy.",
+          "More eggs on the control side rules out toxicity or reduced fecundity."
+        ],
+        "reasoning_boundaries": [
+          "Present the control set as a synthesis of experimental logic and the cited multi-design study.",
+          "Keep laboratory choice and field infestation endpoints separate."
+        ],
+        "sources": [
+          {
+            "title": "Oviposition deterrent as a component of a push–pull management approach for Drosophila suzukii",
+            "public_url": "https://doi.org/10.1093/ee/nvaf057",
+            "source_id": "doi:10.1093/ee/nvaf057",
+            "locator": "Abstract and field raspberry methods/results; laboratory choice and no-choice assays; Figure 5 pupae emerging from ripening and sentinel raspberries under control, pull, push, and push-pull treatments",
+            "supports": "The study used solvent controls and both choice and no-choice designs before a field comparison."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-fruit-condition-09",
+      "question": "How should fruit ripeness, skin hardness, injury, and moisture be controlled in an SWD repellent assay?",
+      "category": "swd-assay-interpretation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Fruit condition can create an apparent treatment effect larger than the candidate repellent itself.",
+      "expected_behavior": "Use matched fruit, randomization or blocking, measured covariates, and an explicit moisture control while distinguishing directly demonstrated fruit effects from design precautions.",
+      "truth_source": "Independent review of PMID 34065090 and DOI 10.3390/insects12050424.",
+      "truth_packet": {
+        "required_claims": [
+          "Fruit injury directly changed and hierarchically interacted with other oviposition cues in the cited blueberry experiment.",
+          "Ripeness, firmness, injury, and surface moisture should be matched or deliberately factorial, recorded, and randomized or blocked across treatment positions."
+        ],
+        "forbidden_claims": [
+          "A treatment difference is interpretable when fruit condition is systematically confounded with treatment.",
+          "The cited paper proved a specific moisture effect."
+        ],
+        "reasoning_boundaries": [
+          "Treat moisture standardization as assay-design inference, not a measured result from the cited injury study.",
+          "Preserve fruit species, cultivar, ripeness, firmness, and injury as separate variables."
+        ],
+        "sources": [
+          {
+            "title": "Mind the Wound!—Fruit Injury Ranks Higher than, and Interacts with, Heterospecific Cues for Drosophila suzukii Oviposition",
+            "public_url": "https://doi.org/10.3390/insects12050424",
+            "source_id": "doi:10.3390/insects12050424",
+            "locator": "Abstract and Results: two-way oviposition choices among intact, wounded, infested, and heterospecific-exposed blueberries",
+            "supports": "The study directly showed that fruit wounding and heterospecific cues change SWD oviposition preference."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-crop-followup-10",
+      "question": "What follow-up measurements connect SWD oviposition deterrence to actual crop protection?",
+      "category": "swd-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A scientist must decide whether an egg-laying effect survives through development and matters to growers.",
+      "expected_behavior": "Build a measured chain from eggs to immature survival, fruit injury, and marketable yield, while naming the current field-performance evidence gap.",
+      "truth_source": "Independent review of PMID 40576950 plus the public product-readiness gap record.",
+      "truth_packet": {
+        "required_claims": [
+          "Follow eggs with larval or pupal emergence, fruit infestation or damage, and marketable yield or loss under replicated field conditions.",
+          "The cited push-pull study found fewer pupae emerging from treated raspberries, which is stronger than an egg-only endpoint but is not a complete marketable-yield package.",
+          "The source plane explicitly lacks replicated field evidence covering crop damage, marketable yield, persistence, and operational fit."
+        ],
+        "forbidden_claims": [
+          "Fewer eggs automatically means less marketable crop loss.",
+          "The existing public evidence proves commercial crop protection."
+        ],
+        "reasoning_boundaries": [
+          "Keep each biological and commercial endpoint distinct.",
+          "State which links in the eggs-to-yield chain were directly measured and which remain gaps."
+        ],
+        "sources": [
+          {
+            "title": "Oviposition deterrent as a component of a push–pull management approach for Drosophila suzukii",
+            "public_url": "https://doi.org/10.1093/ee/nvaf057",
+            "source_id": "doi:10.1093/ee/nvaf057",
+            "locator": "Abstract and field raspberry methods/results; laboratory choice and no-choice assays; Figure 5 pupae emerging from ripening and sentinel raspberries under control, pull, push, and push-pull treatments",
+            "supports": "The field comparison measured pupae emerging from treated and control raspberries."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-host-cues-11",
+      "question": "Which sensory cues does Aedes aegypti combine to find a human, and which cues are still proven after repellent exposure?",
+      "category": "aedes-sensory-behavior",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Repellent mechanism claims depend on knowing whether exposure changes odor, vision, heat, or later contact behavior.",
+      "expected_behavior": "Name the established multimodal host cues, then refuse to assume that the same cue hierarchy persists under a repellent unless the exposure study tested it.",
+      "truth_source": "Independent review of DOI 10.1038/s41586-024-07848-5, DOI 10.1016/j.cub.2021.07.003, and DOI 10.1038/s41598-024-74518-x.",
+      "truth_packet": {
+        "required_claims": [
+          "Aedes aegypti host seeking integrates carbon dioxide, skin odor, visual contrast, heat, and other close-range cues rather than relying on one signal.",
+          "The cited vision study shows that removing two rhodopsins abolished vision-guided target attraction while odor tracking remained normal.",
+          "Repellent exposure must be tested directly before claiming which sensory channels or cue hierarchy remain intact."
+        ],
+        "forbidden_claims": [
+          "A repellent that reduces landing necessarily blocks olfaction.",
+          "Untreated host-seeking evidence proves behavior after repellent exposure."
+        ],
+        "reasoning_boundaries": [
+          "Separate untreated sensory biology from compound-specific exposure evidence.",
+          "Keep activation, orientation, landing, contact, probing, and biting as distinct behaviors."
+        ],
+        "sources": [
+          {
+            "title": "Thermal infrared directs host-seeking behaviour in Aedes aegypti mosquitoes",
+            "public_url": "https://doi.org/10.1038/s41586-024-07848-5",
+            "source_id": "doi:10.1038/s41586-024-07848-5",
+            "locator": "Abstract and Results: infrared, carbon dioxide, and human-odor combinations plus TRPA1 and opsin perturbations",
+            "supports": "The study directly tested integration of carbon dioxide, human odor, and thermal infrared and describes visual, moisture, and convective-heat cues at other ranges."
+          },
+          {
+            "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
+            "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
+            "source_id": "doi:10.1016/j.cub.2021.07.003",
+            "locator": "Results paragraph 13, Figure 1F and Supplementary Figures S1E-S1G: op1/op2 double-mutant CO2-stimulated cage target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results paragraph 13, Supplementary Figures S1I and S2J: normal human-skin-odor tracking; Results paragraph 17, Figure 3 and Supplementary Figure S3: wind-tunnel target-attraction impairment with preserved upwind orientation; Results paragraphs 18-21, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG",
+            "supports": "The study directly separated vision-guided target attraction from odor tracking using rhodopsin mutants."
+          },
+          {
+            "title": "In the arm-in-cage test, topical repellents activate mosquitoes to disengage upon contact instead of repelling them at distance",
+            "public_url": "https://doi.org/10.1038/s41598-024-74518-x",
+            "source_id": "doi:10.1038/s41598-024-74518-x",
+            "locator": "Abstract and Results: tracked approach, skin contact, disengagement, and bites for four topical repellents",
+            "supports": "The repellent-exposure study found repeated brief contacts and contact-triggered disengagement rather than distance repellency in its arm-in-cage context."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-bloodmeal-state-12",
+      "question": "What does the public evidence say about internal-state control of Aedes aegypti host seeking after a blood meal?",
+      "category": "aedes-physiology-ecology",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Blood-feeding state can change host-seeking enough to confound repellent assays.",
+      "expected_behavior": "Distinguish immediate abdominal-distention inhibition from oocyte-development and candidate neuropeptide signaling without assigning an unsupported fixed duration to the early phase.",
+      "truth_source": "Independent review of the two 1979 primary host-seeking studies and the NPYLR1 functional paper, PMCID PMC3794971.",
+      "truth_packet": {
+        "required_claims": [
+          "Primary Aedes aegypti studies distinguish immediate abdominal-distention inhibition from a haemolymph-borne inhibitory factor during oocyte development.",
+          "Later genetic work describes three days of post-blood-meal suppression and treats Head Peptide-I as a candidate signal without proving that NPYLR1 alone is required.",
+          "Assays should standardize feeding status, time since feeding, abdominal distention, egg-development state, and mating or insemination state."
+        ],
+        "forbidden_claims": [
+          "One receptor alone explains the entire post-blood-meal state.",
+          "Unfed and blood-fed females are interchangeable in a repellent assay."
+        ],
+        "reasoning_boundaries": [
+          "Separate temporal behavioral observations from candidate molecular signals.",
+          "Do not generalize one post-feeding time point to the whole gonotrophic cycle."
+        ],
+        "sources": [
+          {
+            "title": "Abdominal distention terminates subsequent host-seeking behaviour of Aedes aegypti following a blood meal",
+            "public_url": "https://www.sciencedirect.com/science/article/abs/pii/0022191079900738",
+            "source_id": "doi:10.1016/0022-1910(79)90073-8",
+            "locator": "Publisher abstract: immediate host-seeking inhibition after a replete blood meal and after saline-enema abdominal distention",
+            "supports": "The primary study establishes immediate host-seeking inhibition from abdominal distention and implicates anterior abdominal stretch receptors without assigning a universal 24-hour duration."
+          },
+          {
+            "title": "Humoral inhibition of host-seeking in Aedes aegypti during oöcyte maturation",
+            "public_url": "https://www.sciencedirect.com/science/article/abs/pii/0022191079900489",
+            "source_id": "doi:10.1016/0022-1910(79)90048-9",
+            "locator": "Publisher abstract: blood-enema, oocyte-maturation, surgical-manipulation, and haemolymph-transfer experiments separating humoral inhibition from feeding",
+            "supports": "The primary study separates egg development from a blood meal and implicates a haemolymph-borne inhibitory factor during oocyte maturation."
+          },
+          {
+            "title": "Functional and Genetic Characterization of Neuropeptide Y-Like Receptors in Aedes aegypti",
+            "public_url": "https://doi.org/10.1371/journal.pntd.0002486",
+            "source_id": "doi:10.1371/journal.pntd.0002486",
+            "locator": "Results: NPYLR1 response to Head Peptide-I and sNPFs; NPYLR1 null-mutant host-seeking suppression experiment and conclusion that NPYLR1 is not required in vivo",
+            "supports": "The genetic study describes three days of post-blood-meal suppression, identifies Head Peptide-I as a candidate signal, and shows that NPYLR1 was not required for the in-vivo behavioral inhibition."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-npylr1-13",
+      "question": "Is NPYLR1 proven to be required for post-blood-meal suppression of Aedes aegypti host seeking?",
+      "category": "aedes-physiology-ecology",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Target selection requires distinguishing receptor binding from an in-vivo requirement for behavior.",
+      "expected_behavior": "Answer no and explain the binding-versus-necessity distinction using the null-mutant result.",
+      "truth_source": "Independent review of the exact NPYLR1 primary paper, PMCID PMC3794971.",
+      "truth_packet": {
+        "required_claims": [
+          "NPYLR1 can respond to Head Peptide-I, but NPYLR1 null mutants still showed normal post-blood-meal host-seeking suppression.",
+          "The result means NPYLR1 was not required in vivo in that study and supports redundant signaling rather than a single-receptor mechanism."
+        ],
+        "forbidden_claims": [
+          "NPYLR1 is proven to be necessary for post-blood-meal suppression.",
+          "Ligand binding alone proves behavioral causality."
+        ],
+        "reasoning_boundaries": [
+          "Separate receptor activation from genetic necessity.",
+          "Do not confuse NPYLR1 with later work on NPYLR7 agonists."
+        ],
+        "sources": [
+          {
+            "title": "Functional and Genetic Characterization of Neuropeptide Y-Like Receptors in Aedes aegypti",
+            "public_url": "https://doi.org/10.1371/journal.pntd.0002486",
+            "source_id": "doi:10.1371/journal.pntd.0002486",
+            "locator": "Results: NPYLR1 response to Head Peptide-I and sNPFs; NPYLR1 null-mutant host-seeking suppression experiment and conclusion that NPYLR1 is not required in vivo",
+            "supports": "The primary paper reports that NPYLR1 null mutants retained normal host-seeking suppression after a blood meal despite NPYLR1 responding to Head Peptide-I."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-human-metabolites-14",
+      "question": "What evidence links human metabolic differences to Aedes aegypti attraction, and is it causal?",
+      "category": "aedes-sensory-behavior",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Human-to-human attraction variation can add noise or bias to repellent tests.",
+      "expected_behavior": "Report the hosted cohort correlations and clearly state that they establish association, not causality.",
+      "truth_source": "Independent review of Rockefeller University dissertation DOI 10.48496/hx68-5360.",
+      "truth_packet": {
+        "required_claims": [
+          "The hosted 150-person cohort record reports differential attraction and preliminary models in which measured blood metabolites contributed to explained variation.",
+          "Histidine-pathway metabolites were negatively correlated and long-chain fatty acids or monoacylglycerols positively correlated in that cohort.",
+          "These are associations and do not prove that changing a metabolite will change attraction."
+        ],
+        "forbidden_claims": [
+          "The metabolite correlations prove a causal human-attraction mechanism.",
+          "Blood metabolites alone determine who mosquitoes bite."
+        ],
+        "reasoning_boundaries": [
+          "Separate blood-metabolite correlations from skin-emission measurements and receptor experiments.",
+          "Preserve cohort, assay, and model limitations."
+        ],
+        "sources": [
+          {
+            "title": "Why Mosquitoes Bite Some People More Than Others: Metabolic Correlates of Human Attraction in Aedes aegypti",
+            "public_url": "https://doi.org/10.48496/hx68-5360",
+            "source_id": "doi:10.48496/hx68-5360",
+            "locator": "Abstract: 150-subject uniport-olfactometer cohort, three attraction clusters, and blood-metabolite correlations",
+            "supports": "The dissertation reports a 150-subject attraction cohort, metabolomic correlations, and explicitly frames causality as future work."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-contact-spatial-15",
+      "question": "How do we distinguish spatial repellency from contact irritancy in Aedes aegypti?",
+      "category": "aedes-assay-interpretation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A product's delivery and claim depend on whether mosquitoes respond before or after touching a treated surface.",
+      "expected_behavior": "Define the two modes operationally and require paired non-contact and contact chambers with escape and toxicity endpoints.",
+      "truth_source": "Independent review of PMCID PMC7423148 and DOI 10.1371/journal.pone.0237353.",
+      "truth_packet": {
+        "required_claims": [
+          "Spatial repellency is movement away or reduced entry without physical contact, while contact irritancy is locomotor excitation or escape after contact with treatment.",
+          "A paired excito-repellency design separates non-contact from contact exposure and should also record knockdown and mortality."
+        ],
+        "forbidden_claims": [
+          "Escape from a contact chamber proves spatial repellency.",
+          "Any reduced landing is an olfactory effect."
+        ],
+        "reasoning_boundaries": [
+          "Use operational assay definitions rather than inferring mechanism from the word repellent.",
+          "Keep contact, non-contact, knockdown, and mortality measurements separate."
+        ],
+        "sources": [
+          {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus (Diptera: Culicidae)",
+            "public_url": "https://doi.org/10.1371/journal.pone.0237353",
+            "source_id": "doi:10.1371/journal.pone.0237353",
+            "locator": "Methods, Insecticide impregnated papers and Experimental design; Results, Tables 1-3 and Figure 1; Results, Excito-repellency of field-collected mosquitoes, Figure 4 and Table 6; Discussion paragraphs on chemically undetermined residual transfluthrin",
+            "supports": "The study used paired excito-repellency contact and non-contact assays to separate spatial repellency from contact excitation."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-vapor-toxicity-16",
+      "question": "How can we tell whether apparent vapor repellency in Aedes aegypti is actually knockdown or toxicity?",
+      "category": "aedes-assay-interpretation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A mosquito that cannot fly can look repelled even when the chemical is intoxicating or killing it.",
+      "expected_behavior": "Require time-resolved behavior plus immediate knockdown, recovery, and delayed mortality measurements at matched exposure.",
+      "truth_source": "Independent review of PMCID PMC7423148 and its separate behavioral, knockdown, and delayed-mortality endpoints.",
+      "truth_packet": {
+        "required_claims": [
+          "Behavioral avoidance must be measured separately from knockdown and delayed mortality at the same dose and exposure duration.",
+          "The cited transfluthrin study recorded spatial and contact escape and also reported knockdown and 24-hour mortality, showing why escape alone is insufficient."
+        ],
+        "forbidden_claims": [
+          "Reduced occupancy proves voluntary repellency when exposed mosquitoes are impaired.",
+          "Mortality is evidence of a nonlethal spatial mechanism."
+        ],
+        "reasoning_boundaries": [
+          "Separate voluntary movement, locomotor impairment, reversible knockdown, and death.",
+          "Preserve dose and observation time for every endpoint."
+        ],
+        "sources": [
+          {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus (Diptera: Culicidae)",
+            "public_url": "https://doi.org/10.1371/journal.pone.0237353",
+            "source_id": "doi:10.1371/journal.pone.0237353",
+            "locator": "Methods, Insecticide impregnated papers and Experimental design; Results, Tables 1-3 and Figure 1; Results, Excito-repellency of field-collected mosquitoes, Figure 4 and Table 6; Discussion paragraphs on chemically undetermined residual transfluthrin",
+            "supports": "The study measured escape behavior, knockdown, and 24-hour mortality for transfluthrin exposures."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-controlled-release-20",
+      "question": "What does controlled-release citronella evidence show about duration, and what does it not prove about human protection?",
+      "category": "aedes-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A formulation team needs to distinguish extended release from validated protection in real human use.",
+      "expected_behavior": "State the formulation-specific protection result and refuse to generalize it to all citronella products or real-world disease prevention.",
+      "truth_source": "Independent review of PMCID PMC9866038 and DOI 10.3390/life13010141.",
+      "truth_packet": {
+        "required_claims": [
+          "In Table 8 of the cited Aedes aegypti test, F3 averaged 4.0 +/- 0.0 hours of protection in six volunteers, while F1 free citronella oil in the same emulsion base averaged 0.3 +/- 0.5 hours.",
+          "The study also measured release and skin permeation, but it did not establish protection duration across sweat, washing, abrasion, varied climates, or natural disease transmission."
+        ],
+        "forbidden_claims": [
+          "All controlled-release citronella formulations protect people for four hours.",
+          "The formulation is proven to prevent mosquito-borne disease."
+        ],
+        "reasoning_boundaries": [
+          "Preserve formulation, concentration, assay species, and endpoint.",
+          "Separate release kinetics, laboratory repellency, human-use durability, and disease prevention."
+        ],
+        "sources": [
+          {
+            "title": "Development of a Nanotechnology Matrix-Based Citronella Oil Insect Repellent to Obtain a Prolonged Effect and Evaluation of the Safety and Efficacy",
+            "public_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9866038/",
+            "source_id": "pmc:PMC9866038",
+            "locator": "Methods; Results: formulation composition, thermal analysis, skin-permeation and mass-balance experiments; Table 8: complete-protection times and efficacy in the Aedes aegypti arm-in-cage assay",
+            "supports": "Table 8 reports the exact formulation-specific Aedes protection times for F1 and F3 in six volunteers; the paper separately reports release and permeation measurements."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-receptors-21",
+      "question": "How strong is the evidence that specific odorant or ionotropic receptors drive SWD avoidance, rather than merely responding to an odor?",
+      "category": "swd-sensory-behavior",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Mechanism claims influence compound selection and the design of resistance monitoring.",
+      "expected_behavior": "Distinguish receptor annotation and odor response from causal receptor-to-behavior evidence, and report exactly what the direct SWD studies establish for avoidance, attraction, and egg laying.",
+      "truth_source": "Independent review of three exact SWD receptor and avoidance papers.",
+      "truth_packet": {
+        "required_claims": [
+          "The receptor-family study identifies candidate SWD odorant and gustatory receptors but does not prove that one causes avoidance.",
+          "The avoidance study measures SWD behavioral responses to odorants but does not selectively perturb a specific SWD receptor to establish necessity.",
+          "The 2026 receptor-perturbation study establishes causal receptor involvement in attraction to ripe fruit for two receptors, while finding those receptors dispensable for egg-laying preference; it does not establish receptor causality for a crop-repellent avoidance response."
+        ],
+        "forbidden_claims": [
+          "A receptor that responds to an odor is proven to cause avoidance.",
+          "Candidate chemoreceptor records prove the product mechanism."
+        ],
+        "reasoning_boundaries": [
+          "Separate receptor annotation, physiological response, behavioral association, necessity, sufficiency, avoidance, attraction, and oviposition.",
+          "Require the same compound, receptor perturbation, focal behavior, species, and assay before claiming receptor-to-avoidance causality."
+        ],
+        "sources": [
+          {
+            "title": "The making of a pest: Insights from the evolution of chemosensory receptor families in a pestiferous and invasive fly, Drosophila suzukii",
+            "public_url": "https://pubmed.ncbi.nlm.nih.gov/27530109/",
+            "source_id": "pubmed:27530109",
+            "locator": "Abstract and Results: comparative annotation and evolution of odorant and gustatory receptor families",
+            "supports": "This comparative study annotates SWD chemosensory receptor families and identifies evolutionary candidates without establishing receptor-to-avoidance causality."
+          },
+          {
+            "title": "Conservation of Olfactory Avoidance in Drosophila Species and Identification of Repellents for Drosophila suzukii",
+            "public_url": "https://pubmed.ncbi.nlm.nih.gov/26098542/",
+            "source_id": "pubmed:26098542",
+            "locator": "Abstract and Results: comparative behavioral avoidance screen across Drosophila species without receptor perturbation",
+            "supports": "This paper directly measures odor avoidance across Drosophila species, including SWD, but does not prove necessity of a specific SWD receptor for the measured avoidance."
+          },
+          {
+            "title": "Receptor sequence divergence, gain, loss, duplication, and neofunctionalization drive olfactory adaptation in Drosophila suzukii",
+            "public_url": "https://doi.org/10.1073/pnas.2529586123",
+            "source_id": "doi:10.1073/pnas.2529586123",
+            "locator": "Abstract and Results: receptor perturbations required for ripe-fruit attraction but dispensable for egg-laying preference",
+            "supports": "This study perturbs specific receptors and distinguishes causal attraction to ripe fruit from egg-laying preference; it does not demonstrate causal avoidance to a crop-repellent candidate."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-recovery-habituation-23",
+      "question": "After a volatile is removed, what recovery measurements would show whether SWD avoidance persists, habituates, or rapidly disappears?",
+      "category": "swd-sensory-behavior",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A durable crop treatment must not lose effect after prior exposure, and a transient effect may require a different release schedule.",
+      "expected_behavior": "Propose naive-control and repeated pre-exposure or washout measurements and accurately summarize the compound-specific habituation result.",
+      "truth_source": "Independent review of PMID 34532743 and DOI 10.1093/ee/nvab099.",
+      "truth_packet": {
+        "required_claims": [
+          "Compare naive and pre-exposed flies at defined exposure and washout times, then repeat the same avoidance, activity, survival, and oviposition endpoints after the volatile is removed.",
+          "The cited study found no loss of deterrence to octenol or 2-pentylfuran after 24, 48, or 72 hours of adult pre-exposure or larval exposure, but it did not find a geosmin repellent effect in its assay.",
+          "That compound-specific pre-exposure result does not establish long-term field persistence after removal."
+        ],
+        "forbidden_claims": [
+          "SWD cannot habituate to any repellent.",
+          "No habituation in one assay proves the volatile remains active after field weathering."
+        ],
+        "reasoning_boundaries": [
+          "Separate behavioral habituation from chemical persistence and toxic impairment.",
+          "Preserve compound, life stage, exposure duration, washout, and endpoint."
+        ],
+        "sources": [
+          {
+            "title": "Does Habituation Affect the Efficacy of Semiochemical Oviposition Repellents Developed Against Drosophila suzukii?",
+            "public_url": "https://doi.org/10.1093/ee/nvab099",
+            "source_id": "doi:10.1093/ee/nvab099",
+            "locator": "Abstract: adult female and larval pre-exposure; 24, 48, or 72 hour adult exposures; two-choice gated trap capture, survival, and oviposition endpoints; octenol, geosmin, and 2-pentylfuran results",
+            "supports": "The study directly tested adult and larval pre-exposure for three candidate semiochemicals and measured deterrence, survival, and oviposition."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-state-confounds-24",
+      "question": "How could age, mating status, hunger, or prior egg laying change an SWD repellent result?",
+      "category": "swd-oviposition-ecology",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Small differences in female state can change movement and egg output enough to alter a candidate ranking.",
+      "expected_behavior": "Explain the confound pathway, cite direct state-related evidence where available, and identify unmeasured states rather than inventing effect sizes.",
+      "truth_source": "Independent review of PMID 34040592 and DOI 10.3389/fmicb.2021.656406.",
+      "truth_packet": {
+        "required_claims": [
+          "The cited SWD study found lower food seeking in virgin females than in mated gravid females and linked reduced female foraging activity with lower oviposition in microbiome-deprived flies.",
+          "Age, mating, feeding or starvation, microbiome, and prior egg-laying history should therefore be standardized, blocked, or deliberately tested rather than pooled.",
+          "The source does not provide effect sizes for every state named in the question."
+        ],
+        "forbidden_claims": [
+          "All named internal states have the same measured effect in SWD.",
+          "A treatment effect is independent of reproductive state without testing it."
+        ],
+        "reasoning_boundaries": [
+          "Separate direct SWD observations from general experimental-design inference.",
+          "Do not infer age or prior-oviposition effects from mating-state evidence alone."
+        ],
+        "sources": [
+          {
+            "title": "Sex-Dependent Effects of the Microbiome on Foraging and Locomotion in Drosophila suzukii",
+            "public_url": "https://doi.org/10.3389/fmicb.2021.656406",
+            "source_id": "doi:10.3389/fmicb.2021.656406",
+            "locator": "Methods: 5- to 10-day-old adults, including axenic and conventional females and males, 15-hour food deprivation, and foraging scored at 7, 12, and 24 hours; Results, Figures 1-3 and reproductive-state comparison: sex- and microbiome-dependent foraging and locomotion, the conventional-female 7-hour virgin-versus-gravid difference and its later time points, axenic comparisons, and oviposition",
+            "supports": "The paper directly links female microbiome and mating or gravid state to foraging activity and oviposition-related behavior."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-field-plume-25",
+      "question": "What changes when an SWD volatile that works in a still-air chamber is moved into a windy crop canopy?",
+      "category": "swd-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A crop volatile must maintain a useful plume despite wind, foliage, heat, and changing release rate.",
+      "expected_behavior": "Explain delivery and plume variables, cite the field puffer comparison, and keep its raspberry result narrower than a general canopy claim.",
+      "truth_source": "Independent review of PMID 32738015 and DOI 10.1002/ps.6028.",
+      "truth_packet": {
+        "required_claims": [
+          "Moving to a crop canopy introduces airflow, source spacing and placement, foliage, temperature, timing, and changing release-rate effects that a still-air chamber does not estimate.",
+          "In raspberries, automated octenol puffers reduced oviposition and outperformed passive vial dispensers; dawn-and-dusk release performed similarly to continuous release in that study.",
+          "The study stated that larger-scale placement and perimeter strategies still required further research."
+        ],
+        "forbidden_claims": [
+          "A still-air effective dose defines a field application rate.",
+          "The puffer study proves efficacy for every crop, volatile, or canopy."
+        ],
+        "reasoning_boundaries": [
+          "Separate source emission from the spatial and temporal air concentration insects encounter.",
+          "Preserve crop, compound, year, population pressure, and delivery method."
+        ],
+        "sources": [
+          {
+            "title": "Automated aerosol puffers effectively deliver 1-octen-3-ol, an oviposition antagonist useful against spotted-wing drosophila",
+            "public_url": "https://doi.org/10.1002/ps.6028",
+            "source_id": "doi:10.1002/ps.6028",
+            "locator": "Abstract and Results: 2016 and 2017 raspberry field trials comparing aerosol puffers, passive vials, release timing, and placement",
+            "supports": "The field study compared timed aerosol puffers with passive vial delivery and reported oviposition outcomes in raspberries."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-safety-26",
+      "question": "Which non-target and crop-safety measurements should accompany an SWD repellent field trial?",
+      "category": "swd-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A crop treatment must protect fruit, workers, pollinators, natural enemies, and the surrounding environment.",
+      "expected_behavior": "Name crop and non-target endpoints, cite the limited bee comparison, and explicitly state that it is not a product-specific field-safety package.",
+      "truth_source": "Independent review of PMID 38794461 plus the public SWD safety gap records.",
+      "truth_packet": {
+        "required_claims": [
+          "Measure crop phytotoxicity and quality, residue and worker exposure, pollinator and beneficial-arthropod survival and behavior, and relevant soil or aquatic exposure at the intended formulation and dose.",
+          "The cited essential-oil feeding study compared SWD with two pollinator bee species, but it does not establish field safety for a different repellent, formulation, exposure route, crop, or dose.",
+          "The public product record identifies crop and worker safety plus pollinator, predator, parasitoid, soil, aquatic, and beneficial-insect effects as current source gaps."
+        ],
+        "forbidden_claims": [
+          "Greater tolerance in two bee species proves ecological safety.",
+          "A nonlethal repellent is automatically safe for crops and non-target organisms."
+        ],
+        "reasoning_boundaries": [
+          "Match safety evidence to formulation, dose, route, species, life stage, and intended exposure.",
+          "Separate hazard, exposure, and field risk."
+        ],
+        "sources": [
+          {
+            "title": "Contributions of γ-Aminobutyric Acid (GABA) Receptors for the Activities of Pectis brevipedunculata Essential Oil against Drosophila suzukii and Pollinator Bees",
+            "public_url": "https://doi.org/10.3390/plants13101392",
+            "source_id": "doi:10.3390/plants13101392",
+            "locator": "Abstract and Results: feeding toxicity and diet consumption in SWD, Apis mellifera, and Partamona helleri",
+            "supports": "The study directly compared feeding toxicity and diet consumption in SWD and two pollinator bee species for one essential oil."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-resistance-27",
+      "question": "What evidence would distinguish learned habituation from inherited resistance to an SWD repellent?",
+      "category": "swd-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "The mitigation strategy differs if efficacy loss is reversible learning versus heritable population change.",
+      "expected_behavior": "Define the evidence patterns, summarize the existing habituation study, and state the longitudinal resistance gap.",
+      "truth_source": "Independent review of PMID 34532743 plus the public SWD adaptation and resistance gap record.",
+      "truth_packet": {
+        "required_claims": [
+          "Habituation is supported by a within-individual or within-generation response decline after nonreinforced exposure that recovers after sufficient washout, while inherited resistance requires a persistent phenotype across offspring raised without exposure and ideally a selection response or genetic association.",
+          "The cited SWD study tested adult and larval pre-exposure and found no habituation to octenol or 2-pentylfuran in its conditions; it did not establish inherited resistance.",
+          "The source plane identifies longitudinal, cross-resistance, behavioral-tolerance, and field-frequency evidence for repellent pressures as missing."
+        ],
+        "forbidden_claims": [
+          "One reduced response after exposure proves genetic resistance.",
+          "The absence of habituation in one study proves resistance cannot evolve."
+        ],
+        "reasoning_boundaries": [
+          "Use common-garden, unexposed-generation, reciprocal or selection designs to separate learning, parental effects, and inheritance.",
+          "Preserve compound and endpoint specificity."
+        ],
+        "sources": [
+          {
+            "title": "Does Habituation Affect the Efficacy of Semiochemical Oviposition Repellents Developed Against Drosophila suzukii?",
+            "public_url": "https://doi.org/10.1093/ee/nvab099",
+            "source_id": "doi:10.1093/ee/nvab099",
+            "locator": "Abstract: adult female and larval pre-exposure; 24, 48, or 72 hour adult exposures; two-choice gated trap capture, survival, and oviposition endpoints; octenol, geosmin, and 2-pentylfuran results",
+            "supports": "The study directly tested pre-exposure across adult and larval stages for candidate oviposition repellents."
+          }
+        ]
+      }
+    },
+    {
+      "id": "swd-crop-loss-28",
+      "question": "Which endpoints connect fewer SWD eggs on fruit to fewer surviving larvae and less marketable crop loss?",
+      "category": "swd-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Product value depends on preventing damaging survivors and preserving saleable fruit, not only changing egg allocation.",
+      "expected_behavior": "Lay out the causal endpoint chain and identify which links have direct evidence and which remain a field-performance gap.",
+      "truth_source": "Independent review of PMID 40576950, PMID 39769586, and the public field-performance gap record.",
+      "truth_packet": {
+        "required_claims": [
+          "Measure eggs per fruit, hatch or larval establishment, pupation or adult emergence, fruit damage and decay, rejected fruit, marketable yield, and economic loss with consistent fruit denominators.",
+          "The cited push-pull field work measured fewer pupae emerging from treated raspberries, while the cherry study shows that pupation and survival can vary among cultivars.",
+          "A replicated marketable-yield and operational-fit package remains missing."
+        ],
+        "forbidden_claims": [
+          "Every prevented egg would have become a damaging larva.",
+          "Pupal emergence alone quantifies marketable crop loss."
+        ],
+        "reasoning_boundaries": [
+          "Keep egg, survival, damage, yield, and economic endpoints distinct.",
+          "Account for host cultivar and fruit condition when linking stages."
+        ],
+        "sources": [
+          {
+            "title": "Oviposition deterrent as a component of a push–pull management approach for Drosophila suzukii",
+            "public_url": "https://doi.org/10.1093/ee/nvaf057",
+            "source_id": "doi:10.1093/ee/nvaf057",
+            "locator": "Abstract and field raspberry methods/results; laboratory choice and no-choice assays; Figure 5 pupae emerging from ripening and sentinel raspberries under control, pull, push, and push-pull treatments",
+            "supports": "The field study measured pupae emerging from treated and control raspberries."
+          },
+          {
+            "title": "Oviposition Preference and Developmental Performance of Drosophila suzukii on Different Cherry Cultivars",
+            "public_url": "https://pubmed.ncbi.nlm.nih.gov/39769586/",
+            "source_id": "pubmed:39769586",
+            "locator": "Abstract; Methods: fruit ripeness and developmental design; Results and Table 1: cultivar-specific fruit traits, oviposition, hatching, pupation, and survival outcomes",
+            "supports": "The cherry-cultivar study found significant differences in SWD pupation and survival rates among cultivars."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-multimodal-cues-29",
+      "question": "How redundant are carbon dioxide, human odor, heat, humidity, and visual cues during Aedes aegypti host seeking?",
+      "category": "aedes-sensory-behavior",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A repellent targeting one cue may fail if other host cues compensate.",
+      "expected_behavior": "Describe cue integration and partial redundancy without claiming every cue is interchangeable or required at every distance.",
+      "truth_source": "Independent review of DOI 10.1038/s41586-024-07848-5, DOI 10.1016/j.cub.2021.07.003, and DOI 10.1098/rsbl.2022.0270.",
+      "truth_packet": {
+        "required_claims": [
+          "Host seeking is multimodal: direct evidence shows integration of carbon dioxide, human odor, and thermal infrared, while visual contrast, close-range moisture, and convective heat contribute at other stages rather than acting as interchangeable cues.",
+          "Removing two visual rhodopsins abolished vision-guided target attraction but left odor tracking normal, demonstrating pathway separation rather than total host-seeking loss.",
+          "Blood feeding and carbon dioxide changed visual tracking in the cited navigation study, so cue weighting depends on internal and environmental context."
+        ],
+        "forbidden_claims": [
+          "All host cues are fully redundant.",
+          "Blocking any single cue guarantees loss of human attraction."
+        ],
+        "reasoning_boundaries": [
+          "Distinguish activation, long-range orientation, close-range landing, and biting.",
+          "Avoid assigning one fixed hierarchy across all assay geometries and physiological states."
+        ],
+        "sources": [
+          {
+            "title": "Thermal infrared directs host-seeking behaviour in Aedes aegypti mosquitoes",
+            "public_url": "https://doi.org/10.1038/s41586-024-07848-5",
+            "source_id": "doi:10.1038/s41586-024-07848-5",
+            "locator": "Abstract and Results: infrared, carbon dioxide, and human-odor combinations plus TRPA1 and opsin perturbations",
+            "supports": "The study directly tested carbon dioxide, human odor, and thermal infrared together and distinguishes moisture and convective heat as close-range host cues."
+          },
+          {
+            "title": "Elimination of vision-guided target attraction in Aedes aegypti using CRISPR",
+            "public_url": "https://doi.org/10.1016/j.cub.2021.07.003",
+            "source_id": "doi:10.1016/j.cub.2021.07.003",
+            "locator": "Results paragraph 13, Figure 1F and Supplementary Figures S1E-S1G: op1/op2 double-mutant CO2-stimulated cage target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux; Results paragraph 13, Supplementary Figures S1I and S2J: normal human-skin-odor tracking; Results paragraph 17, Figure 3 and Supplementary Figure S3: wind-tunnel target-attraction impairment with preserved upwind orientation; Results paragraphs 18-21, Figure 4 and Supplementary Figure S4: phototaxis, walking optomotor response, and ERG",
+            "supports": "The genetic study separated vision-guided target attraction from intact odor tracking."
+          },
+          {
+            "title": "Carbon dioxide and blood-feeding shift visual cue tracking during navigation in Aedes aegypti mosquitoes",
+            "public_url": "https://doi.org/10.1098/rsbl.2022.0270",
+            "source_id": "doi:10.1098/rsbl.2022.0270",
+            "locator": "Abstract and Results: visual-target tracking before and after carbon-dioxide exposure and blood feeding",
+            "supports": "The navigation study shows that carbon dioxide and blood-feeding state shift visual cue tracking."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-circadian-30",
+      "question": "How should time of day and mosquito circadian state be controlled in a human-repellent assay?",
+      "category": "aedes-physiology-ecology",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Daily changes in host response can masquerade as formulation or treatment differences.",
+      "expected_behavior": "Require a fixed or balanced Zeitgeber time, controlled light cycle, and recorded entrainment history, supported by direct clock-disruption evidence.",
+      "truth_source": "Independent review of PMCID PMC9046260 and DOI 10.1038/s41598-022-10825-5.",
+      "truth_packet": {
+        "required_claims": [
+          "Aedes aegypti shows daily host-seeking patterns, and disabling the cycle clock gene changed locomotor rhythms, host-odor response, and blood-feeding propensity in the cited study.",
+          "Repellent trials should test at a fixed time after lights-on or balance treatments across time blocks while holding light-dark entrainment, age, feeding state, and temperature consistent."
+        ],
+        "forbidden_claims": [
+          "Time of day cannot affect a repellent assay.",
+          "A cycle knockout result gives the exact normal hourly effect size."
+        ],
+        "reasoning_boundaries": [
+          "Separate endogenous circadian state from immediate light, temperature, and feeding effects.",
+          "Do not generalize a genetic clock disruption to every wild population."
+        ],
+        "sources": [
+          {
+            "title": "Impact of disabled circadian clock on yellow fever mosquito Aedes aegypti fitness and behaviors",
+            "public_url": "https://doi.org/10.1038/s41598-022-10825-5",
+            "source_id": "doi:10.1038/s41598-022-10825-5",
+            "locator": "Abstract and Results: AeCyc knockout and clock-gene expression; locomotor activity, host-odor response, blood-feeding, egg-hatching, development, survival, and mating phenotypes",
+            "supports": "The CRISPR cycle-knockout study directly links the circadian clock to host-odor response and blood-feeding behavior."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-learning-31",
+      "question": "Can prior odor or host experience change how Aedes aegypti responds to a repellent?",
+      "category": "aedes-sensory-behavior",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Repeated laboratory handling or prior host encounters may change responses during a multi-day screen.",
+      "expected_behavior": "Say that Aedes can learn salient host odors, then state that transfer to a particular repellent requires direct testing.",
+      "truth_source": "Independent review of PMID 36629098 and DOI 10.1098/rspb.2022.2118.",
+      "truth_packet": {
+        "required_claims": [
+          "Aedes aegypti can acquire aversive responses to odorants salient to mammalian hosts, and dopamine signaling is implicated in that olfactory learning.",
+          "This supports controlling prior odor, handling, and host experience, but it does not prove learning to every repellent or persistence under product use."
+        ],
+        "forbidden_claims": [
+          "All repellents cause learned avoidance.",
+          "A general learning study proves habituation or sensitization to the tested product."
+        ],
+        "reasoning_boundaries": [
+          "Separate learned host-odor associations from innate repellency and toxic effects.",
+          "Preserve odor identity, training stimulus, interval, and species."
+        ],
+        "sources": [
+          {
+            "title": "Neuromodulation and differential learning across mosquito species",
+            "public_url": "https://doi.org/10.1098/rspb.2022.2118",
+            "source_id": "doi:10.1098/rspb.2022.2118",
+            "locator": "Materials and methods 4(b)(ii): 60-second odor presentation, 10 odor-shock pairings, 2-minute inter-trial interval, and testing after 24 hours; Results 2(b) and Figures 2-4: species-specific aversive learning and dopamine-pathway evidence",
+            "supports": "The study tested aversive olfactory learning across mosquito species and linked learnable odors to dopamine innervation."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-population-variation-32",
+      "question": "How much can mosquito population, genotype, age, or insecticide-resistance background change a repellent result?",
+      "category": "aedes-physiology-ecology",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A product screened on one colony may perform differently against field populations and physiological states.",
+      "expected_behavior": "Use direct lab-versus-field and selected-line evidence, but avoid claiming one universal effect size for all sources of variation.",
+      "truth_source": "Independent review of PMCID PMC7423148 and DOI 10.1371/journal.pone.0329776.",
+      "truth_packet": {
+        "required_claims": [
+          "The transfluthrin study observed markedly different spatial and contact responses between a laboratory Aedes aegypti strain and a field population.",
+          "Selection for permethrin or thymol resistance changed longevity, blood-feeding avidity, egg output, and development in a dose- and state-dependent way.",
+          "Strain or population, genotype or resistance phenotype, age, mating, and feeding state should be reported and tested across more than one relevant background."
+        ],
+        "forbidden_claims": [
+          "One laboratory colony represents all Aedes aegypti populations.",
+          "Insecticide resistance always reduces repellent response."
+        ],
+        "reasoning_boundaries": [
+          "Do not collapse genotype, phenotype, population history, age, and state into one variable.",
+          "Report compound- and endpoint-specific variation rather than a universal percentage."
+        ],
+        "sources": [
+          {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus (Diptera: Culicidae)",
+            "public_url": "https://doi.org/10.1371/journal.pone.0237353",
+            "source_id": "doi:10.1371/journal.pone.0237353",
+            "locator": "Methods, Insecticide impregnated papers and Experimental design; Results, Tables 1-3 and Figure 1; Results, Excito-repellency of field-collected mosquitoes, Figure 4 and Table 6; Discussion paragraphs on chemically undetermined residual transfluthrin",
+            "supports": "The study directly compared laboratory and field Aedes aegypti behavioral responses to transfluthrin."
+          },
+          {
+            "title": "Changes in the life history traits in Aedes aegypti selected for resistance to permethrin and thymol, a spatial repellent",
+            "public_url": "https://doi.org/10.1371/journal.pone.0329776",
+            "source_id": "doi:10.1371/journal.pone.0329776",
+            "locator": "Results: Effects of selection for resistance on longevity, Tables 1-2 and Figures 1-2; Selection of resistance on biting rate, Table 3 and Figure 3, where no pairwise feeding difference was significant; fecundity, Table 4 and Figure 4; development, Tables 5-6, Figure 5, and Supplementary Table S4 pairwise comparisons, including conflicts between the main-text significance narrative and S4C, S4E, and S4F",
+            "supports": "The selection study found dose-, meal-, and mating-dependent life-history differences in permethrin- and thymol-selected mosquitoes."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-dose-release-33",
+      "question": "How should dose, evaporation rate, air concentration, and distance be reported for an Aedes spatial repellent?",
+      "category": "aedes-assay-interpretation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Applied mass is not the same as the airborne exposure a mosquito receives at a particular distance and time.",
+      "expected_behavior": "Require separate reporting of source loading, emission over time, measured air concentration, geometry, and distance while naming the current delivery evidence gap.",
+      "truth_source": "Independent review of PMCID PMC7423148 and DOI 10.3390/life13010141 plus the reviewed-public-evidence coverage boundary.",
+      "truth_packet": {
+        "required_claims": [
+          "Report active ingredient and formulation, applied mass and area, source age, evaporation or release rate over time, chamber volume and ventilation, sampling method, measured airborne concentration if available, and source-to-mosquito distance.",
+          "Applied dose cannot be substituted for air concentration without a validated release and transport measurement.",
+          "The current reviewed public Aedes repellent evidence cited here does not contain one complete product-specific package spanning carrier, concentration, spatial delivery, release-rate, measured air concentration, application method, and user-experience evidence."
+        ],
+        "forbidden_claims": [
+          "Milligrams applied and milligrams per cubic meter are interchangeable.",
+          "Distance is irrelevant when a volatile plume is tested."
+        ],
+        "reasoning_boundaries": [
+          "Separate source loading, emission, transport, measured exposure, and behavioral response.",
+          "Preserve time, temperature, humidity, and airflow with every concentration."
+        ],
+        "sources": [
+          {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus (Diptera: Culicidae)",
+            "public_url": "https://doi.org/10.1371/journal.pone.0237353",
+            "source_id": "doi:10.1371/journal.pone.0237353",
+            "locator": "Methods, Insecticide impregnated papers and Experimental design; Results, Tables 1-3 and Figure 1; Results, Excito-repellency of field-collected mosquitoes, Figure 4 and Table 6; Discussion paragraphs on chemically undetermined residual transfluthrin",
+            "supports": "The study reports compound-specific exposure concentrations and separates dose-response behavioral and toxic endpoints."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-durability-35",
+      "question": "Which sweat, washing, abrasion, sunlight, and temperature tests are needed to estimate how long a skin repellent protects a person?",
+      "category": "aedes-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Laboratory protection time can fail under ordinary human activity and environmental exposure.",
+      "expected_behavior": "Use exact WHO and EPA guidance to distinguish standardized baseline protection time from a proposed real-use durability challenge matrix.",
+      "truth_source": "Independent review of exact WHO and EPA guidance.",
+      "truth_packet": {
+        "required_claims": [
+          "WHO and EPA provide standardized efficacy and complete-protection-time methods, while EPA baseline subject controls avoid perspiration, abrasion, rubbing, touching, and wetting of treated skin.",
+          "A real-use durability program should test pre-specified sweat or water exposure, washing and drying, rubbing or abrasion, ultraviolet or sunlight exposure, and relevant temperatures against unchallenged time-matched controls, then repeat landing or bite protection.",
+          "Chemical retention or release is a supporting endpoint and cannot substitute for behavioral protection; the challenge matrix is a product-development recommendation rather than a universally validated protocol for every stress combination."
+        ],
+        "forbidden_claims": [
+          "Initial arm-in-cage protection time establishes durability after real use.",
+          "Chemical remaining on skin automatically means bite protection remains."
+        ],
+        "reasoning_boundaries": [
+          "Present the challenge matrix as a validation design, not an existing product result.",
+          "Separate chemical persistence, release, skin exposure, and behavioral protection."
+        ],
+        "sources": [
+          {
+            "title": "Guidelines for efficacy testing of mosquito repellents for human skin",
+            "public_url": "https://www.who.int/publications/i/item/WHO-HTM-NTD-WHOPES-2009.4",
+            "source_id": "who:WHO-HTM-NTD-WHOPES-2009.4",
+            "locator": "Laboratory and field efficacy procedures: application rate, single-dose evaluation, and complete protection time",
+            "supports": "WHO provides standardized laboratory and field procedures, application-rate methods, and efficacy evaluation for human-skin mosquito repellents."
+          },
+          {
+            "title": "Product Performance Test Guidelines OPPTS 810.3700: Insect Repellents to be Applied to Human Skin",
+            "public_url": "https://www.epa.gov/system/files/documents/2023-12/1d.-oppts-810.3700-guidelines-july-7-2010.pdf",
+            "source_id": "epa:oppts-810.3700",
+            "locator": "Pages 5-9: section (b)(7) Complete Protection Time; section (c)(1)(iii)(B) choice of repellency endpoint; section (c)(1)(ix) subject preparation; section (c)(1)(x) treatment",
+            "supports": "EPA defines complete protection time and instructs baseline subjects to avoid perspiration, abrasion, rubbing, touching, and wetting of the treated area."
+          }
+        ]
+      }
+    },
+    {
+      "id": "aedes-repellent-resistance-36",
+      "question": "How do we distinguish physiological resistance to a mosquito repellent from ordinary behavioral avoidance or reduced sensitivity?",
+      "category": "aedes-product-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A change in response can reflect selection, sensory variation, toxicity resistance, or normal avoidance with different implications for product life.",
+      "expected_behavior": "Require inherited, repeatable population differences under controlled exposure and separate them from contact behavior and insecticide resistance markers.",
+      "truth_source": "Independent review of DOI 10.1371/journal.pone.0329776 and hosted work W4299723530.",
+      "truth_packet": {
+        "required_claims": [
+          "Physiological resistance requires a repeatable inherited reduction in effect under standardized dose or air concentration, ideally shown by selection response, common-garden offspring, and physiological or genetic evidence.",
+          "Ordinary avoidance is the behavior the repellent is intended to elicit, while reduced sensitivity is a behavioral phenotype that is not automatically inherited resistance.",
+          "Pyrethroid kdr status did not eliminate clothing repellency in the cited comparison, and a separate thymol-selection study found lasting life-history changes, so insecticide resistance and repellent response cannot be assumed equivalent."
+        ],
+        "forbidden_claims": [
+          "Any mosquito that enters a treated space is resistant.",
+          "A pyrethroid-resistance marker proves resistance to every repellent."
+        ],
+        "reasoning_boundaries": [
+          "Separate behavioral endpoint, toxic endpoint, heritability, and mechanism.",
+          "Preserve compound, formulation, route, population, and dose."
+        ],
+        "sources": [
+          {
+            "title": "Changes in the life history traits in Aedes aegypti selected for resistance to permethrin and thymol, a spatial repellent",
+            "public_url": "https://doi.org/10.1371/journal.pone.0329776",
+            "source_id": "doi:10.1371/journal.pone.0329776",
+            "locator": "Results: Effects of selection for resistance on longevity, Tables 1-2 and Figures 1-2; Selection of resistance on biting rate, Table 3 and Figure 3, where no pairwise feeding difference was significant; fecundity, Table 4 and Figure 4; development, Tables 5-6, Figure 5, and Supplementary Table S4 pairwise comparisons, including conflicts between the main-text significance narrative and S4C, S4E, and S4F",
+            "supports": "The study selected Aedes aegypti with permethrin or thymol and measured persistent biological changes relevant to resistance interpretation."
+          },
+          {
+            "title": "Pyrethroid insecticides maintain repellent effect on knock-down resistant populations of Aedes aegypti mosquitoes",
+            "public_url": "https://doi.org/10.17615/1p7n-3x92",
+            "source_id": "doi:10.17615/1p7n-3x92",
+            "locator": "Abstract: arm-in-cage landings, blood meals, and mortality for pyrethroid-sensitive and kdr-resistant populations on treated clothing",
+            "supports": "The clothing study found repellent effects in both pyrethroid-sensitive and kdr-resistant Aedes populations."
+          }
+        ]
+      }
+    },
+    {
+      "id": "dbm-host-cues-37",
+      "question": "Which plant cues guide diamondback moth host finding and egg laying, and which evidence is direct for Plutella xylostella?",
+      "category": "diamondback-expansion",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Diamondback moth is the next crop-pest expansion, so scientists need to know what can already be answered without borrowing another species' biology.",
+      "expected_behavior": "Name the direct Plutella xylostella host-finding, oviposition, antennal-response, and field-attraction evidence without importing another species' biology or overstating cue causality.",
+      "truth_source": "Independent review of three exact primary diamondback-moth studies.",
+      "truth_packet": {
+        "required_claims": [
+          "Direct Plutella xylostella evidence shows that volatile plant cues support host orientation and landing, while visual or plant-position context also affects host finding.",
+          "A host-choice study found orientation to Brassicaceae plant odor versus clean air, no preference among three host odors presented together, and reduced oviposition under mixed cropping.",
+          "A 2025 study identified eight broccoli volatiles that elicited antennal responses and found a three-component field attractant blend, but antennal response or trap attraction does not by itself prove control of egg laying."
+        ],
+        "forbidden_claims": [
+          "Another insect's plant-cue evidence is direct diamondback moth evidence.",
+          "Every antennally active Brassica volatile is proven to guide oviposition or repel diamondback moth."
+        ],
+        "reasoning_boundaries": [
+          "Keep odor detection, orientation, vision, landing, trap attraction, and oviposition as separate endpoints.",
+          "Label only the cited Plutella xylostella studies as direct focal-species evidence."
+        ],
+        "sources": [
+          {
+            "title": "The roles of olfaction and vision in host-plant finding by the diamondback moth, Plutella xylostella",
+            "public_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
+            "source_id": "doi:10.1111/j.1365-3032.2006.00499.x",
+            "locator": "Abstract and Results: volatile-cue host location and landing plus plant-position and host-versus-nonhost effects on alighting; oviposition was not measured",
+            "supports": "The study directly tests olfactory, visual, plant-position, and host-versus-nonhost effects on female DBM host finding and landing."
+          },
+          {
+            "title": "Host Selection Behavior and the Fecundity of Plutella xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants",
+            "public_url": "https://doi.org/10.1093/jisesa/ieu113",
+            "source_id": "doi:10.1093/jisesa/ieu113",
+            "locator": "Abstract and Results: host orientation, landing, oviposition, and fecundity measured separately across host plants",
+            "supports": "The paper directly measures host odor orientation, landing, mixed-cropping behavior, fecundity, and oviposition in Plutella xylostella."
+          },
+          {
+            "title": "Electrophysiological Responses and Field Attractants of Plutella xylostella Adults to Volatiles from Brassica oleracea",
+            "public_url": "https://doi.org/10.1021/acs.jafc.5c03182",
+            "source_id": "doi:10.1021/acs.jafc.5c03182",
+            "locator": "Abstract and Results: eight antennally active broccoli volatiles and field trapping with a three-component blend",
+            "supports": "The study identifies eight antennally active broccoli volatiles and tests blended attractants in field traps."
+          }
+        ]
+      }
+    },
+    {
+      "id": "dbm-endpoints-38",
+      "question": "For diamondback moth, which life stage and crop-damage endpoints should a repellent program measure first?",
+      "category": "diamondback-expansion",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "The team needs an initial assay ladder that connects adult behavior to the larval stage that damages a crop.",
+      "expected_behavior": "Recommend an endpoint ladder while grounding each layer in direct Plutella studies and stating that the literature does not establish one universal predictor of marketable yield.",
+      "truth_source": "Independent review of exact DBM host-choice, semiochemical, intercropping, larval-density, and crop-damage studies.",
+      "truth_packet": {
+        "required_claims": [
+          "A repellent program should separately measure adult orientation or landing, female oviposition, egg hatch, larval establishment and feeding, plant damage, and marketable yield or quality.",
+          "Direct Plutella studies separately measure adult choice and landing, oviposition, adult and larval density, leaf damage, field populations, and beneficial insects, demonstrating why those layers cannot be collapsed.",
+          "The endpoint ordering is a product-development design; the cited studies do not prove that one early endpoint universally predicts marketable yield."
+        ],
+        "forbidden_claims": [
+          "Adult avoidance alone proves reduced diamondback moth crop damage.",
+          "The cited studies establish one universally best or sufficient endpoint."
+        ],
+        "reasoning_boundaries": [
+          "Separate adult behavioral prevention from larval crop damage.",
+          "Mark recommendations as an experiment plan until direct Plutella evidence is onboarded."
+        ],
+        "sources": [
+          {
+            "title": "Host Selection Behavior and the Fecundity of Plutella xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants",
+            "public_url": "https://doi.org/10.1093/jisesa/ieu113",
+            "source_id": "doi:10.1093/jisesa/ieu113",
+            "locator": "Abstract and Results: host orientation, landing, oviposition, and fecundity measured separately across host plants",
+            "supports": "This direct DBM study measures adult behavior, host selection, fecundity, and oviposition."
+          },
+          {
+            "title": "Intercropping organic broccoli with Rhododendron tomentosum and Fagopyrum esculentum: a test of bottom-up and top-down strategies for reducing herbivory",
+            "public_url": "https://doi.org/10.1007/s11829-023-10033-6",
+            "source_id": "doi:10.1007/s11829-023-10033-6",
+            "locator": "Abstract and Results: adult moths, larvae, and broccoli leaf damage measured as separate field outcomes",
+            "supports": "This field study separately counts DBM adults, larvae, and leaf damage and measures companion-plant volatiles."
+          },
+          {
+            "title": "A semiochemical attract-and-kill formulation to manage diamondback moth (Lepidoptera: Plutellidae)",
+            "public_url": "https://doi.org/10.1093/jee/toaf193",
+            "source_id": "doi:10.1093/jee/toaf193",
+            "locator": "Abstract: four-choice adult attraction and field counts of diamondback moth and beneficial insects",
+            "supports": "This study links a four-choice adult assay to field DBM population and natural-enemy outcomes while preserving those endpoints separately."
+          }
+        ]
+      }
+    },
+    {
+      "id": "dbm-cross-species-39",
+      "question": "What can SWD or mosquito spatial-repellency evidence legitimately suggest for diamondback moth, and what must be tested directly?",
+      "category": "diamondback-expansion",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "The next species program should reuse assay logic without importing unsupported biology.",
+      "expected_behavior": "Permit transfer of experimental principles only, acknowledge the direct DBM evidence now available, and identify what remains candidate-specific and must be tested in Plutella.",
+      "truth_source": "Independent review of exact SWD, Aedes, and focal-species DBM studies.",
+      "truth_packet": {
+        "required_claims": [
+          "SWD and Aedes work can suggest assay principles such as separating contact from non-contact exposure, measuring dose and plume, using matched controls, and following behavior with reproduction and damage endpoints, but cannot transfer efficacy.",
+          "Direct Plutella studies already provide focal-species adult choice, host-location, oviposition, adult and larval density, and leaf-damage endpoints.",
+          "Each candidate must still be tested directly in Plutella for non-contact orientation, contact effects, sex and life-stage response, oviposition, larval feeding and damage, dose response, toxicity, field plume behavior, and persistence."
+        ],
+        "forbidden_claims": [
+          "A volatile that repels SWD or Aedes will repel diamondback moth.",
+          "Shared assay hardware makes species responses biologically equivalent."
+        ],
+        "reasoning_boundaries": [
+          "Transfer methods and hypotheses, not outcomes.",
+          "Keep SWD and Aedes sources labeled as method analogies and DBM sources labeled as focal-species evidence."
+        ],
+        "sources": [
+          {
+            "title": "Oviposition deterrent as a component of a push–pull management approach for Drosophila suzukii",
+            "public_url": "https://doi.org/10.1093/ee/nvaf057",
+            "source_id": "doi:10.1093/ee/nvaf057",
+            "locator": "Abstract and field raspberry methods/results; laboratory choice and no-choice assays; Figure 5 pupae emerging from ripening and sentinel raspberries under control, pull, push, and push-pull treatments",
+            "supports": "The SWD paper provides a method analogy connecting oviposition deterrence to pupal emergence and field push-pull treatment."
+          },
+          {
+            "title": "Behavioral responses to transfluthrin by Aedes aegypti, Anopheles minimus, Anopheles harrisoni, and Anopheles dirus (Diptera: Culicidae)",
+            "public_url": "https://doi.org/10.1371/journal.pone.0237353",
+            "source_id": "doi:10.1371/journal.pone.0237353",
+            "locator": "Methods, Insecticide impregnated papers and Experimental design; Results, Tables 1-3 and Figure 1; Results, Excito-repellency of field-collected mosquitoes, Figure 4 and Table 6; Discussion paragraphs on chemically undetermined residual transfluthrin",
+            "supports": "The mosquito paper provides a method analogy for separating spatial behavior, contact response, knockdown, mortality, concentration, and population background."
+          },
+          {
+            "title": "A semiochemical attract-and-kill formulation to manage diamondback moth (Lepidoptera: Plutellidae)",
+            "public_url": "https://doi.org/10.1093/jee/toaf193",
+            "source_id": "doi:10.1093/jee/toaf193",
+            "locator": "Abstract: four-choice adult attraction and field counts of diamondback moth and beneficial insects",
+            "supports": "This focal-species study directly measures DBM adult choice and field population outcomes."
+          },
+          {
+            "title": "Intercropping organic broccoli with Rhododendron tomentosum and Fagopyrum esculentum: a test of bottom-up and top-down strategies for reducing herbivory",
+            "public_url": "https://doi.org/10.1007/s11829-023-10033-6",
+            "source_id": "doi:10.1007/s11829-023-10033-6",
+            "locator": "Abstract and Results: adult moths, larvae, and broccoli leaf damage measured as separate field outcomes",
+            "supports": "This focal-species field study directly measures adult density, larval density, leaf damage, and plant volatiles."
+          }
+        ]
+      }
+    },
+    {
+      "id": "dbm-gap-experiment-40",
+      "question": "Before screening diamondback moth repellents, what is the most important public-evidence gap to close and what experiment would close it?",
+      "category": "diamondback-expansion",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A new screening program needs one high-information experiment before committing to a compound library.",
+      "expected_behavior": "Correct the stale premise that general DBM host-finding evidence is absent, identify the candidate-specific contact-versus-non-contact causal chain as the next high-value gap, and propose a controlled experiment.",
+      "truth_source": "Independent review of exact DBM host-finding, antennal-response, oviposition, citronella, and field-damage studies.",
+      "truth_packet": {
+        "required_claims": [
+          "The general host-finding baseline is not absent: direct Plutella studies already link Brassica odor to orientation and landing, measure oviposition, and connect field treatments to adult, larval, and damage endpoints.",
+          "Before broad repellent screening, a high-value product gap is a focal-species assay that separates non-contact avoidance from contact feeding inhibition, knockdown, or mortality and carries the same exposure into oviposition and larval-damage follow-up.",
+          "A useful experiment uses randomized replicated airflow, odor-only, contact-only, solvent, airflow, and activity controls, followed by matched choice and no-choice oviposition and measurements of survival, eggs, larval establishment, feeding damage, and release rate; this is an R&D recommendation, not a proven target."
+        ],
+        "forbidden_claims": [
+          "The source plane has no direct diamondback moth host-finding or oviposition evidence.",
+          "A mosquito or SWD result can substitute for direct Plutella candidate validation."
+        ],
+        "reasoning_boundaries": [
+          "Correct stale source-gap premises when exact focal-species evidence is available.",
+          "Keep orientation, contact effects, oviposition, toxicity, larval establishment, crop damage, and release rate as separate endpoints."
+        ],
+        "sources": [
+          {
+            "title": "The roles of olfaction and vision in host-plant finding by the diamondback moth, Plutella xylostella",
+            "public_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
+            "source_id": "doi:10.1111/j.1365-3032.2006.00499.x",
+            "locator": "Abstract and Results: volatile-cue host location and landing plus plant-position and host-versus-nonhost effects on alighting; oviposition was not measured",
+            "supports": "Direct DBM evidence already establishes host-location roles for olfactory, visual, and plant-position cues."
+          },
+          {
+            "title": "Host Selection Behavior and the Fecundity of Plutella xylostella (Lepidoptera: Plutellidae) on Multiple Host Plants",
+            "public_url": "https://doi.org/10.1093/jisesa/ieu113",
+            "source_id": "doi:10.1093/jisesa/ieu113",
+            "locator": "Abstract and Results: host orientation, landing, oviposition, and fecundity measured separately across host plants",
+            "supports": "Direct DBM evidence already links host odor orientation, landing, mixed cropping, fecundity, and oviposition."
+          },
+          {
+            "title": "Electrophysiological Responses and Field Attractants of Plutella xylostella Adults to Volatiles from Brassica oleracea",
+            "public_url": "https://doi.org/10.1021/acs.jafc.5c03182",
+            "source_id": "doi:10.1021/acs.jafc.5c03182",
+            "locator": "Abstract and Results: eight antennally active broccoli volatiles and field trapping with a three-component blend",
+            "supports": "The 2025 study identifies eight antennally active broccoli volatiles and tests blended attractants in field traps; it supports that baseline claim without making it a repellency result."
+          },
+          {
+            "title": "The effectiveness of citronella oil to control main pest on cabbage Plutella xylostella in the field",
+            "public_url": "https://doi.org/10.4081/jear.2023.11751",
+            "source_id": "doi:10.4081/jear.2023.11751",
+            "locator": "Methods and Results: filter-paper larval position, later adult egg output, mortality through 120 hours, and field larval abundance",
+            "supports": "The citronella study mixes movement, feeding, oviposition, mortality, and field abundance endpoints, motivating explicit mechanism separation."
+          },
+          {
+            "title": "Intercropping organic broccoli with Rhododendron tomentosum and Fagopyrum esculentum: a test of bottom-up and top-down strategies for reducing herbivory",
+            "public_url": "https://doi.org/10.1007/s11829-023-10033-6",
+            "source_id": "doi:10.1007/s11829-023-10033-6",
+            "locator": "Abstract and Results: adult moths, larvae, and broccoli leaf damage measured as separate field outcomes",
+            "supports": "The field study demonstrates separate adult, larval, volatile, and leaf-damage endpoints that a candidate-specific experiment should preserve."
+          }
+        ]
+      }
+    },
+    {
+      "id": "anopheles-eugenol-species-decision-01",
+      "question": "Eugenol was a hit in our Aedes screen. For an Anopheles program, should I carry it straight into a human-landing study, or is there enough evidence to stop? What is the smallest useful next experiment?",
+      "category": "anopheles-compound-interpretation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A repellent team must decide whether a compound result transfers across mosquito genera and whether a weak species-specific result justifies stopping or redesigning the screen.",
+      "expected_behavior": "Use the Anopheles-specific result rather than the Aedes label, preserve the tested close-range endpoint and statistical uncertainty, and propose a small Anopheles dose-and-release experiment before any human-landing claim.",
+      "truth_source": "Independent review of Afify and Potter 2020, DOI 10.1186/s12936-020-03206-8.",
+      "truth_packet": {
+        "required_claims": [
+          "In the cited 30-second close-proximity assay, undiluted eugenol produced only a weak response in non-blood-fed female Anopheles coluzzii that was not significantly different from paraffin oil (P = 0.08), while Aedes aegypti and Culex quinquefasciatus were significantly repelled.",
+          "The Anopheles result does not justify carrying an Aedes hit directly into a human-protection claim, but a non-significant result in one short, close-range assay also does not prove that eugenol is inactive at every dose, release rate, formulation, or host-seeking endpoint.",
+          "The smallest useful next step is an Anopheles-specific, replicated dose-and-release study with matched solvent and positive controls, a no-contact odor condition, predeclared movement or attraction endpoints, and chemical delivery verified before escalating to landing or biting tests."
+        ],
+        "reasoning_boundaries": [
+          "Keep species, female physiological state, undiluted treatment, 0.5 cm odor distance, 30-second observation window, and flight-away endpoint visible.",
+          "Separate direct odor-driven movement from attraction inhibition, landing prevention, biting prevention, complete protection time, field efficacy, and human safety.",
+          "Treat P = 0.08 as insufficient evidence of a difference from control in this experiment, not as proof of biological equivalence or universal absence of effect."
+        ],
+        "forbidden_claims": [
+          "Eugenol is an effective Anopheles repellent because it repelled Aedes aegypti.",
+          "The cited study proves that eugenol never repels Anopheles.",
+          "A 30-second flight-away response establishes protection from human landing, biting, or malaria."
+        ],
+        "sources": [
+          {
+            "title": "Insect repellents mediate species-specific olfactory behaviours in mosquitoes",
+            "public_url": "https://doi.org/10.1186/s12936-020-03206-8",
+            "source_id": "doi:10.1186/s12936-020-03206-8",
+            "locator": "Methods, Close proximity response assay; Results, Species-specific differences in mosquito behavioural response to repellents, Figure 2a-c, especially the Anopheles coluzzii eugenol comparison (P = 0.08).",
+            "supports": "The same controlled assay found species-specific responses and did not find eugenol significantly repellent to Anopheles coluzzii relative to paraffin oil."
+          }
+        ]
+      }
+    },
+    {
+      "id": "anopheles-endpoint-separation-02",
+      "question": "Our volatile candidate drives Anopheles gambiae out of a chamber but also knocks some mosquitoes down. What assay layout and endpoints would let me call spatial repellency, contact irritancy, toxicity, or none of them without mixing the mechanisms?",
+      "category": "anopheles-assay-endpoints",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Repellent discovery teams routinely see movement and impairment in the same screen and need an assay design that prevents one endpoint from being mislabeled as another.",
+      "expected_behavior": "Specify separate noncontact, contact, and mortality assays with matched controls and report movement, contact, knockdown, feeding, and delayed death as distinct endpoints.",
+      "truth_source": "Independent review of WHO spatial-repellent guidance and Deletre et al. 2019, DOI 10.1186/s13071-019-3343-9.",
+      "truth_packet": {
+        "required_claims": [
+          "Spatial repellency requires an airborne exposure condition in which mosquitoes cannot contact the treated substrate; movement away, reduced entry or attraction, or feeding interference must be measured against a matched untreated or solvent control.",
+          "Contact irritancy requires a separate design that permits physical contact with the treated surface and measures contact-triggered escape or abbreviated surface residence; escape from a contact chamber can contain both contact and noncontact components unless the design or analysis separates them.",
+          "Knockdown and toxicity must be recorded separately from avoidance, including immediate impairment and a defined delayed mortality observation such as 24 hours after exposure.",
+          "A defensible experiment records dose, formulation, release conditions, exposure time, mosquito species and state, entry or escape, landing or feeding, knockdown, and delayed mortality without combining them into one percent-repellency number."
+        ],
+        "reasoning_boundaries": [
+          "WHO uses spatial repellency as an intervention-level term covering airborne effects that reduce human-vector contact; it is not a synonym for mortality.",
+          "A no-contact escape assay measures movement away under its own geometry and concentration field, not complete protection from landing or biting.",
+          "Toxic incapacitation can prevent escape and make a toxic treatment appear less behaviorally active, so movement and impairment must be interpreted jointly but reported separately."
+        ],
+        "forbidden_claims": [
+          "Any mosquito leaving a treated chamber proves spatial repellency even when contact was possible.",
+          "Knockdown or 24-hour mortality can be counted as repellency.",
+          "One landing-inhibition endpoint identifies the sensory mechanism or proves absence of contact."
+        ],
+        "sources": [
+          {
+            "title": "Guidelines for efficacy testing of spatial repellents",
+            "public_url": "https://www.who.int/publications/i/item/9789241505024",
+            "source_id": "who:9789241505024",
+            "locator": "Overview definition of spatial repellency and the laboratory, semi-field, and field evaluation sections distinguishing movement away, attraction inhibition, feeding response, knock-down, and mortality.",
+            "supports": "WHO defines spatial repellency around airborne behaviors that reduce human-vector contact and requires staged efficacy testing rather than treating insecticidal effects as the same endpoint."
+          },
+          {
+            "title": "Insecticide resistance modifies mosquito response to DEET and natural repellents",
+            "public_url": "https://doi.org/10.1186/s13071-019-3343-9",
+            "source_id": "doi:10.1186/s13071-019-3343-9",
+            "locator": "Background final paragraph defining spatial repellency, contact irritancy, and contact toxicity; Methods, Repellency assays, Irritancy assays, and Toxicity assays; Results Tables 1-3.",
+            "supports": "The paper operationalizes the three endpoints in separate Anopheles gambiae assays and shows why escape and mortality cannot be collapsed."
+          }
+        ]
+      }
+    },
+    {
+      "id": "anopheles-orco-masking-screen-03",
+      "question": "Our cell assay says carvacrol blocks Anopheles gambiae Orco, but DEET barely does. Can I rank the compounds as repellents from that result, and how should the DEET masking paper change the follow-up?",
+      "category": "anopheles-sensory-mechanism",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A discovery scientist must decide how much weight to give a receptor-platform hit when native mosquito olfaction and odor chemistry may produce a different behavioral result.",
+      "expected_behavior": "Explain that recombinant Orco inhibition is a mechanism-level screen rather than a repellency ranking, reconcile the DEET results by assay scale, and require native-mosquito behavior plus odor-delivery measurements.",
+      "truth_source": "Independent review of Tsitoura et al. 2015 and Afify et al. 2019.",
+      "truth_packet": {
+        "required_claims": [
+          "In the recombinant Anopheles gambiae receptor study, ethyl cinnamate, carvacrol, and isopropyl cinnamate strongly inhibited tested ORx/Orco heteromers at the reported concentration, whereas DEET showed no noticeable inhibitory action on the tested receptors.",
+          "The intact Anopheles coluzzii study found that DEET, IR3535, and picaridin did not directly activate Orco-expressing olfactory receptor neurons under the tested conditions and reduced odor-evoked responses when physically mixed with activating odorants.",
+          "Photoionization-detector measurements in the intact-mosquito study supported a chemical-masking explanation in which synthetic repellents reduced the amount of activating odorant reaching the antenna rather than directly inactivating the receptor.",
+          "An Orco-blocking result can prioritize mechanism work but cannot rank protection without native Anopheles behavioral tests using the intended human-odor context, matched vapor delivery or headspace measurements, dose-response, and landing or biting endpoints."
+        ],
+        "reasoning_boundaries": [
+          "A recombinant receptor assay, intact antennal imaging, vapor chemistry, close-range movement, and host protection are different evidence levels.",
+          "The two papers are not necessarily contradictory: one tests direct action on selected recombinant receptor complexes, while the other tests native neurons and physical odor mixtures.",
+          "The masking evidence is strong for the tested Anopheles coluzzii preparations and odor mixtures but does not prove one universal mechanism for every formulation, species, concentration, or contact context."
+        ],
+        "forbidden_claims": [
+          "The strongest Orco inhibitor must be the strongest human repellent.",
+          "DEET cannot repel Anopheles because it did not block the tested recombinant receptors.",
+          "Chemical masking is the only possible mechanism of DEET in every mosquito species and assay."
+        ],
+        "sources": [
+          {
+            "title": "Inhibition of Anopheles gambiae Odorant Receptor Function by Mosquito Repellents",
+            "public_url": "https://doi.org/10.1074/jbc.M114.632299",
+            "source_id": "doi:10.1074/jbc.M114.632299",
+            "locator": "Abstract; Results, Olfactory Receptor Inhibition by Specific Mosquito Repellents, Figure 4A.",
+            "supports": "Selected repellents inhibited recombinant Anopheles gambiae ORx/Orco function, but DEET did not show noticeable inhibition on the tested receptor heteromers."
+          },
+          {
+            "title": "Commonly Used Insect Repellents Hide Human Odors from Anopheles Mosquitoes",
+            "public_url": "https://doi.org/10.1016/j.cub.2019.09.007",
+            "source_id": "doi:10.1016/j.cub.2019.09.007",
+            "locator": "Summary and Results; Figure 6, Repellent maskers reduce the volatility of odorants; calcium-imaging and photoionization-detector experiments.",
+            "supports": "Native Anopheles coluzzii sensory and vapor measurements support odor masking by common synthetic repellents rather than direct Orco-neuron activation or receptor inactivation."
+          }
+        ]
+      }
+    },
+    {
+      "id": "anopheles-circadian-retest-04",
+      "question": "A 5% DEET excito-repellency screen run at 14:00 gives a different ranking from a night run. Is that just assay drift, or can time of day really change Anopheles contact and noncontact escape? How should I schedule the retest?",
+      "category": "anopheles-circadian-physiology",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Nocturnal Anopheles screens are often run at convenient laboratory hours, so a scientist must know whether time can alter measured avoidance and how to make compound comparisons fair.",
+      "expected_behavior": "Use the species-specific day-night evidence, distinguish contact from noncontact effects, and recommend blocked testing at fixed biological times with matched controls and mosquito state.",
+      "truth_source": "Independent review of Tisgratog et al. 2021, DOI 10.3390/insects12100867.",
+      "truth_packet": {
+        "required_claims": [
+          "The cited study exposed long-colonized, 3- to 5-day-old, non-blood-fed, nulliparous female Anopheles minimus and Anopheles dirus to 5% DEET in matched contact and noncontact excito-repellency chambers across eight 3-hour periods.",
+          "Anopheles minimus differed significantly between daytime and nighttime in both noncontact and contact tests; Anopheles dirus differed significantly in contact escape but not in the overall day-night noncontact comparison.",
+          "Time of testing changed escape patterns and could under- or overestimate behavioral response, but the species-specific results do not establish one universal night-greater-than-day rule.",
+          "The retest should block or randomize every candidate and control across the same predefined Zeitgeber or clock-time windows, hold age, feeding and gonotrophic state, light cycle, starvation, temperature, humidity, dose, and chamber geometry constant, and analyze contact escape, noncontact escape, knockdown, and 24-hour mortality separately."
+        ],
+        "reasoning_boundaries": [
+          "The study used two long-maintained laboratory strains, so its exact escape percentages should not be transferred to wild populations.",
+          "Greater untreated-control activity at some night periods means raw escape is not a treatment effect unless it is compared with the time-matched control.",
+          "Time-of-day sensitivity can coexist with ordinary assay drift; replication and randomized blocking are needed to distinguish them."
+        ],
+        "forbidden_claims": [
+          "All Anopheles species are always more repelled by DEET at night.",
+          "A daytime screen is invalid regardless of the target use period and matched controls.",
+          "Different escape rates prove a change in receptor expression or a specific circadian molecular mechanism."
+        ],
+        "sources": [
+          {
+            "title": "Time of Test Periods Influence the Behavioral Responses of Anopheles minimus and Anopheles dirus (Diptera: Culicidae) to DEET",
+            "public_url": "https://doi.org/10.3390/insects12100867",
+            "source_id": "doi:10.3390/insects12100867",
+            "locator": "Abstract; Methods Sections 2.2-2.4; Results Tables 4-5 and Supplementary Tables S1-S5; Discussion day-night comparisons.",
+            "supports": "The study directly shows that test period can alter contact and noncontact escape, with different patterns for Anopheles minimus and Anopheles dirus."
+          }
+        ]
+      }
+    },
+    {
+      "id": "anopheles-local-biting-ecology-05",
+      "question": "Zanzibar data suggest early outdoor infectious Anopheles arabiensis biting, while a south-eastern Tanzania study found no infected Anopheles arabiensis outdoors. Which schedule should we use for a field repellent trial, and what local measurements are non-negotiable?",
+      "category": "anopheles-biting-ecology",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A field team must choose indoor and outdoor collection hours without treating one site's vector ecology as a universal Anopheles behavior.",
+      "expected_behavior": "Reconcile the studies as setting-specific rather than choosing one as universal, then design local hourly entomology and human-behavior measurements that capture infectious exposure.",
+      "truth_source": "Independent review of Khatib et al. 2025 and Namango et al. 2024.",
+      "truth_packet": {
+        "required_claims": [
+          "In Zanzibar, monthly hourly indoor and outdoor human landing catches from 18:00 to 06:00 at ten sentinel sites from October 2022 through September 2023 found malaria-parasite-infected Anopheles arabiensis bites disproportionately outdoors early in the evening (n = 10, 18:00-21:00) versus indoors later at night (n = 4, 22:00-02:00).",
+          "In rural south-eastern Tanzania, the cited analysis found 17 of 7442 tested indoor Anopheles arabiensis infected and 0 of 1044 tested outdoor Anopheles arabiensis infected; total estimated infective biting was slightly higher indoors and varied by species and hour.",
+          "The apparent conflict is compatible with real geographic, seasonal, species-composition, human-behavior, intervention, and sampling uncertainty rather than one study proving a universal Anopheles arabiensis schedule.",
+          "The field trial should use local, seasonally repeated, hourly indoor and outdoor collections; molecular species identification; sporozoite testing; mosquito abundance and parity or age structure where feasible; weather; and matched records of where people are, whether they are in bed, and whether they use nets or the candidate repellent."
+        ],
+        "reasoning_boundaries": [
+          "Human landing catch measures attempted human landing under the collection protocol, while infectious exposure additionally depends on sporozoite status and human presence or protection.",
+          "Zero infected outdoor Anopheles arabiensis in 1044 tested mosquitoes is a bounded observation with uncertainty, not proof of zero outdoor transmission risk.",
+          "The Zanzibar counts of infected bites were small and site-specific, so they should guide local measurement design rather than supply a universal deployment schedule."
+        ],
+        "forbidden_claims": [
+          "Anopheles arabiensis is always an early-evening outdoor vector.",
+          "No infected outdoor Anopheles arabiensis in one study proves that outdoor repellents are unnecessary.",
+          "A field schedule from Zanzibar or one Tanzanian region can be copied unchanged to another ecology."
+        ],
+        "sources": [
+          {
+            "title": "Early evening outdoor biting by malaria-infected Anopheles arabiensis vectors threatens malaria elimination efforts in Zanzibar",
+            "public_url": "https://doi.org/10.1186/s12936-025-05333-6",
+            "source_id": "doi:10.1186/s12936-025-05333-6",
+            "locator": "Abstract, Methods and Results; hourly indoor/outdoor human landing catches at ten sentinel sites and infected-bite counts by time and location.",
+            "supports": "The Zanzibar study documents setting-specific early outdoor attempted biting by infected Anopheles arabiensis."
+          },
+          {
+            "title": "A matter of timing: Biting by malaria-infected Anopheles mosquitoes and the use of interventions during the night in rural south-eastern Tanzania",
+            "public_url": "https://doi.org/10.1371/journal.pgph.0003864",
+            "source_id": "doi:10.1371/journal.pgph.0003864",
+            "locator": "Results, Table 2 mosquito biting rates, Table 3 sporozoite infection by species and location, and Table 4 estimated infective biting rates.",
+            "supports": "The south-eastern Tanzania analysis found a different local pattern and demonstrates why species, hour, human location, net use, and infection status must be combined."
+          }
+        ]
+      }
+    },
+    {
+      "id": "anopheles-knowlesi-competence-06",
+      "question": "Our Anopheles dirus repellent reduces approaches to human odor. Can we say it blocks Plasmodium knowlesi transmission, and which parasite endpoints would make that claim defensible?",
+      "category": "anopheles-vector-competence",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A repellent scientist must keep host-seeking efficacy separate from mosquito susceptibility to infection and from epidemiological transmission.",
+      "expected_behavior": "Reject the transmission-blocking claim from odor approach alone, identify midgut and salivary-gland parasite endpoints, and preserve the single-patient laboratory boundary of the cited competence study.",
+      "truth_source": "Independent review of Kumpitak et al. 2024, DOI 10.1186/s13071-024-06500-5.",
+      "truth_packet": {
+        "required_claims": [
+          "The cited study used a direct membrane-feeding assay with laboratory-reared female Anopheles dirus and Plasmodium knowlesi-infected blood from one febrile human patient.",
+          "At day 7, two of 745 dissected blood-fed mosquitoes had midgut oocysts (0.27%); at day 14, three of 694 had salivary-gland sporozoites (0.43%), and nested PCR confirmed the sporozoites as Plasmodium knowlesi.",
+          "Reduced odor approach, chamber entry, landing, or blood feeding measures human-vector contact but does not measure vector competence, which requires parasite acquisition, development, and arrival at a transmission-relevant stage such as salivary-gland sporozoites.",
+          "A defensible competence experiment should predefine blood-feeding success, midgut oocyst prevalence and intensity at an appropriate post-infection day, salivary-gland sporozoite prevalence and intensity later, parasite identity, mosquito survival, and relevant local vector and parasite populations; a disease-prevention claim ultimately requires epidemiological evidence in people."
+        ],
+        "reasoning_boundaries": [
+          "The study demonstrates low-frequency human-to-mosquito infection potential under one laboratory feeding experiment, not sustained human-mosquito-human transmission.",
+          "Vector competence is not the same as vectorial capacity, infectious biting rate, or community malaria incidence.",
+          "A repellent can reduce transmission risk by reducing contact without directly changing parasite development inside mosquitoes."
+        ],
+        "forbidden_claims": [
+          "A reduction in approaches to human odor proves that the repellent blocks Plasmodium development.",
+          "The 0.43% salivary-gland result is a field transmission rate for Anopheles dirus.",
+          "One infected-patient membrane feed proves sustained human-to-human Plasmodium knowlesi transmission."
+        ],
+        "sources": [
+          {
+            "title": "Human-to-Anopheles dirus mosquito transmission of the anthropozoonotic malaria parasite, Plasmodium knowlesi",
+            "public_url": "https://doi.org/10.1186/s13071-024-06500-5",
+            "source_id": "doi:10.1186/s13071-024-06500-5",
+            "locator": "Abstract Methods and Results; Methods, Direct membrane feeding assay and mosquito dissection; day-7 midgut oocyst and day-14 salivary-gland sporozoite results.",
+            "supports": "The paper directly separates parasite acquisition and development endpoints and reports the narrow laboratory evidence boundary."
+          }
+        ]
+      }
+    },
+    {
+      "id": "anopheles-resistance-repellent-07",
+      "question": "The WHO resistance record IR000001828 confirms permethrin resistance in western Kenyan Anopheles gambiae s.s. Does that predict DEET or spatial-repellent failure, and what should we test before choosing a candidate?",
+      "category": "anopheles-insecticide-resistance",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "Repellent teams use public resistance surveillance to choose field sites, but insecticide mortality resistance cannot be assumed to predict behavioral response to another active ingredient.",
+      "expected_behavior": "Interpret the WHO-linked resistance evidence at its actual insecticide and population scope, use endpoint-specific Anopheles evidence to reject a simple cross-resistance inference, and propose local resistance and repellent efficacy tests.",
+      "truth_source": "Independent review of WHO Malaria Threats Map record IR000001828, Kawada et al. 2011, and Deletre et al. 2019.",
+      "truth_packet": {
+        "required_claims": [
+          "WHO record IR000001828 is linked to western Kenyan evidence of pyrethroid resistance in Anopheles gambiae s.s.; the underlying study found high-frequency L1014S target-site mutation in Anopheles gambiae s.s. and different, P450-related resistance patterns in sympatric Anopheles arabiensis and Anopheles funestus s.s.",
+          "Permethrin resistance is evidence about susceptibility to that insecticide in the sampled populations and assays; it does not by itself predict behavioral avoidance, landing inhibition, blood-feeding inhibition, or efficacy of DEET or a volatile pyrethroid formulation.",
+          "In genetically matched Anopheles gambiae laboratory strains, high-dose DEET showed no significant repellency in susceptible Kis, but 29.2% repellency in KdrKis and 85.7% in AcerKis; it was irritant in all three strains, while toxicity was 98.2% in Kis, 20.9% in KdrKis, and 96.6% in AcerKis.",
+          "Before candidate selection, test the local target species and population with current insecticide phenotype and mechanism measurements, then measure the candidate's spatial movement, contact irritancy, knockdown, 24-hour mortality, landing, and blood-feeding endpoints across dose and release rate with appropriate susceptible and resistant comparators."
+        ],
+        "reasoning_boundaries": [
+          "Resistance can modify different endpoints in different directions, so lower mortality is not equivalent to lower repellency or lower protection.",
+          "The Deletre results came from three laboratory strains with defined kdr or ace1 backgrounds and cannot supply field efficacy for western Kenya.",
+          "A public resistance record is useful for site selection and stratification, but the linked paper, population, insecticide, assay, date, and resistance mechanism remain the evidence boundary."
+        ],
+        "forbidden_claims": [
+          "Pyrethroid-resistant Anopheles are cross-resistant to all repellents.",
+          "Higher escape in a resistant strain proves better human protection without landing or blood-feeding evidence.",
+          "A historical WHO resistance record establishes the current resistance phenotype of every mosquito at the site."
+        ],
+        "sources": [
+          {
+            "title": "Multimodal pyrethroid resistance in malaria vectors, Anopheles gambiae s.s., Anopheles arabiensis, and Anopheles funestus s.s. in western Kenya",
+            "public_url": "https://pubmed.ncbi.nlm.nih.gov/21853038/",
+            "source_id": "pubmed:21853038",
+            "locator": "WHO Malaria Threats Map resistance record IR000001828; linked paper Abstract, Methods and Results, PMID 21853038.",
+            "supports": "The official WHO resistance record resolves to underlying population-level evidence for permethrin and pyrethroid resistance mechanisms in western Kenyan Anopheles."
+          },
+          {
+            "title": "Insecticide resistance modifies mosquito response to DEET and natural repellents",
+            "public_url": "https://doi.org/10.1186/s13071-019-3343-9",
+            "source_id": "doi:10.1186/s13071-019-3343-9",
+            "locator": "Results, DEET is a repellent to the Anopheles gambiae resistant strain; Tables 1-3 and summary Table 4.",
+            "supports": "The study shows that kdr and ace1 backgrounds changed DEET repellency and toxicity differently, defeating a one-dimensional cross-resistance inference."
+          }
+        ]
+      }
+    },
+    {
+      "id": "anopheles-hut-to-malaria-decision-08",
+      "question": "Our one-year hut trial shows 82.7% less blood feeding, 65.1% less landing, and 20.1% mortality in wild pyrethroid-resistant Anopheles arabiensis. Can I project an 82.7% reduction in malaria cases, or what evidence should gate the program decision?",
+      "category": "anopheles-field-translation",
+      "kind": "domain",
+      "origin": "scientist-rd-workflow",
+      "holdout": false,
+      "why_realistic": "A product team must decide how to translate strong experimental-hut entomological efficacy into a disease-prevention claim and the next investment.",
+      "expected_behavior": "Preserve the hut endpoints and confidence intervals, reject direct one-to-one projection to malaria cases, compare them with randomized epidemiological evidence, and name the target-setting trial needed for a program decision.",
+      "truth_source": "Independent review of Swai et al. 2025 and Ochomo et al. 2025.",
+      "truth_packet": {
+        "required_claims": [
+          "In the Tanzanian experimental-hut study, Guardian reduced the number of blood-fed wild pyrethroid-resistant Anopheles arabiensis by 82.7% (95% CI 78.5%-86.1%), reduced landings by 65.1% (59.4%-70.0%), and induced 20.1% 24-hour mortality (18.4%-21.8%) over 12 months.",
+          "Those are entomological endpoints from a specific transfluthrin product, hut design, deployment, vector population, and volunteer protocol; they are not an 82.7% estimate of malaria incidence reduction and the three percentages cannot be added.",
+          "The western Kenya cluster-randomized placebo-controlled trial measured human malaria infection and reported 33.4% protective efficacy against first-time infection (95% CI 11.1%-50.1%; P = 0.0058) and 32.1% against overall new infections (95% CI 15.9%-45.2%; P = 0.0004) in its reported primary analyses.",
+          "A program decision should be gated by target-setting epidemiological evidence or a justified class-bridging framework that includes malaria infection incidence, product coverage and adherence, local vector species and resistance, human behavior, durability, safety, possible diversion, and concurrent net or spraying use."
+        ],
+        "reasoning_boundaries": [
+          "Experimental-hut blood-feeding and landing results support biological efficacy and product comparison, while malaria incidence requires a randomized community epidemiology design.",
+          "The Kenya trial supports the spatial-repellent intervention class in one high-transmission, high-net-coverage setting; it does not make the Guardian hut percentages a universal disease-effect estimate.",
+          "Pyrethroid resistance in the hut population did not eliminate the observed entomological effects, but that does not prove equal efficacy across resistance mechanisms or geographies."
+        ],
+        "forbidden_claims": [
+          "An 82.7% reduction in blood-fed mosquitoes means an 82.7% reduction in malaria cases.",
+          "Landing inhibition, feeding inhibition, and mortality can be added to estimate total protection.",
+          "One Tanzanian hut trial plus one Kenyan cluster trial proves universal program effectiveness or commercial readiness."
+        ],
+        "sources": [
+          {
+            "title": "SC Johnson Guardian™ spatial repellent shows 1-year efficacy against wild pyrethroid-resistant Anopheles arabiensis, with a similar blood-feeding inhibition efficacy to Mosquito Shield™ in a Tanzanian experimental hut trial",
+            "public_url": "https://doi.org/10.3389/fmala.2025.1570480",
+            "source_id": "doi:10.3389/fmala.2025.1570480",
+            "locator": "Abstract Results; Methods, Study design and endpoints; Results, Protective efficacy of Guardian, Tables 1-2.",
+            "supports": "The study supplies the exact 12-month blood-feeding, landing, and mortality estimates and identifies them as entomological surrogate endpoints."
+          },
+          {
+            "title": "Effect of a spatial repellent on malaria incidence in an area of western Kenya characterised by high malaria transmission, insecticide resistance, and universal coverage of insecticide treated nets (part of the AEGIS Consortium): a cluster-randomised, controlled trial",
+            "public_url": "https://doi.org/10.1016/S0140-6736(24)02253-0",
+            "source_id": "doi:10.1016/S0140-6736(24)02253-0",
+            "locator": "Summary Methods and Findings; primary first-time malaria infection endpoint and overall new-infection analysis; Figure 3.",
+            "supports": "The randomized trial measures human malaria infection directly and demonstrates why entomological efficacy should not be converted one-for-one into disease reduction."
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -334,7 +334,7 @@ sources:
   - id: reviewed_scientific_evidence
     name: Human-reviewed scientific answer catalog
     source_type: derived_repo_catalog
-    boundary: General natural-language routing and bounded scientific interpretations for public SWD, Aedes aegypti, and diamondback moth evidence; each topic cites existing indexed public records and fails closed when any required record is absent; evaluation questions, case ids, holdouts, private experiments, and private results are forbidden
+    boundary: General natural-language routing and bounded scientific interpretations for public SWD, Aedes, Anopheles, and diamondback moth evidence; each topic cites existing indexed public records and fails closed when any required record is absent; evaluation questions, case ids, holdouts, private experiments, and private results are forbidden
     query_plane: reviewed_topic_match_to_exact_sqlite_record_ids
     artifact_dir: artifacts/mosquito-v1
     input_catalog: config/reviewed-scientific-evidence.json

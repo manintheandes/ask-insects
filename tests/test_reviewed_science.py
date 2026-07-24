@@ -2776,6 +2776,63 @@ class ReviewedScienceTests(unittest.TestCase):
 
                     self.assertIsNone(answer)
 
+    def test_explicit_anopheles_diversion_questions_do_not_route_to_aedes_evidence(self):
+        diversion_record_id = (
+            "reviewed_repellent_evidence:transfluthrin_anopheles_diversion_2016"
+        )
+        unrelated_aedes_record_id = "openalex:W3013059076"
+        questions = (
+            (
+                "How should I distinguish true protection from mosquito diversion if a "
+                "spatial repellent reduces Anopheles landings in treated huts but may "
+                "shift biting toward untreated neighboring huts?"
+            ),
+            (
+                "Could lower Anopheles biting at treated houses merely redirect "
+                "blood-seeking mosquitoes to nearby homes without the emanator?"
+            ),
+            (
+                "What study design would tell us whether an Anopheles spatial repellent "
+                "protects the community or only protects users at non-users' expense?"
+            ),
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        diversion_record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator="jsonpath=$.evidence[0]",
+                    ),
+                    evidence_record(
+                        unrelated_aedes_record_id,
+                        source_id="aedes_literature_openalex",
+                        locator=f"records#{unrelated_aedes_record_id}",
+                    ),
+                ]
+            )
+
+            answers = [
+                build_reviewed_science_answer(index, question) for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                evidence_ids = {
+                    item["record_id"] for item in answer["evidence"]
+                }
+                self.assertIn(diversion_record_id, evidence_ids)
+                self.assertNotIn(unrelated_aedes_record_id, evidence_ids)
+                self.assertIn("90 households", answer["answer"])
+                self.assertIn("24 weeks", answer["answer"])
+                self.assertIn("incomplete coverage", answer["answer"])
+                self.assertIn("do not prove community protection", answer["answer"])
+
     def test_swd_field_delivery_matcher_rejects_other_species_and_generic_delivery(self):
         record_id = "swd:openalex_literature:openalex:W3046652911"
         with tempfile.TemporaryDirectory() as tmpdir:
