@@ -492,6 +492,9 @@ class ReviewedScienceTests(unittest.TestCase):
                 "which is post-contact?",
                 "If an Aedes aegypti skin treatment leaves approaches unchanged but lowers "
                 "probing after contact, can we call it distance repellency?",
+                "An Aedes mosquito reaches treated skin and only departs after "
+                "tarsal contact. Does that establish distance repellency, and "
+                "which paired contact/non-contact assay would separate the effects?",
             )
             answers = [
                 build_reviewed_science_answer(index, question)
@@ -512,9 +515,20 @@ class ReviewedScienceTests(unittest.TestCase):
                     "physical contact already occurred",
                     "multiple brief skin contacts",
                     "paired excito-repellency design",
-                    "prevent contact with a barrier",
+                    "screen mesh barrier",
+                    "recorded every minute for 30 minutes",
+                    "24-hour mortality",
+                    "simultaneous paired non-contact escape response",
+                    "R&D interpretation:",
                 ):
                     self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                for unsupported in (
+                    "reduced entry",
+                    "measure entry",
+                    "orientation",
+                    "landing, or escape",
+                ):
+                    self.assertNotIn(unsupported, answer["answer"].casefold())
 
     def test_dbm_antennal_field_blend_paraphrases_preserve_endpoint_boundary(self):
         record_ids = (
@@ -5672,8 +5686,36 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertNotIn("Paragraphs (v)", epa_locator)
 
         transfluthrin_locator = provenance["openalex:W3048721146"]["locator"]
-        self.assertIn("Figure 4 and Table 6", transfluthrin_locator)
-        self.assertIn("Discussion paragraphs", transfluthrin_locator)
+        self.assertIn(
+            "Materials and methods > Excito-repellency (ER) assay system",
+            transfluthrin_locator,
+        )
+        self.assertIn(
+            "sentences beginning 'For measuring spatial repellency', "
+            "'For the contact design', and 'Primary outcome measures are'",
+            transfluthrin_locator,
+        )
+        self.assertIn(
+            "sentences beginning 'The number of mosquitoes that escaped' and "
+            "'All live and moribund mosquitoes'",
+            transfluthrin_locator,
+        )
+        self.assertIn(
+            "Materials and methods > Data analysis, paragraph beginning "
+            "'The percent ER escape responses'",
+            transfluthrin_locator,
+        )
+        self.assertIn(
+            "paragraphs beginning 'The key feature of the excito-repellency', "
+            "'The ER contact test design potentially', and "
+            "'Beside ER responses, mosquitoes encountering TFT'",
+            transfluthrin_locator,
+        )
+        self.assertIn(
+            "Excito-repellency of field-collected mosquitoes to sublethal concentration, Figure 4 and Table 6",
+            transfluthrin_locator,
+        )
+        self.assertNotIn("Experimental design", transfluthrin_locator)
 
         learning_locator = provenance["openalex:W4315621418"]["locator"]
         self.assertIn("Materials and methods 4(b)(ii)", learning_locator)
