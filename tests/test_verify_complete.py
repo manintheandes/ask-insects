@@ -139,6 +139,29 @@ class VerifyCompleteTests(unittest.TestCase):
     def test_verify_complete_enforces_atomic_source_replacement(self):
         verify_complete.check_atomic_source_replacement()
 
+    def test_reviewed_repellent_gate_accepts_audited_catalog_growth(self):
+        verify_complete.check_reviewed_repellent_evidence()
+        catalog = json.loads(
+            (
+                verify_complete.REPO_ROOT
+                / "config"
+                / "reviewed-repellent-evidence.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertGreaterEqual(
+            len(catalog["materials"]),
+            verify_complete.MINIMUM_REVIEWED_REPELLENT_MATERIALS,
+        )
+        self.assertGreaterEqual(
+            len(catalog["evidence"]),
+            verify_complete.MINIMUM_REVIEWED_REPELLENT_CLAIMS,
+        )
+        self.assertTrue(
+            verify_complete.REQUIRED_REVIEWED_REPELLENT_EVIDENCE_IDS.issubset(
+                {item["id"] for item in catalog["evidence"]}
+            )
+        )
+
     def _write_video_atom_artifact(
         self,
         artifact_dir: Path,
