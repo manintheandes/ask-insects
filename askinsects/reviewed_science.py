@@ -85,6 +85,9 @@ _MATCH_TOKEN_EQUIVALENTS = {
     "stiffer": "harder",
     "stiffest": "harder",
     "stiffness": "hardness",
+    "touched": "touch",
+    "touches": "touch",
+    "touching": "touch",
     "treetop": "top",
     "treetops": "top",
 }
