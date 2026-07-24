@@ -2841,6 +2841,37 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertIn("24 weeks", answer["answer"])
                 self.assertIn("incomplete coverage", answer["answer"])
                 self.assertIn("do not prove community protection", answer["answer"])
+                self.assertIn(
+                    "six of the 30 households in each village-period were randomly selected",
+                    answer["answer"],
+                )
+                self.assertIn(
+                    "It was not an increase in mosquito density",
+                    answer["answer"],
+                )
+                self.assertIn(
+                    "This was not an edge-of-treated-area experiment",
+                    answer["answer"],
+                )
+                self.assertIn(
+                    "Its density did not remain unchanged",
+                    answer["answer"],
+                )
+                self.assertIn("IRRs 1.44, 1.63, and 1.56", answer["answer"])
+                self.assertIn("IRRs 1.35 and 1.39", answer["answer"])
+                self.assertNotIn(
+                    "coils did not change anopheles funestus density",
+                    answer["answer"].lower(),
+                )
+                diversion_evidence = next(
+                    item
+                    for item in answer["evidence"]
+                    if item["record_id"] == diversion_record_id
+                )
+                self.assertIn(
+                    "Tables 2 and 4-6",
+                    diversion_evidence["provenance"]["locator"],
+                )
 
     def test_swd_field_delivery_matcher_rejects_other_species_and_generic_delivery(self):
         record_id = "swd:openalex_literature:openalex:W3046652911"

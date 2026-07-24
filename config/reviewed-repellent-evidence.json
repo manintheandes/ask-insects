@@ -476,17 +476,20 @@
       "assay_family": "community_crossover_incomplete_coverage",
       "exposure_route": "non_contact",
       "endpoint": "human landing, household density, blood feeding, and human blood index",
-      "finding": "Over 24 weeks in 90 Tanzanian households, outdoor coils containing 0.03% transfluthrin reduced Anopheles arabiensis human landings by 80% but did not reduce household density. Under incomplete coverage, the human blood index was higher at households without repellent than under no coverage (odds ratio 1.71, 95% CI 1.04-2.83), supporting diversion of human-seeking Anopheles arabiensis to non-users. The coils did not change Anopheles funestus density or human blood index.",
+      "finding": "In a 24-week crossover among 90 Tanzanian households, three outdoor coils containing 0.03% transfluthrin reduced Anopheles arabiensis human landings by approximately 80% (IRR 0.22, 95% CI 0.052-0.91; P=0.037). In the 80% incomplete-coverage condition, six non-user households were randomly selected among 30 households in each village rather than placed specifically at a treatment boundary. Their An. arabiensis human blood index was 0.30 versus 0.20 under no coverage (odds ratio 1.71, 95% CI 1.04-2.83; P=0.03), which the authors interpreted as slight diversion of human blood meals. Resting and blood-fed An. arabiensis density did not increase at non-user households. For An. funestus, the coils did not significantly reduce human landings or change human blood index, and no differential diversion to non-users was demonstrated. Resting An. funestus density was significantly higher in every intervention scenario than under no coverage; blood-fed density was significantly higher among users under complete and incomplete coverage.",
       "limitations": [
         "This result concerns burned 0.03% transfluthrin coils, local outdoor-biting populations, and the study's specific coverage patterns; it does not establish the same diversion magnitude for other formulations, species, resistance states, places, or coverage levels.",
-        "Reduced landings at treated households measured personal protection, while community protection required outcomes at both users and non-users."
+        "The Anopheles arabiensis diversion signal was a change in human blood index, not an increase in total resting or blood-fed mosquito density at non-user households.",
+        "The six non-user households in each incomplete-coverage village-period were randomly selected; the study did not specifically test redistribution across an external treatment boundary or by distance from treated households.",
+        "Reduced landings at treated households measured personal protection, while community protection required outcomes at both users and non-users; the study did not measure malaria infection or clinical disease endpoints.",
+        "The study did not measure local susceptibility to transfluthrin, so it could not distinguish pyrethroid resistance from intrinsic species-specific response as an explanation for the Anopheles funestus result."
       ],
       "supporting_provenance": [
         {
           "title": "A crossover study to evaluate the diversion of malaria vectors in a community with incomplete coverage of spatial repellents in the Kilombero Valley, Tanzania",
           "public_url": "https://doi.org/10.1186/s13071-016-1738-4",
           "source_id": "doi:10.1186/s13071-016-1738-4",
-          "locator": "Abstract, Methods, Results, and Tables 2-4: 24-week crossover among 90 households; 0.03% transfluthrin coils; no, complete, and incomplete coverage; Anopheles arabiensis landing, household density, and human blood index outcomes; Anopheles funestus comparison"
+          "locator": "Methods: Study design and Human landing catches; Results: Assessment of treatment efficacy and Resting collections and diversion; Tables 2 and 4-6: 24-week crossover among 90 households, 80% incomplete coverage with six randomly selected non-users per 30-household village-period, 0.03% transfluthrin landing, human blood index, resting-density, and blood-fed-density outcomes for Anopheles arabiensis and Anopheles funestus"
         }
       ]
     },

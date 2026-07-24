@@ -15,7 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _REPOSITORY_CATALOG = REPO_ROOT / "config" / "reviewed-repellent-evidence.json"
 PUBLIC_CATALOG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "9c9cf8ce586582cc417b53d94bca17b0cc5c6574/"
+    "0b4fd87727e495ebf7da817366f98815073dab81/"
     "config/reviewed-repellent-evidence.json"
 )
 ALLOWED_MATERIAL_TYPES = frozenset(
