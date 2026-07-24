@@ -524,7 +524,13 @@
     {
       "id": "aedes_aegypti",
       "scientific_name": "Aedes aegypti",
-      "aliases": ["yellow fever mosquito", "Aedes mosquito", "Aedes", "mosquito"]
+      "aliases": ["yellow fever mosquito", "Aedes mosquito", "Aedes"],
+      "generic_aliases": ["mosquito", "mosquitoes"]
+    },
+    {
+      "id": "anopheles_mosquitoes",
+      "scientific_name": "Anopheles",
+      "aliases": ["malaria mosquito", "malaria mosquitoes", "Anopheles mosquito", "Anopheles mosquitoes"]
     },
     {
       "id": "plutella_xylostella",
@@ -1506,7 +1512,7 @@
     },
     {
       "id": "aedes-species-specific-repellent-response",
-      "species_ids": ["aedes_aegypti"],
+      "species_ids": ["aedes_aegypti", "anopheles_mosquitoes"],
       "match": {
         "priority": 25,
         "species_may_be_implicit": true,
@@ -1523,6 +1529,31 @@
       },
       "answer": "In the close-proximity odor assay, Aedes aegypti and Culex quinquefasciatus showed significant repellency to lemongrass oil, PMD, eugenol, and DEET. Anopheles coluzzii showed significant repellency to lemongrass oil and PMD; DEET was not significantly repellent, and eugenol produced a weak response that was not significantly different from paraffin oil (P=0.08). That is not the same as zero movement or no response by every mosquito. Each test used one resting female, filter paper about 0.5 cm away, and a 30-second observation window. This is direct odor-only, close-range movement evidence, not human-odor masking, landing, biting, complete protection time, or field efficacy. Do not transfer an Anopheles result to Aedes or infer a universal receptor; test the intended Aedes population at the intended vapor exposure, then confirm host-seeking and protection endpoints.",
       "source_record_ids": ["openalex:W3013059076"]
+    },
+    {
+      "id": "anopheles-spatial-repellent-diversion",
+      "species_ids": ["anopheles_mosquitoes"],
+      "match": {
+        "priority": 70,
+        "phrases": ["mosquito diversion", "community protection", "incomplete coverage", "redirect biting", "shift biting", "non-users' expense"],
+        "required_any": [
+          ["anopheles", "malaria vector", "malaria mosquito"],
+          ["spatial repellent", "spatial repellency", "emanator", "transfluthrin", "treated hut", "treated house", "treated houses"],
+          ["diversion", "redirect", "shift biting", "neighboring", "nearby", "untreated", "non-user", "non user", "community protection", "community-level", "community level", "users' expense", "non-users' expense"]
+        ],
+        "optional": ["landing", "biting", "blood seeking", "blood-seeking", "coverage", "household", "hut", "true protection", "personal protection"]
+      },
+      "answer": "Published evidence: Reduced Anopheles landings in treated huts or houses demonstrate personal protection under those conditions; by themselves, they do not prove community protection. A crossover study ran for 24 weeks across 90 households in Tanzania. Outdoor coils containing 0.03% transfluthrin reduced Anopheles arabiensis human landings by 80%, but household mosquito density was not reduced. Under incomplete coverage, the human blood index at households without repellent was higher than under no coverage (odds ratio 1.71, 95% CI 1.04-2.83), which the authors interpreted as diversion of human-seeking Anopheles arabiensis toward non-users. The coils did not change Anopheles funestus density or human blood index, so the effect was species-specific.\n\nResearch decision: Use randomized clusters or a crossover with no-coverage, complete-coverage, and incomplete-coverage periods. Sample treated homes and untreated neighboring homes concurrently, and preserve each household's location and treatment status. Measure human landings or bites, resting density, blood-fed females, human blood index, and, when feasible, infection or clinical endpoints separately. Pre-specify distance bands, buffer zones, coverage, baseline biting, species, resistance status, weather, and human behavior. A fall at treated homes plus no rise at untreated neighbors supports personal protection without detected diversion; a rise at untreated neighbors indicates redistribution. Neither pattern alone establishes lower disease transmission. This is an R&D interpretation of the cited field design, not a prediction that every spatial-repellent formulation will divert mosquitoes.",
+      "source_record_ids": ["reviewed_repellent_evidence:transfluthrin_anopheles_diversion_2016"],
+      "source_provenance": [
+        {
+          "record_id": "reviewed_repellent_evidence:transfluthrin_anopheles_diversion_2016",
+          "title": "A crossover study to evaluate the diversion of malaria vectors in a community with incomplete coverage of spatial repellents in the Kilombero Valley, Tanzania",
+          "public_url": "https://doi.org/10.1186/s13071-016-1738-4",
+          "source_id": "doi:10.1186/s13071-016-1738-4",
+          "locator": "Abstract, Methods, Results, and Tables 2-4: 24-week crossover among 90 households; 0.03% transfluthrin coils; no, complete, and incomplete coverage; Anopheles arabiensis landing, household density, and human blood index outcomes; Anopheles funestus comparison"
+        }
+      ]
     },
     {
       "id": "aedes-population-human-host-preference",

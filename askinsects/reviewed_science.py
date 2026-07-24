@@ -227,6 +227,11 @@ def validate_reviewed_science_catalog(payload: dict[str, object]) -> None:
                 f"species {species_id} scientific_name must be non-empty"
             )
         _strings(item.get("aliases"), f"species {species_id}.aliases")
+        _strings(
+            item.get("generic_aliases", []),
+            f"species {species_id}.generic_aliases",
+            allow_empty=True,
+        )
 
     topic_ids: set[str] = set()
     referenced_record_ids: set[str] = set()
@@ -764,12 +769,24 @@ def _species_matches(
     normalized_question: str,
     species: list[dict[str, object]],
 ) -> set[str]:
-    matches: set[str] = set()
+    specific_matches: set[str] = set()
     for item in species:
         aliases = [str(item["scientific_name"]), *_strings(item["aliases"], "aliases")]
         if any(_contains(normalized_question, alias) for alias in aliases):
-            matches.add(str(item["id"]))
-    return matches
+            specific_matches.add(str(item["id"]))
+    if specific_matches:
+        return specific_matches
+
+    generic_matches: set[str] = set()
+    for item in species:
+        aliases = _strings(
+            item.get("generic_aliases", []),
+            "generic_aliases",
+            allow_empty=True,
+        )
+        if any(_contains(normalized_question, alias) for alias in aliases):
+            generic_matches.add(str(item["id"]))
+    return generic_matches
 
 
 def _topic_score(

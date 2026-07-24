@@ -88,6 +88,12 @@
       "exact_aliases": ["rosemary oil", "rosemary essential oil", "Rosmarinus officinalis oil"]
     },
     {
+      "id": "transfluthrin",
+      "canonical_name": "transfluthrin",
+      "material_type": "pure_compound",
+      "exact_aliases": ["transfluthrin"]
+    },
+    {
       "id": "thymol",
       "canonical_name": "thymol",
       "material_type": "pure_compound",
@@ -457,6 +463,30 @@
           "public_url": "https://doi.org/10.3390/insects13070658",
           "source_id": "doi:10.3390/insects13070658",
           "locator": "Abstract and Methods: ten undiluted oils, including rosemary, tested by arm-in-cage against three mosquito species"
+        }
+      ]
+    },
+    {
+      "id": "transfluthrin_anopheles_diversion_2016",
+      "material_id": "transfluthrin",
+      "species_id": "anopheles_arabiensis_and_funestus",
+      "scientific_name": "Anopheles arabiensis; Anopheles funestus",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "community_crossover_incomplete_coverage",
+      "exposure_route": "non_contact",
+      "endpoint": "human landing, household density, blood feeding, and human blood index",
+      "finding": "Over 24 weeks in 90 Tanzanian households, outdoor coils containing 0.03% transfluthrin reduced Anopheles arabiensis human landings by 80% but did not reduce household density. Under incomplete coverage, the human blood index was higher at households without repellent than under no coverage (odds ratio 1.71, 95% CI 1.04-2.83), supporting diversion of human-seeking Anopheles arabiensis to non-users. The coils did not change Anopheles funestus density or human blood index.",
+      "limitations": [
+        "This result concerns burned 0.03% transfluthrin coils, local outdoor-biting populations, and the study's specific coverage patterns; it does not establish the same diversion magnitude for other formulations, species, resistance states, places, or coverage levels.",
+        "Reduced landings at treated households measured personal protection, while community protection required outcomes at both users and non-users."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "A crossover study to evaluate the diversion of malaria vectors in a community with incomplete coverage of spatial repellents in the Kilombero Valley, Tanzania",
+          "public_url": "https://doi.org/10.1186/s13071-016-1738-4",
+          "source_id": "doi:10.1186/s13071-016-1738-4",
+          "locator": "Abstract, Methods, Results, and Tables 2-4: 24-week crossover among 90 households; 0.03% transfluthrin coils; no, complete, and incomplete coverage; Anopheles arabiensis landing, household density, and human blood index outcomes; Anopheles funestus comparison"
         }
       ]
     },
