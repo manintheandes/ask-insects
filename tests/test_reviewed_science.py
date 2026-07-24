@@ -2780,18 +2780,25 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertIn("Culex quinquefasciatus Johannesburg", answer["answer"])
                 self.assertIn("n = 30", answer["answer"])
                 self.assertIn("at least 2 minutes", answer["answer"])
+                self.assertIn("Kaplan-Meier estimates", answer["answer"])
                 self.assertIn("Cox model included previous odorant exposures", answer["answer"])
                 self.assertIn(
-                    "powered, five-arm, Anopheles-specific no-contact host-seeking assay",
+                    "1 m dual-port olfactometer",
                     answer["answer"],
                 )
-                self.assertIn("three eugenol vapor exposures", answer["answer"])
                 self.assertIn("standardized human-odor blend plus CO2", answer["answer"])
-                self.assertIn("at least three biological blocks", answer["answer"])
-                self.assertIn("80-90% power", answer["answer"])
-                self.assertIn("50% relative reduction in host-source entry", answer["answer"])
-                self.assertIn("two adjacent exposures", answer["answer"])
-                self.assertIn("Measure headspace concentration", answer["answer"])
+                self.assertIn("0.25, 0.50, and 1.00 times H", answer["answer"])
+                self.assertIn("entry into the host-port zone within 5 minutes", answer["answer"])
+                self.assertIn("60 females per arm, 300 total", answer["answer"])
+                self.assertIn("three biological blocks of 20 per arm", answer["answer"])
+                self.assertIn("targets 90% power", answer["answer"])
+                self.assertIn("70% vehicle entry from 35% entry", answer["answer"])
+                self.assertIn("binomial mixed-effects model", answer["answer"])
+                self.assertIn("Dunnett-adjusted simultaneous 95%", answer["answer"])
+                self.assertIn("both 0.50H and 1.00H", answer["answer"])
+                self.assertIn("negative with P < 0.05", answer["answer"])
+                self.assertIn("no more than 5 percentage points above vehicle", answer["answer"])
+                self.assertIn("top-dose-only effect", answer["answer"])
                 self.assertIn("R&D recommendation", answer["answer"])
                 self.assertNotIn("test the intended Aedes population", answer["answer"])
                 self.assertEqual(len(answer["evidence"]), 1)
@@ -2810,7 +2817,8 @@ class ReviewedScienceTests(unittest.TestCase):
                     "Analysis: 20 uL on 1 x 2 cm filter paper, 0.5 cm from one resting "
                     "mosquito for 30 seconds, n = 30 per experiment, randomized "
                     "odorant order, at least 2 minutes between odorants, paraffin-oil "
-                    "control, and prior exposures included in the Cox model; Results, "
+                    "control, Kaplan-Meier time-to-flight estimates, and prior "
+                    "exposures included in the Cox model; Results, "
                     "Species-specific differences in mosquito behavioural response "
                     "to repellents, Figure 2a-c: Anopheles DEET curve and "
                     "non-significant comparison, Anopheles eugenol P = 0.08, and "
@@ -2878,10 +2886,62 @@ class ReviewedScienceTests(unittest.TestCase):
                     "Methods, Odorants",
                     "20 uL on 1 x 2 cm filter paper",
                     "n = 30 per experiment",
+                    "Kaplan-Meier time-to-flight estimates",
                     "prior exposures included in the Cox model",
                     "Figure 2a-c",
                 ):
                     self.assertIn(fragment, locator)
+
+    def test_anopheles_eugenol_assay_preservation_stays_in_requested_scope(self):
+        record_id = "openalex:W3013059076"
+        questions = (
+            "For the 2020 mosquito odor paper, what dose, strains, mosquito state, "
+            "reuse, and statistics do I need to preserve before interpreting the "
+            "Anopheles eugenol result?",
+            "Which Anopheles eugenol assay details and statistical structure must "
+            "be preserved before I interpret P = 0.08?",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator="records#W3013059076",
+                    )
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                for fragment in (
+                    "Anopheles coluzzii Ngousso",
+                    "Aedes aegypti LVPib12",
+                    "Culex quinquefasciatus Johannesburg",
+                    "3-10-day-old, freely mated, non-blood-fed females",
+                    "100% undiluted eugenol",
+                    "20 uL on 1 x 2 cm",
+                    "0.5 cm",
+                    "n = 30",
+                    "at least 2 minutes",
+                    "Kaplan-Meier estimates",
+                    "Cox proportional hazards model",
+                    "previous odorant exposures",
+                    "P = 0.08",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                self.assertNotIn("five-arm", answer["answer"].casefold())
+                self.assertNotIn("power", answer["answer"].casefold())
+                self.assertNotIn("advance", answer["answer"].casefold())
 
     def test_transfluthrin_mechanism_matcher_rejects_unrelated_aedes_sensory_questions(self):
         record_id = "openalex:W3179105761"
