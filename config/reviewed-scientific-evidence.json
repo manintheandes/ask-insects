@@ -926,12 +926,12 @@
       "id": "aedes-host-cues-after-exposure",
       "species_ids": ["aedes_aegypti"],
       "match": {
-        "phrases": ["sensory cues", "host cues", "find a human"],
+        "phrases": ["sensory cues", "host cues", "find a human", "approach and contact behaviors", "brief contact behaviors", "which sensory channel", "sensory channel remained active", "surviving sensory pathway"],
         "required_any": [
           ["cue", "cues", "sensory", "host seeking", "find", "locate"],
-          ["repellent exposure", "after exposure", "exposure", "repellent"]
+          ["repellent exposure", "after exposure", "exposure", "repellent", "deet", "pmd", "icaridin", "ebaap"]
         ],
-        "optional": ["carbon dioxide", "co2", "odor", "visual", "heat", "landing"]
+        "optional": ["carbon dioxide", "co2", "odor", "visual", "heat", "landing", "deet", "pmd", "icaridin", "ebaap", "approach", "contact", "sensory channel", "sensory pathway"]
       },
       "answer": "Untreated Aedes aegypti host seeking combines carbon dioxide, skin odor, visual contrast, thermal cues, and other close-range information rather than one signal. In the separate op1/op2 experiment, double-mutant carbon-dioxide-stimulated visual target attraction was nearly eliminated at 1000 and 100 lux and abolished at 25 and 5 lux, while human-odor tracking remained normal. That study did not apply a repellent; it shows separable visual and odor pathways under the tested light levels. A separate arm-in-cage study did test repellent exposure in 5-10-day-old female Aedes aegypti and Anopheles stephensi after 14 hours of sucrose starvation. DEET, PMD, icaridin, and EBAAP were each applied as 20% (m/m) ethanolic solutions at 1 ml per 600 cm2 of forearm. One female was observed for 3 minutes at 0.5, 3.5, or 6.5 hours after application. All four repellents reduced probing and bites, but mosquitoes still made multiple brief contacts with treated skin, including touch-and-go, bouncing, and landing. Thus, integrated host-directed approach and contact persisted in that confined assay after these four exposures; the study did not isolate which individual sensory channels remained active. Keep activation, orientation, landing, contact, probing, and biting distinct, and use channel-specific perturbations under matched compound, formulation, dose, and time conditions to answer the channel question.",
       "source_record_ids": [
