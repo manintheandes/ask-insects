@@ -4267,6 +4267,9 @@ class ReviewedScienceTests(unittest.TestCase):
                 },
                 (
                     "fewer pupae",
+                    "2-component deterrent push (2c)",
+                    "combined push-pull (2c + 4c)",
+                    "lure-only pull arm (4c) did not differ from control",
                     "cited reviewed SWD field evidence set",
                     "no replicated field evidence",
                     "crop damage",
@@ -4287,6 +4290,9 @@ class ReviewedScienceTests(unittest.TestCase):
                 },
                 (
                     "larval or pupal emergence",
+                    "2-component deterrent push (2c)",
+                    "combined push-pull (2c + 4c)",
+                    "lure-only pull arm (4c) did not differ from control",
                     "cited reviewed SWD field evidence set",
                     "no replicated field evidence",
                     "crop damage",
@@ -5248,7 +5254,24 @@ class ReviewedScienceTests(unittest.TestCase):
                 (
                     "nearly eliminated at 1000 and 100 lux",
                     "abolished at 25 and 5 lux",
-                    "compound-specific exposure must be tested",
+                    "DEET, PMD, icaridin, and EBAAP",
+                    "20% (m/m) ethanolic solutions",
+                    "1 ml per 600 cm2",
+                    "0.5, 3.5, or 6.5 hours",
+                    "did not isolate which individual sensory channels remained active",
+                ),
+            ),
+            (
+                "Which sensory cues does Aedes aegypti combine to find a human, "
+                "and which cues are still proven after repellent exposure?",
+                "aedes-host-cues-after-exposure",
+                (
+                    "DEET, PMD, icaridin, and EBAAP",
+                    "20% (m/m) ethanolic solutions",
+                    "1 ml per 600 cm2",
+                    "0.5, 3.5, or 6.5 hours",
+                    "integrated host-directed approach and contact persisted",
+                    "did not isolate which individual sensory channels remained active",
                 ),
             ),
             (
@@ -5451,6 +5474,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 if topic_id == "aedes-spatial-environment-controls":
                     self.assertNotIn(
                         "current public source plane", answer["answer"].casefold()
+                    )
+                if topic_id == "aedes-host-cues-after-exposure":
+                    self.assertNotIn(
+                        "compound-specific exposure must be tested",
+                        answer["answer"].casefold(),
+                    )
+                if topic_id == "swd-eggs-to-crop-protection":
+                    self.assertNotIn(
+                        "fewer pupae emerging from treated raspberries",
+                        answer["answer"].casefold(),
                     )
 
     def test_expanded_locators_cover_reviewed_protocol_claims(self):
