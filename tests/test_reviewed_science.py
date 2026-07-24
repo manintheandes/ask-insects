@@ -2773,12 +2773,25 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertIn("about 0.5 cm", answer["answer"])
                 self.assertIn("30-second", answer["answer"])
                 self.assertIn("P = 0.08", answer["answer"])
+                self.assertIn("20 uL", answer["answer"])
+                self.assertIn("1 x 2 cm", answer["answer"])
+                self.assertIn("Anopheles coluzzii Ngousso", answer["answer"])
+                self.assertIn("Aedes aegypti LVPib12", answer["answer"])
+                self.assertIn("Culex quinquefasciatus Johannesburg", answer["answer"])
+                self.assertIn("n = 30", answer["answer"])
+                self.assertIn("at least 2 minutes", answer["answer"])
+                self.assertIn("Cox model included previous odorant exposures", answer["answer"])
                 self.assertIn(
-                    "Anopheles-specific no-contact dose-and-release study",
+                    "powered, five-arm, Anopheles-specific no-contact host-seeking assay",
                     answer["answer"],
                 )
-                self.assertIn("matched formulation or solvent control", answer["answer"])
-                self.assertIn("measured headspace concentration", answer["answer"])
+                self.assertIn("three eugenol vapor exposures", answer["answer"])
+                self.assertIn("standardized human-odor blend plus CO2", answer["answer"])
+                self.assertIn("at least three biological blocks", answer["answer"])
+                self.assertIn("80-90% power", answer["answer"])
+                self.assertIn("50% relative reduction in host-source entry", answer["answer"])
+                self.assertIn("two adjacent exposures", answer["answer"])
+                self.assertIn("Measure headspace concentration", answer["answer"])
                 self.assertIn("R&D recommendation", answer["answer"])
                 self.assertNotIn("test the intended Aedes population", answer["answer"])
                 self.assertEqual(len(answer["evidence"]), 1)
@@ -2790,11 +2803,85 @@ class ReviewedScienceTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     evidence["provenance"]["locator"],
-                    "Methods, Close proximity response assay; Results, "
+                    "Methods, Mosquitoes: Anopheles coluzzii Ngousso, Aedes aegypti "
+                    "LVPib12, and Culex quinquefasciatus Johannesburg 3-10-day-old, "
+                    "non-blood-fed, freely mated females; Methods, Odorants: eugenol "
+                    "and DEET at 100%; Methods, Close proximity response assay and "
+                    "Analysis: 20 uL on 1 x 2 cm filter paper, 0.5 cm from one resting "
+                    "mosquito for 30 seconds, n = 30 per experiment, randomized "
+                    "odorant order, at least 2 minutes between odorants, paraffin-oil "
+                    "control, and prior exposures included in the Cox model; Results, "
                     "Species-specific differences in mosquito behavioural response "
-                    "to repellents, Figure 2a-c, especially the Anopheles coluzzii "
-                    "eugenol comparison (P = 0.08).",
+                    "to repellents, Figure 2a-c: Anopheles DEET curve and "
+                    "non-significant comparison, Anopheles eugenol P = 0.08, and "
+                    "significant Aedes and Culex responses",
                 )
+
+    def test_species_transfer_preserves_close_proximity_assay_and_figure_locator(self):
+        record_id = "openalex:W3013059076"
+        questions = (
+            "Does the non-significant Anopheles DEET response mean every mosquito "
+            "stayed still, and can that result be assigned to Aedes?",
+            "Did every Anopheles coluzzii female remain still near DEET in the "
+            "30-second odor assay, or was the result only statistically "
+            "non-significant?",
+            "Can an Anopheles DEET result be transferred to Aedes?",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator="records#W3013059076",
+                    )
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                for fragment in (
+                    "does not mean every mosquito stayed still",
+                    "Anopheles coluzzii Ngousso",
+                    "Aedes aegypti LVPib12",
+                    "Culex quinquefasciatus Johannesburg",
+                    "DEET and eugenol were tested at 100%",
+                    "20 uL",
+                    "1 x 2 cm",
+                    "n = 30",
+                    "at least 2 minutes",
+                    "Cox model included previous exposures",
+                    "Figure 2a",
+                    "some mosquitoes flew away",
+                    "population- and assay-specific",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                self.assertEqual(len(answer["evidence"]), 1)
+                evidence = answer["evidence"][0]
+                self.assertEqual(evidence["record_id"], record_id)
+                self.assertEqual(
+                    evidence["provenance"]["source_id"],
+                    "doi:10.1186/s12936-020-03206-8",
+                )
+                locator = evidence["provenance"]["locator"]
+                for fragment in (
+                    "Methods, Mosquitoes",
+                    "Methods, Odorants",
+                    "20 uL on 1 x 2 cm filter paper",
+                    "n = 30 per experiment",
+                    "prior exposures included in the Cox model",
+                    "Figure 2a-c",
+                ):
+                    self.assertIn(fragment, locator)
 
     def test_transfluthrin_mechanism_matcher_rejects_unrelated_aedes_sensory_questions(self):
         record_id = "openalex:W3179105761"
