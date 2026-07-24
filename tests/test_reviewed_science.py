@@ -2921,6 +2921,9 @@ class ReviewedScienceTests(unittest.TestCase):
             "Attach the complete experimental context to the 2020 Anopheles eugenol "
             "P = 0.08 result: strains, state, exposure, reuse, Kaplan-Meier, Cox "
             "model, and endpoint. Nothing beyond the paper.",
+            "For a methods appendix, attach only the original Anopheles eugenol "
+            "assay population, state, exposure, reuse, Kaplan-Meier and Cox details "
+            "to P = 0.08.",
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -2946,8 +2949,6 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertTrue(answer["ok"])
                 for fragment in (
                     "Anopheles coluzzii Ngousso",
-                    "Aedes aegypti LVPib12",
-                    "Culex quinquefasciatus Johannesburg",
                     "3-10-day-old, freely mated, non-blood-fed females",
                     "100% undiluted eugenol",
                     "20 uL on 1 x 2 cm",
@@ -2963,6 +2964,13 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertNotIn("five-arm", answer["answer"].casefold())
                 self.assertNotIn("power", answer["answer"].casefold())
                 self.assertNotIn("advance", answer["answer"].casefold())
+                self.assertNotIn("Aedes", answer["answer"])
+                self.assertNotIn("Culex", answer["answer"])
+                self.assertNotIn("host-seeking", answer["answer"].casefold())
+                locator = answer["evidence"][0]["provenance"]["locator"]
+                self.assertNotIn("Aedes", locator)
+                self.assertNotIn("Culex", locator)
+                self.assertIn("Figure 2a", locator)
 
     def test_transfluthrin_mechanism_matcher_rejects_unrelated_aedes_sensory_questions(self):
         record_id = "openalex:W3179105761"
