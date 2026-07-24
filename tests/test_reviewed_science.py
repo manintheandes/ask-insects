@@ -5391,6 +5391,18 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "In the 20% DEET, PMD, icaridin, and EBAAP forearm assay, what "
+                "did females do before and after touching skin, and does that "
+                "identify a receptor or sensory pathway?",
+                "mosquito-arm-in-cage-contact-behaviors",
+                (
+                    "Aedes aegypti and Anopheles stephensi",
+                    "host-directed approaches",
+                    "touch-and-go, bouncing, and landing",
+                    "Sensory-channel conclusion: No.",
+                ),
+            ),
+            (
                 "In Anopheles stephensi exposed to 20% DEET and PMD on skin, "
                 "which brief contact behaviors remained, and did the arm-in-cage "
                 "experiment identify the active sensory channel?",
