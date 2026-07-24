@@ -2744,11 +2744,16 @@ def check_reviewed_scientific_evidence() -> None:
 
 
 MINIMUM_REVIEWED_REPELLENT_MATERIALS = 17
-MINIMUM_REVIEWED_REPELLENT_CLAIMS = 21
+MINIMUM_REVIEWED_REPELLENT_CLAIMS = 26
 REQUIRED_REVIEWED_REPELLENT_EVIDENCE_IDS = frozenset(
     {
         "transfluthrin_guardian_anopheles_hut_2025",
         "transfluthrin_kenya_malaria_cluster_trial_2025",
+        "transfluthrin_who_spatial_emanator_recommendation_2025",
+        "transfluthrin_who_guardian_prequalification_2025",
+        "transfluthrin_who_guardian_efficacy_assessment_2025",
+        "transfluthrin_who_spatial_emanator_equivalence_guidance_2025",
+        "transfluthrin_who_spatial_emanator_module5_2025",
     }
 )
 

@@ -15,7 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 _REPOSITORY_CATALOG = REPO_ROOT / "config" / "reviewed-repellent-evidence.json"
 PUBLIC_CATALOG_URL = (
     "https://raw.githubusercontent.com/manintheandes/ask-insects/"
-    "2c1d257210a6cf2d1ee3d399558f9dd670639833/"
+    "750848a0d35698afafcca5b92dde77ed742990eb/"
     "config/reviewed-repellent-evidence.json"
 )
 ALLOWED_MATERIAL_TYPES = frozenset(
@@ -37,6 +37,10 @@ ALLOWED_EVIDENCE_CLASSES = frozenset(
         "no_significant_repellent_effect",
         "host_cue_or_attractant",
         "identity_only",
+        "official_recommendation",
+        "product_prequalification",
+        "regulatory_efficacy_assessment",
+        "regulatory_dossier_requirement",
     }
 )
 ALLOWED_EXPOSURE_ROUTES = frozenset(
