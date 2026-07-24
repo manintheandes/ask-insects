@@ -5214,6 +5214,36 @@ class ReviewedScienceTests(unittest.TestCase):
         topics = {topic["id"]: topic for topic in catalog["topics"]}
         cases = (
             (
+                "In the 2025 raspberry push-pull field trial, which SWD treatment "
+                "arms actually reduced pupal emergence versus untreated control, "
+                "and which arm did not? Keep naturally ripening and sentinel fruit "
+                "in scope.",
+                "swd-push-pull-treatment-comparison",
+                (
+                    "2-component deterrent push (2c)",
+                    "combined push-pull treatment (2c + 4c)",
+                    "lure-only pull treatment (4c) did not differ",
+                    "naturally ripening field raspberries",
+                    "store-bought sentinel raspberries",
+                    "53.9% lower",
+                    "36.0% lower",
+                    "79.5%",
+                    "70.9%",
+                ),
+            ),
+            (
+                "Did every treated raspberry arm reduce SWD pupae, or did the "
+                "4c pull-only treatment remain equal to control while 2c push and "
+                "2c plus 4c push-pull worked?",
+                "swd-push-pull-treatment-comparison",
+                (
+                    "2-component deterrent push (2c)",
+                    "combined push-pull treatment (2c + 4c)",
+                    "lure-only pull treatment (4c) did not differ",
+                    "did not demonstrate added infestation reduction",
+                ),
+            ),
+            (
                 "Nearly all SWD eggs moved to untreated fruit while total fecundity fell. Which no-choice, survival, movement, and mating controls distinguish avoidance from impairment?",
                 "swd-choice-endpoint-confounds",
                 ("cannot by itself", "total eggs", "female survival"),
@@ -5484,6 +5514,10 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertNotIn(
                         "fewer pupae emerging from treated raspberries",
                         answer["answer"].casefold(),
+                    )
+                if topic_id == "swd-push-pull-treatment-comparison":
+                    self.assertNotIn(
+                        "match fruit species", answer["answer"].casefold()
                     )
 
     def test_expanded_locators_cover_reviewed_protocol_claims(self):
