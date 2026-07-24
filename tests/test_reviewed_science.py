@@ -5244,6 +5244,39 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "The 2c SWD push reduced pupae in raspberries. What additional "
+                "damage, yield, persistence, and operational evidence is needed "
+                "before a crop-protection claim?",
+                "swd-eggs-to-crop-protection",
+                (
+                    "Published evidence:",
+                    "53.9%",
+                    "36.0%",
+                    "79.5%",
+                    "70.9%",
+                    "Evidence still needed:",
+                    "fruit damage and decay",
+                    "marketable yield",
+                    "release rate",
+                    "weather",
+                    "R&D requirements",
+                ),
+            ),
+            (
+                "What evidence is still missing before we call lower SWD pupal "
+                "emergence crop protection: harvest loss, durability, field "
+                "deployment, or repeatability across sites?",
+                "swd-eggs-to-crop-protection",
+                (
+                    "Published evidence:",
+                    "Evidence still needed:",
+                    "rejected fruit",
+                    "economic loss",
+                    "retreatment interval",
+                    "crop, cultivar, season, and site",
+                ),
+            ),
+            (
                 "Nearly all SWD eggs moved to untreated fruit while total fecundity fell. Which no-choice, survival, movement, and mating controls distinguish avoidance from impairment?",
                 "swd-choice-endpoint-confounds",
                 ("cannot by itself", "total eggs", "female survival"),
