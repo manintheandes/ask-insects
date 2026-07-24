@@ -1540,7 +1540,7 @@
       "id": "anopheles-eugenol-go-no-go",
       "species_ids": ["anopheles_mosquitoes"],
       "match": {
-        "priority": 150,
+        "priority": 210,
         "phrases": ["Anopheles eugenol", "eugenol go/no-go", "eugenol go no go", "eugenol human-landing", "eugenol human landing", "smallest useful next experiment"],
         "required_any": [
           ["anopheles", "malaria mosquito", "malaria-mosquito"],

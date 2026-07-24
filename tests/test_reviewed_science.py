@@ -2750,6 +2750,12 @@ class ReviewedScienceTests(unittest.TestCase):
                 "What five-arm eugenol decision gate should Anopheles use before "
                 "human exposure?"
             ),
+            (
+                "Build the minimum Anopheles eugenol screen that ends in a hard "
+                "advance-or-stop decision before people are involved. Specify "
+                "control acceptance, headspace levels, sample count, statistics, "
+                "and toxicity vetoes."
+            ),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
