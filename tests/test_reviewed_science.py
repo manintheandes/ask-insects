@@ -2902,7 +2902,7 @@ class ReviewedScienceTests(unittest.TestCase):
             "reviewed_repellent_evidence:"
             "transfluthrin_who_spatial_emanator_module5_2025"
         )
-        questions = (
+        broad_questions = (
             (
                 "Our one-year hut trial shows 82.7% less blood feeding, 65.1% "
                 "less landing, and 20.1% mortality in wild pyrethroid-resistant "
@@ -2924,6 +2924,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "higher mortality to predict the malaria impact of a new "
                 "transfluthrin product?"
             ),
+        )
+        who_questions = (
             (
                 "If a new Anopheles spatial repellent outperforms a product class "
                 "with clinical evidence on hut blood-feeding, is that enough to "
@@ -2940,9 +2942,38 @@ class ReviewedScienceTests(unittest.TestCase):
                 "the decision?"
             ),
             (
+                "WHO prequalified Guardian even though its direct comparison with "
+                "Mosquito Shield was not used in the decision. What candidate-specific "
+                "tests made that bridge defensible, and what malaria claim would "
+                "still be unsupported?"
+            ),
+            (
+                "We have a new transfluthrin emanator that reduced blood feeding "
+                "more than Guardian in Anopheles huts. Can we use Guardian and "
+                "Mosquito Shield to avoid an infection trial, and what exact "
+                "evidence would WHO still expect?"
+            ),
+            (
+                "Which exact efficacy studies did WHO rely on for Guardian, and "
+                "can a stronger head-to-head comparison replace the new product's "
+                "own dossier?"
+            ),
+        )
+        kenya_questions = (
+            (
                 "Which product and final malaria estimates belong to the Kenya "
                 "spatial-repellent trial, and how far can I bridge them to a new "
                 "Anopheles product?"
+            ),
+            (
+                "The Kenya spatial-repellent trial quotes 33.4% in its summary but "
+                "32.7% in the final results. Which estimate should anchor our "
+                "decision, what was the tested product and deployment, and can we "
+                "apply the number to Guardian?"
+            ),
+            (
+                "Should I use the interim or final Mosquito Shield malaria result, "
+                "and does that percentage transfer to Guardian?"
             ),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2988,12 +3019,20 @@ class ReviewedScienceTests(unittest.TestCase):
                 ]
             )
 
-            answers = [
+            broad_answers = [
                 build_reviewed_science_answer(index, question)
-                for question in questions
+                for question in broad_questions
+            ]
+            who_answers = [
+                build_reviewed_science_answer(index, question)
+                for question in who_questions
+            ]
+            kenya_answers = [
+                build_reviewed_science_answer(index, question)
+                for question in kenya_questions
             ]
 
-        for question, answer in zip(questions, answers, strict=True):
+        for question, answer in zip(broad_questions, broad_answers, strict=True):
             with self.subTest(question=question):
                 self.assertIsNotNone(answer)
                 assert answer is not None
@@ -3002,21 +3041,17 @@ class ReviewedScienceTests(unittest.TestCase):
                     "is not a percentage reduction in malaria cases",
                     answer["answer"],
                 )
-                self.assertIn("82.7% (95% CI 78.5%-86.1%)", answer["answer"])
-                self.assertIn("65.1% (95% CI 59.4%-70.0%)", answer["answer"])
-                self.assertIn("20.1% mortality at 24 hours", answer["answer"])
+                self.assertIn("82.7%", answer["answer"])
+                self.assertIn("65.1%", answer["answer"])
+                self.assertIn("20.1% mortality", answer["answer"])
                 self.assertIn("They cannot be added", answer["answer"])
                 self.assertIn("Funding section says no financial support", answer["answer"])
                 self.assertIn("Mosquito Shield, not Guardian", answer["answer"])
-                self.assertIn("29 clusters per arm", answer["answer"])
-                self.assertIn("two units per 9 square metres", answer["answer"])
-                self.assertIn("32.7% (95% two-sided CI 12.6%-48.2%", answer["answer"])
-                self.assertIn("29.5% (95% CI 12.0%-43.5%", answer["answer"])
+                self.assertIn("32.7% lower first-time", answer["answer"])
+                self.assertIn("29.5% lower overall", answer["answer"])
                 self.assertIn("33.4% and 32.1% values were interim", answer["answer"])
                 self.assertIn("P-12643", answer["answer"])
-                self.assertIn("BIT084 NI", answer["answer"])
                 self.assertIn("not used to inform the decision", answer["answer"])
-                self.assertIn("equivalence-only dossiers", answer["answer"])
                 self.assertIn("at least three semi-field studies", answer["answer"])
                 self.assertIn("target-setting randomized community trial", answer["answer"])
                 evidence_by_id = {
@@ -3067,6 +3102,68 @@ class ReviewedScienceTests(unittest.TestCase):
                 self.assertIn(
                     "Data requirements 5.1 and 5.2",
                     evidence_by_id[module5_record_id]["provenance"]["locator"],
+                )
+
+        for question, answer in zip(who_questions, who_answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertIn(
+                    "not, by itself, an accepted bridge",
+                    answer["answer"],
+                )
+                self.assertIn("P-12643", answer["answer"])
+                self.assertIn("BIT084 NI", answer["answer"])
+                self.assertIn("not used to inform the decision", answer["answer"])
+                self.assertIn("equivalence-only dossier", answer["answer"])
+                self.assertIn("at least three semi-field studies", answer["answer"])
+                self.assertIn("32.7% lower first-time infection", answer["answer"])
+                self.assertIn("29.5% lower overall new infection", answer["answer"])
+                evidence_by_id = {
+                    item["record_id"]: item for item in answer["evidence"]
+                }
+                self.assertEqual(
+                    set(evidence_by_id),
+                    {
+                        kenya_record_id,
+                        recommendation_record_id,
+                        guardian_pq_record_id,
+                        guardian_assessment_record_id,
+                        equivalence_record_id,
+                        module5_record_id,
+                    },
+                )
+                self.assertNotIn(guardian_record_id, evidence_by_id)
+
+        for question, answer in zip(kenya_questions, kenya_answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertIn("Use the final analysis", answer["answer"])
+                self.assertIn(
+                    "32.7% (95% two-sided CI 12.6%-48.2%",
+                    answer["answer"],
+                )
+                self.assertIn("29.5% (95% CI 12.0%-43.5%", answer["answer"])
+                self.assertIn(
+                    "33.4% first-time and 32.1% overall values were",
+                    answer["answer"],
+                )
+                self.assertIn("29 clusters per arm", answer["answer"])
+                self.assertIn("two units per 9 square metres", answer["answer"])
+                self.assertIn("Do not apply 32.7% or 29.5% to Guardian", answer["answer"])
+                evidence_by_id = {
+                    item["record_id"]: item for item in answer["evidence"]
+                }
+                self.assertEqual(
+                    set(evidence_by_id),
+                    {
+                        kenya_record_id,
+                        guardian_pq_record_id,
+                        guardian_assessment_record_id,
+                    },
                 )
 
     def test_swd_field_delivery_matcher_rejects_other_species_and_generic_delivery(self):
