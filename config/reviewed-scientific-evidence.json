@@ -1557,21 +1557,27 @@
     },
     {
       "id": "anopheles-entomology-to-malaria-decision",
-      "species_ids": ["anopheles_mosquitoes"],
+      "species_ids": ["anopheles_mosquitoes", "aedes_aegypti"],
       "match": {
-        "priority": 72,
-        "phrases": ["malaria cases", "malaria incidence", "disease reduction", "clinical impact", "program decision", "entomological endpoint", "experimental hut", "hut trial", "blood feeding"],
+        "priority": 122,
+        "species_may_be_implicit": true,
+        "phrases": ["malaria cases", "malaria incidence", "disease reduction", "clinical impact", "program decision", "entomological endpoint", "experimental hut", "hut trial", "blood feeding", "skip a community infection trial", "product-class bridge", "regulatory bridge", "equivalence-only dossier", "WHO prequalification"],
         "required_any": [
           ["anopheles", "malaria vector", "spatial repellent", "transfluthrin", "guardian", "mosquito shield"],
-          ["hut", "hut trial", "experimental hut", "blood feeding", "blood-fed", "landing", "mortality", "entomological"],
-          ["malaria", "malaria cases", "malaria incidence", "disease", "clinical", "program decision", "project", "predict", "projecting", "translate", "translation", "gate"]
+          ["hut", "hut trial", "experimental hut", "blood feeding", "blood-fed", "landing", "mortality", "entomological", "outperform", "outperforms", "product class", "prequalification", "dossier", "equivalence", "trial", "study", "infection", "final estimate", "final estimates"],
+          ["malaria", "malaria cases", "malaria incidence", "disease", "clinical", "program decision", "decision", "project", "predict", "projecting", "translate", "translation", "gate", "skip", "bridge", "claim", "regulatory", "prequalification", "dossier", "equivalence", "WHO"]
         ],
-        "optional": ["pyrethroid resistant", "pyrethroid-resistant", "protective efficacy", "surrogate", "cluster randomized", "cluster-randomized", "epidemiological", "commercial", "investment"]
+        "optional": ["pyrethroid resistant", "pyrethroid-resistant", "protective efficacy", "surrogate", "cluster randomized", "cluster-randomized", "epidemiological", "commercial", "investment", "WHO", "candidate product", "community infection trial"]
       },
-      "answer": "No. A percentage reduction in an experimental-hut entomological endpoint is not the same quantity as a percentage reduction in malaria cases.\n\nPublished hut evidence: In the Tanzanian Guardian study, two passive emanators containing 2,500 mg transfluthrin each were evaluated for 12 months against wild pyrethroid-resistant Anopheles arabiensis. Guardian reduced the number of blood-fed mosquitoes by 82.7% (95% CI 78.5%-86.1%), reduced human landings by 65.1% (95% CI 59.4%-70.0%), and induced 20.1% mortality at 24 hours (95% CI 18.4%-21.8%). Those are three separate entomological endpoints from the reported product, hut design, deployment, vector population, and volunteer protocol. They cannot be added, and none is an estimate of malaria incidence.\n\nPublished epidemiological evidence: A separate masked, cluster-randomized, placebo-controlled trial in 58 clusters in western Kenya measured human malaria infection after mass distribution of insecticide-treated nets. The transfluthrin spatial-repellent intervention reduced the hazard of first-time malaria infection by 33.4% (95% CI 11.1%-50.1%; P=0.0058) and overall new malaria infections by 32.1% (95% CI 15.9%-45.2%; P=0.0004) among children 6 months to under 10 years old. That supports the intervention class in that high-transmission, pyrethroid-resistant, high-net-coverage setting; it does not convert Guardian's 82.7% hut blood-feeding reduction into an 82.7% disease reduction.\n\nProgram decision: Gate a malaria-impact claim on a target-setting randomized community trial that measures infection or clinical incidence, or on a regulator-accepted class-bridging framework that directly links the candidate product to a product with epidemiological efficacy. Pre-specify the disease endpoint and preserve product dose and release profile, durability, achieved coverage and adherence, local vector species and resistance, human behavior, safety, possible diversion, and concurrent net or spraying use. Until that bridge is justified, use the hut results to support biological efficacy and product comparison, not a numerical malaria-case claim.\n\nEvidence boundary: The Guardian article argues that its entomological results can support comparative evaluation and possible class entry. Treat that as the authors' interpretation, not direct clinical proof. The Guardian study was funded by SC Johnson, the product manufacturer; the article reports the funder's stated role. A universal program-effectiveness or commercial-readiness claim remains unsupported.",
+      "answer": "No. A percentage reduction in an experimental-hut endpoint is not a percentage reduction in malaria cases, and outperforming a clinically supported product in a hut is not enough by itself to skip candidate-specific regulatory evidence.\n\nPublished Guardian hut evidence: In Tanzania, two Guardian passive emanators containing 2,500 mg transfluthrin each were evaluated for 12 months against wild pyrethroid-resistant Anopheles arabiensis. Guardian reduced the number of blood-fed mosquitoes by 82.7% (95% CI 78.5%-86.1%), reduced human landings by 65.1% (95% CI 59.4%-70.0%), and induced 20.1% mortality at 24 hours (95% CI 18.4%-21.8%). These are separate entomological endpoints from one product, deployment, hut design, vector population, and volunteer protocol. They cannot be added, and none estimates malaria incidence. The paper also contains a disclosure contradiction: its Funding section says no financial support was received, while its Conflict of interest section says the study received SC Johnson funding and that the company discussed data requirements and edited the manuscript.\n\nPublished human-infection evidence: The western Kenya trial tested Mosquito Shield, not Guardian, against a matched placebo in 29 clusters per arm after mass insecticide-treated-net distribution. Mosquito Shield was deployed at two units per 9 square metres and replaced every 28 days within a two-day window. In the final analysis it reduced first-time malaria infection by 32.7% (95% two-sided CI 12.6%-48.2%; two-sided P=0.0030) and all new infections by 29.5% (95% CI 12.0%-43.5%; P=0.0020) among children 6 months to under 10 years old. The often-cited 33.4% and 32.1% values were interim estimates. This trial supports Mosquito Shield in that high-transmission, pyrethroid-resistant, high-net-coverage setting; it does not transfer those percentages to another formulation.\n\nCurrent WHO bridge: On 13 August 2025, WHO conditionally recommended indoor spatial emanators in addition to insecticide-treated nets for children and adults in areas with ongoing malaria transmission, and prequalified Guardian as product P-12643. That creates a policy and prequalification route that may not require every candidate to repeat a community infection trial, but it is not an equivalence shortcut. WHO's Guardian assessment relied on Guardian-specific free-flight-room studies and semi-field studies in Tanzania and Benin. Its Table 7 placed the Guardian-versus-Mosquito-Shield comparison, BIT084 NI, among studies not used to inform the decision. Current WHO guidance says equivalence-only dossiers to an already prequalified spatial emanator are not accepted. Module 5 requires at least one free-flight-room study with susceptible and resistant strains of each of Aedes, Culex, and Anopheles, plus at least three semi-field studies against wild free-flying vectors; the candidate's quality, safety, efficacy, useful life, release profile, and study-batch characterization must also be established.\n\nProgram decision: Use the hut result to support candidate biological efficacy and to decide whether to invest in the complete candidate-specific dossier. Do not claim an 82.7% malaria-case reduction. For WHO prequalification within the recommended indoor-plus-ITN use, obtain written agreement on the candidate's evidence plan and satisfy the complete quality, safety, and entomological efficacy requirements. For a candidate-specific numerical infection or disease claim, a target-setting randomized community trial remains the direct evidence unless the relevant authority explicitly accepts another validated bridge. Preserve formulation, dose and release, room coverage, durability, local vector species and resistance, human behavior, adherence, safety, diversion, concurrent interventions, and uncertainty.\n\nEvidence boundary: Published results are the Guardian hut endpoints and the Mosquito Shield infection trial. WHO's recommendation and product assessments are official regulatory evidence. Applying that pathway to a new candidate is an R&D interpretation, not proof that the candidate prevents a particular percentage of infections. No cited source supports a universal numerical conversion from hut blood feeding, landing, or mortality to malaria cases.",
       "source_record_ids": [
         "reviewed_repellent_evidence:transfluthrin_guardian_anopheles_hut_2025",
-        "reviewed_repellent_evidence:transfluthrin_kenya_malaria_cluster_trial_2025"
+        "reviewed_repellent_evidence:transfluthrin_kenya_malaria_cluster_trial_2025",
+        "reviewed_repellent_evidence:transfluthrin_who_spatial_emanator_recommendation_2025",
+        "reviewed_repellent_evidence:transfluthrin_who_guardian_prequalification_2025",
+        "reviewed_repellent_evidence:transfluthrin_who_guardian_efficacy_assessment_2025",
+        "reviewed_repellent_evidence:transfluthrin_who_spatial_emanator_equivalence_guidance_2025",
+        "reviewed_repellent_evidence:transfluthrin_who_spatial_emanator_module5_2025"
       ],
       "source_provenance": [
         {
@@ -1579,14 +1585,49 @@
           "title": "SC Johnson Guardian\u2122 spatial repellent shows 1-year efficacy against wild pyrethroid-resistant Anopheles arabiensis, with a similar blood-feeding inhibition efficacy to Mosquito Shield\u2122 in a Tanzanian experimental hut trial",
           "public_url": "https://doi.org/10.3389/fmala.2025.1570480",
           "source_id": "doi:10.3389/fmala.2025.1570480",
-          "locator": "Abstract Results; Materials and methods: Intervention, Study design, and endpoints; Results: Protective efficacy of Guardian; Tables 1-2: 12-month blood-feeding, landing, and 24-hour mortality estimates for wild pyrethroid-resistant Anopheles arabiensis"
+          "locator": "Abstract Results; Materials and methods: Intervention, Study design, and endpoints; Results: Protective efficacy of Guardian; Tables 1-2: 12-month blood-feeding, landing, and 24-hour mortality estimates for wild pyrethroid-resistant Anopheles arabiensis; Statements: Funding and Conflict of interest"
         },
         {
           "record_id": "reviewed_repellent_evidence:transfluthrin_kenya_malaria_cluster_trial_2025",
           "title": "Effect of a spatial repellent on malaria incidence in an area of western Kenya characterised by high malaria transmission, insecticide resistance, and universal coverage of insecticide treated nets (part of the AEGIS Consortium): a cluster-randomised, controlled trial",
           "public_url": "https://doi.org/10.1016/S0140-6736(24)02253-0",
           "source_id": "doi:10.1016/S0140-6736(24)02253-0",
-          "locator": "Summary Methods and Findings; primary first-time malaria infection endpoint and overall new-infection analysis; Figure 3: 58-cluster trial, 33.4% and 32.1% protective-efficacy estimates"
+          "locator": "Methods: Randomisation and masking and paragraph 22 intervention details; Results paragraphs 46-48 and Table 2: interim 33.4% first-time and 32.1% overall estimates distinguished from final 32.7% first-time and 29.5% overall estimates; Figure 3: first-time infection incidence only"
+        },
+        {
+          "record_id": "reviewed_repellent_evidence:transfluthrin_who_spatial_emanator_recommendation_2025",
+          "title": "WHO recommends spatial emanators for malaria vector control and prequalifies first two products",
+          "public_url": "https://www.who.int/news/item/13-08-2025-who-recommends-spatial-emanators-for-malaria-vector-control-and-prequalifies-first-two-products",
+          "source_id": "who:spatial-emanator-recommendation-2025-08-13",
+          "locator": "Departmental update dated 13 August 2025, paragraphs under 'More on the WHO recommendation': conditional indoor use in addition to ITNs, children and adults, ongoing malaria transmission, moderate-certainty evidence from five studies, and remaining evidence gaps"
+        },
+        {
+          "record_id": "reviewed_repellent_evidence:transfluthrin_who_guardian_prequalification_2025",
+          "title": "SC Johnson Guardian",
+          "public_url": "https://extranet.who.int/prequal/vector-control-products/sc-johnson-guardian",
+          "source_id": "who:P-12643",
+          "locator": "Product Identification and Prequalification Status: spatial emanator, reference P-12643, SC Johnson, transfluthrin 2.5 g/unit, active status, and 13 August 2025 prequalification date"
+        },
+        {
+          "record_id": "reviewed_repellent_evidence:transfluthrin_who_guardian_efficacy_assessment_2025",
+          "title": "WHO Public Assessment Report: WHOPAR Part 5, SC Johnson Guardian, Efficacy Assessment",
+          "public_url": "https://extranet.who.int/prequal/sites/default/files/doc_parts/P-12643%20-%20part5v1.pdf",
+          "source_id": "who:P-12643-part5v1",
+          "locator": "Section 3, Semi-field studies; Section 4, Efficacy conclusions; Table 7 on page 17: BIO016a-23, BIO096-22, BIT084 WP3, and 24-04-B/GLP relied on for decision making, while BIT084 NI comparative Guardian-to-Mosquito-Shield study was not used to inform decision making"
+        },
+        {
+          "record_id": "reviewed_repellent_evidence:transfluthrin_who_spatial_emanator_equivalence_guidance_2025",
+          "title": "Interim guidance for the prequalification assessment of spatial emanator products",
+          "public_url": "https://extranet.who.int/prequal/node/35269",
+          "source_id": "who:spatial-emanator-interim-guidance-2025",
+          "locator": "Section 9, page 20: 'Claiming equivalency to an already prequalified product' and statement that equivalence-claiming dossiers are not accepted"
+        },
+        {
+          "record_id": "reviewed_repellent_evidence:transfluthrin_who_spatial_emanator_module5_2025",
+          "title": "Spatial emanators guidance: Module 5 data requirements table",
+          "public_url": "https://extranet.who.int/prequal/node/35288",
+          "source_id": "who:spatial-emanator-module-5-2025",
+          "locator": "Data requirements 5.1 and 5.2, pages 1-2: susceptible and resistant Aedes, Culex, and Anopheles free-flight-room strains; minimum three semi-field studies; Module 3 batch characterization"
         }
       ]
     },

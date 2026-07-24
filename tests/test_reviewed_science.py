@@ -2882,6 +2882,26 @@ class ReviewedScienceTests(unittest.TestCase):
             "reviewed_repellent_evidence:"
             "transfluthrin_kenya_malaria_cluster_trial_2025"
         )
+        recommendation_record_id = (
+            "reviewed_repellent_evidence:"
+            "transfluthrin_who_spatial_emanator_recommendation_2025"
+        )
+        guardian_pq_record_id = (
+            "reviewed_repellent_evidence:"
+            "transfluthrin_who_guardian_prequalification_2025"
+        )
+        guardian_assessment_record_id = (
+            "reviewed_repellent_evidence:"
+            "transfluthrin_who_guardian_efficacy_assessment_2025"
+        )
+        equivalence_record_id = (
+            "reviewed_repellent_evidence:"
+            "transfluthrin_who_spatial_emanator_equivalence_guidance_2025"
+        )
+        module5_record_id = (
+            "reviewed_repellent_evidence:"
+            "transfluthrin_who_spatial_emanator_module5_2025"
+        )
         questions = (
             (
                 "Our one-year hut trial shows 82.7% less blood feeding, 65.1% "
@@ -2904,6 +2924,26 @@ class ReviewedScienceTests(unittest.TestCase):
                 "higher mortality to predict the malaria impact of a new "
                 "transfluthrin product?"
             ),
+            (
+                "If a new Anopheles spatial repellent outperforms a product class "
+                "with clinical evidence on hut blood-feeding, is that enough to "
+                "skip a community infection trial?"
+            ),
+            (
+                "Can a same-active-ingredient equivalence argument get our "
+                "transfluthrin emanator through WHO prequalification without "
+                "candidate-specific mosquito studies?"
+            ),
+            (
+                "What evidence did WHO actually use to prequalify Guardian, and "
+                "did the Guardian-versus-Mosquito-Shield hut comparison carry "
+                "the decision?"
+            ),
+            (
+                "Which product and final malaria estimates belong to the Kenya "
+                "spatial-repellent trial, and how far can I bridge them to a new "
+                "Anopheles product?"
+            ),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -2920,6 +2960,31 @@ class ReviewedScienceTests(unittest.TestCase):
                         source_id="reviewed_repellent_evidence",
                         locator="jsonpath=$.evidence[1]",
                     ),
+                    evidence_record(
+                        recommendation_record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator="jsonpath=$.evidence[2]",
+                    ),
+                    evidence_record(
+                        guardian_pq_record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator="jsonpath=$.evidence[3]",
+                    ),
+                    evidence_record(
+                        guardian_assessment_record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator="jsonpath=$.evidence[4]",
+                    ),
+                    evidence_record(
+                        equivalence_record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator="jsonpath=$.evidence[5]",
+                    ),
+                    evidence_record(
+                        module5_record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator="jsonpath=$.evidence[6]",
+                    ),
                 ]
             )
 
@@ -2934,30 +2999,47 @@ class ReviewedScienceTests(unittest.TestCase):
                 assert answer is not None
                 self.assertTrue(answer["ok"])
                 self.assertIn(
-                    "is not the same quantity as a percentage reduction in malaria cases",
+                    "is not a percentage reduction in malaria cases",
                     answer["answer"],
                 )
                 self.assertIn("82.7% (95% CI 78.5%-86.1%)", answer["answer"])
                 self.assertIn("65.1% (95% CI 59.4%-70.0%)", answer["answer"])
                 self.assertIn("20.1% mortality at 24 hours", answer["answer"])
                 self.assertIn("They cannot be added", answer["answer"])
-                self.assertIn("33.4% (95% CI 11.1%-50.1%", answer["answer"])
-                self.assertIn("32.1% (95% CI 15.9%-45.2%", answer["answer"])
+                self.assertIn("Funding section says no financial support", answer["answer"])
+                self.assertIn("Mosquito Shield, not Guardian", answer["answer"])
+                self.assertIn("29 clusters per arm", answer["answer"])
+                self.assertIn("two units per 9 square metres", answer["answer"])
+                self.assertIn("32.7% (95% two-sided CI 12.6%-48.2%", answer["answer"])
+                self.assertIn("29.5% (95% CI 12.0%-43.5%", answer["answer"])
+                self.assertIn("33.4% and 32.1% values were interim", answer["answer"])
+                self.assertIn("P-12643", answer["answer"])
+                self.assertIn("BIT084 NI", answer["answer"])
+                self.assertIn("not used to inform the decision", answer["answer"])
+                self.assertIn("equivalence-only dossiers", answer["answer"])
+                self.assertIn("at least three semi-field studies", answer["answer"])
                 self.assertIn("target-setting randomized community trial", answer["answer"])
-                self.assertIn("authors' interpretation", answer["answer"])
                 evidence_by_id = {
                     item["record_id"]: item for item in answer["evidence"]
                 }
                 self.assertEqual(
                     set(evidence_by_id),
-                    {guardian_record_id, kenya_record_id},
+                    {
+                        guardian_record_id,
+                        kenya_record_id,
+                        recommendation_record_id,
+                        guardian_pq_record_id,
+                        guardian_assessment_record_id,
+                        equivalence_record_id,
+                        module5_record_id,
+                    },
                 )
                 self.assertEqual(
                     evidence_by_id[guardian_record_id]["provenance"]["source_id"],
                     "doi:10.3389/fmala.2025.1570480",
                 )
                 self.assertIn(
-                    "Tables 1-2",
+                    "Funding and Conflict of interest",
                     evidence_by_id[guardian_record_id]["provenance"]["locator"],
                 )
                 self.assertEqual(
@@ -2965,8 +3047,26 @@ class ReviewedScienceTests(unittest.TestCase):
                     "doi:10.1016/S0140-6736(24)02253-0",
                 )
                 self.assertIn(
-                    "Figure 3",
+                    "final 32.7% first-time and 29.5% overall",
                     evidence_by_id[kenya_record_id]["provenance"]["locator"],
+                )
+                self.assertEqual(
+                    evidence_by_id[guardian_pq_record_id]["provenance"]["source_id"],
+                    "who:P-12643",
+                )
+                self.assertIn(
+                    "Table 7 on page 17",
+                    evidence_by_id[guardian_assessment_record_id]["provenance"][
+                        "locator"
+                    ],
+                )
+                self.assertIn(
+                    "Section 9, page 20",
+                    evidence_by_id[equivalence_record_id]["provenance"]["locator"],
+                )
+                self.assertIn(
+                    "Data requirements 5.1 and 5.2",
+                    evidence_by_id[module5_record_id]["provenance"]["locator"],
                 )
 
     def test_swd_field_delivery_matcher_rejects_other_species_and_generic_delivery(self):

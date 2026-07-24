@@ -37,6 +37,10 @@ ALLOWED_EVIDENCE_CLASSES = frozenset(
         "no_significant_repellent_effect",
         "host_cue_or_attractant",
         "identity_only",
+        "official_recommendation",
+        "product_prequalification",
+        "regulatory_efficacy_assessment",
+        "regulatory_dossier_requirement",
     }
 )
 ALLOWED_EXPOSURE_ROUTES = frozenset(

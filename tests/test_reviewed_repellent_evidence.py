@@ -126,6 +126,14 @@ class ReviewedRepellentEvidenceTests(unittest.TestCase):
             "do not estimate malaria-case reduction",
             " ".join(guardian["limitations"]),
         )
+        self.assertIn(
+            "contradictory declarations",
+            " ".join(guardian["limitations"]),
+        )
+        self.assertIn(
+            "Funding and Conflict of interest",
+            guardian["supporting_provenance"][0]["locator"],
+        )
 
         kenya = evidence_by_id[
             "transfluthrin_kenya_malaria_cluster_trial_2025"
@@ -134,12 +142,47 @@ class ReviewedRepellentEvidenceTests(unittest.TestCase):
             kenya["supporting_provenance"][0]["source_id"],
             "doi:10.1016/S0140-6736(24)02253-0",
         )
-        self.assertIn("33.4%", kenya["finding"])
-        self.assertIn("32.1%", kenya["finding"])
+        self.assertIn("32.7%", kenya["finding"])
+        self.assertIn("29.5%", kenya["finding"])
+        self.assertIn("interim results", kenya["finding"])
+        self.assertIn("two units per 9 square metres", kenya["finding"])
+        self.assertIn("29 clusters per arm", kenya["finding"])
         self.assertIn(
             "does not make another product's hut endpoints",
             " ".join(kenya["limitations"]),
         )
+
+        recommendation = evidence_by_id[
+            "transfluthrin_who_spatial_emanator_recommendation_2025"
+        ]
+        self.assertEqual(
+            recommendation["supporting_provenance"][0]["source_id"],
+            "who:spatial-emanator-recommendation-2025-08-13",
+        )
+        self.assertIn("in addition to insecticide-treated nets", recommendation["finding"])
+
+        guardian_pq = evidence_by_id[
+            "transfluthrin_who_guardian_prequalification_2025"
+        ]
+        self.assertIn("P-12643", guardian_pq["finding"])
+        self.assertIn("2.5 g per unit", guardian_pq["finding"])
+
+        guardian_assessment = evidence_by_id[
+            "transfluthrin_who_guardian_efficacy_assessment_2025"
+        ]
+        self.assertIn("BIT084 NI", guardian_assessment["finding"])
+        self.assertIn("not used to inform decision making", guardian_assessment["finding"])
+
+        equivalence = evidence_by_id[
+            "transfluthrin_who_spatial_emanator_equivalence_guidance_2025"
+        ]
+        self.assertIn("not accepted", equivalence["finding"])
+
+        module5 = evidence_by_id[
+            "transfluthrin_who_spatial_emanator_module5_2025"
+        ]
+        self.assertIn("susceptible and insecticide-resistant", module5["finding"])
+        self.assertIn("at least three semi-field studies", module5["finding"])
 
     def test_distinct_cineole_isomers_cannot_share_an_exact_alias(self):
         payload = catalog_payload()
