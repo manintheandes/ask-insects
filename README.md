@@ -61,7 +61,7 @@ bash scripts/install_local_runtime.sh
 
 Normal user questions go directly through the installed skill to the hosted production source plane. Do not run setup, installation, repository tests, or source refreshes inside a normal answer. The repo-owned skill can be refreshed by itself during maintenance with `ask-insects setup-agent`.
 
-Production code deployment and scientific source refresh are separate operations. `scripts/deploy_gce_app.sh` installs and verifies the requested revision without rebuilding sources. Set `ASK_INSECTS_DEPLOY_REFRESH_SOURCES=1` only for an intentional maintenance deployment that must also refresh the four bootstrap evidence lanes and the insect-intelligence program ledger.
+Production code deployment and scientific source refresh are separate operations. `scripts/deploy_gce_app.sh` installs and verifies the requested revision without rebuilding sources. Set `ASK_INSECTS_DEPLOY_REFRESH_SOURCES=1` only for an intentional maintenance deployment that must also refresh the bootstrap evidence lanes, the reviewed repellent catalog, and the insect-intelligence program ledger.
 
 ### Aedes Deep Source Program
 

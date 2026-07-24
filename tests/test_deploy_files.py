@@ -32,6 +32,7 @@ class DeployFilesTests(unittest.TestCase):
         self.assertIn("ingest_human_repellent_testing_guidance.py", app)
         self.assertIn("ingest_aedes_primary_behavior_evidence.py", app)
         self.assertIn("ingest_swd_primary_field_evidence.py", app)
+        self.assertIn("ingest_reviewed_repellent_evidence.py", app)
 
     def test_deploy_source_refresh_is_opt_in(self):
         app = Path("scripts/deploy_gce_app.sh").read_text(encoding="utf-8")
