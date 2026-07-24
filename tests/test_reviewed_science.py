@@ -2741,6 +2741,15 @@ class ReviewedScienceTests(unittest.TestCase):
                 "What is the minimum Anopheles go/no-go experiment for eugenol "
                 "before a landing assay?"
             ),
+            (
+                "Before a person enters the experiment, what exact five-arm "
+                "Anopheles eugenol decision gate would you preregister, including "
+                "H, n, power, model, and disqualifying outcomes?"
+            ),
+            (
+                "What five-arm eugenol decision gate should Anopheles use before "
+                "human exposure?"
+            ),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
