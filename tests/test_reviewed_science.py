@@ -5415,6 +5415,17 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "In the 20% DEET, PMD, icaridin, and EBAAP forearm study, "
+                "which brief landing and disengagement patterns did females show, "
+                "and can those observations identify one receptor pathway?",
+                "mosquito-arm-in-cage-contact-behaviors",
+                (
+                    "touch-and-go, bouncing, and landing",
+                    "Sensory-channel conclusion: No.",
+                    "Channel-specific perturbations",
+                ),
+            ),
+            (
                 "Our SWD odor candidate received more eggs on a firmer fruit analog than its vehicle. What does mechanosensation evidence say, and which control separates odor from firmness?",
                 "swd-fruit-texture-mechanosensation",
                 (
@@ -5668,6 +5679,44 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertIn("Materials and methods 4(b)(ii)", learning_locator)
         self.assertIn("60-second odor presentation", learning_locator)
         self.assertIn("2-minute inter-trial interval", learning_locator)
+
+        arm_in_cage_locator = provenance["openalex:W4403603462"]["locator"]
+        self.assertIn(
+            "Methods > Experimental set-up: 40 x 40 x 40 cm",
+            arm_in_cage_locator,
+        )
+        self.assertIn(
+            "Methods > Experimental procedure, paragraphs beginning "
+            "'The experimental procedure was', "
+            "'The study included no study participants', "
+            "'In the experiment', and 'For each exposure'",
+            arm_in_cage_locator,
+        )
+        self.assertIn("1 ml per 600 cm2", arm_in_cage_locator)
+        self.assertIn(
+            "Results > Frequency of individual contact behaviours with exposed forearm, paragraph 1 and Figure 6",
+            arm_in_cage_locator,
+        )
+        self.assertIn(
+            "Results > Identification and quantification of behavioural categories, paragraph beginning 'Based on the FHF parameters and analysis of the video playbacks'",
+            arm_in_cage_locator,
+        )
+        self.assertIn(
+            "paragraph beginning 'Contact disengagement has also been described'",
+            arm_in_cage_locator,
+        )
+        self.assertIn(
+            "Methods > Data analysis, paragraphs beginning 'The readouts of the 3D video tracking system were' and 'Based on the FHF parameters, visual inspection'",
+            arm_in_cage_locator,
+        )
+        self.assertIn(
+            "with no receptor or sensory-channel perturbation reported",
+            arm_in_cage_locator,
+        )
+        self.assertNotIn(
+            "Experimental set-up: 40 x 40 x 40 cm arm-in-cage assay, 1 ml",
+            arm_in_cage_locator,
+        )
 
         life_history_locator = provenance["openalex:W4413344516"]["locator"]
         self.assertIn("Supplementary Table S4", life_history_locator)
