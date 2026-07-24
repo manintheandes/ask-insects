@@ -898,6 +898,9 @@
           "non-target captures",
           "deployment context"
         ],
+        "excluded_normalized_patterns": [
+          "(?=.*\\b(?:damage|injury|decay|rejected|harvest)\\b)(?=.*\\b(?:yield|economic|loss)\\b)(?=.*\\b(?:persistence|durability|retreatment|operations?|operational|deployment)\\b)"
+        ],
         "required_any": [
           ["raspberry", "raspberries", "field", "field plot", "field plots", "fall", "fall-bearing", "crop"],
           ["oviposition deterrent", "deterrent", "reduced oviposition", "lowered eggs", "reduced eggs", "egg laying", "egg-laying", "eggs"],
@@ -1212,8 +1215,6 @@
             "adult and larval pre exposure",
             "adult and larval pre-exposure",
             "washout",
-            "persists",
-            "persistence",
             "disappears",
             "reversible",
             "reversibility",
