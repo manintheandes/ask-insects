@@ -1511,6 +1511,31 @@
       "source_record_ids": ["openalex:W4399119561"]
     },
     {
+      "id": "anopheles-eugenol-go-no-go",
+      "species_ids": ["anopheles_mosquitoes"],
+      "match": {
+        "priority": 150,
+        "phrases": ["Anopheles eugenol", "eugenol go/no-go", "eugenol go no go", "eugenol human-landing", "eugenol human landing", "smallest useful next experiment"],
+        "required_any": [
+          ["anopheles", "malaria mosquito", "malaria-mosquito"],
+          ["eugenol"],
+          ["human landing", "human-landing", "landing study", "landing assay", "next experiment", "next study", "go/no-go", "go no go", "carry", "advance", "stop", "drop", "dose", "release", "active", "inactive"]
+        ],
+        "optional": ["aedes", "culex", "P=0.08", "P = 0.08", "paraffin oil", "close proximity", "close-proximity", "flight away", "flight-away", "non-blood-fed", "odor", "odour"]
+      },
+      "answer": "Do not carry an Aedes eugenol hit straight into an Anopheles human-landing study, but do not stop the program solely because of this one non-significant Anopheles comparison.\n\nPublished evidence: The cited study tested undiluted eugenol in a 30-second close-proximity assay using individual 3-10-day-old, freely mated, non-blood-fed female mosquitoes. The treated filter paper was about 0.5 cm from the resting mosquito, and the endpoint was flight away from the odor source. Aedes aegypti and Culex quinquefasciatus were significantly repelled by eugenol. In Anopheles coluzzii, eugenol produced only a weak response that was not significantly different from the paraffin-oil control (P = 0.08). That result is insufficient evidence of repellency under the tested condition; it is not proof that eugenol is inactive at every dose, release rate, formulation, population, or host-seeking endpoint.\n\nSmallest useful next experiment: Run a replicated Anopheles-specific no-contact dose-and-release study before involving human landing or biting. Use the intended Anopheles population and physiological state; at least a matched formulation or solvent control and an Anopheles-active positive control; predeclared movement-away and attraction-inhibition endpoints; randomized treatment order or position; and measured headspace concentration or release over the observation period. Preserve dose, formulation, distance, exposure time, temperature, airflow, age, feeding state, mating state, and population. Advance only if the candidate shows a reproducible, exposure-linked effect against the controls. This experiment is an R&D recommendation derived from the evidence gap, not a protocol or efficacy result reported by the cited paper.\n\nEvidence boundary: The published assay measured direct close-range odor-driven movement. It did not measure human-odor masking, landing prevention, biting prevention, complete protection time, field efficacy, malaria transmission, or human safety.",
+      "source_record_ids": ["openalex:W3013059076"],
+      "source_provenance": [
+        {
+          "record_id": "openalex:W3013059076",
+          "title": "Insect repellents mediate species-specific olfactory behaviours in mosquitoes",
+          "public_url": "https://doi.org/10.1186/s12936-020-03206-8",
+          "source_id": "doi:10.1186/s12936-020-03206-8",
+          "locator": "Methods, Close proximity response assay; Results, Species-specific differences in mosquito behavioural response to repellents, Figure 2a-c, especially the Anopheles coluzzii eugenol comparison (P = 0.08)."
+        }
+      ]
+    },
+    {
       "id": "aedes-species-specific-repellent-response",
       "species_ids": ["aedes_aegypti", "anopheles_mosquitoes"],
       "match": {

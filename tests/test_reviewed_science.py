@@ -2721,6 +2721,81 @@ class ReviewedScienceTests(unittest.TestCase):
                     for fragment in expected_fragments:
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
 
+    def test_anopheles_eugenol_decisions_preserve_species_and_small_next_step(self):
+        record_id = "openalex:W3013059076"
+        questions = (
+            (
+                "Eugenol was a hit in our Aedes screen. For an Anopheles program, "
+                "should I carry it straight into a human-landing study, or is there "
+                "enough evidence to stop? What is the smallest useful next experiment?"
+            ),
+            (
+                "Aedes responded to eugenol, but should the Anopheles team go "
+                "straight to human landing or first run a smaller no-contact study?"
+            ),
+            (
+                "Does eugenol's P = 0.08 Anopheles result mean we should drop it, "
+                "or how should dose and release be tested before people are exposed?"
+            ),
+            (
+                "What is the minimum Anopheles go/no-go experiment for eugenol "
+                "before a landing assay?"
+            ),
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="public_literature",
+                        locator="records#W3013059076",
+                    )
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertIn(
+                    "Do not carry an Aedes eugenol hit straight into an Anopheles",
+                    answer["answer"],
+                )
+                self.assertIn("undiluted eugenol", answer["answer"])
+                self.assertIn("non-blood-fed female", answer["answer"])
+                self.assertIn("about 0.5 cm", answer["answer"])
+                self.assertIn("30-second", answer["answer"])
+                self.assertIn("P = 0.08", answer["answer"])
+                self.assertIn(
+                    "Anopheles-specific no-contact dose-and-release study",
+                    answer["answer"],
+                )
+                self.assertIn("matched formulation or solvent control", answer["answer"])
+                self.assertIn("measured headspace concentration", answer["answer"])
+                self.assertIn("R&D recommendation", answer["answer"])
+                self.assertNotIn("test the intended Aedes population", answer["answer"])
+                self.assertEqual(len(answer["evidence"]), 1)
+                evidence = answer["evidence"][0]
+                self.assertEqual(evidence["record_id"], record_id)
+                self.assertEqual(
+                    evidence["provenance"]["source_id"],
+                    "doi:10.1186/s12936-020-03206-8",
+                )
+                self.assertEqual(
+                    evidence["provenance"]["locator"],
+                    "Methods, Close proximity response assay; Results, "
+                    "Species-specific differences in mosquito behavioural response "
+                    "to repellents, Figure 2a-c, especially the Anopheles coluzzii "
+                    "eugenol comparison (P = 0.08).",
+                )
+
     def test_transfluthrin_mechanism_matcher_rejects_unrelated_aedes_sensory_questions(self):
         record_id = "openalex:W3179105761"
         with tempfile.TemporaryDirectory() as tmpdir:
