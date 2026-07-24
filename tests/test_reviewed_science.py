@@ -2918,6 +2918,9 @@ class ReviewedScienceTests(unittest.TestCase):
             "When I cite the Anopheles coluzzii eugenol P value, which exact 2020 "
             "assay conditions and time-to-event analyses must stay attached to it? "
             "Do not design a new study.",
+            "Attach the complete experimental context to the 2020 Anopheles eugenol "
+            "P = 0.08 result: strains, state, exposure, reuse, Kaplan-Meier, Cox "
+            "model, and endpoint. Nothing beyond the paper.",
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
