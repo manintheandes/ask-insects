@@ -103,6 +103,44 @@ class ReviewedRepellentEvidenceTests(unittest.TestCase):
             evidence["supporting_provenance"][0]["locator"],
         )
 
+    def test_default_catalog_contains_hut_and_epidemiological_transfluthrin_evidence(
+        self,
+    ):
+        catalog = load_reviewed_repellent_catalog()
+        evidence_by_id = {
+            item["id"]: item
+            for item in catalog["evidence"]
+        }
+
+        guardian = evidence_by_id[
+            "transfluthrin_guardian_anopheles_hut_2025"
+        ]
+        self.assertEqual(
+            guardian["supporting_provenance"][0]["source_id"],
+            "doi:10.3389/fmala.2025.1570480",
+        )
+        self.assertIn("82.7%", guardian["finding"])
+        self.assertIn("65.1%", guardian["finding"])
+        self.assertIn("20.1%", guardian["finding"])
+        self.assertIn(
+            "do not estimate malaria-case reduction",
+            " ".join(guardian["limitations"]),
+        )
+
+        kenya = evidence_by_id[
+            "transfluthrin_kenya_malaria_cluster_trial_2025"
+        ]
+        self.assertEqual(
+            kenya["supporting_provenance"][0]["source_id"],
+            "doi:10.1016/S0140-6736(24)02253-0",
+        )
+        self.assertIn("33.4%", kenya["finding"])
+        self.assertIn("32.1%", kenya["finding"])
+        self.assertIn(
+            "does not make another product's hut endpoints",
+            " ".join(kenya["limitations"]),
+        )
+
     def test_distinct_cineole_isomers_cannot_share_an_exact_alias(self):
         payload = catalog_payload()
         payload["materials"][2]["exact_aliases"].append("1,4 cineole")

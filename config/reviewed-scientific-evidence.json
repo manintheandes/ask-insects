@@ -1556,6 +1556,41 @@
       ]
     },
     {
+      "id": "anopheles-entomology-to-malaria-decision",
+      "species_ids": ["anopheles_mosquitoes"],
+      "match": {
+        "priority": 72,
+        "phrases": ["malaria cases", "malaria incidence", "disease reduction", "clinical impact", "program decision", "entomological endpoint", "experimental hut", "hut trial", "blood feeding"],
+        "required_any": [
+          ["anopheles", "malaria vector", "spatial repellent", "transfluthrin", "guardian", "mosquito shield"],
+          ["hut", "hut trial", "experimental hut", "blood feeding", "blood-fed", "landing", "mortality", "entomological"],
+          ["malaria", "malaria cases", "malaria incidence", "disease", "clinical", "program decision", "project", "predict", "projecting", "translate", "translation", "gate"]
+        ],
+        "optional": ["pyrethroid resistant", "pyrethroid-resistant", "protective efficacy", "surrogate", "cluster randomized", "cluster-randomized", "epidemiological", "commercial", "investment"]
+      },
+      "answer": "No. A percentage reduction in an experimental-hut entomological endpoint is not the same quantity as a percentage reduction in malaria cases.\n\nPublished hut evidence: In the Tanzanian Guardian study, two passive emanators containing 2,500 mg transfluthrin each were evaluated for 12 months against wild pyrethroid-resistant Anopheles arabiensis. Guardian reduced the number of blood-fed mosquitoes by 82.7% (95% CI 78.5%-86.1%), reduced human landings by 65.1% (95% CI 59.4%-70.0%), and induced 20.1% mortality at 24 hours (95% CI 18.4%-21.8%). Those are three separate entomological endpoints from the reported product, hut design, deployment, vector population, and volunteer protocol. They cannot be added, and none is an estimate of malaria incidence.\n\nPublished epidemiological evidence: A separate masked, cluster-randomized, placebo-controlled trial in 58 clusters in western Kenya measured human malaria infection after mass distribution of insecticide-treated nets. The transfluthrin spatial-repellent intervention reduced the hazard of first-time malaria infection by 33.4% (95% CI 11.1%-50.1%; P=0.0058) and overall new malaria infections by 32.1% (95% CI 15.9%-45.2%; P=0.0004) among children 6 months to under 10 years old. That supports the intervention class in that high-transmission, pyrethroid-resistant, high-net-coverage setting; it does not convert Guardian's 82.7% hut blood-feeding reduction into an 82.7% disease reduction.\n\nProgram decision: Gate a malaria-impact claim on a target-setting randomized community trial that measures infection or clinical incidence, or on a regulator-accepted class-bridging framework that directly links the candidate product to a product with epidemiological efficacy. Pre-specify the disease endpoint and preserve product dose and release profile, durability, achieved coverage and adherence, local vector species and resistance, human behavior, safety, possible diversion, and concurrent net or spraying use. Until that bridge is justified, use the hut results to support biological efficacy and product comparison, not a numerical malaria-case claim.\n\nEvidence boundary: The Guardian article argues that its entomological results can support comparative evaluation and possible class entry. Treat that as the authors' interpretation, not direct clinical proof. The Guardian study was funded by SC Johnson, the product manufacturer; the article reports the funder's stated role. A universal program-effectiveness or commercial-readiness claim remains unsupported.",
+      "source_record_ids": [
+        "reviewed_repellent_evidence:transfluthrin_guardian_anopheles_hut_2025",
+        "reviewed_repellent_evidence:transfluthrin_kenya_malaria_cluster_trial_2025"
+      ],
+      "source_provenance": [
+        {
+          "record_id": "reviewed_repellent_evidence:transfluthrin_guardian_anopheles_hut_2025",
+          "title": "SC Johnson Guardian\u2122 spatial repellent shows 1-year efficacy against wild pyrethroid-resistant Anopheles arabiensis, with a similar blood-feeding inhibition efficacy to Mosquito Shield\u2122 in a Tanzanian experimental hut trial",
+          "public_url": "https://doi.org/10.3389/fmala.2025.1570480",
+          "source_id": "doi:10.3389/fmala.2025.1570480",
+          "locator": "Abstract Results; Materials and methods: Intervention, Study design, and endpoints; Results: Protective efficacy of Guardian; Tables 1-2: 12-month blood-feeding, landing, and 24-hour mortality estimates for wild pyrethroid-resistant Anopheles arabiensis"
+        },
+        {
+          "record_id": "reviewed_repellent_evidence:transfluthrin_kenya_malaria_cluster_trial_2025",
+          "title": "Effect of a spatial repellent on malaria incidence in an area of western Kenya characterised by high malaria transmission, insecticide resistance, and universal coverage of insecticide treated nets (part of the AEGIS Consortium): a cluster-randomised, controlled trial",
+          "public_url": "https://doi.org/10.1016/S0140-6736(24)02253-0",
+          "source_id": "doi:10.1016/S0140-6736(24)02253-0",
+          "locator": "Summary Methods and Findings; primary first-time malaria infection endpoint and overall new-infection analysis; Figure 3: 58-cluster trial, 33.4% and 32.1% protective-efficacy estimates"
+        }
+      ]
+    },
+    {
       "id": "aedes-population-human-host-preference",
       "species_ids": ["aedes_aegypti"],
       "match": {

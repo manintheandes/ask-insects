@@ -2743,6 +2743,16 @@ def check_reviewed_scientific_evidence() -> None:
             )
 
 
+MINIMUM_REVIEWED_REPELLENT_MATERIALS = 17
+MINIMUM_REVIEWED_REPELLENT_CLAIMS = 21
+REQUIRED_REVIEWED_REPELLENT_EVIDENCE_IDS = frozenset(
+    {
+        "transfluthrin_guardian_anopheles_hut_2025",
+        "transfluthrin_kenya_malaria_cluster_trial_2025",
+    }
+)
+
+
 def check_reviewed_repellent_evidence() -> None:
     from askinsects.sources.reviewed_repellent_evidence import (
         REVIEWED_REPELLENT_SOURCE_ID,
@@ -2754,13 +2764,31 @@ def check_reviewed_repellent_evidence() -> None:
     catalog = load_reviewed_repellent_catalog(catalog_path)
     materials = catalog.get("materials")
     evidence = catalog.get("evidence")
-    if not isinstance(materials, list) or len(materials) != 17:
+    if (
+        not isinstance(materials, list)
+        or len(materials) < MINIMUM_REVIEWED_REPELLENT_MATERIALS
+    ):
         raise RuntimeError(
-            "reviewed repellent evidence catalog must contain 17 audited materials"
+            "reviewed repellent evidence catalog must contain at least "
+            f"{MINIMUM_REVIEWED_REPELLENT_MATERIALS} audited materials"
         )
-    if not isinstance(evidence, list) or len(evidence) != 19:
+    if not isinstance(evidence, list) or len(evidence) < MINIMUM_REVIEWED_REPELLENT_CLAIMS:
         raise RuntimeError(
-            "reviewed repellent evidence catalog must contain 19 audited claims"
+            "reviewed repellent evidence catalog must contain at least "
+            f"{MINIMUM_REVIEWED_REPELLENT_CLAIMS} audited claims"
+        )
+    evidence_ids = {
+        str(item.get("id") or "")
+        for item in evidence
+        if isinstance(item, dict)
+    }
+    missing_evidence_ids = REQUIRED_REVIEWED_REPELLENT_EVIDENCE_IDS.difference(
+        evidence_ids
+    )
+    if missing_evidence_ids:
+        raise RuntimeError(
+            "reviewed repellent evidence catalog is missing required claims: "
+            + ", ".join(sorted(missing_evidence_ids))
         )
     records = build_reviewed_repellent_records(
         catalog_path=catalog_path,

@@ -467,6 +467,55 @@
       ]
     },
     {
+      "id": "transfluthrin_guardian_anopheles_hut_2025",
+      "material_id": "transfluthrin",
+      "species_id": "anopheles_arabiensis",
+      "scientific_name": "Anopheles arabiensis",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "one_year_experimental_hut",
+      "exposure_route": "non_contact",
+      "endpoint": "number blood-fed, human landings, and 24-hour mortality",
+      "finding": "Over 12 months in Tanzanian experimental huts, two Guardian passive emanators containing 2,500 mg transfluthrin each reduced the number of blood-fed wild pyrethroid-resistant Anopheles arabiensis by 82.7% (95% CI 78.5%-86.1%), reduced human landings by 65.1% (95% CI 59.4%-70.0%), and induced 20.1% mortality at 24 hours (95% CI 18.4%-21.8%).",
+      "limitations": [
+        "These are separate entomological endpoints from one product, deployment, experimental-hut design, and local vector population; the percentages cannot be added and do not estimate malaria-case reduction.",
+        "The fixed Guardian treatment assignment and volunteer-rotation protocol estimate performance under the reported hut conditions, not community coverage, adherence, diversion, malaria infection, clinical disease, or universal field efficacy.",
+        "The study was funded by SC Johnson, the product manufacturer; the article reports that the funder discussed data requirements and edited the manuscript but was not involved in study design, collection, analysis, interpretation, or the submission decision."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "SC Johnson Guardian\u2122 spatial repellent shows 1-year efficacy against wild pyrethroid-resistant Anopheles arabiensis, with a similar blood-feeding inhibition efficacy to Mosquito Shield\u2122 in a Tanzanian experimental hut trial",
+          "public_url": "https://doi.org/10.3389/fmala.2025.1570480",
+          "source_id": "doi:10.3389/fmala.2025.1570480",
+          "locator": "Abstract Results; Materials and methods: Intervention, Study design, and endpoints; Results: Protective efficacy of Guardian; Tables 1-2: 12-month blood-feeding, landing, and 24-hour mortality estimates for wild pyrethroid-resistant Anopheles arabiensis"
+        }
+      ]
+    },
+    {
+      "id": "transfluthrin_kenya_malaria_cluster_trial_2025",
+      "material_id": "transfluthrin",
+      "species_id": "anopheles_malaria_vectors",
+      "scientific_name": "Anopheles malaria vectors",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "cluster_randomized_malaria_infection_trial",
+      "exposure_route": "non_contact",
+      "endpoint": "first-time and overall new human malaria infections",
+      "finding": "In a prospective, masked, cluster-randomized, placebo-controlled trial in 58 clusters in western Kenya after mass distribution of insecticide-treated nets, a transfluthrin spatial repellent reduced the hazard of first-time malaria infection by 33.4% (95% CI 11.1%-50.1%; P=0.0058) and overall new malaria infections by 32.1% (95% CI 15.9%-45.2%; P=0.0004) among children 6 months to under 10 years old.",
+      "limitations": [
+        "This trial directly measured malaria infection in one high-transmission, pyrethroid-resistant setting with high insecticide-treated-net coverage; it does not make another product's hut endpoints a one-to-one disease-effect estimate.",
+        "Bridging another transfluthrin product to this epidemiological evidence requires a justified product-class or comparative-efficacy framework plus evidence for dose and release, durability, coverage and adherence, local vectors and resistance, safety, diversion, and concurrent interventions."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Effect of a spatial repellent on malaria incidence in an area of western Kenya characterised by high malaria transmission, insecticide resistance, and universal coverage of insecticide treated nets (part of the AEGIS Consortium): a cluster-randomised, controlled trial",
+          "public_url": "https://doi.org/10.1016/S0140-6736(24)02253-0",
+          "source_id": "doi:10.1016/S0140-6736(24)02253-0",
+          "locator": "Summary Methods and Findings; primary first-time malaria infection endpoint and overall new-infection analysis; Figure 3: 58-cluster trial, 33.4% and 32.1% protective-efficacy estimates"
+        }
+      ]
+    },
+    {
       "id": "transfluthrin_anopheles_diversion_2016",
       "material_id": "transfluthrin",
       "species_id": "anopheles_arabiensis_and_funestus",

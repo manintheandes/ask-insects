@@ -2873,6 +2873,102 @@ class ReviewedScienceTests(unittest.TestCase):
                     diversion_evidence["provenance"]["locator"],
                 )
 
+    def test_anopheles_hut_endpoints_do_not_become_malaria_case_predictions(self):
+        guardian_record_id = (
+            "reviewed_repellent_evidence:"
+            "transfluthrin_guardian_anopheles_hut_2025"
+        )
+        kenya_record_id = (
+            "reviewed_repellent_evidence:"
+            "transfluthrin_kenya_malaria_cluster_trial_2025"
+        )
+        questions = (
+            (
+                "Our one-year hut trial shows 82.7% less blood feeding, 65.1% "
+                "less landing, and 20.1% mortality in wild pyrethroid-resistant "
+                "Anopheles arabiensis. Can I project an 82.7% reduction in "
+                "malaria cases, or what evidence should gate the program decision?"
+            ),
+            (
+                "A transfluthrin emanator cut Anopheles blood feeding by 70% in "
+                "experimental huts. Is it defensible to claim 70% fewer malaria "
+                "infections, or what trial must come next?"
+            ),
+            (
+                "How should we bridge Anopheles landing, blood-feeding, and "
+                "mortality endpoints from a hut trial to a malaria public-health "
+                "claim for a spatial repellent?"
+            ),
+            (
+                "Can I add lower Anopheles landing, lower blood feeding, and "
+                "higher mortality to predict the malaria impact of a new "
+                "transfluthrin product?"
+            ),
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        guardian_record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator="jsonpath=$.evidence[0]",
+                    ),
+                    evidence_record(
+                        kenya_record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator="jsonpath=$.evidence[1]",
+                    ),
+                ]
+            )
+
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertIn(
+                    "is not the same quantity as a percentage reduction in malaria cases",
+                    answer["answer"],
+                )
+                self.assertIn("82.7% (95% CI 78.5%-86.1%)", answer["answer"])
+                self.assertIn("65.1% (95% CI 59.4%-70.0%)", answer["answer"])
+                self.assertIn("20.1% mortality at 24 hours", answer["answer"])
+                self.assertIn("They cannot be added", answer["answer"])
+                self.assertIn("33.4% (95% CI 11.1%-50.1%", answer["answer"])
+                self.assertIn("32.1% (95% CI 15.9%-45.2%", answer["answer"])
+                self.assertIn("target-setting randomized community trial", answer["answer"])
+                self.assertIn("authors' interpretation", answer["answer"])
+                evidence_by_id = {
+                    item["record_id"]: item for item in answer["evidence"]
+                }
+                self.assertEqual(
+                    set(evidence_by_id),
+                    {guardian_record_id, kenya_record_id},
+                )
+                self.assertEqual(
+                    evidence_by_id[guardian_record_id]["provenance"]["source_id"],
+                    "doi:10.3389/fmala.2025.1570480",
+                )
+                self.assertIn(
+                    "Tables 1-2",
+                    evidence_by_id[guardian_record_id]["provenance"]["locator"],
+                )
+                self.assertEqual(
+                    evidence_by_id[kenya_record_id]["provenance"]["source_id"],
+                    "doi:10.1016/S0140-6736(24)02253-0",
+                )
+                self.assertIn(
+                    "Figure 3",
+                    evidence_by_id[kenya_record_id]["provenance"]["locator"],
+                )
+
     def test_swd_field_delivery_matcher_rejects_other_species_and_generic_delivery(self):
         record_id = "swd:openalex_literature:openalex:W3046652911"
         with tempfile.TemporaryDirectory() as tmpdir:
