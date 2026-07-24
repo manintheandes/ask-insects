@@ -1629,12 +1629,13 @@
       "match": {
         "priority": 180,
         "species_may_be_implicit": true,
-        "phrases": ["Kenya final estimate", "Kenya final results", "33.4% in its summary", "32.7% in the final", "which estimate", "apply the number to Guardian", "transfer the Kenya result"],
+        "phrases": ["Kenya final estimate", "Kenya final results", "Kenya efficacy estimate", "Mosquito Shield efficacy", "33.4% in its summary", "32.7% in the final", "which estimate", "apply the number to Guardian", "transfer the Kenya result", "assign it to another product", "attribute efficacy", "extrapolate the estimate", "inherit the efficacy"],
         "required_any": [
           ["Kenya", "Mosquito Shield", "33.4%", "32.7%", "29.5%", "spatial-repellent trial", "spatial repellent trial"],
-          ["interim", "final", "estimate", "estimates", "result", "results", "summary", "Table 2", "product", "deployment"],
-          ["Guardian", "transfer", "apply", "bridge", "decision", "anchor", "claim", "another product", "new product"]
+          ["interim", "final", "efficacy", "infection", "malaria", "trial", "estimate", "estimates", "result", "results", "summary", "Table 2", "deployment"],
+          ["Guardian", "transfer", "apply", "assign", "assigned", "attribute", "attributed", "extrapolate", "extrapolated", "inherit", "inherited", "generalize", "generalise", "bridge", "decision", "anchor", "claim", "different product", "another product", "new product", "new formulation", "candidate", "portfolio"]
         ],
+        "excluded_any": ["WHO", "prequalify", "prequalified", "prequalification", "dossier", "candidate-specific", "candidate specific", "what evidence", "which evidence", "evidence would"],
         "optional": ["malaria", "infection", "29 clusters", "two units", "28 days", "placebo", "transfluthrin"]
       },
       "answer": "Use the final analysis, not the interim summary estimate, to anchor the scientific result. In the final western Kenya analysis, Mosquito Shield reduced first-time malaria infection by 32.7% (95% two-sided CI 12.6%-48.2%; two-sided P=0.0030) and all new infections by 29.5% (95% CI 12.0%-43.5%; P=0.0020). The 33.4% first-time and 32.1% overall values were the planned interim estimates.\n\nThe tested product was Mosquito Shield, not Guardian. It was compared with a matched placebo in 29 clusters per arm after mass insecticide-treated-net distribution, deployed at two units per 9 square metres, and replaced every 28 days within a two-day window. The final estimates therefore belong to that product, deployment, population of children aged 6 months to under 10 years, and high-transmission, pyrethroid-resistant, high-net-coverage setting.\n\nDo not apply 32.7% or 29.5% to Guardian. WHO prequalified Guardian as a distinct product, P-12643, using Guardian-specific free-flight-room and semi-field evidence. WHO's efficacy report lists the direct Guardian-versus-Mosquito-Shield study BIT084 NI among studies not used to inform its decision. That supports a candidate-specific regulatory route, not numerical transfer of Mosquito Shield's infection effect. A Guardian-specific numerical malaria claim would require a target-setting community infection trial or another bridge explicitly accepted by the relevant authority.",
