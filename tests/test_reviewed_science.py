@@ -5338,6 +5338,31 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "After 20% DEET, PMD, icaridin, or EBAAP exposure, what approach "
+                "and contact behaviors persisted in Aedes, and did that experiment "
+                "identify which sensory channel remained active?",
+                "aedes-host-cues-after-exposure",
+                (
+                    "DEET, PMD, icaridin, and EBAAP",
+                    "20% (m/m) ethanolic solutions",
+                    "touch-and-go, bouncing, and landing",
+                    "integrated host-directed approach and contact persisted",
+                    "did not isolate which individual sensory channels remained active",
+                ),
+            ),
+            (
+                "When Aedes still approaches treated skin after DEET, PMD, "
+                "icaridin, or EBAAP, which brief contact behaviors were recorded, "
+                "and can that result identify the surviving sensory pathway?",
+                "aedes-host-cues-after-exposure",
+                (
+                    "1 ml per 600 cm2",
+                    "0.5, 3.5, or 6.5 hours",
+                    "touch-and-go, bouncing, and landing",
+                    "did not isolate which individual sensory channels remained active",
+                ),
+            ),
+            (
                 "Our SWD odor candidate received more eggs on a firmer fruit analog than its vehicle. What does mechanosensation evidence say, and which control separates odor from firmness?",
                 "swd-fruit-texture-mechanosensation",
                 (
