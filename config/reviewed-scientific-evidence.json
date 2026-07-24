@@ -1545,7 +1545,7 @@
         "required_any": [
           ["anopheles", "malaria mosquito", "malaria-mosquito"],
           ["eugenol"],
-          ["human landing", "human-landing", "landing study", "landing assay", "next experiment", "next study", "go/no-go", "go no go", "carry", "advance", "stop", "drop", "dose", "release", "active", "inactive"]
+          ["human landing", "human-landing", "human exposure", "before a person", "landing study", "landing assay", "next experiment", "next study", "go/no-go", "go no go", "decision gate", "gate", "preregister", "preregistered", "five-arm", "power", "sample size", "model", "threshold", "disqualifying", "carry", "advance", "stop", "drop", "dose", "release", "active", "inactive"]
         ],
         "optional": ["aedes", "culex", "P=0.08", "P = 0.08", "paraffin oil", "close proximity", "close-proximity", "flight away", "flight-away", "non-blood-fed", "odor", "odour"]
       },
