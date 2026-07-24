@@ -19,6 +19,15 @@ if [[ "${#RELEASE_ID}" -ne 40 || "$RELEASE_ID" == *[!0-9a-f]* ]]; then
 fi
 RUNTIME_DIR="${RUNTIME_ROOT}-${RELEASE_ID}"
 ARCHIVE="/tmp/ask-insects-deploy.tgz"
+ENV_FILE="$(mktemp /tmp/ask-insects-deploy.env.XXXXXX)"
+
+cleanup() {
+  rm -f "$ARCHIVE" "$ENV_FILE"
+}
+trap cleanup EXIT
+umask 077
+printf 'ASK_INSECTS_TOKEN=%s\nASK_INSECTS_RELEASE_ID=%s\n' \
+  "$TOKEN" "$RELEASE_ID" > "$ENV_FILE"
 
 rm -f "$ARCHIVE"
 tar \
@@ -33,6 +42,7 @@ tar \
   --exclude='demo-recordings' \
   -czf "$ARCHIVE" .
 gcloud compute scp "$ARCHIVE" "$VM:/tmp/ask-insects-deploy.tgz" --zone "$ZONE"
+gcloud compute scp "$ENV_FILE" "$VM:/tmp/ask-insects-deploy.env" --zone "$ZONE"
 
 gcloud compute ssh "$VM" --zone "$ZONE" --command "
   set -euo pipefail
@@ -42,9 +52,14 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   mkdir -p '$RUNTIME_DIR' '$DATA_DIR'
   tar -xzf /tmp/ask-insects-deploy.tgz -C '$RUNTIME_DIR'
   printf '%s\n' '$RELEASE_ID' > '$RUNTIME_DIR/.deployed-revision'
-  printf 'ASK_INSECTS_TOKEN=%s\nASK_INSECTS_RELEASE_ID=%s\n' \
-    '$TOKEN' '$RELEASE_ID' > '$DATA_DIR/.env'
-  chmod 600 '$DATA_DIR/.env'
+  install -m 600 /tmp/ask-insects-deploy.env '$DATA_DIR/.env'
+  rm -f /tmp/ask-insects-deploy.env
+  TOKEN=\$(sed -n 's/^ASK_INSECTS_TOKEN=//p' '$DATA_DIR/.env')
+  test -n \"\$TOKEN\"
+  CURL_AUTH_CONFIG=\$(mktemp /tmp/ask-insects-curl-auth.XXXXXX)
+  chmod 600 \"\$CURL_AUTH_CONFIG\"
+  printf 'header = \"Authorization: Bearer %s\"\n' \"\$TOKEN\" > \"\$CURL_AUTH_CONFIG\"
+  trap 'rm -f \"\$CURL_AUTH_CONFIG\"' EXIT
   if [[ '$REFRESH_SOURCES' == '1' ]]; then
     python3 '$RUNTIME_DIR/scripts/ingest_plutella_xylostella_literature.py' \
       --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
@@ -66,8 +81,8 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   sudo systemctl daemon-reload
   sudo systemctl enable ask-insects
   sudo systemctl restart ask-insects
-  curl --retry 30 --retry-delay 1 --retry-connrefused --max-time 10 -fsS \
-    -H 'Authorization: Bearer $TOKEN' \
+  curl --config \"\$CURL_AUTH_CONFIG\" \
+    --retry 30 --retry-delay 1 --retry-connrefused --max-time 10 -fsS \
     http://127.0.0.1:8080/health \
     | python3 -c \"import json,sys; payload=json.load(sys.stdin); assert payload.get('runtime_revision') == '$RELEASE_ID'\"
   MAIN_PID=\$(systemctl show --property MainPID --value ask-insects)
@@ -75,14 +90,14 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
   test \"\$(readlink -f /proc/\$MAIN_PID/cwd)\" = '$RUNTIME_DIR'
   test \"\$(cat '$RUNTIME_DIR/.deployed-revision')\" = '$RELEASE_ID'
   if [[ '$REFRESH_SOURCES' == '1' ]]; then
-    curl --max-time 600 -fsS -X POST \
-      -H 'Authorization: Bearer $TOKEN' \
+    curl --config \"\$CURL_AUTH_CONFIG\" \
+      --max-time 600 -fsS -X POST \
       -H 'Content-Type: application/json' \
       --data '{}' \
       http://127.0.0.1:8080/ingest/insect-intelligence-programs >/dev/null
   fi
-  curl --max-time 10 -fsS \
-    -H 'Authorization: Bearer $TOKEN' \
+  curl --config \"\$CURL_AUTH_CONFIG\" \
+    --max-time 10 -fsS \
     http://127.0.0.1:8080/health \
     | python3 -c \"import json,sys; payload=json.load(sys.stdin); assert payload.get('runtime_revision') == '$RELEASE_ID'\"
 "

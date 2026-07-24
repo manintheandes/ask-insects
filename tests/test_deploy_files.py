@@ -43,6 +43,16 @@ class DeployFilesTests(unittest.TestCase):
         self.assertIn('if [[ "$REFRESH_SOURCES" != "0" && "$REFRESH_SOURCES" != "1" ]]', app)
         self.assertIn("ASK_INSECTS_DEPLOY_REFRESH_SOURCES must be 0 or 1", app)
 
+    def test_deploy_does_not_put_the_token_in_remote_process_arguments(self):
+        app = Path("scripts/deploy_gce_app.sh").read_text(encoding="utf-8")
+
+        self.assertIn("ask-insects-deploy.env", app)
+        self.assertIn('gcloud compute scp "$ENV_FILE"', app)
+        self.assertIn("install -m 600", app)
+        self.assertIn("curl --config", app)
+        self.assertNotIn("'$TOKEN'", app)
+        self.assertNotIn("-H 'Authorization: Bearer $TOKEN'", app)
+
     def test_deploy_activates_and_verifies_the_exact_git_revision(self):
         app = Path("scripts/deploy_gce_app.sh").read_text(encoding="utf-8")
 
