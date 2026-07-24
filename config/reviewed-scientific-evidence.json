@@ -801,6 +801,57 @@
       "source_record_ids": ["swd:openalex_literature:openalex:W3163892682"]
     },
     {
+      "id": "swd-push-pull-treatment-comparison",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 180,
+        "phrases": [
+          "push-pull field trial",
+          "which treatment arms",
+          "pull-only arm",
+          "pupal emergence versus untreated"
+        ],
+        "required_any": [
+          ["swd", "spotted wing", "drosophila suzukii", "raspberry", "raspberries"],
+          ["push-pull", "push pull", "push", "pull", "2c", "4c"],
+          ["pupa", "pupae", "pupal", "emergence", "infestation", "reduced"]
+        ],
+        "excluded_any": [
+          "crop protection",
+          "crop-protection",
+          "commercial",
+          "advance",
+          "stop",
+          "stopping rule",
+          "program",
+          "hop",
+          "pellet",
+          "greenhouse"
+        ],
+        "optional": [
+          "untreated",
+          "control",
+          "naturally ripening",
+          "sentinel",
+          "field",
+          "2025"
+        ]
+      },
+      "answer": "The 2-component deterrent push (2c) and the combined push-pull treatment (2c + 4c) each reduced SWD pupal emergence versus untreated control in both naturally ripening field raspberries and store-bought sentinel raspberries. The 4-component lure-only pull treatment (4c) did not differ from untreated control in either fruit set. In naturally ripening field fruit, pupal emergence was 53.9% lower with the 2c push and 36.0% lower with 2c + 4c push-pull than with control. In sentinel fruit, the corresponding reductions were 79.5% and 70.9%. The study therefore supports the 2c deterrent as the effective component under these field conditions; it did not demonstrate added infestation reduction from the tested 4c pull.",
+      "source_record_ids": [
+        "swd:openalex_literature:openalex:W4411730655"
+      ],
+      "source_provenance": [
+        {
+          "record_id": "swd:openalex_literature:openalex:W4411730655",
+          "title": "Oviposition deterrent as a component of a push\u2013pull management approach for Drosophila suzukii",
+          "public_url": "https://doi.org/10.1093/ee/nvaf057",
+          "source_id": "doi:10.1093/ee/nvaf057",
+          "locator": "Abstract and Results, Field Evaluation of Push and Pull Components and Figure 5: the 2c push and 2c + 4c push-pull arms reduced pupal emergence versus untreated control in naturally ripening and sentinel raspberries; the 4c pull-only arm did not differ from control; naturally ripening fruit had 53.9% and 36.0% fewer pupae and sentinel fruit had 79.5% and 70.9% fewer pupae under push and push-pull, respectively"
+        }
+      ]
+    },
+    {
       "id": "swd-eggs-to-crop-protection",
       "species_ids": ["drosophila_suzukii"],
       "match": {
