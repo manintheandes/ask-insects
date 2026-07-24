@@ -14,8 +14,10 @@ from .reviewed_science import build_reviewed_science_answer
 from .records import EvidenceRecord
 from .repellency import (
     build_date_bounded_repellent_literature_answer,
+    build_most_cited_repellent_literature_answer,
     build_repellency_comparison_answer,
     is_date_bounded_repellent_literature_question,
+    is_most_cited_repellent_literature_question,
     is_repellency_comparison_question,
 )
 from .sources.aedes_deep_sources import (
@@ -7285,6 +7287,13 @@ def answer_question(question: str, artifact_dir: Path = DEFAULT_ARTIFACT_DIR, li
 
     if is_date_bounded_repellent_literature_question(plan.question):
         return build_date_bounded_repellent_literature_answer(
+            index,
+            plan.question,
+            limit=limit,
+        )
+
+    if is_most_cited_repellent_literature_question(plan.question):
+        return build_most_cited_repellent_literature_answer(
             index,
             plan.question,
             limit=limit,

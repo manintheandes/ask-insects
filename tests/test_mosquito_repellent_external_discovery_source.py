@@ -13,6 +13,7 @@ OPENALEX = {
             "doi": "https://doi.org/10.1000/openalex",
             "publication_date": "2026-01-01",
             "publication_year": 2026,
+            "cited_by_count": 11,
             "abstract": "Aedes mosquito repellent DEET study.",
             "primary_location": {"source": {"display_name": "Vector Journal"}},
         }
@@ -63,6 +64,7 @@ SEMANTIC_SCHOLAR = {
             "externalIds": {"DOI": "10.1000/s2"},
             "authors": [{"name": "Researcher B"}],
             "url": "https://semanticscholar.org/paper/S1",
+            "citationCount": 8,
         }
     ]
 }
@@ -178,6 +180,10 @@ class MosquitoRepellentExternalDiscoverySourceTests(unittest.TestCase):
         self.assertEqual(patent_gap.payload["artifact_type"], "source_gap")
         dataset = next(record for record in result.records if record.payload["source_family"] == "datacite")
         self.assertEqual(dataset.lane, "datasets")
+        openalex_record = next(record for record in result.records if record.payload["source_family"] == "openalex")
+        self.assertEqual(openalex_record.payload["citation_count"], 11)
+        semantic_scholar_record = next(record for record in result.records if record.payload["source_family"] == "semantic_scholar")
+        self.assertEqual(semantic_scholar_record.payload["citation_count"], 8)
         self.assertIn("datacite_mosquito_repellent.json#data/0", dataset.provenance.locator)
         self.assertTrue(any(body for _, body in calls if body and body.get("search_for") == "mosquito repellent"))
 

@@ -61,6 +61,7 @@ class ExternalCandidate:
     venue: str | None = None
     publisher: str | None = None
     repository: str | None = None
+    citation_count: int | None = None
     abstract: str | None = None
     terms: list[str] = field(default_factory=list)
     raw_locators: list[str] = field(default_factory=list)
@@ -199,6 +200,11 @@ def _merge_candidate(candidates: dict[str, ExternalCandidate], candidate: Extern
     existing.venue = existing.venue or candidate.venue
     existing.publisher = existing.publisher or candidate.publisher
     existing.repository = existing.repository or candidate.repository
+    if candidate.citation_count is not None and (
+        existing.citation_count is None
+        or candidate.citation_count > existing.citation_count
+    ):
+        existing.citation_count = candidate.citation_count
     existing.abstract = existing.abstract or candidate.abstract
     for field_name in ("authors", "terms", "raw_locators", "source_urls"):
         target = getattr(existing, field_name)
@@ -264,6 +270,9 @@ def _add_openalex(candidates: dict[str, ExternalCandidate], payload: dict[str, o
             publication_date=_as_string(item.get("publication_date")) or None,
             publication_year=_int_value(item.get("publication_year"), 0) or None,
             venue=_as_string(source.get("display_name")) or None,
+            citation_count=_int_value(item.get("cited_by_count"), 0)
+            if item.get("cited_by_count") is not None
+            else None,
             abstract=abstract or None,
             terms=_terms(text),
             raw_locators=[f"{raw_path.as_posix()}#results/{index}"],
@@ -338,6 +347,9 @@ def _add_semantic_scholar(candidates: dict[str, ExternalCandidate], payload: dic
             publication_year=_int_value(item.get("year"), 0) or None,
             authors=[_as_string(author.get("name")) for author in authors if isinstance(author, dict) and _as_string(author.get("name"))],
             venue=_as_string(item.get("venue")) or None,
+            citation_count=_int_value(item.get("citationCount"), 0)
+            if item.get("citationCount") is not None
+            else None,
             abstract=_as_string(item.get("abstract")) or None,
             terms=_terms(text),
             raw_locators=[f"{raw_path.as_posix()}#data/{index}"],
@@ -527,6 +539,7 @@ def _record_for_candidate(candidate: ExternalCandidate, *, retrieved_at: str) ->
         "venue": candidate.venue,
         "publisher": candidate.publisher,
         "repository": candidate.repository,
+        "citation_count": candidate.citation_count,
         "terms": sorted(candidate.terms),
         "raw_locators": candidate.raw_locators,
         "source_urls": candidate.source_urls,
@@ -545,6 +558,7 @@ def _record_for_candidate(candidate: ExternalCandidate, *, retrieved_at: str) ->
         ("venue", candidate.venue),
         ("publisher", candidate.publisher),
         ("repository", candidate.repository),
+        ("citation_count", candidate.citation_count),
         ("terms", "; ".join(candidate.terms)),
     ):
         if value:

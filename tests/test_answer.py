@@ -1728,6 +1728,72 @@ class AnswerTests(unittest.TestCase):
             self.assertEqual(answer["answer_shape"], "literature")
             self.assertEqual(answer["evidence"][0]["source"], "mosquito_repellent_literature")
 
+    def test_most_cited_repellent_question_ranks_citation_metadata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            artifact_dir = Path(tmpdir) / "mosquito-v1"
+            index = SourceIndex(artifact_dir / "source_index.sqlite")
+            index.initialize()
+            records = [
+                EvidenceRecord(
+                    record_id="mosquito_repellent_external_discovery:doi:10.1000.high",
+                    lane="literature",
+                    source="mosquito_repellent_external_discovery",
+                    title="Highly cited mosquito repellent paper",
+                    text="External mosquito repellent discovery record since 2020. DEET citation_count=42.",
+                    species="Culicidae",
+                    url="https://doi.org/10.1000/high",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="mosquito_repellent_external_discovery",
+                        locator="raw/mosquito_repellent_external_discovery/openalex_mosquito_repellent.json#results/0",
+                        retrieved_at="2026-07-24T00:00:00Z",
+                    ),
+                    payload={
+                        "publication_year": 2024,
+                        "citation_count": 42,
+                        "source_family": "openalex",
+                        "terms": ["deet", "mosquito", "repellent"],
+                    },
+                ),
+                EvidenceRecord(
+                    record_id="mosquito_repellent_external_discovery:doi:10.1000.low",
+                    lane="literature",
+                    source="mosquito_repellent_external_discovery",
+                    title="Lower cited mosquito repellent paper",
+                    text="External mosquito repellent discovery record since 2020. picaridin citation_count=7.",
+                    species="Culicidae",
+                    url="https://doi.org/10.1000/low",
+                    media_url=None,
+                    provenance=Provenance(
+                        source_id="mosquito_repellent_external_discovery",
+                        locator="raw/mosquito_repellent_external_discovery/semantic_scholar_mosquito_repellent.json#data/0",
+                        retrieved_at="2026-07-24T00:00:00Z",
+                    ),
+                    payload={
+                        "publication_year": 2023,
+                        "citation_count": 7,
+                        "source_family": "semantic_scholar",
+                        "terms": ["picaridin", "mosquito", "repellent"],
+                    },
+                ),
+            ]
+            index.upsert_records(records)
+
+            answer = answer_question(
+                "list the most widely cited mosquito repellent of the last 10 years",
+                artifact_dir=artifact_dir,
+            )
+
+            self.assertTrue(answer["ok"])
+            self.assertEqual(answer["answer_shape"], "repellent_literature_citation_rank")
+            self.assertEqual(answer["ranking"][0]["compound"], "DEET")
+            self.assertEqual(answer["ranking"][0]["citation_count_sum"], 42)
+            self.assertIn("the most widely cited active is DEET", answer["answer"])
+            self.assertEqual(
+                answer["evidence"][0]["provenance"]["source_id"],
+                "mosquito_repellent_external_discovery",
+            )
+
     def test_repellent_patent_questions_include_external_discovery_gap(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             artifact_dir = Path(tmpdir) / "mosquito-v1"

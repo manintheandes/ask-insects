@@ -283,6 +283,23 @@ def is_date_bounded_repellent_literature_question(question: str) -> bool:
     )
 
 
+def is_most_cited_repellent_literature_question(question: str) -> bool:
+    normalized = question.lower()
+    has_repellent = any(term in normalized for term in _REPELLENCY_TERMS)
+    has_bibliometric = any(
+        term in normalized
+        for term in (
+            "most cited",
+            "widely cited",
+            "highest cited",
+            "citation count",
+            "citations",
+            "cited",
+        )
+    )
+    return has_repellent and has_bibliometric
+
+
 def _comparison_scope(question: str) -> dict[str, object]:
     normalized = question.lower()
     if (
@@ -1179,6 +1196,251 @@ def _record_publication_year(record: EvidenceRecord) -> int | None:
         str(payload.get("publication_date") or ""),
     )
     return int(match.group(1)) if match else None
+
+
+def _record_citation_count(record: EvidenceRecord) -> int | None:
+    payload = record.payload or {}
+    candidates = (
+        payload.get("citation_count"),
+        payload.get("cited_by_count"),
+    )
+    raw_payload = payload.get("raw_payload")
+    if isinstance(raw_payload, dict):
+        candidates = (
+            *candidates,
+            raw_payload.get("citationCount"),
+            raw_payload.get("cited_by_count"),
+        )
+    for value in candidates:
+        if value is None or value == "":
+            continue
+        try:
+            return int(str(value))
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
+def _bibliometric_start_year(question: str) -> int:
+    current_year = datetime.now(UTC).year
+    match = re.search(r"\blast\s+(\d{1,2})\s+years?\b", question.lower())
+    if match:
+        return current_year - int(match.group(1)) + 1
+    return current_year - 9
+
+
+def _wants_bibliometric_papers(question: str) -> bool:
+    normalized = question.lower()
+    return any(
+        term in normalized
+        for term in (
+            "article",
+            "articles",
+            "paper",
+            "papers",
+            "publication",
+            "publications",
+            "literature",
+            "record",
+            "records",
+        )
+    )
+
+
+def build_most_cited_repellent_literature_answer(
+    index: SourceIndex,
+    question: str,
+    *,
+    limit: int = 10,
+) -> dict[str, object]:
+    start_year = _bibliometric_start_year(question)
+    current_year = datetime.now(UTC).year
+    metadata_sources = MOSQUITO_REPELLENCY_METADATA_SOURCES
+    records = [
+        record
+        for record in _source_records(
+            index,
+            metadata_sources,
+            lanes=("literature",),
+        )
+        if not _is_source_gap(record)
+    ]
+    scoped_records = [
+        record
+        for record in records
+        if (year := _record_publication_year(record)) is not None
+        and start_year <= year <= current_year
+    ]
+    ranked_records = [
+        record
+        for record in scoped_records
+        if _record_citation_count(record) is not None
+    ]
+    ranked_records.sort(
+        key=lambda record: (
+            -int(_record_citation_count(record) or 0),
+            _record_publication_year(record) or 9999,
+            record.title.casefold(),
+            record.record_id,
+        )
+    )
+    if not ranked_records:
+        return {
+            "ok": False,
+            "answer_shape": "repellent_literature_citation_rank",
+            "answer": (
+                "I do not see indexed mosquito-repellent records in the requested "
+                "publication window with explicit citation-count metadata yet."
+            ),
+            "evidence": [],
+            "source_gap": {
+                "lane": "literature",
+                "reason": (
+                    "The checked mosquito repellent metadata records do not expose "
+                    f"citation_count/cited_by_count for publication_year={start_year}..{current_year}."
+                ),
+                "checked_sources": list(metadata_sources),
+            },
+        }
+
+    if not _wants_bibliometric_papers(question):
+        compound_scores: dict[str, dict[str, object]] = {}
+        for record in ranked_records:
+            payload = record.payload or {}
+            searchable = " ".join(
+                str(value)
+                for value in (
+                    record.title,
+                    record.text,
+                    payload.get("title"),
+                    payload.get("abstract"),
+                    " ".join(str(term) for term in payload.get("terms", []) if isinstance(term, str)),
+                )
+                if value
+            )
+            for compound in _matches(searchable, _COMPOUND_PATTERNS):
+                score = compound_scores.setdefault(
+                    compound,
+                    {
+                        "citation_count_sum": 0,
+                        "record_count": 0,
+                        "records": [],
+                    },
+                )
+                score["citation_count_sum"] = int(score["citation_count_sum"]) + int(_record_citation_count(record) or 0)
+                score["record_count"] = int(score["record_count"]) + 1
+                records_for_compound = score["records"]
+                if isinstance(records_for_compound, list):
+                    records_for_compound.append(record)
+        if compound_scores:
+            ordered_compounds = sorted(
+                compound_scores.items(),
+                key=lambda item: (
+                    -int(item[1]["citation_count_sum"]),
+                    -int(item[1]["record_count"]),
+                    _display_compound(item[0]).casefold(),
+                ),
+            )
+            selected_compound, selected_score = ordered_compounds[0]
+            compound_records = sorted(
+                list(selected_score["records"]),
+                key=lambda record: (
+                    -int(_record_citation_count(record) or 0),
+                    _record_publication_year(record) or 9999,
+                    record.title.casefold(),
+                    record.record_id,
+                ),
+            )[: max(1, limit)]
+            compound_rows = [
+                f"{index}. {_display_compound(compound)}: {int(score['citation_count_sum'])} citation(s) across {int(score['record_count'])} indexed record(s)"
+                for index, (compound, score) in enumerate(ordered_compounds[: max(1, limit)], start=1)
+            ]
+            answer_lines = [
+                (
+                    "Among named repellent actives in indexed mosquito-repellent "
+                    f"literature records with explicit citation-count metadata from "
+                    f"{start_year}-{current_year}, the most widely cited active is "
+                    f"{_display_compound(selected_compound)}: "
+                    f"{int(selected_score['citation_count_sum'])} citation(s) across "
+                    f"{int(selected_score['record_count'])} indexed record(s)."
+                ),
+                (
+                    "This aggregates citation counts for source records that explicitly "
+                    "name the active; it is not a global Google Scholar material ranking."
+                ),
+                "Top indexed actives:\n" + "\n".join(compound_rows),
+            ]
+            return {
+                "ok": True,
+                "answer_shape": "repellent_literature_citation_rank",
+                "answer": "\n\n".join(answer_lines),
+                "ranking": [
+                    {
+                        "compound": _display_compound(compound),
+                        "citation_count_sum": int(score["citation_count_sum"]),
+                        "record_count": int(score["record_count"]),
+                    }
+                    for compound, score in ordered_compounds[: max(1, limit)]
+                ],
+                "coverage": {
+                    "publication_year_start": start_year,
+                    "publication_year_end": current_year,
+                    "records_in_window": len(scoped_records),
+                    "records_with_citation_counts": len(ranked_records),
+                    "named_active_records": sum(int(score["record_count"]) for score in compound_scores.values()),
+                    "searched_sources": list(metadata_sources),
+                },
+                "evidence": [_evidence_item(record) for record in compound_records],
+                "source_gap": None,
+            }
+
+    selected = ranked_records[: max(1, limit)]
+    top = selected[0]
+    top_count = _record_citation_count(top)
+    top_year = _record_publication_year(top)
+    answer_lines = [
+        (
+            "Among indexed mosquito-repellent literature records with explicit "
+            f"citation-count metadata from {start_year}-{current_year}, the most "
+            f"widely cited record is: {top.title} ({top_year}), with "
+            f"{top_count} citation(s) in the source metadata."
+        ),
+        (
+            "This is an indexed-source ranking, not a global Google Scholar ranking; "
+            "Ask Insects currently relies on citation counts exposed by its public "
+            "metadata lanes."
+        ),
+    ]
+    if len(selected) > 1:
+        rows = [
+            f"{index}. {record.title} ({_record_publication_year(record)}): {_record_citation_count(record)} citation(s)"
+            for index, record in enumerate(selected, start=1)
+        ]
+        answer_lines.append("Top indexed records:\n" + "\n".join(rows))
+    return {
+        "ok": True,
+        "answer_shape": "repellent_literature_citation_rank",
+        "answer": "\n\n".join(answer_lines),
+        "ranking": [
+            {
+                "record_id": record.record_id,
+                "title": record.title,
+                "publication_year": _record_publication_year(record),
+                "citation_count": _record_citation_count(record),
+                "source": record.source,
+            }
+            for record in selected
+        ],
+        "coverage": {
+            "publication_year_start": start_year,
+            "publication_year_end": current_year,
+            "records_in_window": len(scoped_records),
+            "records_with_citation_counts": len(ranked_records),
+            "searched_sources": list(metadata_sources),
+        },
+        "evidence": [_evidence_item(record) for record in selected],
+        "source_gap": None,
+    }
 
 
 def _display_compound(compound: str) -> str:
