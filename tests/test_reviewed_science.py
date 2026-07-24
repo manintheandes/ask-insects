@@ -2795,6 +2795,15 @@ class ReviewedScienceTests(unittest.TestCase):
                 "What study design would tell us whether an Anopheles spatial repellent "
                 "protects the community or only protects users at non-users' expense?"
             ),
+            (
+                "If fewer Anopheles are caught at transfluthrin-treated homes, what "
+                "evidence would show whether neighbors without devices receive more "
+                "bites rather than there being a net community benefit?"
+            ),
+            (
+                "How can we measure Anopheles spillover or redistribution to untreated "
+                "neighbours when only some households use an emanator?"
+            ),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
