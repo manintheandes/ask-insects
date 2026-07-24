@@ -2975,6 +2975,26 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Should I use the interim or final Mosquito Shield malaria result, "
                 "and does that percentage transfer to Guardian?"
             ),
+            (
+                "Which version of the Kenya Mosquito Shield efficacy estimate "
+                "belongs in a development memo, and why can\u2019t I assign it to "
+                "another transfluthrin product?"
+            ),
+            (
+                "Can I attribute Mosquito Shield's Kenya malaria efficacy to a "
+                "different transfluthrin emanator in our portfolio?"
+            ),
+            (
+                "How should I report the western Kenya interim and final infection "
+                "estimates, and may I extrapolate them to a new formulation?"
+            ),
+            (
+                "A candidate uses transfluthrin too. Can its malaria efficacy be "
+                "inherited from the Kenya Mosquito Shield trial?"
+            ),
+        )
+        unrelated_kenya_question = (
+            "Which version of our product memo should I assign to the Kenya team?"
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -3031,6 +3051,10 @@ class ReviewedScienceTests(unittest.TestCase):
                 build_reviewed_science_answer(index, question)
                 for question in kenya_questions
             ]
+            unrelated_kenya_answer = build_reviewed_science_answer(
+                index,
+                unrelated_kenya_question,
+            )
 
         for question, answer in zip(broad_questions, broad_answers, strict=True):
             with self.subTest(question=question):
@@ -3165,6 +3189,14 @@ class ReviewedScienceTests(unittest.TestCase):
                         guardian_assessment_record_id,
                     },
                 )
+        if unrelated_kenya_answer is not None:
+            self.assertNotIn(
+                kenya_record_id,
+                {
+                    item["record_id"]
+                    for item in unrelated_kenya_answer.get("evidence", [])
+                },
+            )
 
     def test_swd_field_delivery_matcher_rejects_other_species_and_generic_delivery(self):
         record_id = "swd:openalex_literature:openalex:W3046652911"
