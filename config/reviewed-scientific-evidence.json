@@ -1514,12 +1514,12 @@
       "id": "anopheles-eugenol-assay-preservation",
       "species_ids": ["anopheles_mosquitoes"],
       "match": {
-        "priority": 190,
+        "priority": 220,
         "phrases": ["preserve before interpreting", "dose strains mosquito state reuse and statistics", "eugenol assay details", "eugenol assay conditions", "time-to-event analyses"],
         "required_any": [
           ["anopheles", "malaria mosquito", "malaria-mosquito"],
           ["eugenol"],
-          ["preserve", "interpret", "cite", "attached", "method", "assay detail", "assay details", "assay condition", "assay conditions", "statistics", "statistical structure", "time-to-event", "analysis", "analyses", "reuse"],
+          ["preserve", "preserved", "interpret", "cite", "citation", "attach", "attached", "method", "methods", "assay detail", "assay details", "assay condition", "assay conditions", "time-to-event", "footnote", "limit the answer", "limit your answer", "nothing beyond", "paper context"],
           ["dose", "strain", "population", "mosquito state", "feeding state", "reuse", "statistics", "statistical", "time-to-event", "analysis", "analyses", "kaplan", "cox", "P value", "P-value"]
         ],
         "optional": ["2020", "odor paper", "close proximity", "close-proximity", "P = 0.08", "P=0.08"]
