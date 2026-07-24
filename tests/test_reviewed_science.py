@@ -2900,6 +2900,9 @@ class ReviewedScienceTests(unittest.TestCase):
             "Anopheles eugenol result?",
             "Which Anopheles eugenol assay details and statistical structure must "
             "be preserved before I interpret P = 0.08?",
+            "When I cite the Anopheles coluzzii eugenol P value, which exact 2020 "
+            "assay conditions and time-to-event analyses must stay attached to it? "
+            "Do not design a new study.",
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
