@@ -1535,11 +1535,11 @@
       "species_ids": ["anopheles_mosquitoes"],
       "match": {
         "priority": 70,
-        "phrases": ["mosquito diversion", "community protection", "incomplete coverage", "redirect biting", "shift biting", "non-users' expense"],
+        "phrases": ["mosquito diversion", "community protection", "community benefit", "incomplete coverage", "redirect biting", "shift biting", "spillover", "redistribution", "non-users' expense"],
         "required_any": [
           ["anopheles", "malaria vector", "malaria mosquito"],
           ["spatial repellent", "spatial repellency", "emanator", "transfluthrin", "treated hut", "treated house", "treated houses"],
-          ["diversion", "redirect", "shift biting", "neighboring", "nearby", "untreated", "non-user", "non user", "community protection", "community-level", "community level", "users' expense", "non-users' expense"]
+          ["diversion", "redirect", "shift biting", "spillover", "redistribution", "neighbor", "neighbors", "neighbour", "neighbours", "neighboring", "neighbouring", "nearby", "untreated", "non-user", "non user", "community protection", "community benefit", "community-wide", "community wide", "community-level", "community level", "users' expense", "non-users' expense"]
         ],
         "optional": ["landing", "biting", "blood seeking", "blood-seeking", "coverage", "household", "hut", "true protection", "personal protection"]
       },
