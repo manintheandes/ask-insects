@@ -944,6 +944,41 @@
       ]
     },
     {
+      "id": "mosquito-arm-in-cage-contact-behaviors",
+      "species_ids": ["aedes_aegypti", "anopheles_mosquitoes"],
+      "match": {
+        "priority": 160,
+        "species_may_be_implicit": true,
+        "implicit_species_required_any": [
+          ["deet"],
+          ["pmd", "icaridin", "ebaap"],
+          ["skin", "forearm"],
+          ["contact", "touch", "touched", "landing", "approach", "reached"],
+          ["behavior", "behaviour", "pattern", "sensory", "channel", "pathway", "route"]
+        ],
+        "phrases": [
+          "arm-in-cage",
+          "arm in cage",
+          "touch-and-go",
+          "brief contact behaviors",
+          "brief contact behaviours",
+          "contact patterns",
+          "sensory channel remained active",
+          "sensory route that survived"
+        ],
+        "required_any": [
+          ["deet", "pmd", "icaridin", "ebaap"],
+          ["skin", "forearm", "arm-in-cage", "arm in cage", "contact", "touch", "touched", "landing", "approach", "approaches", "reached"],
+          ["behavior", "behaviour", "pattern", "sensory", "channel", "pathway", "route", "probing", "bite", "bites", "biting"]
+        ],
+        "optional": ["20%", "20 percent", "ethanol", "ethanolic", "touch-and-go", "bouncing", "landing", "disengage", "distance", "spatial"]
+      },
+      "answer": "Published evidence: The arm-in-cage study tested 5- to 10-day-old female Aedes aegypti and Anopheles stephensi after 14 hours of sucrose starvation. DEET, PMD, icaridin, and EBAAP were each prepared as 20% (m/m) ethanolic solutions and applied at 1 ml per 600 cm2 of forearm. In a 40 x 40 x 40 cm cage, one female was observed for 3 minutes at 0.5, 3.5, or 6.5 hours after application. All four repellents reduced probing and bites, but mosquitoes still made host-directed approaches and multiple brief contacts with treated skin, including touch-and-go, bouncing, and landing. Sensory-channel conclusion: No. The experiment observed behavior with the normal skin-cue mixture available; it did not independently isolate an olfactory, visual, thermal, humidity, mechanosensory, or gustatory channel. Continued approach and contact therefore show that treatment did not abolish all host-directed behavior in this confined assay, not which sensory route survived. Channel-specific perturbations under matched compound, formulation, dose, and time conditions are still required. Keep approach, landing, contact, probing, and biting as separate endpoints.",
+      "source_record_ids": [
+        "openalex:W4403603462"
+      ]
+    },
+    {
       "id": "aedes-blood-meal-internal-state",
       "species_ids": ["aedes_aegypti"],
       "match": {

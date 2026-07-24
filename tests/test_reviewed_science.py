@@ -5356,25 +5356,50 @@ class ReviewedScienceTests(unittest.TestCase):
                 "After 20% DEET, PMD, icaridin, or EBAAP exposure, what approach "
                 "and contact behaviors persisted in Aedes, and did that experiment "
                 "identify which sensory channel remained active?",
-                "aedes-host-cues-after-exposure",
+                "mosquito-arm-in-cage-contact-behaviors",
                 (
+                    "Published evidence:",
+                    "Aedes aegypti and Anopheles stephensi",
                     "DEET, PMD, icaridin, and EBAAP",
                     "20% (m/m) ethanolic solutions",
                     "touch-and-go, bouncing, and landing",
-                    "integrated host-directed approach and contact persisted",
-                    "did not isolate which individual sensory channels remained active",
+                    "Sensory-channel conclusion: No.",
+                    "did not independently isolate an olfactory, visual, thermal, humidity, mechanosensory, or gustatory channel",
                 ),
             ),
             (
                 "When Aedes still approaches treated skin after DEET, PMD, "
                 "icaridin, or EBAAP, which brief contact behaviors were recorded, "
                 "and can that result identify the surviving sensory pathway?",
-                "aedes-host-cues-after-exposure",
+                "mosquito-arm-in-cage-contact-behaviors",
                 (
                     "1 ml per 600 cm2",
                     "0.5, 3.5, or 6.5 hours",
                     "touch-and-go, bouncing, and landing",
-                    "did not isolate which individual sensory channels remained active",
+                    "Sensory-channel conclusion: No.",
+                ),
+            ),
+            (
+                "When females still reached and touched skin treated with 20% "
+                "PMD, DEET, icaridin, or EBAAP, which contact patterns were "
+                "observed, and can we name the sensory route that survived?",
+                "mosquito-arm-in-cage-contact-behaviors",
+                (
+                    "Aedes aegypti and Anopheles stephensi",
+                    "touch-and-go, bouncing, and landing",
+                    "Sensory-channel conclusion: No.",
+                ),
+            ),
+            (
+                "In Anopheles stephensi exposed to 20% DEET and PMD on skin, "
+                "which brief contact behaviors remained, and did the arm-in-cage "
+                "experiment identify the active sensory channel?",
+                "mosquito-arm-in-cage-contact-behaviors",
+                (
+                    "Aedes aegypti and Anopheles stephensi",
+                    "one female was observed for 3 minutes",
+                    "touch-and-go, bouncing, and landing",
+                    "did not independently isolate an olfactory, visual, thermal, humidity, mechanosensory, or gustatory channel",
                 ),
             ),
             (
