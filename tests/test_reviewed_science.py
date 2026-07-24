@@ -5277,6 +5277,21 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "What else must a raspberry SWD deterrent demonstrate on fruit "
+                "injury, rejected harvest, marketable yield, field persistence, "
+                "and deployment before we call it crop protection?",
+                "swd-eggs-to-crop-protection",
+                (
+                    "Published evidence:",
+                    "fruit damage and decay",
+                    "rejected fruit",
+                    "marketable yield or loss",
+                    "economic loss",
+                    "retreatment interval",
+                    "compatibility with the intended management program",
+                ),
+            ),
+            (
                 "Nearly all SWD eggs moved to untreated fruit while total fecundity fell. Which no-choice, survival, movement, and mating controls distinguish avoidance from impairment?",
                 "swd-choice-endpoint-confounds",
                 ("cannot by itself", "total eggs", "female survival"),
