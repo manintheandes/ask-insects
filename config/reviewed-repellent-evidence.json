@@ -146,7 +146,7 @@
       "assay_family": "olfactory_neuron_imaging_and_headspace_delivery",
       "exposure_route": "non_contact",
       "endpoint": "Orco-neuron activity and delivery of human-derived odorants",
-      "finding": "DEET did not directly activate Orco-expressing olfactory neurons, but physical mixtures with activating human-derived odorants reduced odor-evoked activity; separated-filter-paper and volatility tests supported physicochemical masking through reduced odor delivery.",
+      "finding": "DEET and IR3535 did not directly activate Anopheles coluzzii Orco-expressing olfactory neurons under the tested conditions, while picaridin weakly activated them only at high concentrations. Physical mixtures of DEET, IR3535, or picaridin with activating human-derived odorants reduced odor-evoked activity. Photoionization-detector measurements supported physicochemical masking through reduced odor delivery to the antenna.",
       "limitations": [
         "The study does not make weak direct Orco inhibition evidence of weak behavioral repellency, and its neuronal and volatility results do not by themselves establish landing, biting, or protection performance."
       ],
@@ -155,7 +155,7 @@
           "title": "Commonly Used Insect Repellents Hide Human Odors from Anopheles Mosquitoes",
           "public_url": "https://doi.org/10.1016/j.cub.2019.09.007",
           "source_id": "doi:10.1016/j.cub.2019.09.007",
-          "locator": "Summary; Results, Figures 2-6 and Supplemental Figure S1: calcium imaging of Anopheles coluzzii Orco-expressing olfactory neurons, direct repellent presentations, physical mixtures with human-derived odorants, separated filter-paper controls, and GC-MS volatility measurements; Discussion: synthetic repellents reduced odor delivery through physicochemical masking rather than demonstrated direct Orco inhibition"
+          "locator": "Summary; Results, Figures 2-6 and Supplemental Figures S1-S5: calcium imaging of Anopheles coluzzii Orco-expressing olfactory neurons, direct presentations of DEET, IR3535, and picaridin, physical mixtures with human-derived odorants, and separated filter-paper controls; Results, Figure 6 and Methods, Photoionization detector: PID measurements of odorant concentrations delivered to the antenna after GC-MS was abandoned because of DEET carryover; Discussion: synthetic repellents reduced odor delivery through physicochemical masking rather than demonstrated direct Orco inhibition"
         }
       ]
     },

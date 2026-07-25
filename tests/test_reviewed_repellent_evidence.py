@@ -125,6 +125,17 @@ class ReviewedRepellentEvidenceTests(unittest.TestCase):
             "doi:10.1016/j.cub.2019.09.007",
         )
         self.assertIn("physicochemical masking", masking["finding"])
+        self.assertIn("DEET and IR3535", masking["finding"])
+        self.assertIn("picaridin weakly activated", masking["finding"])
+        self.assertIn("Photoionization-detector", masking["finding"])
+        self.assertIn(
+            "Methods, Photoionization detector",
+            masking["supporting_provenance"][0]["locator"],
+        )
+        self.assertNotIn(
+            "GC-MS volatility measurements",
+            masking["supporting_provenance"][0]["locator"],
+        )
 
         guardian = evidence_by_id[
             "transfluthrin_guardian_anopheles_hut_2025"
