@@ -2952,6 +2952,11 @@ class ReviewedScienceTests(unittest.TestCase):
                 "In a two-arm SWD odor test, how should I control the carrier and air "
                 "stream and verify that lower treated-side occupancy is avoidance "
                 "rather than motor suppression?",
+                "Which controls are essential in a two-choice SWD oviposition assay?",
+                "How should we randomize and replicate an SWD egg-laying choice test, "
+                "and which control shows whether total egg output was suppressed?",
+                "What vehicle, side-balance, fly-state, and no-choice controls belong "
+                "in an SWD treated-fruit preference experiment?",
             )
             for question in questions:
                 with self.subTest(question=question):
@@ -2963,6 +2968,13 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIn("carrier", answer["answer"].lower())
                     self.assertIn("airflow", answer["answer"].lower())
                     self.assertIn("locomot", answer["answer"].lower())
+                    self.assertIn(
+                        "no single cited paper establishes the following control "
+                        "package as a universal standard",
+                        answer["answer"].lower(),
+                    )
+                    self.assertIn("R&D synthesis", answer["answer"])
+                    self.assertIn("R&D interpretation", answer["answer"])
                     self.assertEqual(
                         {item["record_id"] for item in answer["evidence"]},
                         set(record_ids),
