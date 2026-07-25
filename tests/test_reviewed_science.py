@@ -4943,6 +4943,18 @@ class ReviewedScienceTests(unittest.TestCase):
                 "what would you test next to avoid confusing receptor inhibition "
                 "with odor masking?"
             ),
+            (
+                "A recombinant Anopheles receptor screen makes carvacrol look stronger "
+                "than DEET. In the intact-mosquito masking study, which instrument "
+                "actually measured odor delivery, what happened to the attempted GC-MS "
+                "method, and can either result rank protection from bites?"
+            ),
+            (
+                "Why do strong carvacrol inhibition in recombinant Anopheles gambiae "
+                "receptors and weak direct DEET inhibition not contradict the intact "
+                "Anopheles coluzzii odor-masking result? Include what IR3535 and "
+                "picaridin did and what behavioral evidence is still missing."
+            ),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -4974,7 +4986,8 @@ class ReviewedScienceTests(unittest.TestCase):
                         "no noticeable inhibitory action",
                         "DEET and IR3535",
                         "picaridin weakly activated",
-                        "Photoionization-detector measurements",
+                        "DEET carried over into subsequent samples",
+                        "photoionization detector",
                         "physicochemical masking",
                         "not necessarily contradictory",
                         "mixed-versus-separated host-odor conditions",
