@@ -530,6 +530,1852 @@ class ReviewedScienceTests(unittest.TestCase):
                 ):
                     self.assertNotIn(unsupported, answer["answer"].casefold())
 
+    def test_er_contact_only_result_pattern_is_interpreted_directly(self):
+        record_id = "openalex:W3048721146"
+        questions = (
+            "If Aedes escapes after touching treated paper while mesh-separated "
+            "non-contact escape matches control, what can and cannot be claimed "
+            "about spatial repellency, and how should the contact effect be estimated?",
+            "The treated and control Aedes noncontact chambers had identical escape, "
+            "but treated-contact escape exceeded contact control. Is that a spatial "
+            "effect or a contact-associated effect?",
+            "Aedes aegypti treatment and control had the same proportion leaving "
+            "without surface contact, while a greater proportion left under treatment "
+            "than control with surface contact. What does leaving support?",
+            "Aedes non-contact escape did not differ from vehicle, while escape rose "
+            "when direct treated-paper contact was allowed. What does that pattern "
+            "support and what remains unproven?",
+            "Aedes escaped equally often from the mesh-separated treatment and "
+            "control chambers, but contact-chamber escape increased under treatment. "
+            "How should I interpret that?",
+            "Non-contact Aedes escape was indistinguishable from vehicle, while "
+            "treated-contact escape exceeded contact control. Is there evidence "
+            "for a distance effect?",
+            "The noncontact treatment and control produced comparable escape, but "
+            "escape rose when direct treated-paper contact was allowed. Which effect "
+            "does that support?",
+            "The treated and vehicle mesh-separated chambers had the same escape, "
+            "while mosquitoes escaped more after touching treated paper. What does "
+            "this pattern support?",
+            "Escape did not differ from control in non-contact treatment chambers, "
+            "whereas treated-contact escape was greater than contact control.",
+            "Compared with vehicle, the mesh-separated treatment produced "
+            "indistinguishable escape; after direct treated-paper contact, escape rose.",
+            "Noncontact treated and control chambers yielded the same number of "
+            "escapes, but contact treatment yielded more escapes.",
+            "After touching treated paper the mosquitoes escaped more, although "
+            "treatment and control were indistinguishable in the mesh-separated chambers.",
+            "The same escape was recorded for non-contact treatment and vehicle; "
+            "increased escape was recorded when treated paper could be touched.",
+            "In contact chambers, treatment produced higher escape than control; "
+            "in noncontact chambers, escape matched vehicle.",
+            "Touching treated paper increased escape, but the non-contact treatment "
+            "and control did not differ.",
+            "There was no difference from vehicle for escape in the mesh-separated "
+            "treatment, while direct contact increased escape.",
+            "Escape rates were equivalent between noncontact treatment and vehicle; "
+            "allowing direct contact led to more escape.",
+            "There was no detectable difference in escape between the mesh-barrier "
+            "treatment and control, but treated-paper touch increased escape.",
+            "Mosquitoes escaped at the same rate from treatment and control when mesh "
+            "prevented contact, then escaped more when permitted to touch treated paper.",
+            "With treated paper screened off, treatment escape equaled control; once "
+            "surface contact was allowed, escape increased.",
+            "In the no-contact chambers the treated side and vehicle yielded equal "
+            "escape, while contact exposure produced elevated escape versus control.",
+            "The noncontact pair had matching escape counts, treatment versus vehicle, "
+            "and the contact pair had an elevated treated response. What can be inferred?",
+            "No spatial contrast appeared: treatment and control escaped equally "
+            "behind mesh, but contact with treated paper elicited more escape.",
+            "Escape climbed with surface contact on treated paper, whereas treatment "
+            "and vehicle were indistinguishable behind mesh.",
+            "No excess escape appeared with treated paper behind mesh, but once "
+            "mosquitoes could touch the surface they escaped more than contact controls.",
+            "Treatment and vehicle produced indistinguishable escape without paper "
+            "access; granting surface contact increased escape.",
+            "The barrier-protected arm and control had equivalent escape, while the "
+            "exposed-paper arm produced more escape.",
+            "In an escape assay the screened treatment and vehicle were alike then "
+            "physical access to treated paper raised the response",
+            "When a screen blocked the treated surface, escape was unchanged from "
+            "control; removing that separation and permitting touch increased escape.",
+            "In the escape chambers direct-contact treated females exited more often "
+            "than direct-contact controls while screened females left treatment and "
+            "vehicle at the same rate",
+            "The no-surface-access treatment equaled vehicle for escape; the accessible "
+            "treated-paper condition yielded a larger escape response.",
+            "Contact escape exceeded its control first; the corresponding no-contact "
+            "escape later proved equal to vehicle.",
+            "Despite elevated escape in the treatment-contact pair, the mesh-barrier "
+            "treatment stayed level with its control.",
+            "Treatment minus control was zero for mesh-separated escape and positive "
+            "for contact escape. What does that imply?",
+            "There was no noncontact treatment effect on escape relative to vehicle, "
+            "only an excess after the mosquitoes contacted treated paper.",
+            "Females escaped equally from screened treatment and control, then showed "
+            "a larger response once paper contact was enabled.",
+            "The mesh-isolated treated chamber tracked the vehicle for escape; the "
+            "contact-permitted chamber produced extra escapes.",
+            "No difference separated treatment from control with the paper inaccessible "
+            "behind gauze; escape rose after actual paper contact.",
+            "Escape under contact exposure was greater than control while the barrier "
+            "arm remained comparable to vehicle.",
+            "treated paper contact produced higher escape noncontact treatment equaled "
+            "vehicle how should this be interpreted",
+            "A physical divider kept treated-paper escape at the vehicle level, but "
+            "taking the divider away increased exits under treatment.",
+            "When the repellent surface was unreachable, the treated and control "
+            "escape fractions were alike; allowing surface access gave a larger "
+            "treated escape fraction.",
+            "No-touch treatment and control had the same exit rate, whereas the "
+            "touch-permitted treatment had a higher exit rate.",
+            "A gauze partition yielded equivalent escape for treatment and vehicle, "
+            "while paper contact yielded greater escape under treatment.",
+            "With a screen between females and paper, treatment did not differ from "
+            "control for escape; without the screen, treated escape exceeded control.",
+            "Escape under the inaccessible-paper treatment overlapped vehicle, then "
+            "rose when contact was enabled.",
+            "The barrier comparison was null for escape, and the direct-touch "
+            "comparison was positive.",
+            "Contact-enabled escape was greater than control; the contact-blocked "
+            "treatment stayed comparable to vehicle.",
+            "Treated and vehicle females departed equally when a separator prevented "
+            "touch, but treated females departed more after the separator was removed.",
+            "The screened arm had no treatment-control difference in exits; the "
+            "exposed arm had an excess of exits under treatment.",
+            "Without access to the substrate, escape matched control; with access to "
+            "treated paper, treatment caused extra escape.",
+            "The two barrier arms had identical escape, treatment versus carrier, "
+            "while the two open arms showed higher treated escape.",
+            "Escape was unchanged by treatment relative to vehicle when mosquitoes "
+            "could not reach the paper; it increased once they could reach it.",
+            "Contact-first result: elevated treated escape. Noncontact result: "
+            "treatment equal to carrier.",
+            "A zero treatment effect appeared in the mesh-protected escape data, "
+            "followed by a positive treatment effect in the touch-access data.",
+            "There was parity between treatment and control for barrier escape, but "
+            "a treated excess for contact escape.",
+            "Escape curves coincided for the shielded treatment and vehicle, whereas "
+            "the touchable-paper treatment escape curve sat above control.",
+            "contact accessible mosquitoes escaped more than controls paper shielded "
+            "mosquitoes escaped just as often in treatment and vehicle interpret this",
+            "More exits occurred from treated contact exposure, despite no difference "
+            "between treatment and vehicle when contact was prevented.",
+            "The control and no-access treatment produced the same escape count; the "
+            "accessible-surface treatment produced a larger count than control.",
+            "Under contact, treatment minus control was positive for escape; under "
+            "blocked contact it was zero.",
+            "With a nylon screen between mosquitoes and the treated sheet, escape "
+            "matched the carrier control; removing the screen produced more escape "
+            "than the contact control.",
+            "Opening the treated-paper face raised the exit rate above control, while "
+            "the screened face gave the same exit rate as carrier.",
+            "The netted treatment compartment and solvent control had indistinguishable "
+            "egress, but the touch-access compartment had greater treated egress.",
+            "A perforated divider prevented touching and left treatment escape equal "
+            "to vehicle; direct paper access increased the proportion leaving.",
+            "When treated paper sat inside a mesh sleeve, departures matched control; "
+            "outside the sleeve, physical contact led to extra departures.",
+            "With tarsal access denied, treatment and carrier produced equivalent "
+            "chamber exits; with tarsal access permitted, treatment produced more exits.",
+            "The treated surface being available to the feet increased escape, whereas "
+            "escape stayed level with vehicle when a screen blocked access.",
+            "Occluding the paper left treated escape no different from control; "
+            "exposing it for touch raised escape.",
+            "Closed-face treatment equaled carrier for exits, while open-face treatment "
+            "exceeded its control.",
+            "Carrier-only and treated noncontact chambers had the same leaving "
+            "probability; treated contact chambers had a larger leaving probability "
+            "than controls.",
+            "Barrier-side egress was equivalent for treatment and vehicle, whereas "
+            "exposed-side egress was higher under treatment.",
+            "The chance of leaving was unchanged from control with the source fenced "
+            "off, but increased with direct access to the source.",
+            "Departure counts overlapped between protected treatment and carrier; "
+            "contact-enabled treatment generated more departures than its comparator.",
+            "The exit hazard was equal for treatment and control behind a mesh window, "
+            "but higher for treatment when the window was absent.",
+            "The fraction leaving the treatment chamber matched vehicle when a fabric "
+            "barrier intervened and exceeded control when mosquitoes could touch the paper.",
+            "Treatment and carrier escape curves were superimposed in the isolated "
+            "format; in the accessible format, the treated escape curve was above control.",
+            "There was no divergence from carrier in barrier egress, only an excess "
+            "over control once the paper was reachable.",
+            "sheet behind netting treatment exits equaled carrier sheet reachable "
+            "treatment exits were higher than control interpret the contrast",
+            "contact available escape exceeded control barrier enclosed escape matched "
+            "vehicle what effect is supported",
+            "For escape, the treatment-control contrast was nil with a screen and above "
+            "zero with paper access.",
+            "The no-touch treated source behaved like its carrier-only comparator for "
+            "egress, but touchable treatment increased egress.",
+            "Escape from treatment behind mesh equaled untreated-paper control; with no "
+            "mesh, treated-paper escape was greater than untreated-paper escape.",
+            "The isolated treatment matched the reference chamber for exits, and the "
+            "direct-access treatment surpassed its reference.",
+            "Aedes aegypti females left treatment and carrier equally when the paper "
+            "was shrouded, but left treated contact chambers more often than controls.",
+            "Mosquito egress was control-like while the active sheet was covered and "
+            "elevated after the cover was removed for contact.",
+            "Keeping mesh between mosquitoes and paper gave equal treated and vehicle "
+            "escape, whereas removing mesh increased treated escape.",
+            "When the paper was behind a screen, escape in treatment matched the "
+            "carrier arm; when paper was exposed, treatment produced more escape.",
+            "The screened treatment-control pair showed no escape difference, but the "
+            "unscreened pair showed a higher treated escape rate.",
+            "Mosquitoes that could not reach the treated paper escaped as often as "
+            "controls; mosquitoes allowed to reach it escaped more.",
+            "Preventing paper contact removed the treatment-control difference in "
+            "escape, while allowing paper contact produced a positive difference.",
+            "The proportion escaping was the same for treatment and vehicle without "
+            "contact, but greater for treatment when contact was allowed.",
+            "Escape counts were similar between treated and control mesh chambers; "
+            "treated contact chambers recorded more escapes than contact controls.",
+            "Noncontact escape was not significantly different from control, while "
+            "direct-contact escape was significantly higher under treatment.",
+            "Against the carrier control, the barrier treatment showed unchanged "
+            "escape; against the contact control, exposed treatment showed increased escape.",
+            "For Aedes aegypti, escape stayed at control levels behind mesh and rose "
+            "above control when treated paper could be touched.",
+            "In the paired chambers, the noncontact treated-control contrast was absent "
+            "and the contact treated-control contrast was positive for escape.",
+            "In the mesh-screen condition, escape did not differ between the treated "
+            "paper and solvent control. In the contact condition, treated chambers "
+            "had more escape than controls. Does that support a contact effect?",
+            "When females were separated from the treated paper by mesh, their escape "
+            "matched the untreated group; after mesh removal allowed contact, treated "
+            "escape increased.",
+            "Contact exposure produced a higher escape rate than contact control, but "
+            "the corresponding mesh-separated treatment and control rates were equal.",
+            "With the screen in place, treatment did not change escape compared with "
+            "vehicle; with the screen out, treatment increased escape.",
+            "Escape remained at the control rate while mosquitoes could not access the "
+            "paper, then rose above control once access was allowed.",
+            "Females escaped as often as controls when touching was prevented, but more "
+            "often than controls when they could touch the treated paper.",
+            "The contact-free treated pair matched the carrier pair for escape, while "
+            "the contact-permitted treated pair exceeded its control.",
+            "Treated paper under mesh produced the same escape as control paper; "
+            "uncovered treated paper produced higher escape than uncovered control paper.",
+            "Treatment and control escape curves overlapped in the screened chambers "
+            "but separated in the contact chambers, with treatment higher.",
+            "We counted similar numbers of escapes in the treated and control barrier "
+            "chambers, then more escapes in the treated direct-contact chamber.",
+            "The escape percentage matched vehicle in the no-contact condition and "
+            "exceeded control in the contact condition.",
+            "Our paired assay showed no escape effect without paper contact and a "
+            "higher treated escape response with paper contact.",
+            "Carrier and treatment gave comparable escape with the screen present, "
+            "whereas treatment exceeded carrier with the screen removed.",
+            "The fraction escaping was unchanged by treatment behind mesh but higher "
+            "under treatment in the contact setup.",
+            "Cumulative 30-minute escape overlapped control in the mesh condition and "
+            "was higher than control in the contact condition.",
+            "Brief access to the treated paper increased escape above contact control, "
+            "although escape stayed at vehicle levels when direct touch was blocked.",
+            "Paper behind mesh yielded control-level escape; the same paper without "
+            "mesh yielded excess treated escape.",
+            "non contact treated equals control contact treated greater than control "
+            "for escape what can we claim",
+            "No distance-associated escape difference was detected, but the "
+            "contact-permitted treatment produced a larger escape response than its "
+            "control. How should that be interpreted?",
+            "The non-contact treatment escape curve sat on the control escape curve, and "
+            "the contact treatment escape curve sat above the contact control. How should the contact "
+            "component be estimated?",
+            "Escape rates were the same with mesh between the mosquitoes and paper, "
+            "but treatment escape was higher after the mesh was removed.",
+            "Escape did not change when treated paper could not be touched, but it "
+            "increased when females were able to touch it.",
+            "A mesh barrier blocked paper contact and treatment matched control; "
+            "without the barrier, treated escape exceeded control.",
+            "We found control-level escape before paper contact and increased escape "
+            "only when contact was possible. Does this support contact rather than "
+            "spatial repellency?",
+            "Screened treated and control chambers had indistinguishable escape, while "
+            "treated contact chambers had a higher escape rate than contact controls.",
+            "With mesh covering the paper, treatment did not alter escape; after the "
+            "mesh was taken away, treated escape rose above control.",
+            "Escape remained equal to control when paper contact was impossible and "
+            "became higher under treatment when paper contact was possible.",
+            "The noncontact escape response matched vehicle, and the contact "
+            "treatment escape response exceeded the paired control.",
+            "screened treated escape equal control exposed treated escape greater "
+            "control explain the finding",
+            "In our Aedes assay, only the contact-permitted treatment increased escape; "
+            "the contact-blocked treatment stayed at control.",
+            "The paired chamber data showed no treatment effect on noncontact escape "
+            "and a positive treatment effect on contact escape.",
+            "The no-contact treatment gave the vehicle escape rate, whereas the "
+            "contact treatment gave a higher rate than its control.",
+            "Higher escape occurred in the treated contact group, with no "
+            "treated-control escape difference in the mesh group.",
+            "Treatment and control escape curves were together in the non-contact assay and "
+            "the treatment escape curve was higher in the contact assay.",
+            "Aedes females had no escape response to treatment across the mesh, but "
+            "showed increased escape when the treated paper was accessible.",
+            "In chambers fitted with mesh, escape did not change between treatment and "
+            "control. In chambers allowing paper contact, treated mosquitoes escaped more.",
+            "Blocking access to the paper gave the same escape in treatment and vehicle; "
+            "permitting access gave higher escape in treatment than control.",
+            "Cumulative escape was alike for treatment and control behind the screen "
+            "and greater for treatment during direct paper exposure.",
+            "In the paired comparison, no-contact treatment matched its control and "
+            "contact treatment exceeded its control.",
+            "mesh arm treated equals control contact arm treated higher escape how do "
+            "we read this",
+            "No-contact exposure produced no change in escape relative to vehicle; "
+            "permitting paper contact increased escape relative to the contact control.",
+            "The control comparison was null when mosquitoes were kept off the paper "
+            "and positive when mosquitoes were allowed onto the paper, using escape "
+            "as the outcome.",
+            "There was no treatment-control separation in non-contact escape, while "
+            "a clear treated excess appeared in contact escape.",
+            "The no-touch treatment did not affect the 30-minute escape total, but "
+            "treatment increased the total in the touch condition.",
+            "Aedes escape was control-like with mesh protection and above control in "
+            "the paper-contact condition.",
+            "The number leaving was similar for treatment and control with mesh present "
+            "and larger for treatment with mesh absent.",
+            "After 30 minutes, the non-contact treatment-control difference was zero "
+            "and the contact treatment-control difference was positive.",
+            "In Aedes aegypti, preventing treated-paper contact removed the escape "
+            "difference, while allowing contact produced higher treated escape.",
+            "Treated and control escape were alike when mesh separated mosquitoes from "
+            "paper; with no separation, the treated group escaped more.",
+            "When the paper could not be reached, treatment and vehicle had the same "
+            "escape; when it could be reached, treatment had more escape.",
+            "When mesh kept mosquitoes off the treated paper, treated and control "
+            "escape were equal; when contact was allowed, the treated group escaped more.",
+            "The screened treatment had the control escape rate, but the contact "
+            "treatment had a rate above its control.",
+            "Treated contact escape exceeded control, whereas treated escape through "
+            "the mesh remained equal to vehicle.",
+            "Escape counts matched between treatment and control when touch was blocked "
+            "and were higher for treatment when touch was allowed.",
+            "The proportion that escaped was the same under treatment and control in "
+            "the mesh assay and greater under treatment in the contact assay.",
+            "mesh blocks touch treated escape equals control mesh removed treated "
+            "escape above control interpret",
+            "For Aedes aegypti, contact prevention gave control-like escape and paper "
+            "contact gave greater treated escape.",
+            "Treated and control chambers recorded equal escape counts with the paper "
+            "covered and more treated escapes with the paper uncovered.",
+            "At 30 minutes, treatment matched vehicle in the mesh chambers and "
+            "exceeded control in the contact chambers.",
+            "paper covered treated control equal escape paper exposed treated more "
+            "escape interpret result",
+            "Blocking paper access made treatment escape equal to vehicle, while giving "
+            "access made treatment escape higher than control.",
+            "At the 30-minute endpoint, noncontact treatment equaled vehicle and contact "
+            "treatment was above control.",
+            "The paired treatment effect on escape was null across the screen and "
+            "positive during contact.",
+            "screen between paper and mosquitoes treatment control same escape no "
+            "screen treatment higher escape meaning",
+            "Aedes aegypti had equal treated and control escape when separated from "
+            "paper and higher treated escape when contact was possible.",
+            "With the mesh screen in place, treated and control escape rates were equal; "
+            "after the screen was removed, the treated escape rate was higher.",
+            "The treatment did not affect escape when females could not touch the paper, "
+            "but increased escape when touching was allowed.",
+            "mesh on treatment control equal escape mesh off treatment higher escape "
+            "explain",
+            "Excluding paper contact left treatment escape equal to control; including "
+            "paper contact increased escape in treatment.",
+            "When mosquitoes were prevented from contacting the treated paper, treatment "
+            "and control escape were the same; when contact was permitted, treatment "
+            "escape increased.",
+            "More escape occurred in treated contact chambers than controls, but "
+            "treated screen chambers were no different from their controls.",
+            "The escaped fraction matched control in the barrier condition and exceeded "
+            "control in the contact condition.",
+            "When access to treated paper was blocked, escape matched vehicle; when "
+            "access was allowed, treated escape was higher than control.",
+            "The no-contact treatment and control escape rates were comparable, whereas the "
+            "contact treatment escape rate was greater than the contact control escape rate.",
+            "In the screen condition, treated and control mosquitoes escaped at the "
+            "same rate; in direct contact, the treated group escaped more.",
+            "Making the treated paper unavailable for touch produced no escape "
+            "difference from control, but making it available produced higher treated escape.",
+            "Treated contact chambers showed more escape than control chambers, while "
+            "the screen-separated treatment matched its control.",
+            "The percentage leaving remained at control in the mesh chamber and "
+            "increased in the treated contact chamber.",
+            "The paired difference in escape was absent in the noncontact arm and "
+            "positive in the contact arm.",
+            "screen condition treated control same escape direct contact treated more "
+            "escape meaning",
+            "In Aedes aegypti, treatment matched vehicle when the paper could not be "
+            "touched and exceeded control when it could be touched.",
+            "With mesh preventing touch, escape was equal in treated and control "
+            "chambers; without mesh, treated escape was greater.",
+            "Treatment escape matched vehicle when the paper was inaccessible and "
+            "exceeded control when paper access was allowed.",
+            "The contact treatment increased escape compared with control, whereas "
+            "the mesh treatment showed no difference.",
+            "mesh prevents touch treatment equals control no mesh treatment higher "
+            "escape interpret",
+            "With a screen between the paper and mosquitoes, treated and control "
+            "escape were similar; in an open chamber, treated escape was higher.",
+            "Blocking the treated paper from contact produced control-level escape, "
+            "while unblocking it produced an increase in treated escape.",
+            "The treatment-control effect on escape was zero in the screened comparison "
+            "and positive in the contact comparison.",
+            "paper screened treatment control same escape paper open treatment higher "
+            "escape interpret",
+            "Escape was higher for treated paper than control when the paper was "
+            "exposed; with mesh preventing contact, treated escape stayed at the "
+            "control rate.",
+            "When a barrier kept mosquitoes off the paper, escape matched control. "
+            "When the same paper was reachable, escape was greater than control.",
+            "Escape was unchanged by treatment while mesh separated females from the "
+            "paper; after the mesh was removed, treatment increased escape.",
+            "When treated paper was out of reach, escape matched control, whereas "
+            "reachable treated paper produced more escape than control.",
+            "The treated contact chamber had an escape excess, while the treated screen "
+            "chamber stayed at the vehicle rate.",
+            "The 30-minute treatment effect on escape was zero in the screened pair "
+            "and positive in the contact pair.",
+            "Blocking contact with mesh left the treated escape rate unchanged from "
+            "control; allowing contact raised treated escape above control.",
+            "In the barrier pair, treatment did not affect escape. In the contact pair, "
+            "treatment increased escape compared with the paired control.",
+            "A larger escape response occurred in the treated contact chamber, while "
+            "the mesh-separated treated chamber remained at the control response.",
+            "Treated and control escape were alike when a screen stopped contact, and "
+            "treated escape increased when the paper was available to touch. Is this "
+            "contact-associated?",
+            "Aedes treated and control groups did not differ in escape when a screen "
+            "separated them from the paper; treated escape exceeded control when no "
+            "screen separated them.",
+            "With paper touch prevented, treated females left at the control frequency. "
+            "With touch allowed, they left more often.",
+            "The no-contact treatment-control comparison was flat, but the contact "
+            "comparison showed excess escape for treatment.",
+            "Screened treatment and carrier escape totals were alike; uncovered "
+            "treatment escape total was above uncovered control.",
+            "Only contact access separated treatment from control: escape matched "
+            "without access and increased with access.",
+            "This paired Aedes result has equal no-contact escape and higher contact "
+            "escape. What can and cannot be concluded?",
+            "The vehicle and treatment groups had equal exit rates with mesh in place; "
+            "treatment produced more exits than control when direct contact was available.",
+            "When mesh isolated the paper, treated escape equaled carrier; when "
+            "mosquitoes had access to the paper, treated escape exceeded carrier.",
+            "The paired result was a zero treated-control difference for barrier "
+            "escape and a positive difference for contact escape.",
+            "In Aedes, the control and treated escape curves coincided without surface "
+            "contact, but the treated escape curve was higher when surface contact occurred.",
+            "Contact-capable treatment had increased escape relative to contact control; "
+            "contact-excluded treatment was equal to its control.",
+            "Shielding the treated paper gave carrier-level escape, while exposing it "
+            "gave higher treated escape than the exposed control.",
+            "The paired escape comparison was null when contact was excluded and showed "
+            "a treated increase versus paired control when contact access was provided.",
+            "barrier present treated escape equals vehicle barrier absent treated escape "
+            "exceeds control interpret the aedes result",
+            "Aedes females escaped equally from treated and control chambers when mesh "
+            "kept them off the paper; they escaped more from treatment than control "
+            "when the mesh was absent.",
+            "Treated and control escape totals overlapped in the screened test, whereas "
+            "treated totals were higher in the contact test.",
+            "Treatment raised escape over control during direct paper exposure; "
+            "treatment had no escape effect relative to control when exposure was blocked.",
+            "Making the paper inaccessible left treated escape at the vehicle value; "
+            "making it reachable increased treated escape above control.",
+            "Aedes showed no treatment effect on escape before contact and a treated "
+            "increase after contact was permitted. Does this identify a contact response?",
+            "The screened treated group had the same probability of leaving as the "
+            "screened control; the contact treated group had a greater leaving "
+            "probability than its control.",
+            "Thirty-minute cumulative escape counts did not separate treatment from "
+            "control in the barrier format and were higher for treatment in the contact "
+            "format.",
+            "Covering the paper kept treated escape equal to vehicle; uncovering it made "
+            "treated escape greater than control.",
+            "aedes screened escape matches control exposed paper escape increases over "
+            "control what is the interpretation",
+            "In Aedes, treated and control groups had indistinguishable escape under "
+            "mesh separation, while the treated contact group exceeded its control.",
+            "Blocking access to treated paper removed the escape difference between "
+            "treatment and control; granting access generated higher treated escape "
+            "than control.",
+            "The contact treatment produced a larger escape response than contact "
+            "control; the separated treatment produced the same response as separated "
+            "control.",
+            "Treatment did not change the proportion escaping relative to control with "
+            "the barrier present and increased that proportion above control when the "
+            "barrier was absent.",
+            "Our Aedes experiment found no escape change with contact prevented and "
+            "greater treated escape with contact permitted. Is this a contact-associated "
+            "pattern?",
+            "Keeping treated paper out of reach produced control-level escape; putting "
+            "it within reach increased treated escape over control.",
+            "In the Aedes assay, blocking paper contact left the escape proportion "
+            "indistinguishable from control, whereas allowing contact produced a higher "
+            "escape proportion. How would you read these findings?",
+            "When Aedes could not reach the treated surface, treatment and solvent "
+            "control gave comparable exit counts; permitting surface contact increased "
+            "exits over solvent control. How should this be interpreted?",
+            "Aedes escape matched the control with a barrier between insects and treated "
+            "paper, but exceeded control once that barrier was removed and contact was "
+            "possible. What does the contrast support?",
+            "In Aedes trials, treatment behind the contact screen gave an escape curve "
+            "that overlapped solvent control; once the screen was absent and paper could "
+            "be contacted, the treatment escape curve was higher than control. What is the "
+            "result pattern?",
+            "Aedes escape did not differ between repellent and control when mesh stopped "
+            "touching, but it was greater for repellent than control in the open-contact "
+            "condition. How should these observations be interpreted?",
+            "Separating Aedes from dosed paper left treated escape at the control "
+            "baseline, while giving the insects access to the paper raised the number "
+            "escaping above baseline. What does this finding support?",
+            "Screened exposure caused no detectable change in Aedes escape compared with "
+            "control, yet unscreened exposure increased escape compared with control. "
+            "What can be concluded?",
+            "Aedes exit probability was comparable for treatment and control when paper "
+            "was shielded, and significantly larger under treatment when paper contact "
+            "was enabled. How should this result be stated?",
+            "Preventing Aedes from touching the dosed substrate produced a null escape "
+            "contrast; allowing touch produced more treatment escapes than control "
+            "escapes. What does the paired pattern indicate?",
+            "Aedes left the no-access treatment chamber at the same frequency as the "
+            "control chamber. When access to the treated sheet was allowed, the leaving "
+            "frequency surpassed control. What does this pattern show?",
+            "With a screen denying physical contact, Aedes treatment escape was "
+            "statistically equivalent to solvent escape; after contact was permitted, "
+            "the treatment caused a larger escape response than solvent. How should we "
+            "read the result?",
+            "There was no treatment effect on Aedes egress in the separated condition, "
+            "followed by a positive treatment effect on egress in the touching "
+            "condition. What does that mean?",
+            "For the Aedes escape endpoint, treatment equaled control in the "
+            "indirect-exposure arm and exceeded control in the direct-exposure arm. "
+            "What conclusion fits?",
+            "In the Aedes escape assay, shielding the impregnated strip yielded "
+            "treatment values indistinguishable from vehicle, whereas exposing the "
+            "strip yielded treatment values above vehicle. How should this be "
+            "interpreted?",
+            "When a barrier kept Aedes off the test paper, the fraction departing was "
+            "the same for test and control. Once direct access was provided, a larger "
+            "fraction departed from test than control. What does that indicate?",
+            "Aedes egress showed a null treatment contrast in the protected-paper arm "
+            "and an upward treatment contrast in the paper-contact arm. How would you "
+            "summarize the result?",
+            "The treatment did not change Aedes escape relative to control under "
+            "non-touch exposure, but increased it relative to control under touch "
+            "exposure. What interpretation fits?",
+            "Aedes escape curves for treated and control chambers coincided with mesh in "
+            "place; with mosquitoes free to reach the paper, the treated-chamber curve "
+            "lay above control. What does the comparison show?",
+            "For Aedes, denying substrate contact erased the treatment-control "
+            "difference in escape; granting contact revealed higher escape under "
+            "treatment. What conclusion is justified?",
+            "Among Aedes replicates, no-contact treatment and control returned "
+            "comparable escape counts, whereas contact treatment returned a surplus of "
+            "escapees over control. How should this pattern be described?",
+            "The Aedes response was treatment approximately equal to control for escape "
+            "when surface access was blocked and treatment greater than control when "
+            "surface access was open. What can be inferred?",
+            "For Aedes, a nylon partition between mosquitoes and the treated panel left "
+            "escape indistinguishable from carrier, while removing the partition and "
+            "permitting contact increased escape over carrier. What does this result "
+            "mean?",
+            "Aedes departure from the treatment side was at the control level when the "
+            "sample was out of reach; departure was above control when the sample was "
+            "within reach. How should this be interpreted?",
+            "The separated-paper Aedes run yielded no difference in escaped numbers "
+            "between chemical and blank. The contact-paper run yielded more escaped "
+            "mosquitoes for chemical than blank. What is the interpretation?",
+            "Under distance-only exposure, Aedes treatment had a zero escape effect "
+            "versus control. Under tactile exposure, it had a positive escape effect. "
+            "What does this pattern support?",
+            "Aedes escape proportions for treatment and solvent were alike with the "
+            "barrier closed, then diverged in favor of greater treatment escape when the "
+            "barrier was opened for contact. How should the result be described?",
+            "Holding the treated liner beyond Aedes reach did not alter exits relative "
+            "to control; allowing insects to reach the liner increased exits from the "
+            "treated arm relative to control. What can we conclude?",
+            "Aedes showed baseline-equivalent escape from a physically separated "
+            "treatment and above-baseline escape from a contact-accessible treatment. "
+            "What inference follows?",
+            "In Aedes cages, escape from chemically treated versus vehicle paper did "
+            "not differ when a guard prevented contact; with the guard removed, chemical "
+            "treatment yielded a higher escape rate. How should this be interpreted?",
+            "Aedes exited treated and reference compartments equally under remote "
+            "presentation, then exited the treated compartment more often under contact "
+            "presentation. How should we explain the contrast?",
+            "Placing the treated card behind a guard produced no added Aedes escape "
+            "relative to the blank card; making the card touchable produced added escape. "
+            "What does the result indicate?",
+            "The chemical-control contrast for Aedes escape was absent when surface "
+            "access was denied and positive when surface access was granted. How should "
+            "this be read?",
+            "Treatment surpassed control for Aedes escaping during paper contact, "
+            "whereas treatment tied control when paper contact was blocked. What can be "
+            "inferred from the pair?",
+            "Aedes had the same escape response to treatment and control through a guard "
+            "but a stronger treatment escape response with no guard what can this result "
+            "tell us",
+            "The protected exposure produced no Aedes escape difference between "
+            "formulation and vehicle; the unprotected exposure produced an increase for "
+            "formulation over vehicle. How should this finding be read?",
+            "For Aedes escape, the contrast was null when contact was impossible and "
+            "positive when contact was possible. What interpretation is appropriate?",
+            "Aedes leaving was unchanged versus control while treated paper was "
+            "physically separated, then increased versus control once separation was "
+            "removed. What conclusion follows?",
+            "With mosquitoes unable to touch the insert, treated and control Aedes groups "
+            "yielded the same escape proportion. With touch allowed, the treated group "
+            "yielded a larger proportion. How should we describe the pair?",
+            "A barrier made the Aedes treatment escape response look like control; "
+            "access to the treated surface made escape exceed control. What does this "
+            "pattern mean?",
+            "In no-contact replicates, Aedes treatment did not add escapes over solvent. "
+            "In contact replicates, treatment added escapes over solvent. What can be "
+            "inferred?",
+            "For Aedes escape the covered sample matched the control and the uncovered "
+            "touchable sample was higher than the control how should this pattern be stated",
+            "Aedes escape remained at vehicle levels when the dosed surface could not be "
+            "touched; it increased above vehicle when mosquitoes could touch the surface. "
+            "What inference is warranted?",
+            "Aedes did not leave the treated chamber more often than control with a mesh "
+            "barrier, but did leave more often with direct paper access. What can we "
+            "conclude?",
+            "With the formulation isolated from Aedes, treatment and control escape rates "
+            "were equivalent. With the formulation accessible, the treatment escape rate "
+            "exceeded control. What does the contrast mean?",
+            "Shielding the dose yielded no excess Aedes escapes over blank, while exposing "
+            "it for touch yielded a clear excess. How should we interpret the finding?",
+            "Directly exposed Aedes escaped more under treatment than control; remotely "
+            "exposed Aedes showed no treatment-control difference. What is the appropriate "
+            "interpretation?",
+            "When the treated strip was inaccessible, Aedes exited at the same rate as "
+            "control; when it was accessible, they exited at a higher rate than control. "
+            "What does this result indicate?",
+            "The non-touch Aedes condition gave a treatment-control escape ratio near one, "
+            "whereas the touch condition gave a ratio above one. How should we read this "
+            "pattern?",
+            "For Aedes, no additional escape was associated with treatment across the "
+            "barrier, while additional escape was associated with treatment after barrier "
+            "removal. What conclusion is supported?",
+            "Aedes escape under separated treatment was statistically similar to the blank, "
+            "then exceeded the blank under direct exposure. What does the contrast mean?",
+            "The shielded Aedes assay had equivalent treatment and control escape "
+            "percentages; the contact-enabled assay had a larger percentage for treatment. "
+            "What interpretation fits?",
+            "In the paired experiment, Aedes showed no treatment effect on escape if "
+            "touching was prevented and a positive treatment effect if touching was allowed. "
+            "What can be inferred?",
+            "Under direct access the formulation produced more Aedes escape than vehicle, "
+            "but under screened access it produced the same escape as vehicle. What "
+            "conclusion follows?",
+            "For Aedes the test paper caused no extra escape behind mesh and caused extra "
+            "escape over control when mosquitoes could reach it what does that mean",
+            "When dosed paper was enclosed, the number of escaping Aedes matched the vehicle "
+            "count; when the enclosure was opened for contact, the treated count exceeded "
+            "vehicle. What conclusion fits?",
+            "No evidence of extra Aedes escape appeared during distant exposure, but clear "
+            "extra escape over control appeared with surface access. How should we read "
+            "this result?",
+            "The Aedes treatment-control escape contrast was zero with a physical screen "
+            "and above zero without the screen. What can be inferred?",
+            "Contact-prohibited Aedes trials returned equivalent escape for chemical and "
+            "carrier. Contact-permitted trials returned higher escape for chemical. What is "
+            "the appropriate interpretation?",
+            "Aedes escaped from treatment at the baseline control rate when paper remained "
+            "untouchable, then above baseline when the paper became touchable. What does "
+            "the finding support?",
+            "The formulation failed to raise Aedes escape under barrier separation but "
+            "raised escape under direct contact. How should this outcome be described?",
+            "With Aedes unable to reach the sample treatment escape equaled vehicle escape "
+            "with reach allowed treatment escape exceeded vehicle escape how do I interpret "
+            "this",
+            "Aedes escape did not rise above control in the physically isolated condition, "
+            "but did rise above control in the direct-access condition. What result does "
+            "this represent?",
+            "The treatment-control comparison for Aedes escape was nonsignificant with "
+            "contact excluded and showed a significant treatment increase with contact "
+            "included. How should the pattern be described?",
+            "Aedes left treated and control chambers in similar numbers when the sample was "
+            "fenced off; more left the treated chamber once touching was allowed. What does "
+            "this finding mean?",
+            "Remote exposure gave an Aedes escape response matching the solvent blank. "
+            "Contact exposure gave an escape response exceeding the solvent blank. What "
+            "conclusion is appropriate?",
+            "With the paper behind a separator there was no Aedes escape advantage for "
+            "treatment; with the paper exposed there was a treatment escape advantage. How "
+            "should this be read?",
+            "Aedes escaped no more from treatment than control with paper blocked but escaped "
+            "more from treatment with paper available to touch what is the interpretation",
+            "In the Aedes assay, escape was the same as control when mosquitoes could not "
+            "contact the treated paper, but higher than control when contact was allowed. "
+            "How should we interpret this result?",
+            "We saw no increase in Aedes escape across the barrier, but we did see an "
+            "increase after mosquitoes touched the treated surface. How should we interpret "
+            "that?",
+            "The no-contact Aedes arm was negative for an escape effect, while the contact "
+            "arm showed increased escape. What does this pattern mean?",
+            "We observed control-like Aedes escape without touching and greater escape after "
+            "direct contact with treated paper. What does the result indicate?",
+            "Preventing contact removed any treatment effect on Aedes escape; allowing "
+            "contact produced more escape under treatment than control. What can we "
+            "conclude?",
+            "The treatment increased Aedes escape in the contact assay, but not in the "
+            "matched no-contact assay. What interpretation is appropriate?",
+            "Aedes did not escape more than control behind the screen but did escape more "
+            "than control after the screen was removed what is the interpretation",
+            "In the no-contact test, Aedes treatment escape stayed at baseline. In the "
+            "contact test, treatment escape rose above baseline. What does this pattern "
+            "show?",
+            "Aedes showed similar escape from treatment and solvent when the paper was "
+            "screened, but more escape from treatment when the paper was unscreened. What "
+            "conclusion follows?",
+            "Aedes treatment and control escape were equal when paper was out of reach and "
+            "treatment escape was higher when paper was in reach how should I interpret it",
+            "In Aedes, treatment did not increase escape over control when contact with the "
+            "paper was prevented, but treatment did increase escape over control when "
+            "contact was permitted. How should this result be interpreted?",
+            "The Aedes no-contact arm showed no treatment-control increase in escape; the "
+            "contact arm showed higher treatment escape than control. What does this "
+            "pattern indicate?",
+            "Aedes treatment escape was not above vehicle escape in the noncontact setup, "
+            "whereas it was above vehicle escape in the contact setup. How should this be "
+            "interpreted?",
+            "Aedes escape was not increased by treatment relative to control when paper "
+            "contact was blocked, but was increased relative to control when contact was "
+            "allowed. What does this result mean?",
+            "In the screened condition, treatment produced no increase in Aedes escape over "
+            "vehicle; in the open-contact condition, treatment produced a higher escape "
+            "response than vehicle. What conclusion follows?",
+            "Aedes treatment escape did not exceed control without contact and did exceed "
+            "control with contact how should this observed result be interpreted",
+            "In the Aedes trials, treatment did not raise escape above control in the "
+            "no-contact condition, whereas it raised escape above control in the contact "
+            "condition. How should this be interpreted?",
+            "Aedes treatment and control escape rates were identical in the separated "
+            "setup, and the treatment escape rate was higher than control in the "
+            "direct-contact setup. What interpretation fits?",
+            "Aedes escape showed no treatment increase versus control without contact and a "
+            "treatment increase versus control with contact what does this mean",
+            "There was no treatment-related increase over control in Aedes escape without "
+            "contact, while there was a treatment-related increase over control with "
+            "contact. How should we describe the result?",
+            "Treatment escape was higher than control for contact-exposed Aedes, whereas it "
+            "was not higher than control for no-contact Aedes. What does this pair show?",
+            "Aedes showed no treatment over control increase in escape without touching and "
+            "showed a treatment over control increase with touching how should this be "
+            "interpreted",
+            "In Aedes, the treatment group did not show more escape than control without "
+            "contact, but did show more escape than control with contact. How should this "
+            "be interpreted?",
+            "When a barrier prevented touching, Aedes escape under treatment was no higher "
+            "than control. When touching was allowed, escape under treatment was higher than "
+            "control. What conclusion follows?",
+            "Aedes treatment escape matched control when insects were separated from the "
+            "surface and increased above control when insects could touch the surface. What "
+            "does the finding mean?",
+            "For Aedes treatment produced no escape increase over control in the mesh arm "
+            "and produced an escape increase over control in the contact arm what does this "
+            "show",
+            "In Aedes assays, treatment escape was no greater than control when insects were "
+            "kept off the treated paper, but was greater than control when they contacted "
+            "the paper. How should this be interpreted?",
+            "Aedes showed no treatment-versus-control increase in escape through mesh, "
+            "followed by an increase for treatment versus control during direct contact. How "
+            "should we describe the pattern?",
+            "When treated paper could not be touched, treatment did not elevate Aedes escape "
+            "over vehicle; when it was touched, treatment elevated escape over vehicle. "
+            "What does the finding mean?",
+            "For Aedes escape treatment equaled control without direct paper contact and "
+            "treatment was greater than control with direct paper contact how should this be "
+            "interpreted",
+            "Aedes escape from treatment matched control without paper contact and exceeded "
+            "control with paper contact. What can we infer?",
+            "For Aedes, treatment did not increase escape relative to control in the absence "
+            "of contact, but increased escape relative to control when paper contact "
+            "occurred. How should this be interpreted?",
+            "Aedes treatment produced no extra escape beyond control when paper was "
+            "unreachable and produced extra escape beyond control when paper was reachable "
+            "how should I interpret this",
+            "The screened Aedes condition showed no increase for treatment over control, "
+            "while the contact condition showed more escape for treatment than control. How "
+            "should we describe the pattern?",
+            "Aedes treatment did not produce more escape than control without contact, and "
+            "did produce more escape than control with contact. What can we infer?",
+            "Aedes treated and control groups escaped equally with mesh separating them from "
+            "the paper, but the treated group escaped more with direct paper contact. What "
+            "conclusion follows?",
+            "The treated Aedes group had control-level escape without touching the paper and "
+            "above-control escape while touching it. How should this be interpreted?",
+            "Blocking treated-paper access left Aedes aegypti treatment escape no greater "
+            "than control, but allowing access produced higher treatment escape than "
+            "control. What is the appropriate interpretation?",
+            "When the treated source was inaccessible, Aedes aegypti escape under treatment "
+            "did not exceed control; when the source was reachable, treatment escape exceeded "
+            "control. Which response is indicated?",
+            "Separating Aedes aegypti from the treated surface produced no treatment-control "
+            "increase in escape, but allowing surface contact produced an increased treatment "
+            "escape relative to control. How do we report this pattern?",
+            "When Aedes aegypti were kept away from the treated paper, treatment did not "
+            "increase escape relative to control; when they could contact it, treatment "
+            "increased escape relative to control. What is supported?",
+            "Aedes aegypti showed no treatment-control elevation in escape across the barrier "
+            "and a treatment-control elevation in escape after direct paper contact. How "
+            "should this observed result be reported?",
+            "Under paper isolation, Aedes aegypti treatment escape stayed at the control rate; "
+            "under direct paper exposure, treatment escape rose above the control rate. Which "
+            "response does this support?",
+            "Without direct access to the paper, Aedes aegypti treatment generated no more "
+            "escape than control; with direct access, treatment generated more escape than "
+            "control. What is supported by these observations?",
+            "In contact-free Aedes aegypti chambers, the treated group did not show higher "
+            "escape than control; in contact chambers, treated escape was higher than control. "
+            "How should this be interpreted?",
+            "The Aedes aegypti no-contact escape contrast did not favor treatment over control, "
+            "whereas the contact escape contrast favored treatment with more escape than control. "
+            "What does that indicate?",
+            "The treatment-control relation for Aedes aegypti escape was no increase under "
+            "no-contact exposure and an increase under contact exposure. What can and cannot "
+            "be claimed?",
+            "In the Aedes aegypti no-contact portion, treated and control escape proportions "
+            "were alike; in the contact portion, treated escape exceeded control. What "
+            "interpretation follows?",
+            "Treatment added no Aedes aegypti escape beyond control without contact, but added "
+            "escape beyond control when contact was available. What does the result indicate?",
+            "The paired Aedes aegypti readout showed no treatment-control increase in escape "
+            "for no-contact exposure and a higher treatment escape than control for contact "
+            "exposure. What is supported?",
+            "The treated Aedes aegypti group's escape probability matched control in the "
+            "no-contact assay and surpassed control in the contact assay. How should the "
+            "contrast be read?",
+            "In the contact-barred Aedes aegypti assay, treatment did not produce a larger "
+            "escaped fraction than control; in the contact-access assay, the treated fraction "
+            "was larger than control. What does this support?",
+            "The study observed no treatment-control rise in Aedes aegypti escape under "
+            "no-contact exposure and a treatment-control rise under contact exposure, with "
+            "treatment higher. What can and cannot be concluded?",
+            "Aedes aegypti treatment left escape unchanged versus control when the paper was "
+            "separated by mesh, but increased escape versus control when contact with paper "
+            "was possible. How should this be interpreted?",
+            "There was no treatment-related excess in Aedes aegypti escape without contact "
+            "and there was a treatment-related excess over control with contact. What "
+            "conclusion is supported?",
+            "The treated-control gap in Aedes aegypti escape was absent without contact and "
+            "present with contact, where treated escape was higher. Which response fits "
+            "these data?",
+            "Treatment failed to increase Aedes aegypti escape relative to control when contact "
+            "was excluded, but succeeded in increasing escape relative to control when contact "
+            "was included. What does the pattern indicate?",
+            "Only the contact-present Aedes aegypti condition showed treatment escape above "
+            "control; the contact-absent condition showed no treatment-control increase. How "
+            "should we read this result?",
+            "A treatment-specific increase in Aedes aegypti escape appeared with contact but "
+            "not without contact, where treatment remained at control. What is supported?",
+            "No Aedes aegypti treatment effect on escape was seen in the separated-paper "
+            "condition, while increased treatment escape over control was seen in the contact "
+            "condition. What can be concluded?",
+            "In summary, Aedes aegypti treatment showed no escape increase over control without "
+            "contact and showed an escape increase over control with contact. What can and "
+            "cannot be claimed?",
+            "When direct touch was excluded, Aedes aegypti treatment did not increase escape "
+            "relative to control; when touch was permitted, treatment increased escape relative "
+            "to control. What conclusion follows?",
+            "Escape under treatment and control was equivalent for Aedes aegypti with the "
+            "surface screened off, while treatment escape was greater than control with the "
+            "surface exposed. What can be inferred?",
+            "There was no evidence of higher treated Aedes aegypti escape than control without "
+            "contact, but treated escape was higher than control with contact. What is the "
+            "appropriate interpretation?",
+            "No-contact Aedes aegypti results had no upward shift in treatment escape versus "
+            "control, while contact results had an upward shift with treatment above control. "
+            "How should this be read?",
+            "Direct contact gave higher Aedes aegypti treatment escape than control, but "
+            "preventing direct contact gave no treatment-control increase in escape. What can "
+            "be inferred?",
+            "Treatment was unable to raise Aedes aegypti escape above control in the no-contact "
+            "arm but raised it above control in the contact arm. How should this be reported?",
+            "Across mesh and no-mesh Aedes aegypti tests, treatment escape matched control with "
+            "mesh and exceeded control with contact allowed. What conclusion is justified?",
+            "Escape under no-touch exposure was not higher for treated Aedes aegypti than "
+            "controls, while escape under touch exposure was higher for treated females than "
+            "controls. What is supported?",
+            "In the Aedes aegypti ER assay, treatment did not raise escape relative to control "
+            "behind the barrier; with paper contact available, treatment raised escape above "
+            "control. Is this a contact-associated result?",
+            "Aedes aegypti escape under no-contact treatment was not above the paired control, "
+            "but escape under contact treatment was above the paired control. How should that "
+            "finding be classified?",
+            "The Aedes aegypti no-touch treatment arm stayed even with control for escape, and "
+            "the touch-enabled treatment arm exceeded control for escape. How should this be "
+            "interpreted?",
+            "Aedes aegypti had no treatment-control escape increase in screened chambers, "
+            "followed by greater treatment than control escape in chambers permitting contact. "
+            "What is supported?",
+            "Aedes aegypti showed matching treatment and control escape in the contact-blocked "
+            "condition, alongside higher treatment escape in the contact-allowed condition. "
+            "Which interpretation is justified?",
+            "Escape did not rise above control for treated Aedes aegypti without surface access, "
+            "whereas it did rise above control with surface access. What does the combined "
+            "result indicate?",
+            "For Aedes aegypti, contact prevention yielded no treatment-control difference in "
+            "escape, and contact permission yielded a larger treated escape response than "
+            "control. What is supported?",
+            "The Aedes aegypti treatment-control difference in escape was zero with a contact "
+            "barrier and positive without the barrier. What result does that support?",
+            "For Aedes aegypti, treated escape did not exceed control when direct access was "
+            "denied, whereas treated escape exceeded control when direct access was granted. "
+            "What can we infer?",
+            "With the treated surface shielded, Aedes aegypti treatment escape remained at "
+            "control; with the surface unshielded for contact, treatment escape rose above "
+            "control. What does the result mean?",
+            "The screened Aedes aegypti treatment group had the same escape as its control, "
+            "while the contact-capable treatment group had more escape than its control. What "
+            "conclusion is warranted?",
+            "Aedes aegypti escape was unchanged by treatment relative to control before surface "
+            "contact was possible, but higher under treatment once surface contact was possible. "
+            "How should this pattern be classified?",
+            "In Aedes aegypti, denying surface contact gave no treatment-related escape increase, "
+            "while permitting surface contact gave higher treatment escape than control. Which "
+            "effect is supported?",
+            "Our Aedes aegypti comparison showed a zero treatment-control escape contrast in the "
+            "separated arm and a positive contrast in the touching arm. What is the "
+            "interpretation?",
+            "Treatment and control Aedes aegypti escaped equally when contact was unavailable; "
+            "treatment produced more escape than control when contact was available. Is the "
+            "signal spatial or contact-associated?",
+            "Aedes aegypti treatment escape showed no increase over control in the arm with the "
+            "surface inaccessible and an increase over control in the arm with the surface "
+            "accessible. How should this be interpreted?",
+            "Treatment did not raise Aedes aegypti escape in the non-touch arm relative to "
+            "control, but did raise it in the touch arm. What does this support?",
+            "Aedes aegypti escaped at equal rates under treatment and control when separated "
+            "from residue, then at a higher rate under treatment than control when residue "
+            "contact was possible. What can we infer?",
+            "For Aedes aegypti, treatment and control produced the same escape when a mesh kept "
+            "mosquitoes from the surface, but treatment produced greater escape than control "
+            "when the surface could be touched. What does this support?",
+            "The escape response of treated Aedes aegypti matched control with physical access "
+            "blocked, then exceeded control with physical access allowed. Is this evidence for "
+            "contact-associated activity?",
+            "Our Aedes aegypti data showed a null treatment effect on escape while contact was "
+            "impossible and a positive treatment effect while contact was possible. Which "
+            "interpretation follows?",
+            "No treatment-control increase in Aedes aegypti escape occurred with surface access "
+            "closed, whereas a treatment-control increase occurred with surface access open. "
+            "What does that indicate?",
+            "Aedes aegypti escaped equally under treatment and control when contact with residue "
+            "was prevented, but escaped more under treatment when residue contact was allowed. "
+            "Is the effect contact-associated?",
+            "The treatment-control escape comparison in Aedes aegypti was flat when paper contact "
+            "could not occur and positive when paper contact could occur. Which response is "
+            "supported?",
+            "In our Aedes aegypti trial, the contact-restricted treatment had the control escape "
+            "rate, while the contact-unrestricted treatment had a higher escape rate than "
+            "control. What is the conclusion?",
+            "For Aedes aegypti, treated escape matched control while contact with the test surface "
+            "was blocked, then exceeded control when access to the test surface was opened. What "
+            "does this result support?",
+            "In Aedes aegypti, contact exclusion left treatment escape unchanged from control, "
+            "whereas contact inclusion raised treatment escape above control. Which effect is "
+            "present?",
+            "Aedes aegypti had equal treatment and control escape under restricted paper access "
+            "and higher treatment than control escape under unrestricted paper access. How "
+            "should this be reported?",
+            "With direct touch ruled out, Aedes aegypti treatment produced no excess escape; with "
+            "direct touch enabled, treatment produced excess escape over control. What is "
+            "supported?",
+            "The Aedes aegypti treatment-control escape contrast was absent for inaccessible "
+            "residue and positive for accessible residue. What may we claim?",
+            "For Aedes aegypti, there was no treated escape increase in the no-access condition "
+            "and a treated escape increase over control in the access condition. What is "
+            "supported?",
+            "In Aedes aegypti, treated and control groups escaped equally from contact-blocking "
+            "chambers, while treated groups escaped more than controls from contact-permitting "
+            "chambers. What can we conclude?",
+            "Our Aedes aegypti results showed control-level escape under treatment when direct "
+            "surface access was absent and above-control escape when direct surface access was "
+            "present. Is this contact-associated?",
+            "Keeping Aedes aegypti away from treated residue produced no extra treatment escape; "
+            "letting them reach the residue produced more treatment escape than control. Which "
+            "interpretation follows?",
+            "Aedes aegypti had no treatment-related escape elevation with the contact barrier "
+            "installed and a clear elevation with the barrier removed. How should this pattern "
+            "be classified?",
+            "The separated Aedes aegypti treatment arm matched its control for escape, whereas "
+            "the touching treatment arm exceeded its control. What is justified?",
+            "Treatment failed to increase Aedes aegypti escape when surface contact was "
+            "disallowed, yet increased escape versus control when surface contact was allowed. "
+            "What does that indicate?",
+            "The Aedes aegypti escape contrast between treatment and control was zero when access "
+            "to residue was denied and positive when access was granted. What does that mean?",
+            "Under no-contact exposure, Aedes aegypti treatment did not elevate escape over "
+            "control; under contact exposure, it did. Which result follows?",
+            "Aedes aegypti showed equal escape for treatment and control behind the contact "
+            "barrier and higher treated escape after contact access was restored. What can be "
+            "claimed?",
+            "When the test surface was off limits, treated Aedes aegypti did not escape more than "
+            "controls; when it was available for contact, they did. How should this be reported?",
+            "Aedes aegypti treatment escape had no elevation in the residue-separated condition "
+            "but a positive elevation over control in the residue-accessible condition. What "
+            "does this support?",
+            "For Aedes aegypti, treatment escape was no different from control in chambers "
+            "preventing touch, but was higher than control in chambers permitting touch. What "
+            "is the supported interpretation?",
+            "The Aedes aegypti treatment-control escape response was neutral when the paper was "
+            "out of reach and positive when the paper was reachable. How should this be "
+            "classified?",
+            "Aedes aegypti treated groups escaped at the same frequency as controls with residue "
+            "isolated, whereas treated groups escaped at a greater frequency with residue "
+            "accessible. What can be concluded?",
+            "When access to treated paper was shut, Aedes aegypti treatment escape stayed level "
+            "with control; when access was opened, it rose above control. What is supported?",
+            "Treatment caused no escape elevation in Aedes aegypti under physical separation, "
+            "but caused escape above control under direct paper access. Which effect follows?",
+            "For Aedes aegypti, the no-surface-contact arm showed equal treated and control "
+            "escape, and the surface-contact arm showed greater treated escape. What does that "
+            "support?",
+            "The Aedes aegypti treatment produced the same escape as control with residue "
+            "screened off, but more escape than control with residue exposed for contact. What "
+            "can be concluded?",
+            "In Aedes aegypti, blocking touch removed any treatment-control escape increase; "
+            "allowing touch produced an increase under treatment. Is that contact-associated?",
+            "Our Aedes aegypti comparison showed no escape gain over control in the access-blocked "
+            "condition and an escape gain in the access-allowed condition. Which interpretation "
+            "follows?",
+            "When paper contact was unavailable, treated Aedes aegypti escaped at the control "
+            "rate; when it was available, treated mosquitoes escaped at a higher rate. What is "
+            "supported?",
+            "Aedes aegypti had matching treatment and control escape with the contact surface "
+            "closed off and higher treated escape with it open to contact. How should this be "
+            "classified?",
+            "No treatment-related escape increase appeared for Aedes aegypti under physical "
+            "isolation from the paper, but one appeared under physical contact. What does the "
+            "pattern mean?",
+            "Aedes aegypti treatment did not exceed control for escape without residue access "
+            "and did exceed control with residue access. Is the response contact-associated?",
+            "For Aedes aegypti, treated escape remained at the control value when the paper "
+            "could not be contacted, but exceeded control when paper contact was possible. "
+            "What does this support?",
+            "Aedes aegypti showed no treatment-associated increase in escape in the "
+            "contact-excluded setup and higher treated escape in the contact-included setup. "
+            "How should this be interpreted?",
+            "Our Aedes aegypti data had treated escape equal to control with residue out of "
+            "reach and above control with residue within reach. What can be inferred?",
+            "Blocking Aedes aegypti from the paper produced no excess treatment escape, whereas "
+            "allowing them onto the paper produced more escape than control. Which "
+            "interpretation is justified?",
+            "Aedes aegypti treatment escape was neutral versus control under surface separation "
+            "and elevated under surface contact. How should this pattern be reported?",
+            "When contact was not allowed, Aedes aegypti did not escape more from treatment "
+            "than control; when contact was allowed, they did. What does that indicate?",
+            "Aedes aegypti had a zero treatment contrast for escape in the screened-off "
+            "condition and a greater-than-zero contrast in the exposed condition. What may "
+            "we claim?",
+            "In Aedes aegypti, preventing contact yielded no extra treatment escape, whereas "
+            "enabling contact yielded more treatment escape than control. Is that "
+            "contact-associated?",
+            "When the residue was screened away, Aedes aegypti treatment escape equaled "
+            "control; when residue contact was available, it was higher. What does the "
+            "result mean?",
+            "Aedes aegypti treatment produced control-level escape with access prohibited "
+            "and above-control escape with access permitted. Which interpretation follows?",
+            "Aedes aegypti egress under treatment was no higher than control egress when "
+            "residue was inaccessible, but treatment egress was higher than control egress "
+            "when residue was accessible. How should this be reported?",
+            "In the screened Aedes aegypti pair, treatment escape equaled control escape; "
+            "in the direct-contact pair, treatment escape rose above control escape. Which "
+            "interpretation is justified?",
+            "The Aedes aegypti exit probability under treatment was no higher than the "
+            "control exit probability when contact was blocked, then exceeded control when "
+            "contact was possible. What does this show?",
+            "Among Aedes aegypti, treatment caused no increase over control in leaving when "
+            "the surface could not be contacted, whereas leaving under treatment was greater "
+            "than control when surface contact was allowed. Is this contact-associated?",
+            "In Aedes aegypti, no-contact treatment exits were equal to no-contact control "
+            "exits, but contact treatment exits outnumbered contact control exits. Which "
+            "effect is indicated?",
+            "Aedes aegypti no-contact treatment escape matched control, while contact "
+            "treatment escape exceeded control. What does this support?",
+            "Aedes aegypti treatment escape matched control when contact was blocked "
+            "(p = 0.70), while treatment escape exceeded control when contact was allowed "
+            "(p = 0.01). What does this support?",
+            "Aedes aegypti treatment-control escape was null when contact was blocked and "
+            "its interval included zero, while treatment escape exceeded control when "
+            "contact was allowed and its interval was entirely above zero. What does this "
+            "support?",
+            "Aedes aegypti treatment escape matched control when contact was blocked, while "
+            "treatment escape exceeded control when contact was allowed and mortality "
+            "matched control. Does this support contact-associated escape?",
+            "Aedes aegypti treatment escape matched control at 10 minutes and 30 minutes "
+            "when contact was blocked, while treatment escape exceeded control at 10 minutes "
+            "and 30 minutes when contact was allowed. What does this support?",
+            "With transfluthrin, Aedes aegypti treatment escape matched control when contact "
+            "was blocked, while treatment escape exceeded control when contact was allowed. "
+            "What does this support?",
+            "For Aedes aegypti, treatment escape matched control without contact "
+            "(p = 0.62), whereas treatment escape exceeded control with contact "
+            "(p = 0.004; q = 0.012). What interpretation is supported?",
+            "The Aedes aegypti no-contact treatment-control difference in egress had a 95% "
+            "confidence interval from -0.08 to 0.07, while the contact treatment egress was "
+            "greater than control with a confidence interval from 0.12 to 0.31. How should "
+            "this be interpreted?",
+            "At both 5 minutes and 25 minutes, Aedes aegypti treatment departure matched "
+            "control without contact and treatment departure exceeded control with contact. "
+            "What does the repeated departure result support?",
+            "In Aedes aegypti, treatment and control had the same proportion leaving without "
+            "contact (q = 0.73), but a greater proportion was leaving under treatment than "
+            "control with contact (q = 0.018); 24-hour mortality did not differ. What is "
+            "supported?",
+            "Aedes aegypti treatment departure equaled control departure without contact at "
+            "15 and 30 minutes, while treatment departure was greater than control departure "
+            "with contact at the same 15- and 30-minute observations. How should we report "
+            "this?",
+            "In Aedes aegypti, the no-contact treatment-control escape contrast was null "
+            "(p = 0.48; q = 0.61), while the contact treatment-control escape contrast was "
+            "positive, with treatment escape greater than control escape (p = 0.006; "
+            "q = 0.019). What does this support?",
+            "For Aedes aegypti, treatment minus control for exit was centered on zero without "
+            "contact (95% confidence interval -0.05 to 0.06), but treatment exit was greater "
+            "than control exit with contact (95% confidence interval 0.09 to 0.27). How "
+            "should this be interpreted?",
+            "At 10 minutes, 20 minutes, and 30 minutes, Aedes aegypti treatment departure "
+            "matched control departure without contact, while at the same three timepoints "
+            "treatment departure exceeded control departure with contact. What pattern is "
+            "supported?",
+            "TFT-treated Aedes aegypti had no treatment-control increase in egress without "
+            "contact, with a credible interval spanning zero, but had greater treatment "
+            "egress than control with contact, with the credible interval wholly positive. "
+            "Which interpretation follows?",
+            "Aedes aegypti treatment minus control for exit was null in the no-contact "
+            "condition, with a 95% confidence interval of -0.04 to 0.05, whereas treatment "
+            "exit exceeded control exit in the contact condition, with a 95% confidence "
+            "interval of 0.11 to 0.29. What is supported?",
+            "At 8 minutes, 16 minutes, and 30 minutes, Aedes aegypti treatment departure "
+            "equaled control departure in the no-contact arm and exceeded control departure "
+            "in the contact arm. How should this repeated result be interpreted?",
+            "TFT exposure produced no treatment-control increase in Aedes aegypti egress "
+            "without contact, and the credible interval covered zero; with contact, "
+            "treatment egress was greater than control and the credible interval remained "
+            "above zero. Which effect is indicated?",
+            "For Aedes aegypti, the 95% confidence interval for the no-contact "
+            "treatment-control exit difference was -0.03 to 0.04, while the contact "
+            "treatment exit was greater than control exit with a confidence interval of "
+            "0.08 to 0.22. How should this be interpreted?",
+            "With TFT, Aedes aegypti treatment egress matched control egress without contact "
+            "and its credible interval included zero, but treatment egress exceeded control "
+            "egress with contact and the credible interval had a positive lower bound. Which "
+            "response is supported?",
+            "The Aedes aegypti treatment-control difference in exit straddled zero without "
+            "contact, with a 95% confidence interval of -0.06 to 0.03, but treatment exit "
+            "exceeded control exit with contact, with a confidence interval of 0.10 to 0.26. "
+            "How should the result be interpreted?",
+            "Aedes aegypti treatment escape remained at control escape without contact and "
+            "rose above control escape with contact; separately measured knockdown and "
+            "mortality did not differ from control. Is escape contact-associated?",
+            "Aedes aegypti treatment escape matched control escape when contact was prevented "
+            "and exceeded control escape when contact was permitted; the separately reported "
+            "feeding rate was unchanged. Does the escape result support a contact-associated "
+            "response?",
+            "In Aedes aegypti, treatment departure remained at the control level without "
+            "contact, with a confidence interval spanning zero, whereas it rose above control "
+            "with contact, with a wholly positive confidence interval; landing frequency did "
+            "not change. How should departure be interpreted?",
+            "At 9 minutes and 23 minutes in each arm, Aedes aegypti treatment egress was no "
+            "higher than control egress without contact, while treatment egress was higher "
+            "than control egress with contact. Is this contact-associated egress?",
+            "Treatment escape in Aedes aegypti did not rise above control when contact was "
+            "excluded but did rise above control when contact was available; wing-beat "
+            "frequency was reported separately and remained unchanged. Is the escape effect "
+            "contact-associated?",
+            "Without contact, Aedes aegypti treatment leaving was no greater than control "
+            "leaving (q = 0.67); with contact, treatment leaving was greater than control "
+            "leaving (q = 0.011), and recovery at 24 hours was similar. How should leaving "
+            "be described?",
+            "Without surface contact, Aedes aegypti treatment departure matched control and "
+            "its credible interval included zero; with surface contact, treatment departure "
+            "exceeded control and its credible interval stayed above zero. Separately, "
+            "probing duration matched control. What does departure support?",
+            "Across the shared 12-minute and 26-minute readings, Aedes aegypti treatment "
+            "egress equaled control egress in the contact-prevented condition and exceeded "
+            "control egress in the contact-permitted condition. Is the egress response "
+            "contact-associated?",
+            "For Aedes aegypti, the no-contact treatment-control exit estimate was "
+            "consistent with zero, with a 95% confidence interval from -0.05 to 0.08, "
+            "whereas the contact estimate was positive and treatment exit was greater "
+            "than control, with a confidence interval from 0.04 to 0.17. How should this "
+            "be read?",
+            "TFT-treated Aedes aegypti showed treatment egress equal to control egress "
+            "while contact was prevented, with a credible interval overlapping zero; "
+            "once contact was allowed, treatment egress was greater than control and the "
+            "credible interval was wholly above zero. What does this support?",
+            "Aedes aegypti treatment escape was no higher than control when contact was "
+            "blocked and higher than control when contact was possible; the separate "
+            "fecundity measure was unchanged. What interpretation applies to escape?",
+            "Aedes aegypti treatment egress equaled control egress without contact "
+            "(p = 0.55), but was greater than control egress with contact (q = 0.022); "
+            "flight speed was separately reported as unchanged. How should egress be "
+            "interpreted?",
+            "Without contact, Aedes aegypti treatment leaving matched control leaving and "
+            "the confidence interval covered zero. With contact, treatment leaving exceeded "
+            "control leaving and the confidence interval had a positive lower bound. "
+            "Antennal grooming did not differ. What does leaving support?",
+            "Using the same 7-minute and 24-minute readouts for both conditions, Aedes "
+            "aegypti treatment escape equaled control without contact and exceeded control "
+            "with contact. What pattern does this show?",
+            "Aedes aegypti treatment escape matched control without contact, with a 95% "
+            "confidence interval from -0.05 to 0.04, and treatment escape exceeded control "
+            "with contact, with a 95% confidence interval from 0.10 to 0.25. What does this "
+            "support?",
+            "Without contact, Aedes aegypti treatment escape matched control and its "
+            "confidence interval included zero, and with contact treatment escape exceeded "
+            "control and its confidence interval stayed above zero. What does this support?",
+            "Aedes aegypti treatment exit matched control without residue contact "
+            "(p = 0.58), and treatment exit exceeded control with residue contact "
+            "(p = 0.014). What does exit support?",
+            "Aedes aegypti treatment departure matched control without direct contact "
+            "(q = 0.63), and treatment departure exceeded control with direct contact "
+            "(q = 0.012). What does departure support?",
+            "With TFT, Aedes aegypti treatment egress remained equal to control egress "
+            "when surface contact was blocked and the credible interval contained zero; "
+            "when surface contact was permitted, treatment egress exceeded control and "
+            "the credible interval was entirely above zero. What is supported?",
+            "Aedes aegypti treatment escape did not exceed control when contact was "
+            "unavailable but exceeded control when contact was available; walking speed "
+            "was analyzed separately and matched control. Is the escape pattern "
+            "contact-associated?",
+            "Aedes aegypti treatment leaving was indistinguishable from control leaving "
+            "without contact (p = 0.61; q = 0.72) and greater than control leaving with "
+            "contact (p = 0.006; q = 0.016); mortality was unchanged. What does leaving "
+            "support?",
+            "Without contact, Aedes aegypti treatment exit matched control and its "
+            "confidence interval included zero; with contact, treatment exit was higher "
+            "than control and its confidence interval stayed positive. Oviposition was "
+            "separately unchanged. How should exit be interpreted?",
+            "Aedes aegypti treatment egress was no higher than control egress without "
+            "contact and its confidence interval included zero; treatment egress was "
+            "higher than control with contact and its confidence interval lay above zero. "
+            "Biting frequency was separately unchanged. What does egress support?",
+            "Transfluthrin-exposed Aedes aegypti had treatment egress equal to control "
+            "when contact was excluded and a credible interval spanning zero; with "
+            "contact included, treatment egress exceeded control and the credible interval "
+            "was fully above zero. Which interpretation is warranted?",
+            "At the identical 6-minute and 25-minute checks in both Aedes aegypti arms, "
+            "treatment departure matched control without contact and was higher than "
+            "control with contact. What does the departure pattern show?",
+            "Aedes aegypti treatment escape did not rise above control without contact "
+            "but rose above control with contact. Biting duration was evaluated separately "
+            "and remained at the control level. Is the escape response contact-associated?",
+            "For Aedes aegypti, treated escape was indistinguishable from control escape "
+            "with contact prevented (p = 0.68; q = 0.79), but treated escape was greater "
+            "than control escape with contact allowed (p = 0.006; q = 0.017). What is "
+            "supported?",
+            "In the TFT assay, Aedes aegypti treatment egress equaled control egress in "
+            "the no-touch condition and the credible interval crossed zero, whereas "
+            "treatment egress was greater than control in the touch-enabled condition and "
+            "the interval was wholly positive. What does this support?",
+            "Aedes aegypti treatment egress remained at control egress without contact "
+            "and its confidence interval contained zero; with contact, treatment egress "
+            "rose above control and its confidence interval had a positive lower bound. "
+            "Takeoff count was separately unchanged. How should egress be interpreted?",
+            "In Aedes aegypti, treatment escape was not elevated above control in the "
+            "contact-barred condition (p = 0.56; q = 0.67), but treatment escape was "
+            "elevated above control in the contact-open condition (p = 0.003; q = 0.012). "
+            "What does this result support?",
+            "With TFT treatment, Aedes aegypti egress matched control when a mesh blocked "
+            "contact and the credible interval included zero; when the mesh no longer "
+            "blocked contact, treatment egress exceeded control and the interval stayed "
+            "entirely positive. What is supported?",
+            "For Aedes aegypti, treatment escape did not exceed control when contact was "
+            "denied (p = 0.64; q = 0.76), whereas treatment escape exceeded control when "
+            "contact was permitted (p = 0.005; q = 0.016). What does this support?",
+            "In a transfluthrin assay, Aedes aegypti treatment egress matched control "
+            "behind the contact barrier and the credible interval covered zero; after "
+            "contact access was allowed, treatment egress was greater than control and "
+            "the interval remained entirely above zero. Which effect is supported?",
+            "Aedes aegypti treatment escape equaled control without contact and exceeded "
+            "control with contact. Host-seeking orientation was reported separately and "
+            "did not change. Is the escape finding contact-associated?",
+            "Aedes aegypti treatment exit remained at control exit without contact "
+            "(p = 0.58; q = 0.69) and rose above control exit with contact (p = 0.009; "
+            "q = 0.021); mortality stayed equal to control. What does exit support?",
+            "Using matched 6-minute and 23-minute readouts in both formats, Aedes aegypti "
+            "treatment escape was no higher than control without contact and higher than "
+            "control with contact. Does this support contact-associated escape?",
+            "For Aedes aegypti, treatment escape matched control while contact was "
+            "restricted (p = 0.60; q = 0.72), but treatment escape was greater than "
+            "control while contact was available (p = 0.004; q = 0.013). Which "
+            "interpretation is supported?",
+            "For TFT-treated Aedes aegypti, egress under treatment equaled control while "
+            "the paper was inaccessible and the credible interval overlapped zero; when "
+            "the paper became reachable for contact, treatment egress exceeded control "
+            "and the interval stayed wholly above zero. How should this be interpreted?",
+            "Aedes aegypti treatment escape was no higher than control without contact "
+            "and higher than control with contact. Feeding attempts were analyzed "
+            "separately and did not differ from control. Is the escape result "
+            "contact-associated?",
+            "In Aedes aegypti, treatment escape remained equal to control with contact "
+            "blocked (p = 0.62; q = 0.73), while treatment escape exceeded control with "
+            "contact allowed (p = 0.003; q = 0.011). What interpretation follows?",
+            "Transfluthrin-treated Aedes aegypti showed egress equal to control when "
+            "direct contact was prevented and the credible interval encompassed zero; "
+            "when direct contact was possible, treatment egress was greater than control "
+            "and the interval was entirely positive. How should this be interpreted?",
+            "Aedes aegypti treatment escape equaled control when contact was not possible "
+            "and was greater than control when contact was possible. Wing movement was "
+            "measured separately and did not differ. Does escape support a "
+            "contact-associated effect?",
+        )
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator=f"raw/aedes.json#works/{record_id}",
+                    )
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question) for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {record_id},
+                )
+                for fragment in (
+                    "Interpretation of the stated result pattern:",
+                    "no spatial-repellency signal was detected under those assay conditions",
+                    "treated-contact escape exceeds its paired contact control",
+                    "simultaneous paired non-contact adjustment",
+                    "supports a contact-associated behavioral effect, not spatial repellency",
+                    "does not identify a sensory receptor or molecular mechanism",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+        negative_questions = (
+            "Aedes aegypti escape matched control without paper contact; after paper "
+            "contact was enabled, the treated group exceeded the control group. Is "
+            "escape contact-associated?",
+            "Without contact, Aedes aegypti departure equaled control; the treatment "
+            "effect became greater than control under contact. Does departure support "
+            "a contact effect?",
+            "The treated group was above the control group with paper contact, while "
+            "Aedes aegypti exit matched control without paper contact. Is exit "
+            "contact-associated?",
+            "Aedes aegypti escape matched control without direct contact and showed a "
+            "positive treatment effect relative to control with direct contact. Is "
+            "escape contact-associated?",
+            "Aedes aegypti escape matched control without contact; with contact, "
+            "treatment was higher than control. Is this contact-associated?",
+            "Without contact, Aedes aegypti treatment matched control; with contact, "
+            "treatment escape exceeded control escape. Is this a contact-only escape result?",
+            "Without contact, Aedes aegypti treatment matched control; with contact, "
+            "treatment exceeded control. Is this contact-associated escape?",
+            "Aedes aegypti departure matched control without contact; with surface contact, "
+            "the treatment response exceeded control. Does departure support contact "
+            "association?",
+            "Aedes aegypti exit matched control without residue contact; with residue "
+            "contact, the treated group was higher than control. Is exit contact-associated?",
+            "Aedes aegypti leaving equaled control without direct contact; with direct "
+            "contact, the treatment effect exceeded control. Does leaving support contact "
+            "association?",
+            "Aedes aegypti exit matched control without contact; with contact, the treatment "
+            "rate exceeded the control rate. Is exit contact-associated?",
+            "Aedes aegypti egress equaled control without contact; with contact, the "
+            "treatment estimate was above control. Is egress contact-associated?",
+            "Aedes aegypti departure matched control without contact; with contact, the "
+            "treated proportion exceeded the control proportion. Is departure "
+            "contact-associated?",
+            "Aedes aegypti treatment equaled control with contact absent; treatment exceeded "
+            "control with contact present. Is this an egress result?",
+            "Aedes aegypti treatment escape matched control when contact was blocked, while "
+            "treatment escape failed to be higher than control when contact was allowed. "
+            "Does this support contact-associated escape?",
+            "Aedes aegypti treatment escape matched control when contact was blocked, while "
+            "treatment escape could not be shown to exceed control when contact was allowed. "
+            "Does this support contact-associated escape?",
+            "Aedes aegypti treatment exit equaled control with contact blocked, but the "
+            "contact treatment exit was unable to rise above control. Is exit increased by "
+            "contact?",
+            "Aedes aegypti no-contact testing occurred at 09:00 with escape matching control, "
+            "whereas contact testing occurred at 21:00 with treatment escape exceeding "
+            "control. Can the result be attributed to contact?",
+            "Aedes aegypti no-contact egress matched control, whereas contact treatment "
+            "egress was not shown to be above control egress. What does the result support?",
+            "Aedes aegypti no-contact escape equaled control, while the 95% confidence "
+            "interval for the contact treatment-control escape increase included zero. Can "
+            "contact escape be called greater?",
+            "Aedes aegypti treatment exit equaled control without contact, and treatment "
+            "exit was estimated above control with contact, but the contact confidence "
+            "interval ran from -0.04 to 0.16. Can a contact increase be claimed?",
+            "Aedes aegypti exit showed no treatment-control difference without contact, but "
+            "an increase in treatment exit was not seen when contact was allowed. Is contact "
+            "exit elevated?",
+            "Aedes aegypti treatment departure stayed at the control rate without contact, "
+            "and there was no evidence that treatment departure was greater than control "
+            "with contact. What does this support?",
+            "No increase over control occurred for treated Aedes aegypti in the "
+            "touch-blocked condition, but an increase occurred in the touch-allowed "
+            "condition. What is supported?",
+            "Aedes non-contact escape exceeded control while contact escape was "
+            "unchanged. Which component is spatial?",
+            "Reduced Aedes non-contact escape followed knockdown in the treated "
+            "chamber. How should I separate motor impairment from avoidance?",
+            "Which genes control non-contact escape and contact excitation in Aedes?",
+            "Which experimental control should I use in a non-contact escape assay "
+            "with a matched contact chamber?",
+            "Aedes contact escape matched control, but non-contact escape increased. "
+            "Does that support spatial repellency?",
+            "Aedes contact-chamber escape was identical to control while noncontact "
+            "escape was higher. Which component changed?",
+            "Aedes noncontact escape increased over control, but contact escape was "
+            "the same as control. How should I interpret the two formats?",
+            "How should I design an experiment to test whether non-contact escape "
+            "matches control while contact escape increases after touching treated paper?",
+            "Which genes should I knock out to test why non-contact escape matches "
+            "control but contact escape rises after touching treated paper?",
+            "Could knockdown explain a result where non-contact escape matches "
+            "control but contact escape increases after touching treated paper?",
+            "Noncontact escape was identical to control, but treated-contact escape "
+            "decreased rather than increased.",
+            "Would an Orco mutant explain why noncontact escape matches vehicle but "
+            "treated-contact escape is higher?",
+            "Was the higher treated-contact escape caused by knockdown even though "
+            "noncontact escape matched control?",
+            "Noncontact escape was identical to vehicle; treated-contact escape was "
+            "not increased by the paper.",
+            "Noncontact escape matched vehicle and treated-contact escape was lower, "
+            "not higher, than control.",
+            "Could the Orco pathway be responsible for noncontact escape matching "
+            "control while direct-contact escape rises?",
+            "Could contact chemosensation be the cause of higher treated-contact "
+            "escape when noncontact escape matches control?",
+            "In an escape chamber noncontact landing equaled vehicle contact landing "
+            "rose after touching treated paper",
+            "Noncontact escape matched control contact-chamber mortality was elevated "
+            "under treatment",
+            "No extra exits occurred after paper contact, even though no-contact "
+            "escape equaled vehicle.",
+            "Treatment contact escape failed to exceed control while mesh-isolated "
+            "escape remained equal to vehicle.",
+            "Which statistical model should estimate higher treated-contact escape "
+            "when noncontact treatment matches control?",
+            "How would I build an apparatus to compare a zero noncontact effect with "
+            "a positive contact escape effect?",
+            "For Musca domestica, screened treatment escape equaled vehicle but "
+            "contact escape rose.",
+            "Which hypothesis test compares a zero no-touch effect with a larger "
+            "touch-enabled escape effect?",
+            "Is motor activation responsible for extra exits after touch when "
+            "screened treatment matches carrier?",
+            "Apis mellifera showed no barrier escape difference and a positive "
+            "treated-contact escape difference.",
+            "Treatment and control had equal noncontact escape, but flight activity "
+            "increased in the contact assay.",
+            "Noncontact escape did not differ from control, while time spent in the "
+            "contact chamber increased.",
+            "How many mosquitoes per replicate are needed if noncontact escape matches "
+            "control and contact escape is higher?",
+            "Which regression model should compare a null noncontact effect with an "
+            "increased contact escape effect?",
+            "How should treatment sides be randomized when contact escape is higher "
+            "but noncontact escape matches vehicle?",
+            "Which receptor explains higher contact escape when noncontact escape is "
+            "unchanged from vehicle?",
+            "No-contact escape equaled vehicle, while probing attempts increased after "
+            "paper contact.",
+            "What statistical model should I fit when non-contact escape matches control "
+            "but contact escape is elevated?",
+            "Which chemosensory receptor causes the higher contact escape when "
+            "non-contact escape matches control?",
+            "Which sensory neurons drive the contact escape increase despite no "
+            "non-contact effect?",
+            "What sample size is needed to detect no non-contact difference and a "
+            "higher contact escape rate?",
+            "Which test determines whether contact escape exceeds control when "
+            "non-contact escape does not differ?",
+            "Could toxic motor stimulation explain higher contact escape with no "
+            "non-contact difference?",
+            "Non-contact escape matched control, but walking speed was higher in the "
+            "contact treatment.",
+            "What model should analyze a non-contact null result and a higher contact "
+            "escape result?",
+            "No-contact escape matched control, while movement speed increased in the "
+            "treated contact chamber.",
+            "Which model should be used for a null no-contact result and an increased "
+            "contact escape result?",
+            "Could a toxic effect cause elevated contact escape while no-contact escape "
+            "remains equal to vehicle?",
+            "Culex pipiens matched control without contact and escaped more with "
+            "treated-paper contact.",
+            "The noncontact groups had the same escape, but more treated mosquitoes "
+            "were knocked down in the contact chamber.",
+            "What analysis should be used for a no-contact null and a contact escape "
+            "increase?",
+            "How many mosquitoes should each group contain to detect a null noncontact "
+            "result and increased contact escape?",
+            "What statistical approach should be used when noncontact escape matches "
+            "control and contact escape is higher?",
+            "How many mosquitoes are needed to compare a zero no-contact effect with "
+            "increased contact escape?",
+            "Noncontact escape matched control, while more mosquitoes landed in the "
+            "treated contact chamber.",
+            "Non-contact escape matched control, but general movement increased in the "
+            "treated contact group.",
+            "Is toxicity causing the higher contact escape despite no effect through mesh?",
+            "Noncontact escape was unchanged, but movement rate increased in the treated "
+            "contact group.",
+            "How many females should be tested to detect equal noncontact escape and "
+            "higher contact escape?",
+            "No-contact escape matched control, while distance walked increased after "
+            "contact treatment.",
+            "No-contact escape was equal to vehicle, but path length increased after "
+            "contact treatment.",
+            "How many mosquitoes per chamber are needed for equal barrier escape and "
+            "increased contact escape?",
+            "Which statistical method should evaluate a null no-contact result and a "
+            "positive contact escape result?",
+            "Could a toxic action explain increased contact escape with unchanged "
+            "no-contact escape?",
+            "No-contact escape was equal to control, but total movement increased in "
+            "the contact treatment group.",
+            "How many mosquitoes per condition should be used to detect equal "
+            "no-contact escape and higher contact escape?",
+            "How many insects should go into each arm to detect equal noncontact escape "
+            "and higher contact escape?",
+            "Could a toxic response cause greater contact escape while noncontact "
+            "escape stays equal to control?",
+            "Noncontact escape was equal to control, but time active increased in the "
+            "contact treatment group.",
+            "What test should compare a null noncontact result with an increased "
+            "contact escape result?",
+            "Noncontact escape was unchanged, but the amount of time moving increased "
+            "during contact treatment.",
+            "With mesh escape matched vehicle, and without mesh treatment did not "
+            "increase escape above vehicle.",
+            "How should we set up screened and unscreened chambers to measure equal "
+            "noncontact escape and higher contact escape?",
+            "Should we use a paired logistic model when no-contact escape matches "
+            "control and contact escape exceeds control?",
+            "Noncontact escape matched vehicle, but average speed increased in the "
+            "treated contact chamber.",
+            "How many females per arm are needed to detect equal noncontact escape and "
+            "higher contact escape?",
+            "Aedes barrier escape equaled vehicle, but blood-feeding attempts "
+            "increased after paper contact.",
+            "Aedes barrier escape equaled vehicle, while probing was higher in the "
+            "treated contact chamber.",
+            "What number of Aedes females is required to detect no non-contact effect "
+            "and increased contact escape?",
+            "Could toxic stimulation be the reason Aedes contact escape rises while "
+            "barrier escape matches control?",
+            "What power is needed to detect a null Aedes no-contact result and an "
+            "increased contact escape result?",
+            "How many Aedes batches are needed to detect equal no-contact escape and "
+            "increased contact escape?",
+            "What statistical method should compare an Aedes no-contact null with "
+            "higher contact escape?",
+            "Could treatment toxicity create higher Aedes contact escape despite equal "
+            "barrier escape?",
+            "Culex pipiens pallens showed equal no-contact escape and increased treated "
+            "contact escape.",
+            "How many Aedes groups should be tested for a null barrier escape result and "
+            "a higher contact escape result?",
+            "Which analytical test should evaluate equal Aedes no-contact escape and "
+            "increased contact escape?",
+            "Could partial paralysis create an apparent Aedes contact escape increase "
+            "while barrier escape matches control?",
+            "How many Aedes trials are required for equal barrier escape and higher "
+            "contact escape?",
+            "Which link function should be used for a model of null non-contact escape "
+            "and elevated contact escape?",
+            "Could treatment-induced sedation account for an apparent contact escape "
+            "increase despite equal barrier escape?",
+            "Aedes screened escape equaled vehicle, while blood-feeding rate was higher "
+            "after treated-paper contact.",
+            "Does TRPA1 mediate the Aedes contact escape increase when no-contact escape "
+            "matches control?",
+            "Which generalized linear mixed model should analyze a null Aedes "
+            "no-contact result and positive contact escape result?",
+            "Which mixed-effects analysis should compare an Aedes no-contact arm that "
+            "matches control with a contact arm that has higher escape?",
+            "What paired statistical test should be used when Aedes treatment escape "
+            "equals control behind mesh and exceeds control with direct contact?",
+            "Is absorption through the Aedes tarsi the cause of unchanged escape behind "
+            "a screen and greater escape with paper access?",
+            "What mesh opening and chamber dimensions should be used to test equal "
+            "escape without contact and increased escape with contact in Aedes?",
+            "Does olfactory adaptation explain why Aedes escape is control-like without "
+            "contact but greater after contact?",
+            "Culex pipiens escape was equal to control across mesh and higher than "
+            "control with treated paper exposed. How should that species result be "
+            "classified?",
+            "How should the interaction term be calculated for equal treatment-control "
+            "Aedes escape without contact and higher treatment escape with contact?",
+            "Aedes escape was unchanged from control behind the screen, and the observed "
+            "contact increase failed the significance test against control. Is a contact "
+            "increase supported?",
+            "How should confidence intervals be computed for a null Aedes no-contact "
+            "contrast and a positive contact escape contrast?",
+            "What multiplicity correction should be applied when testing null noncontact "
+            "escape and elevated contact escape against control in Aedes?",
+            "Aedes escape matched control without contact, but the apparent contact "
+            "increase disappeared after adjustment for replicate. Can we still claim "
+            "increased contact escape?",
+            "Which contrast coding should be used for Aedes data with equal no-contact "
+            "escape and greater contact escape under treatment?",
+            "Should a mesh separator be mounted upstream or downstream when testing "
+            "control-like no-contact escape and increased contact escape in Aedes?",
+            "Aedes escape matched control in the no-contact arm, while the contact arm ran "
+            "five degrees warmer and showed higher treatment escape. Can the increase be "
+            "assigned to contact?",
+            "Aedes escape matched control without contact and fell below control after "
+            "treatment contact. Is this evidence of increased contact escape?",
+            "The Aedes contact estimate has p = 0.08 after a null noncontact result. May I "
+            "report a significant increase in contact escape?",
+            "Which post hoc test should compare Aedes treatment with control after finding "
+            "no noncontact escape effect and a positive contact escape effect?",
+            "What mesh pore size is appropriate for an Aedes assay intended to compare null "
+            "no-contact escape with elevated contact escape?",
+            "The Aedes no-contact arm matched control, but humidity was much lower in the "
+            "contact arm where treatment escape increased. Can contact explain the "
+            "difference?",
+            "Aedes escape equaled control at the low dose used without contact, while a "
+            "tenfold dose in the contact arm increased escape. Does this isolate a contact "
+            "effect?",
+            "How many chambers are needed to test a null Aedes no-contact effect alongside "
+            "a positive contact escape effect?",
+            "Does IR25a mediate the Aedes pattern of control-level escape without contact "
+            "and increased escape after contact?",
+            "Should a paired t-test or a binomial model analyze equal no-contact Aedes "
+            "escape and higher contact escape?",
+            "What chamber length is required to test unchanged Aedes escape without contact "
+            "and increased escape with contact?",
+            "The Aedes screened arm ran in the morning and matched control, while the contact "
+            "arm ran at dusk and showed increased escape. Does this establish a contact "
+            "effect?",
+            "Which random-slope structure should be fitted to Aedes escape with a null "
+            "mesh-arm contrast and a positive contact-arm contrast?",
+            "How should Aedes escape percentages be transformed before analyzing equal "
+            "no-contact and higher contact treatment effects?",
+            "Where should the escape outlet be positioned in an apparatus testing null "
+            "noncontact and positive contact effects in Aedes?",
+            "The Aedes no-contact arm ran at 25 C and matched control, while the contact arm "
+            "ran at 30 C and showed higher treatment escape. Can we attribute the increase "
+            "to contact?",
+            "Aedes escape matched control in the no-contact arm and was lower than control "
+            "in the contact arm. Does this indicate increased contact escape?",
+            "Aedes contact escape was higher before correction but no longer significant "
+            "after multiple-testing adjustment; no-contact escape matched control. What "
+            "should we report?",
+            "How should we calculate the treatment-by-contact interaction for equal "
+            "no-contact escape and increased contact escape in Aedes?",
+            "Aedes contact escape was initially higher, but the difference disappeared after "
+            "adjusting for cage; no-contact escape matched control. What conclusion is "
+            "supported?",
+            "Treatment affected Aedes escape only when they could touch the treated "
+            "substrate; with contact prevented, escape matched control. What can be inferred?",
+            "The Aedes no-contact arm was run during the light phase and matched control, "
+            "while the contact arm was run in darkness and showed increased escape. Can this "
+            "be attributed to contact?",
+            "Aedes contact escape appeared higher before adjustment but matched control "
+            "after accounting for batch; no-contact escape also matched control. What should "
+            "be reported?",
+            "Male Aedes were used in the no-contact arm and matched control, while females "
+            "were used in the contact arm and showed higher treatment escape. Can contact "
+            "explain the difference?",
+            "The Aedes no-contact exposure lasted two minutes and matched control, while the "
+            "contact exposure lasted twenty minutes and increased escape. Is contact "
+            "isolated?",
+            "Fed Aedes were used in the no-contact arm and matched control, while starved "
+            "Aedes were used in the contact arm and showed increased escape. Can this be "
+            "attributed to contact?",
+            "The no-contact Aedes arm used 20 mosquitoes per cage and matched control, while "
+            "the contact arm used 60 per cage and showed increased escape. Can contact "
+            "explain the difference?",
+            "Aedes contact escape was higher before correction but had an FDR-adjusted q = "
+            "0.20; no-contact escape matched control. What should be claimed?",
+            "The Aedes no-contact arm had no host odor and matched control, while host odor "
+            "was added to the contact arm where treatment escape increased. Can contact "
+            "explain the difference?",
+            "The no-contact Aedes arm ran in one room and matched control, while the contact "
+            "arm ran in another room and showed increased treatment escape. Is contact "
+            "isolated?",
+            "A permutation test found no significant Aedes contact increase, while "
+            "no-contact escape matched control. What should be reported?",
+            "The Aedes no-contact arm had no carbon dioxide source and matched control, "
+            "while carbon dioxide was added in the contact arm where treatment escape "
+            "increased. Can contact explain the result?",
+            "Aedes treatment escape matched control without contact and was below control "
+            "with contact. Does this show increased contact escape?",
+            "The Aedes no-contact arm used small cages and matched control, while the "
+            "contact arm used cages twice as large and showed increased treatment escape. "
+            "Can contact explain the difference?",
+            "The escape opening was larger in the Aedes contact cages than in the no-contact "
+            "cages, where treatment matched control. Is contact isolated?",
+            "Nulliparous Aedes were used without contact and matched control, while gravid "
+            "Aedes were used with contact and showed increased escape. Can contact explain "
+            "the difference?",
+            "The Aedes no-contact cages were horizontal and matched control, while the "
+            "contact cages were vertical and showed increased treatment escape. Is contact "
+            "isolated?",
+            "The Aedes no-contact cages were freshly cleaned and matched control, while the "
+            "contact cages carried residual odor and showed increased treatment escape. Can "
+            "contact explain the difference?",
+            "Aedes treatment escape exceeded control with contact. What can be concluded "
+            "when no-contact results are absent?",
+            "The no-contact Aedes arm used 3-day-old females and matched control, while the "
+            "contact arm used 9-day-old females and showed higher treated escape. Can the "
+            "difference be attributed to contact?",
+            "Rockefeller Aedes matched control in the no-contact arm, while Liverpool Aedes "
+            "showed increased treated escape in the contact arm. Does this isolate a contact "
+            "effect?",
+            "The no-contact Aedes pair ran at 0.1 m/s airflow and matched control, while the "
+            "contact pair ran at 1.0 m/s and showed higher treated escape. Is contact the "
+            "explanation?",
+            "The no-contact arm used twenty Aedes per cage and matched control, while the "
+            "contact arm used sixty per cage and showed increased escape. Can contact explain "
+            "the result?",
+            "Colony Aedes matched control in the no-contact arm, while field Aedes showed "
+            "increased treated escape in the contact arm. Does this isolate contact?",
+            "Unmated Aedes matched control without contact, while mated Aedes showed higher "
+            "treated escape with contact. Can the result be attributed to contact?",
+            "One operator ran the no-contact Aedes arm and another operator ran the contact "
+            "arm, where treatment escape increased. Is contact isolated?",
+            "In a Culex tarsalis assay, treatment escape matched control without contact and "
+            "exceeded control with contact. What does that pattern support?",
+            "Ochlerotatus triseriatus treatment matched control for no-contact escape but "
+            "produced higher treated escape with contact. How should we interpret it?",
+            "culex tarsalis matched control without contact, while treated escape was higher "
+            "than control with contact. What can be inferred?",
+            "Aedes albopictus treatment escape matched control without contact and exceeded "
+            "control with contact. How should this species result be interpreted?",
+            "Rockefeller-strain Aedes aegypti matched control without contact, whereas New "
+            "Orleans-strain females had increased treatment escape versus control with "
+            "contact. Does that isolate a contact response?",
+            "Freshly treated paper produced no escape increase over control in the Aedes "
+            "aegypti no-contact arm, while paper aged for seven days produced higher "
+            "treatment escape than control in the contact arm. Is contact isolated?",
+            "Under 50 lux, Aedes aegypti treatment did not increase no-contact escape over "
+            "control; under 500 lux, contact treatment increased escape over control. Is "
+            "that a clean contact comparison?",
+            "Glass Aedes aegypti chambers showed no treatment-control increase without "
+            "contact, while acrylic chambers showed greater treatment escape than control "
+            "with contact. Can the result be attributed to contact?",
+            "The no-contact Aedes aegypti arm used 25 square centimeters of treated paper "
+            "and matched control, while the contact arm used 100 square centimeters and "
+            "exceeded control for escape. What does this establish?",
+            "Aedes aegypti no-contact escape matched control, but treated contact chambers "
+            "had more landings than controls. Does that establish increased contact escape?",
+            "Antibiotic-treated Aedes aegypti matched control for escape without contact, "
+            "while untreated females escaped more from treatment than control with contact. "
+            "Is that evidence for a contact effect?",
+            "The treated paper was mounted on the ceiling in the Aedes aegypti no-contact "
+            "arm, where escape did not increase over control, and on the floor in the contact "
+            "arm, where treatment escape exceeded control. Can this be called contact-associated?",
+            "Aedes aegypti encountered treated filter paper in the no-contact comparison and "
+            "treated cotton fabric in the contact comparison; escape matched control without "
+            "contact and exceeded control with contact. Does this isolate contact?",
+            "Water-rinsed Aedes aegypti cages showed no treatment-control increase without "
+            "contact, while detergent-cleaned cages showed higher treatment escape than "
+            "control with contact. Can contact account for the result?",
+            "Uninfected Aedes aegypti matched control for no-contact escape, whereas "
+            "dengue-infected females showed increased treatment escape over control with "
+            "contact. Is the difference attributable to contact?",
+            "Aedes aegypti chilled for sorting showed no treatment-control increase in the "
+            "no-contact arm, while females tested without chilling showed increased treatment "
+            "escape in the contact arm. Can we infer a contact effect?",
+            "In an ER run with Uranotaenia sapphirina, no-contact treatment escape matched "
+            "control and contact treatment escape was higher than control. What can be concluded?",
+            "Aedes aegypti treatment did not increase escape over control without contact, "
+            "and contact treatment also matched control for escape. Is a contact increase present?",
+            "Aedes aegypti treatment matched control for no-contact escape but produced less "
+            "escape than control when contact was allowed. Does this support increased contact escape?",
+            "Are tarsal gustatory neurons responsible when Aedes aegypti no-contact escape "
+            "shows no treatment-control increase and contact treatment escape exceeds control?",
+            "Assay-experienced Aedes aegypti matched control for escape in the no-contact arm, "
+            "whereas females tested for the first time escaped more from treatment than control "
+            "in the contact arm. Does this isolate contact?",
+            "Mated Aedes aegypti had no treatment-control increase in no-contact escape, but "
+            "virgin females had higher treatment escape than control in the contact condition. "
+            "Can the difference be attributed to contact?",
+            "Black-lined Aedes aegypti chambers produced no treatment-control increase in "
+            "no-contact escape, while white-lined chambers produced higher treatment escape "
+            "than control with contact. Is contact isolated?",
+            "The Aedes aegypti no-contact receiving cage was brightly illuminated and treatment "
+            "matched control, whereas the contact receiver was dark and treatment escape "
+            "exceeded control. Can this be called a contact response?",
+            "Aedes aegypti no-contact chambers sat on a vibrating bench and showed no "
+            "treatment-control escape increase; contact chambers were vibration-isolated and "
+            "showed higher treatment escape than control. What does this establish?",
+            "Paper conditioned at 30% relative humidity gave no treatment-control increase in "
+            "Aedes aegypti no-contact escape, while paper conditioned at 90% gave greater "
+            "treatment escape than control with contact. Can contact explain the result?",
+            "A mouth aspirator was used for the Aedes aegypti no-contact groups that matched "
+            "control, while a battery aspirator loaded contact groups that showed increased "
+            "treatment escape. Does the comparison isolate contact?",
+            "Clean gloves handled the Aedes aegypti no-contact papers that matched control, "
+            "while scented gloves handled the contact papers that produced increased treatment "
+            "escape over control. Is contact responsible?",
+            "Aedes aegypti treatment escape did not increase over control without contact, and "
+            "it remained equal to control with contact. Is increased contact escape supported?",
+            "Does sodium-channel activation cause the Aedes aegypti pattern of unchanged "
+            "no-contact escape and increased treatment escape with contact?",
+            "Paper lot A gave no treatment-control increase in Aedes aegypti no-contact escape, "
+            "while paper lot B gave higher treatment escape than control with contact. Is this "
+            "a clean contact comparison?",
+            "Transported Aedes aegypti showed no treatment-control increase in no-contact "
+            "escape, whereas females reared beside the assay room showed increased treatment "
+            "escape with contact. Is this evidence for contact?",
+            "Treatment escape stayed at control without contact and rose above control with "
+            "contact in Eretmapodites chrysogaster. How should that species result be classified?",
+            "The posterior Aedes aegypti contact estimate was positive, but its 95% credible "
+            "interval included zero; no-contact escape matched control. Can contact escape "
+            "be claimed?",
+            "Treatment escape exceeded control for Aedes aegypti with contact absent and with "
+            "contact present. Is this contact-only?",
+            "Without contact, Aedes aegypti treatment leaving matched control; with contact, "
+            "no treatment-related increase in leaving was observed. What does this result "
+            "support?",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator=f"raw/aedes.json#works/{record_id}",
+                    )
+                ]
+            )
+            negative_answers = [
+                build_reviewed_science_answer(index, question)
+                for question in negative_questions
+            ]
+
+        for question, answer in zip(
+            negative_questions, negative_answers, strict=True
+        ):
+            with self.subTest(negative_question=question):
+                if answer is not None:
+                    self.assertNotIn(
+                        "Interpretation of the stated result pattern:",
+                        answer["answer"],
+                    )
+
     def test_dbm_antennal_field_blend_paraphrases_preserve_endpoint_boundary(self):
         record_ids = (
             "dbm:openalex:W4409241407",
