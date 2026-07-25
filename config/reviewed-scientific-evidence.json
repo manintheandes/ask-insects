@@ -1725,6 +1725,37 @@
       ]
     },
     {
+      "id": "anopheles-deet-time-of-test-retest",
+      "species_ids": ["anopheles_mosquitoes"],
+      "match": {
+        "priority": 320,
+        "phrases": [
+          "time of day really change Anopheles contact and noncontact escape",
+          "DEET excito-repellency day and night",
+          "schedule the retest",
+          "time of test periods"
+        ],
+        "required_any": [
+          ["anopheles", "malaria mosquito", "malaria-mosquito", "minimus", "dirus"],
+          ["deet"],
+          ["time of day", "test period", "test periods", "daytime", "nighttime", "day", "night", "14:00", "clock time", "zeitgeber", "schedule"],
+          ["contact", "noncontact", "non-contact", "escape", "excito-repellency", "excito repellency", "retest", "ranking"]
+        ],
+        "optional": ["5%", "assay drift", "knockdown", "mortality", "control", "randomize", "block"]
+      },
+      "answer": "Time of day can change the measured response, and ordinary assay drift can still coexist with that biological effect. In the cited study, long-colonized, 3- to 5-day-old, non-blood-fed, nulliparous female Anopheles minimus and Anopheles dirus were tested with 5% DEET in matched contact and noncontact excito-repellency chambers across eight 3-hour periods. Anopheles minimus differed significantly between daytime and nighttime in both noncontact and contact escape. Anopheles dirus differed significantly in contact escape but not in the overall day-night noncontact comparison. Untreated-control activity was also greater in some night periods, so raw escape is not a treatment effect unless it is compared with the time-matched control. These two laboratory strains do not establish a universal rule that every Anopheles species is more repelled at night, and the study does not identify a receptor-level circadian mechanism. For the retest, predefine clock-time or Zeitgeber windows that cover the intended use period, then block or randomize every candidate and its matched control across every window and replicate the blocks on multiple days. Hold age, feeding and gonotrophic state, light-dark entrainment, starvation interval, temperature, humidity, dose, and chamber geometry constant. Analyze contact escape, noncontact escape, knockdown, and 24-hour mortality separately, with treatment-by-time and species or population effects rather than comparing unmatched daytime and nighttime totals.",
+      "source_record_ids": ["reviewed_repellent_evidence:deet_anopheles_time_of_test_2021"],
+      "source_provenance": [
+        {
+          "record_id": "reviewed_repellent_evidence:deet_anopheles_time_of_test_2021",
+          "title": "Time of Test Periods Influence the Behavioral Responses of Anopheles minimus and Anopheles dirus (Diptera: Culicidae) to DEET",
+          "public_url": "https://doi.org/10.3390/insects12100867",
+          "source_id": "doi:10.3390/insects12100867",
+          "locator": "Abstract; Methods Sections 2.2-2.4: long-colonized, 3- to 5-day-old, non-blood-fed, nulliparous female Anopheles minimus and Anopheles dirus, 5% DEET, matched contact and noncontact excito-repellency chambers, and eight 3-hour test periods; Results Tables 4-5 and Supplementary Tables S1-S5: species-specific daytime and nighttime escape, knockdown, and mortality comparisons; Discussion: test-period effects and time-matched untreated-control activity"
+        }
+      ]
+    },
+    {
       "id": "anopheles-eugenol-assay-preservation",
       "species_ids": ["anopheles_mosquitoes"],
       "match": {

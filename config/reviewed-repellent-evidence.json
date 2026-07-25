@@ -829,6 +829,31 @@
           "locator": "Background final paragraph defining spatial repellency, contact irritancy, and contact toxicity; Methods, Repellency assays, Irritancy assays, and Toxicity assays; Results Tables 1-3"
         }
       ]
+    },
+    {
+      "id": "deet_anopheles_time_of_test_2021",
+      "material_id": "deet",
+      "species_id": "anopheles_minimus_and_dirus",
+      "scientific_name": "Anopheles minimus; Anopheles dirus",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "time_blocked_contact_and_noncontact_excito_repellency",
+      "exposure_route": "mixed_or_unclear",
+      "endpoint": "contact and noncontact escape, knockdown, and 24-hour mortality across test periods",
+      "finding": "In long-colonized Anopheles minimus and Anopheles dirus, time of testing changed 5% DEET contact and noncontact excito-repellency patterns in species- and endpoint-specific ways.",
+      "limitations": [
+        "The study used two long-maintained laboratory strains, so its exact escape percentages and day-night patterns should not be transferred to wild populations.",
+        "Untreated-control activity also varied across some test periods, so raw escape must be interpreted against the time-matched control.",
+        "The results show time-of-test sensitivity but do not identify a receptor-level or molecular circadian mechanism."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Time of Test Periods Influence the Behavioral Responses of Anopheles minimus and Anopheles dirus (Diptera: Culicidae) to DEET",
+          "public_url": "https://doi.org/10.3390/insects12100867",
+          "source_id": "doi:10.3390/insects12100867",
+          "locator": "Abstract; Methods Sections 2.2-2.4: long-colonized, 3- to 5-day-old, non-blood-fed, nulliparous female Anopheles minimus and Anopheles dirus, 5% DEET, matched contact and noncontact excito-repellency chambers, and eight 3-hour test periods; Results Tables 4-5 and Supplementary Tables S1-S5: species-specific daytime and nighttime escape, knockdown, and mortality comparisons; Discussion: test-period effects and time-matched untreated-control activity"
+        }
+      ]
     }
   ]
 }
