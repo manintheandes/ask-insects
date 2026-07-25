@@ -1639,7 +1639,7 @@
     },
     {
       "id": "anopheles-orco-screen-ranking-boundary",
-      "species_ids": ["anopheles_mosquitoes"],
+      "species_ids": ["anopheles_mosquitoes", "aedes_aegypti"],
       "match": {
         "priority": 120,
         "phrases": [
@@ -1650,7 +1650,7 @@
         ],
         "required_any": [
           ["orco", "odorant receptor", "cell assay", "receptor assay"],
-          ["carvacrol", "deet", "compound", "compounds"],
+          ["carvacrol", "deet"],
           ["rank", "ranking", "repellent", "repellents", "follow-up", "follow up", "masking", "prevent", "bite", "bites", "outperform", "stronger", "better"]
         ],
         "optional": ["anopheles", "gambiae", "coluzzii", "blocks", "inhibits", "weakly", "barely", "human odor", "human odour"]
