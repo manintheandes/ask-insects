@@ -1503,11 +1503,11 @@
       "id": "swd-crop-and-nontarget-safety",
       "species_ids": ["drosophila_suzukii"],
       "match": {
-        "priority": 45,
+        "priority": 65,
         "phrases": ["non-target", "non target", "crop safety", "pollinator safe", "pollinator safety", "bee safe", "bee safety"],
         "required_any": [
           ["non target", "non-target", "pollinator", "pollinators", "bee", "bees", "beneficial", "crop safety", "phytotoxicity"],
-          ["measure", "measurement", "field trial", "safety", "safe", "safer", "unsafe", "assess", "advance", "tolerant", "tolerance", "sensitive", "sensitivity", "hazard", "risk"]
+          ["measure", "measurement", "field trial", "field testing", "field-testing", "test", "testing", "require", "required", "protect", "protection", "safety", "safe", "safer", "unsafe", "assess", "advance", "tolerant", "tolerance", "sensitive", "sensitivity", "hazard", "risk"]
         ],
         "optional": ["residue", "worker", "soil", "aquatic", "predator", "parasitoid", "essential oil", "feeding", "formulation", "dose", "route", "crop", "berry", "program"]
       },
