@@ -3107,6 +3107,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Can we call an SWD oil bee-safe because honey bees and stingless bees tolerated it better than the flies?",
                 "What pollinator risk evidence is still missing before advancing an SWD essential oil for use on berry crops?",
                 "Do lower effects in two tested bees establish non-target safety for an SWD crop treatment?",
+                "Before field-testing a volatile SWD deterrent in raspberries, what evidence would you require to protect bees, predators, parasitoids, workers, the crop, soil, and nearby water?",
+                "How should I test whether an airborne SWD treatment is safe for beneficial insects across their life stages?",
             )
             for question in questions:
                 with self.subTest(question=question):
