@@ -7412,7 +7412,15 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "Nearly all SWD eggs moved to untreated fruit while total fecundity fell. Which no-choice, survival, movement, and mating controls distinguish avoidance from impairment?",
                 "swd-choice-endpoint-confounds",
-                ("cannot by itself", "total eggs", "female survival"),
+                (
+                    "side-balanced treated-versus-vehicle choice assay",
+                    "treated-only and vehicle-only no-choice arms",
+                    "survival immediately after exposure",
+                    "confirmed-mated females",
+                    "unchanged total eggs",
+                    "support activity impairment or toxicity",
+                    "within-state treatment contrast",
+                ),
             ),
             (
                 "Treated SWD berries were firmer and drier while control berries were wounded. How should those fruit conditions be crossed before assigning the effect to repellency?",
