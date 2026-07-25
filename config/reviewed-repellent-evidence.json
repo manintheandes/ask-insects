@@ -783,6 +783,52 @@
           "locator": "Abstract: Thymus leucospermus and Thymus teucrioides essential-oil adult repellency"
         }
       ]
+    },
+    {
+      "id": "transfluthrin_who_spatial_repellency_assay_guidance_2013",
+      "material_id": "transfluthrin",
+      "species_id": "multiple_mosquito_vectors",
+      "scientific_name": "Aedes, Anopheles, and Culex mosquito vectors",
+      "evidence_relation": "exact_material",
+      "evidence_class": "regulatory_dossier_requirement",
+      "assay_family": "who_spatial_repellency_efficacy_guidance",
+      "exposure_route": "non_contact",
+      "endpoint": "movement away, attraction inhibition, feeding response, knock-down, and mortality",
+      "finding": "WHO defines spatial repellency as an airborne intervention-level effect that reduces human-vector contact and evaluates movement, attraction inhibition, feeding response, knock-down, and mortality as distinct outcomes.",
+      "limitations": [
+        "The guidance is an assay framework, not evidence that a particular candidate, dose, formulation, or delivery system is effective."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Guidelines for efficacy testing of spatial repellents",
+          "public_url": "https://www.who.int/publications/i/item/9789241505024",
+          "source_id": "who:9789241505024",
+          "locator": "Overview definition of spatial repellency and the laboratory, semi-field, and field evaluation sections distinguishing movement away, attraction inhibition, feeding response, knock-down, and mortality"
+        }
+      ]
+    },
+    {
+      "id": "deet_anopheles_contact_spatial_toxicity_separation_2019",
+      "material_id": "deet",
+      "species_id": "anopheles_gambiae",
+      "scientific_name": "Anopheles gambiae",
+      "evidence_relation": "exact_material",
+      "evidence_class": "repellent_effect",
+      "assay_family": "paired_repellency_irritancy_toxicity_assays",
+      "exposure_route": "mixed_or_unclear",
+      "endpoint": "spatial repellency, contact irritancy, and contact toxicity",
+      "finding": "Deletre and colleagues defined and assayed spatial repellency, contact irritancy, and contact toxicity as separate response classes in Anopheles gambiae.",
+      "limitations": [
+        "The study's outcomes are specific to its mosquito strains, compounds, doses, and assay geometries and do not establish universal candidate efficacy."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Insecticide resistance modifies mosquito response to DEET and natural repellents",
+          "public_url": "https://doi.org/10.1186/s13071-019-3343-9",
+          "source_id": "doi:10.1186/s13071-019-3343-9",
+          "locator": "Background final paragraph defining spatial repellency, contact irritancy, and contact toxicity; Methods, Repellency assays, Irritancy assays, and Toxicity assays; Results Tables 1-3"
+        }
+      ]
     }
   ]
 }

@@ -95,6 +95,20 @@
       "locator": "Summary; Results, Figures 2-6 and Supplemental Figure S1: calcium imaging of Anopheles coluzzii Orco-expressing olfactory neurons, direct repellent presentations, physical mixtures with human-derived odorants, separated filter-paper controls, and GC-MS volatility measurements; Discussion: synthetic repellents reduced odor delivery through physicochemical masking rather than demonstrated direct Orco inhibition"
     },
     {
+      "record_id": "reviewed_repellent_evidence:transfluthrin_who_spatial_repellency_assay_guidance_2013",
+      "title": "Guidelines for efficacy testing of spatial repellents",
+      "public_url": "https://www.who.int/publications/i/item/9789241505024",
+      "source_id": "who:9789241505024",
+      "locator": "Overview definition of spatial repellency and the laboratory, semi-field, and field evaluation sections distinguishing movement away, attraction inhibition, feeding response, knock-down, and mortality"
+    },
+    {
+      "record_id": "reviewed_repellent_evidence:deet_anopheles_contact_spatial_toxicity_separation_2019",
+      "title": "Insecticide resistance modifies mosquito response to DEET and natural repellents",
+      "public_url": "https://doi.org/10.1186/s13071-019-3343-9",
+      "source_id": "doi:10.1186/s13071-019-3343-9",
+      "locator": "Background final paragraph defining spatial repellency, contact irritancy, and contact toxicity; Methods, Repellency assays, Irritancy assays, and Toxicity assays; Results Tables 1-3"
+    },
+    {
       "record_id": "dbm:openalex:W1994548084",
       "title": "The roles of olfaction and vision in host-plant finding by the diamondback moth, Plutella xylostella",
       "public_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
@@ -1141,6 +1155,35 @@
       },
       "answer": "Use paired non-contact treatment and carrier-only control chambers with a mesh barrier that prevents surface contact. Record escape at 1-minute intervals for 30 minutes and compare escape-time curves; that is the direct behavioral measure of spatial avoidance in the cited assay. Run a matched contact format to separate contact excitation from the non-contact response. At 30 minutes, record knockdown separately among escaped and remaining mosquitoes, then follow recovery and 24-hour mortality. In this assay, greater non-contact escape indicates stronger spatial avoidance only when locomotor capacity is preserved. Reduced escape can indicate knockdown or impaired movement and must not be labeled repellency; in a differently designed assay, reduced entry or occupancy can indicate avoidance only when the endpoint direction and motor controls are explicit. Knockdown can suppress escape and mimic a weak behavioral response. Keep spatial avoidance, contact excitation, reversible knockdown, and death as separate endpoints.",
       "source_record_ids": ["openalex:W3048721146"]
+    },
+    {
+      "id": "anopheles-spatial-contact-toxicity-assay-design",
+      "species_ids": ["anopheles_mosquitoes"],
+      "match": {
+        "priority": 2000,
+        "phrases": [
+          "without mixing the mechanisms",
+          "separate spatial repellency from contact irritancy",
+          "distinguish spatial repellency, contact irritancy, and toxicity",
+          "assay layout and endpoints",
+          "drives mosquitoes out",
+          "drives Anopheles out"
+        ],
+        "required_any": [
+          ["Anopheles", "malaria mosquito", "malaria mosquitoes"],
+          ["spatial repellency", "spatial repellent", "airborne", "volatile", "vapor", "vapour", "non-contact", "no-contact", "drives", "exit", "escape"],
+          ["contact", "contact irritancy", "contact excitation", "contact effect", "touch", "contact-permitted", "contact permitted"],
+          ["toxicity", "toxic", "knockdown", "knocks", "mortality", "death", "deaths"],
+          ["assay", "layout", "design", "endpoint", "endpoints", "arm", "arms", "separate", "distinguish", "classify", "call", "claim", "claims"]
+        ],
+        "optional": ["chamber", "mechanism", "mechanisms", "control", "controls", "recovery", "dose", "formulation"]
+      },
+      "answer": "Published evidence: WHO defines spatial repellency as an airborne intervention effect that reduces human-vector contact and treats movement, attraction inhibition, feeding response, knock-down, and mortality as distinct outcomes. Deletre and colleagues likewise defined and assayed spatial repellency, contact irritancy, and contact toxicity separately in Anopheles gambiae. A published Anopheles excito-repellency layout used paired treated and solvent-carrier control chambers in two formats: a mesh barrier physically prevented contact in the non-contact pair, while the matched contact pair omitted that barrier. Record escape or exit over time in the no-contact pair as the geometry-specific spatial-response endpoint. In the contact-permitted pair, record contact residence or treated-surface encounters and escape; compare with its matched contact control and account for the simultaneous no-contact response because raw contact escape can contain both airborne and contact effects. Record immediate knockdown separately among mosquitoes that exited and remained, follow the same cohorts for recovery, and score delayed mortality at a defined time such as 24 hours. Report dose, formulation, source loading and release, exposure time, species, physiological state, entry or escape, landing or feeding, contact residence, knockdown, recovery, and delayed mortality separately. Decision rules: a treatment-specific no-contact movement response with preserved locomotion supports spatial repellency under that apparatus and concentration; an additional treatment-specific response only when contact is allowed supports contact-associated irritancy; knockdown or delayed death supports toxic action; and no treatment-control difference on those prespecified endpoints supports none of those claims. Toxic incapacitation can suppress escape, so reduced escape must never be called stronger repellency without the motor and survival endpoints. Interpretation boundary: these assays classify operational effects, not a receptor-level mechanism, complete protection, or field efficacy.",
+      "source_record_ids": [
+        "reviewed_repellent_evidence:transfluthrin_who_spatial_repellency_assay_guidance_2013",
+        "reviewed_repellent_evidence:deet_anopheles_contact_spatial_toxicity_separation_2019",
+        "openalex:W3048721146"
+      ]
     },
     {
       "id": "aedes-spatial-environment-controls",
