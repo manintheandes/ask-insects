@@ -813,19 +813,23 @@ def _has_er_contact_only_result_pattern_intent(
         r"\b(?:no contact|non contact|no touch|non touch|"
         r"without (?:contact|direct contact|surface contact|"
         r"paper contact|residue contact)|contact barred|contact free|"
+        r"contact barrier (?:was )?in place|"
         r"contact restricted|(?:paper|surface|residue) (?:was )?inaccessible|"
         r"contact (?:was )?not (?:allowed|available|possible)|"
         r"contact (?:was )?"
         r"(?:blocked|denied|prevented|prohibited|restricted|unavailable|"
         r"excluded|impossible)|"
         r"(?:mesh|barrier) (?:blocked|prevented)|"
+        r"(?:mesh|screen) separated (?:aedes|females|mosquitoes) from "
+        r"(?:the )?(?:paper|surface|residue)|"
         r"behind (?:the )?(?:contact )?(?:mesh|barrier))\b"
     )
     contact_result_state_pattern = re.compile(
         r"(?<!no )(?<!non )\bcontact "
         r"(?:arm|chamber|condition|contrast|escape|estimate|group|increase|"
         r"result|treatment)\b|"
-        r"(?<!without )\b(?:direct|surface|paper|residue) contact\b"
+        r"(?<!without )(?<!blocked )(?<!denied )(?<!prevented )"
+        r"\b(?:direct|surface|paper|residue) contact\b"
         r"(?! (?:was )?(?:blocked|excluded|prevented|prohibited|unavailable))|"
         r"(?<!no )(?<!non )\bcontact (?:was )?"
         r"(?:allowed|available|enabled|permitted|possible)\b|"
@@ -1802,7 +1806,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"oviposition|eggs?)\b"
         r"|\b(?:feeding attempts?|feeding(?: rate)?|flight activity|"
         r"wing beat(?: frequency| rate)?|"
-        r"flight speed|wing movement|time spent|activity|"
+        r"flight speed|flight velocity|wing movement|time spent|activity|"
         r"dwell time|duration|"
         r"probing|probing attempts?|blood feeding (?:attempts?|rate)|"
         r"walking speed|movement speed|movement rate|average speed|time active|"
@@ -1872,10 +1876,10 @@ def _has_er_contact_only_result_pattern_intent(
         """
         a about above across after against all also among an analyzed and any arm arms as
         assay assays at aedes aegypti be became before behind being below
-        between beyond both but by cage cages can cannot chamber chambers
+        between beyond both but by cage cages can cannot chamber chambers common
         comparison comparisons condition conditions contact contrast control
         controls could cumulative data did direct relation
-        directly do does during effect endpoint equal er escape escaped escapees
+        directly do does during effect endpoint equal er excito escape escaped escapees
         escapes escaping experiment exposure female females finding findings
         first for format formulation from gap group groups had has have how i if
         in
@@ -1886,14 +1890,14 @@ def _has_er_contact_only_result_pattern_intent(
         result results s
         run same seen should show showed source spatial specific stated
         statistically study summary surface test than that
-        the their them then there these they thirty this through to together
+        the their them then there these they thirty this through to together each
         treated treatment two under us using vehicle versus was we were what
         when where whereas which while with within without would yielded yet
         """.split()
     )
     neutral_arm_words |= frozenset(
         """
-        able absence absent accessible active actual add added additional
+        able absence absent accessible active actual add added additional assessed
         advantage affect alike allowed allowing alongside alter although appeared
         appropriate approximately associated available away blank blocked
         blocking blocks brief capable card carrier caused chance change
