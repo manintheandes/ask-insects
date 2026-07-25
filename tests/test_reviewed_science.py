@@ -242,6 +242,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "How should I test the reversibility of SWD avoidance once the volatile is gone?",
                 "Does SWD avoidance return to baseline after the odor source is removed?",
                 "Would SWD avoidance rebound after repellent washout?",
+                "After taking away an SWD volatile, which measurements distinguish persistent avoidance, habituation, and a response that vanishes quickly?",
+                "Design a washout time course that separates residual odor, learned habituation, and toxic motor impairment in SWD.",
                 "For an SWD oviposition repellent lead, how should I think about adult or larval pre-exposure before assuming the deterrent will keep working after repeated crop exposure?",
                 "Before I trust an SWD oviposition deterrent across repeated crop exposure, how should adult and larval pre-exposure be tested?",
             )
@@ -252,7 +254,12 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIsNotNone(answer)
                     assert answer is not None
                     self.assertTrue(answer["ok"])
-                    self.assertIn("Compare naive and pre-exposed flies", answer["answer"])
+                    self.assertIn("15 minutes, 1 hour, 6 hours, 24 hours, and 48 hours", answer["answer"])
+                    self.assertIn("residual odor is not mistaken for a behavioral aftereffect", answer["answer"])
+                    self.assertIn("Persistent avoidance means", answer["answer"])
+                    self.assertIn("Habituation means", answer["answer"])
+                    self.assertIn("Rapid disappearance means", answer["answer"])
+                    self.assertIn("not post-removal recovery measurements", answer["answer"])
                     self.assertIn("does not prove long-term field persistence", answer["answer"])
 
     def test_swd_seasonal_morph_olfaction_paraphrases_use_direct_source(self):

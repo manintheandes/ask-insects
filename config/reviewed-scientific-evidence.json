@@ -1278,6 +1278,7 @@
           "volatile is removed",
           "pre-exposed flies",
           "washout time",
+          "washout time course",
           "adult or larval pre-exposure",
           "repeated crop exposure",
           "deterrent will keep working"
@@ -1298,11 +1299,11 @@
             "rebounds",
             "rebound"
           ],
-          ["volatile", "removed", "recovery", "avoidance", "repellent", "deterrent", "deterrence", "octenol", "2 pentylfuran", "2-pentylfuran", "geosmin"]
+          ["volatile", "odor", "removed", "recovery", "avoidance", "repellent", "deterrent", "deterrence", "octenol", "2 pentylfuran", "2-pentylfuran", "geosmin"]
         ],
         "optional": ["octenol", "2 pentylfuran", "geosmin", "larval exposure"]
       },
-      "answer": "Compare naive and pre-exposed flies at defined exposure and washout times, then repeat the same avoidance, activity, survival, and oviposition endpoints after removing the volatile. The cited study found no loss of deterrence to octenol or 2-pentylfuran after 24, 48, or 72 hours of adult pre-exposure or after larval exposure, but it did not find a geosmin repellent effect in its assay. That compound-specific result does not prove long-term field persistence after removal or weathering.",
+      "answer": "Measure the same flies immediately before removal, immediately after removal, and at fixed washout intervals such as 15 minutes, 1 hour, 6 hours, 24 hours, and 48 hours. At each interval, compare naive, carrier-only pre-exposed, and volatile-pre-exposed groups in a clean apparatus, then rechallenge them at the same delivered dose. Record orientation or trap choice, zone occupancy or dwell time, movement speed, distance, immobility, egg allocation and total eggs, knockdown, survival, and recovery. Verify that the volatile has cleared with an empty-apparatus or chemical-residue control so residual odor is not mistaken for a behavioral aftereffect. Persistent avoidance means the pre-exposed flies still avoid in clean air after the volatile has cleared. Habituation means their response to the same-dose rechallenge becomes progressively weaker than naive and carrier controls while locomotion and survival remain normal; recovery after a longer washout supports a reversible learned effect. Rapid disappearance means avoidance returns to the matched control baseline soon after removal. Reduced movement, knockdown, or mortality instead supports impairment, not habituation. The cited study found no loss of deterrence to octenol or 2-pentylfuran after 24, 48, or 72 hours of adult pre-exposure or after larval exposure, but it did not find a geosmin repellent effect in its assay. Those were pre-exposure tests, not post-removal recovery measurements, and the compound-specific result does not prove long-term field persistence after removal or weathering.",
       "source_record_ids": ["swd:openalex_literature:openalex:W3199560580"],
       "source_provenance": [
         {
