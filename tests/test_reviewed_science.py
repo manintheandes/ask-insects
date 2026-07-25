@@ -248,6 +248,9 @@ class ReviewedScienceTests(unittest.TestCase):
                 "When the odor source is taken away, what observations separate a lasting SWD behavior change from leftover vapor or temporary paralysis?",
                 "What post-exposure schedule would distinguish SWD habituation from residual chemical in the chamber?",
                 "How should recovery be tracked after removing an airborne SWD deterrent?",
+                "Once an SWD odor treatment ends, how often should behavior be checked to separate recovery from lasting avoidance?",
+                "Following exposure, how should I measure whether SWD avoidance survives source removal?",
+                "What should we measure after odor withdrawal to distinguish recovery from habituation in SWD?",
                 "For an SWD oviposition repellent lead, how should I think about adult or larval pre-exposure before assuming the deterrent will keep working after repeated crop exposure?",
                 "Before I trust an SWD oviposition deterrent across repeated crop exposure, how should adult and larval pre-exposure be tested?",
             )
