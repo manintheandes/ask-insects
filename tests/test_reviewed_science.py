@@ -526,6 +526,45 @@ class ReviewedScienceTests(unittest.TestCase):
                     ):
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
 
+    def test_aedes_contact_spatial_answer_requires_delivered_vapor_comparability(self):
+        record_ids = (
+            "openalex:W4403603462",
+            "openalex:W3048721146",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="aedes_literature_openalex",
+                        locator=f"raw/aedes.json#works/{record_id.split(':')[-1]}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+
+            answer = build_reviewed_science_answer(
+                index,
+                "Equal transfluthrin on two papers does not necessarily mean equal vapor exposure. How should I verify delivered dose while separating Aedes spatial escape, contact excitation, reversible knockdown, and 24-hour death?",
+            )
+
+            self.assertIsNotNone(answer)
+            assert answer is not None
+            self.assertIn(
+                "equal paper loading does not establish equal delivered vapor exposure",
+                answer["answer"],
+            )
+            self.assertIn(
+                "same nominal loading and exposed cohorts",
+                answer["answer"],
+            )
+            self.assertIn(
+                "report the dose or loading and observation time for every endpoint",
+                answer["answer"],
+            )
+
     def test_aedes_post_exposure_recovery_defines_denominators(self):
         record_id = "openalex:W3048721146"
         with tempfile.TemporaryDirectory() as tmpdir:
