@@ -4899,6 +4899,77 @@ class ReviewedScienceTests(unittest.TestCase):
                         answer["answer"].casefold(),
                     )
 
+    def test_anopheles_deet_time_of_test_routes_to_circadian_retest(self):
+        record_id = "reviewed_repellent_evidence:deet_anopheles_time_of_test_2021"
+        questions = (
+            (
+                "A 5% DEET excito-repellency screen run at 14:00 gives a different "
+                "ranking from a night run. Is that just assay drift, or can time of "
+                "day really change Anopheles contact and noncontact escape? How "
+                "should I schedule the retest?"
+            ),
+            (
+                "Could the test period explain why Anopheles minimus contact and "
+                "non-contact escape to DEET changed between daytime and nighttime, "
+                "and how should I block a repeat?"
+            ),
+            (
+                "Our Anopheles dirus DEET ranking changed at night. What time-matched "
+                "controls and mosquito-state variables are needed before calling it "
+                "a circadian response?"
+            ),
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator=f"records#{record_id}",
+                    )
+                ]
+            )
+            answers = [
+                build_reviewed_science_answer(index, question)
+                for question in questions
+            ]
+
+        for question, answer in zip(questions, answers, strict=True):
+            with self.subTest(question=question):
+                self.assertIsNotNone(answer)
+                assert answer is not None
+                self.assertTrue(answer["ok"])
+                self.assertEqual(
+                    {item["record_id"] for item in answer["evidence"]},
+                    {record_id},
+                )
+                for fragment in (
+                    "eight 3-hour periods",
+                    "Anopheles minimus",
+                    "Anopheles dirus",
+                    "5% DEET",
+                    "time-matched control",
+                    "block or randomize",
+                    "contact escape, noncontact escape, knockdown, and 24-hour mortality",
+                    "does not identify a receptor-level circadian mechanism",
+                ):
+                    self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                evidence = answer["evidence"][0]
+                self.assertEqual(
+                    evidence["provenance"]["source_id"],
+                    "doi:10.3390/insects12100867",
+                )
+                self.assertIn(
+                    "Methods Sections 2.2-2.4",
+                    evidence["provenance"]["locator"],
+                )
+                self.assertNotIn(
+                    "A non-significant Anopheles DEET comparison",
+                    answer["answer"],
+                )
+
     def test_anopheles_eugenol_decisions_preserve_species_and_small_next_step(self):
         record_id = "openalex:W3013059076"
         questions = (
