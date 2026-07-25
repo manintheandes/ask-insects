@@ -81,6 +81,20 @@
       "locator": "Publisher abstract: immediate host-seeking inhibition after a replete blood meal and after saline-enema abdominal distention"
     },
     {
+      "record_id": "reviewed_repellent_evidence:doi:10.1074/jbc.M114.632299",
+      "title": "Inhibition of Anopheles gambiae Odorant Receptor Function by Mosquito Repellents",
+      "public_url": "https://doi.org/10.1074/jbc.M114.632299",
+      "source_id": "doi:10.1074/jbc.M114.632299",
+      "locator": "Abstract; Experimental Procedures, cell-based OR assay and sequential compound-addition protocol; Results, Figures 2-5: primary responses and inhibition of AgamOR1/Orco and AgamOR2/Orco by ethyl cinnamate, carvacrol, cumin alcohol, DEET, and isopropyl cinnamate; Discussion: receptor inhibition is an in-vitro molecular endpoint and was not tested as mosquito repellency"
+    },
+    {
+      "record_id": "reviewed_repellent_evidence:doi:10.1016/j.cub.2019.09.007",
+      "title": "Commonly Used Insect Repellents Hide Human Odors from Anopheles Mosquitoes",
+      "public_url": "https://doi.org/10.1016/j.cub.2019.09.007",
+      "source_id": "doi:10.1016/j.cub.2019.09.007",
+      "locator": "Summary; Results, Figures 2-6 and Supplemental Figure S1: calcium imaging of Anopheles coluzzii Orco-expressing olfactory neurons, direct repellent presentations, physical mixtures with human-derived odorants, separated filter-paper controls, and GC-MS volatility measurements; Discussion: synthetic repellents reduced odor delivery through physicochemical masking rather than demonstrated direct Orco inhibition"
+    },
+    {
       "record_id": "dbm:openalex:W1994548084",
       "title": "The roles of olfaction and vision in host-plant finding by the diamondback moth, Plutella xylostella",
       "public_url": "https://doi.org/10.1111/j.1365-3032.2006.00499.x",
@@ -1624,6 +1638,30 @@
       "source_record_ids": ["openalex:W4399119561"]
     },
     {
+      "id": "anopheles-orco-screen-ranking-boundary",
+      "species_ids": ["anopheles_mosquitoes"],
+      "match": {
+        "priority": 120,
+        "phrases": [
+          "carvacrol blocks Anopheles gambiae Orco",
+          "rank the compounds as repellents",
+          "DEET masking paper",
+          "Orco cell assay"
+        ],
+        "required_any": [
+          ["orco", "odorant receptor", "cell assay", "receptor assay"],
+          ["carvacrol", "deet", "compound", "compounds"],
+          ["rank", "ranking", "repellent", "repellents", "follow-up", "follow up", "masking"]
+        ],
+        "optional": ["anopheles", "gambiae", "coluzzii", "blocks", "inhibits", "weakly", "barely", "human odor", "human odour"]
+      },
+      "answer": "Do not rank carvacrol above DEET as a mosquito repellent from the cell assay. The recombinant Anopheles gambiae OR/Orco experiment measured molecular inhibition in an insect-cell expression system, not orientation, landing, biting, or protection. Carvacrol strongly inhibited the tested AgamOR1/Orco and AgamOR2/Orco responses, whereas DEET was the exception among the tested repellents and produced little inhibition in that sequential-addition assay. That result supports a receptor-level lead and a mechanistic difference under the tested in-vitro conditions; it does not establish behavioral potency, delivered airborne dose, duration, formulation performance, or human protection. The later Anopheles coluzzii study further shows why weak direct Orco inhibition cannot be read as weak repellency. DEET did not directly activate Orco-expressing olfactory neurons, and when physically mixed with activating human-derived odorants it reduced odor-evoked activity. Separated-filter-paper and volatility experiments supported physicochemical masking that reduced odor delivery rather than direct Orco inhibition. Follow up with matched delivered-dose tests that keep three layers separate: receptor or neuronal response, physical effects on host-odor volatility and delivery, and mosquito behavior. Compare carvacrol and DEET in direct neuronal presentation, mixed-versus-separated host-odor conditions with chemical headspace measurement, and then matched non-contact orientation, landing, and protection assays with locomotion, knockdown, and mortality controls. Treat that sequence as an R&D design derived from the papers, not as proof that either compound will outperform the other.",
+      "source_record_ids": [
+        "reviewed_repellent_evidence:doi:10.1074/jbc.M114.632299",
+        "reviewed_repellent_evidence:doi:10.1016/j.cub.2019.09.007"
+      ]
+    },
+    {
       "id": "anopheles-eugenol-assay-preservation",
       "species_ids": ["anopheles_mosquitoes"],
       "match": {
@@ -2522,7 +2560,7 @@
           "phylloplane"
         ]
       },
-      "answer": "Direct Plutella xylostella evidence separates host finding from egg laying. In one host-choice study, females oriented to Brassicaceae plant odors versus clean air but showed no preference when odors from three Brassicaceae species were presented together. Mixed cropping increased takeoff and reduced both field DBM population and oviposition compared with monoculture; landing also differed among host plants. Flying females use volatile plant cues to locate and land on hosts, while plant position and host-versus-nonhost identity also affect alighting. Direct oviposition tests found the isothiocyanates iberin and sulforaphane to be the most active volatile stimulants and also found activity in non-volatile plant fractions. Surface-choice experiments found more eggs on reduced-wax or herbicide-treated plants and on glossy rather than waxy strains, implicating epicuticular wax, although visual, chemical, and tactile mechanisms were not isolated. A separate study found that larva-induced host-plant volatiles attracted adult females in a Y-tube olfactory assay; it did not measure landing or egg deposition, so it cannot show that the attraction caused oviposition. Another study identified eight broccoli volatiles that elicited antennal responses: benzaldehyde, limonene, phenylacetaldehyde, acetophenone, linalool, 2-phenylethyl alcohol, methyl salicylate, and methyl 2-methoxybenzoate; field trapping supported a three-component blend. Antennal response, field trapping, attraction, landing, and egg deposition are not interchangeable endpoints, and antennal activity does not prove that a compound guides egg laying. Keep odor, vision, surface contact, landing, and oviposition separate when selecting or rejecting a cue.",
+      "answer": "Direct Plutella xylostella evidence separates host finding from egg laying. In one host-choice study, females oriented to Brassicaceae plant odors versus clean air but showed no preference when odors from three Brassicaceae species were presented together. Mixed cropping increased takeoff and reduced field DBM population. Oviposition was significantly lower than on the two tested non-B. oleracea monocultures, but it was not significantly lower than on the B. oleracea monoculture; landing also differed among host plants. The result therefore does not support an unqualified claim that mixed cropping reduced oviposition versus every monoculture. Flying females use volatile plant cues to locate and land on hosts, while plant position and host-versus-nonhost identity also affect alighting. Direct oviposition tests found the isothiocyanates iberin and sulforaphane to be the most active volatile stimulants and also found activity in non-volatile plant fractions. Surface-choice experiments found more eggs on reduced-wax or herbicide-treated plants and on glossy rather than waxy strains, implicating epicuticular wax, although visual, chemical, and tactile mechanisms were not isolated. A separate study found that larva-induced host-plant volatiles attracted adult females in a Y-tube olfactory assay; it did not measure landing or egg deposition, so it cannot show that the attraction caused oviposition. Another study identified eight broccoli volatiles that elicited antennal responses: benzaldehyde, limonene, phenylacetaldehyde, acetophenone, linalool, 2-phenylethyl alcohol, methyl salicylate, and methyl 2-methoxybenzoate; field trapping supported a three-component blend. Antennal response, field trapping, attraction, landing, and egg deposition are not interchangeable endpoints, and antennal activity does not prove that a compound guides egg laying. Keep odor, vision, surface contact, landing, and oviposition separate when selecting or rejecting a cue.",
       "source_record_ids": [
         "dbm:openalex:W1994548084",
         "dbm:openalex:W2114561940",

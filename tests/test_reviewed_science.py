@@ -1846,10 +1846,117 @@ class ReviewedScienceTests(unittest.TestCase):
             "paper contact and the credible interval crossed zero; after the mesh was "
             "removed for contact, treatment egress exceeded control and the interval was "
             "wholly above zero. What does this support?",
+            "For Aedes aegypti, treatment escape equaled control with the contact screen "
+            "present (p = 0.54; q = 0.65), while treatment escape was greater than control "
+            "with the screen removed (p = 0.003; q = 0.010). What does this support?",
+            "For transfluthrin-treated Aedes aegypti, egress under treatment matched "
+            "control while the treated surface was out of reach and the credible interval "
+            "contained zero; once the surface was reachable for contact, treatment egress "
+            "exceeded control and the interval was fully positive. Which interpretation "
+            "is supported?",
+            "Aedes aegypti treatment escape matched control in the absence of contact and "
+            "exceeded control in the presence of contact. Feeding duration was evaluated "
+            "separately and remained unchanged. Is escape contact-associated?",
+            "For Aedes aegypti, treatment escape stayed at control with the contact shield "
+            "active (p = 0.58; q = 0.69), whereas treatment escape exceeded control with "
+            "the shield inactive (p = 0.004; q = 0.012). Which interpretation is "
+            "supported?",
+            "In TFT-treated Aedes aegypti, egress matched control while the barrier "
+            "prevented treated-paper contact and the credible interval overlapped zero; "
+            "once treated-paper contact was allowed, treatment egress exceeded control "
+            "and the interval stayed entirely positive. How should this be interpreted?",
+            "Aedes aegypti treatment escape matched control without contact and exceeded "
+            "control with contact. Takeoff latency was analyzed separately and remained "
+            "unchanged. Is the escape response contact-associated?",
             "In an Aedes aegypti excito-repellency assay, treated and control escape were "
             "equal behind a mesh barrier, but treated mosquitoes escaped more than "
             "controls when they could touch the treated paper. What can this result "
             "support, and what can it not support?",
+            "For Aedes aegypti, normalized exit was unchanged from control in the "
+            "no-contact treatment arm (q = 0.71), whereas normalized exit in the "
+            "contact-treatment arm exceeded its control (q = 0.02). Is this a "
+            "contact-only response?",
+            "The Aedes aegypti treatment-control difference in leaving was zero without "
+            "access to the paper (95% CI -0.05 to 0.05), while treatment produced more "
+            "leaving than control with paper contact (difference 0.18, 95% CI 0.07 to "
+            "0.29). How should we interpret it?",
+            "At 8, 16, and 24 minutes, Aedes aegypti escape in the separated treatment "
+            "chamber never exceeded its time-matched control, whereas at each same time "
+            "point escape with surface contact was higher for treatment than control. "
+            "Is the response confined to contact?",
+            "After scaling each chamber to its paired control, Aedes aegypti no-contact "
+            "escape showed no treatment-control increase, but contact-treatment escape "
+            "remained greater than contact-control escape. How should the adjusted "
+            "pattern be described?",
+            "For Aedes aegypti, the mesh-separated escape contrast was null (p = 0.58) "
+            "and the allowed-contact escape contrast was positive (q = 0.014); knockdown "
+            "did not differ between treatment and control. Does this support "
+            "contact-associated escape?",
+            "Aedes aegypti had equal treatment and control egress without paper contact "
+            "at both 15 and 30 minutes, yet TFT-treated contact chambers had greater "
+            "egress than contact controls at those same readings. What is the appropriate "
+            "result interpretation?",
+            "Aedes aegypti leaving under no-contact treatment was no higher than under "
+            "its vehicle control, while leaving from the treated contact chamber was "
+            "higher than from the contact control; recovery at 24 hours was the same in "
+            "all groups. What is the escape interpretation?",
+            "In Aedes aegypti tests of transfluthrin, screened treatment and vehicle "
+            "chambers had equal exit (q = 0.63), but treatment exit exceeded vehicle in "
+            "chambers allowing touch (p = 0.017). What can be inferred?",
+            "Aedes aegypti egress did not rise above control when contact was prevented "
+            "(posterior interval -0.03 to 0.06), yet treated egress was greater than "
+            "control with contact (posterior interval 0.05 to 0.24). How should the "
+            "two-arm finding be described?",
+            "For Aedes aegypti, the treated-minus-control exit estimate without contact "
+            "was -0.01 (95% CI -0.07 to 0.05), so there was no increase; with contact, "
+            "treated exit was greater than control by 0.16 (95% CI 0.06 to 0.26). What "
+            "does this support?",
+            "Transfluthrin caused no treatment-control increase in Aedes aegypti egress "
+            "behind the barrier, and its credible interval covered zero, but contact "
+            "egress was greater for transfluthrin than carrier with a positive credible "
+            "interval; mortality was unchanged. What is the behavioral inference?",
+            "After normalizing each response to its arm-specific control, Aedes aegypti "
+            "escape had no treatment-control increase without contact and a greater "
+            "treatment than control value with contact. How should this normalized "
+            "result be stated?",
+            "Aedes aegypti egress showed no increase over control with contact blocked "
+            "(Bayesian interval -0.04 to 0.04), while treated egress exceeded control "
+            "with contact allowed (Bayesian interval 0.07 to 0.22). Is that a "
+            "contact-only result pattern?",
+            "Aedes aegypti had no treatment-control increase in exit without access to "
+            "the surface: the contrast was 0.00 with a 95% confidence interval of -0.08 "
+            "to 0.08. With contact, treated exit exceeded control by 0.14 with a 95% "
+            "interval of 0.04 to 0.24. How should this be interpreted?",
+            "At minutes 4, 17, and 29, Aedes aegypti departure under no-contact treatment "
+            "was no higher than control, while departure under contact treatment exceeded "
+            "control at the same three readings. What conclusion follows?",
+            "Relative to the respective arm controls, normalized Aedes aegypti escape "
+            "showed no increase for the no-contact treatment and a greater response for "
+            "the contact treatment than its control. How should we label the observed "
+            "effect?",
+            "Transfluthrin gave Aedes aegypti exit equal to vehicle while the barrier "
+            "remained in place (q = 0.67), but gave higher exit than vehicle after the "
+            "barrier was removed and paper contact became possible (p = 0.015). What can "
+            "be claimed?",
+            "At both 11 and 23 minutes, Aedes aegypti no-contact treatment and control "
+            "had equal departure, whereas TFT contact treatment had greater departure "
+            "than control at both matched times. How should the result be summarized?",
+            "For Aedes aegypti, transfluthrin did not increase egress over vehicle "
+            "through the contact-blocked chamber and its credible interval included zero, "
+            "while transfluthrin egress exceeded vehicle under direct contact with a "
+            "credible interval above zero; mortality was unchanged. What conclusion is "
+            "justified?",
+            "Using arm-to-control normalized ratios, Aedes aegypti escape had no "
+            "treatment increase in the no-contact pair and a greater treatment ratio "
+            "than control in the contact pair. How should this result be described?",
+            "TFT and vehicle gave equal Aedes aegypti exit with the barrier lowered "
+            "(q = 0.62), but TFT gave higher exit than vehicle with the barrier raised "
+            "so mosquitoes could contact the paper (p = 0.014). What does the pattern "
+            "support?",
+            "No treatment-control increase in Aedes aegypti escape appeared behind the "
+            "mesh, but treated escape was greater than control after surface contact; "
+            "knockdown, reported as a distinct endpoint, remained unchanged. What can be "
+            "inferred from escape?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2372,6 +2479,17 @@ class ReviewedScienceTests(unittest.TestCase):
             "Without contact, Aedes aegypti treatment leaving matched control; with contact, "
             "no treatment-related increase in leaving was observed. What does this result "
             "support?",
+            "Aedes aegypti escape matched control in the no-contact arm tested with 0.01% "
+            "transfluthrin, but exceeded control in the contact arm tested with 0.05% "
+            "transfluthrin. Can this be called a contact-only effect?",
+            "Aedes aegypti showed equal no-contact escape and greater treated escape with "
+            "contact. Was this caused by sodium-channel activation?",
+            "Aedes aegypti escape was unchanged without contact, and there was no greater "
+            "treatment escape than control after contact. What can be inferred?",
+            "Aedes aegypti escape was unchanged behind the barrier, and contact escape "
+            "never rose above control under treatment. Does that show contact excitation?",
+            "Aedes aegypti showed no no-contact escape increase and greater escape with "
+            "contact. Did an odorant-binding protein cause the response?",
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -3351,6 +3469,7 @@ class ReviewedScienceTests(unittest.TestCase):
                     "no preference",
                     "three Brassicaceae",
                     "mixed cropping",
+                    "not significantly lower than on the B. oleracea monoculture",
                 ),
             ),
         )
@@ -4604,6 +4723,51 @@ class ReviewedScienceTests(unittest.TestCase):
                     )
                     for fragment in expected_fragments:
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
+    def test_anopheles_orco_cell_screen_does_not_rank_behavioral_repellency(self):
+        record_ids = (
+            "reviewed_repellent_evidence:doi:10.1074/jbc.M114.632299",
+            "reviewed_repellent_evidence:doi:10.1016/j.cub.2019.09.007",
+        )
+        question = (
+            "Our cell assay says carvacrol blocks Anopheles gambiae Orco, but DEET "
+            "barely does. Can I rank the compounds as repellents from that result, "
+            "and how should the DEET masking paper change the follow-up?"
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="reviewed_repellent_evidence",
+                        locator=f"records#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            answer = build_reviewed_science_answer(index, question)
+
+        self.assertIsNotNone(answer)
+        assert answer is not None
+        self.assertEqual(
+            {item["record_id"] for item in answer["evidence"]},
+            set(record_ids),
+        )
+        for fragment in (
+            "Do not rank carvacrol above DEET",
+            "insect-cell expression system",
+            "little inhibition",
+            "physicochemical masking",
+            "mixed-versus-separated host-odor conditions",
+            "orientation, landing, and protection",
+        ):
+            self.assertIn(fragment.casefold(), answer["answer"].casefold())
+        self.assertNotIn(
+            "eugenol produced a weak response",
+            answer["answer"].casefold(),
+        )
 
     def test_anopheles_eugenol_decisions_preserve_species_and_small_next_step(self):
         record_id = "openalex:W3013059076"
