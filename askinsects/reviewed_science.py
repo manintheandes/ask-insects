@@ -820,6 +820,9 @@ def _has_er_contact_only_result_pattern_intent(
         r"barrier (?:was )?lowered|"
         r"contact screen (?:was )?present|"
         r"screen (?:was )?closed|"
+        r"screen (?:was )?inserted|"
+        r"mesh panel (?:was )?present|"
+        r"mesh covered (?:the )?paper|"
         r"contact shield (?:was )?active|"
         r"contact restricted|(?:paper|surface|residue) (?:was )?inaccessible|"
         r"(?:paper|surface|residue) (?:was )?out of reach|"
@@ -871,9 +874,11 @@ def _has_er_contact_only_result_pattern_intent(
     result_qualifier_pattern = re.compile(
         r"\b[pfq]\s*(?:>=|<=|=|>|<)\s*0?\.\d+\b|"
         r"\b(?:the )?same (?:one|two|three|four|five|six|seven|eight|"
-        r"nine|ten|\d+) timepoints?\b|"
-        r"\b(?:the )?same (?:one|two|three|four|five|six|seven|eight|"
-        r"nine|ten|\d+) (?:readings|observations|measurements)\b|"
+        r"nine|ten|\d+) (?:timepoints?|time points?)\b|"
+        r"\b(?:the )?(?:same|all) "
+        r"(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+) "
+        r"(?:matching )?(?:readings|observations|measurements?)\b|"
+        r"\bevery corresponding (?:reading|observation|measurement)\b|"
         r"\bboth matched (?:readings|times|timepoints?)\b|"
         r"\bin each (?:arm|condition|comparison|group)\b|"
         r"\b(?:\d+\s+)?(?:(?:confidence|credible)\s+)?interval"
@@ -986,6 +991,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"\b(?:orco|pathway|chemosensation|olfaction|receptor|gene|mutant|"
         r"mutation|knockdown|trpa1|ir25a|absorption|tarsi|tarsal|"
         r"olfactory|gustatory neurons?|adaptation|odorant binding proteins?|"
+        r"chemosensory proteins?|"
         r"(?:voltage gated )?sodium channel(?: activation)?|"
         r"motor activation|motor stimulation|toxic effect|"
         r"toxic action|toxic response|toxicity|paralysis|sedation|"
@@ -1300,6 +1306,14 @@ def _has_er_contact_only_result_pattern_intent(
         value = dose_match.group(1) or dose_match.group(3)
         unit = dose_match.group(2) or dose_match.group(4)
         reported_transfluthrin_doses.append((float(value), unit.casefold()))
+    if reported_transfluthrin_doses:
+        for percent_match in re.finditer(
+            r"\b(\d+(?:\.\d+)?)\s*%(?!\s*(?:ci|confidence|credible|interval)\b)",
+            raw_text.casefold(),
+        ):
+            reported_transfluthrin_doses.append(
+                (float(percent_match.group(1)), "%")
+            )
     mismatched_transfluthrin_doses = (
         len(set(reported_transfluthrin_doses)) > 1
     )
@@ -1429,7 +1443,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"mesh barrier|contact barrier(?: installed)?|mesh protected|mesh protection|"
         r"mesh screen|mesh condition|"
         r"mesh on|with mesh(?=\s+(?:and|while|whereas|but)|[;,]|$)|"
-        r"mesh present|mesh in place|"
+        r"mesh present|mesh in place|mesh panel (?:was )?present|"
         r"mesh cover(?:ed|ing) (?:the )?paper|"
         r"mesh prevent(?:s|ed|ing)? contact|"
         r"mesh stop(?:s|ped|ping) touch(?:ing)?|"
@@ -1477,7 +1491,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"screened chambers?|"
         r"screen condition|screen separated|"
         r"screen chambers?|"
-        r"screen in place|screen (?:was )?closed|"
+        r"screen in place|screen (?:was )?(?:closed|inserted)|"
         r"screen present|"
         r"screen between|"
         r"screen separat(?:e|ed|es|ing)(?:\s+\w+){0,4}\s+(?:from )?"
@@ -1677,6 +1691,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"tarsal access permitted|available to (?:the )?feet|"
         r"expos(?:e|ed|ing) (?:it|the paper)|open face|exposed side|"
         r"direct access|window (?:was )?absent|reachable|contact available|"
+        r"(?:mesh )?panel (?:was )?absent|"
         r"no mesh|no screen|no guard|guard (?:was )?removed|without mesh|"
         r"mesh (?:was )?absent|"
         r"screen (?:was )?absent|mesh off|"
@@ -1707,7 +1722,9 @@ def _has_er_contact_only_result_pattern_intent(
         r"mesh removal|barrier removal|mesh (?:was )?removed|"
         r"(?:mesh|screen|barrier) no longer block(?:ed|s)? contact|"
         r"mesh (?:was )?taken away|"
+        r"mesh (?:was )?moved aside(?: to allow contact)?|"
         r"screen (?:was )?removed|"
+        r"screen (?:was )?withdrawn(?: so contact could occur)?|"
         r"without (?:the )?barrier|barrier (?:was )?absent|barrier opened|"
         r"no separation|"
         r"able to touch|reach (?:was )?allowed|"
@@ -1761,7 +1778,8 @@ def _has_er_contact_only_result_pattern_intent(
         r"behaved like|looks? like|nil|similar|absent|as often as|just as often|"
         r"(?:escape )?ratio (?:was )?(?:near|approximately|about) one|"
         r"did not differ|does not differ|do not differ|did not change|"
-        r"did not increase|not increased|did not exceed|never exceeded|"
+        r"did not increase|not increased|did not exceed|did not surpass|"
+        r"never exceeded|"
         r"never (?:increased|rose) above|did not raise|"
         r"unable to raise|"
         r"did not favor treatment over control|"
@@ -1802,6 +1820,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"no treatment over control increase|"
         r"no treatment control (?:escape )?increase|"
         r"not higher(?:\s+\w+){0,6}\s+than (?:controls?|vehicle)|"
+        r"not greater than (?:the )?(?:control|vehicle)|"
         r"no higher than (?:under )?(?:its )?(?:the )?"
         r"(?:control|vehicle(?: control)?)|"
         r"no greater than (?:the )?(?:control|vehicle)|"
@@ -1944,7 +1963,7 @@ def _has_er_contact_only_result_pattern_intent(
         advantage affect alike allowed allowing alongside alter although appeared
         appropriate approximately associated available away bayesian blank blocked
         blocking blocks brief capable card carrier caused chance change
-        chemical chemically claim claimed clear climbed closed coincided
+        chemical chemically claim claimed clear climbed closed coincided considered
         ci comparable comparator compared comparison compartment compartments
         antennal component conclude concluded conclusion consistent corresponding count counted
         counts cover covered covering curve curves denied denying departed
@@ -1964,9 +1983,9 @@ def _has_er_contact_only_result_pattern_intent(
         hour hours made making matched matches matching measure measured measurement
         measurements meaning mesh minus minute minutes monitor never
         near negative netted netting nil non nonsignificant normalized null number numbers
-        nylon observations observed occluding occurred off often onto open
+        nylon observations observed occluding occurred off often onto open own
         opened opening outcome outside overlapped paper parity partition
-        p q pattern percentage percentages perforated permission permitted permitting physical
+        p q pattern percentage percentages perforated permission permitted permitting physical post
         physically place placing positive possible present presentation
         posterior
         prevented preventing prevention prevents probability produce produced
@@ -1979,7 +1998,7 @@ def _has_er_contact_only_result_pattern_intent(
         separating separation separator setup sheet shielded shielding shrouded
         side significant significantly similar sleeve so solvent source spatial specific
         stayed stopped stronger substrate summarize superimposed support
-        supported surface surpassed surplus tactile taken taking tarsal tell
+        supported surface surpassed surplus tabulated tactile taken taking tarsal tell
         test tied total totals touch touchable touched touching tracked treated
         those time timepoint timepoints treatment transfluthrin trials tft unable unavailable
         unblocking unchanged

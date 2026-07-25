@@ -15,6 +15,12 @@
       "exact_aliases": ["citral"]
     },
     {
+      "id": "carvacrol",
+      "canonical_name": "carvacrol",
+      "material_type": "pure_compound",
+      "exact_aliases": ["carvacrol"]
+    },
+    {
       "id": "deet",
       "canonical_name": "DEET",
       "material_type": "pure_compound",
@@ -107,6 +113,52 @@
     }
   ],
   "evidence": [
+    {
+      "id": "carvacrol_anopheles_orco_cell_2015",
+      "material_id": "carvacrol",
+      "species_id": "anopheles_gambiae",
+      "scientific_name": "Anopheles gambiae",
+      "evidence_relation": "exact_material",
+      "evidence_class": "identity_only",
+      "assay_family": "recombinant_odorant_receptor_cell_assay",
+      "exposure_route": "not_applicable",
+      "endpoint": "inhibition of AgamOR1/Orco and AgamOR2/Orco responses",
+      "finding": "Carvacrol strongly inhibited responses of the tested recombinant Anopheles gambiae OR/Orco complexes in an insect-cell sequential-addition assay.",
+      "limitations": [
+        "The assay did not measure mosquito orientation, landing, biting, protection, formulation performance, or field efficacy and cannot rank behavioral repellency."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Inhibition of Anopheles gambiae Odorant Receptor Function by Mosquito Repellents",
+          "public_url": "https://doi.org/10.1074/jbc.M114.632299",
+          "source_id": "doi:10.1074/jbc.M114.632299",
+          "locator": "Abstract; Experimental Procedures, cell-based OR assay and sequential compound-addition protocol; Results, Figures 2-5: primary responses and inhibition of AgamOR1/Orco and AgamOR2/Orco by ethyl cinnamate, carvacrol, cumin alcohol, DEET, and isopropyl cinnamate; Discussion: receptor inhibition is an in-vitro molecular endpoint and was not tested as mosquito repellency"
+        }
+      ]
+    },
+    {
+      "id": "deet_anopheles_odor_masking_2019",
+      "material_id": "deet",
+      "species_id": "anopheles_coluzzii",
+      "scientific_name": "Anopheles coluzzii",
+      "evidence_relation": "exact_material",
+      "evidence_class": "identity_only",
+      "assay_family": "olfactory_neuron_imaging_and_headspace_delivery",
+      "exposure_route": "non_contact",
+      "endpoint": "Orco-neuron activity and delivery of human-derived odorants",
+      "finding": "DEET did not directly activate Orco-expressing olfactory neurons, but physical mixtures with activating human-derived odorants reduced odor-evoked activity; separated-filter-paper and volatility tests supported physicochemical masking through reduced odor delivery.",
+      "limitations": [
+        "The study does not make weak direct Orco inhibition evidence of weak behavioral repellency, and its neuronal and volatility results do not by themselves establish landing, biting, or protection performance."
+      ],
+      "supporting_provenance": [
+        {
+          "title": "Commonly Used Insect Repellents Hide Human Odors from Anopheles Mosquitoes",
+          "public_url": "https://doi.org/10.1016/j.cub.2019.09.007",
+          "source_id": "doi:10.1016/j.cub.2019.09.007",
+          "locator": "Summary; Results, Figures 2-6 and Supplemental Figure S1: calcium imaging of Anopheles coluzzii Orco-expressing olfactory neurons, direct repellent presentations, physical mixtures with human-derived odorants, separated filter-paper controls, and GC-MS volatility measurements; Discussion: synthetic repellents reduced odor delivery through physicochemical masking rather than demonstrated direct Orco inhibition"
+        }
+      ]
+    },
     {
       "id": "cinnamaldehyde_aedes_skin_2006",
       "material_id": "cinnamaldehyde",

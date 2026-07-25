@@ -1957,6 +1957,43 @@ class ReviewedScienceTests(unittest.TestCase):
             "mesh, but treated escape was greater than control after surface contact; "
             "knockdown, reported as a distinct endpoint, remained unchanged. What can be "
             "inferred from escape?",
+            "In Aedes aegypti, no-contact treatment escape was not greater than control "
+            "(p = 0.70), but contact-treatment escape was greater than contact control "
+            "(q = 0.005). What interpretation fits this result?",
+            "No-contact Aedes aegypti leaving was the same under treatment and control, "
+            "whereas treated contact chambers had greater leaving than contact controls; "
+            "post-assay recovery, considered separately, was unchanged. Is the escape "
+            "effect contact-associated?",
+            "At 5, 19, and 30 minutes, Aedes aegypti departure in the no-contact treatment "
+            "equaled control, while departure in the contact treatment exceeded control "
+            "at all three matching observations. How should this pattern be reported?",
+            "After normalizing treatment values to their own arm controls, Aedes aegypti "
+            "escape had no increase in the no-contact arm and a greater treated value than "
+            "control in the contact arm. What conclusion follows?",
+            "With the screen inserted, transfluthrin and vehicle produced equal Aedes "
+            "aegypti exit (q = 0.65); with the screen withdrawn so contact could occur, "
+            "transfluthrin produced higher exit than vehicle (p = 0.011). What does this "
+            "indicate?",
+            "Treatment did not increase Aedes aegypti escape above control when mesh "
+            "prevented contact, but treated escape exceeded control with direct contact; "
+            "the independently tabulated knockdown endpoint did not differ. What does "
+            "escape support?",
+            "In an Aedes aegypti run, no-contact treatment escape did not surpass control "
+            "(p = 0.68), whereas contact treatment escape surpassed contact control "
+            "(q = 0.004). What does this observed pattern mean?",
+            "At 1, 12, and 24 minutes, Aedes aegypti departure under no-contact treatment "
+            "was equal to control, while contact treatment departure was greater than "
+            "control at the same three time points. What conclusion fits?",
+            "With the mesh panel present, Aedes aegypti exit under transfluthrin equaled "
+            "vehicle (q = 0.60); with the panel absent and contact possible, "
+            "transfluthrin exit exceeded vehicle (p = 0.013). What can be concluded?",
+            "At 4, 15, and 28 minutes, Aedes aegypti departure under no-contact treatment "
+            "matched control, while treated contact departure was greater than control at "
+            "every corresponding measurement. What pattern was observed?",
+            "When mesh covered the paper, TFT and vehicle produced equal Aedes aegypti "
+            "exit (q = 0.58); when the mesh was moved aside to allow contact, TFT "
+            "produced higher exit than vehicle (p = 0.016). What does the two-arm result "
+            "mean?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -2490,6 +2527,10 @@ class ReviewedScienceTests(unittest.TestCase):
             "never rose above control under treatment. Does that show contact excitation?",
             "Aedes aegypti showed no no-contact escape increase and greater escape with "
             "contact. Did an odorant-binding protein cause the response?",
+            "Aedes aegypti no-contact escape matched control at 0.03% transfluthrin, but "
+            "contact escape exceeded control at 0.09%. Does this identify a contact effect?",
+            "Aedes aegypti showed no no-contact escape increase and greater escape with "
+            "contact. Did a chemosensory protein mediate the response?",
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -4726,8 +4767,8 @@ class ReviewedScienceTests(unittest.TestCase):
 
     def test_anopheles_orco_cell_screen_does_not_rank_behavioral_repellency(self):
         record_ids = (
-            "reviewed_repellent_evidence:doi:10.1074/jbc.M114.632299",
-            "reviewed_repellent_evidence:doi:10.1016/j.cub.2019.09.007",
+            "reviewed_repellent_evidence:carvacrol_anopheles_orco_cell_2015",
+            "reviewed_repellent_evidence:deet_anopheles_odor_masking_2019",
         )
         question = (
             "Our cell assay says carvacrol blocks Anopheles gambiae Orco, but DEET "

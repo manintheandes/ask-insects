@@ -81,14 +81,14 @@
       "locator": "Publisher abstract: immediate host-seeking inhibition after a replete blood meal and after saline-enema abdominal distention"
     },
     {
-      "record_id": "reviewed_repellent_evidence:doi:10.1074/jbc.M114.632299",
+      "record_id": "reviewed_repellent_evidence:carvacrol_anopheles_orco_cell_2015",
       "title": "Inhibition of Anopheles gambiae Odorant Receptor Function by Mosquito Repellents",
       "public_url": "https://doi.org/10.1074/jbc.M114.632299",
       "source_id": "doi:10.1074/jbc.M114.632299",
       "locator": "Abstract; Experimental Procedures, cell-based OR assay and sequential compound-addition protocol; Results, Figures 2-5: primary responses and inhibition of AgamOR1/Orco and AgamOR2/Orco by ethyl cinnamate, carvacrol, cumin alcohol, DEET, and isopropyl cinnamate; Discussion: receptor inhibition is an in-vitro molecular endpoint and was not tested as mosquito repellency"
     },
     {
-      "record_id": "reviewed_repellent_evidence:doi:10.1016/j.cub.2019.09.007",
+      "record_id": "reviewed_repellent_evidence:deet_anopheles_odor_masking_2019",
       "title": "Commonly Used Insect Repellents Hide Human Odors from Anopheles Mosquitoes",
       "public_url": "https://doi.org/10.1016/j.cub.2019.09.007",
       "source_id": "doi:10.1016/j.cub.2019.09.007",
@@ -1657,8 +1657,8 @@
       },
       "answer": "Do not rank carvacrol above DEET as a mosquito repellent from the cell assay. The recombinant Anopheles gambiae OR/Orco experiment measured molecular inhibition in an insect-cell expression system, not orientation, landing, biting, or protection. Carvacrol strongly inhibited the tested AgamOR1/Orco and AgamOR2/Orco responses, whereas DEET was the exception among the tested repellents and produced little inhibition in that sequential-addition assay. That result supports a receptor-level lead and a mechanistic difference under the tested in-vitro conditions; it does not establish behavioral potency, delivered airborne dose, duration, formulation performance, or human protection. The later Anopheles coluzzii study further shows why weak direct Orco inhibition cannot be read as weak repellency. DEET did not directly activate Orco-expressing olfactory neurons, and when physically mixed with activating human-derived odorants it reduced odor-evoked activity. Separated-filter-paper and volatility experiments supported physicochemical masking that reduced odor delivery rather than direct Orco inhibition. Follow up with matched delivered-dose tests that keep three layers separate: receptor or neuronal response, physical effects on host-odor volatility and delivery, and mosquito behavior. Compare carvacrol and DEET in direct neuronal presentation, mixed-versus-separated host-odor conditions with chemical headspace measurement, and then matched non-contact orientation, landing, and protection assays with locomotion, knockdown, and mortality controls. Treat that sequence as an R&D design derived from the papers, not as proof that either compound will outperform the other.",
       "source_record_ids": [
-        "reviewed_repellent_evidence:doi:10.1074/jbc.M114.632299",
-        "reviewed_repellent_evidence:doi:10.1016/j.cub.2019.09.007"
+        "reviewed_repellent_evidence:carvacrol_anopheles_orco_cell_2015",
+        "reviewed_repellent_evidence:deet_anopheles_odor_masking_2019"
       ]
     },
     {
