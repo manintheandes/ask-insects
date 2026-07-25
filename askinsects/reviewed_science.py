@@ -775,8 +775,9 @@ def _has_er_contact_only_result_pattern_intent(
     clause_split_pattern = (
         r"(?<=[.!])\s+(?=[A-Za-z])|"
         r"\b(?:while|whereas|but|although|yet|then|and there was)\b|"
-        r"\band (?=(?:became|greater|higher|increased|more|rose|"
+        r"\band (?=(?:a )?(?:became|greater|higher|increased|more|rose|"
         r"exceed(?:s|ed|ing)?)\b)|"
+        r"\band (?=(?:the )?(?:allowed|enabled|permitted)[- ]contact\b)|"
         r"\band (?=present with contact\b)|"
         r"\band (?=with (?:(?:direct|surface|paper|residue) )?contact\b)|"
         r"\band (?=(?:treatment|treated)\b"
@@ -813,13 +814,22 @@ def _has_er_contact_only_result_pattern_intent(
         r"\b(?:no contact|non contact|no touch|non touch|"
         r"without (?:contact|direct contact|surface contact|"
         r"paper contact|residue contact)|contact barred|contact free|"
+        r"without access to (?:the )?(?:paper|surface|substrate|residue)|"
         r"contact barrier (?:was )?in place|"
+        r"barrier (?:was )?(?:in place|remained in place)|"
+        r"barrier (?:was )?lowered|"
+        r"contact screen (?:was )?present|"
+        r"screen (?:was )?closed|"
+        r"contact shield (?:was )?active|"
         r"contact restricted|(?:paper|surface|residue) (?:was )?inaccessible|"
+        r"(?:paper|surface|residue) (?:was )?out of reach|"
         r"contact (?:was )?not (?:allowed|available|possible)|"
         r"contact (?:was )?"
         r"(?:blocked|denied|prevented|prohibited|restricted|unavailable|"
         r"excluded|impossible)|"
         r"(?:mesh|barrier) (?:blocked|prevented)|"
+        r"mesh separated (?:escape|exit|egress|departure|leaving)|"
+        r"screened (?:treatment|vehicle|chamber|chambers|arm|arms)|"
         r"(?:mesh|screen) separated (?:aedes|females|mosquitoes) from "
         r"(?:the )?(?:paper|surface|residue)|"
         r"behind (?:the )?(?:contact )?(?:mesh|barrier))\b"
@@ -829,6 +839,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"(?:arm|chamber|condition|contrast|escape|estimate|group|increase|"
         r"result|treatment)\b|"
         r"(?<!without )(?<!blocked )(?<!denied )(?<!prevented )"
+        r"(?<!blocked treated )(?<!denied treated )(?<!prevented treated )"
         r"\b(?:direct|surface|paper|residue) contact\b"
         r"(?! (?:was )?(?:blocked|excluded|prevented|prohibited|unavailable))|"
         r"(?<!no )(?<!non )\bcontact (?:was )?"
@@ -861,6 +872,9 @@ def _has_er_contact_only_result_pattern_intent(
         r"\b[pfq]\s*(?:>=|<=|=|>|<)\s*0?\.\d+\b|"
         r"\b(?:the )?same (?:one|two|three|four|five|six|seven|eight|"
         r"nine|ten|\d+) timepoints?\b|"
+        r"\b(?:the )?same (?:one|two|three|four|five|six|seven|eight|"
+        r"nine|ten|\d+) (?:readings|observations|measurements)\b|"
+        r"\bboth matched (?:readings|times|timepoints?)\b|"
         r"\bin each (?:arm|condition|comparison|group)\b|"
         r"\b(?:\d+\s+)?(?:(?:confidence|credible)\s+)?interval"
         r"(?:\s+[a-z]+){1,12}(?:\s+\d+){1,3}\s+to"
@@ -880,7 +894,9 @@ def _has_er_contact_only_result_pattern_intent(
         r"\b(?:(?:confidence|credible)\s+)?interval\b"
         r"(?:\s+\w+){0,12}\s+"
         r"\b(?:(?:entirely|fully|wholly) (?:above zero|positive)|"
-        r"(?:lay|remained|stayed) (?:above zero|positive))\b"
+        r"(?:lay|remained|stayed) (?:above zero|positive))\b|"
+        r"\bpositive (?:confidence|credible|posterior|bayesian) interval\b"
+        r"|\b(?:confidence|credible|posterior|bayesian) interval above zero\b"
     )
 
     def raw_interval_spans_zero(raw_clause: str) -> bool:
@@ -969,7 +985,8 @@ def _has_er_contact_only_result_pattern_intent(
     mechanism_term = re.search(
         r"\b(?:orco|pathway|chemosensation|olfaction|receptor|gene|mutant|"
         r"mutation|knockdown|trpa1|ir25a|absorption|tarsi|tarsal|"
-        r"olfactory|gustatory neurons?|adaptation|"
+        r"olfactory|gustatory neurons?|adaptation|odorant binding proteins?|"
+        r"(?:voltage gated )?sodium channel(?: activation)?|"
         r"motor activation|motor stimulation|toxic effect|"
         r"toxic action|toxic response|toxicity|paralysis|sedation|"
         r"toxic stimulation|"
@@ -1270,6 +1287,22 @@ def _has_er_contact_only_result_pattern_intent(
         normalized_question,
     )
     mismatched_treated_area = len(set(treated_paper_areas)) > 1
+    reported_transfluthrin_doses = []
+    transfluthrin_dose_pattern = re.compile(
+        r"\b(\d+(?:\.\d+)?)\s*(%|ppm|ppb|mg(?:/[a-z]+)?|"
+        r"ug(?:/[a-z]+)?|micrograms?(?:/[a-z]+)?)\s+"
+        r"(?:of\s+)?(?:transfluthrin|tft)\b|"
+        r"\b(?:transfluthrin|tft)\s+(?:at\s+)?"
+        r"(\d+(?:\.\d+)?)\s*(%|ppm|ppb|mg(?:/[a-z]+)?|"
+        r"ug(?:/[a-z]+)?|micrograms?(?:/[a-z]+)?)\b"
+    )
+    for dose_match in transfluthrin_dose_pattern.finditer(raw_text.casefold()):
+        value = dose_match.group(1) or dose_match.group(3)
+        unit = dose_match.group(2) or dose_match.group(4)
+        reported_transfluthrin_doses.append((float(value), unit.casefold()))
+    mismatched_transfluthrin_doses = (
+        len(set(reported_transfluthrin_doses)) > 1
+    )
     def clause_has_unsupported_probability(
         raw_clause: str,
         normalized_clause: str,
@@ -1357,6 +1390,7 @@ def _has_er_contact_only_result_pattern_intent(
         or mismatched_illumination
         or changed_chamber_material
         or mismatched_treated_area
+        or mismatched_transfluthrin_doses
         or non_significant_contact_estimate
         or non_significant_adjusted_estimate
         or causal_mechanism_question
@@ -1406,7 +1440,9 @@ def _has_er_contact_only_result_pattern_intent(
         r"across (?:the )?barrier|screened access|"
         r"chambers fitted with mesh|"
         r"across (?:the )?mesh|"
-        r"barrier protected|barrier present|barrier pair|barrier arm|"
+        r"barrier protected|barrier present|barrier remained in place|"
+        r"barrier (?:was )?lowered|"
+        r"barrier pair|barrier arm|"
         r"a barrier|"
         r"barrier prevent(?:s|ed|ing)? touch(?:ing)?|"
         r"barrier (?:kept|keeps)(?:\s+\w+){0,3}\s+off "
@@ -1441,7 +1477,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"screened chambers?|"
         r"screen condition|screen separated|"
         r"screen chambers?|"
-        r"screen in place|"
+        r"screen in place|screen (?:was )?closed|"
         r"screen present|"
         r"screen between|"
         r"screen separat(?:e|ed|es|ing)(?:\s+\w+){0,4}\s+(?:from )?"
@@ -1457,6 +1493,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"surface|substrate) (?:was )?behind (?:a )?"
         r"(?:screen|guard|barrier|separator)|"
         r"behind (?:(?:a|the) )?(?:mesh|gauze|screen|guard|barrier|separator)|"
+        r"contact shield (?:was )?active|"
         r"shielded treatment|paper (?:was )?shielded|"
         r"(?:treated )?surface (?:was )?shielded|"
         r"shield(?:ed|ing) (?:the )?(?:(?:treated|impregnated) )?"
@@ -1593,6 +1630,8 @@ def _has_er_contact_only_result_pattern_intent(
     )
     contact_pattern = re.compile(
         r"\b(?:contact|contacted|contact access|contact present|"
+        r"presence of contact|"
+        r"(?:contact )?shield inactive|"
         r"touch(?:ed|ing)?|touch enabled|"
         r"physical contact|surface contact|physical access|surface access|"
         r"surface accessible|"
@@ -1722,7 +1761,8 @@ def _has_er_contact_only_result_pattern_intent(
         r"behaved like|looks? like|nil|similar|absent|as often as|just as often|"
         r"(?:escape )?ratio (?:was )?(?:near|approximately|about) one|"
         r"did not differ|does not differ|do not differ|did not change|"
-        r"did not increase|not increased|did not exceed|did not raise|"
+        r"did not increase|not increased|did not exceed|never exceeded|"
+        r"never (?:increased|rose) above|did not raise|"
         r"unable to raise|"
         r"did not favor treatment over control|"
         r"did not elevate|not (?:statistically )?elevated|"
@@ -1762,8 +1802,11 @@ def _has_er_contact_only_result_pattern_intent(
         r"no treatment over control increase|"
         r"no treatment control (?:escape )?increase|"
         r"not higher(?:\s+\w+){0,6}\s+than (?:controls?|vehicle)|"
-        r"no higher than (?:the )?(?:control|vehicle)|"
+        r"no higher than (?:under )?(?:its )?(?:the )?"
+        r"(?:control|vehicle(?: control)?)|"
         r"no greater than (?:the )?(?:control|vehicle)|"
+        r"no (?:greater|higher|more)(?:\s+\w+){0,3}\s+"
+        r"(?:escape|exit|egress|leaving|departure) than (?:the )?control|"
         r"no treatment versus control increase|"
         r"no added|no additional|no extra|"
         r"no(?:\s+\w+){0,3}\s+(?:rise|upward shift)|"
@@ -1802,7 +1845,7 @@ def _has_er_contact_only_result_pattern_intent(
         r"survival|recovery|"
         r"fecundity|grooming|host seeking|landed|landing|landings|"
         r"orientation|occupancy|"
-        r"takeoffs?|"
+        r"takeoff latency|takeoffs?|"
         r"oviposition|eggs?)\b"
         r"|\b(?:feeding attempts?|feeding(?: rate)?|flight activity|"
         r"wing beat(?: frequency| rate)?|"
@@ -1899,14 +1942,14 @@ def _has_er_contact_only_result_pattern_intent(
         """
         able absence absent accessible active actual add added additional assessed
         advantage affect alike allowed allowing alongside alter although appeared
-        appropriate approximately associated available away blank blocked
+        appropriate approximately associated available away bayesian blank blocked
         blocking blocks brief capable card carrier caused chance change
         chemical chemically claim claimed clear climbed closed coincided
-        comparable comparator compared comparison compartment compartments
+        ci comparable comparator compared comparison compartment compartments
         antennal component conclude concluded conclusion consistent corresponding count counted
         counts cover covered covering curve curves denied denying departed
         departing departure departures describe described despite detectable
-        detected differ difference different distance distant diverged
+        detected differ difference different distinct distance distant diverged
         divergence divider dose dosed egress elevate elevated elicited enabled
         enclosed enclosure endpoint equals equivalent erased estimate estimated evidence
         exceed exceeded exceeding exceeds excess excluded excluding exited
@@ -1914,30 +1957,31 @@ def _has_er_contact_only_result_pattern_intent(
         females fenced finding findings fits fitted flat followed follows format formats
         found fraction fractions free frequency gauze gave generated giving
         granted granting greater guard hazard higher holding identical identify
-        impossible impregnated inaccessible included including inclusion indicate
+        impossible impregnated inaccessible included including inclusion indicate independently
         indicated indirect indistinguishable infer inference inferred insert
         inside interpretation interpreted intervened isolated justified keeping
         larger later lay leave leaving led left level levels like liner longer look
         hour hours made making matched matches matching measure measured measurement
-        measurements meaning mesh minus minute minutes monitor
-        near negative netted netting nil non nonsignificant null number numbers
+        measurements meaning mesh minus minute minutes monitor never
+        near negative netted netting nil non nonsignificant normalized null number numbers
         nylon observations observed occluding occurred off often onto open
         opened opening outcome outside overlapped paper parity partition
         p q pattern percentage percentages perforated permission permitted permitting physical
         physically place placing positive possible present presentation
+        posterior
         prevented preventing prevention prevents probability produce produced
         prohibited proportion proportions protected protection proved provided
-        putting raise raised rather ratio reach reachable reached read recorded
-        reference related remained remains remote remotely removal removed
-        removing repellency repellent replicates represent residue response restored returned
-        reading readings readout readouts revealed rise rose sample sat saw screen screened see separate
+        putting raise raised rather ratio ratios reach reachable reached read recorded
+        reference related relative remained remains remote remotely removal removed
+        removing repellency repellent replicates represent residue respective response restored returned
+        point points reading readings readout readouts revealed rise rose sample sat saw screen screened see separate
         separately separated shared
         separating separation separator setup sheet shielded shielding shrouded
-        side significant significantly similar sleeve solvent source spatial
+        side significant significantly similar sleeve so solvent source spatial specific
         stayed stopped stronger substrate summarize superimposed support
         supported surface surpassed surplus tactile taken taking tarsal tell
         test tied total totals touch touchable touched touching tracked treated
-        timepoint timepoints treatment transfluthrin trials tft unable unavailable
+        those time timepoint timepoints treatment transfluthrin trials tft unable unavailable
         unblocking unchanged
         uncovered unrestricted
         uncovering unproven unreachable unscreened untouchable untreated upward
@@ -1990,9 +2034,11 @@ def _has_er_contact_only_result_pattern_intent(
         "isolat",
         "leav",
         "match",
+        "measur",
         "mesh",
         "net",
         "noncontact",
+        "normaliz",
         "observ",
         "pair",
         "panel",
@@ -2015,6 +2061,7 @@ def _has_er_contact_only_result_pattern_intent(
         "rise",
         "rose",
         "same",
+        "scal",
         "screen",
         "separat",
         "sheet",
@@ -2132,6 +2179,7 @@ def _has_er_contact_only_result_pattern_intent(
             "not" in prefix_tokens
             or "failed" in prefix_tokens
             or "no" in prefix_tokens
+            or "never" in prefix_tokens
         ):
             return False
         if re.search(
@@ -2397,6 +2445,8 @@ def _has_er_contact_only_result_pattern_intent(
                 r"\b(?:escap(?:e|es|ed|ing)|exit(?:s|ed|ing)?|left)\b",
                 clause,
             )
+            if equality_pattern.search(clause):
+                observed_after_contact = None
             repeated_positive_under_contact = (
                 contact_pattern.search(clause)
                 and re.search(
