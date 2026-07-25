@@ -435,6 +435,54 @@ class ReviewedScienceTests(unittest.TestCase):
                         answer["answer"].casefold(),
                     )
 
+    def test_anopheles_assay_separates_spatial_contact_and_toxic_effects(self):
+        record_ids = (
+            "reviewed_repellent_evidence:transfluthrin_who_spatial_repellency_assay_guidance_2013",
+            "reviewed_repellent_evidence:deet_anopheles_contact_spatial_toxicity_separation_2019",
+            "openalex:W3048721146",
+        )
+        questions = (
+            "Our volatile candidate drives Anopheles gambiae out of a chamber but also knocks some mosquitoes down. What assay layout and endpoints would let me call spatial repellency, contact irritancy, toxicity, or none of them without mixing the mechanisms?",
+            "How should I design an Anopheles assay to distinguish airborne repellency, an effect that appears only after contact, and toxic knockdown?",
+            "Which matched controls and endpoints separate spatial escape, contact irritancy, recovery, and 24-hour mortality in malaria mosquitoes?",
+            "An Anopheles candidate causes chamber exits and some delayed deaths. What no-contact and contact-permitted arms keep those claims separate?",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="reviewed_science_test",
+                        locator=f"test#{record_id}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertTrue(answer["ok"])
+                    self.assertEqual(
+                        [item["record_id"] for item in answer["evidence"]],
+                        list(record_ids),
+                    )
+                    for fragment in (
+                        "mesh barrier physically prevented contact",
+                        "matched contact control",
+                        "contact residence",
+                        "immediate knockdown",
+                        "recovery",
+                        "delayed mortality",
+                        "24 hours",
+                        "Toxic incapacitation can suppress escape",
+                        "supports none of those claims",
+                    ):
+                        self.assertIn(fragment.casefold(), answer["answer"].casefold())
+
     def test_aedes_post_exposure_recovery_defines_denominators(self):
         record_id = "openalex:W3048721146"
         with tempfile.TemporaryDirectory() as tmpdir:
