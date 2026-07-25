@@ -1651,7 +1651,7 @@
         "required_any": [
           ["orco", "odorant receptor", "cell assay", "receptor assay"],
           ["carvacrol", "deet", "compound", "compounds"],
-          ["rank", "ranking", "repellent", "repellents", "follow-up", "follow up", "masking"]
+          ["rank", "ranking", "repellent", "repellents", "follow-up", "follow up", "masking", "prevent", "bite", "bites", "outperform", "stronger", "better"]
         ],
         "optional": ["anopheles", "gambiae", "coluzzii", "blocks", "inhibits", "weakly", "barely", "human odor", "human odour"]
       },

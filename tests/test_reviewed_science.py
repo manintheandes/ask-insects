@@ -4770,10 +4770,17 @@ class ReviewedScienceTests(unittest.TestCase):
             "reviewed_repellent_evidence:carvacrol_anopheles_orco_cell_2015",
             "reviewed_repellent_evidence:deet_anopheles_odor_masking_2019",
         )
-        question = (
-            "Our cell assay says carvacrol blocks Anopheles gambiae Orco, but DEET "
-            "barely does. Can I rank the compounds as repellents from that result, "
-            "and how should the DEET masking paper change the follow-up?"
+        questions = (
+            (
+                "Our cell assay says carvacrol blocks Anopheles gambiae Orco, but DEET "
+                "barely does. Can I rank the compounds as repellents from that result, "
+                "and how should the DEET masking paper change the follow-up?"
+            ),
+            (
+                "If carvacrol suppresses an Anopheles odorant receptor more strongly "
+                "than DEET in cultured cells, does that prove it will prevent more "
+                "mosquito bites, or what experiments are still needed?"
+            ),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
@@ -4788,27 +4795,29 @@ class ReviewedScienceTests(unittest.TestCase):
                     for record_id in record_ids
                 ]
             )
-            answer = build_reviewed_science_answer(index, question)
+            for question in questions:
+                with self.subTest(question=question):
+                    answer = build_reviewed_science_answer(index, question)
 
-        self.assertIsNotNone(answer)
-        assert answer is not None
-        self.assertEqual(
-            {item["record_id"] for item in answer["evidence"]},
-            set(record_ids),
-        )
-        for fragment in (
-            "Do not rank carvacrol above DEET",
-            "insect-cell expression system",
-            "little inhibition",
-            "physicochemical masking",
-            "mixed-versus-separated host-odor conditions",
-            "orientation, landing, and protection",
-        ):
-            self.assertIn(fragment.casefold(), answer["answer"].casefold())
-        self.assertNotIn(
-            "eugenol produced a weak response",
-            answer["answer"].casefold(),
-        )
+                    self.assertIsNotNone(answer)
+                    assert answer is not None
+                    self.assertEqual(
+                        {item["record_id"] for item in answer["evidence"]},
+                        set(record_ids),
+                    )
+                    for fragment in (
+                        "Do not rank carvacrol above DEET",
+                        "insect-cell expression system",
+                        "little inhibition",
+                        "physicochemical masking",
+                        "mixed-versus-separated host-odor conditions",
+                        "orientation, landing, and protection",
+                    ):
+                        self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                    self.assertNotIn(
+                        "eugenol produced a weak response",
+                        answer["answer"].casefold(),
+                    )
 
     def test_anopheles_eugenol_decisions_preserve_species_and_small_next_step(self):
         record_id = "openalex:W3013059076"
