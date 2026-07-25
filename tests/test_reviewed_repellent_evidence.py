@@ -112,6 +112,20 @@ class ReviewedRepellentEvidenceTests(unittest.TestCase):
             for item in catalog["evidence"]
         }
 
+        carvacrol = evidence_by_id["carvacrol_anopheles_orco_cell_2015"]
+        self.assertEqual(
+            carvacrol["supporting_provenance"][0]["source_id"],
+            "doi:10.1074/jbc.M114.632299",
+        )
+        self.assertIn("cannot rank behavioral repellency", carvacrol["limitations"][0])
+
+        masking = evidence_by_id["deet_anopheles_odor_masking_2019"]
+        self.assertEqual(
+            masking["supporting_provenance"][0]["source_id"],
+            "doi:10.1016/j.cub.2019.09.007",
+        )
+        self.assertIn("physicochemical masking", masking["finding"])
+
         guardian = evidence_by_id[
             "transfluthrin_guardian_anopheles_hut_2025"
         ]
