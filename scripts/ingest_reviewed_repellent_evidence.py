@@ -20,6 +20,43 @@ from askinsects.sources.reviewed_repellent_evidence import (
 )
 
 
+def _can_preserve_existing_fts(
+    index: SourceIndex,
+    records: list[object],
+) -> bool:
+    with index.connect() as conn:
+        existing_rows = conn.execute(
+            """
+            SELECT record_id, lane, species, title, text
+            FROM records
+            WHERE source=?
+            """,
+            (REVIEWED_REPELLENT_SOURCE_ID,),
+        ).fetchall()
+    incoming = {
+        record.record_id: (
+            record.lane,
+            record.species,
+            record.title,
+            record.text,
+        )
+        for record in records
+    }
+    existing = {
+        str(row["record_id"]): (
+            str(row["lane"]),
+            row["species"],
+            str(row["title"]),
+            str(row["text"]),
+        )
+        for row in existing_rows
+    }
+    return existing.keys() <= incoming.keys() and all(
+        incoming[record_id] == searchable_fields
+        for record_id, searchable_fields in existing.items()
+    )
+
+
 def _read_json(path: Path) -> dict[str, object]:
     if not path.exists():
         return {}
@@ -40,12 +77,19 @@ def ingest_reviewed_repellent_evidence(
     )
     index = SourceIndex(artifact_dir / "source_index.sqlite")
     index.initialize()
-    index.replace_source_records(
-        REVIEWED_REPELLENT_SOURCE_ID,
-        records,
-        update_fts=True,
-        delete_existing_fts=True,
-    )
+    preserved_existing_fts = _can_preserve_existing_fts(index, records)
+    if preserved_existing_fts:
+        index.replace_source_records_preserving_existing_fts(
+            REVIEWED_REPELLENT_SOURCE_ID,
+            records,
+        )
+    else:
+        index.replace_source_records(
+            REVIEWED_REPELLENT_SOURCE_ID,
+            records,
+            update_fts=True,
+            delete_existing_fts=True,
+        )
     summary = index.summary()
     source_payload = {
         "source": REVIEWED_REPELLENT_SOURCE_ID,
@@ -55,6 +99,7 @@ def ingest_reviewed_repellent_evidence(
             "human-reviewed material identities and claim-level public "
             "repellent evidence"
         ),
+        "preserved_existing_fts": preserved_existing_fts,
     }
     generated_at = retrieved_at or (
         datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
