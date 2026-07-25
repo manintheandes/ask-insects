@@ -7423,6 +7423,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "My SWD treatment shifted eggs to the control berry but also lowered total eggs. What matched assays tell me whether this is avoidance or suppressed reproduction?",
+                "swd-choice-endpoint-confounds",
+                ("treated-only and vehicle-only no-choice arms", "support fecundity or egg-laying suppression"),
+            ),
+            (
+                "Which measurements distinguish an SWD egg-laying preference from knockdown or unmated females?",
+                "swd-choice-endpoint-confounds",
+                ("immobility, knockdown, or death", "confirmed-mated females", "within-state treatment contrast"),
+            ),
+            (
                 "Treated SWD berries were firmer and drier while control berries were wounded. How should those fruit conditions be crossed before assigning the effect to repellency?",
                 "swd-fruit-condition-controls",
                 ("factorial design", "fruit injury directly changed oviposition", "did not measure a specific moisture effect"),
