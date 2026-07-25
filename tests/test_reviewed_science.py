@@ -445,6 +445,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "repellency or possible knockdown?",
                 "How would you distinguish a mosquito changing its flight direction from a "
                 "mosquito that is simply moving more slowly after repellent exposure?",
+                "How can we tell whether apparent vapor repellency in Aedes aegypti is actually knockdown or toxicity?",
+                "What dose-matched endpoints distinguish voluntary Aedes vapor avoidance from knockdown and delayed death?",
             )
             for question in questions:
                 with self.subTest(question=question):
@@ -456,14 +458,19 @@ class ReviewedScienceTests(unittest.TestCase):
                     for fragment in (
                         "paired non-contact",
                         "mesh barrier",
+                        "nominal active-ingredient loading or applied dose",
+                        "exposure duration constant",
+                        "equal paper loading does not guarantee equal delivered vapor exposure",
                         "1-minute intervals",
                         "30 minutes",
+                        "same nominal loading and 30-minute exposure",
                         "greater non-contact escape",
                         "reduced escape can indicate knockdown",
                         "contact excitation",
                         "escaped and remaining",
                         "24-hour mortality",
                         "knockdown can suppress escape",
+                        "report the dose or loading and observation time for each",
                     ):
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
                     self.assertNotIn(
