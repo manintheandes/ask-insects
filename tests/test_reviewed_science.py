@@ -3157,6 +3157,10 @@ class ReviewedScienceTests(unittest.TestCase):
             for fragment in (
                 "Measure the safety package",
                 "non-target species, and life stage",
+                "egg hatch, larval development and feeding",
+                "pupation and adult emergence",
+                "adult orientation and foraging",
+                "reproduction, and offspring production",
                 "crop injury and fruit quality",
                 "residues and worker exposure",
                 "field pollinator survival and behavior",
