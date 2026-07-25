@@ -262,12 +262,45 @@ class ReviewedScienceTests(unittest.TestCase):
                     assert answer is not None
                     self.assertTrue(answer["ok"])
                     self.assertIn("15 minutes, 1 hour, 6 hours, 24 hours, and 48 hours", answer["answer"])
-                    self.assertIn("residual odor is not mistaken for a behavioral aftereffect", answer["answer"])
-                    self.assertIn("Persistent avoidance means", answer["answer"])
-                    self.assertIn("Habituation means", answer["answer"])
-                    self.assertIn("Rapid disappearance means", answer["answer"])
+                    self.assertIn("measured airborne concentration or surface residue", answer["answer"])
+                    self.assertIn("chemical persistence, not a learned post-exposure effect", answer["answer"])
+                    self.assertIn("after verified clearance", answer["answer"])
+                    self.assertIn("supports habituation", answer["answer"])
+                    self.assertIn("shows retained sensitivity, not persistent avoidance in odor-free air", answer["answer"])
+                    self.assertIn("shows rapid loss of the active repellent effect", answer["answer"])
                     self.assertIn("not post-removal recovery measurements", answer["answer"])
                     self.assertIn("does not prove long-term field persistence", answer["answer"])
+
+    def test_recovery_answer_does_not_define_avoidance_without_an_odor_target(self):
+        record_id = "swd:openalex_literature:openalex:W3199560580"
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="drosophila_suzukii_core",
+                        locator="raw/swd.json#works/W3199560580",
+                    )
+                ]
+            )
+
+            answer = build_reviewed_science_answer(
+                index,
+                "After a volatile is removed, what recovery measurements would show whether SWD avoidance persists, habituates, or rapidly disappears?",
+            )
+
+            self.assertIsNotNone(answer)
+            assert answer is not None
+            self.assertNotIn(
+                "still avoid in clean air after the volatile has cleared",
+                answer["answer"],
+            )
+            self.assertIn(
+                "An unchanged same-dose rechallenge response shows retained sensitivity",
+                answer["answer"],
+            )
 
     def test_swd_seasonal_morph_olfaction_paraphrases_use_direct_source(self):
         record_id = "swd_olfaction_literature:pubmed:29668908"
