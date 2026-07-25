@@ -4986,6 +4986,20 @@ class ReviewedScienceTests(unittest.TestCase):
                         "eugenol produced a weak response",
                         answer["answer"].casefold(),
                     )
+                    masking_source = next(
+                        item
+                        for item in answer["evidence"]
+                        if item["record_id"]
+                        == "reviewed_repellent_evidence:deet_anopheles_odor_masking_2019"
+                    )
+                    self.assertIn(
+                        "Methods, Photoionization detector",
+                        masking_source["provenance"]["locator"],
+                    )
+                    self.assertNotIn(
+                        "GC-MS volatility measurements",
+                        masking_source["provenance"]["locator"],
+                    )
 
     def test_anopheles_deet_time_of_test_routes_to_circadian_retest(self):
         record_id = "reviewed_repellent_evidence:deet_anopheles_time_of_test_2021"
