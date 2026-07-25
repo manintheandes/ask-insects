@@ -1826,6 +1826,30 @@ class ReviewedScienceTests(unittest.TestCase):
             "and was greater than control when contact was possible. Wing movement was "
             "measured separately and did not differ. Does escape support a "
             "contact-associated effect?",
+            "In TFT-exposed Aedes aegypti, treatment egress matched control while a "
+            "screen separated mosquitoes from the paper and the credible interval included "
+            "zero; after paper contact was enabled, treatment egress exceeded control and "
+            "the interval stayed above zero. Which interpretation follows?",
+            "At common 5-minute and 29-minute observations in both conditions, Aedes "
+            "aegypti treatment departure equaled control without contact and exceeded "
+            "control with contact. What departure response is present?",
+            "Aedes aegypti treatment escape remained at control without contact and was "
+            "greater than control with contact. Flight velocity was assessed separately "
+            "and remained unchanged. Does escape support a contact-associated effect?",
+            "Using identical 8-minute and 19-minute readings for each arm, Aedes aegypti "
+            "treatment escape did not exceed control without contact and did exceed "
+            "control with contact. Is this contact-associated escape?",
+            "For Aedes aegypti, treatment escape matched control with the contact barrier "
+            "in place (p = 0.61; q = 0.70), whereas treatment escape exceeded control "
+            "with the barrier absent (p = 0.004; q = 0.015). What result is supported?",
+            "With TFT, Aedes aegypti treatment egress equaled control while mesh prevented "
+            "paper contact and the credible interval crossed zero; after the mesh was "
+            "removed for contact, treatment egress exceeded control and the interval was "
+            "wholly above zero. What does this support?",
+            "In an Aedes aegypti excito-repellency assay, treated and control escape were "
+            "equal behind a mesh barrier, but treated mosquitoes escaped more than "
+            "controls when they could touch the treated paper. What can this result "
+            "support, and what can it not support?",
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
