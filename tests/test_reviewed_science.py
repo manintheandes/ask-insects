@@ -4781,6 +4781,12 @@ class ReviewedScienceTests(unittest.TestCase):
                 "than DEET in cultured cells, does that prove it will prevent more "
                 "mosquito bites, or what experiments are still needed?"
             ),
+            (
+                "Carvacrol looks stronger than DEET against a mosquito odorant "
+                "receptor in vitro. Is it therefore the better human repellent, and "
+                "what would you test next to avoid confusing receptor inhibition "
+                "with odor masking?"
+            ),
         )
         with tempfile.TemporaryDirectory() as tmpdir:
             index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
