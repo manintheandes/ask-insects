@@ -4970,12 +4970,18 @@ class ReviewedScienceTests(unittest.TestCase):
                     for fragment in (
                         "Do not rank carvacrol above DEET",
                         "insect-cell expression system",
-                        "little inhibition",
+                        "ethyl cinnamate, carvacrol, and isopropyl cinnamate",
+                        "no noticeable inhibitory action",
+                        "DEET and IR3535",
+                        "picaridin weakly activated",
+                        "Photoionization-detector measurements",
                         "physicochemical masking",
+                        "not necessarily contradictory",
                         "mixed-versus-separated host-odor conditions",
-                        "orientation, landing, and protection",
+                        "orientation, landing, and biting or protection",
                     ):
                         self.assertIn(fragment.casefold(), answer["answer"].casefold())
+                    self.assertNotIn("GC-MS volatility measurements", answer["answer"])
                     self.assertNotIn(
                         "eugenol produced a weak response",
                         answer["answer"].casefold(),
