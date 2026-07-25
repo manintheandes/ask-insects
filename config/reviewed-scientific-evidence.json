@@ -1071,6 +1071,32 @@
       ]
     },
     {
+      "id": "aedes-er-contact-only-result-pattern",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 180,
+        "question_intent": "er_contact_only_result_pattern",
+        "species_may_be_implicit": true,
+        "phrases": [
+          "non-contact escape matches control",
+          "noncontact escape matches control",
+          "non-contact escape did not differ from control",
+          "noncontact escape did not differ from control",
+          "no non-contact escape increase",
+          "no noncontact escape increase",
+          "contact-only escape pattern"
+        ],
+        "required_any": [
+          ["non contact", "non-contact", "noncontact", "mesh separated", "mesh-separated", "mesh barrier"],
+          ["matches control", "match control", "matched control", "same as control", "equal to control", "identical to control", "identical escape", "same escape", "equal escape", "no difference from control", "did not differ from control", "matches vehicle", "same as vehicle", "no difference from vehicle", "did not differ from vehicle", "escaped equally", "equally often", "indistinguishable from control", "indistinguishable from vehicle", "comparable escape", "produced comparable escape"],
+          ["contact escape", "contact chamber", "contact-chamber", "treated-contact", "treatment-contact", "touching treated paper", "touched treated paper", "direct treated-paper contact", "direct contact", "contact excitation"]
+        ],
+        "optional": ["spatial", "repellency", "treated paper", "contact control", "paired adjustment", "estimate", "claim", "exceeded", "increased", "higher"]
+      },
+      "answer": "Published evidence: The cited excito-repellency system paired treated and control chambers in both non-contact and contact formats. A screen mesh prevented treated-paper contact in the non-contact pair; the contact pair omitted the barrier. Escape was recorded every minute for 30 minutes, with 30-minute knockdown and 24-hour mortality kept separate. Raw contact-chamber escape can combine contact excitation and non-contact repellency, so the authors adjusted contact escape using the simultaneous paired non-contact response. Interpretation of the stated result pattern: if treated non-contact escape matches its paired non-contact control, no spatial-repellency signal was detected under those assay conditions. Contact-associated escape is supported only if treated-contact escape exceeds its paired contact control and the estimated contact component remains positive after the simultaneous paired non-contact adjustment. That pattern supports a contact-associated behavioral effect, not spatial repellency. It does not prove that spatial activity is absent at other doses, times, formulations, or arenas, and it does not identify a sensory receptor or molecular mechanism. Report raw treated and control escape counts or curves for both formats, the adjusted contact estimate, and knockdown, recovery, and 24-hour mortality as separate outcomes.",
+      "source_record_ids": ["openalex:W3048721146"]
+    },
+    {
       "id": "aedes-contact-versus-spatial",
       "species_ids": ["aedes_aegypti"],
       "match": {
