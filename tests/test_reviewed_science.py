@@ -7433,6 +7433,11 @@ class ReviewedScienceTests(unittest.TestCase):
                 ("immobility, knockdown, or death", "confirmed-mated females", "within-state treatment contrast"),
             ),
             (
+                "If SWD lay fewer eggs on a treated berry, what result pattern would prove redistribution rather than a toxic or reproductive effect?",
+                "swd-choice-endpoint-confounds",
+                ("unchanged total eggs", "support activity impairment or toxicity", "support fecundity or egg-laying suppression"),
+            ),
+            (
                 "Treated SWD berries were firmer and drier while control berries were wounded. How should those fruit conditions be crossed before assigning the effect to repellency?",
                 "swd-fruit-condition-controls",
                 ("factorial design", "fruit injury directly changed oviposition", "did not measure a specific moisture effect"),
