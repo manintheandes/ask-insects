@@ -3154,13 +3154,16 @@ class ReviewedScienceTests(unittest.TestCase):
             self.assertFalse(answer["answer"].startswith("No."))
             for fragment in (
                 "Measure the safety package",
+                "non-target species, and life stage",
                 "crop injury and fruit quality",
                 "residues and worker exposure",
                 "field pollinator survival and behavior",
+                "survival and behavior of beneficial arthropods",
                 "predators and parasitoids",
                 "soil exposure",
                 "aquatic exposure",
                 "does not establish pollinator safety or crop safety",
+                "Crop and worker safety plus pollinator",
             ):
                 self.assertIn(fragment.casefold(), answer["answer"].casefold())
 
