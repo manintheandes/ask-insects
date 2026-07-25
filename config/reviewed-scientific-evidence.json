@@ -737,7 +737,7 @@
         "phrases": ["fewer eggs", "reduced egg laying", "oviposition choice"],
         "required_any": [
           ["egg", "eggs", "oviposition", "fecundity"],
-          ["mortality", "survival", "activity", "locomotion", "movement", "mating", "unmated", "knockdown", "suppressed reproduction", "reproductive suppression", "confound", "separate", "distinguish"],
+          ["mortality", "survival", "activity", "locomotion", "movement", "mating", "unmated", "knockdown", "toxic", "toxicity", "suppressed reproduction", "reproductive suppression", "reproductive effect", "confound", "separate", "distinguish"],
           ["treated", "untreated", "choice", "preference", "no choice", "no-choice", "total eggs", "allocation", "allocate", "repellency", "avoidance", "prove"]
         ],
         "optional": ["treated fruit", "choice", "total eggs", "no choice", "dwell", "physiological state"]
