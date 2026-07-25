@@ -246,6 +246,8 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Design a washout time course that separates residual odor, learned habituation, and toxic motor impairment in SWD.",
                 "How can I tell whether an SWD repellent response persists after odor removal or fades back to baseline?",
                 "When the odor source is taken away, what observations separate a lasting SWD behavior change from leftover vapor or temporary paralysis?",
+                "What post-exposure schedule would distinguish SWD habituation from residual chemical in the chamber?",
+                "How should recovery be tracked after removing an airborne SWD deterrent?",
                 "For an SWD oviposition repellent lead, how should I think about adult or larval pre-exposure before assuming the deterrent will keep working after repeated crop exposure?",
                 "Before I trust an SWD oviposition deterrent across repeated crop exposure, how should adult and larval pre-exposure be tested?",
             )
