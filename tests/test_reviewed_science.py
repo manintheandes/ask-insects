@@ -244,6 +244,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Would SWD avoidance rebound after repellent washout?",
                 "After taking away an SWD volatile, which measurements distinguish persistent avoidance, habituation, and a response that vanishes quickly?",
                 "Design a washout time course that separates residual odor, learned habituation, and toxic motor impairment in SWD.",
+                "How can I tell whether an SWD repellent response persists after odor removal or fades back to baseline?",
                 "For an SWD oviposition repellent lead, how should I think about adult or larval pre-exposure before assuming the deterrent will keep working after repeated crop exposure?",
                 "Before I trust an SWD oviposition deterrent across repeated crop exposure, how should adult and larval pre-exposure be tested?",
             )
