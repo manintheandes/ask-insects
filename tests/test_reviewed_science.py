@@ -4405,6 +4405,17 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "If one SWD population becomes less responsive to octenol and also survives an insecticide better, what evidence would prove cross-resistance rather than unrelated behavioral and toxicological changes?",
+                "swd:openalex_literature:openalex:W3199560580",
+                (
+                    "same compound, delivered exposure, and behavioral endpoint",
+                    "other repellents and relevant toxicants",
+                    "matched delivered exposures",
+                    "cross-resistance",
+                    "candidate genetic changes",
+                ),
+            ),
+            (
                 "If an SWD line keeps ignoring a deterrent after its offspring are raised without exposure, is that still learning or evidence for inheritance?",
                 "swd:openalex_literature:openalex:W3199560580",
                 (
