@@ -240,6 +240,7 @@ REQUIRED_FILES = (
     "askinsects/reality_eval.py",
     "askinsects/sources/aedes_primary_behavior_evidence.py",
     "askinsects/sources/swd_primary_field_evidence.py",
+    "askinsects/sources/anopheles_primary_evidence.py",
     "askinsects/sources/human_repellent_testing_guidance.py",
     "askinsects/sources/plutella_xylostella_literature.py",
     "askinsects/server.py",
@@ -378,6 +379,7 @@ REQUIRED_FILES = (
     "scripts/ingest_insect_intelligence_programs.py",
     "scripts/ingest_aedes_primary_behavior_evidence.py",
     "scripts/ingest_swd_primary_field_evidence.py",
+    "scripts/ingest_anopheles_primary_evidence.py",
     "scripts/ingest_human_repellent_testing_guidance.py",
     "scripts/ingest_plutella_xylostella_literature.py",
     "scripts/ingest_uniprot_proteins.py",
@@ -511,6 +513,7 @@ REQUIRED_FILES = (
     "tests/test_insect_intelligence_programs.py",
     "tests/test_aedes_primary_behavior_evidence_source.py",
     "tests/test_swd_primary_field_evidence_source.py",
+    "tests/test_anopheles_primary_evidence_source.py",
     "tests/test_human_repellent_testing_guidance_source.py",
     "tests/test_plutella_xylostella_literature_source.py",
     "tests/test_context_package.py",
@@ -671,6 +674,7 @@ UNIT_TEST_MODULES = (
     "tests.test_insect_intelligence_programs",
     "tests.test_aedes_primary_behavior_evidence_source",
     "tests.test_swd_primary_field_evidence_source",
+    "tests.test_anopheles_primary_evidence_source",
     "tests.test_human_repellent_testing_guidance_source",
     "tests.test_plutella_xylostella_literature_source",
     "tests.test_context_package",
@@ -2723,6 +2727,8 @@ def check_reviewed_scientific_evidence() -> None:
         "scripts/ingest_human_repellent_testing_guidance.py",
         "swd_primary_field_evidence",
         "scripts/ingest_swd_primary_field_evidence.py",
+        "anopheles_primary_evidence",
+        "scripts/ingest_anopheles_primary_evidence.py",
     ):
         if required not in source_map:
             raise RuntimeError(
@@ -2736,6 +2742,7 @@ def check_reviewed_scientific_evidence() -> None:
         "human_repellent_testing_guidance",
         "original public guidance page",
         "swd_primary_field_evidence",
+        "anopheles_primary_evidence",
     ):
         if required not in source_docs:
             raise RuntimeError(

@@ -183,6 +183,8 @@ Hosted Ask Insects uses the same source lanes. The difference is location: parse
 
 `swd_primary_field_evidence` maps human-reviewed primary SWD field-translation studies to exact public articles. It preserves the hop-pellet 24-hour cage result, controlled and commercial berry-field results, larvae-in-fruit and trap-count endpoints, and the distinction between measured results and proposed field-failure explanations. It also preserves the crop-specific Ecotrol PLUS raspberry and half-high-blueberry designs, rates, infestation estimates, comparator statistics, and tunnel limitation. It does not transfer efficacy across crops, turn equal point estimates or shared Tukey groups into equivalence, or treat greenhouse efficacy and hypothesized mechanisms as commercial proof.
 
+`anopheles_primary_evidence` maps human-reviewed primary Anopheles studies to exact public articles. It preserves setting-specific hourly indoor and outdoor infectious-biting measurements from Zanzibar and south-eastern Tanzania, plus the separate midgut-oocyst and salivary-gland-sporozoite endpoints from a human-to-Anopheles dirus Plasmodium knowlesi membrane feed. It does not transfer one location's biting schedule to another, turn reduced host approach into blocked transmission, or treat one laboratory vector-competence assay as field transmission efficacy.
+
 Hosted GBIF and iNaturalist ingests stage a copy of the active artifact directory, fetch into the staging copy, replace only the matching source rows in SQLite, write receipts, and activate the staged directory only after the refresh succeeds. This keeps the old server database readable during long pulls.
 
 ## Genomics
