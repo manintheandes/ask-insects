@@ -568,6 +568,23 @@
   ],
   "topics": [
     {
+      "id": "swd-fruit-texture-mechanism-finding",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 120,
+        "phrases": ["fruit texture", "egg-laying texture", "oviposition texture"],
+        "required_any": [
+          ["texture", "firmness", "firmer", "hardness", "harder"],
+          ["egg", "eggs", "oviposition", "lay", "laying"],
+          ["mechanism", "mechanosensory", "mechanosensation", "channel", "channels", "sensory"]
+        ],
+        "excluded_any": ["candidate", "vehicle", "control", "separate", "factorial", "cross"],
+        "optional": ["TRP", "DEG/ENaC", "preference"]
+      },
+      "answer": "In the cited laboratory assay, female Drosophila suzukii preferred the harder oviposition texture. Drugs targeting TRP and DEG/ENaC channel families abolished that preference. This implicates mechanosensitive channel families but does not identify one uniquely causal channel. The study does not show that fruit hardness alone determines field infestation or that one channel is a proven commercial target.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W3037850025"]
+    },
+    {
       "id": "swd-fruit-texture-mechanosensation",
       "species_ids": ["drosophila_suzukii"],
       "match": {
