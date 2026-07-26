@@ -4409,6 +4409,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "swd:openalex_literature:openalex:W3199560580",
                 (
                     "same compound, delivered exposure, and behavioral endpoint",
+                    "focal compound named in the hypothesis",
                     "other repellents and relevant toxicants",
                     "matched delivered exposures",
                     "cross-resistance",
