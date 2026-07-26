@@ -257,6 +257,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "For an SWD oviposition repellent lead, how should I think about adult or larval pre-exposure before assuming the deterrent will keep working after repeated crop exposure?",
                 "Before I trust an SWD oviposition deterrent across repeated crop exposure, how should adult and larval pre-exposure be tested?",
                 "Our SWD flies avoid a volatile less on a second same-dose challenge, then recover by the next day. Can we conclude they learned to habituate to it?",
+                "An SWD cohort becomes less avoidant after repeated nonreinforced exposure and later regains its response. What additional evidence is needed before calling this habituation rather than sensory adaptation?",
             )
             for question in questions:
                 with self.subTest(question=question):
@@ -314,6 +315,18 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Restoration after a longer washout shows recovery of responsiveness, not proof",
                 answer["answer"],
             )
+
+    def test_swd_monitoring_adaptation_does_not_select_habituation_topic(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+
+            answer = build_reviewed_science_answer(
+                index,
+                "How should we adapt our SWD trap monitoring schedule for next season?",
+            )
+
+            self.assertIsNone(answer)
 
     def test_swd_seasonal_morph_olfaction_paraphrases_use_direct_source(self):
         record_id = "swd_olfaction_literature:pubmed:29668908"
