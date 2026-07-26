@@ -727,6 +727,22 @@
       "source_record_ids": ["swd_olfaction_literature:pubmed:30379809"]
     },
     {
+      "id": "swd-methyl-jasmonate-dose-finding",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 120,
+        "phrases": ["methyl jasmonate", "MeJA", "dose-dependent effect", "low dose attracts"],
+        "required_any": [
+          ["methyl jasmonate", "meja"],
+          ["dose", "concentration", "attract", "attraction", "repel", "repellent"]
+        ],
+        "excluded_any": ["field", "push-pull", "push pull", "push", "pull", "trap", "traps", "bycatch", "spacing", "design", "deploy", "deployment"],
+        "optional": ["filter paper", "planar olfactometer", "artificial fruit", "low dose"]
+      },
+      "answer": "Methyl jasmonate was not uniformly repellent. In the cited two-choice planar olfactometer, 3.86 to 15.45 micrograms per filter paper was attractive, while 309.0 micrograms per filter paper was repellent. In a separate two-choice cage, doses above 1287.5 micrograms per filter paper reduced female oviposition on artificial fruits by more than 90 percent. This dose-dependent reversal means that a low delivered exposure could produce the opposite orientation response under the tested apparatus. Adult orientation and egg allocation are different endpoints and cannot be collapsed into one potency curve. Applied mass per filter paper is not emitted mass, air concentration, fruit residue, or a crop application rate, and these laboratory results do not establish field crop protection.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W4413971464"]
+    },
+    {
       "id": "swd-methyl-jasmonate-dose",
       "species_ids": ["drosophila_suzukii"],
       "match": {
@@ -1922,6 +1938,66 @@
           "public_url": "https://doi.org/10.1186/s12936-020-03206-8",
           "source_id": "doi:10.1186/s12936-020-03206-8",
           "locator": "Methods, Mosquitoes: Anopheles coluzzii Ngousso (wild type), 3-10-day-old, non-blood-fed, freely mated females; Methods, Odorants: eugenol used undiluted; Methods, Close proximity response assay and Analysis: 20 uL on 1 x 2 cm filter paper, 0.5 cm from one resting mosquito for 30 seconds, n = 30 per experiment, randomized odorant order, at least 2 minutes between odorants, paraffin-oil control, Kaplan-Meier time-to-flight estimates, and prior exposures included in the Cox model; Results, Species-specific differences in mosquito behavioural response to repellents, Figure 2a: weak Anopheles eugenol response not significantly different from paraffin oil, P = 0.08"
+        }
+      ]
+    },
+    {
+      "id": "anopheles-local-infectious-biting-schedule",
+      "species_ids": ["anopheles_mosquitoes"],
+      "match": {
+        "priority": 300,
+        "phrases": ["infectious biting schedule", "infected Anopheles arabiensis", "early outdoor infectious biting", "local biting schedule"],
+        "required_any": [
+          ["anopheles", "malaria vector", "malaria mosquito"],
+          ["infected", "infectious", "sporozoite", "malaria transmission"],
+          ["indoor", "outdoor", "evening", "night", "hourly", "schedule", "time", "timing"]
+        ],
+        "optional": ["zanzibar", "tanzania", "arabiensis", "field trial", "repellent", "human landing", "local measurement"]
+      },
+      "answer": "Use the Zanzibar result to ensure the trial covers the early outdoor window, but do not treat it as a universal schedule. In Zanzibar, monthly hourly indoor and outdoor human landing catches ran from 18:00 to 06:00 at ten sentinel sites from October 2022 through September 2023. Malaria-parasite-infected Anopheles arabiensis bites were observed outdoors at 18:00-21:00 (n=10) and indoors at 22:00-02:00 (n=4). In south-eastern Tanzania, by contrast, 17 of 7,442 tested indoor An. arabiensis were sporozoite-positive and 0 of 1,044 tested outdoors were positive. These studies show that infectious-biting time and location are setting-specific. For the field repellent trial, sample locally across the full plausible exposure period, including at least hourly concurrent indoor and outdoor collections from before dusk through dawn, repeated across the relevant seasons. Non-negotiable measurements are molecular species identification, sporozoite infection, hourly abundance, parity or another age-structure measure, weather, intervention use, and where people are each hour, including bed, net, and repellent use. Analyze landing density, infection prevalence, and infectious-bite exposure separately.",
+      "source_record_ids": [
+        "anopheles_primary:doi:10.1186/s12936-025-05333-6",
+        "anopheles_primary:doi:10.1371/journal.pgph.0003864"
+      ],
+      "source_provenance": [
+        {
+          "record_id": "anopheles_primary:doi:10.1186/s12936-025-05333-6",
+          "title": "Early evening outdoor biting by malaria-infected Anopheles arabiensis vectors threatens malaria elimination efforts in Zanzibar",
+          "public_url": "https://doi.org/10.1186/s12936-025-05333-6",
+          "source_id": "doi:10.1186/s12936-025-05333-6",
+          "locator": "Abstract, Methods and Results: monthly two-night sampling at ten sentinel sites from October 2022 through September 2023; hourly indoor and outdoor human landing catches from 18:00 to 06:00; infected Anopheles arabiensis bites outdoors at 18:00-21:00 (n=10) and indoors at 22:00-02:00 (n=4)"
+        },
+        {
+          "record_id": "anopheles_primary:doi:10.1371/journal.pgph.0003864",
+          "title": "A matter of timing: Biting by malaria-infected Anopheles mosquitoes and the use of interventions during the night in rural south-eastern Tanzania",
+          "public_url": "https://doi.org/10.1371/journal.pgph.0003864",
+          "source_id": "doi:10.1371/journal.pgph.0003864",
+          "locator": "Methods, indoor and outdoor hourly human landing catches from 18:00 to 06:00 and sporozoite ELISA; Results, Table 3: Anopheles arabiensis infection indoors 17/7,442 and outdoors 0/1,044"
+        }
+      ]
+    },
+    {
+      "id": "anopheles-knowlesi-vector-competence-boundary",
+      "species_ids": ["anopheles_mosquitoes"],
+      "match": {
+        "priority": 310,
+        "phrases": ["Plasmodium knowlesi transmission", "Anopheles dirus vector competence", "blocks knowlesi transmission", "parasite endpoints"],
+        "required_any": [
+          ["anopheles dirus", "dirus"],
+          ["plasmodium knowlesi", "knowlesi"],
+          ["transmission", "vector competence", "oocyst", "oocysts", "sporozoite", "sporozoites", "parasite endpoint", "parasite endpoints"]
+        ],
+        "optional": ["human odor", "human odour", "approach", "repellent", "midgut", "salivary gland", "membrane feed"]
+      },
+      "answer": "No. Reducing Anopheles dirus approaches to human odor is a behavioral result; it does not by itself show that the repellent blocks Plasmodium knowlesi transmission. In the cited direct membrane-feeding study, laboratory female An. dirus fed on infected blood from one symptomatic patient. On day 7, 2 of 745 dissected mosquitoes had midgut oocysts (0.27%). On day 14, 3 of 694 had salivary-gland sporozoites (0.43%), confirmed as P. knowlesi by nested PCR. A defensible transmission-blocking claim would require the repellent study to preserve feeding success, midgut oocyst prevalence and intensity, salivary-gland sporozoite prevalence and intensity, parasite identity, mosquito survival through the extrinsic incubation period, and enough independent infected donors and locally relevant mosquito populations to estimate uncertainty. Field transmission claims additionally require human or epidemiological infection endpoints. Keep reduced approach, reduced blood feeding, reduced mosquito infection, reduced infectious mosquitoes, and reduced human infection as separate claims.",
+      "source_record_ids": ["anopheles_primary:doi:10.1186/s13071-024-06500-5"],
+      "source_provenance": [
+        {
+          "record_id": "anopheles_primary:doi:10.1186/s13071-024-06500-5",
+          "title": "Human-to-Anopheles dirus mosquito transmission of the anthropozoonotic malaria parasite, Plasmodium knowlesi",
+          "public_url": "https://doi.org/10.1186/s13071-024-06500-5",
+          "source_id": "doi:10.1186/s13071-024-06500-5",
+          "locator": "Abstract and Methods, direct membrane-feeding assay using infected blood from one patient; Results: day-7 midgut oocysts in 2/745 mosquitoes (0.27%), day-14 salivary-gland sporozoites in 3/694 (0.43%), with nested-PCR confirmation of Plasmodium knowlesi"
         }
       ]
     },

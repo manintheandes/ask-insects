@@ -6966,6 +6966,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Methyl jasmonate was not uniformly repellent."
             )
         )
+        self.assertNotIn("run separate low-pull", named_answer["answer"])
 
     def test_hop_greenhouse_result_routes_to_exact_field_translation_evidence(self):
         from askinsects.cli import compact_agent_answer
@@ -8741,6 +8742,55 @@ class ReviewedScienceTests(unittest.TestCase):
                         forbidden_record_id,
                         {item["record_id"] for item in answer["evidence"]},
                     )
+
+    def test_anopheles_infectious_biting_and_vector_competence_route_separately(
+        self,
+    ) -> None:
+        record_ids = (
+            "anopheles_primary:doi:10.1186/s12936-025-05333-6",
+            "anopheles_primary:doi:10.1371/journal.pgph.0003864",
+            "anopheles_primary:doi:10.1186/s13071-024-06500-5",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            index = SourceIndex(Path(tmpdir) / "source_index.sqlite")
+            index.initialize()
+            index.upsert_records(
+                [
+                    evidence_record(
+                        record_id,
+                        source_id="anopheles_primary_evidence",
+                        locator=f"https://doi.org/{record_id.rsplit(':', 1)[-1]}",
+                    )
+                    for record_id in record_ids
+                ]
+            )
+            schedule = build_reviewed_science_answer(
+                index,
+                "How should local indoor and outdoor infectious Anopheles biting "
+                "times determine a malaria repellent trial schedule?",
+            )
+            competence = build_reviewed_science_answer(
+                index,
+                "Does reducing Anopheles dirus approaches prove that a repellent "
+                "blocks Plasmodium knowlesi transmission?",
+            )
+
+        self.assertIsNotNone(schedule)
+        self.assertIsNotNone(competence)
+        assert schedule is not None and competence is not None
+        self.assertEqual(
+            {item["record_id"] for item in schedule["evidence"]},
+            set(record_ids[:2]),
+        )
+        self.assertIn("setting-specific", schedule["answer"])
+        self.assertIn("0 of 1,044", schedule["answer"])
+        self.assertEqual(
+            {item["record_id"] for item in competence["evidence"]},
+            {record_ids[2]},
+        )
+        self.assertIn("does not by itself", competence["answer"])
+        self.assertIn("3 of 694", competence["answer"])
+        self.assertNotIn("eugenol", competence["answer"].casefold())
 
 
 if __name__ == "__main__":

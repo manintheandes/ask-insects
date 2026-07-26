@@ -481,6 +481,31 @@ sources:
         - greenhouse_efficacy_as_commercial_field_efficacy
         - associated_headspace_compounds_as_causal_repellents
         - hypothesized_field_failure_mechanisms_as_demonstrated_causes
+  - id: anopheles_primary_evidence
+    name: Exact primary Anopheles decision evidence
+    source_type: human_reviewed_primary_study
+    boundary: Human-reviewed primary studies preserving setting-specific infectious-biting schedules and parasite-development endpoints without converting behavior into transmission protection.
+    query_plane: deterministic_reviewed_record_to_sqlite_literature
+    artifact_dir: artifacts/mosquito-v1
+    ingest_script: scripts/ingest_anopheles_primary_evidence.py
+    upstream_sources:
+      - malaria_journal_open_access_article
+      - plos_global_public_health_open_access_article
+      - parasites_and_vectors_open_access_article
+    lanes:
+      - literature
+    provenance_required: true
+    live_fetch: release_refresh_static_exact_record
+    source_contract:
+      source_grade_now:
+        - exact_original_title
+        - exact_public_url
+        - exact_methods_or_results_locator
+        - human_reviewed_claim_boundary
+      not_claimed:
+        - one_setting_biting_schedule_as_universal
+        - approach_reduction_as_transmission_blocking
+        - laboratory_vector_competence_as_field_transmission_rate
   - id: drosophila_suzukii_core
     name: Drosophila suzukii spotted wing drosophila core source boundary
     source_type: public_api_composite

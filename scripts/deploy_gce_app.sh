@@ -69,6 +69,8 @@ gcloud compute ssh "$VM" --zone "$ZONE" --command "
       --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
     python3 '$RUNTIME_DIR/scripts/ingest_swd_primary_field_evidence.py' \
       --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
+    python3 '$RUNTIME_DIR/scripts/ingest_anopheles_primary_evidence.py' \
+      --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
     python3 '$RUNTIME_DIR/scripts/ingest_reviewed_repellent_evidence.py' \
       --artifact-dir '$DATA_DIR/artifacts/mosquito-v1'
   fi
