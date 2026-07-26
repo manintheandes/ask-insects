@@ -8763,6 +8763,13 @@ class ReviewedScienceTests(unittest.TestCase):
                     )
                     for record_id in record_ids
                 ]
+                + [
+                    evidence_record(
+                        "swd:openalex_literature:openalex:W4413971464",
+                        source_id="swd_openalex_literature",
+                        locator="https://doi.org/10.1017/S0007485325100369",
+                    )
+                ]
             )
             schedule = build_reviewed_science_answer(
                 index,
@@ -8774,10 +8781,24 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Does reducing Anopheles dirus approaches prove that a repellent "
                 "blocks Plasmodium knowlesi transmission?",
             )
+            schedule_neighbor = build_reviewed_science_answer(
+                index,
+                "Our local malaria vectors may bite outdoors before bedtime. How "
+                "should we measure the intervention window without importing another "
+                "region's schedule?",
+            )
+            methyl_neighbor = build_reviewed_science_answer(
+                index,
+                "Could a weak methyl jasmonate dispenser accidentally draw spotted "
+                "wing drosophila toward fruit rather than deter oviposition?",
+            )
 
         self.assertIsNotNone(schedule)
         self.assertIsNotNone(competence)
+        self.assertIsNotNone(schedule_neighbor)
+        self.assertIsNotNone(methyl_neighbor)
         assert schedule is not None and competence is not None
+        assert schedule_neighbor is not None and methyl_neighbor is not None
         self.assertEqual(
             {item["record_id"] for item in schedule["evidence"]},
             set(record_ids[:2]),
@@ -8791,6 +8812,11 @@ class ReviewedScienceTests(unittest.TestCase):
         self.assertIn("does not by itself", competence["answer"])
         self.assertIn("3 of 694", competence["answer"])
         self.assertNotIn("eugenol", competence["answer"].casefold())
+        self.assertEqual(
+            {item["record_id"] for item in schedule_neighbor["evidence"]},
+            set(record_ids[:2]),
+        )
+        self.assertIn("3.86 to 15.45", methyl_neighbor["answer"])
 
 
 if __name__ == "__main__":

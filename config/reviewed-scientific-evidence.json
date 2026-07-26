@@ -558,7 +558,7 @@
     {
       "id": "anopheles_mosquitoes",
       "scientific_name": "Anopheles",
-      "aliases": ["malaria mosquito", "malaria mosquitoes", "Anopheles mosquito", "Anopheles mosquitoes"]
+      "aliases": ["malaria mosquito", "malaria mosquitoes", "malaria vector", "malaria vectors", "Anopheles mosquito", "Anopheles mosquitoes"]
     },
     {
       "id": "plutella_xylostella",
@@ -734,7 +734,7 @@
         "phrases": ["methyl jasmonate", "MeJA", "dose-dependent effect", "low dose attracts"],
         "required_any": [
           ["methyl jasmonate", "meja"],
-          ["dose", "concentration", "attract", "attraction", "repel", "repellent"]
+          ["dose", "concentration", "attract", "attraction", "draw", "draws", "repel", "repellent", "deter", "deterrence", "dispenser"]
         ],
         "excluded_any": ["field", "push-pull", "push pull", "push", "pull", "trap", "traps", "bycatch", "spacing", "design", "deploy", "deployment"],
         "optional": ["filter paper", "planar olfactometer", "artificial fruit", "low dose"]
@@ -1948,9 +1948,9 @@
         "priority": 300,
         "phrases": ["infectious biting schedule", "infected Anopheles arabiensis", "early outdoor infectious biting", "local biting schedule"],
         "required_any": [
-          ["anopheles", "malaria vector", "malaria mosquito"],
-          ["infected", "infectious", "sporozoite", "malaria transmission"],
-          ["indoor", "outdoor", "evening", "night", "hourly", "schedule", "time", "timing"]
+          ["anopheles", "malaria vector", "malaria vectors", "malaria mosquito", "malaria mosquitoes"],
+          ["infected", "infectious", "sporozoite", "malaria transmission", "intervention window", "repellent trial", "before bedtime", "local biting"],
+          ["indoor", "indoors", "outdoor", "outdoors", "evening", "night", "hourly", "schedule", "time", "timing"]
         ],
         "optional": ["zanzibar", "tanzania", "arabiensis", "field trial", "repellent", "human landing", "local measurement"]
       },
