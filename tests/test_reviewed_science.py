@@ -7927,6 +7927,7 @@ class ReviewedScienceTests(unittest.TestCase):
                     "laid fewer eggs on soft 1% agar",
                     "Drosophila melanogaster and Drosophila biarmipes",
                     "On hard 3% agar",
+                    "showed even stronger preferences for media with microbial growth",
                     "interaction between mechanosensory and chemosensory information",
                     "did not identify the responsible microbial molecule",
                 ),
