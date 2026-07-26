@@ -3567,6 +3567,9 @@ class ReviewedScienceTests(unittest.TestCase):
                     "three hours",
                     "electroantennogram",
                     "associative learning",
+                    "female Aedes aegypti",
+                    "1-octen-3-ol and hexanoic acid",
+                    "linalool",
                     "does not establish long-term",
                     "standardize and record prior odor or repellent exposure",
                     "do not test whether either changes a later repellent response",
@@ -4480,7 +4483,15 @@ class ReviewedScienceTests(unittest.TestCase):
             (
                 "How was Aedes aversive odor learning trained and when was memory tested?",
                 "openalex:W4315621418",
-                ("mechanical shock", "10 pairings", "2-minute", "24 hours"),
+                (
+                    "female Aedes aegypti",
+                    "mechanical shock",
+                    "10 pairings",
+                    "2-minute",
+                    "24 hours",
+                    "1-octen-3-ol and hexanoic acid",
+                    "linalool",
+                ),
             ),
             (
                 "What measurements separate sensory detection of a mosquito repellent from the later decision to avoid it in female Aedes aegypti?",
