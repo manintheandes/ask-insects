@@ -1427,7 +1427,7 @@
             "rebounds",
             "rebound"
           ],
-          ["volatile", "odor", "removed", "recovery", "avoidance", "repellent", "deterrent", "deterrence", "residual chemical", "airborne", "octenol", "2 pentylfuran", "2-pentylfuran", "geosmin"]
+          ["volatile", "odor", "removed", "recovery", "avoidance", "repellent", "deterrent", "deterrence", "residual chemical", "airborne", "sensory adaptation", "peripheral adaptation", "response attenuation", "octenol", "2 pentylfuran", "2-pentylfuran", "geosmin"]
         ],
         "optional": ["octenol", "2 pentylfuran", "geosmin", "larval exposure"]
       },
