@@ -7921,6 +7921,17 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Do microbes on fruit attract or deter SWD oviposition, and does substrate hardness change that response?",
+                "swd-microbial-oviposition-finding",
+                (
+                    "laid fewer eggs on soft 1% agar",
+                    "Drosophila melanogaster and Drosophila biarmipes",
+                    "On hard 3% agar",
+                    "interaction between mechanosensory and chemosensory information",
+                    "did not identify the responsible microbial molecule",
+                ),
+            ),
+            (
                 "How should we cross inoculation and substrate hardness in an SWD egg-laying assay, and which egg endpoints should we keep separate?",
                 "swd-microbial-oviposition",
                 (

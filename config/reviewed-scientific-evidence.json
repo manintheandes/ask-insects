@@ -601,6 +601,23 @@
       "source_record_ids": ["swd:openalex_literature:openalex:W3037850025"]
     },
     {
+      "id": "swd-microbial-oviposition-finding",
+      "species_ids": ["drosophila_suzukii"],
+      "match": {
+        "priority": 120,
+        "phrases": ["microbial growth", "microbes on fruit", "microbial oviposition"],
+        "required_any": [
+          ["microbe", "microbes", "microbial", "bacteria", "yeast", "commensal", "inoculated", "inoculation"],
+          ["egg", "eggs", "oviposition", "lay", "laying"],
+          ["hardness", "harder", "soft", "hard", "substrate", "texture", "attract", "deter", "avoid"]
+        ],
+        "excluded_any": ["design", "control", "cross", "factorial", "randomize", "endpoint", "measure"],
+        "optional": ["mechanosensory", "chemosensory", "interaction"]
+      },
+      "answer": "In the cited artificial-substrate assay, Drosophila suzukii laid fewer eggs on soft 1% agar with visible commensal microbial growth than on the matched uninoculated substrate. By contrast, Drosophila melanogaster and Drosophila biarmipes preferred the microbe-rich soft substrate and laid more eggs there. On hard 3% agar, D. suzukii showed no significant preference or aversion to microbial growth. The hardness-dependent change implicates an interaction between mechanosensory and chemosensory information. The experiment did not identify the responsible microbial molecule and does not show that every fruit microbe deters SWD in crops.",
+      "source_record_ids": ["swd:openalex_literature:openalex:W3124252639"]
+    },
+    {
       "id": "swd-microbial-oviposition",
       "species_ids": ["drosophila_suzukii"],
       "match": {
