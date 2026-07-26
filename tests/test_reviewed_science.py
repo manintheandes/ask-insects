@@ -4398,6 +4398,10 @@ class ReviewedScienceTests(unittest.TestCase):
                     "common-garden",
                     "reciprocal crosses",
                     "replicated selection lines",
+                    "repeatedly sample the same field populations",
+                    "matched unexposed reference populations",
+                    "other repellents and relevant toxicants",
+                    "matched delivered exposures",
                 ),
             ),
             (
