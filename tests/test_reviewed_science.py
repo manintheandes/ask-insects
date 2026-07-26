@@ -4388,6 +4388,19 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "How would you test whether declining SWD response to 2-pentylfuran across seasons is behavioral tolerance, cross-resistance, or a heritable field-population shift?",
+                "swd:openalex_literature:openalex:W3199560580",
+                (
+                    "2-pentylfuran",
+                    "longitudinal behavioral tolerance",
+                    "cross-resistance",
+                    "field phenotype frequencies",
+                    "common-garden",
+                    "reciprocal crosses",
+                    "replicated selection lines",
+                ),
+            ),
+            (
                 "If an SWD line keeps ignoring a deterrent after its offspring are raised without exposure, is that still learning or evidence for inheritance?",
                 "swd:openalex_literature:openalex:W3199560580",
                 (

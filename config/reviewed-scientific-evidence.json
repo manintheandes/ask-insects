@@ -1519,10 +1519,19 @@
       "species_ids": ["drosophila_suzukii"],
       "match": {
         "priority": 95,
-        "phrases": ["inherited resistance", "learned habituation", "genetic resistance"],
+        "phrases": [
+          "inherited resistance",
+          "learned habituation",
+          "genetic resistance",
+          "behavioral tolerance",
+          "cross-resistance",
+          "cross resistance",
+          "heritable field-population shift",
+          "heritable field population shift"
+        ],
         "required_any": [
-          ["habituation", "learned", "learning", "pre exposure", "pre-exposure"],
-          ["inherited", "inheritance", "genetic", "resistance", "offspring"]
+          ["habituation", "learned", "learning", "pre exposure", "pre-exposure", "behavioral tolerance", "declining response"],
+          ["inherited", "inheritance", "heritable", "genetic", "resistance", "cross-resistance", "cross resistance", "offspring", "field-population shift", "field population shift"]
         ],
         "optional": ["washout", "common garden", "selection", "unexposed generation"]
       },
