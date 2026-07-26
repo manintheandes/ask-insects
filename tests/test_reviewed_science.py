@@ -256,6 +256,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "If the odor source is removed, what distinguishes residual airborne repellent from learned SWD avoidance?",
                 "For an SWD oviposition repellent lead, how should I think about adult or larval pre-exposure before assuming the deterrent will keep working after repeated crop exposure?",
                 "Before I trust an SWD oviposition deterrent across repeated crop exposure, how should adult and larval pre-exposure be tested?",
+                "Our SWD flies avoid a volatile less on a second same-dose challenge, then recover by the next day. Can we conclude they learned to habituate to it?",
             )
             for question in questions:
                 with self.subTest(question=question):

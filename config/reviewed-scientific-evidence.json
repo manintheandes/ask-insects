@@ -1382,6 +1382,9 @@
         "required_any": [
           [
             "habituation",
+            "habituate",
+            "habituated",
+            "habituating",
             "pre exposure",
             "pre-exposure",
             "post exposure",
