@@ -3590,7 +3590,7 @@ class ReviewedScienceTests(unittest.TestCase):
                 "Did shock-conditioned female Aedes aegypti respond equally to hexanoic acid, linalool, and 1-octen-3-ol?",
                 "aedes-aversive-odor-learning",
                 (
-                    "No.",
+                    "did not learn all three odors equally",
                     "female Aedes aegypti",
                     "1-octen-3-ol and hexanoic acid",
                     "but not linalool",
