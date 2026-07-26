@@ -4451,6 +4451,8 @@ class ReviewedScienceTests(unittest.TestCase):
                     "0.51-0.62",
                     "fewer pupae",
                     "marketable yield",
+                    "A replicated field package",
+                    "operational fit",
                 ),
             ),
             (
