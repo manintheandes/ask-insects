@@ -572,9 +572,9 @@
       "species_ids": ["drosophila_suzukii"],
       "match": {
         "priority": 120,
-        "phrases": ["fruit texture", "egg-laying texture", "oviposition texture"],
+        "phrases": ["fruit texture", "egg-laying texture", "oviposition texture", "egg-laying surface", "oviposition surface", "soft or firm"],
         "required_any": [
-          ["texture", "firmness", "firmer", "hardness", "harder"],
+          ["texture", "firm", "firmness", "firmer", "soft", "hardness", "harder"],
           ["egg", "eggs", "oviposition", "lay", "laying"],
           ["mechanism", "mechanosensory", "mechanosensation", "channel", "channels", "sensory"]
         ],

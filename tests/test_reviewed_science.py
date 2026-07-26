@@ -7903,6 +7903,15 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Did female spotted-wing drosophila choose soft or firm oviposition surfaces, and was one mechanosensory channel proven causal?",
+                "swd-fruit-texture-mechanism-finding",
+                (
+                    "preferred the harder oviposition texture",
+                    "TRP and DEG/ENaC channel families",
+                    "does not identify one uniquely causal channel",
+                ),
+            ),
+            (
                 "Our SWD odor candidate received more eggs on a firmer fruit analog than its vehicle. What does mechanosensation evidence say, and which control separates odor from firmness?",
                 "swd-fruit-texture-mechanosensation",
                 (
