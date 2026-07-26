@@ -7893,6 +7893,16 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "How does fruit texture influence where Drosophila suzukii females lay eggs, and what sensory mechanism is implicated?",
+                "swd-fruit-texture-mechanism-finding",
+                (
+                    "preferred the harder oviposition texture",
+                    "TRP and DEG/ENaC channel families",
+                    "does not identify one uniquely causal channel",
+                    "does not show that fruit hardness alone determines field infestation",
+                ),
+            ),
+            (
                 "Our SWD odor candidate received more eggs on a firmer fruit analog than its vehicle. What does mechanosensation evidence say, and which control separates odor from firmness?",
                 "swd-fruit-texture-mechanosensation",
                 (
