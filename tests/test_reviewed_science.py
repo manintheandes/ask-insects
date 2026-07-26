@@ -3576,6 +3576,17 @@ class ReviewedScienceTests(unittest.TestCase):
                 ),
             ),
             (
+                "Which odor identities changed after aversive conditioning in female Aedes aegypti?",
+                "aedes-olfactory-learning",
+                (
+                    "female Aedes aegypti",
+                    "1-octen-3-ol and hexanoic acid",
+                    "linalool",
+                    "mechanical shock",
+                    "24 hours",
+                ),
+            ),
+            (
                 "How much can mosquito population, genotype, age, or insecticide-resistance background change a repellent result?",
                 "aedes-population-and-state-variation",
                 (

@@ -1669,9 +1669,20 @@
       "match": {
         "priority": 20,
         "question_intent": "olfactory_experience",
-        "phrases": ["prior odor experience", "host experience", "olfactory learning", "repeat exposure", "retested three hours", "three hours after exposure"],
+        "phrases": [
+          "prior odor experience",
+          "host experience",
+          "olfactory learning",
+          "learn to avoid",
+          "learned to avoid",
+          "aversive training",
+          "aversive conditioning",
+          "repeat exposure",
+          "retested three hours",
+          "three hours after exposure"
+        ],
         "required_any": [
-          ["experience", "experienced", "learning", "learned", "training", "habituation", "adaptation", "retested", "repeat exposure"],
+          ["experience", "experienced", "learn", "learning", "learned", "training", "conditioning", "habituation", "adaptation", "retested", "repeat exposure"],
           ["odor", "odour", "host", "repellent", "repellency", "response", "deet"]
         ],
         "optional": ["dopamine", "aversive", "habituation", "sensitization", "persistence"]

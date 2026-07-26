@@ -643,7 +643,7 @@ def _has_olfactory_experience_intent(normalized_question: str) -> bool:
     target = r"(?:odor|odour|host|repellent|repellency|deet)"
     experience = (
         r"(?:experience|experienced|exposure|exposed|contact|training|learning|"
-        r"learned|habituation|adaptation|pre exposure)"
+        r"learn|learned|conditioning|habituation|adaptation|pre exposure)"
     )
     prior_target_experience = re.search(
         rf"\b(?:prior|previous|past|repeat|repeated|retested)\s+{target}"
@@ -667,7 +667,8 @@ def _has_olfactory_experience_intent(normalized_question: str) -> bool:
     )
     named_learning = re.search(
         r"\b(?:olfactory learning|odor learning|odour learning|host experience|"
-        r"repellent experience|deet experience)\b",
+        r"repellent experience|deet experience|aversive training|"
+        r"aversive conditioning|learn(?:ed)? to avoid)\b",
         normalized_question,
     )
     bound_experience = re.search(
@@ -676,7 +677,7 @@ def _has_olfactory_experience_intent(normalized_question: str) -> bool:
         normalized_question,
     )
     mechanism_question = re.search(
-        r"\b(?:learning|learned|training|habituation|adaptation)\b",
+        r"\b(?:learning|learn|learned|training|conditioning|habituation|adaptation)\b",
         normalized_question,
     )
     return bool(
