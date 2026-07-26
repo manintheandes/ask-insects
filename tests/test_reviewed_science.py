@@ -3577,13 +3577,26 @@ class ReviewedScienceTests(unittest.TestCase):
             ),
             (
                 "Which odor identities changed after aversive conditioning in female Aedes aegypti?",
-                "aedes-olfactory-learning",
+                "aedes-aversive-odor-learning",
                 (
                     "female Aedes aegypti",
                     "1-octen-3-ol and hexanoic acid",
                     "linalool",
                     "mechanical shock",
                     "24 hours",
+                ),
+            ),
+            (
+                "Did shock-conditioned female Aedes aegypti respond equally to hexanoic acid, linalool, and 1-octen-3-ol?",
+                "aedes-aversive-odor-learning",
+                (
+                    "No.",
+                    "female Aedes aegypti",
+                    "1-octen-3-ol and hexanoic acid",
+                    "but not linalool",
+                    "10 pairings",
+                    "mechanical shock",
+                    "does not establish that these odors are repellents",
                 ),
             ),
             (

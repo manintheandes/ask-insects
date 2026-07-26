@@ -1664,6 +1664,30 @@
       ]
     },
     {
+      "id": "aedes-aversive-odor-learning",
+      "species_ids": ["aedes_aegypti"],
+      "match": {
+        "priority": 1200,
+        "phrases": [
+          "aversive odor learning",
+          "learn to avoid",
+          "learned to avoid",
+          "aversive training",
+          "aversive conditioning",
+          "shock conditioned",
+          "mechanical shock conditioning",
+          "mechanical-shock conditioning"
+        ],
+        "required_any": [
+          ["aversive training", "aversive conditioning", "shock conditioned", "shock-conditioned", "mechanical shock", "mechanical-shock", "learn to avoid", "learned to avoid", "olfactory learning"],
+          ["odor", "odour", "1-octen-3-ol", "hexanoic acid", "linalool"]
+        ],
+        "optional": ["dopamine", "pairings", "24 hours", "equally"]
+      },
+      "answer": "No. In the cited associative-learning experiment, female Aedes aegypti learned avoidance of 1-octen-3-ol and hexanoic acid, but not linalool. Training used 10 pairings of a 60-second isolated odor presentation with mechanical shock, separated by 2-minute intervals, and the mosquitoes were tested 24 hours later. Dopamine signaling was implicated in this odor-specific aversive learning. This is published evidence from that laboratory conditioning protocol; it does not establish that these odors are repellents or that Aedes aegypti learns to avoid every repellent.",
+      "source_record_ids": ["openalex:W4315621418"]
+    },
+    {
       "id": "aedes-olfactory-learning",
       "species_ids": ["aedes_aegypti"],
       "match": {
