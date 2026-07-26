@@ -268,7 +268,12 @@ class ReviewedScienceTests(unittest.TestCase):
                     self.assertIn("measured airborne concentration or surface residue", answer["answer"])
                     self.assertIn("chemical persistence, not a learned post-exposure effect", answer["answer"])
                     self.assertIn("after verified clearance", answer["answer"])
-                    self.assertIn("supports habituation", answer["answer"])
+                    self.assertIn("reversible response attenuation", answer["answer"])
+                    self.assertIn("peripheral sensory adaptation", answer["answer"])
+                    self.assertIn("does not by itself distinguish learned habituation", answer["answer"])
+                    self.assertIn("dishabituation or stimulus-specificity tests", answer["answer"])
+                    self.assertIn("sensory-response measurements", answer["answer"])
+                    self.assertNotIn("recovery from a reversible learned effect", answer["answer"])
                     self.assertIn("shows retained sensitivity, not persistent avoidance in odor-free air", answer["answer"])
                     self.assertIn("shows rapid loss of the active repellent effect", answer["answer"])
                     self.assertIn("not post-removal recovery measurements", answer["answer"])
@@ -302,6 +307,10 @@ class ReviewedScienceTests(unittest.TestCase):
             )
             self.assertIn(
                 "An unchanged same-dose rechallenge response shows retained sensitivity",
+                answer["answer"],
+            )
+            self.assertIn(
+                "Restoration after a longer washout shows recovery of responsiveness, not proof",
                 answer["answer"],
             )
 
